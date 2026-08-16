@@ -198,16 +198,17 @@ export async function GET(
   } =
     await supabaseAdmin
       .from("applications")
-      .select(
-        `
-          id,
-          owner_user_id,
-          title,
-          acceptance_mode,
-          status
-        `,
-      )
-      .eq(
+    .select(
+      `
+        id,
+        owner_user_id,
+        title,
+        acceptance_mode,
+        payment_method,
+        payment_confirmation_required,
+        status
+      `,
+    )      .eq(
         "id",
         applicationId,
       )
@@ -278,6 +279,10 @@ export async function GET(
           user_id,
           form_submission_id,
           status,
+        qualification_status,
+        payment_status,
+        payment_reported_at,
+        payment_confirmed_at,
           agreed_at,
           created_at,
           updated_at
@@ -547,6 +552,18 @@ export async function GET(
         status:
           entry.status,
 
+      qualification_status:
+        entry.qualification_status,
+
+      payment_status:
+        entry.payment_status,
+
+      payment_reported_at:
+        entry.payment_reported_at,
+
+      payment_confirmed_at:
+        entry.payment_confirmed_at,
+          
         application_version:
           entry.application_version,
 
@@ -619,6 +636,12 @@ export async function GET(
 
       acceptance_mode:
         application.acceptance_mode,
+        
+    payment_method:
+      application.payment_method,
+
+    payment_confirmation_required:
+      application.payment_confirmation_required,
 
       status:
         application.status,
@@ -627,4 +650,604 @@ export async function GET(
     entries:
       resultEntries,
   });
+}
+
+
+export async function PATCH(
+  request: NextRequest,
+) {
+  const token =
+    getBearerToken(request);
+
+  if (!token) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "ログインが必要です。",
+      },
+      {
+        status: 401,
+      },
+    );
+  }
+
+  const {
+    data: authData,
+    error: authError,
+  } =
+    await supabaseAdmin.auth.getUser(
+      token,
+    );
+
+  const user =
+    authData.user;
+
+  if (
+    authError ||
+    !user
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "ログイン状態を確認できませんでした。",
+      },
+      {
+        status: 401,
+      },
+    );
+  }
+
+
+  const body =
+    (await request
+      .json()
+      .catch(() => null)) as
+      | {
+          entryId?: unknown;
+
+          action?: unknown;
+        }
+      | null;
+
+
+  const entryId =
+    typeof body?.entryId ===
+    "string"
+      ? body.entryId.trim()
+      : "";
+
+  const action =
+    typeof body?.action ===
+    "string"
+      ? body.action.trim()
+      : "";
+
+
+  if (!UUID_RE.test(entryId)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込情報が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  if (
+    action !==
+      "qualification_approve" &&
+    action !==
+      "qualification_reject" &&
+    action !==
+      "payment_confirm"
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "操作内容が正しくありません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  // ========================================================
+  // Entry取得
+  // ========================================================
+
+  const {
+    data: entry,
+    error: entryError,
+  } =
+    await supabaseAdmin
+      .from(
+        "application_entries",
+      )
+      .select(
+        `
+          id,
+          application_id,
+          status,
+          qualification_status,
+          payment_status
+        `,
+      )
+      .eq(
+        "id",
+        entryId,
+      )
+      .maybeSingle();
+
+
+  if (entryError) {
+    console.error(
+      "[APPLICATION entries PATCH] entry load failed",
+      entryError,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込情報を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  if (!entry) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込情報が見つかりません。",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+
+  // ========================================================
+  // APPLICATION取得
+  // ========================================================
+
+  const {
+    data: application,
+    error: applicationError,
+  } =
+    await supabaseAdmin
+      .from("applications")
+      .select(
+        `
+          id,
+          owner_user_id,
+          acceptance_mode,
+          payment_method,
+          payment_confirmation_required
+        `,
+      )
+      .eq(
+        "id",
+        entry.application_id,
+      )
+      .maybeSingle();
+
+
+  if (
+    applicationError ||
+    !application
+  ) {
+    console.error(
+      "[APPLICATION entries PATCH] application load failed",
+      applicationError,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "APPLICATIONを確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  if (
+    application.owner_user_id !==
+    user.id
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "この申込を変更する権限がありません。",
+      },
+      {
+        status: 403,
+      },
+    );
+  }
+
+
+  // ========================================================
+  // 資格 OK
+  // ========================================================
+
+  if (
+    action ===
+    "qualification_approve"
+  ) {
+    if (
+      application.acceptance_mode !==
+      "approval"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは資格確認は必要ありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    if (
+      entry.qualification_status !==
+      "pending"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "資格確認はすでに処理されています。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    const paymentSatisfied =
+      application
+        .payment_confirmation_required !==
+        true ||
+      entry.payment_status ===
+        "paid";
+
+
+    const {
+      data: updatedEntry,
+      error: updateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .update({
+          qualification_status:
+            "approved",
+
+          status:
+            paymentSatisfied
+              ? "confirmed"
+              : "submitted",
+        })
+        .eq(
+          "id",
+          entryId,
+        )
+        .select(
+          `
+            id,
+            status,
+            qualification_status,
+            payment_status,
+            payment_reported_at,
+            payment_confirmed_at,
+            updated_at
+          `,
+        )
+        .single();
+
+
+    if (
+      updateError ||
+      !updatedEntry
+    ) {
+      console.error(
+        "[APPLICATION entries PATCH] qualification approve failed",
+        updateError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "資格確認を更新できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    return NextResponse.json({
+      ok: true,
+      entry:
+        updatedEntry,
+    });
+  }
+
+
+  // ========================================================
+  // 資格 NG
+  // ========================================================
+
+  if (
+    action ===
+    "qualification_reject"
+  ) {
+    if (
+      application.acceptance_mode !==
+      "approval"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは資格確認は必要ありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    if (
+      entry.qualification_status !==
+      "pending"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "資格確認はすでに処理されています。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    const {
+      data: updatedEntry,
+      error: updateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .update({
+          qualification_status:
+            "rejected",
+
+          status:
+            "rejected",
+        })
+        .eq(
+          "id",
+          entryId,
+        )
+        .select(
+          `
+            id,
+            status,
+            qualification_status,
+            payment_status,
+            payment_reported_at,
+            payment_confirmed_at,
+            updated_at
+          `,
+        )
+        .single();
+
+
+    if (
+      updateError ||
+      !updatedEntry
+    ) {
+      console.error(
+        "[APPLICATION entries PATCH] qualification reject failed",
+        updateError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "資格確認を更新できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    return NextResponse.json({
+      ok: true,
+      entry:
+        updatedEntry,
+    });
+  }
+
+
+  // ========================================================
+  // 着金確認
+  // ========================================================
+
+  if (
+    action ===
+    "payment_confirm"
+  ) {
+    if (
+      application.payment_method ===
+      "none"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは支払はありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    if (
+      entry.status ===
+      "rejected"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "受付されなかった申込の支払確認はできません。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    if (
+      entry.payment_status ===
+      "paid"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "支払はすでに確認されています。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    const qualificationSatisfied =
+      application.acceptance_mode !==
+        "approval" ||
+      entry.qualification_status ===
+        "approved";
+
+
+    const {
+      data: updatedEntry,
+      error: updateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .update({
+          payment_status:
+            "paid",
+
+          payment_confirmed_at:
+            new Date().toISOString(),
+
+          status:
+            qualificationSatisfied
+              ? "confirmed"
+              : "submitted",
+        })
+        .eq(
+          "id",
+          entryId,
+        )
+        .select(
+          `
+            id,
+            status,
+            qualification_status,
+            payment_status,
+            payment_reported_at,
+            payment_confirmed_at,
+            updated_at
+          `,
+        )
+        .single();
+
+
+    if (
+      updateError ||
+      !updatedEntry
+    ) {
+      console.error(
+        "[APPLICATION entries PATCH] payment confirm failed",
+        updateError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "着金確認を更新できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    return NextResponse.json({
+      ok: true,
+      entry:
+        updatedEntry,
+    });
+  }
+
+
+  return NextResponse.json(
+    {
+      ok: false,
+      message:
+        "処理できませんでした。",
+    },
+    {
+      status: 400,
+    },
+  );
 }

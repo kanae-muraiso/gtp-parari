@@ -60,11 +60,36 @@ type ManagedApplication = {
   definition: ApplicationDefinitionData;
   form_id: string | null;
   acceptance_mode: ApplicationAcceptanceMode;
+    
+    payment_method: ApplicationPaymentMethod;
+
+    payment_amount:
+      | number
+      | null;
+
+    payment_currency: string;
+
+    payment_url:
+      | string
+      | null;
+
+    payment_instructions:
+      | string
+      | null;
+    
+    payment_confirmation_required: boolean;
+    
   status: "draft" | "open" | "closed";
   version: number;
   created_at?: string;
   updated_at?: string;
 };
+
+type ApplicationPaymentMethod =
+  | "none"
+  | "on_site"
+  | "bank_transfer"
+  | "payment_link";
 
 type ApplicationEntryStatus =
   | "submitted"
@@ -83,6 +108,27 @@ type ApplicationEntryAnswer = {
 type ManagedApplicationEntry = {
   id: string;
   status: ApplicationEntryStatus;
+
+  qualification_status:
+    | "not_required"
+    | "pending"
+    | "approved"
+    | "rejected";
+
+  payment_status:
+    | "not_required"
+    | "unpaid"
+    | "reported"
+    | "paid";
+
+  payment_reported_at:
+    | string
+    | null;
+
+  payment_confirmed_at:
+    | string
+    | null;
+
   application_version: number;
   agreed_at: string | null;
   created_at: string;
@@ -444,6 +490,7 @@ function downloadApplicationEntriesCsv(
 }
 
 
+
 export default function ApplicationManager() {
   const [
     applications,
@@ -516,6 +563,34 @@ export default function ApplicationManager() {
       "instant",
     );
 
+    const [
+      paymentMethod,
+      setPaymentMethod,
+    ] =
+      React.useState<ApplicationPaymentMethod>(
+        "none",
+      );
+
+    const [
+      paymentAmount,
+      setPaymentAmount,
+    ] = React.useState("");
+
+    const [
+      paymentUrl,
+      setPaymentUrl,
+    ] = React.useState("");
+
+    const [
+      paymentInstructions,
+      setPaymentInstructions,
+    ] = React.useState("");
+    
+    const [
+      paymentConfirmationRequired,
+      setPaymentConfirmationRequired,
+    ] = React.useState(false);
+    
   const [
     agreement,
     setAgreement,
@@ -540,6 +615,11 @@ export default function ApplicationManager() {
     statusMessage,
     setStatusMessage,
   ] = React.useState("");
+    
+    const [
+      statusUpdatingApplicationId,
+      setStatusUpdatingApplicationId,
+    ] = React.useState<string | null>(null);
 
   const [
     openEntriesApplicationId,
@@ -570,6 +650,11 @@ export default function ApplicationManager() {
     setEntriesMessage,
   ] = React.useState("");
 
+    const [
+      entryActionId,
+      setEntryActionId,
+    ] = React.useState<string | null>(null);
+    
   const [
     entriesViewMode,
     setEntriesViewMode,
@@ -743,6 +828,12 @@ export default function ApplicationManager() {
       getDefaultAcceptanceMode(type),
     );
 
+      setPaymentMethod("none");
+      setPaymentAmount("");
+      setPaymentUrl("");
+      setPaymentInstructions("");
+      setPaymentConfirmationRequired(false);
+      
     setAgreement("");
 
       const defaultActionLabel =
@@ -816,7 +907,36 @@ export default function ApplicationManager() {
     setAcceptanceMode(
       application.acceptance_mode,
     );
+      
+      setPaymentMethod(
+        application.payment_method ??
+          "none",
+      );
 
+      setPaymentAmount(
+        application.payment_amount ==
+        null
+          ? ""
+          : String(
+              application.payment_amount,
+            ),
+      );
+
+      setPaymentUrl(
+        application.payment_url ??
+          "",
+      );
+
+      setPaymentInstructions(
+        application.payment_instructions ??
+          "",
+      );
+
+      setPaymentConfirmationRequired(
+        application.payment_confirmation_required ===
+          true,
+      );
+      
     setAgreement(
       application.definition
         ?.agreement ?? "",
@@ -899,6 +1019,30 @@ export default function ApplicationManager() {
         application.acceptance_mode,
       );
 
+        setPaymentMethod(
+          application.payment_method ??
+            "none",
+        );
+
+        setPaymentAmount(
+          application.payment_amount ==
+          null
+            ? ""
+            : String(
+                application.payment_amount,
+              ),
+        );
+
+        setPaymentUrl(
+          application.payment_url ??
+            "",
+        );
+
+        setPaymentInstructions(
+          application.payment_instructions ??
+            "",
+        );
+        
       setAgreement(
         application.definition
           ?.agreement ?? "",
@@ -1148,7 +1292,276 @@ export default function ApplicationManager() {
     }
   }
 
+    async function updateApplicationEntryAction(
+      applicationId: string,
+      entryId: string,
+      action:
+        | "qualification_approve"
+        | "qualification_reject"
+        | "payment_confirm",
+    ) {
+      setEntryActionId(entryId);
+      setEntriesMessage("");
 
+      try {
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setEntriesMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/application/entries",
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body: JSON.stringify({
+                entryId,
+                action,
+              }),
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+
+                entry?: {
+                  id: string;
+
+                  status:
+                    ApplicationEntryStatus;
+
+                  qualification_status:
+                    | "not_required"
+                    | "pending"
+                    | "approved"
+                    | "rejected";
+
+                  payment_status:
+                    | "not_required"
+                    | "unpaid"
+                    | "reported"
+                    | "paid";
+
+                  payment_reported_at:
+                    | string
+                    | null;
+
+                  payment_confirmed_at:
+                    | string
+                    | null;
+                };
+
+                message?: string;
+              }
+            | null;
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.entry
+        ) {
+          setEntriesMessage(
+            result?.message ||
+              "申込状態を変更できませんでした。",
+          );
+
+          return;
+        }
+
+        const updatedEntry =
+          result.entry;
+
+        setEntriesByApplicationId(
+          (current) => ({
+            ...current,
+
+            [applicationId]:
+              (
+                current[
+                  applicationId
+                ] ?? []
+              ).map((entry) =>
+                entry.id === entryId
+                  ? {
+                      ...entry,
+
+                      status:
+                        updatedEntry.status,
+
+                      qualification_status:
+                        updatedEntry
+                          .qualification_status,
+
+                      payment_status:
+                        updatedEntry
+                          .payment_status,
+
+                      payment_reported_at:
+                        updatedEntry
+                          .payment_reported_at,
+
+                      payment_confirmed_at:
+                        updatedEntry
+                          .payment_confirmed_at,
+                    }
+                  : entry,
+              ),
+          }),
+        );
+      } catch (error) {
+        console.error(
+          "application entry action failed:",
+          error,
+        );
+
+        setEntriesMessage(
+          "申込状態を変更できませんでした。",
+        );
+      } finally {
+        setEntryActionId(null);
+      }
+    }
+   
+    async function updateApplicationStatus(
+      applicationId: string,
+      nextStatus: "open" | "closed",
+    ) {
+      setStatusUpdatingApplicationId(
+        applicationId,
+      );
+
+      setStatusMessage("");
+
+      try {
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setStatusMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/application/status",
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body: JSON.stringify({
+                applicationId,
+                status:
+                  nextStatus,
+              }),
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+
+                application?: {
+                  id: string;
+
+                  status:
+                    | "draft"
+                    | "open"
+                    | "closed";
+                };
+
+                message?: string;
+              }
+            | null;
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.application
+        ) {
+          setStatusMessage(
+            result?.message ||
+              "受付状態を変更できませんでした。",
+          );
+
+          return;
+        }
+
+        const updatedStatus =
+          result.application.status;
+
+        setApplications(
+          (current) =>
+            current.map(
+              (application) =>
+                application.id ===
+                applicationId
+                  ? {
+                      ...application,
+                      status:
+                        updatedStatus,
+                    }
+                  : application,
+            ),
+        );
+
+        setStatusMessage(
+          updatedStatus ===
+            "open"
+            ? "受付を開始しました。"
+            : "受付を終了しました。",
+        );
+      } catch (error) {
+        console.error(
+          "application status update failed:",
+          error,
+        );
+
+        setStatusMessage(
+          "受付状態を変更できませんでした。",
+        );
+      } finally {
+        setStatusUpdatingApplicationId(
+          null,
+        );
+      }
+    }
+    
   async function handleSave() {
     const normalizedTitle =
       title.trim();
@@ -1174,6 +1587,42 @@ export default function ApplicationManager() {
       return;
     }
 
+      const normalizedPaymentAmount =
+        paymentAmount.trim();
+
+      if (
+        paymentMethod !== "none"
+      ) {
+        const amount =
+          Number(
+            normalizedPaymentAmount,
+          );
+
+        if (
+          !normalizedPaymentAmount ||
+          !Number.isFinite(amount) ||
+          amount <= 0
+        ) {
+          setStatusMessage(
+            "参加費を正しく入力してください。",
+          );
+
+          return;
+        }
+      }
+
+      if (
+        paymentMethod ===
+          "payment_link" &&
+        !paymentUrl.trim()
+      ) {
+        setStatusMessage(
+          "支払リンクを入力してください。",
+        );
+
+        return;
+      }
+      
     if (!supabase) {
       setStatusMessage(
         "ログイン情報を確認できませんでした。",
@@ -1263,6 +1712,31 @@ export default function ApplicationManager() {
                   formId || null,
 
                 acceptanceMode,
+                  
+                  paymentMethod,
+
+                  paymentAmount:
+                    paymentMethod ===
+                    "none"
+                      ? null
+                      : Number(
+                          normalizedPaymentAmount,
+                        ),
+
+                  paymentUrl:
+                    paymentMethod ===
+                    "payment_link"
+                      ? paymentUrl.trim()
+                      : "",
+
+                  paymentInstructions:
+                    paymentMethod ===
+                    "none"
+                      ? ""
+                      : paymentInstructions.trim(),
+                  
+                  paymentConfirmationRequired,
+                  
               }),
           },
         );
@@ -1760,6 +2234,184 @@ export default function ApplicationManager() {
             </div>
 
 
+                      <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
+                        <div className="text-sm font-bold text-neutral-950">
+                          支払
+                        </div>
+
+                        <p className="mt-1 text-xs leading-5 text-neutral-500">
+                          支払方法は主催者が自由に決められます。
+                          PARARIでは支払状況を管理します。
+                        </p>
+
+                        <div className="mt-4">
+                          <label className="block text-xs font-bold text-neutral-600">
+                            支払方法
+                          </label>
+
+                          <select
+                            value={
+                              paymentMethod
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              setPaymentMethod(
+                                event.target
+                                  .value as ApplicationPaymentMethod,
+                              );
+                            }}
+                            className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                          >
+                            <option value="none">
+                              支払不要
+                            </option>
+
+                            <option value="on_site">
+                              当日払い
+                            </option>
+
+                            <option value="bank_transfer">
+                              銀行振込（事前支払）
+                            </option>
+
+                            <option value="payment_link">
+                              支払リンク
+                            </option>
+                          </select>
+                        </div>
+
+                        {paymentMethod !==
+                        "none" ? (
+                          <>
+                            <div className="mt-4">
+                              <label className="block text-xs font-bold text-neutral-600">
+                                参加費
+                              </label>
+
+                              <div className="mt-2 flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  inputMode="numeric"
+                                  value={
+                                    paymentAmount
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setPaymentAmount(
+                                      event.target
+                                        .value,
+                                    )
+                                  }
+                                  placeholder="3000"
+                                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                />
+
+                                <span className="shrink-0 text-sm text-neutral-500">
+                                  円
+                                </span>
+                              </div>
+                            </div>
+
+                            {paymentMethod ===
+                            "payment_link" ? (
+                              <div className="mt-4">
+                                <label className="block text-xs font-bold text-neutral-600">
+                                  支払リンク
+                                </label>
+
+                                <input
+                                  type="url"
+                                  value={
+                                    paymentUrl
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setPaymentUrl(
+                                      event.target
+                                        .value,
+                                    )
+                                  }
+                                  placeholder="https://..."
+                                  className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                />
+                              </div>
+                            ) : null}
+
+                            <div className="mt-4">
+                              <label className="block text-xs font-bold text-neutral-600">
+                                {paymentMethod ===
+                                "on_site"
+                                  ? "当日の支払案内"
+                                  : paymentMethod ===
+                                      "bank_transfer"
+                                    ? "振込案内"
+                                    : "支払についての案内"}
+                              </label>
+
+                              <textarea
+                                value={
+                                  paymentInstructions
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  setPaymentInstructions(
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                rows={3}
+                                placeholder={
+                                  paymentMethod ===
+                                  "on_site"
+                                    ? "例）当日受付で現金またはクレジットカードでお支払いください。"
+                                    : paymentMethod ===
+                                        "bank_transfer"
+                                      ? "例）振込先、振込期限などを入力してください。"
+                                      : "必要な案内があれば入力してください。"
+                                }
+                                className="mt-2 w-full resize-y rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
+                              />
+                            </div>
+                                  
+                                  {paymentMethod === "bank_transfer" ||
+                                  paymentMethod === "payment_link" ? (
+                                    <label className="mt-5 flex items-start gap-3 rounded-xl bg-neutral-50 p-4">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          paymentConfirmationRequired
+                                        }
+                                        onChange={(event) =>
+                                          setPaymentConfirmationRequired(
+                                            event.target.checked,
+                                          )
+                                        }
+                                        className="mt-1"
+                                      />
+
+                                      <span>
+                                        <span className="block text-sm font-bold text-neutral-900">
+                                          支払確認後に参加確定とする
+                                        </span>
+
+                                        <span className="mt-1 block text-xs leading-5 text-neutral-500">
+                                          主催者が着金を確認するまで、
+                                          参加は「確認中」となります。
+                                        </span>
+                                      </span>
+                                    </label>
+                                  ) : null}
+                                  
+                          </>
+                        ) : null}
+                      </div>
+                      
             <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
               <div className="text-sm font-bold text-neutral-950">
                 確認・同意事項
@@ -1781,7 +2433,7 @@ export default function ApplicationManager() {
 
             <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
               <div className="text-sm font-bold text-neutral-950">
-                受付方法
+                資格・申込内容の確認
               </div>
 
               <label className="mt-4 flex items-start gap-3">
@@ -1801,7 +2453,7 @@ export default function ApplicationManager() {
 
                 <span>
                   <span className="block text-sm font-bold text-neutral-900">
-                    申し込みと同時に確定
+                      資格確認は不要
                   </span>
 
                   <span className="mt-1 block text-xs leading-5 text-neutral-500">
@@ -1827,7 +2479,7 @@ export default function ApplicationManager() {
 
                 <span>
                   <span className="block text-sm font-bold text-neutral-900">
-                    主催者の承認後に確定
+                      資格・申込内容の確認が必要
                   </span>
 
                   <span className="mt-1 block text-xs leading-5 text-neutral-500">
@@ -2059,15 +2711,46 @@ export default function ApplicationManager() {
                           ) : null}
                         </div>
 
-                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-500">
-                          {application.status ===
-                          "draft"
-                            ? "下書き"
-                            : application.status ===
-                                "open"
-                              ? "募集中"
-                              : "終了"}
-                        </span>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-500">
+                                        {application.status ===
+                                        "draft"
+                                          ? "下書き"
+                                          : application.status ===
+                                              "open"
+                                            ? "募集中"
+                                            : "募集終了"}
+                                      </span>
+
+                                      <button
+                                        type="button"
+                                        disabled={
+                                          statusUpdatingApplicationId ===
+                                          application.id
+                                        }
+                                        onClick={() => {
+                                          void updateApplicationStatus(
+                                            application.id,
+                                            application.status ===
+                                              "open"
+                                              ? "closed"
+                                              : "open",
+                                          );
+                                        }}
+                                        className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+                                      >
+                                        {statusUpdatingApplicationId ===
+                                        application.id
+                                          ? "変更中..."
+                                          : application.status ===
+                                              "draft"
+                                            ? "受付を開始する"
+                                            : application.status ===
+                                                "open"
+                                              ? "受付を終了する"
+                                              : "受付を再開する"}
+                                      </button>
+                                    </div>
                       </div>
 
                       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
@@ -2372,11 +3055,130 @@ export default function ApplicationManager() {
                                               ) : null}
                                             </div>
 
-                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-neutral-600">
-                                              {getApplicationEntryStatusLabel(
-                                                entry.status,
-                                              )}
-                                            </span>
+                                                  <div className="flex flex-col items-end gap-3">
+                                                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-neutral-600">
+                                                      {getApplicationEntryStatusLabel(
+                                                        entry.status,
+                                                      )}
+                                                    </span>
+
+                                                    {/* 資格確認 */}
+                                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                                      <span className="text-xs font-bold text-neutral-500">
+                                                        資格
+                                                      </span>
+
+                                                      {application.acceptance_mode !==
+                                                      "approval" ? (
+                                                        <span className="text-xs text-neutral-400">
+                                                          確認不要
+                                                        </span>
+                                                      ) : entry.qualification_status ===
+                                                        "pending" ? (
+                                                        <>
+                                                          <button
+                                                            type="button"
+                                                            disabled={
+                                                              entryActionId ===
+                                                              entry.id
+                                                            }
+                                                            onClick={() => {
+                                                              void updateApplicationEntryAction(
+                                                                application.id,
+                                                                entry.id,
+                                                                "qualification_approve",
+                                                              );
+                                                            }}
+                                                            className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                                                          >
+                                                            OK
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            disabled={
+                                                              entryActionId ===
+                                                              entry.id
+                                                            }
+                                                            onClick={() => {
+                                                              void updateApplicationEntryAction(
+                                                                application.id,
+                                                                entry.id,
+                                                                "qualification_reject",
+                                                              );
+                                                            }}
+                                                            className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition hover:bg-neutral-100 disabled:opacity-40"
+                                                          >
+                                                            NG
+                                                          </button>
+                                                        </>
+                                                      ) : entry.qualification_status ===
+                                                        "approved" ? (
+                                                        <span className="text-xs font-bold text-neutral-700">
+                                                          ✓ OK
+                                                        </span>
+                                                      ) : (
+                                                        <span className="text-xs font-bold text-neutral-500">
+                                                          × NG
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {/* 支払確認 */}
+                                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                                      <span className="text-xs font-bold text-neutral-500">
+                                                        支払
+                                                      </span>
+
+                                                      {application.payment_method ===
+                                                      "none" ? (
+                                                        <span className="text-xs text-neutral-400">
+                                                          支払不要
+                                                        </span>
+                                                      ) : entry.payment_status ===
+                                                        "paid" ? (
+                                                        <span className="text-xs font-bold text-neutral-700">
+                                                          ✓ 支払済
+                                                        </span>
+                                                      ) : (
+                                                        <>
+                                                          <span className="text-xs text-neutral-500">
+                                                            {entry.payment_status ===
+                                                            "reported"
+                                                              ? "支払連絡あり"
+                                                              : application.payment_method ===
+                                                                  "on_site"
+                                                                ? "当日支払予定"
+                                                                : "未確認"}
+                                                          </span>
+
+                                                          {entry.status !==
+                                                          "rejected" ? (
+                                                            <button
+                                                              type="button"
+                                                              disabled={
+                                                                entryActionId ===
+                                                                entry.id
+                                                              }
+                                                              onClick={() => {
+                                                                void updateApplicationEntryAction(
+                                                                  application.id,
+                                                                  entry.id,
+                                                                  "payment_confirm",
+                                                                );
+                                                              }}
+                                                              className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+                                                            >
+                                                              {application.payment_method ===
+                                                              "on_site"
+                                                                ? "支払済にする"
+                                                                : "着金を確認"}
+                                                            </button>
+                                                          ) : null}
+                                                        </>
+                                                      )}
+                                                    </div>
+                                                  </div>
                                           </div>
 
                                           <div className="mt-4 text-xs text-neutral-500">

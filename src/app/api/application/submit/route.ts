@@ -61,15 +61,38 @@ type ApplicationRow = {
     | string
     | null;
 
-  acceptance_mode:
-    | "instant"
-    | "approval";
+acceptance_mode:
+  | "instant"
+  | "approval";
 
-  status:
-    | "draft"
-    | "open"
-    | "closed";
+payment_method:
+  | "none"
+  | "on_site"
+  | "bank_transfer"
+  | "payment_link";
 
+payment_amount:
+  | number
+  | null;
+
+payment_currency: string;
+
+payment_url:
+  | string
+  | null;
+
+payment_instructions:
+  | string
+  | null;
+
+payment_confirmation_required:
+  boolean;
+
+status:
+  | "draft"
+  | "open"
+  | "closed";
+    
   version: number;
 };
 
@@ -337,6 +360,12 @@ export async function POST(
             definition,
             form_id,
             acceptance_mode,
+            payment_method,
+            payment_amount,
+            payment_currency,
+            payment_url,
+            payment_instructions,
+            payment_confirmation_required,
             status,
             version
           `,
@@ -452,13 +481,14 @@ export async function POST(
           "user_id",
           user.id,
         )
-        .in(
-          "status",
-          [
-            "submitted",
-            "confirmed",
-          ],
-        )
+      .in(
+        "status",
+        [
+          "submitted",
+          "confirmed",
+          "rejected",
+        ],
+      )
         .limit(1)
         .maybeSingle();
 
@@ -650,10 +680,11 @@ export async function POST(
         )
         .in(
           "status",
-          [
-            "submitted",
-            "confirmed",
-          ],
+            [
+              "submitted",
+              "confirmed",
+              "rejected",
+            ],
         );
 
     if (countError) {
@@ -718,6 +749,24 @@ export async function POST(
 
       acceptance_mode:
         application.acceptance_mode,
+        
+    payment_method:
+      application.payment_method,
+
+    payment_amount:
+      application.payment_amount,
+
+    payment_currency:
+      application.payment_currency,
+
+    payment_url:
+      application.payment_url,
+
+    payment_instructions:
+      application.payment_instructions,
+
+    payment_confirmation_required:
+      application.payment_confirmation_required,
 
       version:
         application.version,
@@ -728,11 +777,32 @@ export async function POST(
     // Entry作成
     // ======================================================
 
-    const entryStatus =
-      application.acceptance_mode ===
-      "instant"
-        ? "confirmed"
-        : "submitted";
+      const qualificationStatus =
+        application.acceptance_mode ===
+        "approval"
+          ? "pending"
+          : "not_required";
+
+      const paymentStatus =
+        application.payment_method ===
+        "none"
+          ? "not_required"
+          : "unpaid";
+
+      const qualificationSatisfied =
+        qualificationStatus ===
+          "not_required";
+
+      const paymentSatisfied =
+        application
+          .payment_confirmation_required !==
+          true;
+
+      const entryStatus =
+        qualificationSatisfied &&
+        paymentSatisfied
+          ? "confirmed"
+          : "submitted";
 
     const {
       data: entry,
@@ -758,17 +828,29 @@ export async function POST(
           status:
             entryStatus,
 
+        qualification_status:
+          qualificationStatus,
+
+        payment_status:
+          paymentStatus,
+            
           application_snapshot:
             applicationSnapshot,
+            
         })
-        .select(
-          `
-            id,
-            status,
-            agreed_at,
-            created_at
-          `,
-        )
+      .select(
+        `
+          id,
+          status,
+          qualification_status,
+          payment_status,
+          payment_reported_at,
+          payment_confirmed_at,
+          application_snapshot,
+          agreed_at,
+          created_at
+        `,
+      )
         .single();
 
     if (insertError) {

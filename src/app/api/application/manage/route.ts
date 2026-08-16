@@ -38,6 +38,13 @@ const ACCEPTANCE_MODES = [
   "approval",
 ] as const;
 
+const PAYMENT_METHODS = [
+  "none",
+  "on_site",
+  "bank_transfer",
+  "payment_link",
+] as const;
+
 
 function getBearerToken(
   request: NextRequest,
@@ -182,6 +189,15 @@ function isAcceptanceMode(
   );
 }
 
+function isPaymentMethod(
+  value: string,
+): value is
+  (typeof PAYMENT_METHODS)[number] {
+  return PAYMENT_METHODS.includes(
+    value as
+      (typeof PAYMENT_METHODS)[number],
+  );
+}
 
 async function validateFormOwnership(
   formId: string | null,
@@ -268,6 +284,12 @@ export async function GET(
         definition,
         form_id,
         acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
         status,
         version,
         created_at,
@@ -452,9 +474,15 @@ export async function POST(
         definition?: unknown;
         formId?: unknown;
         acceptanceMode?: unknown;
+
+        paymentMethod?: unknown;
+        paymentAmount?: unknown;
+        paymentUrl?: unknown;
+        paymentInstructions?: unknown;
+        paymentConfirmationRequired?: unknown;
       }
     | null;
-
+    
   const applicationType =
     typeof body?.applicationType ===
       "string"
@@ -483,7 +511,41 @@ export async function POST(
       "string"
       ? body.acceptanceMode.trim()
       : "instant";
+    
+    const paymentMethod =
+      typeof body?.paymentMethod === "string"
+        ? body.paymentMethod.trim()
+        : "none";
 
+    const paymentAmount =
+      typeof body?.paymentAmount === "number"
+        ? body.paymentAmount
+        : typeof body?.paymentAmount === "string" &&
+            body.paymentAmount.trim()
+          ? Number(body.paymentAmount)
+          : null;
+
+    const paymentUrl =
+      typeof body?.paymentUrl === "string"
+        ? body.paymentUrl.trim()
+        : "";
+
+    const paymentInstructions =
+      typeof body?.paymentInstructions === "string"
+        ? body.paymentInstructions.trim()
+        : "";
+
+    const paymentConfirmationRequired =
+      body?.paymentConfirmationRequired === true;
+    
+    const normalizedPaymentConfirmationRequired =
+      (
+        paymentMethod === "bank_transfer" ||
+        paymentMethod === "payment_link"
+      )
+        ? paymentConfirmationRequired
+        : false;
+    
   if (
     !isApplicationType(
       applicationType,
@@ -560,6 +622,45 @@ export async function POST(
       },
     );
   }
+    
+    if (
+      !isPaymentMethod(
+        paymentMethod,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "支払方法が正しくありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      paymentMethod !== "none" &&
+      (
+        paymentAmount === null ||
+        !Number.isFinite(
+          paymentAmount,
+        ) ||
+        paymentAmount <= 0
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "参加費を正しく入力してください。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
   const definition =
     body?.definition &&
@@ -618,6 +719,32 @@ export async function POST(
 
       acceptance_mode:
         acceptanceMode,
+        
+    payment_method:
+      paymentMethod,
+
+    payment_amount:
+      paymentMethod === "none"
+        ? null
+        : paymentAmount,
+
+    payment_currency:
+      "JPY",
+
+    payment_url:
+      paymentMethod ===
+      "payment_link"
+        ? paymentUrl || null
+        : null,
+
+    payment_instructions:
+      paymentMethod === "none"
+        ? null
+        : paymentInstructions ||
+          null,
+        
+    payment_confirmation_required:
+      normalizedPaymentConfirmationRequired,
 
       status:
         "draft",
@@ -631,6 +758,12 @@ export async function POST(
         definition,
         form_id,
         acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
         status,
         version,
         created_at,
@@ -698,9 +831,15 @@ export async function PATCH(
         definition?: unknown;
         formId?: unknown;
         acceptanceMode?: unknown;
+
+        paymentMethod?: unknown;
+        paymentAmount?: unknown;
+        paymentUrl?: unknown;
+        paymentInstructions?: unknown;
+        paymentConfirmationRequired?: unknown;
       }
     | null;
-
+    
   const applicationId =
     typeof body?.applicationId ===
       "string"
@@ -735,7 +874,41 @@ export async function PATCH(
       "string"
       ? body.acceptanceMode.trim()
       : "instant";
+    
+    const paymentMethod =
+      typeof body?.paymentMethod === "string"
+        ? body.paymentMethod.trim()
+        : "none";
 
+    const paymentAmount =
+      typeof body?.paymentAmount === "number"
+        ? body.paymentAmount
+        : typeof body?.paymentAmount === "string" &&
+            body.paymentAmount.trim()
+          ? Number(body.paymentAmount)
+          : null;
+
+    const paymentUrl =
+      typeof body?.paymentUrl === "string"
+        ? body.paymentUrl.trim()
+        : "";
+
+    const paymentInstructions =
+      typeof body?.paymentInstructions === "string"
+        ? body.paymentInstructions.trim()
+        : "";
+
+    const paymentConfirmationRequired =
+      body?.paymentConfirmationRequired === true;
+    
+    const normalizedPaymentConfirmationRequired =
+      (
+        paymentMethod === "bank_transfer" ||
+        paymentMethod === "payment_link"
+      )
+        ? paymentConfirmationRequired
+        : false;
+    
   if (!applicationId) {
     return NextResponse.json(
       {
@@ -795,6 +968,45 @@ export async function PATCH(
       },
     );
   }
+    
+    if (
+      !isPaymentMethod(
+        paymentMethod,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "支払方法が正しくありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      paymentMethod !== "none" &&
+      (
+        paymentAmount === null ||
+        !Number.isFinite(
+          paymentAmount,
+        ) ||
+        paymentAmount <= 0
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "参加費を正しく入力してください。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
   const definition =
     body?.definition &&
@@ -850,6 +1062,33 @@ export async function PATCH(
 
       acceptance_mode:
         acceptanceMode,
+        
+    payment_method:
+      paymentMethod,
+
+    payment_amount:
+      paymentMethod === "none"
+        ? null
+        : paymentAmount,
+
+    payment_currency:
+      "JPY",
+
+    payment_url:
+      paymentMethod ===
+      "payment_link"
+        ? paymentUrl || null
+        : null,
+
+    payment_instructions:
+      paymentMethod === "none"
+        ? null
+        : paymentInstructions ||
+          null,
+        
+    payment_confirmation_required:
+      normalizedPaymentConfirmationRequired,
+        
     })
     .eq(
       "id",
@@ -868,6 +1107,12 @@ export async function PATCH(
         definition,
         form_id,
         acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
         status,
         version,
         created_at,

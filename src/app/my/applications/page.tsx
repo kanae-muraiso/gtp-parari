@@ -112,7 +112,7 @@ function statusLabel(
       return "確定";
 
     case "rejected":
-      return "却下";
+      return "受付されませんでした";
 
     case "withdrawn":
       return "取下げ";

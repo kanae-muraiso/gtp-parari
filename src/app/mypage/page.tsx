@@ -1,239 +1,207 @@
-import { redirect } from "next/navigation";
+// src/app/mypage/page.tsx
+// 2026/08/16 13:36
+
+"use client";
+
+import Link from "next/link";
+import BookShelfPanel from "@/components/parari/BookShelfPanel";
+
+const tabs = [
+  {
+    label: "HOME",
+    href: "/mypage",
+    description: "PARARIでのあなたの現在地です。",
+  },
+  {
+    label: "申込",
+    href: "/my/applications",
+    description: "申し込んだ内容や現在の状態を確認します。",
+  },
+  {
+    label: "本棚",
+    href: "#bookshelf",
+    description: "保存した作品や読みたい作品を開きます。",
+  },
+  {
+    label: "作品",
+    href: "/my/works",
+    description: "自分の作品を作成・編集します。",
+  },
+] as const;
+
+
+// 必要なときだけ表示するお知らせ。
+// 通常は空配列のまま。
+const notices: Array<{
+  id: string;
+  title: string;
+  message: string;
+}> = [];
+
+/*
+例：
+
+const notices = [
+  {
+    id: "maintenance-20260820",
+    title: "メンテナンスのお知らせ",
+    message:
+      "8月20日 午前2時から3時までメンテナンスを行います。",
+  },
+];
+
+*/
+
 
 export default function MyPage() {
-  redirect("/my/works");
+  return (
+    <main className="min-h-screen bg-neutral-50">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+
+        {/* HEADER */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+              PARARI
+            </div>
+
+            <h1 className="mt-1 text-xl font-bold text-neutral-950">
+              Home
+            </h1>
+          </div>
+
+          <Link
+            href="/my/profile"
+            className="text-xs font-bold text-neutral-500 transition hover:text-neutral-950"
+          >
+            プロフィール・設定
+          </Link>
+        </div>
+
+
+        {/* MAIN TABS */}
+        <nav className="mt-6 border-b border-neutral-200">
+          <div className="grid grid-cols-4">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.label}
+                href={tab.href}
+                title={tab.description}
+                className="group relative flex h-11 items-center justify-center border-b-2 border-transparent text-sm font-bold text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-950"
+              >
+                {tab.label}
+
+                {/* PC hover explanation */}
+                <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-56 -translate-x-1/2 rounded-xl bg-neutral-950 px-3 py-2 text-center text-xs font-normal leading-5 text-white shadow-lg group-hover:sm:block">
+                  {tab.description}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+
+
+        {/* NOTICE AREA
+            notices が空なら何も表示されず、高さも取りません。
+        */}
+        {notices.length > 0 ? (
+          <div className="mt-5 space-y-2">
+            {notices.map((notice) => (
+              <div
+                key={notice.id}
+                className="rounded-2xl border border-neutral-300 bg-white px-5 py-4"
+              >
+                <div className="text-sm font-bold text-neutral-950">
+                  {notice.title}
+                </div>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-600">
+                  {notice.message}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+
+        {/* HOME */}
+        <div className="mt-8 space-y-10">
+
+          {/* APPLICATION */}
+          <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-bold text-neutral-950">
+                  参加・申し込み
+                </div>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  あなたが申し込んだものを確認できます。
+                </p>
+              </div>
+
+              <Link
+                href="/my/applications"
+                className="shrink-0 text-xs font-bold text-neutral-700"
+              >
+                見る →
+              </Link>
+            </div>
+          </section>
+
+
+          {/* BOOKSHELF */}
+          <section
+            id="bookshelf"
+            className="scroll-mt-6"
+          >
+            <div className="mb-4">
+              <div className="text-sm font-bold text-neutral-950">
+                あなたの本棚
+              </div>
+
+              <p className="mt-1 text-xs leading-6 text-neutral-500">
+                読むものは、ここに集まります。
+              </p>
+            </div>
+
+            <BookShelfPanel activeTab="shelf" />
+          </section>
+
+
+          {/* WORKS */}
+          <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-bold text-neutral-950">
+                  あなたの作品
+                </div>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  書いたもの、作っているものはこちらです。
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/my/works"
+                  className="text-xs font-bold text-neutral-700"
+                >
+                  作品一覧 →
+                </Link>
+
+                <Link
+                  href="/editor/new"
+                  className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white"
+                >
+                  ＋ 新しく作る
+                </Link>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+  );
 }
-
-
-// 以下初期画面が本棚にするためのスクリプト
-// apps/tools/parari/src/app/mypage/page.tsx
-// apps/tools/parari/src/app/mypage/page.tsx
-// 2026-04-25 JST
-
-//"use client";
-//
-///**
-// * PART: Reader Home / My Shelf
-// * コメント:
-// * - /mypage を「読者HOME / 自分の書棚」にする
-// * - 本棚環境では黒帯 ControlBar を使わない
-// * - 上部は BookshelfControlBar の1本だけにする
-// * - 外側背景色は profiles の shelf_page_theme を使う
-// * - バー色は profiles の shelf_bar_theme を使う
-// * - アコーディオン内部色は BookShelfPanel 側で別途対応する
-// */
-//
-//import React from "react";
-//import { useRouter } from "next/navigation";
-//import { supabase } from "../../lib/supabaseClient";
-//import BookShelfPanel from "../../components/parari/BookShelfPanel";
-//import BookshelfControlBar from "../../components/parari/BookshelfControlBar";
-//import { getThemeClass, normalizeTheme } from "../../lib/shelfTheme";
-//
-///**
-// * PART: profile theme row type
-// * コメント:
-// * - 本棚用テーマ3項目を profiles から読む
-// */
-//type ProfileThemeRow = {
-//  shelf_bar_theme: string | null;
-//  shelf_page_theme: string | null;
-//  shelf_panel_theme: string | null;
-//};
-//
-///**
-// * PART: ShelfTab
-// * コメント:
-// * - 本棚内の表示タブ
-// * - BookshelfControlBar と BookShelfPanel に渡す
-// */
-//type ShelfTab =
-//  | "home"
-//  | "shelf"
-//  | "managed"
-//  | "participant"
-//  | "read_later"
-//  | "viewed";
-//
-//export default function MyPage() {
-//  const router = useRouter();
-//
-//  /**
-//   * PART: screen state
-//   * コメント:
-//   * - status はログイン確認用
-//   * - theme は本棚の見た目用
-//   */
-//  const [status, setStatus] = React.useState<string>("loading…");
-//  const [barTheme, setBarTheme] = React.useState<string | null>("cream");
-//  const [pageTheme, setPageTheme] = React.useState<string | null>("cream");
-//    
-//    // apps/tools/parari/src/app/mypage/page.tsx
-//    // 2026-04-25 JST
-//
-//    /**
-//     * PART: active shelf tab state
-//     * コメント:
-//     * - ピンクのバー側で選んだ棚を本文に反映する
-//     */
-//    const [activeShelfTab, setActiveShelfTab] =
-//      React.useState<ShelfTab>("shelf");
-//
-//  React.useEffect(() => {
-//    let mounted = true;
-//
-//    async function checkLoginAndLoadTheme() {
-//      if (!supabase) {
-//        if (!mounted) return;
-//        setStatus("not-logged-in");
-//        return;
-//      }
-//
-//      /**
-//       * PART: get auth user
-//       * コメント:
-//       * - まずログイン状態を確認する
-//       */
-//      const { data: userData, error: userErr } = await supabase.auth.getUser();
-//
-//      if (!mounted) return;
-//
-//      if (userErr) {
-//        setStatus("failed: " + userErr.message);
-//        return;
-//      }
-//
-//      if (!userData.user) {
-//        setStatus("not-logged-in");
-//        return;
-//      }
-//
-//      /**
-//       * PART: load profile theme
-//       * コメント:
-//       * - user_id 基準で profiles を読む
-//       * - 値が null のときは normalizeTheme 側で cream に寄せる
-//       */
-//      const { data: profile, error: profileErr } = await supabase
-//        .from("profiles")
-//        .select("shelf_bar_theme, shelf_page_theme, shelf_panel_theme")
-//        .eq("user_id", userData.user.id)
-//        .maybeSingle<ProfileThemeRow>();
-//
-//      if (!mounted) return;
-//
-//      if (profileErr) {
-//        setStatus("failed: " + profileErr.message);
-//        return;
-//      }
-//
-//      setBarTheme(profile?.shelf_bar_theme ?? "cream");
-//      setPageTheme(profile?.shelf_page_theme ?? "cream");
-//      setStatus("");
-//    }
-//
-//    void checkLoginAndLoadTheme();
-//
-//    return () => {
-//      mounted = false;
-//    };
-//  }, []);
-//
-//  React.useEffect(() => {
-//    if (status === "not-logged-in") {
-//      router.replace("/");
-//    }
-//  }, [status, router]);
-//
-//  if (status === "not-logged-in") return null;
-//
-//  /**
-//   * PART: theme class resolve
-//   * コメント:
-//   * - page は外側背景
-//   * - bar は BookshelfControlBar に渡す
-//   */
-//  const resolvedPageTheme = normalizeTheme(pageTheme);
-//  const themePage = getThemeClass(resolvedPageTheme);
-//
-//  return (
-//    <main className={`min-h-screen ${themePage.page}`}>
-//          <BookshelfControlBar
-//            current="bookshelf"
-//            barTheme={barTheme}
-//            activeShelfTab={activeShelfTab}
-//            onShelfTabChange={setActiveShelfTab}
-//          />
-//
-//      <div className="mx-auto max-w-5xl space-y-5 px-4 py-4">
-//        {status ? <div className="text-xs opacity-70">{status}</div> : null}
-//          
-//
-//          {/* PART: PARARI official shelf */}
-//          {/* コメント:
-//              - 左端の 🏠 タブで表示するPARARI公式本棚
-//              - まずは静的カードで場所だけ確保する
-//              - 将来は parari 公式アカウントの作品一覧に差し替える
-//          */}
-//          {activeShelfTab === "home" ? (
-//            <section className="rounded-2xl border border-neutral-200 bg-white/75 p-4 shadow-sm">
-//              <div className="mb-4">
-//                <div className="text-sm font-semibold text-neutral-900">
-//                  PARARI公式本棚
-//                </div>
-//                <p className="mt-1 text-xs leading-5 text-neutral-500">
-//                  PARARIからのお知らせ、使い方ガイド、メンテナンス情報を置く場所です。
-//                </p>
-//              </div>
-//
-//                                                      <div className="mb-4 rounded-xl border border-neutral-200 bg-white/70 p-4">
-//                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-//                                                          <div>
-//                                                            <div className="text-sm font-semibold text-neutral-900">
-//                                                              プランとお支払い
-//                                                            </div>
-//                                                            <p className="mt-1 text-xs leading-5 text-neutral-500">
-//                                                              現在のプラン確認、Plus申込、請求管理はこちらから行えます。
-//                                                            </p>
-//                                                          </div>
-//
-//                                                          <a
-//                                                            href="/billing"
-//                                                            className="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50"
-//                                                          >
-//                                                            プランを確認する
-//                                                          </a>
-//                                                        </div>
-//                                                      </div>
-//                                        
-//              <div className="grid gap-3 sm:grid-cols-2">
-//                <a
-//                  href="/parari"
-//                  className="rounded-xl border border-neutral-200 bg-white p-4 text-sm shadow-sm transition hover:bg-neutral-50"
-//                >
-//                  <div className="font-semibold text-neutral-900">
-//                    PARARI公式ページ
-//                  </div>
-//                  <p className="mt-2 text-xs leading-5 text-neutral-500">
-//                    公式BOOKやお知らせはこちらから確認できます。
-//                  </p>
-//                </a>
-//
-//                <div className="rounded-xl border border-dashed border-neutral-200 bg-white/60 p-4 text-sm">
-//                  <div className="font-semibold text-neutral-700">
-//                    お知らせBOOK準備中
-//                  </div>
-//                  <p className="mt-2 text-xs leading-5 text-neutral-500">
-//                    障害・メンテナンス情報や更新履歴を、PARARI作品として置けるようにします。
-//                  </p>
-//                </div>
-//              </div>
-//            </section>
-//          ) : (
-//            <BookShelfPanel activeTab={activeShelfTab} />
-//          )}
-//          
-//      </div>
-//    </main>
-//  );
-//}
