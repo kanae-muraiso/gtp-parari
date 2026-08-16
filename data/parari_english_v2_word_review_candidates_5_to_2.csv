@@ -1,0 +1,29 @@
+expression,normalized_expression,entry_kind,meaning_ja_primary,meaning_ja_all,parari_level,importance,min_eiken_level,eiken_levels,label_raw_all,source_refs,row_count,review_reason
+April,april,word,4月がつ,4月がつ,junior_high,1,5,5;4;3,名詞,5:302;4:621;3:639,3,month name
+August,august,word,8月がつ,8月がつ,junior_high,1,5,5;4,,5:407;4:307,2,month name
+December,december,word,１２月がつ,１２月がつ,junior_high,1,5,5;4,,5:522;4:368,2,month name
+English,english,word,英語えいご,英語えいご,junior_high,1,5,5;4,,5:492;4:569,2,proper noun or language/country adjective
+February,february,word,2月がつ,2月がつ,junior_high,1,5,5;4;3,名詞,5:517;4:310;3:447,3,month name
+Friday,friday,word,金曜日きんようび,金曜日きんようび,junior_high,1,5,5;4;3,名詞,5:401;4:284;3:413,3,weekday name
+I,i,word,私わたしは,私わたしは,junior_high,1,5,5;4,,5:1;4:22,2,capitalized word
+January,january,word,1月がつ,1月がつ,junior_high,1,5,5;4,,5:463;4:389,2,month name
+Japan,japan,word,日本にほん,日本にほん,junior_high,1,5,5;4,,5:283;4:393,2,proper noun or language/country adjective
+Japanese,japanese,word,日本人にほんじん,日本人にほんじん,junior_high,1,5,5;4,,5:546;4:487,2,proper noun or language/country adjective
+July,july,word,7月がつ,7月がつ,junior_high,1,5,5;4;3,名詞,5:130;4:498;3:169,3,month name
+June,june,word,6月がつ,6月がつ,junior_high,1,5,5;4;3,名詞,5:181;4:656;3:106,3,month name
+March,march,word,3月がつ,3月がつ,junior_high,1,5,5;4;3,名詞,5:293;4:423;3:180,3,month name
+May,may,word,５月がつ,５月がつ,junior_high,1,5,5;4;3,名詞,5:46;4:520;3:444,3,month name
+Monday,monday,word,月曜日げつようび,月曜日げつようび,junior_high,1,5,5;4,,5:404;4:610,2,weekday name
+November,november,word,11月がつ,11月がつ,junior_high,1,5,5;4;3,名詞,5:520;4:415;3:562,3,month name
+October,october,word,10月がつ,10月がつ,junior_high,1,5,5;4,,5:476;4:669,2,month name
+Saturday,saturday,word,土曜日どようび,土曜日どようび,junior_high,1,5,5;4;3,名詞,5:510;4:667;3:411,3,weekday name
+September,september,word,9月がつ,9月がつ,junior_high,1,5,5;4,,5:565;4:291,2,month name
+Sunday,sunday,word,日曜日にちようび,日曜日にちようび,junior_high,1,5,5;4,,5:414;4:292,2,weekday name
+Thursday,thursday,word,木曜日もくようび,木曜日もくようび,junior_high,1,5,5;4,,5:509;4:490,2,weekday name
+Tuesday,tuesday,word,火曜日かようび,火曜日かようび,junior_high,1,5,5;4,,5:470;4:339,2,weekday name
+Wednesday,wednesday,word,水曜日すいようび,水曜日すいようび,junior_high,1,5,5;4;3,名詞,5:559;4:344;3:415,3,weekday name
+Jewish,jewish,word,ユダヤ人，ユダヤ教徒,ユダヤ人，ユダヤ教徒,high_school,2,pre2,pre2;2,形容詞,pre2:489;2:1124,2,capitalized word
+Mexican,mexican,word,メキシコの，メキシコ系の,メキシコの，メキシコ系の,high_school,2,pre2,pre2;2,形容詞,pre2:1082;2:1233,2,capitalized word
+Arctic,arctic,word,北極地方,北極地方,high_school,3,2,2;pre1,名詞,2:2006;pre1:3349,2,capitalized word
+Buddhist,buddhist,word,仏教,仏教,high_school,3,2,2,名詞,2:2013,1,capitalized word
+Muslim,muslim,word,イスラム教徒，ムスリム,イスラム教徒，ムスリム,high_school,3,2,2,名詞,2:1218,1,capitalized word

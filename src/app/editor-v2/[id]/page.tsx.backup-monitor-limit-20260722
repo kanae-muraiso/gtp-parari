@@ -1,0 +1,850 @@
+// apps/tools/parari/src/app/editor-v2/[id]/page.tsx
+// 2026-06-29 09:55 JST
+// PART: BOOK PanelSequence Editor v2 route
+// コメント:
+// - 既存BOOKを旧エディタではなく PagePanelComposer で開く実験ルート
+// - /editor/[id] は残したまま、/editor-v2/[id] を並行導入する
+// - parari_books.content をSSOTとして読み、保存時もcontentへ戻す
+
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
+import { WebPageComposer } from "@/components/parari/mvp/WebPageComposer";
+import { parseMetaFields, getMetaValue } from "@/components/parari/panels/shared/metaFields";
+import {
+  getEffectivePlan,
+  getPlanLimits,
+} from "@/lib/billing/plan";
+import {
+  ParariOwnerTopBar,
+  ParariTopBarButton,
+} from "@/components/parari/ParariTopBars";
+
+import {
+  isWebLikeSsot,
+  parseWebSsot,
+} from "@/components/parari/viewer-v2/web/webSsot";
+
+type LoadStatus =
+  | { type: "loading"; message: string }
+  | { type: "ready"; message: string }
+  | { type: "saving"; message: string }
+  | { type: "success"; message: string }
+  | { type: "error"; message: string };
+
+type Visibility = "private" | "unlisted" | "public";
+
+async function fetchInternalAdminStatus(): Promise<boolean> {
+  if (!sharedSupabase) {
+    return false;
+  }
+
+  const {
+    data: { session },
+    error,
+  } = await sharedSupabase.auth.getSession();
+
+  if (error || !session?.access_token) {
+    return false;
+  }
+
+  try {
+    const response = await fetch("/api/internal/admin-status", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = (await response.json()) as {
+      isAdmin?: boolean;
+    };
+
+    return data.isAdmin === true;
+  } catch {
+    return false;
+  }
+}
+
+type BookWorkRow = {
+  id: string;
+  owner: string;
+  title: string | null;
+  content: string | null;
+  visibility: string | null;
+  stable_slug: string | null;
+  updated_at: string | null;
+};
+
+type ProfileRow = {
+  username: string | null;
+};
+
+type UpdateWorkResponse = {
+  ok?: boolean;
+  id?: string;
+  message?: string;
+  code?: string;
+  plan?: string;
+  visibility?: Visibility;
+  pageCount?: number;
+  pageLimit?: number | null;
+  publishedWorkLimit?: number | null;
+  updatedAt?: string;
+};
+
+export default function BookPanelSequenceEditorPage() {
+  const params = useParams<{ id: string }>();
+  const workId = decodeURIComponent(params.id);
+
+  const supabase = useMemo(() => sharedSupabase, []);
+
+  const [row, setRow] = useState<BookWorkRow | null>(null);
+  const [ssot, setSsot] = useState("");
+  const [initialSsot, setInitialSsot] = useState("");
+  const [backHref, setBackHref] = useState("/my/works");
+    
+    const [ownerUsername, setOwnerUsername] = useState("");
+    const [copyMessage, setCopyMessage] = useState("");
+    
+  const [showInternalSsotUi, setShowInternalSsotUi] = useState(false);
+    
+  const [status, setStatus] = useState<LoadStatus>({
+    type: "loading",
+    message: "BOOK作品を読み込んでいます...",
+  });
+
+  const [pageLimit, setPageLimit] = useState<
+    number | null | undefined
+  >(undefined);
+  const [limitMessage, setLimitMessage] = useState("");
+
+  const isDirty = ssot !== initialSsot;
+    
+    const publicPath =
+      ownerUsername && row?.stable_slug
+        ? `/${ownerUsername}/${row.stable_slug}`
+        : "";
+
+    const publicUrl =
+      publicPath && typeof window !== "undefined"
+        ? `${window.location.origin}${publicPath}`
+        : publicPath;
+
+  const loadBookWork = useCallback(async () => {
+    if (!supabase) {
+      setStatus({
+        type: "error",
+        message: "Supabase環境変数がありません。",
+      });
+      return;
+    }
+
+    setStatus({
+      type: "loading",
+      message: "BOOK作品を読み込んでいます...",
+    });
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setStatus({
+        type: "error",
+        message: "BOOKを編集するにはログインが必要です。",
+      });
+      return;
+    }
+
+    const { data: billingData, error: billingError } =
+      await supabase
+        .from("user_billing")
+        .select("plan, billing_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (billingError) {
+      console.warn(
+        "[editor-v2] billing load failed:",
+        billingError,
+      );
+      setPageLimit(undefined);
+    } else {
+      const effectivePlan = getEffectivePlan(billingData);
+      setPageLimit(
+        getPlanLimits(effectivePlan).pageLimitPerWork,
+      );
+    }
+
+      setShowInternalSsotUi(await fetchInternalAdminStatus());
+      
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("user_id", user.id)
+      .maybeSingle<ProfileRow>();
+
+      if (profile?.username) {
+        setOwnerUsername(profile.username);
+        setBackHref(`/${profile.username}/works`);
+      }
+
+    const { data, error } = await supabase
+      .from("parari_books")
+      .select("id, owner, title, content, visibility, stable_slug, updated_at")
+      .eq("id", workId)
+      .eq("owner", user.id)
+      .maybeSingle<BookWorkRow>();
+
+    if (error) {
+      setStatus({
+        type: "error",
+        message: `作品取得に失敗しました: ${error.message}`,
+      });
+      return;
+    }
+
+    if (!data) {
+      setStatus({
+        type: "error",
+        message: "指定されたBOOK作品が見つかりませんでした。",
+      });
+      return;
+    }
+
+    const content = data.content ?? "";
+
+    setRow(data);
+    setSsot(content);
+    setInitialSsot(content);
+
+    setStatus({
+      type: "ready",
+      message: "BOOK作品を読み込みました。",
+    });
+  }, [supabase, workId]);
+
+  useEffect(() => {
+    void loadBookWork();
+  }, [loadBookWork]);
+
+    const handleCopyPublicUrl = async () => {
+      if (!publicUrl) {
+        setCopyMessage("公開URLを確認できませんでした。");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(publicUrl);
+        setCopyMessage("公開URLをコピーしました。");
+      } catch {
+        setCopyMessage("URLをコピーできませんでした。");
+      }
+    };
+    
+  const handleSave = async () => {
+    if (!supabase) {
+      setStatus({
+        type: "error",
+        message: "Supabase環境変数がありません。",
+      });
+      return;
+    }
+
+    if (!row) {
+      setStatus({
+        type: "error",
+        message: "保存対象のBOOK作品が読み込まれていません。",
+      });
+      return;
+    }
+
+    setLimitMessage("");
+
+    setStatus({
+      type: "saving",
+      message: "保存中です...",
+    });
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setStatus({
+        type: "error",
+        message: "BOOKを保存するにはログインが必要です。",
+      });
+      return;
+    }
+
+      setShowInternalSsotUi(await fetchInternalAdminStatus());
+      
+      const nextTitle = extractWorkTitle(ssot) || row.title || "Untitled";
+      const nextVisibility =
+        extractWorkVisibility(ssot) ?? normalizeVisibility(row.visibility);
+
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      setStatus({
+        type: "ready",
+        message: "ログインセッションを確認できませんでした。",
+      });
+      setLimitMessage(
+        "ログインセッションを確認できませんでした。再度ログインしてください。",
+      );
+      return;
+    }
+
+    const response = await fetch("/api/works/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        workId: row.id,
+        title: nextTitle,
+        content: ssot,
+        visibility: nextVisibility,
+      }),
+    });
+
+    const result = (await response.json().catch(() => null)) as
+      | UpdateWorkResponse
+      | null;
+
+    if (!response.ok || !result?.ok) {
+      setStatus({
+        type: "ready",
+        message: "保存できませんでした。",
+      });
+      setLimitMessage(
+        result?.message ?? "作品を保存できませんでした。",
+      );
+      return;
+    }
+
+    const updatedAt =
+      result.updatedAt ?? new Date().toISOString();
+
+    setInitialSsot(ssot);
+    setRow({
+      ...row,
+      title: nextTitle,
+      content: ssot,
+      visibility: nextVisibility,
+      updated_at: updatedAt,
+    });
+    setLimitMessage("");
+
+    setStatus({
+      type: "success",
+      message: "BOOK作品を保存しました。",
+    });
+  };
+
+ const webWarnings = getWebStructureWarnings(ssot);
+    
+  return (
+          
+          <>
+            <ParariOwnerTopBar
+              title="編集中"
+              leftHref="/my/works"
+              leftLabel="作品リストへ"
+              actions={
+                <div className="flex items-center gap-2">
+                  <ParariTopBarButton href={`/p/${workId}`}>
+                    表示確認
+                  </ParariTopBarButton>
+
+                  <EditorSaveButton
+                    status={status}
+                    isDirty={isDirty}
+                    canSave={!!row}
+                    onSave={handleSave}
+                  />
+                </div>
+              }
+            />
+
+          
+    <main className="min-h-screen bg-neutral-100">
+      {status.type === "error" ? (
+        <div className="mx-auto max-w-6xl px-4 py-6">
+          <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-rose-800">
+            {status.message}
+          </div>
+
+          <div className="mt-4">
+            <a
+              href={backHref}
+              className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              作品リストへ戻る
+            </a>
+          </div>
+        </div>
+      ) : (
+        <>
+           
+           <div className="mx-auto max-w-6xl px-4 py-6">
+             {publicPath ? (
+               <div className="mb-5 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+                 <div className="text-xs font-bold tracking-[0.15em] text-neutral-400">
+                   PUBLIC URL
+                 </div>
+
+                 <div className="mt-2 break-all text-sm font-medium text-neutral-800">
+                   {publicUrl}
+                 </div>
+
+                 <div className="mt-4 flex flex-wrap gap-2">
+                   <a
+                     href={publicPath}
+                     target="_blank"
+                     rel="noreferrer"
+                     className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
+                   >
+                     公開ページを開く
+                   </a>
+
+                   <button
+                     type="button"
+                     onClick={handleCopyPublicUrl}
+                     className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700"
+                   >
+                     URLをコピー
+                   </button>
+                 </div>
+
+                 {copyMessage ? (
+                   <div className="mt-3 text-xs text-neutral-500">
+                     {copyMessage}
+                   </div>
+                 ) : null}
+               </div>
+             ) : null}
+
+             {limitMessage ? (
+               <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-900">
+                 <p>{limitMessage}</p>
+                 <a
+                   href="/billing"
+                   className="mt-3 inline-flex rounded-full bg-amber-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-amber-800"
+                 >
+                   プランを確認する
+                 </a>
+               </div>
+             ) : null}
+
+             {showInternalSsotUi ? (
+               <details className="mb-6 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm">
+                 <summary className="cursor-pointer text-sm font-bold text-neutral-700">
+                   管理者用：SSOT一括編集
+                 </summary>
+
+                 <p className="mt-2 text-xs leading-5 text-neutral-400">
+                   この欄は管理者用です。変更内容は下のパネル表示にも反映されます。
+                 </p>
+
+                 <textarea
+                   value={ssot}
+                   onChange={(event) => setSsot(event.target.value)}
+                   spellCheck={false}
+                   className="mt-4 min-h-[420px] w-full resize-y rounded-2xl border border-neutral-200 bg-neutral-50 p-4 font-mono text-xs leading-6 text-neutral-800 outline-none focus:border-neutral-400"
+                 />
+               </details>
+             ) : null}
+           
+
+           {webWarnings.length > 0 ? (
+             <div className="mb-5 rounded-3xl border border-amber-300 bg-amber-50 p-5">
+               <div className="text-sm font-bold text-amber-950">
+                 WEB設定に問題があります
+               </div>
+
+               <div className="mt-1 text-xs leading-5 text-amber-800">
+                 公開はできますが、PAGEINFOの設定を確認してください。
+               </div>
+
+               <ul className="mt-3 space-y-1 text-xs leading-5 text-amber-900">
+                 {webWarnings.map((warning) => (
+                   <li key={warning}>・{warning}</li>
+                 ))}
+               </ul>
+             </div>
+           ) : null}
+
+                      
+           {isWebLikeSsot(ssot) ? (
+             <WebPageComposer
+               value={ssot}
+               onChange={setSsot}
+               pageLimit={pageLimit}
+               onLimitMessage={setLimitMessage}
+               publicBasePath={publicPath}
+             />
+           ) : (
+             <PagePanelComposer
+               value={ssot}
+               onChange={setSsot}
+               textPlaceholder="本文"
+               pageLimit={pageLimit}
+               onLimitMessage={setLimitMessage}
+               publicBasePath={publicPath}
+             />
+           )}
+           
+           </div>
+           
+        </>
+      )}
+    </main>
+          </>
+  );
+}
+
+function EditorSaveButton({
+  status,
+  isDirty,
+  canSave,
+  onSave,
+}: {
+  status: LoadStatus;
+  isDirty: boolean;
+  canSave: boolean;
+  onSave: () => void;
+}) {
+  const isSaving = status.type === "saving";
+  const isLoading = status.type === "loading";
+  const isDisabled = isSaving || isLoading || !canSave;
+
+  const label = getSaveButtonLabel({
+    status,
+    isDirty,
+    canSave,
+  });
+
+  const colorClass = getSaveButtonColorClass({
+    status,
+    isDirty,
+    canSave,
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={isDisabled}
+      title={status.message}
+      className={[
+        "rounded-full px-4 py-1.5 text-xs font-bold text-white shadow-sm transition",
+        colorClass,
+        isDisabled ? "cursor-not-allowed opacity-70" : "",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getSaveButtonLabel({
+  status,
+  isDirty,
+  canSave,
+}: {
+  status: LoadStatus;
+  isDirty: boolean;
+  canSave: boolean;
+}): string {
+  if (status.type === "loading") {
+    return "読込中";
+  }
+
+  if (status.type === "saving") {
+    return "保存中…";
+  }
+
+  if (!canSave) {
+    return "保存不可";
+  }
+
+  if (status.type === "error" && isDirty) {
+    return "再試行";
+  }
+
+  if (isDirty) {
+    return "保存";
+  }
+
+  return "保存済み ✓";
+}
+
+function getSaveButtonColorClass({
+  status,
+  isDirty,
+  canSave,
+}: {
+  status: LoadStatus;
+  isDirty: boolean;
+  canSave: boolean;
+}): string {
+  if (status.type === "saving" || status.type === "loading" || !canSave) {
+    return "bg-neutral-500";
+  }
+
+  if (status.type === "error" && isDirty) {
+    return "bg-red-600 hover:bg-red-500";
+  }
+
+  if (isDirty) {
+    return "bg-red-600 hover:bg-red-500";
+  }
+
+  return "bg-sky-600 hover:bg-sky-500";
+}
+
+function getWebStructureWarnings(ssot: string): string[] {
+  if (!isWebLikeSsot(ssot)) {
+    return [];
+  }
+
+  const parsed = parseWebSsot(ssot);
+  const warnings: string[] = [];
+
+  const slugCounts = new Map<string, number>();
+
+  for (const page of parsed.pages) {
+    const normalizedSlug = normalizeWebWarningSlug(page.slug);
+
+    if (!normalizedSlug) {
+      continue;
+    }
+
+    slugCounts.set(
+      normalizedSlug,
+      (slugCounts.get(normalizedSlug) ?? 0) + 1,
+    );
+  }
+
+  for (const [slug, count] of slugCounts) {
+    if (count > 1) {
+      warnings.push(
+        `slug「${slug}」が${count}つのPAGEで使われています。`,
+      );
+    }
+  }
+
+  const explicitHomePages = parsed.pages.filter(
+    (page) => page.isHome,
+  );
+
+  if (explicitHomePages.length > 1) {
+    warnings.push(
+      `HOME指定が${explicitHomePages.length}つのPAGEに設定されています。`,
+    );
+  }
+
+  return warnings;
+}
+
+function normalizeWebWarningSlug(value: string): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+}
+
+function normalizeVisibility(value: string | null): Visibility {
+  if (value === "public" || value === "unlisted" || value === "private") {
+    return value;
+  }
+
+  if (value === "limited") {
+    return "unlisted";
+  }
+
+  return "private";
+}
+
+function extractWorkTitle(ssot: string): string {
+  const normalized = String(ssot ?? "").replace(/\r\n/g, "\n").trimStart();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const lines = normalized.split("\n");
+
+  const firstLine = String(lines[0] ?? "").trim();
+
+  if (/^\[(BOOK|BOOKINFO)\b/i.test(firstLine)) {
+    return extractTitleFromLeadingInfoBlock(lines, ["BOOK", "BOOKINFO"]);
+  }
+
+  if (/^\[(PAGE|PAGEINFO)\b/i.test(firstLine)) {
+    return extractTitleFromLeadingInfoBlock(lines, ["PAGE", "PAGEINFO"]);
+  }
+
+  // 念のため、先頭以外にBOOKがある古いデータにも対応する
+  const bookTitle = extractTitleFromFirstBlock(normalized, ["BOOK", "BOOKINFO"]);
+
+  if (bookTitle) {
+    return bookTitle;
+  }
+
+  return extractTitleFromFirstBlock(normalized, ["PAGE", "PAGEINFO"]);
+}
+
+
+function extractTitleFromLeadingInfoBlock(lines: string[], tags: string[]): string {
+  const firstLine = String(lines[0] ?? "").trim();
+  const inlineTitle = extractInlinePanelTitle(firstLine, tags);
+
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = String(lines[index] ?? "").trim();
+
+    if (/^\[[A-Za-z][A-Za-z0-9_]*(?::[^\]]+)?\]/.test(line)) {
+      break;
+    }
+
+    const titleMatched = line.match(/^title\s*:\s*(.*)$/i);
+
+    if (titleMatched) {
+      const metaTitle = String(titleMatched[1] ?? "").trim();
+
+      if (metaTitle) {
+        return metaTitle;
+      }
+    }
+  }
+
+  return inlineTitle;
+}
+
+function extractTitleFromFirstBlock(ssot: string, tags: string[]): string {
+  const lines = ssot.split("\n");
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = String(lines[index] ?? "").trim();
+
+    if (!isTargetInfoLine(line, tags)) {
+      continue;
+    }
+
+    return extractTitleFromLeadingInfoBlock(lines.slice(index), tags);
+  }
+
+  return "";
+}
+
+function extractInlinePanelTitle(line: string, tags: string[]): string {
+  const tagPattern = new RegExp(
+    `^\\s*\\[(${tags.join("|")})(?::[^\\]]+)?\\]\\s*(.*)$`,
+    "i",
+  );
+
+  const matched = line.match(tagPattern);
+
+  return String(matched?.[2] ?? "").trim();
+}
+
+function isTargetInfoLine(line: string, tags: string[]): boolean {
+  const tagPattern = new RegExp(
+    `^\\s*\\[(${tags.join("|")})(?::[^\\]]+)?\\]`,
+    "i",
+  );
+
+  return tagPattern.test(line);
+}
+
+
+function extractWorkVisibility(ssot: string): Visibility | null {
+  const pageRaw = extractFirstPanelRaw(ssot, "PAGE");
+  const bookRaw = extractFirstPanelRaw(ssot, "BOOK");
+  const panelRaw = pageRaw || bookRaw;
+
+  if (!panelRaw) {
+    return null;
+  }
+
+  const fields = parseMetaFields(panelRaw);
+  const value = getMetaValue(fields, ["visibility"], "").trim();
+
+  if (!value) {
+    return null;
+  }
+
+  return normalizeVisibility(value);
+}
+
+// apps/tools/parari/src/app/editor-v2/[id]/page.tsx
+// 2026-06-29 19:35 JST
+// PART: TAG line compatibility
+// コメント:
+// - [TAG] と [TAG] value の両方をPANEL開始行として扱う
+// - 旧BOOK記法の [PAGE] はじめに / [IMAGE] URL を壊さない
+// - [TAG]の直後にスペースがあってもなくてもよい
+
+function extractFirstPanelRaw(ssot: string, tag: string): string {
+  const normalizedTag = tag.trim().toUpperCase();
+  const lines = ssot.replace(/\r\n/g, "\n").split("\n");
+
+  let startIndex = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const tagLine = parsePanelTagLine(lines[index]);
+
+    if (tagLine?.tag === normalizedTag) {
+      startIndex = index;
+      break;
+    }
+  }
+
+  if (startIndex < 0) {
+    return "";
+  }
+
+  let endIndex = lines.length;
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    const tagLine = parsePanelTagLine(lines[index]);
+
+    if (tagLine) {
+      endIndex = index;
+      break;
+    }
+  }
+
+  return lines.slice(startIndex, endIndex).join("\n");
+}
+
+function parsePanelTagLine(line: string): { tag: string; tail: string } | null {
+  const match = line.trim().match(/^\[([A-Z0-9_:-]+)\]\s*(.*)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    tag: match[1].trim().toUpperCase(),
+    tail: match[2]?.trim() ?? "",
+  };
+}

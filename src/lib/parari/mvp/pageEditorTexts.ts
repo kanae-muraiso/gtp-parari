@@ -1,0 +1,153 @@
+// src/lib/parari/mvp/pageEditorTexts.ts
+// 2026-06-24 JST
+// PARARI MVP: PageEditor 表示文言辞書
+
+export type ParariEditorLocale = "ja" | "en";
+
+export const pageEditorTexts = {
+  ja: {
+    header: {
+      backToWorks: "作品リストへ",
+      mainImage: "メイン画像",
+      settings: "PAGE設定",
+      save: "保存",
+      view: "見る",
+    },
+    title: {
+      placeholder: "タイトル",
+      authorPrefix: "by",
+      defaultAuthorName: "著者名",
+    },
+    image: {
+      title: "メイン画像",
+      placeholder: "画像URLを貼り付け",
+      empty: "メイン画像はまだありません",
+    },
+    settings: {
+      title: "PAGE設定",
+      subtitle: "公開と共有",
+      detailsOpen: "詳細",
+      detailsClose: "詳細を閉じる",
+      visibility: "公開設定",
+      shareUrl: "共有URL",
+      shareUrlPending: "保存後にURLが作成されます",
+      getUrl: "取得",
+      copied: "コピーしました",
+      copyFailed: "コピーできませんでした",
+      detailsTitle: "詳細設定",
+      subtitleLabel: "サブタイトル",
+      subtitlePlaceholder: "必要な場合だけ入力",
+      time: "日時",
+      timePlaceholder: "例：2026年6月24日",
+      place: "場所",
+      placePlaceholder: "例：京都",
+      topics: "トピックス",
+      topicsPlaceholder: "例：ZUMBA, 京都, 英語",
+      ssotOpen: "詳細を確認",
+      ssotClose: "詳細を閉じる",
+    },
+    visibility: {
+      private: "非公開",
+      unlisted: "限定公開",
+      public: "公開",
+    },
+    body: {
+      menuTitle: "本文メニュー",
+      placeholder: "ここから本文",
+      h2: "見出し",
+      h3: "小見出し",
+      bold: "太字",
+      link: "リンク",
+      divider: "区切り",
+      notice: "お知らせ",
+      list: "リスト",
+    },
+    buttons: {
+      image: "IMG",
+      settings: "SET",
+      save: "SAVE",
+      h2: "H2",
+      h3: "H3",
+      bold: "B",
+      link: "LINK",
+      divider: "LINE",
+      notice: "NOTE",
+      list: "LIST",
+    },
+  },
+
+  en: {
+    header: {
+      backToWorks: "Back to works",
+      mainImage: "Main image",
+      settings: "Page settings",
+      save: "Save",
+      view: "View",
+    },
+    title: {
+      placeholder: "Title",
+      authorPrefix: "by",
+      defaultAuthorName: "Author",
+    },
+    image: {
+      title: "Main image",
+      placeholder: "Paste image URL",
+      empty: "No main image yet",
+    },
+    settings: {
+      title: "Page settings",
+      subtitle: "Visibility and sharing",
+      detailsOpen: "Details",
+      detailsClose: "Close details",
+      visibility: "Visibility",
+      shareUrl: "Share URL",
+      shareUrlPending: "URL will be created after saving",
+      getUrl: "Copy",
+      copied: "Copied",
+      copyFailed: "Could not copy",
+      detailsTitle: "Details",
+      subtitleLabel: "Subtitle",
+      subtitlePlaceholder: "Optional subtitle",
+      time: "Date / time",
+      timePlaceholder: "e.g. June 24, 2026",
+      place: "Place",
+      placePlaceholder: "e.g. Kyoto",
+      topics: "Topics",
+      topicsPlaceholder: "e.g. ZUMBA, Kyoto, English",
+      ssotOpen: "Show details",
+      ssotClose: "Hide details",
+    },
+    visibility: {
+      private: "Private",
+      unlisted: "Unlisted",
+      public: "Public",
+    },
+    body: {
+      menuTitle: "Body menu",
+      placeholder: "Start writing here",
+      h2: "Heading",
+      h3: "Subheading",
+      bold: "Bold",
+      link: "Link",
+      divider: "Divider",
+      notice: "Notice",
+      list: "List",
+    },
+    buttons: {
+      image: "IMG",
+      settings: "SET",
+      save: "SAVE",
+      h2: "H2",
+      h3: "H3",
+      bold: "B",
+      link: "LINK",
+      divider: "LINE",
+      notice: "NOTE",
+      list: "LIST",
+    },
+  },
+} as const;
+
+export function getPageEditorTexts(locale: ParariEditorLocale = "ja") {
+  return pageEditorTexts[locale] ?? pageEditorTexts.ja;
+}

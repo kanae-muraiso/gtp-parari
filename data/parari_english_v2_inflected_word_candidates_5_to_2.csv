@@ -1,0 +1,100 @@
+expression,normalized_expression,entry_kind,meaning_ja_primary,meaning_ja_all,parari_level,importance,min_eiken_level,eiken_levels,label_raw_all,source_refs,row_count,guessed_lemma,inflected_reason
+exciting,exciting,word,興奮こうふんさせる,興奮こうふんさせる,junior_high,1,5,5;4;3,形容詞,5:539;4:42;3:160,3,,possible -ing form
+interesting,interesting,word,面白おもしろい,面白おもしろい,junior_high,1,5,5;4;3,形容詞,5:598;4:46;3:287,3,,possible -ing form
+left,left,word,左ひだり,左ひだり,junior_high,1,5,5;4,,5:194;4:701,2,leave,known inflected form of leave
+put,put,word,置く,置く / 置おく,junior_high,1,5,5;4;3,動詞,5:63;4:142;3:122,3,put,known inflected form of put
+read,read,word,読よむ,読よむ,junior_high,1,5,5;4,,5:112;4:587,2,read,known inflected form of read
+reading,reading,word,読書どくしょ,読書どくしょ,junior_high,1,5,5;4,,5:499;4:397,2,,possible -ing form
+shopping,shopping,word,買かい物もの,買かい物もの,junior_high,1,5,5;4,,5:545;4:269,2,,possible -ing form
+spring,spring,word,春はる,春はる,junior_high,1,5,5;4,,5:417;4:626,2,,possible -ing form
+was,was,word,でした,でした,junior_high,1,5,5;4,,5:107;4:330,2,be,known inflected form of be
+ate,ate,word,食たべた,食たべた,junior_high,1,4,4,,4:509,1,eat,known inflected form of eat
+bought,bought,word,買かった,買かった,junior_high,1,4,4,,4:179,1,buy,known inflected form of buy
+brought,brought,word,持もって来きた,持もって来きた,junior_high,1,4,4,,4:542,1,bring,known inflected form of bring
+came,came,word,来きた,来きた,junior_high,1,4,4,,4:603,1,come,known inflected form of come
+cried,cried,word,泣ないた,泣ないた,junior_high,1,4,4,,4:694,1,,possible -ed form
+did,did,word,した,した,junior_high,1,4,4,,4:475,1,do,known inflected form of do
+during,during,word,～の間あいだ,～の間あいだ / ～の間，～の間ずっと,junior_high,1,4,4;3;2,前置詞;接続詞,4:524;3:10;2:887,3,,possible -ing form
+enjoyed,enjoyed,word,楽たのしんだ,楽たのしんだ,junior_high,1,4,4,,4:145,1,,possible -ed form
+gave,gave,word,与あたえた,与あたえた,junior_high,1,4,4;3,動詞,4:427;3:651,2,give,known inflected form of give
+got,got,word,得えた,得えた,junior_high,1,4,4,,4:167,1,get,known inflected form of get
+had,had,word,食たべた,食たべた,junior_high,1,4,4,,4:177,1,have,known inflected form of have
+lived,lived,word,住すんだ,住すんだ,junior_high,1,4,4,,4:543,1,,possible -ed form
+made,made,word,作つくった,作つくった,junior_high,1,4,4;3,動詞,4:209;3:660,2,make,known inflected form of make
+meaning,meaning,word,意味いみ,意味いみ,junior_high,1,4,4;3,名詞,4:464;3:221,2,,possible -ing form
+people,people,word,人々ひとびと,人々ひとびと,junior_high,1,4,4;3,名詞,4:2;3:186,2,person,known inflected form of person
+played,played,word,演奏えんそうした,演奏えんそうした,junior_high,1,4,4,,4:155,1,,possible -ed form
+saw,saw,word,見みた,見みた,junior_high,1,4,4,,4:595,1,see,known inflected form of see
+sent,sent,word,送おくった,送おくった,junior_high,1,4,4;3,動詞,4:708;3:710,2,send,known inflected form of send
+sold,sold,word,売うった,売うった,junior_high,1,4,4;3,動詞,4:150;3:657,2,sell,known inflected form of sell
+spoke,spoke,word,話はなした,話はなした,junior_high,1,4,4;3,動詞,4:146;3:659,2,speak,known inflected form of speak
+stood,stood,word,立たった,立たった,junior_high,1,4,4,,4:139,1,stand,known inflected form of stand
+stopped,stopped,word,止とまった,止とまった,junior_high,1,4,4,,4:384,1,,possible -ed form
+studied,studied,word,勉強べんきょうした,勉強べんきょうした,junior_high,1,4,4;3,動詞,4:206;3:656,2,,possible -ed form
+thought,thought,word,考かんがえ,考かんがえ / 考えること，意見,junior_high,1,4,4;3;pre2;2,名詞,4:172;3:796;pre2:201;2:1919,4,think,known inflected form of think
+took,took,word,取とった,取とった,junior_high,1,4,4,,4:162,1,take,known inflected form of take
+tried,tried,word,試ためした,試ためした,junior_high,1,4,4,,4:148,1,try,known inflected form of try
+understood,understood,word,理解りかいした,理解りかいした,junior_high,1,4,4,,4:620,1,understand,known inflected form of understand
+watched,watched,word,見みた,見みた,junior_high,1,4,4,,4:152,1,,possible -ed form
+went,went,word,行いった,行いった,junior_high,1,4,4;3,動詞,4:186;3:420,2,go,known inflected form of go
+worried,worried,word,心配しんぱいした,心配しんぱいした,junior_high,1,4,4,,4:208,1,,possible -ed form
+amazing,amazing,word,驚おどろくべき,驚おどろくべき,junior_high,2,3,3,形容詞,3:299,1,,possible -ing form
+ashamed,ashamed,word,恥はじて,恥はじて / 恥じて，恥ずかしくて,junior_high,1,3,3;2;pre1,形容詞,3:1141;2:2272;pre1:3015,3,,possible -ed form
+beginning,beginning,word,最初さいしょ,最初さいしょ,junior_high,2,3,3,名詞,3:668,1,,possible -ing form
+boring,boring,word,つまらない,つまらない,junior_high,2,3,3,形容詞,3:290,1,,possible -ing form
+breed,breed,word,を飼育しいくする，繁殖はんしょくする,を飼育しいくする，繁殖はんしょくする / を飼育する，繁殖する,junior_high,1,3,3;2;pre1,動詞,3:877;2:2036;pre1:232,3,,possible -ed form
+drove,drove,word,運転うんてんした,運転うんてんした,junior_high,2,3,3,動詞,3:779,1,drive,known inflected form of drive
+excited,excited,word,興奮こうふんした,興奮こうふんした,junior_high,2,3,3,形容詞,3:40,1,,possible -ed form
+found,found,word,を見みつけた,を見みつけた / 設立する，創立する,junior_high,2,3,3;2,動詞,3:678;2:1797,2,find,known inflected form of find
+given,given,word,与あたえた,与あたえた / 与えられた，授与された,junior_high,1,3,3;pre2;2,形容詞,3:1009;pre2:981;2:1813,3,give,known inflected form of give
+grew,grew,word,育そだった,育そだった,junior_high,2,3,3,動詞,3:404,1,grow,known inflected form of grow
+heard,heard,word,聞きいた,聞きいた,junior_high,2,3,3,動詞,3:1088,1,hear,known inflected form of hear
+held,held,word,握にぎった,握にぎった,junior_high,2,3,3,動詞,3:628,1,hold,known inflected form of hold
+indeed,indeed,word,実じつに,実じつに / 実に，全く,junior_high,1,3,3;pre2;2,副詞,3:903;pre2:216;2:847,3,,possible -ed form
+joined,joined,word,参加さんかした,参加さんかした,junior_high,2,3,3,動詞,3:406,1,,possible -ed form
+limited,limited,word,限かぎられた,限かぎられた,junior_high,2,3,3,形容詞,3:907,1,,possible -ed form
+lost,lost,word,失うしなった,失うしなった,junior_high,2,3,3,動詞,3:638,1,lose,known inflected form of lose
+pleased,pleased,word,喜よろこんで,喜よろこんで,junior_high,2,3,3,形容詞,3:1059,1,,possible -ed form
+rose,rose,word,昇のぼった,昇のぼった,junior_high,2,3,3,動詞,3:803,1,rise,known inflected form of rise
+said,said,word,言いった,言いった,junior_high,2,3,3,動詞,3:938,1,say,known inflected form of say
+spelling,spelling,word,綴つづり,綴つづり,junior_high,2,3,3,名詞,3:726,1,,possible -ing form
+succeed,succeed,word,成功せいこうする,成功せいこうする / 成功する，達成する,junior_high,2,3,3;2,動詞,3:1036;2:525,2,,possible -ed form
+unused,unused,word,未使用みしようの,未使用みしようの,junior_high,2,3,3,形容詞,3:1011,1,,possible -ed form
+won,won,word,勝かった,勝かった,junior_high,2,3,3,動詞,3:640,1,win,known inflected form of win
+according,according,word,による，準じて,による，準じて,high_school,2,pre2,pre2;2,前置詞;副詞,pre2:846;2:1023,2,,possible -ing form
+advertising,advertising,word,広告，宣伝,広告，宣伝,high_school,2,pre2,pre2;2,名詞,pre2:853;2:1292,2,,possible -ing form
+armed,armed,word,武装した，装備した,武装した，装備した,high_school,2,pre2,pre2;2,形容詞,pre2:482;2:1229,2,,possible -ed form
+civilized,civilized,word,発達した文明をもつ，教養の高い,発達した文明をもつ，教養の高い,high_school,2,pre2,pre2;2,形容詞,pre2:541;2:1426,2,,possible -ed form
+clothing,clothing,word,衣料品，服,衣料品，服,high_school,2,pre2,pre2;2,名詞,pre2:16;2:1676,2,,possible -ing form
+complicated,complicated,word,複雑な，繁雑な,複雑な，繁雑な,high_school,1,pre2,pre2;2;pre1,形容詞,pre2:547;2:74;pre1:224,3,,possible -ed form
+depending,depending,word,依存している，依存状態,依存している，依存状態,high_school,2,pre2,pre2;2,動詞（現在分詞）;動詞,pre2:1197;2:1992,2,,possible -ing form
+detailed,detailed,word,詳細の，具体的な,詳細の，具体的な,high_school,2,pre2,pre2;2,形容詞,pre2:287;2:1205,2,,possible -ed form
+engaged,engaged,word,に従事して，忙しくして,に従事して，忙しくして,high_school,2,pre2,pre2;2,形容詞,pre2:338;2:1698,2,,possible -ed form
+existing,existing,word,既存の，現存の,既存の，現存の,high_school,2,pre2,pre2;2,形容詞,pre2:435;2:1907,2,,possible -ing form
+frightened,frightened,word,恐ろしかった，怖かった,恐ろしかった，怖かった,high_school,2,pre2,pre2;2,形容詞,pre2:1375;2:326,2,,possible -ed form
+funding,funding,word,資金調達，資本集め,資金調達，資本集め,high_school,2,pre2,pre2;2,名詞,pre2:918;2:1938,2,,possible -ing form
+isolated,isolated,word,孤立した，隔離された,孤立した，隔離された,high_school,1,pre2,pre2;2;pre1,形容詞,pre2:1373;2:323;pre1:643,3,,possible -ed form
+manufacturing,manufacturing,word,製造している,製造している,high_school,2,pre2,pre2,動詞,pre2:600,1,,possible -ing form
+naked,naked,word,裸の，無防備な,裸の，無防備な,high_school,2,pre2,pre2;2,形容詞,pre2:488;2:1249,2,,possible -ed form
+preserved,preserved,word,保存された，保管された,保存された，保管された,high_school,2,pre2,pre2;2,形容詞,pre2:1258;2:117,2,,possible -ed form
+proposed,proposed,word,提案した，提供した,提案した，提供した,high_school,2,pre2,pre2;2,形容詞,pre2:423;2:1659,2,,possible -ed form
+regarding,regarding,word,に関して，について,に関して，について,high_school,2,pre2,pre2;2,前置詞,pre2:900;2:1714,2,,possible -ing form
+remaining,remaining,word,残りの，残余の,残りの，残余の,high_school,2,pre2,pre2;2,形容詞,pre2:640;2:1960,2,,possible -ing form
+shooting,shooting,word,撮影，射撃,撮影，射撃,high_school,2,pre2,pre2;2,名詞,pre2:554;2:1670,2,,possible -ing form
+so-called,so-called,word,いわゆる，通称,いわゆる，通称,high_school,2,pre2,pre2;2,形容詞,pre2:265;2:1993,2,,possible -ed form
+sophisticated,sophisticated,word,洗練された，高雅な,洗練された，高雅な,high_school,1,pre2,pre2;2;pre1,形容詞,pre2:307;2:1308;pre1:3045,3,,possible -ed form
+string,string,word,紐，糸,紐，糸,high_school,2,pre2,pre2,名詞,pre2:1094,1,,possible -ing form
+suffering,suffering,word,苦しみ，悩み,苦しみ，悩み,high_school,2,pre2,pre2;2,名詞,pre2:224;2:1234,2,,possible -ing form
+talented,talented,word,才能のある,才能のある,high_school,2,pre2,pre2,形容詞,pre2:230,1,,possible -ed form
+trading,trading,word,取引,取引,high_school,2,pre2,pre2,名詞,pre2:1191,1,,possible -ing form
+accustomed,accustomed,word,慣れている，いつもの,慣れている，いつもの,high_school,3,2,2,形容詞,2:1618,1,,possible -ed form
+addicted,addicted,word,癖になった,癖になった,high_school,3,2,2,形容詞,2:2050,1,,possible -ed form
+bleed,bleed,word,出血する,出血する,high_school,3,2,2;pre1,動詞,2:2132;pre1:440,2,,possible -ed form
+embarrassed,embarrassed,word,恥ずかしい,恥ずかしい / 恥ずかしい，照れる,high_school,1,2,2;pre1;1,形容詞,2:2098;pre1:971;1:391,3,,possible -ed form
+inclined,inclined,word,傾いた，(し)がちで,傾いた，(し)がちで,high_school,3,2,2,形容詞,2:1613,1,,possible -ed form
+outstanding,outstanding,word,並外れた，目立った,並外れた，目立った,high_school,1,2,2;pre1,形容詞,2:748;2:2256;pre1:140,3,,possible -ing form
+overwhelming,overwhelming,word,圧倒的な，支配的な,圧倒的な，支配的な,high_school,3,2,2,形容詞,2:1843,1,,possible -ing form
+proceed,proceed,word,進む，始める,進む，始める,high_school,3,2,2,動詞,2:1712,1,,possible -ed form
+rating,rating,word,評価，鑑定,評価，鑑定,high_school,3,2,2,名詞,2:1829,1,,possible -ing form
+unexpected,unexpected,word,意外な，突然の,意外な，突然の,high_school,3,2,2,形容詞,2:624,1,,possible -ed form
+willing,willing,word,いとわない，快諾する,いとわない，快諾する,high_school,3,2,2,形容詞,2:1179,1,,possible -ing form

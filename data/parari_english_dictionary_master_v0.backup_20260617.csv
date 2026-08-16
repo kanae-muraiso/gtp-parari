@@ -1,0 +1,2050 @@
+action,source_rank,word,lemma,pos,form_type,sense_id,meaning_ja,level,importance,category,note,Note2
+add,4,a,a,article,base,1,ひとつの・ある,junior_high,1,,不定冠詞,
+review,143,a lot of,a lot of,adjective,base,1,たくさんの,junior_high,1,,複数語表現として登録するか要確認,元行が review または複数語表現
+add,4863,aboard,aboard,preposition,base,1,〜に乗って,exam,3,,船・飛行機などに乗っていることを表す,
+add,46,about,about,preposition,base,1,〜について・およそ,junior_high,1,,話題・概略を表す,
+add,1091,above,above,preposition,base,1,〜の上に・〜を超えて,junior_high,2,,上方・基準超過を表す,
+add,1149,abroad,abroad,adverb,base,1,外国へ・外国で,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,768,absent,absent,adjective,base,1,欠席の・不在の,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,902,accident,accident,noun,base,1,事故,junior_high,1,,,
+add,263,across,across,preposition,base,1,〜を横切って・〜の向こう側に,junior_high,2,,横断・反対側を表す,
+add_pos_variant,1165,across,across,adverb,base,1,横切って・向こう側へ,junior_high,2,,前置詞 across とは別,比較級・最上級を単語形として追加する必要性は低い
+add,897,action,action,noun,base,1,行動,junior_high,1,,,
+add,2004,actor,actor,noun,base,1,俳優,junior_high,1,,,
+add,743,add,add,verb,base,1,加える,junior_high,1,,,規則活用。自動生成候補
+add,1267,addition,addition,noun,base,1,追加・加えること,high_school,2,,通常は in addition to の形で使う。単独では名詞として扱う,
+add,965,address,address,noun,base,1,住所,junior_high,1,,,
+add,586,advice,advice,noun,base,1,忠告・助言,junior_high,1,,,不可算名詞。通常 advices は作らない
+add,752,advise,advise,verb,base,1,忠告する・助言する,junior_high,2,,,規則活用。自動生成候補
+add,800,afraid,afraid,adjective,base,1,恐れて,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,95,after,after,preposition,base,1,〜の後に,junior_high,1,,時間・順序で後を表す,
+add,3003,afternoon,afternoon,noun,base,1,午後,junior_high,1,,,
+add,311,again,again,adverb,base,1,もう一度・再び,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,125,against,against,preposition,base,1,〜に反対して・〜に逆らって,high_school,2,,対立・接触・背景を表す,
+add,138,age,age,noun,base,1,年齢,junior_high,1,,,
+add,343,ago,ago,adverb,base,1,前に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1100,ah,ah,interjection,base,1,ああ・あっ,junior_high,2,,驚き・理解・感情を表す,
+add,1150,ahead,ahead,adverb,base,1,前方に・先に,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,619,air,air,noun,base,1,空気,junior_high,1,,,不可算用法が中心
+add,2009,airplane,airplane,noun,base,1,飛行機,junior_high,1,,,
+add,494,airport,airport,noun,base,1,空港,junior_high,1,,,
+add,6694,alas,alas,interjection,base,1,ああ・悲しいかな,exam,3,,古風・文学的な嘆き,
+add,4772,albeit,albeit,conjunction,base,1,〜ではあるが,exam,3,,文語的・硬い譲歩表現,
+add,417,album,album,noun,base,1,アルバム,junior_high,1,,,
+add,354,all,all,adverb,base,1,まったく・すっかり・みんな・すべて,junior_high,2,,語義統合。ただし「すべて」は限定詞・代名詞用法もあるため要確認,比較級・最上級を単語形として追加する必要性は低い
+add,1152,almost,almost,adverb,base,1,ほとんど,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1141,alone,alone,adverb,base,1,ひとりで,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,316,along,along,preposition,base,1,〜に沿って,junior_high,2,,線・道筋に沿うことを表す,
+add,2528,alongside,alongside,preposition,base,1,〜と並んで・〜のそばに,high_school,2,,並行・近接を表す,
+add,326,already,already,adverb,base,1,すでに,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,348,also,also,adverb,base,1,〜もまた,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1042,although,although,conjunction,base,1,〜だけれども,high_school,2,,譲歩を表す,
+add,308,always,always,adverb,base,1,いつも,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,3008,am,be,auxiliary,variant,1,いる・ある,junior_high,1,基本語,be動詞。191基本語と重複,
+add,104,America,America,noun,base,1,アメリカ,junior_high,1,国名,,
+add,807,American,American,adjective,base,1,アメリカの・アメリカ人の,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,4638,amid,amid,preposition,base,1,〜の中で・〜の最中に,exam,3,,文語的。状況の中にあることを表す,
+add,7809,amidst,amidst,preposition,base,1,〜の中で・〜の最中に,exam,3,,amidの文語的形,
+add,241,among,among,preposition,base,1,〜の間に・〜の中で,junior_high,2,,3者以上の中にあることを表す,
+add,5772,amongst,amongst,preposition,base,1,〜の間に・〜の中で,exam,3,,amongの文語的・英国的形,
+add,4,an,a,article,variant,1,ひとつの・ある,junior_high,1,,母音の前で使う不定冠詞,
+add,3,and,and,conjunction,base,1,そして・〜と,junior_high,1,,語と語・文と文をつなぐ,
+review,3010,and so on,and so on,adverb,base,1,などなど,junior_high,1,,複数語表現として登録するか要確認,元行が review または複数語表現
+add,763,angry,angry,adjective,base,1,怒っている,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,56,animal,animal,noun,base,1,動物,junior_high,1,,,
+add,1103,another,another,adjective,base,1,ほかの・もう一つの,junior_high,1,,,規則比較級・最上級として自動生成候補
+add_pos_variant,922,answer,answer,noun,base,1,答え,junior_high,1,,動詞 answer とは別,
+add_pos_variant,709,answer,answer,verb,base,1,答える,junior_high,1,,名詞 answer とは別,規則活用。自動生成候補
+add,1583,anybody,anybody,pronoun,base,1,誰か・誰でも・誰も,junior_high,2,,anyone とほぼ同じ,
+add,376,anyone,anyone,pronoun,base,1,誰か・誰でも・誰も,junior_high,2,,不定代名詞。否定文・疑問文でよく使う,
+add,202,anything,anything,pronoun,base,1,何か・何でも・何も,junior_high,2,,不定代名詞。否定文・疑問文でよく使う,
+add,1155,anyway,anyway,adverb,base,1,とにかく,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,2023,apartment,apartment,noun,base,1,アパート,junior_high,1,,,
+add,52,apple,apple,noun,base,1,りんご,junior_high,1,果物,,
+add,158,April,April,noun,base,1,4月,junior_high,1,基本語,月名,
+add,,are,be,auxiliary,variant,1,ある・いる・〜である,junior_high,1,基本語,be動詞の現在形,
+add,916,area,area,noun,base,1,地域・区域,junior_high,2,,,
+add,,aren't,be,auxiliary,contracted,1,〜ではない・〜にいない,junior_high,1,,are not の短縮形,
+add,484,arm,arm,noun,base,1,腕,junior_high,1,,,
+add,854,army,army,noun,base,1,陸軍・軍隊,junior_high,2,,,
+add,220,around,around,preposition,base,1,〜の周りに・およそ,junior_high,2,,周囲・概略を表す,
+add,222,arrive,arrive,verb,base,1,到着する,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,856,arrow,arrow,noun,base,1,矢,junior_high,2,,,
+add,632,art,art,noun,base,1,美術・芸術,junior_high,1,,,不可算用法あり。作品の意味では arts もありうる
+add,837,artist,artist,noun,base,1,芸術家・アーティスト,junior_high,1,職業,,
+add,28,as,as,conjunction,base,1,〜するとき・〜なので・〜のように,junior_high,2,,時・理由・様態・比較など用法が多い,
+add,1063,ashamed,ashamed,adjective,base,1,恥じて,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,1009,Asia,Asia,noun,base,1,アジア,junior_high,1,地名,,
+add,687,ask,ask,verb,base,1,尋ねる・頼む,junior_high,1,,,規則活用。自動生成候補
+add,16,at,at,preposition,base,1,〜で・〜に,junior_high,1,,一点の場所・時刻・対象を表す,
+add,,ate,eat,verb,past,1,食べる（過去形）,junior_high,1,,eat の過去形,
+add,6246,atop,atop,preposition,base,1,〜の頂上に・〜の上に,exam,3,,文語的,
+add,162,August,August,noun,base,1,8月,junior_high,1,基本語,月名,
+add,83,aunt,aunt,noun,base,1,おば,junior_high,1,,,
+add,1010,Australia,Australia,noun,base,1,オーストラリア,junior_high,1,国名,,
+add,152,autumn,autumn,noun,base,1,秋,junior_high,1,基本語,季節,
+add,1018,awake,awake,verb,base,1,目が覚める,junior_high,2,,,不規則活用。正本追加候補あり
+add,1148,away,away,adverb,base,1,離れて・去って,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,awoke,awake,verb,past,1,目が覚める（過去形）,junior_high,2,,awake の過去形,
+add,,awoken,awake,verb,past_participle,1,目が覚める（過去分詞）,junior_high,2,,awake の過去分詞,
+add,5742,aye,aye,interjection,base,1,はい・賛成,exam,2,,古風・方言的・投票時の賛成表現,
+add,511,baby,baby,noun,base,1,赤ん坊,junior_high,1,,,子音+y → ies の規則複数
+add,1088,back,back,adjective,base,1,後ろの・裏の,junior_high,1,,名詞・副詞 back とは別,規則比較級・最上級として自動生成候補
+add,240,bad,bad,adjective,base,1,悪い,junior_high,1,,,
+add,2034,badminton,badminton,noun,base,1,バドミントン,junior_high,1,,,
+add,6,bag,bag,noun,base,1,かばん,junior_high,1,,,
+add,1048,bake,bake,verb,base,1,焼く,junior_high,2,,主にオーブンで焼く,規則活用。自動生成候補
+add,538,ball,ball,noun,base,1,ボール,junior_high,1,,,
+add,520,band,band,noun,base,1,バンド,junior_high,1,,,
+add,117,bank,bank,noun,base,1,銀行,junior_high,1,,,
+add,657,bar,bar,noun,base,1,棒・バー,junior_high,2,,,
+add,883,barber,barber,noun,base,1,床屋・理髪師,junior_high,2,,,
+add,40,baseball,baseball,noun,base,1,野球,junior_high,1,,,
+add,39,basketball,basketball,noun,base,1,バスケットボール,junior_high,1,,,
+add,43,bat,bat,noun,base,1,バット・コウモリ,junior_high,1,,,
+add,427,bath,bath,noun,base,1,風呂,junior_high,1,,,
+add,862,bathroom,bathroom,noun,base,1,浴室・トイレ,junior_high,1,,,
+add,3020,be,be,auxiliary,base,1,である,junior_high,1,基本語,be動詞。191基本語と重複,
+review,338,be able to,be able to,auxiliary,base,1,〜できる,junior_high,1,,要確認。複数語表現として登録するか判断,
+add,871,beach,beach,noun,base,1,砂浜・ビーチ,junior_high,1,,,
+add,3022,bean,bean,noun,base,1,豆,junior_high,1,,,
+add,443,bear,bear,noun,base,1,クマ,junior_high,1,動物,動詞 bear とは別,
+add,276,beautiful,beautiful,adjective,base,1,美しい,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,997,beauty,beauty,noun,base,1,美・美しさ,junior_high,2,,,
+add,,became,become,verb,past,1,〜になる（過去形）,junior_high,1,,become の過去形,
+add,80,because,because,conjunction,base,1,なぜなら・〜なので,junior_high,1,,理由を表す,
+add,,become,become,verb,past_participle,1,〜になる（過去分詞）,junior_high,1,,become の過去分詞,
+add,761,become,become,verb,base,1,〜になる,junior_high,1,,,不規則活用。正本追加候補あり
+add,21,bed,bed,noun,base,1,ベッド,junior_high,1,,,
+add,2044,bedroom,bedroom,noun,base,1,寝室,junior_high,1,,,
+add,465,beef,beef,noun,base,1,牛肉,junior_high,1,,,不可算用法が中心
+add,,been,be,auxiliary,past_participle,1,〜であった・いた,junior_high,1,基本語,be動詞の過去分詞,
+add,472,beer,beer,noun,base,1,ビール,junior_high,2,,,不可算・可算両用。文脈により beers もあり
+add,144,before,before,preposition,base,1,〜の前に,junior_high,1,,時間・順序で前を表す,
+add,,began,begin,verb,past,1,始まる・始める（過去形）,junior_high,1,,begin の過去形,
+add,727,begin,begin,verb,base,1,始まる・始める,junior_high,1,,,不規則活用。正本追加候補あり
+add,,begun,begin,verb,past_participle,1,始まる・始める（過去分詞）,junior_high,1,,begin の過去分詞,
+add,275,behind,behind,preposition,base,1,〜の後ろに,junior_high,1,,背後・遅れを表す,
+add,,being,be,auxiliary,present_participle,1,〜であること・〜でいて,junior_high,1,基本語,be動詞の現在分詞・動名詞,
+add,667,believe,believe,verb,base,1,信じる,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,647,bell,bell,noun,base,1,ベル・鐘,junior_high,1,,,
+add,1028,belong,belong,verb,base,1,所属する,junior_high,2,,,規則活用。自動生成候補
+add,580,belt,belt,noun,base,1,ベルト,junior_high,1,,,
+add,426,bench,bench,noun,base,1,ベンチ,junior_high,1,,,
+add,2490,beneath,beneath,preposition,base,1,〜の下に・〜にふさわしくない,high_school,3,,underより文語的・比喩的,
+add,1653,beside,beside,preposition,base,1,〜のそばに,junior_high,2,,近く・横を表す,
+add,1135,besides,besides,adverb,base,1,その上・さらに,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,,best,well,adverb,superlative,1,最もよく・最も上手に,junior_high,1,,well の最上級,
+add,238,best,good,adjective,superlative,1,最もよい,junior_high,1,基本語,good の最上級,既に比較級・最上級として登録済み
+add,,better,well,adverb,comparative,1,よりよく・より上手に,junior_high,1,,well の比較級,
+add,2049,better,good,adjective,comparative,1,よりよい,junior_high,1,,good の比較級,既に比較級・最上級として登録済み
+add,107,between,between,preposition,base,1,〜の間に,junior_high,1,,主に2者の間を表す,
+add,1505,beyond,beyond,preposition,base,1,〜を越えて・〜の向こうに,high_school,3,,範囲・限界の外を表す,
+add,64,bicycle,bicycle,noun,base,1,自転車,junior_high,1,,,
+add,260,big,big,adjective,base,1,大きい,junior_high,1,,,短母音＋子音の重ね字規則で自動生成候補
+add,2051,bike,bike,noun,base,1,自転車・バイク,junior_high,1,乗り物,,
+add,1522,billion,billion,numeral,base,1,10億,junior_high,1,,大きな数。英米では通常10億,
+add,59,bird,bird,noun,base,1,鳥,junior_high,1,動物,,
+add,639,birthday,birthday,noun,base,1,誕生日,junior_high,1,,,
+add,983,bit,bit,noun,base,1,少し,junior_high,1,,a bit の形でよく使う,
+add,268,black,black,adjective,base,1,黒い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,2052,blackboard,blackboard,noun,base,1,黒板,junior_high,1,,,
+add,6831,blah,blah,interjection,base,1,などなど・つまらない話,junior_high,2,,くだけた表現。blah blah blahで「云々」,
+add,,blew,blow,verb,past,1,吹く（過去形）,junior_high,2,,blow の過去形,
+add,1064,blind,blind,adjective,base,1,目の見えない,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,878,blood,blood,noun,base,1,血,junior_high,2,,,不可算用法が中心
+add,1055,blow,blow,verb,base,1,吹く,junior_high,2,,,不規則活用。正本追加候補あり
+add,,blown,blow,verb,past_participle,1,吹く（過去分詞）,junior_high,2,,blow の過去分詞,
+add,269,blue,blue,adjective,base,1,青い,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,45,boat,boat,noun,base,1,ボート・小舟,junior_high,1,,,
+add,30,body,body,noun,base,1,体,junior_high,1,,,
+add,1042,boil,boil,verb,base,1,ゆでる・沸く,junior_high,2,,,規則活用。自動生成候補
+add,855,bomb,bomb,noun,base,1,爆弾,junior_high,2,,,
+add,11,book,book,noun,base,1,本,junior_high,1,,,
+add,3036,bookstore,bookstore,noun,base,1,本屋,junior_high,1,,,
+add,750,borrow,borrow,verb,base,1,借りる,junior_high,1,,,規則活用。自動生成候補
+add,353,both,both,adverb,base,1,両方とも,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,867,bottle,bottle,noun,base,1,びん,junior_high,1,,,
+add,,bought,buy,verb,past,1,買う（過去形）,junior_high,1,,buy の過去形,
+add,,bought,buy,verb,past_participle,1,買う（過去分詞）,junior_high,1,,buy の過去分詞,
+add,952,bowl,bowl,noun,base,1,ボウル・鉢,junior_high,1,,,
+add,125,box,box,noun,base,1,箱,junior_high,1,,,
+add,71,boy,boy,noun,base,1,少年・男の子,junior_high,1,,,
+add,958,branch,branch,noun,base,1,枝・支店,junior_high,2,,,
+add,1094,brave,brave,adjective,base,1,勇敢な,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,47,bread,bread,noun,base,1,パン,junior_high,1,,,不可算用法が中心
+add,1045,break,break,verb,base,1,壊れる・壊す,junior_high,1,,,不規則活用。正本追加候補あり
+add,3040,breakfast,breakfast,noun,base,1,朝食,junior_high,1,,,
+add,497,bridge,bridge,noun,base,1,橋,junior_high,1,,,
+add,789,bright,bright,adjective,base,1,明るい,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,754,bring,bring,verb,base,1,持って来る,junior_high,1,,,不規則活用。正本追加候補あり
+add,,broke,break,verb,past,1,壊れる・壊す（過去形）,junior_high,1,,break の過去形,
+add,,broken,break,verb,past_participle,1,壊れる・壊す（過去分詞）,junior_high,1,,break の過去分詞,
+add,75,brother,brother,noun,base,1,兄弟・兄・弟,junior_high,1,,,
+add,,brought,bring,verb,past,1,持って来る（過去形）,junior_high,1,,bring の過去形,
+add,,brought,bring,verb,past_participle,1,持って来る（過去分詞）,junior_high,1,,bring の過去分詞,
+add,773,brown,brown,adjective,base,1,茶色の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,960,brush,brush,noun,base,1,ブラシ・筆,junior_high,1,,,
+add,738,build,build,verb,base,1,建てる・作る,junior_high,1,,,不規則活用。正本追加候補あり
+add,493,building,building,noun,base,1,建物,junior_high,1,,,
+add,,built,build,verb,past,1,建てる・作る（過去形）,junior_high,1,,build の過去形,
+add,,built,build,verb,past_participle,1,建てる・作る（過去分詞）,junior_high,1,,build の過去分詞,
+add,63,bus,bus,noun,base,1,バス,junior_high,1,,,
+add,583,business,business,noun,base,1,商売・仕事,junior_high,2,,,
+add,242,busy,busy,adjective,base,1,忙しい,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,19,but,but,conjunction,base,1,しかし・だが,junior_high,1,,逆接を表す,
+add,649,butter,butter,noun,base,1,バター,junior_high,1,,,不可算用法が中心
+add,209,buy,buy,verb,base,1,買う,junior_high,1,,,不規則活用。正本追加候補あり
+add,26,by,by,preposition,base,1,〜によって・〜のそばに,junior_high,1,,手段・行為者・近接・期限を表す,
+add,1017,bye,goodbye,interjection,variant,1,さようなら,junior_high,1,,くだけた別れのあいさつ,
+add,2065,cafeteria,cafeteria,noun,base,1,カフェテリア・食堂,junior_high,1,,,
+add,54,cake,cake,noun,base,1,ケーキ,junior_high,1,,,
+add,917,calendar,calendar,noun,base,1,カレンダー,junior_high,1,,,
+add,690,call,call,verb,base,1,呼ぶ・電話をかける,junior_high,1,,,規則活用。自動生成候補
+add,1110,calm,calm,adjective,base,1,落ち着いた,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,,came,come,verb,past,1,来る（過去形）,junior_high,1,,come の過去形,
+add,135,camera,camera,noun,base,1,カメラ,junior_high,1,,,
+add,590,camp,camp,noun,base,1,キャンプ,junior_high,1,,,
+add,2070,camping,camping,noun,present_participle,1,キャンプ,junior_high,1,,動詞 camp のing形由来の名詞,
+add,39,can,can,auxiliary,base,1,〜できる・〜してもよい,junior_high,2,,能力・許可・可能性を表す,
+add_pos_variant,991,can,can,noun,base,1,缶,junior_high,1,,助動詞 can とは別,
+add,,can't,can,auxiliary,contracted,1,〜できない,junior_high,1,,cannot の短縮形,
+add,1008,Canada,Canada,noun,base,1,カナダ,junior_high,1,国名,,
+add,651,candle,candle,noun,base,1,ろうそく,junior_high,1,,,
+add,460,candy,candy,noun,base,1,キャンディー,junior_high,1,,,不可算・可算両用。米語では candies もあり
+add,129,cap,cap,noun,base,1,帽子・ふた,junior_high,1,,,
+add,526,capital,capital,noun,base,1,首都・大文字・資本,junior_high,2,,,
+add,846,captain,captain,noun,base,1,船長・キャプテン,junior_high,1,,,
+add,65,car,car,noun,base,1,自動車,junior_high,1,,,
+add,418,card,card,noun,base,1,カード,junior_high,1,,,
+add,678,care,care,verb,base,1,気にする・世話をする,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,940,care,care,noun,base,1,世話・管理,junior_high,1,,動詞 care とは別,
+add,263,careful,careful,adjective,base,1,注意深い,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,1173,carefully,carefully,adverb,base,1,注意深く,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,421,carpet,carpet,noun,base,1,じゅうたん,junior_high,1,,,
+add,747,carry,carry,verb,base,1,運ぶ,junior_high,1,,,規則活用。自動生成候補
+add,1000,case,case,noun,base,1,場合・容器,junior_high,2,,,
+add,58,cat,cat,noun,base,1,猫,junior_high,1,,,
+add,205,catch,catch,verb,base,1,捕まえる・受け取る,junior_high,1,,,不規則活用。正本追加候補あり
+add,,caught,catch,verb,past,1,捕まえる・受け取る（過去形）,junior_high,1,,catch の過去形,
+add,,caught,catch,verb,past_participle,1,捕まえる・受け取る（過去分詞）,junior_high,1,,catch の過去分詞,
+add,964,cent,cent,noun,base,1,セント,junior_high,1,,,
+add,527,center,center,noun,base,1,中央・中心,junior_high,1,,,
+add,972,centimeter,centimeter,noun,base,1,センチメートル,junior_high,1,,,
+add,1113,central,central,adjective,base,1,中心の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,884,century,century,noun,base,1,世紀,junior_high,2,,,
+add,1119,certain,certain,adjective,base,1,ある・確かな,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,1138,certainly,certainly,adverb,base,1,確かに,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,650,chain,chain,noun,base,1,くさり,junior_high,2,,,
+add,12,chair,chair,noun,base,1,いす,junior_high,1,,,
+add,645,chalk,chalk,noun,base,1,チョーク,junior_high,1,,,
+add,137,chance,chance,noun,base,1,機会・チャンス,junior_high,1,,,
+add,758,change,change,verb,base,1,変わる・変える,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,2078,check,check,noun,base,1,小切手・確認,junior_high,1,,動詞 check とは別,
+add,990,cheese,cheese,noun,base,1,チーズ,junior_high,1,,,不可算・可算両用
+add,2079,cherry,cherry,noun,base,1,さくらんぼ,junior_high,1,,,
+add,2080,Chicago,Chicago,noun,base,1,シカゴ,junior_high,1,,,
+add,437,chicken,chicken,noun,base,1,ニワトリ・鶏肉,junior_high,1,,,
+add,510,child,child,noun,base,1,子供,junior_high,1,,,child の不規則複数形
+add,,children,child,noun,plural,1,子どもたち,junior_high,1,,child の不規則複数形,
+add,105,China,China,noun,base,1,中国,junior_high,1,国名,,
+add,1102,Chinese,Chinese,adjective,base,1,中国の・中国人の,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,2084,chocolate,chocolate,noun,base,1,チョコレート,junior_high,1,,,
+add,1039,choose,choose,verb,base,1,選ぶ,junior_high,1,,,不規則活用。正本追加候補あり
+add,2085,chopstick,chopstick,noun,base,1,箸,junior_high,1,,通常は chopsticks の複数形で使う,
+add,,chose,choose,verb,past,1,選ぶ（過去形）,junior_high,1,,choose の過去形,
+add,,chosen,choose,verb,past_participle,1,選ぶ（過去分詞）,junior_high,1,,choose の過去分詞,
+add,618,Christmas,Christmas,noun,base,1,クリスマス,junior_high,1,,,
+add,108,church,church,noun,base,1,教会,junior_high,1,,,
+add,622,circle,circle,noun,base,1,円・輪,junior_high,1,,,
+add,85,citizen,citizen,noun,base,1,市民,junior_high,2,,,
+add,107,city,city,noun,base,1,市・都会,junior_high,1,,,子音+y → ies の規則複数
+add,2086,clarinet,clarinet,noun,base,1,クラリネット,junior_high,1,,,
+add,2,class,class,noun,base,1,学級・授業,junior_high,1,,,
+add,2088,classmate,classmate,noun,base,1,同級生,junior_high,1,,,
+add,498,classroom,classroom,noun,base,1,教室,junior_high,1,,,
+add_pos_variant,241,clean,clean,adjective,base,1,きれいな,junior_high,1,,動詞 clean とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,688,clean,clean,verb,base,1,掃除する,junior_high,1,,形容詞 clean とは別,規則活用。自動生成候補
+add,91,clerk,clerk,noun,base,1,店員・事務員,junior_high,1,,,
+add,762,clever,clever,adjective,base,1,利口な,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,944,climate,climate,noun,base,1,気候,junior_high,2,,,
+add,689,climb,climb,verb,base,1,登る,junior_high,1,,,規則活用。自動生成候補
+add,422,clock,clock,noun,base,1,時計,junior_high,1,,,
+add_pos_variant,1117,close,close,adjective,base,1,近い・接近した,junior_high,1,,動詞 close とは別,e終わり。r/st 付加で自動生成候補
+add_pos_variant,733,close,close,verb,base,1,閉じる,junior_high,1,,形容詞 close とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,447,cloth,cloth,noun,base,1,布,junior_high,2,,clothes との混同注意,
+add,448,clothes,clothes,noun,plural,1,服,junior_high,1,,常に複数形で使うことが多い,常に複数形で使うことが多い
+add,551,cloud,cloud,noun,base,1,雲,junior_high,1,,,
+add,804,cloudy,cloudy,adjective,base,1,曇った,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,539,club,club,noun,base,1,クラブ・部活動,junior_high,1,,,
+add,451,coat,coat,noun,base,1,コート,junior_high,1,,,
+add,469,coffee,coffee,noun,base,1,コーヒー,junior_high,1,,,不可算・可算両用。coffees もあり
+add,523,coin,coin,noun,base,1,硬貨,junior_high,1,,,
+add,254,cold,cold,adjective,base,1,冷たい・寒い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,190,collect,collect,verb,base,1,集める,junior_high,1,,,規則活用。自動生成候補
+add,495,college,college,noun,base,1,大学,junior_high,1,,,
+add,2098,color,color,noun,base,1,色,junior_high,1,,,
+add,,come,come,verb,past_participle,1,来る（過去分詞）,junior_high,1,,come の過去分詞,
+add,192,come,come,verb,base,1,来る,junior_high,1,,,不規則活用。正本追加候補あり
+add,2100,comic,comic,noun,base,1,漫画・コミック,junior_high,1,,,
+add,1115,common,common,adjective,base,1,共通の・よくある,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,2101,company,company,noun,base,1,会社,junior_high,1,,,
+add,424,computer,computer,noun,base,1,コンピュータ,junior_high,1,,,
+add,896,concert,concert,noun,base,1,コンサート,junior_high,1,,,
+add,608,contest,contest,noun,base,1,コンテスト,junior_high,1,,,
+add,202,cook,cook,verb,base,1,料理する,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,89,cook,cook,noun,base,1,料理人,junior_high,1,,動詞 cook とは別,
+add,2106,cookie,cookie,noun,base,1,クッキー,junior_high,1,,,
+add,2107,cooking,cooking,noun,present_participle,1,料理・調理,junior_high,1,,動詞 cook のing形由来の名詞,
+add,253,cool,cool,adjective,base,1,涼しい・かっこいい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add_pos_variant,1041,copy,copy,verb,base,1,写す・コピーする,junior_high,1,,名詞 copy とは別,規則活用。自動生成候補
+add,528,corner,corner,noun,base,1,角・すみ,junior_high,1,,,
+add,2109,costume,costume,noun,base,1,衣装・コスチューム,junior_high,1,,,
+add,54,could,can,auxiliary,past,1,〜できた・〜かもしれない・〜していただけますか,junior_high,2,,canの過去形由来。可能・推量・丁寧表現,
+add,,couldn't,can,auxiliary,contracted,1,〜できなかった・〜できないだろう,junior_high,1,,could not の短縮形,
+add,102,country,country,noun,base,1,国・田舎,junior_high,1,,,子音+y → ies の規則複数
+add,915,couple,couple,noun,base,1,カップル・二人組,junior_high,1,,,
+add,924,courage,courage,noun,base,1,勇気,junior_high,2,,,不可算名詞
+add,931,course,course,noun,base,1,進路・講座・コース,junior_high,1,,,
+add,839,cousin,cousin,noun,base,1,いとこ,junior_high,1,,,
+add,1044,cover,cover,verb,base,1,おおう,junior_high,1,,,規則活用。自動生成候補
+add,61,cow,cow,noun,base,1,牛,junior_high,1,,,
+add,1124,crazy,crazy,adjective,base,1,気が変な・夢中の,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,1016,cross,cross,verb,base,1,横切る,junior_high,1,,名詞 cross とは別,規則活用。自動生成候補
+add,841,crowd,crowd,noun,base,1,群衆・人混み,junior_high,2,,,
+add,693,cry,cry,verb,base,1,泣く,junior_high,1,,,規則活用。自動生成候補
+add,609,culture,culture,noun,base,1,文化,junior_high,2,,,
+add,19,cup,cup,noun,base,1,カップ,junior_high,1,,,
+add,975,curtain,curtain,noun,base,1,カーテン,junior_high,1,,,
+add,903,custom,custom,noun,base,1,習慣・慣習,junior_high,2,,,
+add,,cut,cut,verb,past,1,切る（過去形）,junior_high,1,,cut の過去形,
+add,,cut,cut,verb,past_participle,1,切る（過去分詞）,junior_high,1,,cut の過去分詞,
+add,749,cut,cut,verb,base,1,切る,junior_high,1,,,不規則活用。正本追加候補あり
+add,1107,cute,cute,adjective,base,1,かわいい,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,2116,cycling,cycling,noun,present_participle,1,サイクリング,junior_high,1,,動詞 cycle のing形由来の名詞,
+add,825,dad,dad,noun,base,1,お父さん,junior_high,1,,,
+add,1097,daily,daily,adjective,base,1,毎日の,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,966,damage,damage,noun,base,1,被害・損害,junior_high,2,,,不可算用法中心。damages は損害賠償の意味
+add,220,dance,dance,verb,base,1,踊る,junior_high,1,,,規則活用。自動生成候補
+add,2118,dancer,dancer,noun,base,1,ダンサー,junior_high,1,,,
+add,142,danger,danger,noun,base,1,危険,junior_high,1,,,
+add,262,dark,dark,adjective,base,1,暗い・黒っぽい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1023,date,date,verb,base,1,デートする,junior_high,1,,名詞 date とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add_pos_variant,628,date,date,noun,base,1,日付・デート,junior_high,1,,動詞 date とは別,
+add,78,daughter,daughter,noun,base,1,娘,junior_high,1,,,
+add,176,day,day,noun,base,1,日,junior_high,1,基本語,時間,
+add,764,dear,dear,adjective,base,1,親愛なる,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,877,death,death,noun,base,1,死,junior_high,2,,,
+add,166,December,December,noun,base,1,12月,junior_high,1,基本語,月名,
+add,661,decide,decide,verb,base,1,決める・決心する,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,790,deep,deep,adjective,base,1,深い,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,1109,delicious,delicious,adjective,base,1,おいしい,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,2124,dentist,dentist,noun,base,1,歯医者,junior_high,1,,,
+add,870,desert,desert,noun,base,1,砂漠,junior_high,2,,,
+add,5,desk,desk,noun,base,1,机,junior_high,1,,,
+add,1484,despite,despite,preposition,base,1,〜にもかかわらず,high_school,3,,譲歩を表す,
+add,2125,dessert,dessert,noun,base,1,デザート,junior_high,1,,,
+add,1027,destroy,destroy,verb,base,1,破壊する,junior_high,2,,,規則活用。自動生成候補
+add,9,diary,diary,noun,base,1,日記,junior_high,1,,,子音+y → ies の規則複数
+add,423,dictionary,dictionary,noun,base,1,辞書,junior_high,1,,,子音+y → ies の規則複数
+add,,did,do,verb,past,1,する（過去形）,junior_high,1,,do の過去形,
+add,,didn't,do,auxiliary,contracted,1,〜しなかった,junior_high,1,,did not の短縮形,
+add,728,die,die,verb,base,1,死ぬ,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,791,different,different,adjective,base,1,違った・異なる,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,784,difficult,difficult,adjective,base,1,難しい,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,3078,dinner,dinner,noun,base,1,夕食,junior_high,1,,,
+add,2129,dirty,dirty,adjective,base,1,汚い,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,696,discover,discover,verb,base,1,発見する,junior_high,2,,,規則活用。自動生成候補
+add,1049,discuss,discuss,verb,base,1,話し合う,junior_high,2,,,規則活用。自動生成候補
+add,919,discussion,discussion,noun,base,1,討論・話し合い,junior_high,2,,,
+add,887,disease,disease,noun,base,1,病気,junior_high,2,,,
+add,413,dish,dish,noun,base,1,皿・料理,junior_high,1,,,
+add,701,dislike,dislike,verb,base,1,嫌う,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,194,do,do,verb,base,1,する,junior_high,1,,,不規則活用。正本追加候補あり
+add,87,doctor,doctor,noun,base,1,医者,junior_high,1,,,
+add,,does,do,verb,third_person_singular,1,する,junior_high,1,,do の三人称単数現在形,
+add,,doesn't,do,auxiliary,contracted,1,〜しない,junior_high,1,,does not の短縮形,
+add,57,dog,dog,noun,base,1,犬,junior_high,1,,,
+add,132,doll,doll,noun,base,1,人形,junior_high,1,,,
+add,522,dollar,dollar,noun,base,1,ドル,junior_high,1,,,
+add,2133,dolphin,dolphin,noun,base,1,イルカ,junior_high,1,,,
+add,,don't,do,auxiliary,contracted,1,〜しない,junior_high,1,,do not の短縮形,
+add,,done,do,verb,past_participle,1,する（過去分詞）,junior_high,1,,do の過去分詞,
+add,13,door,door,noun,base,1,ドア,junior_high,1,,,
+add,1133,down,down,adverb,base,1,下に・下へ,junior_high,1,,前置詞 down とは別,比較級・最上級を単語形として追加する必要性は低い
+add,1771,dozen,dozen,numeral,base,1,12個・1ダース,junior_high,1,,数量表現,
+add,2135,drama,drama,noun,base,1,ドラマ・劇,junior_high,1,,,
+add,,drank,drink,verb,past,1,飲む（過去形）,junior_high,1,,drink の過去形,
+add,685,draw,draw,verb,base,1,描く・引く,junior_high,1,,,不規則活用。正本追加候補あり
+add,,drawn,draw,verb,past_participle,1,描く・引く（過去分詞）,junior_high,1,,draw の過去分詞,
+add,598,dream,dream,noun,base,1,夢,junior_high,1,,,
+add,710,dress,dress,verb,base,1,服を着る,junior_high,1,,名詞 dress とは別,規則活用。自動生成候補
+add,,drew,draw,verb,past,1,描く・引く（過去形）,junior_high,1,,draw の過去形,
+add,182,drink,drink,verb,base,1,飲む,junior_high,1,,,不規則活用。正本追加候補あり
+add,686,drive,drive,verb,base,1,運転する,junior_high,1,,,不規則活用。正本追加候補あり
+add,,driven,drive,verb,past_participle,1,運転する（過去分詞）,junior_high,1,,drive の過去分詞,
+add,833,driver,driver,noun,base,1,運転手・ドライバー,junior_high,1,,,
+add,1060,drop,drop,verb,base,1,落とす・落ちる,junior_high,1,,,規則活用だが子音重ねなど綴り生成注意
+add,,drove,drive,verb,past,1,運転する（過去形）,junior_high,1,,drive の過去形,
+add,2143,drum,drum,noun,base,1,ドラム・太鼓,junior_high,1,,,
+add,,drunk,drink,verb,past_participle,1,飲む（過去分詞）,junior_high,1,,drink の過去分詞,
+add,741,dry,dry,verb,base,1,乾く・乾かす,junior_high,1,,形容詞 dry とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,439,duck,duck,noun,base,1,アヒル,junior_high,1,,,
+add,1083,dumb,dumb,adjective,base,1,口のきけない・ばかな,junior_high,2,,語義注意,規則比較級・最上級として自動生成候補
+add,157,during,during,preposition,base,1,〜の間に,junior_high,1,,期間中を表す,
+add,2144,DVD,DVD,noun,base,1,DVD,junior_high,1,,,
+add,2145,e-mail,e-mail,noun,base,1,電子メール,junior_high,1,,,
+add,801,each,each,adjective,base,1,それぞれの,junior_high,1,,代名詞 each とは別,規則比較級・最上級として自動生成候補
+add,476,ear,ear,noun,base,1,耳,junior_high,1,,,
+add,247,early,early,adjective,base,1,早い,junior_high,1,,副詞 early とは別,y→ier/iest の綴り規則で自動生成候補
+add_pos_variant,352,early,early,adverb,base,1,早く,junior_high,1,,形容詞 early とは別,y→ier/iest の綴り規則で自動生成候補
+add,546,earth,earth,noun,base,1,地球・大地,junior_high,1,,,
+add,1139,easily,easily,adverb,base,1,簡単に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,100,east,east,noun,base,1,東,junior_high,1,方角,,
+add,236,easy,easy,adjective,base,1,やさしい・簡単な,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,217,eat,eat,verb,base,1,食べる,junior_high,1,,,不規則活用。正本追加候補あり
+add,,eaten,eat,verb,past_participle,1,食べる（過去分詞）,junior_high,1,,eat の過去分詞,
+add,49,egg,egg,noun,base,1,卵,junior_high,1,,,
+add,332,eight,eight,numeral,base,1,8・八つ,junior_high,1,,基数,
+add,1293,eighteen,eighteen,numeral,base,1,18・十八,junior_high,1,,基数,
+add,1206,eighteenth,eighteenth,ordinal,base,1,18番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1196,eighth,eighth,ordinal,base,1,8番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1776,eighty,eighty,numeral,base,1,80・八十,junior_high,1,,基数,
+add,1156,either,either,adverb,base,1,〜もまた…ない,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+review,3096,elementary school,elementary school,noun,base,1,小学校,junior_high,1,,複数語表現として登録するか要確認,
+add,813,elephant,elephant,noun,base,1,象,junior_high,1,,,
+add,646,elevator,elevator,noun,base,1,エレベーター,junior_high,1,,,
+add,1260,eleven,eleven,numeral,base,1,11・十一,junior_high,1,,基数,
+add,1199,eleventh,eleventh,ordinal,base,1,11番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1154,else,else,adverb,base,1,そのほかに,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,726,end,end,verb,base,1,終わる・終える,junior_high,1,,名詞 end とは別,規則活用。自動生成候補
+add,834,enemy,enemy,noun,base,1,敵,junior_high,2,,,子音+y → ies の規則複数
+add,980,energy,energy,noun,base,1,エネルギー,junior_high,2,,,不可算用法中心。energies もあり
+add,840,engineer,engineer,noun,base,1,技術者・エンジニア,junior_high,2,,,
+add,1007,England,England,noun,base,1,イングランド,junior_high,1,国名,,
+add,27,English,English,noun,base,1,英語,junior_high,1,,,
+add,197,enjoy,enjoy,verb,base,1,楽しむ,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,806,enough,enough,adjective,base,1,十分な,junior_high,1,,副詞 enough とは別,規則比較級・最上級として自動生成候補
+add,708,enter,enter,verb,base,1,入る,junior_high,1,,,規則活用。自動生成候補
+add,822,entrance,entrance,noun,base,1,入口,junior_high,2,,,
+add,431,eraser,eraser,noun,base,1,消しゴム,junior_high,1,,,
+add,1145,especially,especially,adverb,base,1,特に,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,1005,Europe,Europe,noun,base,1,ヨーロッパ,junior_high,1,,,
+add,1170,even,even,adverb,base,1,〜さえ,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,3100,evening,evening,noun,base,1,夕方・晩,junior_high,1,,,
+add,3101,event,event,noun,base,1,出来事・イベント,junior_high,1,,,
+add,1128,ever,ever,adverb,base,1,今までに・いつか,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,335,every,every,adjective,base,1,毎〜・すべての,junior_high,1,,元資料は副詞だがPARARIでは adjective 扱いが自然,元行が review または複数語表現
+add,491,everybody,everybody,pronoun,base,1,みんな・誰もが,junior_high,2,,everyone とほぼ同じ,
+add,360,everyone,everyone,pronoun,base,1,みんな・誰もが,junior_high,2,,不定代名詞,
+add,262,everything,everything,pronoun,base,1,すべてのもの・何もかも,junior_high,2,,不定代名詞,
+add,1132,everywhere,everywhere,adverb,base,1,どこでも・至る所に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,889,exam,exam,noun,base,1,試験,junior_high,1,,,
+add,642,example,example,noun,base,1,例,junior_high,1,,,
+add,1672,except,except,conjunction,base,1,〜を除いて・ただし,high_school,2,,除外を表す。前置詞用法もある,
+add,1104,excited,excite,adjective,past_participle,1,興奮した,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1098,exciting,excite,adjective,present_participle,1,わくわくさせる,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,683,excuse,excuse,verb,base,1,許す・言い訳する,junior_high,1,,名詞 excuse とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,1025,exercise,exercise,verb,base,1,運動する・練習する,junior_high,1,,名詞 exercise とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,2161,expensive,expensive,adjective,base,1,高価な,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,1047,explain,explain,verb,base,1,説明する,junior_high,2,,,規則活用。自動生成候補
+add,32,eye,eye,noun,base,1,目,junior_high,1,,,
+add,475,face,face,noun,base,1,顔,junior_high,1,,,
+add,996,fact,fact,noun,base,1,事実,junior_high,2,,,
+add,499,factory,factory,noun,base,1,工場,junior_high,1,,,
+add,716,fail,fail,verb,base,1,失敗する,junior_high,1,,,規則活用。自動生成候補
+add,153,fall,fall,noun,base,1,秋,junior_high,1,基本語,季節。動詞 fall とは別,
+add_pos_variant,723,fall,fall,verb,base,1,落ちる,junior_high,1,,名詞 fall とは別,不規則活用。正本追加候補あり
+add,,fallen,fall,verb,past_participle,1,落ちる（過去分詞）,junior_high,1,,fall の過去分詞,
+add,79,family,family,noun,base,1,家族,junior_high,1,,,子音+y → ies の規則複数
+add,274,famous,famous,adjective,base,1,有名な,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,654,fan,fan,noun,base,1,ファン・扇風機,junior_high,1,,,
+add,312,far,far,adverb,base,1,遠くに・はるかに,junior_high,1,,,
+add,658,farm,farm,noun,base,1,農場,junior_high,1,,,
+add,512,farmer,farmer,noun,base,1,農家・農場主,junior_high,1,,,
+add,,farther,far,adverb,comparative,1,より遠くに,junior_high,1,,far の比較級,
+add,,farthest,far,adverb,superlative,1,最も遠くに,junior_high,1,,far の最上級,
+add,246,fast,fast,adjective,base,1,速い,junior_high,1,,副詞 fast とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,341,fast,fast,adverb,base,1,速く,junior_high,1,,形容詞 fast とは別,副詞でも er/est 型があり得る。自動生成候補
+add,1105,fat,fat,adjective,base,1,太った,junior_high,1,,,短母音＋子音の重ね字規則で自動生成候補
+add,72,father,father,noun,base,1,父,junior_high,1,,,
+add,2169,favorite,favorite,adjective,base,1,お気に入りの,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,156,February,February,noun,base,1,2月,junior_high,1,基本語,月名,
+add,697,feel,feel,verb,base,1,感じる,junior_high,1,,,不規則活用。正本追加候補あり
+add,588,feeling,feeling,noun,present_participle,1,感覚・気持ち,junior_high,1,,動詞 feel のing形由来の名詞,
+add,,feet,foot,noun,plural,1,足,junior_high,1,,foot の不規則複数形,
+add,,fell,fall,verb,past,1,落ちる（過去形）,junior_high,1,,fall の過去形,
+add,,felt,feel,verb,past,1,感じる（過去形）,junior_high,1,,feel の過去形,
+add,,felt,feel,verb,past_participle,1,感じる（過去分詞）,junior_high,1,,feel の過去分詞,
+add,861,fence,fence,noun,base,1,塀・柵,junior_high,2,,,
+add,898,festival,festival,noun,base,1,祭り,junior_high,1,,,
+add,803,few,few,adjective,base,1,少数の,junior_high,1,,a few の形でよく使う,規則比較級・最上級として自動生成候補
+add,116,field,field,noun,base,1,野原・競技場,junior_high,1,,,
+add,1204,fifteen,fifteen,numeral,base,1,15・十五,junior_high,1,,基数,
+add,1203,fifteenth,fifteenth,ordinal,base,1,15番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1193,fifth,fifth,ordinal,base,1,5番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1123,fifty,fifty,numeral,base,1,50・五十,junior_high,1,,基数,
+add,1057,fight,fight,verb,base,1,戦う,junior_high,1,,,不規則活用。正本追加候補あり
+add,1019,fill,fill,verb,base,1,いっぱいにする,junior_high,1,,,規則活用。自動生成候補
+add,891,film,film,noun,base,1,映画・フィルム,junior_high,1,,,
+add,1112,final,final,adjective,base,1,最後の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,1130,finally,finally,adverb,base,1,ついに・最後に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,660,find,find,verb,base,1,見つける,junior_high,1,,,不規則活用。正本追加候補あり
+add,273,fine,fine,adjective,base,1,元気な・晴れた,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add_pos_variant,1172,fine,fine,adverb,base,1,うまく・元気に,junior_high,1,,形容詞 fine とは別,比較級・最上級を単語形として追加する必要性は低い
+add,36,finger,finger,noun,base,1,指,junior_high,1,,,
+add,756,finish,finish,verb,base,1,終える,junior_high,1,,,規則活用。自動生成候補
+add,572,fire,fire,noun,base,1,火,junior_high,1,,,
+add,73,first,first,ordinal,base,1,第1の・最初の,junior_high,1,,序数詞。名詞・形容詞・副詞的にも使う,
+add,68,fish,fish,noun,base,1,魚,junior_high,1,,,単複同形
+add,882,fishing,fishing,noun,present_participle,1,魚釣り,junior_high,1,,動詞 fish のing形由来の名詞,
+add,152,five,five,numeral,base,1,5・五つ,junior_high,1,,基数,
+add,1069,flat,flat,adjective,base,1,平らな,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,,flew,fly,verb,past,1,飛ぶ・飛行機で行く（過去形）,junior_high,1,,fly の過去形,
+add,890,flight,flight,noun,base,1,飛行・フライト,junior_high,2,,,
+add,22,floor,floor,noun,base,1,床・階,junior_high,1,,,
+add,69,flower,flower,noun,base,1,花,junior_high,1,,,
+add,,flown,fly,verb,past_participle,1,飛ぶ・飛行機で行く（過去分詞）,junior_high,1,,fly の過去分詞,
+add,2178,flute,flute,noun,base,1,フルート,junior_high,1,,,
+add,670,fly,fly,verb,base,1,飛ぶ・飛行機で行く,junior_high,1,,,不規則活用。正本追加候補あり
+add,1125,fond,fond,adjective,base,1,好きで,junior_high,2,,be fond of でよく使う,規則比較級・最上級として自動生成候補
+add,46,food,food,noun,base,1,食べ物,junior_high,1,,,不可算・可算両用。foods もあり
+add,630,fool,fool,noun,base,1,愚か者,junior_high,2,,,
+add,797,foolish,foolish,adjective,base,1,愚かな,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,37,foot,foot,noun,base,1,足,junior_high,1,,,foot の不規則複数形
+add,537,football,football,noun,base,1,フットボール・サッカー,junior_high,1,,,
+add,11,for,for,preposition,base,1,〜のために・〜に向けて,junior_high,1,,目的・対象・期間などを表す,
+add,864,forest,forest,noun,base,1,森・森林,junior_high,2,,,
+add,1143,forever,forever,adverb,base,1,永遠に,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,663,forget,forget,verb,base,1,忘れる,junior_high,1,,,不規則活用。正本追加候補あり
+add,,forgot,forget,verb,past,1,忘れる（過去形）,junior_high,1,,forget の過去形,
+add,,forgotten,forget,verb,past_participle,1,忘れる（過去分詞）,junior_high,1,,forget の過去分詞,
+add,412,fork,fork,noun,base,1,フォーク,junior_high,1,,,
+add,1155,forty,forty,numeral,base,1,40・四十,junior_high,1,,基数。fourtyではない,
+add,,fought,fight,verb,past,1,戦う（過去形）,junior_high,1,,fight の過去形,
+add,,fought,fight,verb,past_participle,1,戦う（過去分詞）,junior_high,1,,fight の過去分詞,
+add,,found,find,verb,past,1,見つける（過去形）,junior_high,1,,find の過去形,
+add,,found,find,verb,past_participle,1,見つける（過去分詞）,junior_high,1,,find の過去分詞,
+add,139,four,four,numeral,base,1,4・四つ,junior_high,1,,基数,
+add,1311,fourteen,fourteen,numeral,base,1,14・十四,junior_high,1,,基数,
+add,1202,fourteenth,fourteenth,ordinal,base,1,14番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1192,fourth,fourth,ordinal,base,1,第4の・4番目の,junior_high,1,基本語,元データ forth を fourth の誤記として修正,
+add,1192,fourth,fourth,ordinal,base,1,第4の・4番目の,junior_high,1,,元データ forth は fourth の誤記として修正,元データ forth を fourth として採用
+add,814,fox,fox,noun,base,1,キツネ,junior_high,1,動物,,
+add,780,free,free,adjective,base,1,自由な・ひまな・無料の,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,,french,french,noun,base,1,フランス語,junior_high,1,,言語名。本文では French と大文字で出ることが多い,
+add_pos_variant,,french,french,adjective,base,1,フランスの・フランス人の,junior_high,1,,言語名・国民名由来の形容詞,
+add,1080,fresh,fresh,adjective,base,1,新鮮な,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,172,Friday,Friday,noun,base,1,金曜日,junior_high,1,基本語,曜日,
+add,80,friend,friend,noun,base,1,友人,junior_high,1,,,
+add,1126,friendly,friendly,adjective,base,1,親しみやすい,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,815,frog,frog,noun,base,1,カエル,junior_high,1,動物,,
+add,25,from,from,preposition,base,1,〜から,junior_high,1,,起点・出所を表す,
+add,627,front,front,noun,base,1,前・正面,junior_high,1,,,
+add,50,fruit,fruit,noun,base,1,果物,junior_high,1,,,集合・不可算的用法あり。fruits もあり
+add,771,full,full,adjective,base,1,いっぱいの・満腹の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,581,fun,fun,noun,base,1,楽しみ,junior_high,1,,,不可算名詞
+add,1106,funny,funny,adjective,base,1,おかしな・面白い,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,,further,far,adverb,comparative,1,さらに・より遠くに,junior_high,1,,far の比較級・追加的用法,
+add,,furthest,far,adverb,superlative,1,最も遠くに・最も進んで,junior_high,1,,far の最上級・追加的用法,
+add,638,future,future,noun,base,1,未来,junior_high,1,,,
+add,540,game,game,noun,base,1,試合・ゲーム,junior_high,1,,,
+add,3136,garbage,garbage,noun,base,1,ごみ,junior_high,1,,,不可算名詞
+add,123,garden,garden,noun,base,1,庭,junior_high,1,,,
+add,943,gas,gas,noun,base,1,ガス,junior_high,2,,,
+add,114,gate,gate,noun,base,1,門,junior_high,1,,,
+add,,gave,give,verb,past,1,与える・あげる（過去形）,junior_high,1,,give の過去形,
+add,1065,gentle,gentle,adjective,base,1,やさしい・穏やかな,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,504,gentleman,gentleman,noun,base,1,紳士,junior_high,1,,,gentleman の不規則複数形
+add,,gentlemen,gentleman,noun,plural,1,紳士たち,junior_high,1,,gentleman の不規則複数形,
+add,1157,gently,gently,adverb,base,1,やさしく・穏やかに,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,223,get,get,verb,base,1,得る・手に入れる,junior_high,1,,,不規則活用。正本追加候補あり
+add,640,gift,gift,noun,base,1,贈り物,junior_high,1,,,
+add,70,girl,girl,noun,base,1,少女・女の子,junior_high,1,,,
+add,227,give,give,verb,base,1,与える・あげる,junior_high,1,,,不規則活用。正本追加候補あり
+add,,given,give,verb,past_participle,1,与える・あげる（過去分詞）,junior_high,1,,give の過去分詞,
+add,275,glad,glad,adjective,base,1,うれしい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,20,glass,glass,noun,base,1,コップ・ガラス,junior_high,1,,,
+add,456,glove,glove,noun,base,1,手袋・グローブ,junior_high,1,,,
+add,214,go,go,verb,base,1,行く,junior_high,1,,,不規則活用。正本追加候補あり
+add,885,goal,goal,noun,base,1,目標・得点・ゴール,junior_high,1,,,
+add,853,God,God,noun,base,1,神,junior_high,2,,,
+add,570,gold,gold,noun,base,1,金,junior_high,1,,,不可算用法中心
+add,2196,golf,golf,noun,base,1,ゴルフ,junior_high,1,,,
+add,,gone,go,verb,past_participle,1,行く（過去分詞）,junior_high,1,,go の過去分詞,
+add,237,good,good,adjective,base,1,良い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1017,goodbye,goodbye,interjection,base,1,さようなら,junior_high,1,,別れのあいさつ,
+add,7291,goodnight,goodnight,interjection,base,1,おやすみなさい,junior_high,1,,夜の別れ・就寝時のあいさつ,
+add,976,goods,goods,noun,plural,1,商品,junior_high,2,,通常は複数形で使う,通常は複数形で使う
+add,,got,get,verb,past,1,得る・手に入れる（過去形）,junior_high,1,,get の過去形,
+add,,got,get,verb,past_participle,1,得る・手に入れる（過去分詞）,junior_high,1,,get の過去分詞,
+add,988,grade,grade,noun,base,1,成績・等級,junior_high,1,,,
+add,963,gram,gram,noun,base,1,グラム,junior_high,1,,,
+add,508,grandfather,grandfather,noun,base,1,祖父,junior_high,1,,,
+add,509,grandmother,grandmother,noun,base,1,祖母,junior_high,1,,,
+add,2201,grandparent,grandparent,noun,base,1,祖父母,junior_high,1,,,
+add,957,grape,grape,noun,base,1,ぶどう,junior_high,1,,,
+add,559,grass,grass,noun,base,1,草,junior_high,1,,,不可算用法中心
+add,982,gray,gray,noun,base,1,灰色,junior_high,1,,形容詞 gray とは別,
+add,810,great,great,adjective,base,1,すばらしい・大きな,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,271,green,green,adjective,base,1,緑の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,,grew,grow,verb,past,1,成長する・育つ（過去形）,junior_high,1,,grow の過去形,
+add,553,ground,ground,noun,base,1,地面,junior_high,1,,,
+add,507,group,group,noun,base,1,グループ・集団,junior_high,1,,,
+add,668,grow,grow,verb,base,1,成長する・育つ,junior_high,1,,,不規則活用。正本追加候補あり
+add,,grown,grow,verb,past_participle,1,成長する・育つ（過去分詞）,junior_high,1,,grow の過去分詞,
+add,3146,guess,guess,verb,base,1,推測する,junior_high,1,,元資料は名詞だが意味は動詞,
+add,505,guest,guest,noun,base,1,客・招待客,junior_high,1,,,
+add,842,guide,guide,noun,base,1,案内人・ガイド,junior_high,1,,動詞 guide とは別,
+add,15,guitar,guitar,noun,base,1,ギター,junior_high,1,,,
+add,648,gun,gun,noun,base,1,銃・鉄砲,junior_high,2,,,
+add,817,gym,gym,noun,base,1,体育館・ジム,junior_high,1,,,
+add,880,habit,habit,noun,base,1,習慣・くせ,junior_high,2,,,
+add,,had,have,verb,past,1,持っている・食べる（過去形）,junior_high,1,,have の過去形,
+add,,had,have,verb,past_participle,1,持っている・食べる（過去分詞）,junior_high,1,,have の過去分詞,
+add,,hadn't,have,auxiliary,contracted,1,〜していなかった・持っていなかった,junior_high,1,,had not の短縮形,
+add,474,hair,hair,noun,base,1,髪,junior_high,1,,,不可算・可算両用。hairs は1本1本の髪
+add,2208,haircut,haircut,noun,base,1,散髪・ヘアカット,junior_high,1,,,
+add,2209,hairstyle,hairstyle,noun,base,1,髪型・ヘアスタイル,junior_high,1,,,
+add,139,half,half,noun,base,1,半分,junior_high,1,,,half の複数形
+add,863,hall,hall,noun,base,1,広間・廊下,junior_high,1,,,
+add,2212,Halloween,Halloween,noun,base,1,ハロウィーン,junior_high,1,,,
+add,,halves,half,noun,plural,1,半分,junior_high,1,,half の複数形,
+add,2213,hamburger,hamburger,noun,base,1,ハンバーガー,junior_high,1,,,
+add,2214,hamster,hamster,noun,base,1,ハムスター,junior_high,1,,,
+add_pos_variant,35,hand,hand,noun,base,1,手,junior_high,1,,動詞 hand とは別,
+add_pos_variant,1038,hand,hand,verb,base,1,手渡す,junior_high,1,,名詞 hand とは別,規則活用。自動生成候補
+add,712,happen,happen,verb,base,1,起こる,junior_high,1,,,規則活用。自動生成候補
+add,1159,happily,happily,adverb,base,1,幸せに・楽しく,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,613,happiness,happiness,noun,base,1,幸福,junior_high,2,,,不可算名詞
+add,231,happy,happy,adjective,base,1,幸せな・楽しい,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,3150,hard,hard,adjective,base,1,かたい・難しい,junior_high,1,,副詞 hard とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,1142,hard,hard,adverb,base,1,一生懸命に・激しく,junior_high,1,,形容詞 hard とは別,副詞でも er/est 型があり得る。自動生成候補
+add,,has,have,verb,third_person_singular,1,持っている・食べる,junior_high,1,,have の三人称単数現在形,
+add,,hasn't,have,auxiliary,contracted,1,〜していない・持っていない,junior_high,1,,has not の短縮形,
+add,449,hat,hat,noun,base,1,帽子,junior_high,1,,,
+add,187,have,have,verb,base,1,持っている・食べる,junior_high,1,,語義統合。持つ／食べるの基本用法,不規則活用。正本追加候補あり
+add,,haven't,have,auxiliary,contracted,1,〜していない・持っていない,junior_high,1,,have not の短縮形,
+add,2217,Hawaii,Hawaii,noun,base,1,ハワイ,junior_high,1,地名,,
+add,13,he,he,pronoun,base,1,彼は・彼が,junior_high,1,,三人称単数男性の主格,
+add,,he'd,would,auxiliary,contracted,1,彼は〜するだろう・〜したいだろう,junior_high,1,,he would の短縮形,
+add,,he'd,have,auxiliary,contracted,2,彼は〜していた,junior_high,1,,he had の短縮形,
+add,,he'll,will,auxiliary,contracted,1,彼は〜するでしょう・〜するつもりだ,junior_high,1,,he will の短縮形,
+add,,he's,be,auxiliary,contracted,1,彼は〜です・彼は〜している,junior_high,1,,he is の短縮形,
+add,,he's,have,auxiliary,contracted,2,彼は〜した・彼は〜している,junior_high,1,,he has の短縮形,
+add,31,head,head,noun,base,1,頭・先頭,junior_high,1,,,
+add,584,health,health,noun,base,1,健康,junior_high,1,,,不可算名詞
+add,1081,healthy,healthy,adjective,base,1,健康な,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,694,hear,hear,verb,base,1,聞く,junior_high,1,,,不規則活用。正本追加候補あり
+add,,heard,hear,verb,past,1,聞く（過去形）,junior_high,1,,hear の過去形,
+add,,heard,hear,verb,past_participle,1,聞く（過去分詞）,junior_high,1,,hear の過去分詞,
+add,489,heart,heart,noun,base,1,心・心臓,junior_high,1,,,
+add,911,heaven,heaven,noun,base,1,天国,junior_high,2,,,
+add,2219,heavy,heavy,adjective,base,1,重い,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,,held,hold,verb,past,1,持つ・開催する（過去形）,junior_high,1,,hold の過去形,
+add,,held,hold,verb,past_participle,1,持つ・開催する（過去分詞）,junior_high,1,,hold の過去分詞,
+add,781,hello,hello,interjection,base,1,こんにちは・もしもし,junior_high,1,,あいさつ,
+add,208,help,help,verb,base,1,助ける,junior_high,1,,,規則活用。自動生成候補
+add,36,her,her,pronoun,base,1,彼女を・彼女の,junior_high,1,,目的格または所有形容詞,
+add,313,here,here,adverb,base,1,ここに・ここで,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,942,hers,hers,pronoun,base,1,彼女のもの,junior_high,1,,所有代名詞,
+add,1065,herself,herself,pronoun,base,1,彼女自身,junior_high,1,,再帰代名詞,
+add,1206,hey,hey,interjection,base,1,ねえ・おい・やあ,junior_high,2,,呼びかけ・注意喚起・あいさつ,
+add,914,hi,hi,interjection,base,1,やあ・こんにちは,junior_high,1,,くだけたあいさつ,
+add,245,high,high,adjective,base,1,高い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,556,hill,hill,noun,base,1,丘,junior_high,1,,,
+add,48,him,him,pronoun,base,1,彼を・彼に,junior_high,1,,三人称単数男性の目的格,
+add,236,himself,himself,pronoun,base,1,彼自身,junior_high,1,,再帰代名詞,
+add,22,his,his,pronoun,base,1,彼のもの・彼の,junior_high,1,,所有代名詞または所有形容詞,
+add,643,history,history,noun,base,1,歴史,junior_high,1,,,
+add,,hit,hit,verb,past,1,打つ・当たる（過去形）,junior_high,1,,hit の過去形,
+add,,hit,hit,verb,past_participle,1,打つ・当たる（過去分詞）,junior_high,1,,hit の過去分詞,
+add,1053,hit,hit,verb,base,1,打つ・当たる,junior_high,1,,,不規則活用。正本追加候補あり
+add,573,hobby,hobby,noun,base,1,趣味,junior_high,1,,,
+add,2224,hockey,hockey,noun,base,1,ホッケー,junior_high,1,,,
+add,671,hold,hold,verb,base,1,持つ・開催する,junior_high,1,,,不規則活用。正本追加候補あり
+add,993,hole,hole,noun,base,1,穴,junior_high,1,,,
+add,617,holiday,holiday,noun,base,1,休日・祝日,junior_high,1,,,
+add,1072,holy,holy,adjective,base,1,神聖な,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add_pos_variant,345,home,home,adverb,base,1,家へ・家に,junior_high,1,,名詞 home とは別,比較級・最上級を単語形として追加する必要性は低い
+add_pos_variant,411,home,home,noun,base,1,家・故郷,junior_high,1,,副詞 home とは別,
+add,611,homeroom,homeroom,noun,base,1,ホームルーム,junior_high,1,,,
+add,2226,hometown,hometown,noun,base,1,出身地・故郷,junior_high,1,,,
+add,8,homework,homework,noun,base,1,宿題,junior_high,1,,,不可算名詞
+add,235,honest,honest,adjective,base,1,正直な,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,859,honey,honey,noun,base,1,蜂蜜,junior_high,1,,,不可算名詞
+add,695,hope,hope,verb,base,1,望む・願う,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,614,hope,hope,noun,base,1,希望,junior_high,1,,動詞 hope とは別,
+add,445,horse,horse,noun,base,1,馬,junior_high,1,動物,,
+add,119,hospital,hospital,noun,base,1,病院,junior_high,1,,,
+add,824,host,host,noun,base,1,主人・司会者・ホスト,junior_high,2,,,
+add,252,hot,hot,adjective,base,1,暑い・熱い,junior_high,1,,,短母音＋子音の重ね字規則で自動生成候補
+add,120,hotel,hotel,noun,base,1,ホテル,junior_high,1,,,
+add,175,hour,hour,noun,base,1,時間,junior_high,1,基本語,時間,
+add,16,house,house,noun,base,1,家,junior_high,1,,,
+add,315,how,how,adverb,base,1,どのように・どのくらい,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,how's,be,auxiliary,contracted,1,どのようですか・調子はどうですか,junior_high,1,,how is の短縮形,
+add,786,human,human,adjective,base,1,人間の,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,327,hundred,hundred,numeral,base,1,100,junior_high,1,,大きな数,
+add,264,hungry,hungry,adjective,base,1,空腹の,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,675,hunt,hunt,verb,base,1,狩りをする,junior_high,2,,,規則活用。自動生成候補
+add,721,hurry,hurry,verb,base,1,急ぐ,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,,hurt,hurt,verb,past,1,傷つける・痛む（過去形）,junior_high,1,,hurt の過去形,
+add,,hurt,hurt,verb,past_participle,1,傷つける・痛む（過去分詞）,junior_high,1,,hurt の過去分詞,
+add,1033,hurt,hurt,verb,base,1,傷つける・痛む,junior_high,1,,,不規則活用。正本追加候補あり
+add,831,husband,husband,noun,base,1,夫,junior_high,1,,,
+add,8,I,I,pronoun,base,1,私は・私が,junior_high,1,,一人称単数の主格,
+add,,i'd,would,auxiliary,contracted,1,私は〜したい・私は〜するだろう,junior_high,1,,I would の短縮形,
+add,,i'd,have,auxiliary,contracted,2,私は〜していた,junior_high,1,,I had の短縮形,
+add,,i'll,will,auxiliary,contracted,1,私は〜するつもりだ・〜でしょう,junior_high,1,,I will の短縮形,
+add,,i'm,be,auxiliary,contracted,1,私は〜です・私は〜している,junior_high,1,,I am の短縮形,
+add,,i've,have,auxiliary,contracted,1,私は〜したことがある・私は〜している,junior_high,1,,I have の短縮形,
+add,571,ice,ice,noun,base,1,氷,junior_high,1,,,不可算用法中心
+add,585,idea,idea,noun,base,1,考え・アイデア,junior_high,1,,,
+add,32,if,if,conjunction,base,1,もし〜なら,junior_high,1,,条件を表す,
+add,265,ill,ill,adjective,base,1,病気の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,699,imagine,imagine,verb,base,1,想像する,junior_high,1,,,規則活用。自動生成候補
+add,809,important,important,adjective,base,1,重要な,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,5,in,in,preposition,base,1,〜の中に・〜で,junior_high,1,,場所・時間・状態の内側を表す,
+add,1052,including,include,preposition,present_participle,1,〜を含めて,high_school,2,,includeのing形由来の前置詞的用法,
+add,1153,indeed,indeed,adverb,base,1,実に・本当に,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,106,India,India,noun,base,1,インド,junior_high,1,国名,,
+add,2238,information,information,noun,base,1,情報,junior_high,1,,,不可算名詞。informations は通常不可
+add,868,ink,ink,noun,base,1,インク,junior_high,1,,,不可算名詞
+add,553,inside,inside,preposition,base,1,〜の内側に,junior_high,2,,内側を表す,
+add_pos_variant,633,inside,inside,noun,base,1,内側,junior_high,1,,前置詞 inside とは別,
+add,2239,instrument,instrument,noun,base,1,楽器・器具,junior_high,2,,,
+add,2240,interested,interest,adjective,past_participle,1,興味がある,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+skip_duplicate,1062,interested (in),interest,adjective,past_participle,1,興味のある,junior_high,1,,interested と重複。表現としては be interested in,more/most 型で扱う候補。単語形としては追加しない
+add,795,interesting,interest,adjective,present_participle,1,おもしろい・興味深い,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,1087,international,international,adjective,base,1,国際的な,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,55,into,into,preposition,base,1,〜の中へ,junior_high,1,,外から内への移動・変化を表す,
+add,1058,introduce,introduce,verb,base,1,紹介する,junior_high,2,,,規則活用。自動生成候補
+add,1031,invent,invent,verb,base,1,発明する,junior_high,2,,,規則活用。自動生成候補
+add,737,invite,invite,verb,base,1,招待する,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,925,iron,iron,noun,base,1,鉄・アイロン,junior_high,2,,,不可算・可算両用
+add,3169,is,be,auxiliary,third_person_singular,1,ある・いる,junior_high,1,基本語,be動詞。191基本語と重複,
+add,555,island,island,noun,base,1,島,junior_high,1,,,
+add,,isn't,be,auxiliary,contracted,1,〜ではない・〜にいない,junior_high,1,,is not の短縮形,
+add,7,it,it,pronoun,base,1,それ・それは・それを,junior_high,1,,物・事・動物などを指す,
+add,,it'd,would,auxiliary,contracted,1,それは〜するだろう,junior_high,1,,it would の短縮形,
+add,,it'd,have,auxiliary,contracted,2,それは〜していた,junior_high,1,,it had の短縮形,
+add,,it'll,will,auxiliary,contracted,1,それは〜するでしょう,junior_high,1,,it will の短縮形,
+add,,it's,be,auxiliary,contracted,1,それは〜です・それは〜している,junior_high,1,,it is の短縮形,
+add,,it's,have,auxiliary,contracted,2,それは〜した・それは〜している,junior_high,1,,it has の短縮形,
+add,2244,Italy,Italy,noun,base,1,イタリア,junior_high,1,国名,,
+add,68,its,its,pronoun,base,1,それの,junior_high,1,,it の所有形,
+add,1457,itself,itself,pronoun,base,1,それ自体,junior_high,1,,再帰代名詞,
+add,857,jam,jam,noun,base,1,ジャム,junior_high,1,,,不可算用法中心
+add,155,January,January,noun,base,1,1月,junior_high,1,基本語,月名,
+add,103,Japan,Japan,noun,base,1,日本,junior_high,1,,,
+add,3174,Japanese,Japanese,noun,base,1,日本人・日本語,junior_high,1,,形容詞 Japanese とは別,単複同形になりうる。日本人・日本語として扱う
+add,829,jeans,jeans,noun,plural,1,ジーンズ,junior_high,1,,通常は複数形で使う,通常は複数形で使う
+add,945,jewel,jewel,noun,base,1,宝石,junior_high,2,,,
+add,610,job,job,noun,base,1,仕事,junior_high,1,,,
+add,2247,jogging,jogging,noun,present_participle,1,ジョギング,junior_high,1,,動詞 jog のing形由来の名詞,
+add,719,join,join,verb,base,1,参加する・加わる,junior_high,1,,,規則活用。自動生成候補
+add,881,joy,joy,noun,base,1,喜び,junior_high,2,,,
+add,858,juice,juice,noun,base,1,ジュース,junior_high,1,,,不可算・可算両用
+add,161,July,July,noun,base,1,7月,junior_high,1,基本語,月名,
+add,740,jump,jump,verb,base,1,跳ぶ,junior_high,1,,,規則活用。自動生成候補
+add,160,June,June,noun,base,1,6月,junior_high,1,基本語,月名,
+add,258,junior,junior,adjective,base,1,年下の・下級の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1167,just,just,adverb,base,1,ちょうど・ただ単に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,713,keep,keep,verb,base,1,保つ・持ち続ける,junior_high,1,,,不規則活用。正本追加候補あり
+add,,kept,keep,verb,past,1,保つ・持ち続ける（過去形）,junior_high,1,,keep の過去形,
+add,,kept,keep,verb,past_participle,1,保つ・持ち続ける（過去分詞）,junior_high,1,,keep の過去分詞,
+add,428,key,key,noun,base,1,鍵・手がかり,junior_high,1,,,
+add,732,kill,kill,verb,base,1,殺す,junior_high,1,,,規則活用。自動生成候補
+add,969,kilometer,kilometer,noun,base,1,キロメートル,junior_high,1,,,
+add,234,kind,kind,adjective,base,1,親切な,junior_high,1,,名詞 kind とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,636,kind,kind,noun,base,1,種類,junior_high,1,,形容詞 kind とは別,
+add,515,king,king,noun,base,1,王・王様,junior_high,1,職業,,
+add,1015,kiss,kiss,verb,base,1,キスをする,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,18,kitchen,kitchen,noun,base,1,台所,junior_high,1,,,
+add,3182,knee,knee,noun,base,1,ひざ,junior_high,1,,,
+add,,knew,know,verb,past,1,知っている（過去形）,junior_high,1,,know の過去形,
+add,592,knife,knife,noun,base,1,ナイフ,junior_high,1,,,knife の複数形
+add,,knives,knife,noun,plural,1,ナイフ,junior_high,1,,knife の複数形,
+add,1034,knock,knock,verb,base,1,ノックする,junior_high,1,,,規則活用。自動生成候補
+add,215,know,know,verb,base,1,知っている,junior_high,1,,,不規則活用。正本追加候補あり
+add,,known,know,verb,past_participle,1,知っている（過去分詞）,junior_high,1,,know の過去分詞,
+add,503,lady,lady,noun,base,1,婦人・女性,junior_high,1,,,子音+y → ies の規則複数
+add,1050,lain,lie,verb,past_participle,2,横たわった,junior_high,2,,横たわる lie の過去分詞,
+add,561,lake,lake,noun,base,1,湖,junior_high,1,,,
+add,558,land,land,noun,base,1,陸地・土地,junior_high,1,,,
+add,641,language,language,noun,base,1,言語,junior_high,1,,,
+add,243,large,large,adjective,base,1,大きい・広い,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,98,last,last,ordinal,base,1,最後の・前回の,junior_high,1,,序数詞扱いだが形容詞・副詞・動詞用法もある,
+add,766,last,last,adjective,base,1,最後の・この前の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add_pos_variant,532,last,last,noun,base,1,最後,junior_high,1,,形容詞 last とは別,
+add,2313,late,late,adjective,base,1,遅い・遅れた,junior_high,1,,,
+add_pos_variant,2313,late,late,adverb,base,1,遅く・遅れて,junior_high,1,,形容詞 late とは別,
+add,322,later,later,adverb,comparative,1,後で,junior_high,1,,late の比較級由来,既に比較級・最上級として登録済み
+add,,latest,late,adjective,superlative,2,最新の,junior_high,2,,late の最上級から派生した語義。the latest ... で「最新の〜」,
+add,673,laugh,laugh,verb,base,1,笑う,junior_high,1,,,規則活用。自動生成候補
+add,626,law,law,noun,base,1,法律,junior_high,2,,,
+add,1050,lay,lie,verb,past,2,横たわった,junior_high,2,,横たわる lie の過去形,
+add,1093,lazy,lazy,adjective,base,1,怠けた,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,524,leaf,leaf,noun,base,1,葉,junior_high,1,,,leaf の複数形
+add,218,learn,learn,verb,base,1,学ぶ・覚える,junior_high,1,,,規則形も使うが、別形もあるため追加候補
+add,,learned,learn,verb,past,1,学んだ・覚えた,junior_high,1,,learn の過去形,
+add,,learned,learn,verb,past_participle,1,学んだ・覚えた,junior_high,1,,learn の過去分詞,
+add,,learnt,learn,verb,past,1,学ぶ・覚える（過去形）,junior_high,1,,learn の過去形,
+add,,learnt,learn,verb,past_participle,1,学ぶ・覚える（過去分詞）,junior_high,1,,learn の過去分詞,
+add,,learnt,learn,verb,past,1,学んだ・覚えた,junior_high,2,,learn の過去形。主にイギリス英語,
+add,,learnt,learn,verb,past_participle,1,学んだ・覚えた,junior_high,2,,learn の過去分詞。主にイギリス英語,
+add,,least,little,adjective,superlative,1,最も少ない,junior_high,1,,little の最上級,
+add,210,leave,leave,verb,base,1,去る・残す,junior_high,1,,,不規則活用。正本追加候補あり
+add,,leaves,leaf,noun,plural,1,葉,junior_high,1,,leaf の複数形,
+add,,left,leave,verb,past,1,去る・残す（過去形）,junior_high,1,,leave の過去形,
+add,,left,leave,verb,past_participle,1,去る・残す（過去分詞）,junior_high,1,,leave の過去分詞,
+add,97,left,left,noun,base,1,左,junior_high,1,,形容詞・副詞 left とは別,
+add,486,leg,leg,noun,base,1,脚,junior_high,1,,,
+add,53,lemon,lemon,noun,base,1,レモン,junior_high,1,果物,,
+add,731,lend,lend,verb,base,1,貸す,junior_high,1,,,不規則活用。正本追加候補あり
+add,,lent,lend,verb,past,1,貸す（過去形）,junior_high,1,,lend の過去形,
+add,,lent,lend,verb,past_participle,1,貸す（過去分詞）,junior_high,1,,lend の過去分詞,
+add,,less,little,adjective,comparative,1,より少ない,junior_high,1,,little の比較級,
+add,602,lesson,lesson,noun,base,1,授業・課,junior_high,1,,,
+add,7485,lest,lest,conjunction,base,1,〜しないように,exam,3,,古風・文語的。文学で出る,
+add,,let,let,verb,base,1,〜させる・許す,junior_high,1,,基本形,
+add,,let,let,verb,past,1,〜させた・許した,junior_high,1,,let の過去形。綴りは基本形と同じ,
+add,,let,let,verb,past_participle,1,〜させた・許した,junior_high,1,,let の過去分詞。綴りは基本形と同じ,
+add,3189,let's,let,verb,contracted,1,〜しよう,junior_high,1,,let us の短縮形。PARARIでは複数語的・慣用表現として扱うか要確認,意味・活用を分ける必要があるため要確認
+add,,let's,let,verb,contracted,1,〜しよう,junior_high,1,,let us の短縮形,
+add,126,letter,letter,noun,base,1,手紙・文字,junior_high,1,,,
+add,,letting,let,verb,present_participle,1,〜させている・許している,junior_high,1,,let の現在分詞・動名詞,
+add,118,library,library,noun,base,1,図書館,junior_high,1,,,子音+y → ies の規則複数
+add,1050,lie,lie,verb,base,1,うそをつく,junior_high,2,,lie-lied-lied 型,
+add,1050,lie,lie,verb,base,2,横たわる,junior_high,2,,lie-lay-lain 型,
+add_pos_variant,607,lie,lie,noun,base,1,嘘,junior_high,1,,動詞 lie とは別,
+add,1050,lied,lie,verb,past,1,うそをついた,junior_high,2,,うそをつく lie の過去形,
+add,1050,lied,lie,verb,past_participle,1,うそをついた,junior_high,2,,うそをつく lie の過去分詞,
+add,410,life,life,noun,base,1,生活・生命,junior_high,1,,,life の複数形
+add,783,light,light,adjective,base,1,軽い・薄い・明るい,junior_high,1,,名詞 light とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,575,light,light,noun,base,1,光・明かり・信号,junior_high,1,,形容詞 light とは別,
+add,64,like,like,preposition,base,1,〜のような,junior_high,2,,類似を表す。動詞likeとは別,
+add_pos_variant,3192,like,like,verb,base,1,好む,junior_high,1,,前置詞 like とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,141,line,line,noun,base,1,線・列,junior_high,1,,,
+add,436,lion,lion,noun,base,1,ライオン,junior_high,1,動物,,
+add,953,lip,lip,noun,base,1,くちびる,junior_high,1,,,
+add,934,list,list,noun,base,1,リスト・表,junior_high,1,,,
+add,682,listen,listen,verb,base,1,聴く,junior_high,1,,,規則活用。自動生成候補
+add,259,little,little,adjective,base,1,小さい・幼い・少しの,junior_high,1,,,
+add,212,live,live,verb,base,1,住む・生きる,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,,lives,life,noun,plural,1,命・生活,junior_high,1,,life の複数形,
+add,1075,living,live,adjective,present_participle,1,生きている,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,420,locker,locker,noun,base,1,ロッカー,junior_high,1,,,
+add,1006,London,London,noun,base,1,ロンドン,junior_high,1,地名,,
+add,1073,lonely,lonely,adjective,base,1,さびしい・ひとりの,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,249,long,long,adjective,base,1,長い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add_pos_variant,1147,long,long,adverb,base,1,長く,junior_high,1,,形容詞 long とは別,副詞でも er/est 型があり得る。自動生成候補
+add,180,look,look,verb,base,1,見る・〜に見える,junior_high,1,,,規則活用。自動生成候補
+add,748,lose,lose,verb,base,1,失う・負ける,junior_high,1,,,不規則活用。正本追加候補あり
+add,,lost,lose,verb,past,1,失う・負ける（過去形）,junior_high,1,,lose の過去形,
+add,,lost,lose,verb,past_participle,1,失う・負ける（過去分詞）,junior_high,1,,lose の過去分詞,
+add,1090,lost,lose,adjective,past_participle,1,道に迷った・失われた,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,779,loud,loud,adjective,base,1,音が大きい,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,684,love,love,verb,base,1,愛する・大好きである,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add_pos_variant,600,love,love,noun,base,1,愛,junior_high,1,,動詞 love とは別,
+add,1082,lovely,lovely,adjective,base,1,美しい・すてきな,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,793,low,low,adjective,base,1,低い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,879,luck,luck,noun,base,1,運,junior_high,1,,,不可算名詞
+add,802,lucky,lucky,adjective,base,1,幸運な,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,3198,lunch,lunch,noun,base,1,昼食,junior_high,1,,,
+add,1050,lying,lie,verb,present_participle,1,うそをついている,junior_high,2,,うそをつく lie の現在分詞,
+add,1050,lying,lie,verb,present_participle,2,横たわっている,junior_high,2,,横たわる lie の現在分詞,
+add,655,machine,machine,noun,base,1,機械,junior_high,1,,,
+add,,made,make,verb,past,1,作る（過去形）,junior_high,1,,make の過去形,
+add,,made,make,verb,past_participle,1,作る（過去分詞）,junior_high,1,,make の過去分詞,
+add,434,magazine,magazine,noun,base,1,雑誌,junior_high,1,,,
+add,130,mail,mail,noun,base,1,郵便・メール,junior_high,1,,,不可算用法中心
+add,2284,mailbox,mailbox,noun,base,1,メールボックス・郵便受け,junior_high,1,,,
+add,794,main,main,adjective,base,1,主な,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,195,make,make,verb,base,1,作る,junior_high,1,,,不規則活用。正本追加候補あり
+add,82,man,man,noun,base,1,男の人・人,junior_high,1,,,man の不規則複数形
+add,336,many,many,adjective,base,1,多くの,junior_high,1,,元資料は副詞だがPARARIでは adjective 扱いが自然,
+add,134,map,map,noun,base,1,地図,junior_high,1,,,
+add,157,March,March,noun,base,1,3月,junior_high,1,基本語,月名。動詞 march とは別,
+add,951,mark,mark,noun,base,1,印・点数,junior_high,1,,,
+add,659,market,market,noun,base,1,市場,junior_high,1,,,
+add,1061,marry,marry,verb,base,1,結婚する・結婚させる,junior_high,2,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,876,match,match,noun,base,1,試合・組み合わせ,junior_high,1,,動詞 match とは別,
+add,28,math,math,noun,base,1,数学,junior_high,1,学科,,不可算名詞
+add,984,matter,matter,noun,base,1,問題・事柄,junior_high,2,,,
+add,93,may,may,auxiliary,base,1,〜してもよい・〜かもしれない,junior_high,2,,許可・可能性を表す,
+add_pos_variant,159,May,May,noun,base,1,5月,junior_high,1,基本語,助動詞 may とは別。月名,
+add,1136,maybe,maybe,adverb,base,1,おそらく・たぶん,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,49,me,me,pronoun,base,1,私を・私に,junior_high,1,,一人称単数の目的格,
+add,742,mean,mean,verb,base,1,意味する,junior_high,1,,,不規則活用。正本追加候補あり
+add,1002,meaning,meaning,noun,present_participle,1,意味,junior_high,1,,動詞 mean のing形由来の名詞,
+add,,meant,mean,verb,past,1,意味する（過去形）,junior_high,1,,mean の過去形,
+add,,meant,mean,verb,past_participle,1,意味する（過去分詞）,junior_high,1,,mean の過去分詞,
+add,463,meat,meat,noun,base,1,肉,junior_high,1,,,不可算用法中心
+add,652,medal,medal,noun,base,1,メダル,junior_high,1,,,
+add,429,medicine,medicine,noun,base,1,薬・医学,junior_high,1,,,不可算・可算両用
+add,2291,medium,medium,noun,base,1,中くらい・媒体,junior_high,2,,形容詞 medium とは別,
+add,211,meet,meet,verb,base,1,会う,junior_high,1,,,不規則活用。正本追加候補あり
+add,2293,meeting,meeting,noun,present_participle,1,会議・集まり,junior_high,1,,動詞 meet のing形由来の名詞,
+add,955,melon,melon,noun,base,1,メロン,junior_high,1,果物,,
+add,531,member,member,noun,base,1,会員・一員,junior_high,1,,,
+add,3207,memory,memory,noun,base,1,記憶,junior_high,2,,,
+add,,men,man,noun,plural,1,男の人たち・人々,junior_high,1,,man の不規則複数形,
+add,962,menu,menu,noun,base,1,メニュー,junior_high,1,,,
+add,850,merchant,merchant,noun,base,1,商人,junior_high,2,,,
+add,1074,merry,merry,adjective,base,1,陽気な,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,,met,meet,verb,past,1,会う（過去形）,junior_high,1,,meet の過去形,
+add,,met,meet,verb,past_participle,1,会う（過去分詞）,junior_high,1,,meet の過去分詞,
+add,144,meter,meter,noun,base,1,メートル,junior_high,1,,,
+add,,mice,mouse,noun,plural,1,ネズミたち,junior_high,1,動物,mouse の不規則複数形,
+add,970,middle,middle,noun,base,1,中央・中間,junior_high,1,,,
+add,894,midnight,midnight,noun,base,1,真夜中,junior_high,1,,,
+add,1445,might,may,auxiliary,past,1,〜かもしれない,junior_high,2,,mayより控えめな可能性を表す,
+add,635,mile,mile,noun,base,1,マイル,junior_high,1,,,
+add,55,milk,milk,noun,base,1,牛乳,junior_high,1,,,
+add,233,million,million,numeral,base,1,100万,junior_high,1,,大きな数,
+add_pos_variant,578,million,million,noun,base,1,100万,junior_high,1,,数詞 million とは別,
+add,892,mind,mind,noun,base,1,心・精神,junior_high,1,,,
+add,810,mine,mine,pronoun,base,1,私のもの,junior_high,1,,所有代名詞,
+add,4693,minus,minus,preposition,base,1,〜を引いて・〜なしで,high_school,2,,減算・欠如を表す,
+add,174,minute,minute,noun,base,1,分・少しの間,junior_high,1,基本語,時間,
+add,416,mirror,mirror,noun,base,1,鏡,junior_high,1,,,
+add,1036,miss,miss,verb,base,1,逃す・寂しく思う,junior_high,1,,,規則活用。自動生成候補
+add,587,mistake,mistake,noun,base,1,誤り・間違い,junior_high,1,,,
+add,42,mitt,mitt,noun,base,1,ミット,junior_high,1,,,
+add,1054,mix,mix,verb,base,1,混ぜる,junior_high,1,,,規則活用。自動生成候補
+add,948,model,model,noun,base,1,模型・モデル,junior_high,1,,,
+add,1084,modern,modern,adjective,base,1,現代的な,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,830,mom,mom,noun,base,1,お母さん,junior_high,1,,,
+add,2296,moment,moment,noun,base,1,一瞬・瞬間,junior_high,1,,,
+add,168,Monday,Monday,noun,base,1,月曜日,junior_high,1,基本語,曜日,
+add,521,money,money,noun,base,1,お金,junior_high,1,,,不可算名詞
+add,62,monkey,monkey,noun,base,1,猿,junior_high,1,,,
+add,2298,monster,monster,noun,base,1,怪物・モンスター,junior_high,1,,,
+add,178,month,month,noun,base,1,月,junior_high,1,基本語,時間,
+add,1067,monthly,monthly,adjective,base,1,毎月の,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,548,moon,moon,noun,base,1,月,junior_high,1,,,
+add,,more,much,adverb,comparative,1,もっと・より多く,junior_high,1,,much の比較級,
+add,2301,more,much,adjective,comparative,1,もっと多くの,junior_high,1,,much/many の比較級。副詞 more とは別,既に比較級・最上級として登録済み
+add,3211,morning,morning,noun,base,1,朝,junior_high,1,,,
+add,355,most,most,adverb,superlative,1,最も・ほとんど,junior_high,1,,much/many の最上級用法あり,既に比較級・最上級として登録済み
+add,73,mother,mother,noun,base,1,母,junior_high,1,,,
+add,557,mountain,mountain,noun,base,1,山,junior_high,1,,,
+add,438,mouse,mouse,noun,base,1,ネズミ,junior_high,1,動物,,mouse の不規則複数形
+add,34,mouth,mouth,noun,base,1,口,junior_high,1,,,
+add,207,move,move,verb,base,1,動く・動かす,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,2305,movie,movie,noun,base,1,映画,junior_high,1,,,
+add,346,much,much,adverb,base,1,ずっと・たいへん,junior_high,1,,,
+add,334,much,much,adjective,base,1,多量の・多くの,junior_high,1,,元資料は副詞だがPARARIでは adjective 扱いが自然,
+add,496,museum,museum,noun,base,1,博物館,junior_high,1,,,
+add,516,music,music,noun,base,1,音楽,junior_high,1,,,不可算名詞
+add,1070,musical,musical,adjective,base,1,音楽の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,2310,musician,musician,noun,base,1,音楽家,junior_high,1,職業,,
+add,126,must,must,auxiliary,base,1,〜しなければならない・〜に違いない,junior_high,2,,義務・強い推量を表す,
+add,,mustn't,must,auxiliary,contracted,1,〜してはいけない,junior_high,1,,must not の短縮形,
+add,45,my,my,pronoun,base,1,私の,junior_high,1,,一人称単数の所有形容詞,
+add,395,myself,myself,pronoun,base,1,私自身,junior_high,1,,再帰代名詞,
+add_pos_variant,146,name,name,noun,base,1,名前,junior_high,1,,動詞 name とは別,
+add_pos_variant,715,name,name,verb,base,1,名づける,junior_high,1,,名詞 name とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,1101,national,national,adjective,base,1,国家の・国民の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,1089,natural,natural,adjective,base,1,自然の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,542,nature,nature,noun,base,1,自然,junior_high,1,,,
+add,393,near,near,preposition,base,1,〜の近くに,junior_high,1,,近接を表す,
+add_pos_variant,2312,near,near,noun,base,1,近く,junior_high,1,,前置詞 near とは別,
+add_pos_variant,393,near,near,adjective,base,1,近い,junior_high,1,,前置詞・名詞 near とは別,
+add_pos_variant,393,near,near,adverb,base,1,近くに,junior_high,1,,前置詞・名詞 near とは別,
+add,1077,necessary,necessary,adjective,base,1,必要な,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,481,neck,neck,noun,base,1,首,junior_high,1,,,
+add,230,need,need,verb,base,1,必要とする,junior_high,1,,,規則活用。自動生成候補
+add,847,neighbor,neighbor,noun,base,1,隣人,junior_high,1,,,
+add,1140,neither,neither,adverb,base,1,どちらも〜ない,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,653,nest,nest,noun,base,1,巣,junior_high,1,,,
+add,954,net,net,noun,base,1,網・ネット,junior_high,1,,,
+add,1174,never,never,adverb,base,1,一度も〜ない,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,255,new,new,adjective,base,1,新しい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,574,news,news,noun,base,1,ニュース,junior_high,1,,単数扱いされることが多い,単数扱いの不可算名詞
+add,415,newspaper,newspaper,noun,base,1,新聞,junior_high,1,,,
+add,277,next,next,adjective,base,1,次の・隣の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,239,nice,nice,adjective,base,1,よい・親切な,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,3226,night,night,noun,base,1,夜,junior_high,1,,,
+add,413,nine,nine,numeral,base,1,9・九つ,junior_high,1,,基数,
+add,3251,nineteen,nineteen,numeral,base,1,19・十九,junior_high,1,,基数,
+add,1207,nineteenth,nineteenth,ordinal,base,1,19番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,3320,ninety,ninety,numeral,base,1,90・九十,junior_high,1,,基数,
+add,1197,ninth,ninth,ordinal,base,1,9番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,317,no,no,adverb,base,1,いいえ,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1560,nobody,nobody,pronoun,base,1,誰も〜ない,junior_high,2,,no one と近い,
+add,625,noise,noise,noun,base,1,物音・騒音,junior_high,1,,,
+add,1071,noisy,noisy,adjective,base,1,騒がしい,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,1538,none,none,pronoun,base,1,誰も〜ない・何も〜ない,high_school,2,,否定を表す代名詞,
+add,2316,noodle,noodle,noun,base,1,麺・ヌードル,junior_high,1,,,
+add,2317,noon,noon,noun,base,1,正午・昼,junior_high,1,,,
+add,1518,nor,nor,conjunction,base,1,〜もまた…ない,high_school,2,,否定の追加を表す,
+add,98,north,north,noun,base,1,北,junior_high,1,方角,,
+add,33,nose,nose,noun,base,1,鼻,junior_high,1,,,
+add,349,not,not,adverb,base,1,〜でない,junior_high,1,基本語,191基本語と重複,比較級・最上級を単語形として追加する必要性は低い
+add,7,notebook,notebook,noun,base,1,ノート,junior_high,1,,,
+add,187,nothing,nothing,pronoun,base,1,何も〜ない・無,junior_high,2,,不定代名詞,
+add,165,November,November,noun,base,1,11月,junior_high,1,基本語,月名,
+add,342,now,now,adverb,base,1,今,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,140,number,number,noun,base,1,数・番号,junior_high,1,,,
+add,86,nurse,nurse,noun,base,1,看護師,junior_high,1,職業,,
+add,325,o'clock,o'clock,adverb,contracted,1,〜時,junior_high,1,,of the clock の短縮由来,比較級・最上級を単語形として追加する必要性は低い
+add,912,ocean,ocean,noun,base,1,海・大洋,junior_high,2,,,
+add,164,October,October,noun,base,1,10月,junior_high,1,基本語,月名,
+add,2,of,of,preposition,base,1,〜の・〜からなる,junior_high,1,,所属・部分・内容などを表す,
+add,1164,off,off,adverb,base,1,離れて・外れて,junior_high,1,,前置詞 off とは別,比較級・最上級を単語形として追加する必要性は低い
+add,121,office,office,noun,base,1,事務所・会社,junior_high,1,,,
+add,310,often,often,adverb,base,1,しばしば・よく,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,105,oh,oh,interjection,base,1,ああ・おお,junior_high,2,,驚き・気づき・感情を表す,
+add,568,oil,oil,noun,base,1,油・石油,junior_high,1,,,不可算・可算両用
+add,256,old,old,adjective,base,1,古い・年をとった,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,15,on,on,preposition,base,1,〜の上に・〜に接して,junior_high,1,,接触・日時・話題などを表す,
+add,1129,once,once,adverb,base,1,かつて・一度,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,44,one,one,numeral,base,1,1・一つ,junior_high,1,,基数,
+add,5104,oneself,oneself,pronoun,base,1,自分自身,high_school,2,,一般的な再帰代名詞,
+add,2329,onion,onion,noun,base,1,玉ねぎ,junior_high,1,,,
+add,2330,only,only,adverb,base,1,ただ〜だけ,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1529,onto,onto,preposition,base,1,〜の上へ,junior_high,2,,移動して接触することを表す,
+add_pos_variant,1068,open,open,adjective,base,1,開いている,junior_high,1,,動詞 open とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,206,open,open,verb,base,1,開ける・開く,junior_high,1,,形容詞 open とは別,規則活用。自動生成候補
+add,29,or,or,conjunction,base,1,または・それとも,junior_high,1,,選択を表す,
+add,51,orange,orange,noun,base,1,オレンジ,junior_high,1,果物,,
+add,1012,order,order,verb,base,1,注文する・命令する,junior_high,1,,名詞 order とは別,規則活用。自動生成候補
+add,767,other,other,adjective,base,1,ほかの,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,3249,ought,ought,auxiliary,base,1,〜すべきだ,high_school,2,,通常 ought to の形で使う,
+add,77,our,our,pronoun,base,1,私たちの,junior_high,1,,一人称複数の所有形容詞,
+add,981,ours,ours,pronoun,base,1,私たちのもの,junior_high,1,,所有代名詞,
+add,807,ourselves,ourselves,pronoun,base,1,私たち自身,junior_high,1,,再帰代名詞,
+add,460,outside,outside,preposition,base,1,〜の外に,junior_high,2,,外側を表す,
+add_pos_variant,1079,outside,outside,adjective,base,1,外側の,junior_high,2,,前置詞 outside とは別,e終わり。r/st 付加で自動生成候補
+add,2336,oven,oven,noun,base,1,オーブン,junior_high,1,,,
+add,99,over,over,preposition,base,1,〜の上に・〜を越えて,junior_high,2,,上方・超過・通過を表す,
+add,450,overcoat,overcoat,noun,base,1,オーバーコート,junior_high,1,,,
+add,788,own,own,adjective,base,1,自分自身の,junior_high,1,,動詞 own とは別,規則比較級・最上級として自動生成候補
+add,935,page,page,noun,base,1,ページ,junior_high,1,,,
+add,,paid,pay,verb,past,1,支払う（過去形）,junior_high,1,,pay の過去形,
+add,,paid,pay,verb,past_participle,1,支払う（過去分詞）,junior_high,1,,pay の過去分詞,
+add,893,pain,pain,noun,base,1,痛み,junior_high,1,,,
+add,730,paint,paint,verb,base,1,描く・ペンキを塗る,junior_high,1,,,規則活用。自動生成候補
+add,851,painter,painter,noun,base,1,画家,junior_high,1,,,
+add,2341,painting,painting,noun,present_participle,1,絵・絵画,junior_high,1,,動詞 paint のing形由来の名詞,
+add,998,pair,pair,noun,base,1,一組・ペア,junior_high,1,,,
+add,845,pal,pal,noun,base,1,友だち,junior_high,2,,,
+add,821,palace,palace,noun,base,1,宮殿,junior_high,2,,,
+add,1095,pale,pale,adjective,base,1,青ざめた・淡い,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,452,pants,pants,noun,plural,1,ズボン,junior_high,1,,通常は複数形で使う,通常は複数形で使う
+add,414,paper,paper,noun,base,1,紙・書類,junior_high,1,,,不可算・可算両用。papers は書類・論文の意味
+add,2343,parade,parade,noun,base,1,パレード,junior_high,1,,,
+add,74,parent,parent,noun,base,1,親,junior_high,1,,,
+add,124,park,park,noun,base,1,公園,junior_high,1,,,
+add,629,part,part,noun,base,1,部分・役割,junior_high,1,,,
+add,432,party,party,noun,base,1,パーティー・政党,junior_high,1,,,子音+y → ies の規則複数
+add,744,pass,pass,verb,base,1,通る・過ぎる・合格する・手渡す,junior_high,1,,語義統合,規則活用。自動生成候補
+add,419,passport,passport,noun,base,1,パスポート,junior_high,1,,,
+add,777,past,past,adjective,base,1,過去の,junior_high,2,,名詞 past とは別,規則比較級・最上級として自動生成候補
+add,729,pay,pay,verb,base,1,支払う,junior_high,1,,,不規則活用。正本追加候補あり
+add,597,peace,peace,noun,base,1,平和,junior_high,1,,,不可算名詞
+add,1085,peaceful,peaceful,adjective,base,1,平和な,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,468,peanut,peanut,noun,base,1,ピーナッツ,junior_high,1,果物,,
+add,4,pen,pen,noun,base,1,ペン,junior_high,1,,,
+add,3,pencil,pencil,noun,base,1,鉛筆,junior_high,1,,,
+add,2349,penguin,penguin,noun,base,1,ペンギン,junior_high,1,動物,,
+add,502,people,people,noun,plural,1,人々,junior_high,1,,person の複数形としても使う,person の複数形として既存
+add,1044,per,per,preposition,base,1,〜につき・〜ごとに,high_school,2,,割合・単位あたりを表す,
+add,999,percent,percent,noun,base,1,パーセント,junior_high,1,,,
+add,1169,perhaps,perhaps,adverb,base,1,たぶん,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,501,person,person,noun,base,1,人,junior_high,1,,,
+add,1076,personal,personal,adjective,base,1,個人の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,446,pet,pet,noun,base,1,ペット,junior_high,1,,,
+add,430,phone,phone,noun,base,1,電話,junior_high,1,,,
+add,603,photo,photo,noun,base,1,写真,junior_high,1,,,
+add,2353,pianist,pianist,noun,base,1,ピアニスト,junior_high,1,職業,,
+add,14,piano,piano,noun,base,1,ピアノ,junior_high,1,,,
+add,735,pick,pick,verb,base,1,選ぶ・摘む,junior_high,1,,,規則活用。自動生成候補
+add,601,picnic,picnic,noun,base,1,ピクニック,junior_high,1,,,
+add,24,picture,picture,noun,base,1,絵・写真,junior_high,1,,,
+add,461,pie,pie,noun,base,1,パイ,junior_high,1,,,
+add,621,piece,piece,noun,base,1,一片・断片,junior_high,1,,,
+add,444,pig,pig,noun,base,1,ブタ,junior_high,1,動物,,
+add,88,pilot,pilot,noun,base,1,パイロット,junior_high,1,職業,,
+add,2359,pizza,pizza,noun,base,1,ピザ,junior_high,1,,,
+add,112,place,place,noun,base,1,場所,junior_high,1,,,
+add_pos_variant,616,plan,plan,noun,base,1,計画,junior_high,1,,動詞 plan とは別,
+add_pos_variant,664,plan,plan,verb,base,1,計画する,junior_high,1,,名詞 plan とは別,規則活用。自動生成候補
+add,67,plane,plane,noun,base,1,飛行機,junior_high,1,,,
+add,545,planet,planet,noun,base,1,惑星,junior_high,2,,,
+add,942,plant,plant,noun,base,1,植物,junior_high,1,,動詞 plant とは別,
+add,989,plate,plate,noun,base,1,皿・プレート,junior_high,1,,,
+add,198,play,play,verb,base,1,遊ぶ・スポーツをする・演奏する,junior_high,1,,語義統合,規則活用。自動生成候補
+add_pos_variant,820,play,play,noun,base,1,劇・遊び,junior_high,1,,動詞 play とは別,
+add,94,player,player,noun,base,1,選手・演奏者,junior_high,1,,,
+add,1046,please,please,verb,base,1,喜ばせる・気に入る,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,1066,pleased,please,adjective,past_participle,1,喜んで,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,2351,plus,plus,preposition,base,1,〜に加えて・プラスして,high_school,2,,追加を表す,
+add,455,pocket,pocket,noun,base,1,ポケット,junior_high,1,,,
+add,961,poem,poem,noun,base,1,詩,junior_high,2,,,
+add,949,point,point,noun,base,1,点・要点,junior_high,1,,,
+add,606,police,police,noun,base,1,警察,junior_high,1,,,
+add,848,policeman,policeman,noun,base,1,警官,junior_high,1,職業,,policeman の不規則複数形
+add,,policemen,policeman,noun,plural,1,警官たち,junior_high,1,職業,policeman の不規則複数形,
+add,562,pond,pond,noun,base,1,池,junior_high,1,,,
+add,2365,pool,pool,noun,base,1,プール,junior_high,1,,,
+add,232,poor,poor,adjective,base,1,貧しい・かわいそうな,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,899,pop,pop,noun,base,1,ポピュラー音楽,junior_high,1,,,
+add,785,popular,popular,adjective,base,1,人気のある,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,464,pork,pork,noun,base,1,豚肉,junior_high,1,食べ物,,不可算名詞
+add,620,port,port,noun,base,1,港,junior_high,2,,,
+add,981,position,position,noun,base,1,位置・地位,junior_high,2,,,
+add,624,post,post,noun,base,1,郵便・柱,junior_high,1,,,
+add,2368,postcard,postcard,noun,base,1,はがき,junior_high,1,,,
+add,2369,poster,poster,noun,base,1,ポスター,junior_high,1,,,
+add,25,pot,pot,noun,base,1,ポット・鍋,junior_high,1,,,
+add,467,potato,potato,noun,base,1,じゃがいも,junior_high,1,野菜,,語尾 -o + es の複数形。自動生成ルールまたは手動追加で対応
+add,985,power,power,noun,base,1,力・権力,junior_high,1,,,
+add,739,practice,practice,verb,base,1,練習する,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,136,present,present,noun,base,1,プレゼント,junior_high,1,,形容詞 present とは別,
+add,849,president,president,noun,base,1,大統領・社長,junior_high,1,職業,,
+add_pos_variant,1134,pretty,pretty,adverb,base,1,かなり,junior_high,2,,形容詞 pretty とは別,比較級・最上級を単語形として追加する必要性は低い
+add,994,price,price,noun,base,1,価格・値段,junior_high,1,,,
+add,844,prince,prince,noun,base,1,王子,junior_high,1,職業,,
+add,1020,print,print,verb,base,1,印刷する,junior_high,1,,,規則活用。自動生成候補
+add,933,prize,prize,noun,base,1,賞,junior_high,1,,,
+add,1158,probably,probably,adverb,base,1,たぶん・おそらく,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,995,problem,problem,noun,base,1,問題,junior_high,1,,,
+add,2374,professional,professional,adjective,base,1,プロの・専門的な,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,623,program,program,noun,base,1,番組・プログラム,junior_high,1,,,
+add,901,promise,promise,noun,base,1,約束,junior_high,1,,動詞 promise とは別,
+add,2376,puppy,puppy,noun,base,1,子犬,junior_high,1,,,子音+y → ies の規則複数
+add,3250,purple,purple,noun,base,1,紫色,junior_high,1,,形容詞 purple とは別,
+add,692,push,push,verb,base,1,押す,junior_high,1,,,規則活用。自動生成候補
+add,,put,put,verb,past,1,置く（過去形）,junior_high,1,,put の過去形,
+add,,put,put,verb,past_participle,1,置く（過去分詞）,junior_high,1,,put の過去分詞,
+add,224,put,put,verb,base,1,置く,junior_high,1,,,不規則活用。正本追加候補あり
+add,843,queen,queen,noun,base,1,女王,junior_high,1,職業,,
+add,533,question,question,noun,base,1,質問,junior_high,1,,,
+add,1091,quick,quick,adjective,base,1,速い・すばやい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1146,quickly,quickly,adverb,base,1,すばやく,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,778,quiet,quiet,adjective,base,1,静かな,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1171,quietly,quietly,adverb,base,1,静かに,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1168,quite,quite,adverb,base,1,かなり・まったく,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,939,quiz,quiz,noun,base,1,クイズ,junior_high,1,,,
+add,440,rabbit,rabbit,noun,base,1,ウサギ,junior_high,1,動物,,
+add,907,race,race,noun,base,1,競走・人種,junior_high,2,,,
+add,44,racket,racket,noun,base,1,ラケット,junior_high,1,,,
+add,425,radio,radio,noun,base,1,ラジオ,junior_high,1,,,
+add,950,railway,railway,noun,base,1,鉄道,junior_high,2,,,
+add_pos_variant,566,rain,rain,noun,base,1,雨,junior_high,1,,動詞 rain とは別,
+add_pos_variant,760,rain,rain,verb,base,1,雨が降る,junior_high,1,,名詞 rain とは別,規則活用。自動生成候補
+add,946,rainbow,rainbow,noun,base,1,虹,junior_high,1,,,
+add,775,rainy,rainy,adjective,base,1,雨降りの,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,1024,raise,raise,verb,base,1,上げる・育てる,junior_high,2,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,,ran,run,verb,past,1,走る（過去形）,junior_high,1,,run の過去形,
+add,442,rat,rat,noun,base,1,ネズミ,junior_high,1,動物,,
+add,1086,raw,raw,adjective,base,1,生の,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,1037,reach,reach,verb,base,1,届く・到着する,junior_high,1,,,規則活用。自動生成候補
+add,,read,read,verb,past,1,読む（過去形）,junior_high,1,,read の過去形,
+add,,read,read,verb,past_participle,1,読む（過去分詞）,junior_high,1,,read の過去分詞,
+add,181,read,read,verb,base,1,読む,junior_high,1,,,不規則活用。正本追加候補あり
+add,3256,reading,reading,noun,present_participle,1,読書,junior_high,1,,動詞 read のing形由来の名詞,
+add,769,ready,ready,adjective,base,1,用意できている,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1118,real,real,adjective,base,1,本当の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,1029,realize,realize,verb,base,1,理解する・気づく,junior_high,2,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,2388,really,really,adverb,base,1,本当に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,968,reason,reason,noun,base,1,理由・原因,junior_high,1,,,
+add,1022,receive,receive,verb,base,1,受け取る,junior_high,2,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,1163,recently,recently,adverb,base,1,最近,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,517,record,record,noun,base,1,記録・レコード,junior_high,1,,動詞 record とは別,
+add,270,red,red,adjective,base,1,赤い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,681,remember,remember,verb,base,1,覚えている・思い出す,junior_high,1,,,規則活用。自動生成候補
+add,906,reply,reply,noun,base,1,返事,junior_high,1,,動詞 reply とは別,
+add,936,report,report,noun,base,1,報告・レポート,junior_high,1,,動詞 report とは別,
+add,852,reporter,reporter,noun,base,1,記者・レポーター,junior_high,1,,,
+add_pos_variant,717,rest,rest,verb,base,1,休む・休息する,junior_high,1,,名詞 rest とは別,規則活用。自動生成候補
+add,873,restaurant,restaurant,noun,base,1,レストラン,junior_high,1,,,
+add,1026,return,return,verb,base,1,帰る・戻る,junior_high,1,,名詞 return とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,48,rice,rice,noun,base,1,米・ご飯,junior_high,1,,,不可算名詞
+add,233,rich,rich,adjective,base,1,金持ちの・豊かな,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,,ridden,ride,verb,past_participle,1,乗る（過去分詞）,junior_high,1,,ride の過去分詞,
+add,196,ride,ride,verb,base,1,乗る,junior_high,1,,,不規則活用。正本追加候補あり
+add,770,right,right,adjective,base,1,正しい・右の,junior_high,1,,副詞 right とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,96,right,right,noun,base,1,右・権利,junior_high,1,,形容詞・副詞 right とは別,
+add,656,ring,ring,noun,base,1,指輪・輪,junior_high,1,,動詞 ring とは別,
+add,722,rise,rise,verb,base,1,上がる・起き上がる,junior_high,1,,,不規則活用。正本追加候補あり
+add,,risen,rise,verb,past_participle,1,上がる・起き上がる（過去分詞）,junior_high,1,,rise の過去分詞,
+add,560,river,river,noun,base,1,川,junior_high,1,,,
+add,554,road,road,noun,base,1,道・道路,junior_high,1,,,
+add,564,rock,rock,noun,base,1,岩・石,junior_high,1,,,
+add,,rode,ride,verb,past,1,乗る（過去形）,junior_high,1,,ride の過去形,
+add,591,roof,roof,noun,base,1,屋根,junior_high,1,,,
+add,17,room,room,noun,base,1,部屋,junior_high,1,,,
+add,929,root,root,noun,base,1,根,junior_high,2,,,
+add,,rose,rise,verb,past,1,上がる・起き上がる（過去形）,junior_high,1,,rise の過去形,
+add,2401,rose,rose,noun,base,1,バラ,junior_high,1,植物,,
+add,1166,round,round,adverb,base,1,周りに・回って,junior_high,2,,前置詞 round とは別,比較級・最上級を単語形として追加する必要性は低い
+add_pos_variant,1059,row,row,verb,base,1,こぐ,junior_high,2,,名詞 row とは別,規則活用。自動生成候補
+add,3263,ruler,ruler,noun,base,1,定規・支配者,junior_high,1,,,
+add,,run,run,verb,past_participle,1,走る（過去分詞）,junior_high,1,,run の過去分詞,
+add,185,run,run,verb,base,1,走る,junior_high,1,,,不規則活用。正本追加候補あり
+add,836,runner,runner,noun,base,1,ランナー・走者,junior_high,1,,,
+add,941,rush,rush,noun,base,1,急ぎ・混雑,junior_high,2,,動詞 rush とは別,
+add,278,sad,sad,adjective,base,1,悲しい,junior_high,1,,,短母音＋子音の重ね字規則で自動生成候補
+add,1100,safe,safe,adjective,base,1,安全な,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,,said,say,verb,past,1,言う（過去形）,junior_high,1,,say の過去形,
+add,,said,say,verb,past_participle,1,言う（過去分詞）,junior_high,1,,say の過去分詞,
+add,711,sail,sail,verb,base,1,航海する・船を走らせる,junior_high,2,,,規則活用。自動生成候補
+add,513,sailor,sailor,noun,base,1,船員,junior_high,1,,,
+add,2405,salad,salad,noun,base,1,サラダ,junior_high,1,,,
+add,2406,sale,sale,noun,base,1,販売・セール,junior_high,1,,,
+add,2407,salesclerk,salesclerk,noun,base,1,店員,junior_high,1,,,
+add,569,salt,salt,noun,base,1,塩,junior_high,1,,,不可算用法中心
+add,792,same,same,adjective,base,1,同じ,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,2410,sandwich,sandwich,noun,base,1,サンドイッチ,junior_high,1,,,
+add,,sang,sing,verb,past,1,歌う（過去形）,junior_high,1,,sing の過去形,
+add,,sat,sit,verb,past,1,座る（過去形）,junior_high,1,,sit の過去形,
+add,,sat,sit,verb,past_participle,1,座る（過去分詞）,junior_high,1,,sit の過去分詞,
+add,173,Saturday,Saturday,noun,base,1,土曜日,junior_high,1,基本語,曜日,
+add,2411,sausage,sausage,noun,base,1,ソーセージ,junior_high,1,,,
+add,1052,save,save,verb,base,1,救う・節約する,junior_high,1,,,規則活用。自動生成候補
+add,,saw,see,verb,past,1,見る・わかる（過去形）,junior_high,1,,see の過去形,
+add,674,say,say,verb,base,1,言う,junior_high,1,,,不規則活用。正本追加候補あり
+add,1,school,school,noun,base,1,学校,junior_high,1,,,
+add,2413,schoolyard,schoolyard,noun,base,1,校庭,junior_high,1,,,
+add,29,science,science,noun,base,1,科学・理科,junior_high,1,,,不可算・可算両用
+add,835,scientist,scientist,noun,base,1,科学者,junior_high,1,職業,,
+add,550,sea,sea,noun,base,1,海,junior_high,1,,,
+add,149,season,season,noun,base,1,季節,junior_high,1,基本語,,
+add,631,seat,seat,noun,base,1,座席,junior_high,1,,,
+add,223,second,second,ordinal,base,1,第2の・2番目の,junior_high,1,,序数詞。名詞・動詞用法もある,
+add,938,secret,secret,noun,base,1,秘密,junior_high,2,,形容詞 secret とは別,
+add,665,see,see,verb,base,1,見る・わかる,junior_high,1,,,不規則活用。正本追加候補あり
+add,662,seem,seem,verb,base,1,〜のように思われる,junior_high,1,,,規則活用。自動生成候補
+add,,seen,see,verb,past_participle,1,見る・わかる（過去分詞）,junior_high,1,,see の過去分詞,
+add,1017,select,select,verb,base,1,選ぶ,junior_high,2,,,規則活用。自動生成候補
+add,221,sell,sell,verb,base,1,売る,junior_high,1,,,不規則活用。正本追加候補あり
+add,191,send,send,verb,base,1,送る,junior_high,1,,,不規則活用。正本追加候補あり
+add,1099,senior,senior,adjective,base,1,年上の・上級の,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,977,sense,sense,noun,base,1,感覚・意味・センス,junior_high,2,,,
+add,,sent,send,verb,past,1,送る（過去形）,junior_high,1,,send の過去形,
+add,,sent,send,verb,past_participle,1,送る（過去分詞）,junior_high,1,,send の過去分詞,
+add,986,sentence,sentence,noun,base,1,文,junior_high,1,,,
+add,163,September,September,noun,base,1,9月,junior_high,1,基本語,月名,
+add,,set,set,verb,past,1,置く・設定する（過去形）,junior_high,1,,set の過去形,
+add,,set,set,verb,past_participle,1,置く・設定する（過去分詞）,junior_high,1,,set の過去分詞,
+add,757,set,set,verb,base,1,置く・設定する,junior_high,1,,,不規則活用。正本追加候補あり
+add,340,seven,seven,numeral,base,1,7・七つ,junior_high,1,,基数,
+add,2018,seventeen,seventeen,numeral,base,1,17・十七,junior_high,1,,基数,
+add,1205,seventeenth,seventeenth,ordinal,base,1,17番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1195,seventh,seventh,ordinal,base,1,7番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1878,seventy,seventy,numeral,base,1,70・七十,junior_high,1,,基数,
+add,932,shade,shade,noun,base,1,日陰・影,junior_high,2,,,
+add,1051,shake,shake,verb,base,1,震える・振る,junior_high,2,,,不規則活用。正本追加候補あり
+add,,shaken,shake,verb,past_participle,1,震える・振る（過去分詞）,junior_high,2,,shake の過去分詞,
+add,487,shall,shall,auxiliary,base,1,〜しましょう・〜するものとする,high_school,2,,古風・硬い未来表現や提案に使う,
+add,1040,share,share,verb,base,1,分け合う・共有する,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,24,she,she,pronoun,base,1,彼女は・彼女が,junior_high,1,,三人称単数女性の主格,
+add,,she'd,would,auxiliary,contracted,1,彼女は〜するだろう・〜したいだろう,junior_high,1,,she would の短縮形,
+add,,she'd,have,auxiliary,contracted,2,彼女は〜していた,junior_high,1,,she had の短縮形,
+add,,she'll,will,auxiliary,contracted,1,彼女は〜するでしょう・〜するつもりだ,junior_high,1,,she will の短縮形,
+add,,she's,be,auxiliary,contracted,1,彼女は〜です・彼女は〜している,junior_high,1,,she is の短縮形,
+add,,she's,have,auxiliary,contracted,2,彼女は〜した・彼女は〜している,junior_high,1,,she has の短縮形,
+add,60,sheep,sheep,noun,base,1,羊,junior_high,1,動物,単複同形,単複同形
+add,759,shine,shine,verb,base,1,光る・輝く,junior_high,1,,,不規則活用。正本追加候補あり
+add,492,ship,ship,noun,base,1,船,junior_high,1,,,
+add,454,shirt,shirt,noun,base,1,シャツ,junior_high,1,,,
+add,971,shock,shock,noun,base,1,衝撃・ショック,junior_high,2,,,
+add,457,shoe,shoe,noun,base,1,靴,junior_high,1,,,
+add,,shone,shine,verb,past,1,光る・輝く（過去形）,junior_high,1,,shine の過去形,
+add,,shone,shine,verb,past_participle,1,光る・輝く（過去分詞）,junior_high,1,,shine の過去分詞,
+add,,shook,shake,verb,past,1,震える・振る（過去形）,junior_high,2,,shake の過去形,
+add,1056,shoot,shoot,verb,base,1,撃つ・撮影する,junior_high,2,,,不規則活用。正本追加候補あり
+add,751,shop,shop,verb,base,1,買い物をする,junior_high,1,,名詞 shop とは別,規則活用だが子音重ねなど綴り生成注意
+add_pos_variant,500,shop,shop,noun,base,1,店,junior_high,1,,動詞 shop とは別,
+add,2425,shopping,shopping,noun,present_participle,1,買い物,junior_high,1,,動詞 shop のing形由来の名詞,不可算名詞
+add,250,short,short,adjective,base,1,短い・背が低い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,,shot,shoot,verb,past,1,撃つ・撮影する（過去形）,junior_high,2,,shoot の過去形,
+add,,shot,shoot,verb,past_participle,1,撃つ・撮影する（過去分詞）,junior_high,2,,shoot の過去分詞,
+add,89,should,should,auxiliary,base,1,〜すべきだ・〜のはずだ,junior_high,2,,義務・助言・推量を表す,
+add,482,shoulder,shoulder,noun,base,1,肩,junior_high,1,,,
+add,,shouldn't,should,auxiliary,contracted,1,〜すべきではない,junior_high,1,,should not の短縮形,
+add,703,shout,shout,verb,base,1,叫ぶ,junior_high,1,,,規則活用。自動生成候補
+add,706,show,show,verb,base,1,見せる,junior_high,1,,,過去形 showed は規則生成候補。過去分詞 shown を追加候補
+add_pos_variant,593,show,show,noun,base,1,ショー・番組,junior_high,1,,動詞 show とは別,
+add,2430,shower,shower,noun,base,1,シャワー,junior_high,1,,,
+add,,shown,show,verb,past_participle,1,見せる（過去分詞）,junior_high,1,,show の過去分詞,
+add,266,sick,sick,adjective,base,1,病気の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,644,side,side,noun,base,1,側面・側,junior_high,1,,,
+add,920,sign,sign,noun,base,1,合図・標識・印,junior_high,1,,,
+add,918,signal,signal,noun,base,1,信号・合図,junior_high,2,,,
+add,1116,silent,silent,adjective,base,1,静かな・無言の,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,927,silk,silk,noun,base,1,絹,junior_high,2,,,不可算用法中心
+add,910,silver,silver,noun,base,1,銀,junior_high,1,,,不可算用法中心
+add,1096,simple,simple,adjective,base,1,簡単な・質素な,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,189,since,since,conjunction,base,1,〜以来・〜なので,junior_high,2,,時・理由を表す。前置詞用法もある,
+add,200,sing,sing,verb,base,1,歌う,junior_high,1,,,不規則活用。正本追加候補あり
+add,90,singer,singer,noun,base,1,歌手,junior_high,1,職業,,
+add,76,sister,sister,noun,base,1,姉妹・姉・妹,junior_high,1,,,
+add,704,sit,sit,verb,base,1,座る,junior_high,1,,,不規則活用。正本追加候補あり
+add,211,six,six,numeral,base,1,6・六つ,junior_high,1,,基数,
+add,3256,sixteen,sixteen,numeral,base,1,16・十六,junior_high,1,,基数,
+add,1204,sixteenth,sixteenth,ordinal,base,1,16番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1194,sixth,sixth,ordinal,base,1,6番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1225,sixty,sixty,numeral,base,1,60・六十,junior_high,1,,基数,
+add,2436,size,size,noun,base,1,大きさ・サイズ,junior_high,1,,,
+add,753,skate,skate,verb,base,1,スケートをする,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,718,ski,ski,verb,base,1,スキーをする,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,453,skirt,skirt,noun,base,1,スカート,junior_high,1,,,
+add,549,sky,sky,noun,base,1,空,junior_high,1,,,
+add,672,sleep,sleep,verb,base,1,眠る,junior_high,1,,,不規則活用。正本追加候補あり
+add,1108,sleepy,sleepy,adjective,base,1,眠い,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,,slept,sleep,verb,past,1,眠る（過去形）,junior_high,1,,sleep の過去形,
+add,,slept,sleep,verb,past_participle,1,眠る（過去分詞）,junior_high,1,,sleep の過去分詞,
+add,248,slow,slow,adjective,base,1,遅い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,331,slowly,slowly,adverb,base,1,ゆっくりと,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,261,small,small,adjective,base,1,小さな,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1014,smell,smell,verb,base,1,においがする・においをかぐ,junior_high,1,,,規則形も使うが、別形もあるため追加候補
+add,,smelt,smell,verb,past,1,においがする・においをかぐ（過去形）,junior_high,1,,smell の過去形,
+add,,smelt,smell,verb,past_participle,1,においがする・においをかぐ（過去分詞）,junior_high,1,,smell の過去分詞,
+add,612,smile,smile,noun,base,1,ほほ笑み・笑顔,junior_high,1,,動詞 smile とは別,
+add,930,smoke,smoke,noun,base,1,煙,junior_high,1,,動詞 smoke とは別,
+add,2445,snack,snack,noun,base,1,軽食・スナック,junior_high,1,,,
+add,816,snake,snake,noun,base,1,蛇,junior_high,1,,,
+add,565,snow,snow,noun,base,1,雪,junior_high,1,,動詞 snow とは別,不可算用法中心
+add,1122,snowy,snowy,adjective,base,1,雪の降る,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,330,so,so,adverb,base,1,とても・だから,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,536,soccer,soccer,noun,base,1,サッカー,junior_high,1,スポーツ,,不可算名詞
+add,2450,social,social,adjective,base,1,社会の・社交の,junior_high,2,,,more/most 型で扱う候補。単語形としては追加しない
+add,2451,sock,sock,noun,base,1,靴下,junior_high,1,,,
+add,869,sofa,sofa,noun,base,1,ソファー,junior_high,1,,,
+add,3297,soft,soft,adjective,base,1,柔らかい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,913,soil,soil,noun,base,1,土・土壌,junior_high,2,,,不可算用法中心
+add,,sold,sell,verb,past,1,売る（過去形）,junior_high,1,,sell の過去形,
+add,,sold,sell,verb,past_participle,1,売る（過去分詞）,junior_high,1,,sell の過去分詞,
+add,1032,solve,solve,verb,base,1,解決する,junior_high,2,,,規則活用。自動生成候補
+add,351,some,some,adjective,base,1,いくつかの・多少の,junior_high,1,,元資料は副詞だがPARARIでは adjective 扱いが自然,
+add,1504,somebody,somebody,pronoun,base,1,誰か,junior_high,2,,someone とほぼ同じ,
+add,2453,someday,someday,adverb,base,1,いつか,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,284,someone,someone,pronoun,base,1,誰か,junior_high,2,,不定代名詞,
+add,113,something,something,pronoun,base,1,何か・あるもの,junior_high,2,,不定代名詞,
+add,2455,sometime,sometime,adverb,base,1,いつか,junior_high,1,,元資料は名詞だがPARARIでは adverb 扱いが自然,
+add,309,sometimes,sometimes,adverb,base,1,時々,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,77,son,son,noun,base,1,息子,junior_high,1,,,
+add,518,song,song,noun,base,1,歌,junior_high,1,,,
+add,323,soon,soon,adverb,base,1,すぐに,junior_high,1,,,副詞でも er/est 型があり得る。自動生成候補
+add_pos_variant,337,sorry,sorry,adjective,base,1,すまなく思って・残念な,junior_high,1,,元資料は副詞だがPARARIでは adjective 扱いが自然,規則比較級・最上級として自動生成候補
+add,967,sort,sort,noun,base,1,種類,junior_high,2,,,
+add_pos_variant,519,sound,sound,noun,base,1,音,junior_high,1,,動詞 sound とは別,
+add_pos_variant,1030,sound,sound,verb,base,1,〜のように聞こえる,junior_high,1,,名詞 sound とは別,規則活用。自動生成候補
+add,826,soup,soup,noun,base,1,スープ,junior_high,1,,,
+add,99,south,south,noun,base,1,南,junior_high,1,方角,,
+add,637,space,space,noun,base,1,宇宙・空間,junior_high,1,,,
+add,2463,spaghetti,spaghetti,noun,base,1,スパゲッティ,junior_high,1,,,不可算名詞
+add,2464,Spain,Spain,noun,base,1,スペイン,junior_high,1,国名,,
+add,201,speak,speak,verb,base,1,話す,junior_high,1,,,不規則活用。正本追加候補あり
+add,774,special,special,adjective,base,1,特別な,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,582,speech,speech,noun,base,1,演説・スピーチ,junior_high,1,,,
+add,3302,spell,spell,verb,base,1,つづる,junior_high,1,,,規則活用。自動生成候補
+add,1001,spelling,spelling,noun,present_participle,1,つづり,junior_high,1,,動詞 spell のing形由来の名詞,
+add,755,spend,spend,verb,base,1,費やす・過ごす,junior_high,1,,,不規則活用。正本追加候補あり
+add,,spent,spend,verb,past,1,費やす・過ごす（過去形）,junior_high,1,,spend の過去形,
+add,,spent,spend,verb,past_participle,1,費やす・過ごす（過去分詞）,junior_high,1,,spend の過去分詞,
+add,,spoke,speak,verb,past,1,話す（過去形）,junior_high,1,,speak の過去形,
+add,,spoken,speak,verb,past_participle,1,話す（過去分詞）,junior_high,1,,speak の過去分詞,
+add,535,sport,sport,noun,base,1,スポーツ・運動,junior_high,1,,,
+add,38,sports,sport,noun,plural,1,スポーツ,junior_high,1,,sport の複数形,sport の複数形として既存
+add,150,spring,spring,noun,base,1,春,junior_high,1,基本語,季節。動詞 spring とは別,
+add,1003,square,square,noun,base,1,正方形・広場,junior_high,2,,形容詞 square とは別,
+add,2468,stadium,stadium,noun,base,1,スタジアム,junior_high,1,,,
+add,131,stamp,stamp,noun,base,1,切手・スタンプ,junior_high,1,,,
+add,219,stand,stand,verb,base,1,立つ,junior_high,1,,,不規則活用。正本追加候補あり
+add,544,star,star,noun,base,1,星・スター,junior_high,1,,,
+add,734,start,start,verb,base,1,始める・出発する,junior_high,1,,名詞 start とは別,規則活用。自動生成候補
+add,111,station,station,noun,base,1,駅・場所,junior_high,1,,,
+add,823,statue,statue,noun,base,1,像・銅像,junior_high,2,,,
+add,225,stay,stay,verb,base,1,滞在する・とどまる,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,908,stay,stay,noun,base,1,滞在,junior_high,1,,動詞 stay とは別,
+add,2473,steak,steak,noun,base,1,ステーキ,junior_high,1,,,
+add,937,step,step,noun,base,1,一歩・階段・段階,junior_high,1,,,
+add,2475,stew,stew,noun,base,1,シチュー,junior_high,1,,,
+add,1162,still,still,adverb,base,1,まだ・なお,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,563,stone,stone,noun,base,1,石,junior_high,1,,,
+add,,stood,stand,verb,past,1,立つ（過去形）,junior_high,1,,stand の過去形,
+add,,stood,stand,verb,past_participle,1,立つ（過去分詞）,junior_high,1,,stand の過去分詞,
+add,186,stop,stop,verb,base,1,止まる・止める,junior_high,1,,,規則活用だが子音重ねなど綴り生成注意
+add_pos_variant,923,stop,stop,noun,base,1,停留所・停止,junior_high,1,,動詞 stop とは別,
+add,122,store,store,noun,base,1,店,junior_high,1,,,
+add,534,story,story,noun,base,1,話・物語,junior_high,1,,,子音+y → ies の規則複数
+add,1131,straight,straight,adverb,base,1,まっすぐに,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,765,strange,strange,adjective,base,1,奇妙な,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,832,stranger,stranger,noun,base,1,見知らぬ人,junior_high,2,,,
+add,541,street,street,noun,base,1,通り・街路,junior_high,1,,,
+add,714,strike,strike,verb,base,1,打つ・ぶつかる,junior_high,2,,,不規則活用。正本追加候補あり
+add,272,strong,strong,adjective,base,1,強い・丈夫な,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,,struck,strike,verb,past,1,打つ・ぶつかる（過去形）,junior_high,2,,strike の過去形,
+add,,struck,strike,verb,past_participle,1,打つ・ぶつかる（過去分詞）,junior_high,2,,strike の過去分詞,
+add,92,student,student,noun,base,1,学生・生徒,junior_high,1,,,
+add,216,study,study,verb,base,1,勉強する,junior_high,1,,名詞 study とは別,規則活用だが e 脱落・y変化など綴り生成注意
+add,26,subject,subject,noun,base,1,科目・主題,junior_high,1,,,
+add,2484,subway,subway,noun,base,1,地下鉄,junior_high,1,,,
+add,1021,succeed,succeed,verb,base,1,成功する,junior_high,2,,,規則活用。自動生成候補
+add,599,success,success,noun,base,1,成功,junior_high,1,,,
+add,776,such,such,adjective,base,1,そのような,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,1144,suddenly,suddenly,adverb,base,1,突然,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,462,sugar,sugar,noun,base,1,砂糖,junior_high,1,,,不可算用法中心
+add,827,suit,suit,noun,base,1,スーツ,junior_high,1,,動詞 suit とは別,
+add,151,summer,summer,noun,base,1,夏,junior_high,1,基本語,季節,
+add,543,sun,sun,noun,base,1,太陽,junior_high,1,,,
+add,167,Sunday,Sunday,noun,base,1,日曜日,junior_high,1,基本語,曜日,
+add,,sung,sing,verb,past_participle,1,歌う（過去分詞）,junior_high,1,,sing の過去分詞,
+add,3317,sunny,sunny,adjective,base,1,晴れた,junior_high,1,,元資料は名詞だがPARARIでは adjective 扱いが自然,
+add,874,sunset,sunset,noun,base,1,日没・夕焼け,junior_high,1,,,
+add,2487,supermarket,supermarket,noun,base,1,スーパーマーケット,junior_high,1,,,
+add,805,sure,sure,adjective,base,1,確信して・確かな,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,1137,surely,surely,adverb,base,1,確かに・きっと,junior_high,2,,,比較級・最上級を単語形として追加する必要性は低い
+add,,swam,swim,verb,past,1,泳ぐ（過去形）,junior_high,1,,swim の過去形,
+add,2489,sweater,sweater,noun,base,1,セーター,junior_high,1,,,
+add,2490,sweet,sweet,adjective,base,1,甘い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,203,swim,swim,verb,base,1,泳ぐ,junior_high,1,,,不規則活用。正本追加候補あり
+add,,swum,swim,verb,past_participle,1,泳ぐ（過去分詞）,junior_high,1,,swim の過去分詞,
+add,979,symbol,symbol,noun,base,1,象徴・記号,junior_high,2,,,
+add,23,table,table,noun,base,1,テーブル・表,junior_high,1,,,
+add,724,take,take,verb,base,1,取る・連れていく・時間がかかる,junior_high,1,,語義統合,不規則活用。正本追加候補あり
+add,,taken,take,verb,past_participle,1,取る・連れていく・時間がかかる（過去分詞）,junior_high,1,,take の過去分詞,
+add,669,talk,talk,verb,base,1,話す,junior_high,1,,,規則活用。自動生成候補
+add,244,tall,tall,adjective,base,1,背の高い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,128,tape,tape,noun,base,1,テープ,junior_high,1,,,
+add,,taught,teach,verb,past,1,教える（過去形）,junior_high,1,,teach の過去形,
+add,,taught,teach,verb,past_participle,1,教える（過去分詞）,junior_high,1,,teach の過去分詞,
+add,959,taxi,taxi,noun,base,1,タクシー,junior_high,1,,,
+add,471,tea,tea,noun,base,1,お茶,junior_high,1,,,不可算・可算両用
+add,702,teach,teach,verb,base,1,教える,junior_high,1,,,不規則活用。正本追加候補あり
+add,93,teacher,teacher,noun,base,1,先生・教師,junior_high,1,,,
+add,506,team,team,noun,base,1,チーム,junior_high,1,,,
+add,895,tear,tear,noun,base,1,涙,junior_high,1,,動詞 tear とは別,
+add,,teeth,tooth,noun,plural,1,歯,junior_high,1,,tooth の不規則複数形,
+add,2496,telephone,telephone,noun,base,1,電話,junior_high,1,,,
+add,707,tell,tell,verb,base,1,教える・語る,junior_high,1,,,不規則活用。正本追加候補あり
+add,3328,temple,temple,noun,base,1,寺・寺院,junior_high,1,,,
+add,335,ten,ten,numeral,base,1,10・十,junior_high,1,,基数,
+add,41,tennis,tennis,noun,base,1,テニス,junior_high,1,スポーツ,,不可算名詞
+add,872,tent,tent,noun,base,1,テント,junior_high,1,,,
+add,1198,tenth,tenth,ordinal,base,1,10番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add_pos_variant,615,test,test,noun,base,1,試験・テスト,junior_high,1,,動詞 test とは別,
+add_pos_variant,746,test,test,verb,base,1,試す・試験する,junior_high,1,,名詞 test とは別,規則活用。自動生成候補
+add,604,textbook,textbook,noun,base,1,教科書,junior_high,1,,,
+add,2501,Thailand,Thailand,noun,base,1,タイ,junior_high,1,国名,,
+add,66,than,than,conjunction,base,1,〜よりも,junior_high,1,,比較を表す,
+add,680,thank,thank,verb,base,1,感謝する,junior_high,1,,,規則活用。自動生成候補
+add,12,that,that,conjunction,base,1,〜ということ,junior_high,1,,名詞節を導く。代名詞・関係代名詞用法もある,
+add,399,that,that,pronoun,base,1,あれ・それ,junior_high,1,基本語,接続詞 that とは別,
+add,,that's,be,auxiliary,contracted,1,それは〜です・あれは〜です,junior_high,1,,that is の短縮形,
+add,,that's,have,auxiliary,contracted,2,それは〜した・あれは〜した,junior_high,1,,that has の短縮形,
+add,1,the,the,article,base,1,その・例の,junior_high,1,,定冠詞。特定されたものを指す,
+add,819,theater,theater,noun,base,1,劇場,junior_high,1,,,
+add,7220,thee,thou,pronoun,archaic,1,そなたを・汝を,exam,3,,古語・文語。thou の目的格,
+add,33,their,their,pronoun,base,1,彼らの・それらの,junior_high,1,,三人称複数の所有形容詞,
+add,2104,theirs,theirs,pronoun,base,1,彼らのもの・それらのもの,junior_high,1,,所有代名詞,
+add,47,them,them,pronoun,base,1,彼らを・それらを,junior_high,1,,三人称複数の目的格,
+add,297,themselves,themselves,pronoun,base,1,彼ら自身・それら自身,junior_high,1,,再帰代名詞,
+add,1160,then,then,adverb,base,1,それから・そのとき,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,328,there,there,adverb,base,1,そこに・そこで,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,there's,be,auxiliary,contracted,1,〜がある・〜がいる,junior_high,1,,there is の短縮形,
+add,,there's,have,auxiliary,contracted,2,〜があった・〜している,junior_high,1,,there has の短縮形,
+add,400,these,this,pronoun,plural,1,これら,junior_high,1,基本語,this の複数形,
+add,18,they,they,pronoun,base,1,彼らは・それらは,junior_high,1,,三人称複数の主格,
+add,,they'd,would,auxiliary,contracted,1,彼らは〜するだろう・〜したいだろう,junior_high,1,,they would の短縮形,
+add,,they'd,have,auxiliary,contracted,2,彼らは〜していた,junior_high,1,,they had の短縮形,
+add,,they'll,will,auxiliary,contracted,1,彼らは〜するでしょう・彼女らは〜するつもりだ,junior_high,1,,they will の短縮形,
+add,,they're,be,auxiliary,contracted,1,彼らは〜です・彼女らは〜です・それらは〜です,junior_high,1,,they are の短縮形,
+add,,they've,have,auxiliary,contracted,1,彼らは〜したことがある・彼女らは〜している,junior_high,1,,they have の短縮形,
+add,145,thing,thing,noun,base,1,物・こと,junior_high,1,,,
+add,666,think,think,verb,base,1,考える・思う,junior_high,1,,,不規則活用。正本追加候補あり
+add,324,third,third,ordinal,base,1,第3の・3番目の,junior_high,1,,序数詞,
+add,1339,thirteen,thirteen,numeral,base,1,13・十三,junior_high,1,,基数,
+add,1201,thirteenth,thirteenth,ordinal,base,1,13番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1209,thirtieth,thirtieth,ordinal,base,1,30番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1114,thirty,thirty,numeral,base,1,30・三十,junior_high,1,,基数,
+add,398,this,this,pronoun,base,1,これ,junior_high,1,基本語,,
+add,401,those,that,pronoun,plural,1,あれら・それら,junior_high,1,基本語,that の複数形,
+add,6761,thou,thou,pronoun,archaic,1,そなた・汝,exam,3,,古語・文語。you の単数主格,
+add,161,though,though,conjunction,base,1,〜だけれども,high_school,2,,譲歩を表す。文末副詞用法もある,
+add,,thought,think,verb,past,1,考える・思う（過去形）,junior_high,1,,think の過去形,
+add,,thought,think,verb,past_participle,1,考える・思う（過去分詞）,junior_high,1,,think の過去分詞,
+add,900,thought,thought,noun,base,1,考え・思考,junior_high,1,,think の過去形・過去分詞とは別,
+add,514,thousand,thousand,numeral,base,1,1000,junior_high,1,,大きな数,
+add_pos_variant,577,thousand,thousand,noun,base,1,千,junior_high,1,,数詞 thousand とは別,
+add,96,three,three,numeral,base,1,3・三つ,junior_high,1,,基数,
+add,,threw,throw,verb,past,1,投げる（過去形）,junior_high,1,,throw の過去形,
+add,101,through,through,preposition,base,1,〜を通って・〜を通じて,junior_high,2,,通過・手段・期間を表す,
+add,1530,throughout,throughout,preposition,base,1,〜の至る所に・〜の間ずっと,high_school,3,,全体に及ぶことを表す,
+add,705,throw,throw,verb,base,1,投げる,junior_high,1,,,不規則活用。正本追加候補あり
+add,,thrown,throw,verb,past_participle,1,投げる（過去分詞）,junior_high,1,,throw の過去分詞,
+add,171,Thursday,Thursday,noun,base,1,木曜日,junior_high,1,基本語,曜日,
+add,7479,thy,thou,pronoun,archaic,1,そなたの・汝の,exam,3,,古語・文語。thou の所有形,
+add,860,ticket,ticket,noun,base,1,切符・チケット,junior_high,1,,,
+add,828,tie,tie,noun,base,1,ネクタイ・結びつき,junior_high,1,,動詞 tie とは別,
+add,3340,tiger,tiger,noun,base,1,トラ,junior_high,1,,,
+add,1920,till,till,preposition,base,1,〜まで,junior_high,2,,untilと近い。口語的,
+add,3341,time,time,noun,base,1,時・回数,junior_high,1,,,
+add,1111,tiny,tiny,adjective,base,1,とても小さな,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,796,tired,tire,adjective,past_participle,1,疲れた,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,2510,title,title,noun,base,1,題名・タイトル,junior_high,1,,,
+add,6,to,to,preposition,base,1,〜へ・〜に,junior_high,1,,方向・到達点を表す。不定詞のtoと区別が必要,
+add,974,toast,toast,noun,base,1,トースト,junior_high,1,,,
+add,340,today,today,adverb,base,1,今日・現在,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,350,together,together,adverb,base,1,一緒に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,told,tell,verb,past,1,教える・語る（過去形）,junior_high,1,,tell の過去形,
+add,,told,tell,verb,past_participle,1,教える・語る（過去分詞）,junior_high,1,,tell の過去分詞,
+add,2513,tomato,tomato,noun,base,1,トマト,junior_high,1,野菜,,語尾 -o + es の複数形。自動生成ルールまたは手動追加で対応
+add,2514,tomorrow,tomorrow,adverb,base,1,明日,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1127,tonight,tonight,adverb,base,1,今夜,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,316,too,too,adverb,base,1,〜もまた・〜すぎる,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,took,take,verb,past,1,取る・連れていく・時間がかかる（過去形）,junior_high,1,,take の過去形,
+add,480,tooth,tooth,noun,base,1,歯,junior_high,1,,,tooth の不規則複数形
+add,2517,toothbrush,toothbrush,noun,base,1,歯ブラシ,junior_high,1,,,
+add,525,top,top,noun,base,1,頂上・上部,junior_high,1,,,
+add,1035,touch,touch,verb,base,1,触れる,junior_high,1,,,規則活用。自動生成候補
+add,888,tour,tour,noun,base,1,小旅行・見学,junior_high,1,,,
+add,1075,toward,toward,preposition,base,1,〜の方へ・〜に向かって,junior_high,2,,方向・態度の向きを表す,
+add,818,tower,tower,noun,base,1,塔・タワー,junior_high,1,,,
+add,109,town,town,noun,base,1,町,junior_high,1,,,
+add,865,toy,toy,noun,base,1,おもちゃ,junior_high,1,,,
+add,875,trade,trade,noun,base,1,貿易・取引,junior_high,2,,動詞 trade とは別,
+add_pos_variant,66,train,train,noun,base,1,列車・電車,junior_high,1,,動詞 train とは別,
+add_pos_variant,1043,train,train,verb,base,1,訓練する,junior_high,1,,名詞 train とは別,規則活用。自動生成候補
+add,886,training,training,noun,present_participle,1,訓練・トレーニング,junior_high,1,,動詞 train のing形由来の名詞,不可算名詞
+add,595,travel,travel,noun,base,1,旅行,junior_high,1,,動詞 travel とは別,
+add,992,treasure,treasure,noun,base,1,宝物,junior_high,2,,,
+add,133,tree,tree,noun,base,1,木,junior_high,1,,,
+add,5076,trillion,trillion,numeral,base,1,1兆,junior_high,1,,大きな数。英米では通常1兆,
+add,594,trip,trip,noun,base,1,旅行・短い旅,junior_high,1,,,
+add,2525,trumpet,trumpet,noun,base,1,トランペット,junior_high,1,楽器,,
+add,226,try,try,verb,base,1,試す・やってみる,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,169,Tuesday,Tuesday,noun,base,1,火曜日,junior_high,1,基本語,曜日,
+add,2527,tulip,tulip,noun,base,1,チューリップ,junior_high,1,植物,,
+add,736,turn,turn,verb,base,1,曲がる・回る・変化する,junior_high,1,,,規則活用。自動生成候補
+add,433,TV,TV,noun,base,1,テレビ,junior_high,1,,,
+add,1200,twelfth,twelfth,ordinal,base,1,12番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,737,twelve,twelve,numeral,base,1,12・十二,junior_high,1,,基数,
+add,1208,twentieth,twentieth,ordinal,base,1,20番目の,junior_high,1,基本語,191基本語由来。序数として正本追加,
+add,1069,twenty,twenty,numeral,base,1,20・二十,junior_high,1,,基数,
+add,1161,twice,twice,adverb,base,1,2回・2倍,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,61,two,two,numeral,base,1,2・二つ,junior_high,1,,基数,
+add,978,type,type,noun,base,1,型・種類,junior_high,1,,,
+add,866,umbrella,umbrella,noun,base,1,傘,junior_high,1,,,
+add,84,uncle,uncle,noun,base,1,おじ,junior_high,1,,,
+add,147,under,under,preposition,base,1,〜の下に,junior_high,1,,下方・支配下・条件下を表す,
+add,2626,underneath,underneath,preposition,base,1,〜の下に,junior_high,2,,underより具体的に真下を表す,
+add,679,understand,understand,verb,base,1,理解する,junior_high,1,,,不規則活用。正本追加候補あり
+add,,understood,understand,verb,past,1,理解する（過去形）,junior_high,1,,understand の過去形,
+add,,understood,understand,verb,past_participle,1,理解する（過去分詞）,junior_high,1,,understand の過去分詞,
+add,1092,unhappy,unhappy,adjective,base,1,不幸な・うれしくない,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,2534,uniform,uniform,noun,base,1,制服,junior_high,1,,,
+add,926,universe,universe,noun,base,1,宇宙,junior_high,2,,,
+add,1535,unless,unless,conjunction,base,1,〜でない限り,high_school,2,,否定条件を表す,
+add,1859,unlike,unlike,preposition,base,1,〜とは違って,high_school,2,,対比を表す,
+add,195,until,until,conjunction,base,1,〜するまで,junior_high,1,,継続の終点を表す。前置詞用法もある,
+add,327,up,up,adverb,base,1,上へ・上に,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,1471,upon,upon,preposition,base,1,〜の上に・〜するとすぐに,high_school,2,,onより文語的,
+add,102,us,us,pronoun,base,1,私たちを・私たちに,junior_high,1,,一人称複数の目的格,
+add,228,use,use,verb,base,1,使う,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add_pos_variant,905,use,use,noun,base,1,使用・利用,junior_high,1,,動詞 use とは別,
+add,782,useful,useful,adjective,base,1,役に立つ,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,799,usual,usual,adjective,base,1,通常の,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,339,usually,usually,adverb,base,1,ふつう・たいてい,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,589,vacation,vacation,noun,base,1,休暇,junior_high,1,,,
+add,909,valley,valley,noun,base,1,谷,junior_high,2,,,
+add,466,vegetable,vegetable,noun,base,1,野菜,junior_high,1,野菜,,
+add,4592,versus,versus,preposition,base,1,〜対〜・〜に対して,high_school,2,,元データは versus (vs)。word を versus に正規化,
+add,314,very,very,adverb,base,1,非常に・とても,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,2691,via,via,preposition,base,1,〜を経由して・〜によって,high_school,2,,経由・手段を表す,
+add,605,video,video,noun,base,1,ビデオ・動画,junior_high,1,,,
+add,110,village,village,noun,base,1,村,junior_high,1,,,
+add,229,visit,visit,verb,base,1,訪問する,junior_high,1,,,規則活用。自動生成候補
+add,838,visitor,visitor,noun,base,1,訪問者,junior_high,1,,,
+add,488,voice,voice,noun,base,1,声,junior_high,1,,,
+add,921,volleyball,volleyball,noun,base,1,バレーボール,junior_high,1,,,
+add,2544,volunteer,volunteer,noun,base,1,ボランティア,junior_high,1,,動詞 volunteer とは別,
+add,189,wait,wait,verb,base,1,待つ,junior_high,1,,,規則活用。自動生成候補
+add,2546,waiter,waiter,noun,base,1,ウェイター,junior_high,1,職業,,
+add,2547,waitress,waitress,noun,base,1,ウェイトレス,junior_high,1,職業,,
+add,691,wake,wake,verb,base,1,目が覚める・起こす,junior_high,1,,,不規則活用。正本追加候補あり
+add,183,walk,walk,verb,base,1,歩く,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,147,walk,walk,noun,base,1,散歩,junior_high,1,,動詞 walk とは別,
+add,113,wall,wall,noun,base,1,壁,junior_high,1,,,
+add,193,want,want,verb,base,1,欲しい・望む,junior_high,1,,,規則活用。自動生成候補
+add,596,war,war,noun,base,1,戦争,junior_high,2,,,
+add,251,warm,warm,adjective,base,1,暖かい,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,3371,was,be,auxiliary,past,1,だった・いた,junior_high,1,基本語,be動詞。191基本語と重複,
+add,184,wash,wash,verb,base,1,洗う,junior_high,1,,,規則活用。自動生成候補
+add,,wasn't,be,auxiliary,contracted,1,〜ではなかった・〜にいなかった,junior_high,1,,was not の短縮形,
+add,904,waste,waste,noun,base,1,ごみ・浪費,junior_high,2,,動詞 waste とは別,
+add,677,watch,watch,verb,base,1,見る・見守る,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,127,watch,watch,noun,base,1,腕時計,junior_high,1,,動詞 watch とは別,
+add,470,water,water,noun,base,1,水,junior_high,1,,,不可算・可算両用
+add,2553,watermelon,watermelon,noun,base,1,スイカ,junior_high,1,,,
+add,928,wave,wave,noun,base,1,波,junior_high,1,,動詞 wave とは別,
+add,95,way,way,noun,base,1,道・方法,junior_high,1,,,
+add,21,we,we,pronoun,base,1,私たちは,junior_high,1,,一人称複数の主格,
+add,,we'd,would,auxiliary,contracted,1,私たちは〜するだろう・〜したいだろう,junior_high,1,,we would の短縮形,
+add,,we'd,have,auxiliary,contracted,2,私たちは〜していた,junior_high,1,,we had の短縮形,
+add,,we'll,will,auxiliary,contracted,1,私たちは〜するでしょう・〜するつもりだ,junior_high,1,,we will の短縮形,
+add,,we're,be,auxiliary,contracted,1,私たちは〜です・私たちは〜している,junior_high,1,,we are の短縮形,
+add,,we've,have,auxiliary,contracted,1,私たちは〜したことがある・私たちは〜している,junior_high,1,,we have の短縮形,
+add,772,weak,weak,adjective,base,1,弱い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,676,wear,wear,verb,base,1,着ている・身につけている,junior_high,1,,,不規則活用。正本追加候補あり
+add,947,weather,weather,noun,base,1,天気,junior_high,1,,,不可算名詞
+add,170,Wednesday,Wednesday,noun,base,1,水曜日,junior_high,1,基本語,曜日,
+add,177,week,week,noun,base,1,週,junior_high,1,基本語,時間,
+add,2557,weekend,weekend,noun,base,1,週末,junior_high,1,,,
+add,1121,weekly,weekly,adjective,base,1,毎週の・週刊の,junior_high,2,,,y→ier/iest の綴り規則で自動生成候補
+add,787,welcome,welcome,adjective,base,1,歓迎される,junior_high,1,,間投詞 welcome とは別,e終わり。r/st 付加で自動生成候補
+add,798,well,well,adjective,base,1,健康な・元気な,junior_high,1,,副詞 well とは別,規則比較級・最上級として自動生成候補
+add_pos_variant,329,well,well,adverb,base,1,よく・上手に,junior_high,1,,形容詞 well とは別,
+add,,went,go,verb,past,1,行く（過去形）,junior_high,1,,go の過去形,
+add,,were,be,auxiliary,past,1,だった・いた,junior_high,1,基本語,be動詞の過去形,
+add,,weren't,be,auxiliary,contracted,1,〜ではなかった・〜にいなかった,junior_high,1,,were not の短縮形,
+add,101,west,west,noun,base,1,西,junior_high,1,方角,,
+add,1114,wet,wet,adjective,base,1,濡れている,junior_high,1,,,短母音＋子音の重ね字規則で自動生成候補
+add,2560,whale,whale,noun,base,1,クジラ,junior_high,1,動物,,
+add,319,what,what,pronoun,base,1,何,junior_high,1,,元資料は副詞だがPARARIでは pronoun 扱いが自然,
+add,,what's,be,auxiliary,contracted,1,何が〜ですか・何ですか,junior_high,1,,what is の短縮形,
+add,,what's,have,auxiliary,contracted,2,何が〜したのか,junior_high,1,,what has の短縮形,
+add,56,when,when,conjunction,base,1,〜するとき,junior_high,1,,時を表す。疑問詞用法もある,
+add,,when's,be,auxiliary,contracted,1,いつですか,junior_high,1,,when is の短縮形,
+add,344,where,where,adverb,base,1,どこに・どこで,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,where's,be,auxiliary,contracted,1,どこにありますか・どこですか,junior_high,1,,where is の短縮形,
+add,2371,whereas,whereas,conjunction,base,1,〜である一方,exam,3,,対比を表す。硬い表現,
+add,1446,whether,whether,conjunction,base,1,〜かどうか,high_school,2,,選択・不確定を表す,
+add,320,which,which,pronoun,base,1,どちら・どれ,junior_high,1,,元資料は副詞だがPARARIでは pronoun 扱いが自然,
+add,129,while,while,conjunction,base,1,〜している間に・一方で,junior_high,2,,時間・対比を表す,
+add,5767,whilst,whilst,conjunction,base,1,〜している間に・一方で,exam,3,,whileの文語的・英国的形,
+add,267,white,white,adjective,base,1,白い,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,38,who,who,pronoun,base,1,誰・〜する人,junior_high,1,,疑問代名詞・関係代名詞,
+add,,who's,be,auxiliary,contracted,1,誰が〜ですか,junior_high,1,,who is の短縮形,
+add,,who's,have,auxiliary,contracted,2,誰が〜したのか,junior_high,1,,who has の短縮形,
+add,7446,whoa,whoa,interjection,base,1,うわ・おっと,junior_high,2,,驚き・制止を表す,
+add,3003,whoever,whoever,pronoun,base,1,誰でも・〜する人は誰でも,high_school,2,,複合関係代名詞,
+add,1123,whole,whole,adjective,base,1,全体の・すべての,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,2557,whom,whom,pronoun,base,1,誰を・誰に・〜する人を,high_school,2,,who の目的格。現代英語では硬い,
+add,321,whose,whose,pronoun,base,1,誰の・誰のもの,junior_high,1,,元資料は副詞だが pronoun 扱い,
+add,333,why,why,adverb,base,1,なぜ,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,,why's,be,auxiliary,contracted,1,なぜ〜なのですか,junior_high,1,,why is の短縮形,
+add,808,wide,wide,adjective,base,1,幅が広い,junior_high,2,,,e終わり。r/st 付加で自動生成候補
+add,514,wife,wife,noun,base,1,妻,junior_high,1,,,wife の複数形
+add,1078,wild,wild,adjective,base,1,野生の・荒々しい,junior_high,2,,,規則比較級・最上級として自動生成候補
+add,41,will,will,auxiliary,base,1,〜するつもりだ・〜だろう,junior_high,2,,未来・意志・推量を表す,
+add,720,win,win,verb,base,1,勝つ,junior_high,1,,,不規則活用。正本追加候補あり
+add,552,wind,wind,noun,base,1,風,junior_high,1,,動詞 wind とは別,
+add,10,window,window,noun,base,1,窓,junior_high,1,,,
+add,2565,windy,windy,adjective,base,1,風が強い,junior_high,1,,,y→ier/iest の綴り規則で自動生成候補
+add,956,wine,wine,noun,base,1,ワイン,junior_high,2,,,不可算・可算両用
+add,154,winter,winter,noun,base,1,冬,junior_high,1,基本語,季節,
+add,700,wish,wish,verb,base,1,望む・願う,junior_high,1,,,規則活用。自動生成候補
+add,14,with,with,preposition,base,1,〜と一緒に・〜を持って,junior_high,1,,同行・所有・手段などを表す,
+add,1447,within,within,preposition,base,1,〜以内に・〜の内側に,high_school,2,,範囲・期限の内側を表す,
+add,155,without,without,preposition,base,1,〜なしで,junior_high,1,,欠如を表す,
+add,,wives,wife,noun,plural,1,妻たち,junior_high,1,,wife の複数形,
+add,,woke,wake,verb,past,1,目が覚める・起こす（過去形）,junior_high,1,,wake の過去形,
+add,,woken,wake,verb,past_participle,1,目が覚める・起こす（過去分詞）,junior_high,1,,wake の過去分詞,
+add,81,woman,woman,noun,base,1,女の人・女性,junior_high,1,,,woman の不規則複数形
+add,,women,woman,noun,plural,1,女の人たち・女性たち,junior_high,1,,woman の不規則複数形,
+add,,won,win,verb,past,1,勝つ（過去形）,junior_high,1,,win の過去形,
+add,,won,win,verb,past_participle,1,勝つ（過去分詞）,junior_high,1,,win の過去分詞,
+add,,won't,will,auxiliary,contracted,1,〜しないだろう・〜するつもりはない,junior_high,1,,will not の短縮形,
+add,1013,wonder,wonder,verb,base,1,不思議に思う,junior_high,2,,,規則活用。自動生成候補
+add,781,wonderful,wonderful,adjective,base,1,すばらしい,junior_high,1,,,more/most 型で扱う候補。単語形としては追加しない
+add,567,wood,wood,noun,base,1,木材・森,junior_high,1,,,不可算・可算両用
+add,529,word,word,noun,base,1,言葉・単語,junior_high,1,,,
+add,,wore,wear,verb,past,1,着ている・身につけている（過去形）,junior_high,1,,wear の過去形,
+add,213,work,work,verb,base,1,働く・うまくいく,junior_high,1,,,規則活用。自動生成候補
+add_pos_variant,148,work,work,noun,base,1,仕事・作品,junior_high,1,,動詞 work とは別,
+add,2570,world,world,noun,base,1,世界,junior_high,1,,,
+add,,worn,wear,verb,past_participle,1,着ている・身につけている（過去分詞）,junior_high,1,,wear の過去分詞,
+add,698,worry,worry,verb,base,1,心配する・心配させる,junior_high,1,,,規則活用だが e 脱落・y変化など綴り生成注意
+add,,worse,bad,adjective,comparative,1,より悪い,junior_high,1,,bad の比較級,
+add,,worst,bad,adjective,superlative,1,最も悪い,junior_high,1,,bad の最上級,
+add,1531,worth,worth,adjective,base,1,〜の価値がある,high_school,2,,前置詞的に見える用法もあるが、PARARIでは adjective 扱いを基本にする,
+add,34,would,will,auxiliary,past,1,〜だろう・〜したものだった,junior_high,2,,willの過去形由来。仮定・丁寧表現・過去の習慣など,
+add,,wouldn't,would,auxiliary,contracted,1,〜しないだろう・〜しなかっただろう,junior_high,1,,would not の短縮形,
+add,204,write,write,verb,base,1,書く,junior_high,1,,,不規則活用。正本追加候補あり
+add,2574,writer,writer,noun,base,1,作家・書く人,junior_high,1,,,
+add,,written,write,verb,past_participle,1,書く（過去分詞）,junior_high,1,,write の過去分詞,
+add,1120,wrong,wrong,adjective,base,1,間違った,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,,wrote,write,verb,past,1,書く（過去形）,junior_high,1,,write の過去形,
+add,115,yard,yard,noun,base,1,庭・ヤード,junior_high,1,,,
+add,5961,ye,you,pronoun,archaic,1,あなたがた,exam,3,,古語・文語。you の古い形,
+add,1444,yeah,yeah,interjection,base,1,うん・そう,junior_high,1,,くだけた肯定,
+add,179,year,year,noun,base,1,年,junior_high,1,基本語,時間,
+add,811,yellow,yellow,adjective,base,1,黄色の,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,987,yen,yen,noun,base,1,円,junior_high,1,,,
+add,108,yes,yes,interjection,base,1,はい・そうです,junior_high,1,,肯定の返事。重複統合,
+add,324,yesterday,yesterday,adverb,base,1,昨日,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,332,yet,yet,adverb,base,1,まだ・もう,junior_high,1,,,比較級・最上級を単語形として追加する必要性は低い
+add,10,you,you,pronoun,base,1,あなた・あなたたち,junior_high,1,,二人称。単数にも複数にも使う,
+add,,you'd,would,auxiliary,contracted,1,あなたは〜するだろう・〜したいだろう,junior_high,1,,you would の短縮形,
+add,,you'd,have,auxiliary,contracted,2,あなたは〜していた,junior_high,1,,you had の短縮形,
+add,,you'll,will,auxiliary,contracted,1,あなたは〜するでしょう・〜するつもりだ,junior_high,1,,you will の短縮形,
+add,,you're,be,auxiliary,contracted,1,あなたは〜です・あなたは〜している,junior_high,1,,you are の短縮形,
+add,,you've,have,auxiliary,contracted,1,あなたは〜したことがある・あなたは〜している,junior_high,1,,you have の短縮形,
+add,257,young,young,adjective,base,1,若い,junior_high,1,,,規則比較級・最上級として自動生成候補
+add,58,your,your,pronoun,base,1,あなたの・あなたたちの,junior_high,1,,二人称の所有形容詞,
+add,879,yours,yours,pronoun,base,1,あなたのもの・あなたたちのもの,junior_high,1,,所有代名詞,
+add,483,yourself,yourself,pronoun,base,1,あなた自身,junior_high,1,,再帰代名詞,
+add,1004,youth,youth,noun,base,1,若さ・若者,junior_high,2,,,
+add,2578,zebra,zebra,noun,base,1,シマウマ,junior_high,1,動物,,
+add,1384,zero,zero,numeral,base,1,0・ゼロ,junior_high,1,,基数,
+add,973,zone,zone,noun,base,1,地帯・区域,junior_high,2,,,
+add,812,zoo,zoo,noun,base,1,動物園,junior_high,1,,,
+add,279,TRUE,TRUE,adjective,base,1,本当の,junior_high,1,,,e終わり。r/st 付加で自動生成候補
+add,70,out,out,adverb,base,1,外へ・外に・外で,high_school,2,center_exam,センター試験頻出語,
+add,119,used,use,verb,past_participle,1,使われた・使った,high_school,2,center_exam,use の過去分詞。used to は複数語表現として別扱い,
+add,131,however,however,adverb,base,1,しかしながら・けれども,high_school,2,center_exam,センター試験頻出語,
+add,168,any,any,adjective,base,1,いくらかの・どんな〜でも,high_school,2,center_exam,元POSはRBだがPARARIでは adjective 扱いを基本にする,
+add,184,lot,lot,noun,base,1,たくさん・多量,high_school,2,center_exam,a lot of は複数語表現として別扱い,
+add,187,increase,increase,noun,base,1,増加,high_school,2,center_exam,動詞 increase も必要なら品詞違いで追加,
+add,247,experience,experience,noun,base,1,経験,high_school,2,center_exam,動詞 experience も必要なら品詞違いで追加,
+add,254,state,state,noun,base,1,状態・州・国家,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,
+add,262,activity,activity,noun,base,1,活動,high_school,2,center_exam,センター試験頻出語,
+add,271,author,author,noun,base,1,著者・作者,high_school,2,center_exam,センター試験頻出語,
+add,70,out,out,adverb,base,1,外へ・外に・外で,high_school,2,center_exam,センター試験頻出語,center_pos=RB; center_pmw=1000+
+add,131,however,however,adverb,base,1,しかしながら・けれども,high_school,2,center_exam,センター試験頻出語,center_pos=RB; center_pmw=1000+
+add,168,any,any,adjective,base,1,いくらかの・どんな〜でも,high_school,2,center_exam,元POSはRBだがPARARIでは形容詞扱い,center_pos=RB; center_pmw=500+
+add,184,lot,lot,noun,base,1,たくさん・多量,high_school,2,center_exam,a lot of は複数語表現として別扱い,center_pos=NN; center_pmw=500+
+add,187,increase,increase,noun,base,1,増加,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=500+
+add,247,experience,experience,noun,base,1,経験,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=500+
+add,254,state,state,noun,base,1,状態・州・国家,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=500+
+add,262,activity,activity,noun,base,1,活動,high_school,2,center_exam,センター試験頻出語,center_pos=NN; center_pmw=500+
+add,271,author,author,noun,base,1,著者・作者,high_school,2,center_exam,センター試験頻出語,center_pos=NN; center_pmw=500+
+add,283,able,able,adjective,base,1,できる・能力がある,high_school,2,center_exam,be able to は複数語表現として別扱い,center_pos=JJ; center_pmw=100+
+add,308,paragraph,paragraph,noun,base,1,段落,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,315,result,result,noun,base,1,結果,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,316,expect,expect,verb,base,1,予期する・期待する,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,351,develop,develop,verb,base,1,発達する・発展させる・開発する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,355,society,society,noun,base,1,社会,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,361,amount,amount,noun,base,1,量・総額,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,364,university,university,noun,base,1,大学,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,365,view,view,noun,base,1,見方・眺め・意見,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,371,rather,rather,adverb,base,1,かなり・むしろ,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,376,percentage,percentage,noun,base,1,割合・百分率,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,381,create,create,verb,base,1,創造する・作り出す,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,390,cause,cause,noun,base,1,原因・理由,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,397,actually,actually,adverb,base,1,実際に・実は,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,398,continue,continue,verb,base,1,続く・続ける,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,399,improve,improve,verb,base,1,改善する・上達する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,400,produce,produce,verb,base,1,生産する・生み出す,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,405,possible,possible,adjective,base,1,可能な・ありうる,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,418,consider,consider,verb,base,1,よく考える・〜と見なす,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,420,lead,lead,noun,base,1,先導・手がかり,high_school,2,center_exam,動詞leadや名詞「鉛」との区別に注意,center_pos=NN; center_pmw=100+
+add,428,provide,provide,verb,base,1,提供する・与える,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,429,researcher,researcher,noun,base,1,研究者,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,432,adult,adult,noun,base,1,大人・成人,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,436,suggest,suggest,verb,base,1,提案する・示唆する,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,439,cost,cost,noun,base,1,費用・代償,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,441,situation,situation,noun,base,1,状況・立場,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,443,likely,likely,adjective,base,1,ありそうな・可能性が高い,high_school,2,center_exam,副詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,445,television,television,noun,base,1,テレビ・テレビ放送,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,446,agree,agree,verb,base,1,同意する・意見が一致する,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,449,difference,difference,noun,base,1,違い・差,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,451,offer,offer,noun,base,1,申し出・提案,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,459,period,period,noun,base,1,期間・時代・終止符,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,462,attention,attention,noun,base,1,注意・注目,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,466,population,population,noun,base,1,人口・集団,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,468,several,several,adjective,base,1,いくつかの・数人の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,472,influence,influence,noun,base,1,影響,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,474,notice,notice,noun,base,1,通知・掲示・注意,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,475,object,object,noun,base,1,物体・対象・目的,high_school,2,center_exam,動詞objectとは発音差あり,center_pos=NN; center_pmw=100+
+add,483,brain,brain,noun,base,1,脳・頭脳,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,485,control,control,noun,base,1,支配・管理・制御,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,487,foreign,foreign,adjective,base,1,外国の・異質な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,490,product,product,noun,base,1,製品・産物,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,491,research,research,noun,base,1,研究・調査,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,492,role,role,noun,base,1,役割,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,494,speaker,speaker,noun,base,1,話し手・講演者・スピーカー,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,496,survey,survey,noun,base,1,調査,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,497,clear,clear,adjective,base,1,明らかな・澄んだ,high_school,2,center_exam,動詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,509,concern,concern,noun,base,1,関心・懸念・関係,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,511,form,form,noun,base,1,形・形式・用紙,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,513,local,local,adjective,base,1,地元の・地域の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,517,opinion,opinion,noun,base,1,意見,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,518,prefer,prefer,verb,base,1,〜を好む・むしろ選ぶ,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,521,allow,allow,verb,base,1,許す・可能にする,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,525,remain,remain,verb,base,1,残る・〜のままである,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,526,stress,stress,noun,base,1,ストレス・強調,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,527,system,system,noun,base,1,制度・仕組み・システム,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,529,bill,bill,noun,base,1,請求書・法案・紙幣,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,533,method,method,noun,base,1,方法,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,535,require,require,verb,base,1,必要とする・要求する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,541,statement,statement,noun,base,1,声明・発言・記述,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,544,unite,unite,verb,base,1,結合する・団結する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,545,various,various,adjective,base,1,さまざまな,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,546,worker,worker,noun,base,1,労働者・働く人,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,549,condition,condition,noun,base,1,状態・条件,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,550,customer,customer,noun,base,1,顧客・客,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,551,depend,depend,verb,base,1,頼る・依存する・左右される,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,553,graph,graph,noun,base,1,グラフ・図表,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,557,passage,passage,noun,base,1,一節・通路・経過,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,565,trouble,trouble,noun,base,1,問題・困難・迷惑,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,566,value,value,noun,base,1,価値・値,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,568,design,design,noun,base,1,設計・デザイン・意図,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,571,experiment,experiment,noun,base,1,実験,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,574,instead,instead,adverb,base,1,代わりに・そうではなく,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,577,similar,similar,adjective,base,1,似ている・同様の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,580,base,base,noun,base,1,基礎・土台・基地,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,581,below,below,adverb,base,1,下に・以下で,high_school,2,center_exam,前置詞用法もあるがここでは副詞,center_pos=RB; center_pmw=100+
+add,592,accept,accept,verb,base,1,受け入れる・認める,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,594,average,average,noun,base,1,平均,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,595,avoid,avoid,verb,base,1,避ける,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,596,distance,distance,noun,base,1,距離,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,598,environment,environment,noun,base,1,環境,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,602,rate,rate,noun,base,1,割合・率・料金,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,607,describe,describe,verb,base,1,描写する・説明する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,609,follow,follow,verb,base,1,続く・従う・理解する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,619,skill,skill,noun,base,1,技能・能力,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,620,technology,technology,noun,base,1,技術・科学技術,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,623,attitude,attitude,noun,base,1,態度・考え方,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,624,behavior,behavior,noun,base,1,行動・ふるまい,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,630,major,major,adjective,base,1,主要な・大きな,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,631,mention,mention,noun,base,1,言及,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,633,opportunity,opportunity,noun,base,1,機会・好機,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,634,process,process,noun,base,1,過程・処理・工程,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,637,equal,equal,adjective,base,1,等しい・平等な,high_school,2,center_exam,動詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,641,issue,issue,noun,base,1,問題・論点・発行物,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,642,item,item,noun,base,1,項目・品物,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,644,nation,nation,noun,base,1,国家・国民,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,650,clearly,clearly,adverb,base,1,はっきりと・明らかに,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,651,comfortable,comfortable,adjective,base,1,快適な・心地よい,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,653,education,education,noun,base,1,教育,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,654,encourage,encourage,verb,base,1,励ます・促す,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,662,online,online,adjective,base,1,オンラインの,high_school,2,center_exam,副詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,664,particular,particular,adjective,base,1,特定の・特別な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,665,protect,protect,verb,base,1,守る・保護する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,668,suppose,suppose,verb,base,1,思う・仮定する,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,669,tend,tend,verb,base,1,傾向がある・〜しがちである,high_school,2,center_exam,tend to の形でよく使う,center_pos=VVP; center_pmw=100+
+add,670,therefore,therefore,adverb,base,1,それゆえに・したがって,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,671,weight,weight,noun,base,1,重さ・体重・重要性,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,673,affect,affect,verb,base,1,影響を与える,high_school,2,center_exam,effect との混同に注意,center_pos=VV; center_pmw=100+
+add,674,development,development,noun,base,1,発達・発展・開発,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,679,perform,perform,verb,base,1,行う・演じる・遂行する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,681,public,public,adjective,base,1,公共の・公の,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,683,service,service,noun,base,1,サービス・業務・公共事業,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,684,sheet,sheet,noun,base,1,紙・用紙・シート,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,687,traffic,traffic,noun,base,1,交通・交通量,high_school,2,center_exam,通常不可算寄り,center_pos=NN; center_pmw=100+
+add,689,act,act,noun,base,1,行為・行動・法律,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,698,deal,deal,noun,base,1,取引・扱い・量,high_school,2,center_exam,a great deal of など複数語表現にも注意,center_pos=NN; center_pmw=100+
+add,699,express,express,adjective,base,1,急行の・明確な,high_school,2,center_exam,動詞用法も重要だがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,701,jack,jack,noun,base,1,ジャッキ・トランプのジャック,high_school,2,center_exam,人名の可能性もあるため要注意語,center_pos=NN; center_pmw=100+
+add,707,shape,shape,noun,base,1,形・形状,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,711,topic,topic,noun,base,1,話題・題目,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,713,appear,appear,verb,base,1,現れる・〜のように見える,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,717,dangerous,dangerous,adjective,base,1,危険な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,719,effect,effect,noun,base,1,効果・影響・結果,high_school,2,center_exam,affect との混同に注意,center_pos=NN; center_pmw=100+
+add,721,finding,finding,noun,base,1,発見・調査結果,high_school,2,center_exam,find の現在分詞由来だが名詞として登録,center_pos=NN; center_pmw=100+
+add,722,forward,forward,adverb,base,1,前へ・先へ,high_school,2,center_exam,look forward to は複数語表現として別扱い,center_pos=RB; center_pmw=100+
+add,724,indicate,indicate,verb,base,1,示す・指し示す,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,727,traditional,traditional,adjective,base,1,伝統的な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,730,ability,ability,noun,base,1,能力・才能,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,736,complain,complain,verb,base,1,不平を言う・訴える,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,739,exactly,exactly,adverb,base,1,正確に・まさに,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,740,expert,expert,noun,base,1,専門家,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,745,manage,manage,verb,base,1,管理する・何とかやり遂げる,high_school,2,center_exam,manage to の形にも注意,center_pos=VV; center_pmw=100+
+add,747,purpose,purpose,noun,base,1,目的・意図,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,748,represent,represent,verb,base,1,表す・代表する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,753,stage,stage,noun,base,1,段階・舞台,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,754,style,style,noun,base,1,様式・スタイル,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,755,summit,summit,noun,base,1,頂上・首脳会議,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,756,support,support,noun,base,1,支援・支持,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,760,community,community,noun,base,1,地域社会・共同体,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,767,quality,quality,noun,base,1,質・品質・特質,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,768,recognize,recognize,verb,base,1,認識する・認める,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,770,reduce,reduce,verb,base,1,減らす・減少させる,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,774,contain,contain,verb,base,1,含む・収容する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,775,convenient,convenient,adjective,base,1,便利な・都合のよい,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,777,difficulty,difficulty,noun,base,1,困難・難しさ,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,778,economic,economic,adjective,base,1,経済の・経済的な,high_school,2,center_exam,economical との違いに注意,center_pos=JJ; center_pmw=100+
+add,779,familiar,familiar,adjective,base,1,よく知られた・親しみのある,high_school,2,center_exam,be familiar with の形にも注意,center_pos=JJ; center_pmw=100+
+add,788,prepare,prepare,verb,base,1,準備する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,791,serve,serve,verb,base,1,仕える・提供する・役に立つ,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,793,suitcase,suitcase,noun,base,1,スーツケース,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,798,beginning,beginning,noun,base,1,始まり・冒頭,high_school,2,center_exam,begin の現在分詞由来だが名詞として登録,center_pos=NN; center_pmw=100+
+add,799,bite,bite,noun,base,1,かむこと・一口,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,801,compare,compare,verb,base,1,比較する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,804,due,due,adjective,base,1,期限の来た・当然支払われる・〜する予定で,high_school,2,center_exam,due to は複数語表現として別扱い,center_pos=JJ; center_pmw=100+
+add,807,heat,heat,noun,base,1,熱・暑さ,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,813,tourist,tourist,noun,base,1,旅行者・観光客,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,817,alarm,alarm,noun,base,1,警報・目覚まし・不安,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,818,content,content,noun,base,1,内容・中身,high_school,2,center_exam,形容詞 content とは発音差あり,center_pos=NN; center_pmw=100+
+add,819,convenience,convenience,noun,base,1,便利さ・都合,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,820,department,department,noun,base,1,部門・学科・売り場,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,821,factor,factor,noun,base,1,要因・要素,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,827,material,material,noun,base,1,材料・資料,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,828,message,message,noun,base,1,伝言・メッセージ,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,830,participate,participate,verb,base,1,参加する,high_school,2,center_exam,participate in の形でよく使う,center_pos=VV; center_pmw=100+
+add,831,passenger,passenger,noun,base,1,乗客,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,834,recent,recent,adjective,base,1,最近の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,835,repair,repair,noun,base,1,修理,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,836,satisfy,satisfy,verb,base,1,満足させる・条件を満たす,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,840,total,total,adjective,base,1,全体の・合計の,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,842,advantage,advantage,noun,base,1,利点・有利な点,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,843,argue,argue,verb,base,1,主張する・議論する,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,846,butterfly,butterfly,noun,base,1,チョウ・蝶,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,847,calorie,calorie,noun,base,1,カロリー,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,849,complete,complete,adjective,base,1,完全な・完了した,high_school,2,center_exam,動詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,854,figure,figure,noun,base,1,数字・人物・図・姿,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,858,glen,glen,noun,base,1,谷・峡谷,high_school,2,center_exam,固有名の可能性もあるため要注意語,center_pos=NN; center_pmw=100+
+add,859,government,government,noun,base,1,政府,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,860,instance,instance,noun,base,1,例・場合,high_school,2,center_exam,for instance の形にも注意,center_pos=NN; center_pmw=100+
+add,861,leisure,leisure,noun,base,1,余暇・自由時間,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,865,quilt,quilt,noun,base,1,キルト・掛け布団,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,867,task,task,noun,base,1,仕事・課題,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,868,transportation,transportation,noun,base,1,交通機関・輸送,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,873,appreciate,appreciate,verb,base,1,感謝する・正しく理解する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,874,approach,approach,noun,base,1,方法・接近,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,883,level,level,noun,base,1,水準・段階・レベル,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,884,limit,limit,noun,base,1,限界・制限,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,885,nervous,nervous,adjective,base,1,緊張した・神経質な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,886,original,original,adjective,base,1,元の・独創的な,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,887,photograph,photograph,noun,base,1,写真,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,888,progress,progress,noun,base,1,進歩・進展,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,889,ray,ray,noun,base,1,光線・一筋の光,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,894,serious,serious,adjective,base,1,深刻な・真剣な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,897,successful,successful,adjective,base,1,成功した・うまくいった,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,899,upset,upset,adjective,base,1,動揺した・腹を立てた,high_school,2,center_exam,動詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,903,atmosphere,atmosphere,noun,base,1,雰囲気・大気,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,904,attract,attract,verb,base,1,引きつける・魅了する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,905,benefit,benefit,noun,base,1,利益・恩恵・利点,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,909,choice,choice,noun,base,1,選択・選択肢,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,910,communicate,communicate,verb,base,1,伝える・意思疎通する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,914,meal,meal,noun,base,1,食事,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,916,occur,occur,verb,base,1,起こる・発生する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,919,physical,physical,adjective,base,1,身体の・物理的な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,924,regard,regard,noun,base,1,点・関心・敬意,high_school,2,center_exam,in this regard などの形にも注意,center_pos=NN; center_pmw=100+
+add,925,schedule,schedule,noun,base,1,予定・日程,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,926,slightly,slightly,adverb,base,1,わずかに・少し,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,928,strategy,strategy,noun,base,1,戦略・方策,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,933,advance,advance,noun,base,1,進歩・前進,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,934,basic,basic,adjective,base,1,基本的な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,935,character,character,noun,base,1,性格・登場人物・文字,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,936,communication,communication,noun,base,1,伝達・コミュニケーション,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,937,conduct,conduct,noun,base,1,行動・ふるまい,high_school,2,center_exam,動詞 conduct とは発音差あり,center_pos=NN; center_pmw=100+
+add,939,decision,decision,noun,base,1,決定・判断,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,940,decrease,decrease,noun,base,1,減少,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,943,email,email,noun,base,1,電子メール・メール,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,944,fear,fear,noun,base,1,恐れ・不安,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,950,leader,leader,noun,base,1,指導者・リーダー,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,952,muscle,muscle,noun,base,1,筋肉,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,953,nearly,nearly,adverb,base,1,ほとんど・もう少しで,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,954,opposite,opposite,adjective,base,1,反対の・向かい側の,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,956,project,project,noun,base,1,計画・事業・プロジェクト,high_school,2,center_exam,動詞 project とは発音差あり,center_pos=NN; center_pmw=100+
+add,957,source,source,noun,base,1,源・出所・情報源,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,960,taste,taste,noun,base,1,味・好み,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,962,variety,variety,noun,base,1,多様性・種類,high_school,2,center_exam,a variety of の形にも注意,center_pos=NN; center_pmw=100+
+add,963,ancient,ancient,adjective,base,1,古代の・昔の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,971,effort,effort,noun,base,1,努力・取り組み,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,973,european,european,adjective,base,1,ヨーロッパの・ヨーロッパ人の,high_school,2,center_exam,国・地域由来語,center_pos=JJ; center_pmw=100+
+add,977,image,image,noun,base,1,印象・画像・イメージ,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,978,involve,involve,verb,base,1,含む・関わらせる,high_school,2,center_exam,be involved in の形にも注意,center_pos=VV; center_pmw=100+
+add,980,laser,laser,noun,base,1,レーザー,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,988,ordinary,ordinary,adjective,base,1,普通の・通常の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,989,pattern,pattern,noun,base,1,型・模様・パターン,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,990,performance,performance,noun,base,1,実績・演技・性能,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,992,rodent,rodent,noun,base,1,げっ歯類,high_school,2,center_exam,動物分類語,center_pos=NN; center_pmw=100+
+add,994,self,self,noun,base,1,自己・自分自身,high_school,2,center_exam,複合語や代名詞表現にも注意,center_pos=NN; center_pmw=100+
+add,996,term,term,noun,base,1,用語・期間・条件,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,1000,access,access,noun,base,1,利用・接近・アクセス,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1003,elderly,elderly,adjective,base,1,年配の・高齢の,high_school,2,center_exam,the elderly は「高齢者」,center_pos=JJ; center_pmw=100+
+add,1004,essential,essential,adjective,base,1,不可欠な・本質的な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1006,gain,gain,noun,base,1,利益・増加・獲得,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1007,global,global,adjective,base,1,世界的な・地球規模の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1008,hate,hate,verb,base,1,ひどく嫌う,high_school,2,center_exam,センター試験語彙,center_pos=VVP; center_pmw=100+
+add,1012,knowledge,knowledge,noun,base,1,知識,high_school,2,center_exam,通常不可算寄り,center_pos=NN; center_pmw=100+
+add,1013,lack,lack,noun,base,1,不足・欠如,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1014,medical,medical,adjective,base,1,医学の・医療の,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1018,peter,peter,noun,base,1,ピーター,high_school,2,center_exam,人名の可能性が高いため要注意語,center_pos=NN; center_pmw=100+
+add,1019,respect,respect,noun,base,1,尊敬・点・配慮,high_school,2,center_exam,in respect of などの形にも注意,center_pos=NN; center_pmw=100+
+add,1022,simply,simply,adverb,base,1,単に・簡単に,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,1024,survive,survive,verb,base,1,生き残る・切り抜ける,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1029,bother,bother,verb,base,1,悩ませる・わざわざ〜する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1030,cell,cell,noun,base,1,細胞・小部屋,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1031,coal,coal,noun,base,1,石炭,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1033,direction,direction,noun,base,1,方向・指示,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1034,dot,dot,noun,base,1,点・ドット,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1038,general,general,adjective,base,1,一般的な・全体的な,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,1039,immediately,immediately,adverb,base,1,すぐに・直ちに,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,1040,impossible,impossible,adjective,base,1,不可能な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1041,jenny,jenny,noun,base,1,ジェニー,high_school,2,center_exam,人名の可能性が高いため要注意語,center_pos=NN; center_pmw=100+
+add,1047,patient,patient,noun,base,1,患者,high_school,2,center_exam,形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1049,pull,pull,verb,base,1,引く・引っぱる,high_school,2,center_exam,名詞用法もあるがここでは動詞,center_pos=VV; center_pmw=100+
+add,1051,relate,relate,verb,base,1,関係づける・関連する,high_school,2,center_exam,relate to の形にも注意,center_pos=VVP; center_pmw=100+
+add,1052,responsibility,responsibility,noun,base,1,責任・責務,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1053,steal,steal,verb,base,1,盗む,high_school,2,center_exam,不規則動詞 steal-stole-stolen,center_pos=VV; center_pmw=100+
+add,1055,understanding,understanding,noun,base,1,理解・理解力,high_school,2,center_exam,understand の現在分詞由来だが名詞として登録,center_pos=NN; center_pmw=100+
+add,1058,adjust,adjust,verb,base,1,調整する・適応する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1061,button,button,noun,base,1,ボタン,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1062,challenge,challenge,noun,base,1,課題・挑戦,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1063,cheap,cheap,adjective,base,1,安い・安っぽい,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1064,completely,completely,adverb,base,1,完全に・すっかり,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,1065,contrast,contrast,noun,base,1,対照・違い,high_school,2,center_exam,動詞 contrast とは発音差あり,center_pos=NN; center_pmw=100+
+add,1066,correct,correct,adjective,base,1,正しい・適切な,high_school,2,center_exam,動詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,1067,designer,designer,noun,base,1,デザイナー・設計者,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1070,earn,earn,verb,base,1,稼ぐ・得る,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1071,equipment,equipment,noun,base,1,設備・装備・用具,high_school,2,center_exam,通常不可算寄り,center_pos=NN; center_pmw=100+
+add,1072,everyday,everyday,adjective,base,1,日常の・毎日の,high_school,2,center_exam,every day とは区別,center_pos=JJ; center_pmw=100+
+add,1073,examine,examine,verb,base,1,調べる・診察する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1074,exist,exist,verb,base,1,存在する,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1076,function,function,noun,base,1,機能・働き・関数,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1080,hiker,hiker,noun,base,1,ハイキングをする人・登山者,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1082,import,import,noun,base,1,輸入・輸入品,high_school,2,center_exam,動詞 import とは発音差あり,center_pos=NN; center_pmw=100+
+add,1085,laughter,laughter,noun,base,1,笑い・笑い声,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1086,locate,locate,verb,base,1,位置を示す・見つける,high_school,2,center_exam,be located in の形にも注意,center_pos=VV; center_pmw=100+
+add,1087,missy,missy,noun,base,1,お嬢さん,high_school,2,center_exam,人名・呼びかけの可能性があるため要注意語,center_pos=NN; center_pmw=100+
+add,1090,psychologist,psychologist,noun,base,1,心理学者,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1093,relax,relax,verb,base,1,くつろぐ・リラックスする,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1095,single,single,adjective,base,1,たった一つの・独身の,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,1096,surface,surface,noun,base,1,表面,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1097,surprise,surprise,noun,base,1,驚き・意外な出来事,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1098,swimming,swimming,noun,base,1,水泳,high_school,2,center_exam,swim の現在分詞由来だが名詞として登録,center_pos=NN; center_pmw=100+
+add,1103,apply,apply,verb,base,1,申し込む・適用する,high_school,2,center_exam,apply to/for の形にも注意,center_pos=VV; center_pmw=100+
+add,1104,appropriate,appropriate,adjective,base,1,適切な・ふさわしい,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1105,attend,attend,verb,base,1,出席する・通う,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1106,balance,balance,noun,base,1,バランス・均衡・残高,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1109,burn,burn,noun,base,1,やけど・燃焼,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1110,carol,carol,noun,base,1,キャロル・聖歌,high_school,2,center_exam,人名または歌の可能性があるため要注意語,center_pos=NN; center_pmw=100+
+add,1111,count,count,noun,base,1,数・数えること,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1114,diet,diet,noun,base,1,食事・食生活・ダイエット,high_school,2,center_exam,国会の意味もあるがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,1118,explanation,explanation,noun,base,1,説明,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1119,fashion,fashion,noun,base,1,流行・ファッション・様式,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1120,fix,fix,noun,base,1,解決策・修理・苦境,high_school,2,center_exam,動詞用法の方が重要な場合あり,center_pos=NN; center_pmw=100+
+add,1124,handle,handle,verb,base,1,扱う・処理する,high_school,2,center_exam,名詞用法もあるがここでは動詞,center_pos=VV; center_pmw=100+
+add,1125,hang,hang,verb,base,1,掛かる・掛ける・つるす,high_school,2,center_exam,不規則変化 hang-hung-hung に注意,center_pos=VV; center_pmw=100+
+add,1126,hardly,hardly,adverb,base,1,ほとんど〜ない,high_school,2,center_exam,否定的意味を持つ副詞,center_pos=RB; center_pmw=100+
+add,1128,hike,hike,noun,base,1,ハイキング・徒歩旅行,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1130,joke,joke,noun,base,1,冗談・ジョーク,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1133,note,note,noun,base,1,メモ・注・紙幣・音符,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,1134,overseas,overseas,adverb,base,1,海外へ・海外で,high_school,2,center_exam,形容詞用法もあるがここでは副詞,center_pos=RB; center_pmw=100+
+add,1140,theory,theory,noun,base,1,理論・説,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1141,thus,thus,adverb,base,1,このように・したがって,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,1142,truck,truck,noun,base,1,トラック,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1146,vinegar,vinegar,noun,base,1,酢,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1148,aspect,aspect,noun,base,1,側面・様相,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1151,consumption,consumption,noun,base,1,消費・消耗,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1153,degree,degree,noun,base,1,程度・度・学位,high_school,2,center_exam,多義語だがv1では主要語義をまとめる,center_pos=NN; center_pmw=100+
+add,1155,destination,destination,noun,base,1,目的地・行き先,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1156,device,device,noun,base,1,装置・工夫・手段,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1157,digital,digital,adjective,base,1,デジタルの,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1158,directly,directly,adverb,base,1,直接に・すぐに,high_school,2,center_exam,センター試験語彙,center_pos=RB; center_pmw=100+
+add,1159,dive,dive,noun,base,1,飛び込み・潜水,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1161,exchange,exchange,noun,base,1,交換・交流・両替,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1162,fit,fit,noun,base,1,適合・発作,high_school,2,center_exam,動詞・形容詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1163,focus,focus,noun,base,1,焦点・中心,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1165,individual,individual,adjective,base,1,個々の・個人の,high_school,2,center_exam,名詞用法もあるがここでは形容詞,center_pos=JJ; center_pmw=100+
+add,1167,km,km,noun,base,1,キロメートル,high_school,2,center_exam,単位略語,center_pos=NN; center_pmw=100+
+add,1168,label,label,noun,base,1,ラベル・表示,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1171,officer,officer,noun,base,1,職員・役人・警官,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1172,popularity,popularity,noun,base,1,人気・評判,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1174,rainforest,rainforest,noun,base,1,熱帯雨林,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+
+add,1175,regular,regular,adjective,base,1,規則的な・通常の・定期的な,high_school,2,center_exam,センター試験語彙,center_pos=JJ; center_pmw=100+
+add,1176,relieve,relieve,verb,base,1,和らげる・安心させる,high_school,2,center_exam,センター試験語彙,center_pos=VV; center_pmw=100+
+add,1177,screen,screen,noun,base,1,画面・スクリーン,high_school,2,center_exam,動詞用法もあるがここでは名詞,center_pos=NN; center_pmw=100+
+add,1178,site,site,noun,base,1,場所・用地・サイト,high_school,2,center_exam,センター試験語彙,center_pos=NN; center_pmw=100+

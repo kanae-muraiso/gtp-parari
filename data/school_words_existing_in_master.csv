@@ -1,0 +1,1298 @@
+word,suggested_level,junior_meaning_ja,high_meaning_ja,source_names,source_ranks,master_status,master_levels,master_pos,master_meaning_ja,match_count
+about,junior_high,について、に関する,,junior_word_list,2;725,existing,junior_high,preposition,〜について・およそ,2
+above,junior_high,上に，上記の,,junior_word_list,1247,existing,junior_high,preposition,〜の上に・〜を超えて,2
+abroad,junior_high,外国に、海外に,外国で,junior_word_list;high_word_list,727;1903;433,existing,junior_high,adverb,外国へ・外国で,2
+absent,junior_high,欠席の,,junior_word_list,729,existing,junior_high,adjective,欠席の・不在の,2
+accept,junior_high,を受け入れる,受け入れる,junior_word_list;high_word_list,1248;299,existing,high_school,verb,受け入れる・認める,2
+accident,junior_high,事故,,junior_word_list,1249,existing,junior_high,noun,事故,2
+across,junior_high,横断して,,junior_word_list,731,existing,junior_high,preposition;adverb,〜を横切って・〜の向こう側に / 横切って・向こう側へ,4
+action,junior_high,行動,,junior_word_list,732,existing,junior_high,noun,行動,2
+activity,junior_high,活動,活動,junior_word_list;high_word_list,3;426,existing,high_school,noun,活動,4
+actor,junior_high,俳優,,junior_word_list,4,existing,junior_high,noun,俳優,2
+actually,junior_high,実は，本当は,実際に,junior_word_list;high_word_list,1250;87,existing,high_school,adverb,実際に・実は,2
+add,junior_high,加える,足し算する,junior_word_list;high_word_list,733;154,existing,junior_high,verb,加える,2
+address,junior_high,住所,住所,junior_word_list;high_word_list,1251;506,existing,junior_high,noun,住所,2
+advice,junior_high,忠告,助言,junior_word_list;high_word_list,734;507,existing,junior_high,noun,忠告・助言,2
+advise,junior_high,助言する,,junior_word_list,735,existing,junior_high,verb,忠告する・助言する,2
+affect,junior_high,に影響を与える,,junior_word_list,1252,existing,high_school,verb,影響を与える,2
+afraid,junior_high,こわがって,心配して,junior_word_list;high_word_list,736;270,existing,junior_high,adjective,恐れて,2
+after,junior_high,～のあとに,,junior_word_list,5;738;739;1864,existing,junior_high,preposition,〜の後に,2
+afternoon,junior_high,午後,,junior_word_list,6,existing,junior_high,noun,午後,2
+again,junior_high,もう一度、再び、また,,junior_word_list,7,existing,junior_high,adverb,もう一度・再び,2
+against,junior_high,に対抗して、反対して,,junior_word_list,8,existing,high_school,preposition,〜に反対して・〜に逆らって,2
+age,junior_high,年齢,,junior_word_list,9;741,existing,junior_high,noun,年齢,2
+ago,junior_high,～の前に,,junior_word_list,742,existing,junior_high,adverb,前に,2
+agree,junior_high,賛成する,同意する,junior_word_list;high_word_list,1254;187,existing,high_school,verb,同意する・意見が一致する,2
+ahead,junior_high,前方に,,junior_word_list,1256,existing,junior_high,adverb,前方に・先に,2
+airplane,junior_high,飛行機,,junior_word_list,744,existing,junior_high,noun,飛行機,2
+airport,junior_high,空港,,junior_word_list,745,existing,junior_high,noun,空港,2
+all,junior_high,全部、全員、全て、みな,,junior_word_list,10;747,existing,junior_high,adverb,まったく・すっかり・みんな・すべて,2
+almost,junior_high,ほとんど,,junior_word_list,1258,existing,junior_high,adverb,ほとんど,2
+alone,junior_high,独りで,,junior_word_list,748,existing,junior_high,adverb,ひとりで,2
+along,junior_high,に沿って,,junior_word_list,11,existing,junior_high,preposition,〜に沿って,2
+already,junior_high,すでに,,junior_word_list,605;1259,existing,junior_high,adverb,すでに,2
+also,junior_high,もまた,,junior_word_list,12;13,existing,junior_high,adverb,〜もまた,2
+although,junior_high,であるけれど,だけれども,junior_word_list;high_word_list,1260;487,existing,high_school,conjunction,〜だけれども,2
+always,junior_high,いつも,,junior_word_list,14,existing,junior_high,adverb,いつも,2
+am,junior_high,午前,,junior_word_list,1;15;16,existing,junior_high,auxiliary,いる・ある,1
+among,junior_high,の中で,,junior_word_list,749,existing,junior_high,preposition,〜の間に・〜の中で,2
+amount,junior_high,量，額,量,junior_word_list;high_word_list,1263;116,existing,high_school,noun,量・総額,2
+an,junior_high,1つの、1人の,,junior_word_list,17,existing,junior_high,article,ひとつの・ある,1
+ancient,junior_high,古代の,古代の,junior_word_list;high_word_list,750;366,existing,high_school,adjective,古代の・昔の,2
+and,junior_high,それと,,junior_word_list,18;19,existing,junior_high,conjunction,そして・〜と,2
+angry,junior_high,怒って,,junior_word_list,752;1264,existing,junior_high,adjective,怒っている,2
+animal,junior_high,動物,,junior_word_list,21;659,existing,junior_high,noun,動物,2
+another,junior_high,ほかの、別の,,junior_word_list,22;753;1886,existing,junior_high,adjective,ほかの・もう一つの,2
+answer,junior_high,に答える,,junior_word_list,754;1867,existing,junior_high,noun;verb,答え / 答える,4
+any,junior_high,どれもない,,junior_word_list,1267;1268,existing,high_school,adjective,いくらかの・どんな〜でも,4
+anyway,junior_high,ともかく,,junior_word_list,1929,existing,junior_high,adverb,とにかく,2
+appear,junior_high,現れる,現れる,junior_word_list;high_word_list,756;370,existing,high_school,verb,現れる・〜のように見える,2
+apple,junior_high,りんご,,junior_word_list,23,existing,junior_high,noun,りんご,2
+apply,junior_high,当てはまる,適用する,junior_word_list;high_word_list,1269;200,existing,high_school,verb,申し込む・適用する,2
+april,junior_high,４月,,junior_word_list,24,existing,junior_high,noun,4月,2
+are,junior_high,です、ます,,junior_word_list,26;27;757,existing,junior_high,auxiliary,ある・いる・〜である,1
+area,junior_high,区域、場所、地域,,junior_word_list,28,existing,junior_high,noun,地域・区域,2
+arm,junior_high,腕,,junior_word_list,758;1270,existing,junior_high,noun,腕,2
+army,junior_high,陸軍,,junior_word_list,1271,existing,junior_high,noun,陸軍・軍隊,2
+around,junior_high,の近くに,,junior_word_list,29;30;31;32;1272,existing,junior_high,preposition,〜の周りに・およそ,2
+arrive,junior_high,到着する,,junior_word_list,604;759,existing,junior_high,verb,到着する,2
+arrow,junior_high,矢,,junior_word_list,1274,existing,junior_high,noun,矢,2
+art,junior_high,美術,,junior_word_list,33;626,existing,junior_high,noun,美術・芸術,2
+as,junior_high,として,,junior_word_list,34;762,existing,junior_high,conjunction,〜するとき・〜なので・〜のように,2
+ashamed,junior_high,恥じて,,junior_word_list,1276,existing,junior_high,adjective,恥じて,2
+ask,junior_high,をたのむ,,junior_word_list,764,existing,junior_high,verb,尋ねる・頼む,2
+at,junior_high,【場所】に、で,,junior_word_list,35;36;37;1277,existing,junior_high,preposition,〜で・〜に,2
+ate,junior_high,食べた（過去形）,,junior_word_list,38,existing,junior_high,verb,食べる（過去形）,1
+attend,junior_high,に通う，に出席する,出席する,junior_word_list;high_word_list,1278;956;1459,existing,high_school,verb,出席する・通う,2
+august,junior_high,8月,,junior_word_list,39,existing,junior_high,noun,8月,2
+aunt,junior_high,おば,,junior_word_list,613;765,existing,junior_high,noun,おば,2
+autumn,junior_high,秋,,junior_word_list,40,existing,junior_high,noun,秋,2
+awake,junior_high,目が覚める,目を覚ましている,junior_word_list;high_word_list,1280;1217;1720,existing,junior_high,verb,目が覚める / 目が覚める（過去形） / 目が覚める（過去分詞）,4
+away,junior_high,はなれて、去って,,junior_word_list,41;766;1880,existing,junior_high,adverb,離れて・去って,2
+baby,junior_high,赤ん坊,,junior_word_list,767,existing,junior_high,noun,赤ん坊,2
+back,junior_high,戻って、返して,,junior_word_list,42;1282,existing,junior_high,adjective,後ろの・裏の,2
+bad,junior_high,悪い,,junior_word_list,43,existing,junior_high,adjective,悪い / より悪い / 最も悪い,4
+bag,junior_high,かばん,,junior_word_list,45,existing,junior_high,noun,かばん,2
+bake,junior_high,焼く,,junior_word_list,1283,existing,junior_high,verb,焼く,2
+barber,junior_high,散髪屋,,junior_word_list,1285,existing,junior_high,noun,床屋・理髪師,2
+baseball,junior_high,野球,,junior_word_list,46,existing,junior_high,noun,野球,2
+bath,junior_high,入浴,,junior_word_list,47;698,existing,junior_high,noun,風呂,2
+be,junior_high,である、になる,,junior_word_list,48;769,existing,junior_high,auxiliary,いる・ある / ある・いる・〜である / 〜ではない・〜にいない / である / 〜であった・いた / 〜であること・〜でいて / 彼は〜です・彼は〜している / どのようですか・調子はどうですか / 私は〜です・私は〜している / ある・いる / それは〜です・それは〜している / 彼女は〜です・彼女は〜している / それは〜です・あれは〜です / 〜がある・〜がいる / 彼らは〜です・彼女らは〜です・それらは〜です / だった・いた / 〜ではなかった・〜にいなかった / 私たちは〜です・私たちは〜している / 何が〜ですか・何ですか / いつですか / どこにありますか・どこですか / 誰が〜ですか / なぜ〜なのですか / あなたは〜です・あなたは〜している,28
+beach,junior_high,浜、海辺,,junior_word_list,49,existing,junior_high,noun,砂浜・ビーチ,2
+bean,junior_high,豆,,junior_word_list,50,existing,junior_high,noun,豆,2
+bear,junior_high,クマ,我慢する,junior_word_list;high_word_list,51;710;441,existing,junior_high,noun,クマ,2
+beautiful,junior_high,美しい,,junior_word_list,52,existing,junior_high,adjective,美しい,2
+beauty,junior_high,美しさ、美,,junior_word_list,770,existing,junior_high,noun,美・美しさ,2
+because,junior_high,だから、なので,,junior_word_list,771;1865,existing,junior_high,conjunction,なぜなら・〜なので,2
+become,junior_high,になる,,junior_word_list,53;664;1292,existing,junior_high,verb,〜になる（過去形） / 〜になる（過去分詞） / 〜になる,5
+bed,junior_high,ベッド,,junior_word_list,54,existing,junior_high,noun,ベッド,2
+beef,junior_high,牛肉,,junior_word_list,706;1293,existing,junior_high,noun,牛肉,2
+beer,junior_high,ビール,,junior_word_list,773,existing,junior_high,noun,ビール,2
+before,junior_high,の前に,,junior_word_list,55;774;775,existing,junior_high,preposition,〜の前に,2
+began,junior_high,始めた,,junior_word_list,776,existing,junior_high,verb,始まる・始める（過去形）,1
+begin,junior_high,を始める,,junior_word_list,777;1294,existing,junior_high,verb,始まる・始める（過去形） / 始まる・始める / 始まる・始める（過去分詞）,4
+beginning,junior_high,最初,,junior_word_list,1296,existing,high_school,noun,始まり・冒頭,2
+behavior,junior_high,ふるまい,振る舞い,junior_word_list;high_word_list,1297;268,existing,high_school,noun,行動・ふるまい,2
+behind,junior_high,の後ろに,背後に,junior_word_list;high_word_list,56;73,existing,junior_high,preposition,〜の後ろに,2
+believe,junior_high,信じる,,junior_word_list,779;1298,existing,junior_high,verb,信じる,2
+belong,junior_high,のものである,に属する,junior_word_list;high_word_list,1299;235,existing,junior_high,verb,所属する,2
+below,junior_high,下に，下記の,,junior_word_list,1300,existing,high_school,adverb,下に・以下で,2
+beside,junior_high,の側に,横に,junior_word_list;high_word_list,780;55,existing,junior_high,preposition,〜のそばに,2
+besides,junior_high,そのうえ，さらに,,junior_word_list,1301,existing,junior_high,adverb,その上・さらに,2
+best,junior_high,最も良い,,junior_word_list,57;781,existing,junior_high,adverb;adjective,最もよく・最も上手に / 最もよい,2
+better,junior_high,より良い,,junior_word_list,782,existing,junior_high,adverb;adjective,よりよく・より上手に / よりよい,2
+between,junior_high,と～の間で,,junior_word_list,783;1884,existing,junior_high,preposition,〜の間に,2
+beyond,junior_high,をこえたところに,を超えて,junior_word_list;high_word_list,1302;465,existing,high_school,preposition,〜を越えて・〜の向こうに,2
+bicycle,junior_high,自転車,,junior_word_list,59,existing,junior_high,noun,自転車,2
+big,junior_high,大きい,,junior_word_list,60,existing,junior_high,adjective,大きい,2
+bike,junior_high,自転車,,junior_word_list,61,existing,junior_high,noun,自転車・バイク,2
+bill,junior_high,請求書,請求書,junior_word_list;high_word_list,784;250,existing,high_school,noun,請求書・法案・紙幣,2
+billion,junior_high,10億,,junior_word_list,1303,existing,junior_high,numeral,10億,2
+bird,junior_high,鳥,,junior_word_list,62,existing,junior_high,noun,鳥,2
+birthday,junior_high,誕生日,,junior_word_list,63,existing,junior_high,noun,誕生日,2
+bit,junior_high,少し,,junior_word_list,1304,existing,junior_high,noun,少し,2
+black,junior_high,黒い,,junior_word_list,64,existing,junior_high,adjective,黒い,2
+blind,junior_high,目の見えない,,junior_word_list,1921,existing,junior_high,adjective,目の見えない,2
+blood,junior_high,血,血,junior_word_list;high_word_list,1305;379,existing,junior_high,noun,血,2
+blow,junior_high,吹く,吹く,junior_word_list;high_word_list,1306;640,existing,junior_high,verb,吹く（過去形） / 吹く / 吹く（過去分詞）,4
+blue,junior_high,青い,,junior_word_list,65,existing,junior_high,adjective,青い,2
+body,junior_high,身体,,junior_word_list,66,existing,junior_high,noun,体,2
+boil,junior_high,ゆでる，煮る,,junior_word_list,1307,existing,junior_high,verb,ゆでる・沸く,2
+bomb,junior_high,爆弾,,junior_word_list,1308,existing,junior_high,noun,爆弾,2
+book,junior_high,本,,junior_word_list,67,existing,junior_high,noun,本,2
+bookstore,junior_high,本屋,,junior_word_list,68,existing,junior_high,noun,本屋,2
+borrow,junior_high,を借りる,借りる,junior_word_list;high_word_list,69;690;795;1298,existing,junior_high,verb,借りる,2
+both,junior_high,両方,,junior_word_list,786,existing,junior_high,adverb,両方とも,2
+bother,junior_high,面倒,悩ます,junior_word_list;high_word_list,1311;74,existing,high_school,verb,悩ませる・わざわざ〜する,2
+bought,junior_high,買った（過去形）,,junior_word_list,70,existing,junior_high,verb,買う（過去形） / 買う（過去分詞）,2
+bowl,junior_high,鉢,,junior_word_list,1312,existing,junior_high,noun,ボウル・鉢,2
+box,junior_high,箱,,junior_word_list,71,existing,junior_high,noun,箱,2
+boy,junior_high,少年,,junior_word_list,72,existing,junior_high,noun,少年・男の子,2
+brain,junior_high,頭脳,頭脳,junior_word_list;high_word_list,1313;188,existing,high_school,noun,脳・頭脳,2
+branch,junior_high,枝,,junior_word_list,1314,existing,junior_high,noun,枝・支店,2
+brave,junior_high,勇敢な,,junior_word_list,1922,existing,junior_high,adjective,勇敢な,2
+bread,junior_high,パン,,junior_word_list,73,existing,junior_high,noun,パン,2
+break,junior_high,壊れる，破る,,junior_word_list,1315,existing,junior_high,verb,壊れる・壊す / 壊れる・壊す（過去形） / 壊れる・壊す（過去分詞）,4
+breakfast,junior_high,朝食,,junior_word_list,74,existing,junior_high,noun,朝食,2
+bridge,junior_high,橋,,junior_word_list,787,existing,junior_high,noun,橋,2
+bright,junior_high,明るい,,junior_word_list,788;1317,existing,junior_high,adjective,明るい,2
+bring,junior_high,持って来る,,junior_word_list,691,existing,junior_high,verb,持って来る / 持って来る（過去形） / 持って来る（過去分詞）,4
+brother,junior_high,兄弟,,junior_word_list,75,existing,junior_high,noun,兄弟・兄・弟,2
+brown,junior_high,茶色,,junior_word_list,76;714,existing,junior_high,adjective,茶色の,2
+brush,junior_high,をみがく,,junior_word_list,77;1318,existing,junior_high,noun,ブラシ・筆,2
+build,junior_high,を建てる,,junior_word_list,78;789,existing,junior_high,verb,建てる・作る / 建てる・作る（過去形） / 建てる・作る（過去分詞）,4
+building,junior_high,建物,,junior_word_list,790;1319,existing,junior_high,noun,建物,2
+built,junior_high,を建てた,,junior_word_list,791,existing,junior_high,verb,建てる・作る（過去形） / 建てる・作る（過去分詞）,2
+burn,junior_high,を燃やす,,junior_word_list,792;1321,existing,high_school,noun,やけど・燃焼,2
+business,junior_high,商売,,junior_word_list,793,existing,junior_high,noun,商売・仕事,2
+busy,junior_high,忙しい,,junior_word_list,79;718,existing,junior_high,adjective,忙しい,2
+but,junior_high,しかし、けれども,,junior_word_list,80;1863,existing,junior_high,conjunction,しかし・だが,2
+buy,junior_high,を買う,,junior_word_list,81,existing,junior_high,verb,買う（過去形） / 買う（過去分詞） / 買う,4
+by,junior_high,【手段・方法・原因】によって,,junior_word_list,82;83;794;795;796,existing,junior_high,preposition,〜によって・〜のそばに,2
+cake,junior_high,ケーキ,,junior_word_list,84,existing,junior_high,noun,ケーキ,2
+call,junior_high,に電話をかける,,junior_word_list,799;800,existing,junior_high,verb,呼ぶ・電話をかける,2
+calm,junior_high,落ちついた,穏やかな,junior_word_list;high_word_list,1323;2009;2349,existing,junior_high,adjective,落ち着いた,2
+came,junior_high,来た（過去形）,,junior_word_list,85,existing,junior_high,verb,来る（過去形）,1
+can,junior_high,【能力・可能】することができる,,junior_word_list,86;802;1861,existing,junior_high,auxiliary;noun,〜できる・〜してもよい / 缶 / 〜できない / 〜できた・〜かもしれない・〜していただけますか / 〜できなかった・〜できないだろう,7
+candle,junior_high,ろうそく,,junior_word_list,803,existing,junior_high,noun,ろうそく,2
+cap,junior_high,帽子,,junior_word_list,88,existing,junior_high,noun,帽子・ふた,2
+capital,junior_high,首都,資本,junior_word_list;high_word_list,804;520,existing,junior_high,noun,首都・大文字・資本,2
+car,junior_high,自動車,,junior_word_list,89,existing,junior_high,noun,自動車,2
+care,junior_high,世話,,junior_word_list,90;805,existing,junior_high,verb;noun,気にする・世話をする / 世話・管理,4
+careful,junior_high,注意深い,,junior_word_list,92,existing,junior_high,adjective,注意深い,2
+carefully,junior_high,注意深く,,junior_word_list,807;1877,existing,junior_high,adverb,注意深く,2
+carpet,junior_high,じゅうたん,,junior_word_list,808,existing,junior_high,noun,じゅうたん,2
+carry,junior_high,を運ぶ,,junior_word_list,809,existing,junior_high,verb,運ぶ,2
+case,junior_high,場合,,junior_word_list,810;1327;1328,existing,junior_high,noun,場合・容器,2
+cat,junior_high,猫,,junior_word_list,93,existing,junior_high,noun,猫,2
+catch,junior_high,を捕まえる,,junior_word_list,811,existing,junior_high,verb,捕まえる・受け取る / 捕まえる・受け取る（過去形） / 捕まえる・受け取る（過去分詞）,4
+central,junior_high,中心の,,junior_word_list,1329,existing,junior_high,adjective,中心の,2
+century,junior_high,世紀,,junior_word_list,812;1911,existing,junior_high,noun,世紀,2
+certain,junior_high,確かな,確かな,junior_word_list;high_word_list,1330;502,existing,junior_high,adjective,ある・確かな,2
+certainly,junior_high,承知しました,,junior_word_list,813;1927,existing,junior_high,adverb,確かに,2
+chain,junior_high,くさり,,junior_word_list,814,existing,junior_high,noun,くさり,2
+chair,junior_high,いす,,junior_word_list,94,existing,junior_high,noun,いす,2
+change,junior_high,変わる,,junior_word_list,815;816;1331,existing,junior_high,verb,変わる・変える,2
+cheap,junior_high,安い,,junior_word_list,1333,existing,high_school,adjective,安い・安っぽい,2
+check,junior_high,を調べる,,junior_word_list,818;819,existing,junior_high,noun,小切手・確認,2
+chicken,junior_high,鶏肉,,junior_word_list,95,existing,junior_high,noun,ニワトリ・鶏肉,2
+child,junior_high,子供,,junior_word_list,96;661,existing,junior_high,noun,子供 / 子どもたち,3
+children,junior_high,子供たち,,junior_word_list,97,existing,junior_high,noun,子どもたち,1
+china,junior_high,中国,,junior_word_list,1336,existing,junior_high,noun,中国,2
+chinese,junior_high,中国語,,junior_word_list,821;1337,existing,junior_high,adjective,中国の・中国人の,2
+choose,junior_high,を選ぶ,,junior_word_list,98;1338,existing,junior_high,verb,選ぶ / 選ぶ（過去形） / 選ぶ（過去分詞）,4
+church,junior_high,教会,,junior_word_list,615,existing,junior_high,noun,教会,2
+circle,junior_high,円,,junior_word_list,822;1339,existing,junior_high,noun,円・輪,2
+citizen,junior_high,市民,市民,junior_word_list;high_word_list,823;524,existing,junior_high,noun,市民,2
+city,junior_high,市、都会、都会,,junior_word_list,99,existing,junior_high,noun,市・都会,2
+class,junior_high,授業,,junior_word_list,1340,existing,junior_high,noun,学級・授業,2
+classmate,junior_high,同級生,,junior_word_list,100,existing,junior_high,noun,同級生,2
+classroom,junior_high,教室,,junior_word_list,101,existing,junior_high,noun,教室,2
+clean,junior_high,きれいな、清潔な,,junior_word_list,102;103;1341,existing,junior_high,adjective;verb,きれいな / 掃除する,4
+clearly,junior_high,はっきりと,,junior_word_list,824,existing,high_school,adverb,はっきりと・明らかに,2
+clerk,junior_high,店員,事務員,junior_word_list;high_word_list,614;825;321,existing,junior_high,noun,店員・事務員,2
+clever,junior_high,利口な,,junior_word_list,826,existing,junior_high,adjective,利口な,2
+climate,junior_high,気候,気候,junior_word_list;high_word_list,1342;525,existing,junior_high,noun,気候,2
+climb,junior_high,を登る,,junior_word_list,104;672,existing,junior_high,verb,登る,2
+close,junior_high,閉じる,,junior_word_list,827;1343,existing,junior_high,adjective;verb,近い・接近した / 閉じる,4
+cloth,junior_high,布,,junior_word_list,828;1344,existing,junior_high,noun,布,2
+clothes,junior_high,服,,junior_word_list,105;1345,existing,junior_high,noun,服,2
+cloud,junior_high,雲,,junior_word_list,829,existing,junior_high,noun,雲,2
+cloudy,junior_high,曇った,,junior_word_list,106;717,existing,junior_high,adjective,曇った,2
+coal,junior_high,石炭,石炭,junior_word_list;high_word_list,1346;684,existing,high_school,noun,石炭,2
+coin,junior_high,硬貨,,junior_word_list,830,existing,junior_high,noun,硬貨,2
+cold,junior_high,冷たい、寒い,,junior_word_list,107,existing,junior_high,adjective,冷たい・寒い,2
+collect,junior_high,を集める,集める,junior_word_list;high_word_list,108;796;1299,existing,junior_high,verb,集める,2
+college,junior_high,大学,,junior_word_list,831;1347,existing,junior_high,noun,大学,2
+come,junior_high,来る,,junior_word_list,109;832,existing,junior_high,verb,来る（過去形） / 来る（過去分詞） / 来る,5
+common,junior_high,共通の,一般的な,junior_word_list;high_word_list,835;1925;458,existing,junior_high,adjective,共通の・よくある,2
+communicate,junior_high,連絡する,,junior_word_list,836,existing,high_school,verb,伝える・意思疎通する,2
+company,junior_high,会社,,junior_word_list,837,existing,junior_high,noun,会社,2
+condition,junior_high,状況,状態,junior_word_list;high_word_list,1350;527,existing,high_school,noun,状態・条件,2
+content,junior_high,中身,中身,junior_word_list;high_word_list,841;211,existing,high_school,noun,内容・中身,2
+continue,junior_high,を続ける,続ける,junior_word_list;high_word_list,842;1354;234,existing,high_school,verb,続く・続ける,2
+control,junior_high,を管理する,,junior_word_list,1355,existing,high_school,noun,支配・管理・制御,2
+convenience,junior_high,便利,,junior_word_list,843,existing,high_school,noun,便利さ・都合,2
+convenient,junior_high,便利な,都合がよい,junior_word_list;high_word_list,1356;1133;1636,existing,high_school,adjective,便利な・都合のよい,2
+cook,junior_high,料理する,,junior_word_list,110,existing,junior_high,verb;noun,料理する / 料理人,4
+cool,junior_high,かっこいい,,junior_word_list,111,existing,junior_high,adjective,涼しい・かっこいい,2
+corner,junior_high,かど,,junior_word_list,844;1357,existing,junior_high,noun,角・すみ,2
+could,junior_high,できた,,junior_word_list,112;1358,existing,junior_high,auxiliary,〜できた・〜かもしれない・〜していただけますか,1
+country,junior_high,国,,junior_word_list,113,existing,junior_high,noun,国・田舎,2
+couple,junior_high,夫婦,,junior_word_list,846,existing,junior_high,noun,カップル・二人組,2
+courage,junior_high,勇気,勇気,junior_word_list;high_word_list,1360;1731;2071,existing,junior_high,noun,勇気,2
+course,junior_high,進路,,junior_word_list,1361,existing,junior_high,noun,進路・講座・コース,2
+cousin,junior_high,いとこ,,junior_word_list,115;1896,existing,junior_high,noun,いとこ,2
+cover,junior_high,覆う,覆う,junior_word_list;high_word_list,1362;6,existing,junior_high,verb,おおう,2
+cow,junior_high,ウシ,,junior_word_list,116,existing,junior_high,noun,牛,2
+crazy,junior_high,気の狂った,,junior_word_list,1363,existing,junior_high,adjective,気が変な・夢中の,2
+create,junior_high,を創造する,,junior_word_list,847,existing,high_school,verb,創造する・作り出す,2
+cross,junior_high,を横切る，渡る,,junior_word_list,1365,existing,junior_high,verb,横切る,2
+crowd,junior_high,群衆,群衆,junior_word_list;high_word_list,1912;388,existing,junior_high,noun,群衆・人混み,2
+cry,junior_high,泣く,,junior_word_list,848;1366,existing,junior_high,verb,泣く,2
+culture,junior_high,文化,文化,junior_word_list;high_word_list,850;146,existing,junior_high,noun,文化,2
+cup,junior_high,カップ,,junior_word_list,117,existing,junior_high,noun,カップ,2
+custom,junior_high,習慣,習慣,junior_word_list;high_word_list,1368;543,existing,junior_high,noun,習慣・慣習,2
+customer,junior_high,顧客,顧客,junior_word_list;high_word_list,851;362,existing,high_school,noun,顧客・客,2
+cut,junior_high,切る,,junior_word_list,852;1370,existing,junior_high,verb,切る（過去形） / 切る（過去分詞） / 切る,6
+cute,junior_high,かわいい,,junior_word_list,118,existing,junior_high,adjective,かわいい,2
+daily,junior_high,日常の,,junior_word_list,1371,existing,junior_high,adjective,毎日の,2
+damage,junior_high,に損害を与える,,junior_word_list,853;1373,existing,junior_high,noun,被害・損害,2
+dangerous,junior_high,危険な,,junior_word_list,1374,existing,high_school,adjective,危険な,2
+date,junior_high,日、日付,,junior_word_list,119;670,existing,junior_high,verb;noun,デートする / 日付・デート,4
+daughter,junior_high,娘,,junior_word_list,1375,existing,junior_high,noun,娘,2
+day,junior_high,日、１日,,junior_word_list,120,existing,junior_high,noun,日,2
+dear,junior_high,親愛なる,,junior_word_list,121,existing,junior_high,adjective,親愛なる,2
+death,junior_high,死,,junior_word_list,1377,existing,junior_high,noun,死,2
+december,junior_high,12月,,junior_word_list,122,existing,junior_high,noun,12月,2
+decide,junior_high,を決める,,junior_word_list,854,existing,junior_high,verb,決める・決心する,2
+decision,junior_high,決定,決定,junior_word_list;high_word_list,1380;641,existing,high_school,noun,決定・判断,2
+decrease,junior_high,減少する,減少する,junior_word_list;high_word_list,855;968;1471,existing,high_school,noun,減少,2
+deep,junior_high,深い,,junior_word_list,856,existing,junior_high,adjective,深い,2
+delicious,junior_high,おいしい,,junior_word_list,123;1901,existing,junior_high,adjective,おいしい,2
+depend,junior_high,頼る,依存する,junior_word_list;high_word_list,1382;464,existing,high_school,verb,頼る・依存する・左右される,2
+desert,junior_high,砂漠,砂漠,junior_word_list;high_word_list,1384;548,existing,junior_high,noun,砂漠,2
+design,junior_high,を設計する,,junior_word_list,1385,existing,high_school,noun,設計・デザイン・意図,2
+desk,junior_high,机,,junior_word_list,124,existing,junior_high,noun,机,2
+destroy,junior_high,を破壊する,破壊する,junior_word_list;high_word_list,1386;178,existing,junior_high,verb,破壊する,2
+develop,junior_high,を発達させる,発達させる,junior_word_list;high_word_list,858;174,existing,high_school,verb,発達する・発展させる・開発する,2
+development,junior_high,開発,発展,junior_word_list;high_word_list,1387;173,existing,high_school,noun,発達・発展・開発,2
+device,junior_high,装置,装置,junior_word_list;high_word_list,1388;550,existing,high_school,noun,装置・工夫・手段,2
+diary,junior_high,日記,,junior_word_list,600,existing,junior_high,noun,日記,2
+dictionary,junior_high,辞書,,junior_word_list,125;677,existing,junior_high,noun,辞書,2
+die,junior_high,死ぬ,死ぬ,junior_word_list;high_word_list,859;1389;328,existing,junior_high,verb,死ぬ,2
+difference,junior_high,ちがい,違い,junior_word_list;high_word_list,1391;459,existing,high_school,noun,違い・差,2
+different,junior_high,色々な、違った,,junior_word_list,126;860,existing,junior_high,adjective,違った・異なる,2
+difficult,junior_high,難しい,,junior_word_list,127;645,existing,junior_high,adjective,難しい,2
+dinner,junior_high,夕食,,junior_word_list,128,existing,junior_high,noun,夕食,2
+directly,junior_high,直接に,直接（的）に,junior_word_list;high_word_list,862;1192;1695,existing,high_school,adverb,直接に・すぐに,2
+discover,junior_high,発見する,発見する,junior_word_list;high_word_list,865;1394;176,existing,junior_high,verb,発見する,2
+discuss,junior_high,話し合う,ついて議論する,junior_word_list;high_word_list,1396;1206;1709,existing,junior_high,verb,話し合う,2
+discussion,junior_high,討論,議論,junior_word_list;high_word_list,1397;553,existing,junior_high,noun,討論・話し合い,2
+disease,junior_high,病気,病気,junior_word_list;high_word_list,1398;157,existing,junior_high,noun,病気,2
+dish,junior_high,皿、料理,,junior_word_list,129;679,existing,junior_high,noun,皿・料理,2
+dislike,junior_high,嫌う,嫌がる,junior_word_list;high_word_list,866;799;1302,existing,junior_high,verb,嫌う,2
+do,junior_high,をする、行う,,junior_word_list,130;867,existing,junior_high,verb;auxiliary,する（過去形） / 〜しなかった / する / 〜しない / する（過去分詞）,8
+doctor,junior_high,医者,,junior_word_list,131,existing,junior_high,noun,医者,2
+dog,junior_high,イヌ,,junior_word_list,132,existing,junior_high,noun,犬,2
+doll,junior_high,人形,,junior_word_list,611,existing,junior_high,noun,人形,2
+door,junior_high,戸,,junior_word_list,133,existing,junior_high,noun,ドア,2
+dot,junior_high,点,,junior_word_list,1401,existing,high_school,noun,点・ドット,2
+down,junior_high,下に,,junior_word_list,134;135,existing,junior_high,adverb,下に・下へ,2
+drama,junior_high,劇,,junior_word_list,136,existing,junior_high,noun,ドラマ・劇,2
+draw,junior_high,描く、引く,引く,junior_word_list;high_word_list,137;687;454,existing,junior_high,verb,描く・引く / 描く・引く（過去分詞） / 描く・引く（過去形）,4
+dream,junior_high,夢,,junior_word_list,138,existing,junior_high,noun,夢,2
+drink,junior_high,を飲む,,junior_word_list,139,existing,junior_high,verb,飲む（過去形） / 飲む / 飲む（過去分詞）,4
+drive,junior_high,運転する,,junior_word_list,868;1402,existing,junior_high,verb,運転する / 運転する（過去分詞） / 運転する（過去形）,4
+driver,junior_high,運転手,,junior_word_list,1403,existing,junior_high,noun,運転手・ドライバー,2
+drop,junior_high,を落とす,,junior_word_list,140;1404,existing,junior_high,verb,落とす・落ちる,2
+drove,junior_high,運転した,,junior_word_list,1406,existing,junior_high,verb,運転する（過去形）,1
+drum,junior_high,太鼓、ドラム,,junior_word_list,141,existing,junior_high,noun,ドラム・太鼓,2
+dry,junior_high,乾く,,junior_word_list,869,existing,junior_high,verb,乾く・乾かす,2
+during,junior_high,～の間,,junior_word_list,142;1879,existing,junior_high,preposition,〜の間に,2
+each,junior_high,それぞれの、各自の,,junior_word_list,143;628,existing,junior_high,adjective,それぞれの,2
+ear,junior_high,耳,,junior_word_list,145;622,existing,junior_high,noun,耳,2
+early,junior_high,早く,,junior_word_list,146;147;870,existing,junior_high,adjective;adverb,早い / 早く,4
+earn,junior_high,をかせぐ,稼ぐ,junior_word_list;high_word_list,871;443,existing,high_school,verb,稼ぐ・得る,2
+earth,junior_high,地球,,junior_word_list,872,existing,junior_high,noun,地球・大地,2
+easily,junior_high,簡単に,,junior_word_list,148,existing,junior_high,adverb,簡単に,2
+east,junior_high,東,,junior_word_list,618;873,existing,junior_high,noun,東,2
+easy,junior_high,簡単な,,junior_word_list,874,existing,junior_high,adjective,やさしい・簡単な,2
+eat,junior_high,を食べる、食事をする,,junior_word_list,149,existing,junior_high,verb,食べる（過去形） / 食べる / 食べる（過去分詞）,4
+effort,junior_high,努力,,junior_word_list,876,existing,high_school,noun,努力・取り組み,2
+egg,junior_high,卵,,junior_word_list,150,existing,junior_high,noun,卵,2
+eight,junior_high,8,,junior_word_list,151,existing,junior_high,numeral,8・八つ,2
+eighteen,junior_high,18,,junior_word_list,152,existing,junior_high,numeral,18・十八,2
+eighth,junior_high,8番目,,junior_word_list,153,existing,junior_high,ordinal,8番目の,2
+eighty,junior_high,80,,junior_word_list,154,existing,junior_high,numeral,80・八十,2
+elderly,junior_high,年配の,年配の,junior_word_list;high_word_list,877;824;1327,existing,high_school,adjective,年配の・高齢の,2
+elephant,junior_high,ゾウ,,junior_word_list,1905,existing,junior_high,noun,象,2
+eleven,junior_high,11,,junior_word_list,156,existing,junior_high,numeral,11・十一,2
+eleventh,junior_high,11番目,,junior_word_list,157,existing,junior_high,ordinal,11番目の,2
+else,junior_high,その他に,,junior_word_list,1414,existing,junior_high,adverb,そのほかに,2
+encourage,junior_high,を勇気づける,励ます,junior_word_list;high_word_list,1417;114,existing,high_school,verb,励ます・促す,2
+end,junior_high,最後,,junior_word_list,158;878,existing,junior_high,verb,終わる・終える,2
+enemy,junior_high,敵,,junior_word_list,1421,existing,junior_high,noun,敵,2
+engineer,junior_high,開発者,,junior_word_list,1422,existing,junior_high,noun,技術者・エンジニア,2
+english,junior_high,英語,,junior_word_list,159,existing,junior_high,noun,英語,2
+enjoy,junior_high,を楽しむ,,junior_word_list,160,existing,junior_high,verb,楽しむ,2
+enough,junior_high,十分な、必要なだけの,,junior_word_list,879,existing,junior_high,adjective,十分な,2
+enter,junior_high,入る,入る,junior_word_list;high_word_list,880;180,existing,junior_high,verb,入る,2
+entrance,junior_high,入口,,junior_word_list,1904,existing,junior_high,noun,入口,2
+environment,junior_high,環境，状況,環境，状況,junior_word_list;high_word_list,1423;422,existing,high_school,noun,環境,2
+eraser,junior_high,消しゴム,,junior_word_list,685,existing,junior_high,noun,消しゴム,2
+especially,junior_high,特に、とりわけ,特に,junior_word_list;high_word_list,882;185,existing,junior_high,adverb,特に,2
+even,junior_high,でさえ,,junior_word_list,883;1869,existing,junior_high,adverb,〜さえ,2
+evening,junior_high,夕方,,junior_word_list,161,existing,junior_high,noun,夕方・晩,2
+event,junior_high,行事,,junior_word_list,162;1429,existing,junior_high,noun,出来事・イベント,2
+ever,junior_high,今まで，かつて,,junior_word_list,1430,existing,junior_high,adverb,今までに・いつか,2
+every,junior_high,毎、ごとに,,junior_word_list,163;1431,existing,junior_high,adjective,毎〜・すべての,2
+everyone,junior_high,みんな,,junior_word_list,164,existing,junior_high,pronoun,みんな・誰もが,2
+everything,junior_high,何でも,,junior_word_list,885,existing,junior_high,pronoun,すべてのもの・何もかも,2
+everywhere,junior_high,どこでも,,junior_word_list,886;1926,existing,junior_high,adverb,どこでも・至る所に,2
+exam,junior_high,試験,,junior_word_list,1433,existing,junior_high,noun,試験,2
+example,junior_high,例、実例,,junior_word_list,887,existing,junior_high,noun,例,2
+exchange,junior_high,交換,,junior_word_list,1435,existing,high_school,noun,交換・交流・両替,2
+excited,junior_high,わくわくした,,junior_word_list,165;1900,existing,junior_high,adjective,興奮した,1
+exciting,junior_high,興奮させる,,junior_word_list,166,existing,junior_high,adjective,わくわくさせる,1
+excuse,junior_high,を許す,言い訳,junior_word_list;high_word_list,167;712;774;1277,existing,junior_high,verb,許す・言い訳する,2
+exercise,junior_high,練習する,,junior_word_list,1436,existing,junior_high,verb,運動する・練習する,2
+expensive,junior_high,高価な，費用のかかる,値段が高い,junior_word_list;high_word_list,1437;217,existing,junior_high,adjective,高価な,2
+experience,junior_high,を経験する,,junior_word_list,890;891,existing,high_school,noun,経験,4
+explain,junior_high,を説明する,説明する,junior_word_list;high_word_list,892;1878;246,existing,junior_high,verb,説明する,2
+eye,junior_high,目、視力,,junior_word_list,168;646,existing,junior_high,noun,目,2
+face,junior_high,顔,直面する,junior_word_list;high_word_list,169;893;205,existing,junior_high,noun,顔,2
+fact,junior_high,事実，現実,事実,junior_word_list;high_word_list,1441;322,existing,junior_high,noun,事実,2
+factory,junior_high,工場,,junior_word_list,895,existing,junior_high,noun,工場,2
+fail,junior_high,失敗する,失敗する,junior_word_list;high_word_list,896;316,existing,junior_high,verb,失敗する,2
+fall,junior_high,転ぶ、転倒する,,junior_word_list,170;171;675;1442,existing,junior_high,noun;verb,秋 / 落ちる / 落ちる（過去分詞） / 落ちる（過去形）,6
+family,junior_high,家族,,junior_word_list,173,existing,junior_high,noun,家族,2
+famous,junior_high,有名な,有名な,junior_word_list;high_word_list,174;124,existing,junior_high,adjective,有名な,2
+far,junior_high,遠くに,,junior_word_list,897,existing,junior_high,adverb,遠くに・はるかに / より遠くに / 最も遠くに / さらに・より遠くに / 最も遠くに・最も進んで,6
+farm,junior_high,農場,,junior_word_list,692,existing,junior_high,noun,農場,2
+farmer,junior_high,農場主,,junior_word_list,175;711;1444,existing,junior_high,noun,農家・農場主,2
+fast,junior_high,速い,,junior_word_list,176;1445,existing,junior_high,adjective;adverb,速い / 速く,4
+fat,junior_high,太った,太った,junior_word_list;high_word_list,1446;832;1335,existing,junior_high,adjective,太った,2
+father,junior_high,父,,junior_word_list,177,existing,junior_high,noun,父,2
+favorite,junior_high,好きな、お気に入りの,一番好きな,junior_word_list;high_word_list,178;1136;1639,existing,junior_high,adjective,お気に入りの,2
+february,junior_high,2月,,junior_word_list,179,existing,junior_high,noun,2月,2
+feel,junior_high,と感じる,,junior_word_list,180;673,existing,junior_high,verb,感じる / 感じる（過去形） / 感じる（過去分詞）,4
+felt,junior_high,感じた,,junior_word_list,181,existing,junior_high,verb,感じる（過去形） / 感じる（過去分詞）,2
+fence,junior_high,塀,,junior_word_list,1449,existing,junior_high,noun,塀・柵,2
+festival,junior_high,祭り,,junior_word_list,182,existing,junior_high,noun,祭り,2
+few,junior_high,少しの,,junior_word_list,902,existing,junior_high,adjective,少数の,2
+fifteen,junior_high,15,,junior_word_list,184,existing,junior_high,numeral,15・十五,2
+fifth,junior_high,5番目,,junior_word_list,185,existing,junior_high,ordinal,5番目の,2
+fifty,junior_high,50,,junior_word_list,186,existing,junior_high,numeral,50・五十,2
+fight,junior_high,たたかう,,junior_word_list,1450,existing,junior_high,verb,戦う / 戦う（過去形） / 戦う（過去分詞）,4
+fill,junior_high,いっぱいにする,,junior_word_list,1451,existing,junior_high,verb,いっぱいにする,2
+film,junior_high,映画,,junior_word_list,1452,existing,junior_high,noun,映画・フィルム,2
+final,junior_high,最後の,,junior_word_list,1453,existing,junior_high,adjective,最後の,2
+finally,junior_high,ついに，やっと,,junior_word_list,1454,existing,junior_high,adverb,ついに・最後に,2
+find,junior_high,を発見する,,junior_word_list,905,existing,junior_high,verb,見つける / 見つける（過去形） / 見つける（過去分詞）,4
+fine,junior_high,元気な,,junior_word_list,187;722,existing,junior_high,adjective;adverb,元気な・晴れた / うまく・元気に,4
+finger,junior_high,手の指,,junior_word_list,906,existing,junior_high,noun,指,2
+finish,junior_high,を終える,,junior_word_list,907,existing,junior_high,verb,終える,2
+fire,junior_high,火,首にする,junior_word_list;high_word_list,908;1455;1456;301,existing,junior_high,noun,火,2
+first,junior_high,1番め、最初,,junior_word_list,188;1457,existing,junior_high,ordinal,第1の・最初の,2
+fish,junior_high,魚,,junior_word_list,189,existing,junior_high,noun,魚,2
+five,junior_high,5,,junior_word_list,190,existing,junior_high,numeral,5・五つ,2
+flat,junior_high,平らな,,junior_word_list,1458,existing,junior_high,adjective,平らな,2
+flight,junior_high,飛行,,junior_word_list,1459,existing,junior_high,noun,飛行・フライト,2
+floor,junior_high,階,,junior_word_list,601,existing,junior_high,noun,床・階,2
+flower,junior_high,花,,junior_word_list,191,existing,junior_high,noun,花,2
+fly,junior_high,飛ぶ,,junior_word_list,910;1460,existing,junior_high,verb,飛ぶ・飛行機で行く（過去形） / 飛ぶ・飛行機で行く（過去分詞） / 飛ぶ・飛行機で行く,4
+focus,junior_high,集中する,焦点,junior_word_list;high_word_list,1461;565,existing,high_school,noun,焦点・中心,2
+follow,junior_high,に従う,,junior_word_list,911,existing,high_school,verb,続く・従う・理解する,2
+fond,junior_high,好きで,,junior_word_list,1464,existing,junior_high,adjective,好きで,2
+food,junior_high,食べ物,,junior_word_list,192,existing,junior_high,noun,食べ物,2
+fool,junior_high,馬鹿,,junior_word_list,912,existing,junior_high,noun,愚か者,2
+foolish,junior_high,愚かな,,junior_word_list,913;1465,existing,junior_high,adjective,愚かな,2
+foot,junior_high,足,,junior_word_list,658,existing,junior_high,noun,足,3
+for,junior_high,として,,junior_word_list,193;914,existing,junior_high,preposition,〜のために・〜に向けて,2
+foreign,junior_high,外国の,外国の,junior_word_list;high_word_list,194;99,existing,high_school,adjective,外国の・異質な,2
+forest,junior_high,森、森林,,junior_word_list,915,existing,junior_high,noun,森・森林,2
+forget,junior_high,を忘れる,,junior_word_list,195;671,existing,junior_high,verb,忘れる / 忘れる（過去形） / 忘れる（過去分詞）,4
+forty,junior_high,40,,junior_word_list,196,existing,junior_high,numeral,40・四十,2
+forward,junior_high,前方へ,前方へ,junior_word_list;high_word_list,197;83,existing,high_school,adverb,前へ・先へ,2
+found,junior_high,を見つけた,設立する,junior_word_list;high_word_list,917;918;1469;1978;2318,existing,junior_high,verb,見つける（過去形） / 見つける（過去分詞）,2
+four,junior_high,4,,junior_word_list,199,existing,junior_high,numeral,4・四つ,2
+fourteen,junior_high,14,,junior_word_list,200,existing,junior_high,numeral,14・十四,2
+fourteenth,junior_high,14番目,,junior_word_list,1899,existing,junior_high,ordinal,14番目の,2
+fourth,junior_high,4番目,,junior_word_list,201,existing,junior_high,ordinal,第4の・4番目の,4
+fox,junior_high,キツネ,,junior_word_list,1470,existing,junior_high,noun,キツネ,2
+free,junior_high,ひまな,,junior_word_list,202;919,existing,junior_high,adjective,自由な・ひまな・無料の,2
+fresh,junior_high,新鮮な,,junior_word_list,1472,existing,junior_high,adjective,新鮮な,2
+friday,junior_high,金曜日,,junior_word_list,203,existing,junior_high,noun,金曜日,2
+friend,junior_high,友達,,junior_word_list,204,existing,junior_high,noun,友人,2
+friendly,junior_high,好意的な,友好的な,junior_word_list;high_word_list,1473;1031;1534,existing,junior_high,adjective,親しみやすい,2
+frog,junior_high,カエル,,junior_word_list,205;1907,existing,junior_high,noun,カエル,2
+from,junior_high,【時間】から,,junior_word_list,206;207,existing,junior_high,preposition,〜から,2
+front,junior_high,前、正面,,junior_word_list,208;921,existing,junior_high,noun,前・正面,2
+fruit,junior_high,果物,,junior_word_list,209,existing,junior_high,noun,果物,2
+full,junior_high,完全な、完ぺきな、最適な,,junior_word_list,923,existing,junior_high,adjective,いっぱいの・満腹の,2
+fun,junior_high,楽しい,,junior_word_list,210;669;1474,existing,junior_high,noun,楽しみ,2
+funny,junior_high,おかしな,,junior_word_list,211;1923,existing,junior_high,adjective,おかしな・面白い,2
+future,junior_high,未来,,junior_word_list,212;925,existing,junior_high,noun,未来,2
+garbage,junior_high,ゴミ,,junior_word_list,213,existing,junior_high,noun,ごみ,2
+gas,junior_high,ガソリン,,junior_word_list,1477,existing,junior_high,noun,ガス,2
+gave,junior_high,与えた,,junior_word_list,214,existing,junior_high,verb,与える・あげる（過去形）,1
+general,junior_high,一般的な,,junior_word_list,928,existing,high_school,adjective,一般的な・全体的な,2
+gentle,junior_high,やさしい,穏やかな,junior_word_list;high_word_list,1478;1033;1536,existing,junior_high,adjective,やさしい・穏やかな,2
+gently,junior_high,やさしく,,junior_word_list,1479,existing,junior_high,adverb,やさしく・穏やかに,2
+get,junior_high,を得る,,junior_word_list,215;216;217,existing,junior_high,verb,得る・手に入れる / 得る・手に入れる（過去形） / 得る・手に入れる（過去分詞）,4
+gift,junior_high,贈り物,,junior_word_list,929,existing,junior_high,noun,贈り物,2
+girl,junior_high,少女,,junior_word_list,218,existing,junior_high,noun,少女・女の子,2
+give,junior_high,を与える、渡す,,junior_word_list,219,existing,junior_high,verb,与える・あげる（過去形） / 与える・あげる / 与える・あげる（過去分詞）,4
+given,junior_high,与えた,与えられた,junior_word_list;high_word_list,1483;1160;1663,existing,junior_high,verb,与える・あげる（過去分詞）,1
+glad,junior_high,うれしい,,junior_word_list,931,existing,junior_high,adjective,うれしい,2
+go,junior_high,行く,,junior_word_list,220,existing,junior_high,verb,行く / 行く（過去分詞） / 行く（過去形）,4
+god,junior_high,神,,junior_word_list,1489,existing,junior_high,noun,神,2
+good,junior_high,良い,,junior_word_list,221;222,existing,junior_high,adjective,最もよい / よりよい / 良い,4
+got,junior_high,得た,,junior_word_list,223,existing,junior_high,verb,得る・手に入れる（過去形） / 得る・手に入れる（過去分詞）,2
+government,junior_high,政府,政府,junior_word_list;high_word_list,1490;255,existing,high_school,noun,政府,2
+grade,junior_high,等級,,junior_word_list,1491,existing,junior_high,noun,成績・等級,2
+grandfather,junior_high,祖父,,junior_word_list,224;641,existing,junior_high,noun,祖父,2
+grandmother,junior_high,祖母,,junior_word_list,225;684,existing,junior_high,noun,祖母,2
+grape,junior_high,ブドウ,,junior_word_list,226,existing,junior_high,noun,ぶどう,2
+graph,junior_high,図表,,junior_word_list,936,existing,high_school,noun,グラフ・図表,2
+grass,junior_high,草,,junior_word_list,937,existing,junior_high,noun,草,2
+great,junior_high,すばらしい,,junior_word_list,227;938,existing,junior_high,adjective,すばらしい・大きな,2
+green,junior_high,緑,,junior_word_list,228,existing,junior_high,adjective,緑の,2
+grew,junior_high,育った,,junior_word_list,1494,existing,junior_high,verb,成長する・育つ（過去形）,1
+ground,junior_high,地面,,junior_word_list,939,existing,junior_high,noun,地面,2
+grow,junior_high,成長する,,junior_word_list,940;1495,existing,junior_high,verb,成長する・育つ（過去形） / 成長する・育つ / 成長する・育つ（過去分詞）,4
+guess,junior_high,を推測する,推測する,junior_word_list;high_word_list,229;192;490,existing,junior_high,verb,推測する,2
+guest,junior_high,客,,junior_word_list,941,existing,junior_high,noun,客・招待客,2
+guide,junior_high,案内人,案内人,junior_word_list;high_word_list,942;1497;777;1280,existing,junior_high,noun,案内人・ガイド,2
+gun,junior_high,鉄砲,,junior_word_list,943,existing,junior_high,noun,銃・鉄砲,2
+gym,junior_high,体育館,,junior_word_list,1895,existing,junior_high,noun,体育館・ジム,2
+habit,junior_high,習慣,習慣,junior_word_list;high_word_list,1498;295,existing,junior_high,noun,習慣・くせ,2
+had,junior_high,持った,,junior_word_list,230,existing,junior_high,verb,持っている・食べる（過去形） / 持っている・食べる（過去分詞）,2
+hair,junior_high,髪,,junior_word_list,231,existing,junior_high,noun,髪,2
+half,junior_high,半分、2分の1,,junior_word_list,232;944,existing,junior_high,noun,半分,3
+hall,junior_high,会館、ホール,,junior_word_list,233;1871,existing,junior_high,noun,広間・廊下,2
+hand,junior_high,手,,junior_word_list,234;1499,existing,junior_high,noun;verb,手 / 手渡す,4
+handle,junior_high,を処理する,手で扱う,junior_word_list;high_word_list,1501;985;1488,existing,high_school,verb,扱う・処理する,2
+happen,junior_high,起こる,,junior_word_list,689,existing,junior_high,verb,起こる,2
+happily,junior_high,幸せに，楽しく,,junior_word_list,1502,existing,junior_high,adverb,幸せに・楽しく,2
+happiness,junior_high,幸福,,junior_word_list,945,existing,junior_high,noun,幸福,2
+happy,junior_high,幸せな、うれしい、楽しい,,junior_word_list,235,existing,junior_high,adjective,幸せな・楽しい,2
+hard,junior_high,熱心に、一生懸命に,,junior_word_list,236;237;1870,existing,junior_high,adjective;adverb,かたい・難しい / 一生懸命に・激しく,4
+hat,junior_high,帽子,,junior_word_list,238;621,existing,junior_high,noun,帽子,2
+have,junior_high,を持っている,,junior_word_list,239;240;241,existing,junior_high,verb;auxiliary,持っている・食べる（過去形） / 持っている・食べる（過去分詞） / 〜していなかった・持っていなかった / 持っている・食べる / 〜していない・持っていない / 彼は〜していた / 彼は〜した・彼は〜している / 私は〜していた / 私は〜したことがある・私は〜している / それは〜していた / それは〜した・それは〜している / 彼女は〜していた / 彼女は〜した・彼女は〜している / それは〜した・あれは〜した / 〜があった・〜している / 彼らは〜していた / 彼らは〜したことがある・彼女らは〜している / 私たちは〜していた / 私たちは〜したことがある・私たちは〜している / 何が〜したのか / 誰が〜したのか / あなたは〜していた / あなたは〜したことがある・あなたは〜している,26
+he,junior_high,彼は,,junior_word_list,242,existing,junior_high,pronoun,彼は・彼が,2
+head,junior_high,頭,,junior_word_list,243,existing,junior_high,noun,頭・先頭,2
+health,junior_high,健康,,junior_word_list,949;1503,existing,junior_high,noun,健康,2
+healthy,junior_high,健康な,,junior_word_list,1504,existing,junior_high,adjective,健康な,2
+hear,junior_high,聞く,,junior_word_list,950;1505,existing,junior_high,verb,聞く / 聞く（過去形） / 聞く（過去分詞）,4
+heard,junior_high,聞いた,,junior_word_list,952;1506,existing,junior_high,verb,聞く（過去形） / 聞く（過去分詞）,2
+heart,junior_high,心,,junior_word_list,245;693,existing,junior_high,noun,心・心臓,2
+heat,junior_high,熱,,junior_word_list,1507,existing,high_school,noun,熱・暑さ,2
+heaven,junior_high,天国,,junior_word_list,1508,existing,junior_high,noun,天国,2
+heavy,junior_high,重い,,junior_word_list,953,existing,junior_high,adjective,重い,2
+held,junior_high,開催した,,junior_word_list,954;1509,existing,junior_high,verb,持つ・開催する（過去形） / 持つ・開催する（過去分詞）,2
+help,junior_high,を手伝う、助ける,,junior_word_list,246;1510,existing,junior_high,verb,助ける,2
+here,junior_high,ここに,,junior_word_list,247,existing,junior_high,adverb,ここに・ここで,2
+hers,junior_high,彼女のもの,,junior_word_list,248,existing,junior_high,pronoun,彼女のもの,2
+herself,junior_high,彼女自身,,junior_word_list,957,existing,junior_high,pronoun,彼女自身,2
+hill,junior_high,丘,,junior_word_list,958,existing,junior_high,noun,丘,2
+him,junior_high,彼を,,junior_word_list,249,existing,junior_high,pronoun,彼を・彼に,2
+himself,junior_high,彼自身を,,junior_word_list,959;1512,existing,junior_high,pronoun,彼自身,2
+his,junior_high,彼の,,junior_word_list,250;251,existing,junior_high,pronoun,彼のもの・彼の,2
+history,junior_high,歴史,歴史,junior_word_list;high_word_list,252;662;113,existing,junior_high,noun,歴史,2
+hit,junior_high,打つ,,junior_word_list,1513,existing,junior_high,verb,打つ・当たる（過去形） / 打つ・当たる（過去分詞） / 打つ・当たる,6
+hobby,junior_high,趣味,,junior_word_list,960,existing,junior_high,noun,趣味,2
+hold,junior_high,をつかむ,,junior_word_list,961;962,existing,junior_high,verb,持つ・開催する（過去形） / 持つ・開催する（過去分詞） / 持つ・開催する,4
+hole,junior_high,穴,,junior_word_list,963,existing,junior_high,noun,穴,2
+holiday,junior_high,休日、休暇,,junior_word_list,964,existing,junior_high,noun,休日・祝日,2
+holy,junior_high,神聖な,,junior_word_list,1514,existing,junior_high,adjective,神聖な,2
+homework,junior_high,宿題,,junior_word_list,253,existing,junior_high,noun,宿題,2
+honest,junior_high,正直な,正直な,junior_word_list;high_word_list,617;719;836;1339,existing,junior_high,adjective,正直な,2
+honey,junior_high,蜂蜜,,junior_word_list,1515,existing,junior_high,noun,蜂蜜,2
+hope,junior_high,を望む,,junior_word_list,254;650,existing,junior_high,verb;noun,望む・願う / 希望,4
+horse,junior_high,馬,,junior_word_list,255;702,existing,junior_high,noun,馬,2
+hospital,junior_high,病院,,junior_word_list,256,existing,junior_high,noun,病院,2
+host,junior_high,主人,,junior_word_list,966;1887,existing,junior_high,noun,主人・司会者・ホスト,2
+hot,junior_high,暑い,,junior_word_list,257,existing,junior_high,adjective,暑い・熱い,2
+hour,junior_high,1時間,,junior_word_list,258;967,existing,junior_high,noun,時間,2
+house,junior_high,家、住宅,,junior_word_list,259,existing,junior_high,noun,家,2
+how,junior_high,どんな,,junior_word_list,260,existing,junior_high,adverb,どのように・どのくらい,2
+however,junior_high,しかしながら、けれども,しかしながら,junior_word_list;high_word_list,971;1894;491,existing,high_school,adverb,しかしながら・けれども,4
+human,junior_high,人間、人,,junior_word_list,972;1521,existing,junior_high,adjective,人間の,2
+hundred,junior_high,百,,junior_word_list,261;696,existing,junior_high,numeral,100,2
+hungry,junior_high,空腹の、飢えた,,junior_word_list,262;721,existing,junior_high,adjective,空腹の,2
+hunt,junior_high,を狩る,,junior_word_list,973,existing,junior_high,verb,狩りをする,2
+hurry,junior_high,急ぐ,,junior_word_list,975,existing,junior_high,verb,急ぐ,2
+hurt,junior_high,を傷つける,傷つける,junior_word_list;high_word_list,976;1920;289,existing,junior_high,verb,傷つける・痛む（過去形） / 傷つける・痛む（過去分詞） / 傷つける・痛む,6
+husband,junior_high,夫,,junior_word_list,977;1909,existing,junior_high,noun,夫,2
+i,junior_high,私は[が],,junior_word_list,263,existing,junior_high,pronoun,私は・私が,2
+ice,junior_high,氷,,junior_word_list,264;633,existing,junior_high,noun,氷,2
+idea,junior_high,考え,,junior_word_list,265,existing,junior_high,noun,考え・アイデア,2
+if,junior_high,もし～ならば,,junior_word_list,978;1524,existing,junior_high,conjunction,もし〜なら,2
+ill,junior_high,病気の,,junior_word_list,979,existing,junior_high,adjective,病気の,2
+image,junior_high,画像，印象,,junior_word_list,1527,existing,high_school,noun,印象・画像・イメージ,2
+imagine,junior_high,想像する,,junior_word_list,980;1528,existing,junior_high,verb,想像する,2
+import,junior_high,を輸入する,輸入する,junior_word_list;high_word_list,1529;989;1492,existing,high_school,noun,輸入・輸入品,2
+important,junior_high,重要な、大切な,,junior_word_list,266;638,existing,junior_high,adjective,重要な,2
+improve,junior_high,を改善する,改善する,junior_word_list;high_word_list,981;982;435,existing,high_school,verb,改善する・上達する,2
+in,junior_high,中に,,junior_word_list,267,existing,junior_high,preposition,〜の中に・〜で,2
+include,junior_high,を含む,含む,junior_word_list;high_word_list,1534;415,existing,high_school,preposition,〜を含めて,1
+increase,junior_high,を増やす，増大させる,増やす,junior_word_list;high_word_list,1535;238,existing,high_school,noun,増加,4
+indeed,junior_high,実に,確かに,junior_word_list;high_word_list,1536;431,existing,junior_high,adverb,実に・本当に,2
+influence,junior_high,に影響を及ぼす,影響を及ぼす,junior_word_list;high_word_list,983;452,existing,high_school,noun,影響,2
+information,junior_high,情報,,junior_word_list,268,existing,junior_high,noun,情報,2
+inside,junior_high,内側の,,junior_word_list,984,existing,junior_high,preposition;noun,〜の内側に / 内側,4
+instead,junior_high,そのかわりに,,junior_word_list,1540,existing,high_school,adverb,代わりに・そうではなく,2
+interest,junior_high,興味,,junior_word_list,1544,existing,junior_high,adjective,興味がある / おもしろい・興味深い,2
+interesting,junior_high,興味深い,,junior_word_list,270;648,existing,junior_high,adjective,おもしろい・興味深い,1
+international,junior_high,国際的な,国際的な,junior_word_list;high_word_list,1891;346,existing,junior_high,adjective,国際的な,2
+into,junior_high,～の中へ,,junior_word_list,986;1545,existing,junior_high,preposition,〜の中へ,2
+introduce,junior_high,を紹介する,紹介する,junior_word_list;high_word_list,987;1873;284,existing,junior_high,verb,紹介する,2
+invent,junior_high,を発明する,発明する,junior_word_list;high_word_list,1546;172,existing,junior_high,verb,発明する,2
+invite,junior_high,を招待する,,junior_word_list,989,existing,junior_high,verb,招待する,2
+iron,junior_high,鉄,,junior_word_list,1548,existing,junior_high,noun,鉄・アイロン,2
+is,junior_high,です、ます,,junior_word_list,271;272,existing,junior_high,auxiliary,ある・いる,1
+island,junior_high,島,,junior_word_list,273;695,existing,junior_high,noun,島,2
+it,junior_high,それを,,junior_word_list,274;275,existing,junior_high,pronoun,それ・それは・それを,2
+its,junior_high,それの、その,,junior_word_list,276,existing,junior_high,pronoun,それの,2
+january,junior_high,1月,,junior_word_list,277,existing,junior_high,noun,1月,2
+japan,junior_high,日本,,junior_word_list,278,existing,junior_high,noun,日本,2
+japanese,junior_high,日本の,,junior_word_list,279;280,existing,junior_high,noun,日本人・日本語,2
+jewel,junior_high,宝石,,junior_word_list,1549,existing,junior_high,noun,宝石,2
+job,junior_high,仕事,,junior_word_list,281,existing,junior_high,noun,仕事,2
+join,junior_high,に参加する,,junior_word_list,282;644,existing,junior_high,verb,参加する・加わる,2
+joy,junior_high,喜び,喜び,junior_word_list;high_word_list,1550;583,existing,junior_high,noun,喜び,2
+july,junior_high,7月,,junior_word_list,283,existing,junior_high,noun,7月,2
+jump,junior_high,跳ぶ,,junior_word_list,284,existing,junior_high,verb,跳ぶ,2
+june,junior_high,6月,,junior_word_list,285,existing,junior_high,noun,6月,2
+junior,junior_high,年下の,,junior_word_list,286,existing,junior_high,adjective,年下の・下級の,2
+just,junior_high,ちょうど、まさに,,junior_word_list,288;1552,existing,junior_high,adverb,ちょうど・ただ単に,2
+keep,junior_high,し続ける,,junior_word_list,990;1553,existing,junior_high,verb,保つ・持ち続ける / 保つ・持ち続ける（過去形） / 保つ・持ち続ける（過去分詞）,4
+kept,junior_high,し続けた,,junior_word_list,991,existing,junior_high,verb,保つ・持ち続ける（過去形） / 保つ・持ち続ける（過去分詞）,2
+key,junior_high,鍵,,junior_word_list,992,existing,junior_high,noun,鍵・手がかり,2
+kill,junior_high,を殺す,,junior_word_list,993,existing,junior_high,verb,殺す,2
+kind,junior_high,親切な,,junior_word_list,289;994,existing,junior_high,adjective;noun,親切な / 種類,4
+king,junior_high,王様,,junior_word_list,290;624,existing,junior_high,noun,王・王様,2
+knee,junior_high,ひざ,ひざ,junior_word_list;high_word_list,291;165,existing,junior_high,noun,ひざ,2
+knew,junior_high,知っていた,,junior_word_list,997,existing,junior_high,verb,知っている（過去形）,1
+knife,junior_high,ナイフ,,junior_word_list,998,existing,junior_high,noun,ナイフ,3
+know,junior_high,を知っている,,junior_word_list,292,existing,junior_high,verb,知っている（過去形） / 知っている / 知っている（過去分詞）,4
+knowledge,junior_high,知識,知識,junior_word_list;high_word_list,999;215,existing,high_school,noun,知識,2
+lake,junior_high,湖,,junior_word_list,293;667,existing,junior_high,noun,湖,2
+land,junior_high,土地,,junior_word_list,1000,existing,junior_high,noun,陸地・土地,2
+language,junior_high,言葉,言語,junior_word_list;high_word_list,294;642;495,existing,junior_high,noun,言語,2
+large,junior_high,大きい、広い,,junior_word_list,295;1556,existing,junior_high,adjective,大きい・広い,2
+last,junior_high,この前の,,junior_word_list,296;1001;1557,existing,junior_high,ordinal;adjective;noun,最後の・前回の / 最後の・この前の / 最後,6
+later,junior_high,～の後で,後に,junior_word_list;high_word_list,297;361,existing,junior_high,adverb,後で,2
+latest,junior_high,最新の,最新の,junior_word_list;high_word_list,1558;1913;2253,existing,junior_high,adjective,最新の,1
+laugh,junior_high,笑う,,junior_word_list,1002,existing,junior_high,verb,笑う,2
+law,junior_high,法律,法律,junior_word_list;high_word_list,1003;1559;138,existing,junior_high,noun,法律,2
+lazy,junior_high,怠け者の,,junior_word_list,1561,existing,junior_high,adjective,怠けた,2
+lead,junior_high,を導く,,junior_word_list,1562,existing,high_school,noun,先導・手がかり,2
+leaf,junior_high,葉,,junior_word_list,1004,existing,junior_high,noun,葉,3
+learn,junior_high,学ぶ,,junior_word_list,595;1005,existing,junior_high,verb,学ぶ・覚える / 学んだ・覚えた / 学ぶ・覚える（過去形） / 学ぶ・覚える（過去分詞）,8
+leave,junior_high,去る,,junior_word_list,298;1563,existing,junior_high,verb,去る・残す / 去る・残す（過去形） / 去る・残す（過去分詞）,4
+left,junior_high,左,,junior_word_list,299;1006,existing,junior_high,verb;noun,去る・残す（過去形） / 去る・残す（過去分詞） / 左,4
+leg,junior_high,脚,,junior_word_list,300;660,existing,junior_high,noun,脚,2
+lend,junior_high,貸す,,junior_word_list,1007,existing,junior_high,verb,貸す / 貸す（過去形） / 貸す（過去分詞）,4
+less,junior_high,もっと少なく,,junior_word_list,1565,existing,junior_high,adjective,より少ない,1
+lesson,junior_high,授業,,junior_word_list,1008,existing,junior_high,noun,授業・課,2
+let,junior_high,～に～をさせる,,junior_word_list,1566,existing,junior_high,verb,〜させる・許す / 〜させた・許した / 〜しよう / 〜させている・許している,9
+let's,junior_high,～しよう,,junior_word_list,301,existing,junior_high,verb,〜しよう,2
+letter,junior_high,手紙,,junior_word_list,596;1009;1010,existing,junior_high,noun,手紙・文字,2
+library,junior_high,図書館,,junior_word_list,302,existing,junior_high,noun,図書館,2
+lie,junior_high,嘘,横たわる,junior_word_list;high_word_list,1011;1883;450,existing,junior_high,verb;noun,横たわった / うそをつく / 横たわる / 嘘 / うそをついた / うそをついている / 横たわっている,12
+life,junior_high,生活,,junior_word_list,303;304;1012,existing,junior_high,noun,生活・生命 / 命・生活,3
+light,junior_high,光,,junior_word_list,305;1013;1014,existing,junior_high,adjective;noun,軽い・薄い・明るい / 光・明かり・信号,4
+like,junior_high,を好む,,junior_word_list,306;307,existing,junior_high,preposition;verb,〜のような / 好む,4
+line,junior_high,列、並び,,junior_word_list,308;1015;1568,existing,junior_high,noun,線・列,2
+lip,junior_high,唇,,junior_word_list,1570,existing,junior_high,noun,くちびる,2
+list,junior_high,表,,junior_word_list,1571,existing,junior_high,noun,リスト・表,2
+listen,junior_high,聞く,,junior_word_list,309;643,existing,junior_high,verb,聴く,2
+little,junior_high,小さい，かわいい,,junior_word_list,1572;1573,existing,junior_high,adjective,最も少ない / より少ない / 小さい・幼い・少しの,4
+live,junior_high,住む,,junior_word_list,311;1016,existing,junior_high,verb;adjective,住む・生きる / 生きている,3
+local,junior_high,地方の、地元の,,junior_word_list,312,existing,high_school,adjective,地元の・地域の,2
+lonely,junior_high,さびしい,,junior_word_list,313,existing,junior_high,adjective,さびしい・ひとりの,2
+long,junior_high,長い,,junior_word_list,314;1017;1574,existing,junior_high,adjective;adverb,長い / 長く,4
+look,junior_high,見る,,junior_word_list,315;316,existing,junior_high,verb,見る・〜に見える,2
+lose,junior_high,負ける,失う,junior_word_list;high_word_list,317;1020;318,existing,junior_high,verb;adjective,失う・負ける / 失う・負ける（過去形） / 失う・負ける（過去分詞） / 道に迷った・失われた,5
+lost,junior_high,負けた,,junior_word_list,318;1576;1577,existing,junior_high,verb;adjective,失う・負ける（過去形） / 失う・負ける（過去分詞） / 道に迷った・失われた,3
+loud,junior_high,声の大きい,,junior_word_list,1021,existing,junior_high,adjective,音が大きい,2
+lovely,junior_high,美しい,,junior_word_list,1578,existing,junior_high,adjective,美しい・すてきな,2
+low,junior_high,低い,,junior_word_list,1022,existing,junior_high,adjective,低い,2
+luck,junior_high,運、幸運,,junior_word_list,319,existing,junior_high,noun,運,2
+lucky,junior_high,幸運な,,junior_word_list,1579,existing,junior_high,adjective,幸運な,2
+lunch,junior_high,昼食,,junior_word_list,320,existing,junior_high,noun,昼食,2
+machine,junior_high,機械,,junior_word_list,1024,existing,junior_high,noun,機械,2
+made,junior_high,作った（過去形）,,junior_word_list,321;1581,existing,junior_high,verb,作る（過去形） / 作る（過去分詞）,2
+magazine,junior_high,雑誌,,junior_word_list,1025;1582,existing,junior_high,noun,雑誌,2
+make,junior_high,を作る,,junior_word_list,322;1583,existing,junior_high,verb,作る（過去形） / 作る（過去分詞） / 作る,4
+man,junior_high,男性、男の人,,junior_word_list,323,existing,junior_high,noun,男の人・人 / 男の人たち・人々,3
+many,junior_high,たくさんの,,junior_word_list,324;1585,existing,junior_high,adjective,多くの,2
+map,junior_high,地図,,junior_word_list,325,existing,junior_high,noun,地図,2
+march,junior_high,3月,,junior_word_list,326,existing,junior_high,noun,3月,2
+mark,junior_high,印,,junior_word_list,1586,existing,junior_high,noun,印・点数,2
+market,junior_high,市場,市場,junior_word_list;high_word_list,327;657;331,existing,junior_high,noun,市場,2
+marry,junior_high,結婚する,,junior_word_list,1587,existing,junior_high,verb,結婚する・結婚させる,2
+match,junior_high,試合,試合,junior_word_list;high_word_list,1588;590,existing,junior_high,noun,試合・組み合わせ,2
+math,junior_high,数学,,junior_word_list,328;683,existing,junior_high,noun,数学,2
+matter,junior_high,問題，困ったこと,事柄,junior_word_list;high_word_list,1589;591,existing,junior_high,noun,問題・事柄,2
+may,junior_high,5月,,junior_word_list,329;1026;1027,existing,junior_high,auxiliary;noun,〜してもよい・〜かもしれない / 5月 / 〜かもしれない,5
+maybe,junior_high,たぶん、もしかすると,たぶん,junior_word_list;high_word_list,330;483,existing,junior_high,adverb,おそらく・たぶん,2
+me,junior_high,私に,,junior_word_list,331;332,existing,junior_high,pronoun,私を・私に,2
+mean,junior_high,を意味する,意味する,junior_word_list;high_word_list,333;653;462,existing,junior_high,verb,意味する / 意味する（過去形） / 意味する（過去分詞）,4
+meaning,junior_high,意味,,junior_word_list,1029;1882,existing,junior_high,noun,意味,2
+meant,junior_high,意味した,,junior_word_list,1590,existing,junior_high,verb,意味する（過去形） / 意味する（過去分詞）,2
+meat,junior_high,肉,,junior_word_list,1031,existing,junior_high,noun,肉,2
+medicine,junior_high,薬,,junior_word_list,1032,existing,junior_high,noun,薬・医学,2
+medium,junior_high,中ほどの,中間の,junior_word_list;high_word_list,1033;842;1345,existing,junior_high,noun,中くらい・媒体,2
+meet,junior_high,と会う,,junior_word_list,334,existing,junior_high,verb,会う / 会う（過去形） / 会う（過去分詞）,4
+memory,junior_high,記憶,,junior_word_list,335,existing,junior_high,noun,記憶,2
+merchant,junior_high,商人,商人,junior_word_list;high_word_list,1591;592,existing,junior_high,noun,商人,2
+middle,junior_high,真ん中,,junior_word_list,1034,existing,junior_high,noun,中央・中間,2
+midnight,junior_high,真夜中,,junior_word_list,1915,existing,junior_high,noun,真夜中,2
+million,junior_high,100万,100万,junior_word_list;high_word_list,1036;163,existing,junior_high,numeral;noun,100万,4
+mind,junior_high,精神,,junior_word_list,1593,existing,junior_high,noun,心・精神,2
+mine,junior_high,私のもの,,junior_word_list,336,existing,junior_high,pronoun,私のもの,2
+minute,junior_high,分,,junior_word_list,337,existing,junior_high,noun,分・少しの間,2
+mirror,junior_high,鏡,,junior_word_list,1037;1596,existing,junior_high,noun,鏡,2
+miss,junior_high,さびしく思う,,junior_word_list,338;1038,existing,junior_high,verb,逃す・寂しく思う,2
+mistake,junior_high,誤り,,junior_word_list,1040,existing,junior_high,noun,誤り・間違い,2
+mix,junior_high,混ぜる,,junior_word_list,1597,existing,junior_high,verb,混ぜる,2
+modern,junior_high,現代的な,現代の,junior_word_list;high_word_list,1598;369,existing,junior_high,adjective,現代的な,2
+moment,junior_high,瞬間,瞬間,junior_word_list;high_word_list,339;291,existing,junior_high,noun,一瞬・瞬間,2
+monday,junior_high,月曜日,,junior_word_list,340,existing,junior_high,noun,月曜日,2
+money,junior_high,お金,,junior_word_list,341,existing,junior_high,noun,お金,2
+monkey,junior_high,サル,,junior_word_list,342,existing,junior_high,noun,猿,2
+month,junior_high,月、１か月,,junior_word_list,343,existing,junior_high,noun,月,2
+monthly,junior_high,月に1回の,,junior_word_list,1599,existing,junior_high,adjective,毎月の,2
+moon,junior_high,月,,junior_word_list,1042,existing,junior_high,noun,月,2
+more,junior_high,よりもっと,,junior_word_list,1043;1600,existing,junior_high,adverb;adjective,もっと・より多く / もっと多くの,2
+morning,junior_high,朝,,junior_word_list,344,existing,junior_high,noun,朝,2
+most,junior_high,最も,,junior_word_list,1046;1603,existing,junior_high,adverb,最も・ほとんど,2
+mother,junior_high,母,,junior_word_list,345,existing,junior_high,noun,母,2
+mountain,junior_high,山,,junior_word_list,346;651,existing,junior_high,noun,山,2
+mouse,junior_high,ネズミ、ハツカネズミ,,junior_word_list,347,existing,junior_high,noun,ネズミたち / ネズミ,3
+mouth,junior_high,口,,junior_word_list,348;697,existing,junior_high,noun,口,2
+move,junior_high,を動かす,,junior_word_list,1047;1604,existing,junior_high,verb,動く・動かす,2
+movie,junior_high,映画,,junior_word_list,349,existing,junior_high,noun,映画,2
+much,junior_high,[動詞を修飾して]おおいに、たいへん,,junior_word_list,350;1048,existing,junior_high,adverb;adjective,もっと・より多く / もっと多くの / ずっと・たいへん / 多量の・多くの,6
+museum,junior_high,博物館,,junior_word_list,351;676,existing,junior_high,noun,博物館,2
+music,junior_high,音楽,,junior_word_list,352,existing,junior_high,noun,音楽,2
+musical,junior_high,音楽の,,junior_word_list,1606,existing,junior_high,adjective,音楽の,2
+musician,junior_high,音楽家,音楽家,junior_word_list;high_word_list,353;917;1420,existing,junior_high,noun,音楽家,2
+must,junior_high,しなければならない,,junior_word_list,1049,existing,junior_high,auxiliary,〜しなければならない・〜に違いない / 〜してはいけない,3
+my,junior_high,私の,,junior_word_list,354,existing,junior_high,pronoun,私の,2
+myself,junior_high,私自身,,junior_word_list,1051,existing,junior_high,pronoun,私自身,2
+name,junior_high,名前,,junior_word_list,355,existing,junior_high,noun;verb,名前 / 名づける,4
+national,junior_high,国の、国家の,国の,junior_word_list;high_word_list,356;1893;348,existing,junior_high,adjective,国家の・国民の,2
+natural,junior_high,自然の,自然の,junior_word_list;high_word_list,1052;1892;191,existing,junior_high,adjective,自然の,2
+nature,junior_high,自然,自然,junior_word_list;high_word_list,357;705;319,existing,junior_high,noun,自然,2
+near,junior_high,の近くで,,junior_word_list,358;1053,existing,junior_high,preposition;noun;adjective;adverb,〜の近くに / 近く / 近い / 近くに,8
+necessary,junior_high,必要な,必要な,junior_word_list;high_word_list,1054;1898;164,existing,junior_high,adjective,必要な,2
+neck,junior_high,首,,junior_word_list,1055,existing,junior_high,noun,首,2
+need,junior_high,を必要とする,,junior_word_list,359;360,existing,junior_high,verb,必要とする,2
+neighbor,junior_high,近所の人,隣人,junior_word_list;high_word_list,1056;1914;2004;2344,existing,junior_high,noun,隣人,2
+neither,junior_high,～も～もない,,junior_word_list,1608,existing,junior_high,adverb,どちらも〜ない,2
+nest,junior_high,巣,,junior_word_list,1057,existing,junior_high,noun,巣,2
+net,junior_high,網,,junior_word_list,1609,existing,junior_high,noun,網・ネット,2
+never,junior_high,今までに一度もしない,,junior_word_list,1058;1610,existing,junior_high,adverb,一度も〜ない,2
+new,junior_high,新しい,,junior_word_list,361,existing,junior_high,adjective,新しい,2
+newspaper,junior_high,新聞,,junior_word_list,362;1611,existing,junior_high,noun,新聞,2
+nice,junior_high,良い,,junior_word_list,364,existing,junior_high,adjective,よい・親切な,2
+night,junior_high,夜,,junior_word_list,365,existing,junior_high,noun,夜,2
+nine,junior_high,9,,junior_word_list,366,existing,junior_high,numeral,9・九つ,2
+nineteen,junior_high,19,,junior_word_list,367,existing,junior_high,numeral,19・十九,2
+ninety,junior_high,90,,junior_word_list,368,existing,junior_high,numeral,90・九十,2
+ninth,junior_high,9番目,,junior_word_list,369,existing,junior_high,ordinal,9番目の,2
+noise,junior_high,騒音,,junior_word_list,1060,existing,junior_high,noun,物音・騒音,2
+noisy,junior_high,騒がしい,,junior_word_list,1613,existing,junior_high,adjective,騒がしい,2
+noon,junior_high,正午,,junior_word_list,370,existing,junior_high,noun,正午・昼,2
+north,junior_high,北,,junior_word_list,620;724,existing,junior_high,noun,北,2
+nose,junior_high,鼻,,junior_word_list,371;678,existing,junior_high,noun,鼻,2
+not,junior_high,でない,,junior_word_list,372,existing,junior_high,adverb,〜でない,2
+note,junior_high,紙幣,,junior_word_list,1617,existing,high_school,noun,メモ・注・紙幣・音符,2
+notebook,junior_high,ノート,,junior_word_list,373,existing,junior_high,noun,ノート,2
+nothing,junior_high,何もない,,junior_word_list,374,existing,junior_high,pronoun,何も〜ない・無,2
+november,junior_high,11月,,junior_word_list,375,existing,junior_high,noun,11月,2
+number,junior_high,数、数字,,junior_word_list,376;1620,existing,junior_high,noun,数・番号,2
+nurse,junior_high,看護婦,,junior_word_list,377,existing,junior_high,noun,看護師,2
+ocean,junior_high,大洋，海,,junior_word_list,1621,existing,junior_high,noun,海・大洋,2
+october,junior_high,10月,,junior_word_list,378,existing,junior_high,noun,10月,2
+of,junior_high,～の,,junior_word_list,1062,existing,junior_high,preposition,〜の・〜からなる,2
+office,junior_high,事務所,,junior_word_list,379,existing,junior_high,noun,事務所・会社,2
+often,junior_high,よく,,junior_word_list,380,existing,junior_high,adverb,しばしば・よく,2
+oil,junior_high,油,,junior_word_list,1063;1622,existing,junior_high,noun,油・石油,2
+old,junior_high,古い,,junior_word_list,381;1064;1065,existing,junior_high,adjective,古い・年をとった,2
+on,junior_high,【場所】の上に,,junior_word_list,382;1066,existing,junior_high,preposition,〜の上に・〜に接して,2
+once,junior_high,かつて,,junior_word_list,1067;1885,existing,junior_high,adverb,かつて・一度,2
+one,junior_high,1,,junior_word_list,383,existing,junior_high,numeral,1・一つ,2
+only,junior_high,～だけ,,junior_word_list,384,existing,junior_high,adverb,ただ〜だけ,2
+open,junior_high,を開ける,,junior_word_list,385,existing,junior_high,adjective;verb,開いている / 開ける・開く,4
+opinion,junior_high,意見，考え,意見,junior_word_list;high_word_list,1625;463,existing,high_school,noun,意見,2
+or,junior_high,そうしなければ,,junior_word_list,1626;1627,existing,junior_high,conjunction,または・それとも,2
+order,junior_high,注文する,命令,junior_word_list;high_word_list,1628;134,existing,junior_high,verb,注文する・命令する,2
+ordinary,junior_high,ふつうの,普通の,junior_word_list;high_word_list,1629;69,existing,high_school,adjective,普通の・通常の,2
+other,junior_high,他の,,junior_word_list,386;1071,existing,junior_high,adjective,ほかの,2
+our,junior_high,私たちの,,junior_word_list,387,existing,junior_high,pronoun,私たちの,2
+ours,junior_high,私たちのもの,,junior_word_list,388,existing,junior_high,pronoun,私たちのもの,2
+out,junior_high,外に,,junior_word_list,389;1630,existing,high_school,adverb,外へ・外に・外で,4
+outside,junior_high,外で,,junior_word_list,390;1073;1631,existing,junior_high,preposition;adjective,〜の外に / 外側の,4
+over,junior_high,向こうへ,,junior_word_list,391;1074;1632,existing,junior_high,preposition,〜の上に・〜を越えて,2
+overseas,junior_high,海外の,,junior_word_list,1077;1633,existing,high_school,adverb,海外へ・海外で,2
+own,junior_high,自分自身の,自身の,junior_word_list;high_word_list,1078;320,existing,junior_high,adjective,自分自身の,2
+paid,junior_high,支払い済みの,,junior_word_list,1079,existing,junior_high,verb,支払う（過去形） / 支払う（過去分詞）,2
+pain,junior_high,痛み,痛み,junior_word_list;high_word_list,1634;602,existing,junior_high,noun,痛み,2
+paint,junior_high,描く,,junior_word_list,1080,existing,junior_high,verb,描く・ペンキを塗る,2
+painter,junior_high,画家,,junior_word_list,1635,existing,junior_high,noun,画家,2
+painting,junior_high,絵をかくこと,,junior_word_list,393,existing,junior_high,noun,絵・絵画,2
+pair,junior_high,一組,,junior_word_list,1636,existing,junior_high,noun,一組・ペア,2
+pal,junior_high,友だち,,junior_word_list,1637,existing,junior_high,noun,友だち,2
+palace,junior_high,宮殿,,junior_word_list,1638,existing,junior_high,noun,宮殿,2
+pale,junior_high,青ざめた,,junior_word_list,1639,existing,junior_high,adjective,青ざめた・淡い,2
+paper,junior_high,紙,,junior_word_list,1081,existing,junior_high,noun,紙・書類,2
+parent,junior_high,親,,junior_word_list,394,existing,junior_high,noun,親,2
+park,junior_high,公園,,junior_word_list,395,existing,junior_high,noun,公園,2
+part,junior_high,部分,,junior_word_list,1082,existing,junior_high,noun,部分・役割,2
+pass,junior_high,を通り過ぎる,,junior_word_list,396;1083,existing,junior_high,verb,通る・過ぎる・合格する・手渡す,2
+past,junior_high,過去の,過去の,junior_word_list;high_word_list,1084;442,existing,junior_high,adjective,過去の,2
+pay,junior_high,払う,,junior_word_list,1085,existing,junior_high,verb,支払う（過去形） / 支払う（過去分詞） / 支払う,4
+peace,junior_high,平和,,junior_word_list,1086;1643,existing,junior_high,noun,平和,2
+peaceful,junior_high,平和な,,junior_word_list,1644,existing,junior_high,adjective,平和な,2
+pencil,junior_high,鉛筆,,junior_word_list,397;1645,existing,junior_high,noun,鉛筆,2
+people,junior_high,人々,,junior_word_list,398;623,existing,junior_high,noun,人々,2
+perform,junior_high,演じる,,junior_word_list,399,existing,high_school,verb,行う・演じる・遂行する,2
+perhaps,junior_high,多分,,junior_word_list,1646,existing,junior_high,adverb,たぶん,2
+period,junior_high,期間、時間,期間,junior_word_list;high_word_list,400;1647;409,existing,high_school,noun,期間・時代・終止符,2
+person,junior_high,人,,junior_word_list,1088;1648,existing,junior_high,noun,人,2
+personal,junior_high,個人の,,junior_word_list,1649,existing,junior_high,adjective,個人の,2
+photograph,junior_high,写真,,junior_word_list,1089,existing,high_school,noun,写真,2
+pick,junior_high,を摘む,,junior_word_list,401;713,existing,junior_high,verb,選ぶ・摘む,2
+picture,junior_high,絵、写真,,junior_word_list,402,existing,junior_high,noun,絵・写真,2
+piece,junior_high,断片,,junior_word_list,1090,existing,junior_high,noun,一片・断片,2
+pig,junior_high,ブタ,,junior_word_list,403;709,existing,junior_high,noun,ブタ,2
+place,junior_high,場所,,junior_word_list,404,existing,junior_high,noun,場所,2
+plan,junior_high,を計画する,,junior_word_list,405;1091,existing,junior_high,noun;verb,計画 / 計画する,4
+plane,junior_high,飛行機,,junior_word_list,610,existing,junior_high,noun,飛行機,2
+planet,junior_high,惑星,,junior_word_list,1092,existing,junior_high,noun,惑星,2
+plant,junior_high,植物,植物,junior_word_list;high_word_list,1093;1917;276,existing,junior_high,noun,植物,2
+plate,junior_high,お皿,,junior_word_list,1094;1919,existing,junior_high,noun,皿・プレート,2
+play,junior_high,を演奏する,,junior_word_list,406;407;1866,existing,junior_high,verb;noun,遊ぶ・スポーツをする・演奏する / 劇・遊び,4
+player,junior_high,選手,,junior_word_list,408,existing,junior_high,noun,選手・演奏者,2
+please,junior_high,気に入る，喜ばせる,,junior_word_list,1651,existing,junior_high,verb;adjective,喜ばせる・気に入る / 喜んで,3
+pleased,junior_high,喜んで,,junior_word_list,1652,existing,junior_high,adjective,喜んで,1
+poem,junior_high,詩,,junior_word_list,1653,existing,junior_high,noun,詩,2
+point,junior_high,特徴，論点,,junior_word_list,1655;1656,existing,junior_high,noun,点・要点,2
+police,junior_high,警察官,,junior_word_list,410;699,existing,junior_high,noun,警察,2
+policeman,junior_high,警官,,junior_word_list,1658,existing,junior_high,noun,警官 / 警官たち,3
+pond,junior_high,池,,junior_word_list,704,existing,junior_high,noun,池,2
+poor,junior_high,貧しい,,junior_word_list,411;720,existing,junior_high,adjective,貧しい・かわいそうな,2
+popular,junior_high,人気のある,人気のある,junior_word_list;high_word_list,412;656;262,existing,junior_high,adjective,人気のある,2
+pork,junior_high,豚肉,,junior_word_list,1096;1660,existing,junior_high,noun,豚肉,2
+port,junior_high,港,,junior_word_list,1097,existing,junior_high,noun,港,2
+possible,junior_high,可能な,可能な,junior_word_list;high_word_list,1662;446,existing,high_school,adjective,可能な・ありうる,2
+practice,junior_high,を練習する,,junior_word_list,413;414;652,existing,junior_high,verb,練習する,2
+president,junior_high,大統領,社長,junior_word_list;high_word_list,1664;310,existing,junior_high,noun,大統領・社長,2
+pretty,junior_high,かわいい，きれいな,かなり,junior_word_list;high_word_list,1665;497,existing,junior_high,adverb,かなり,2
+price,junior_high,値段,値段,junior_word_list;high_word_list,1100;218,existing,junior_high,noun,価格・値段,2
+prince,junior_high,王子,,junior_word_list,1666,existing,junior_high,noun,王子,2
+print,junior_high,を印刷する,,junior_word_list,1667,existing,junior_high,verb,印刷する,2
+prize,junior_high,賞,,junior_word_list,1668,existing,junior_high,noun,賞,2
+probably,junior_high,多分,おそらく,junior_word_list;high_word_list,1930;1932;500,existing,junior_high,adverb,たぶん・おそらく,2
+problem,junior_high,問題,,junior_word_list,415;1875,existing,junior_high,noun,問題,2
+produce,junior_high,を生産する,,junior_word_list,1101,existing,high_school,verb,生産する・生み出す,2
+product,junior_high,製品,,junior_word_list,1102,existing,high_school,noun,製品・産物,2
+progress,junior_high,進歩,進歩,junior_word_list;high_word_list,1104;1669;263,existing,high_school,noun,進歩・進展,2
+promise,junior_high,約束,,junior_word_list,1670,existing,junior_high,noun,約束,2
+protect,junior_high,を守る，保護する,守る,junior_word_list;high_word_list,1671;27,existing,high_school,verb,守る・保護する,2
+pull,junior_high,を引く,,junior_word_list,1105,existing,high_school,verb,引く・引っぱる,2
+purple,junior_high,紫色,,junior_word_list,416,existing,junior_high,noun,紫色,2
+push,junior_high,を押す,,junior_word_list,1106,existing,junior_high,verb,押す,2
+put,junior_high,を置く,,junior_word_list,417;1107,existing,junior_high,verb,置く（過去形） / 置く（過去分詞） / 置く,6
+queen,junior_high,女王,,junior_word_list,418;1913,existing,junior_high,noun,女王,2
+question,junior_high,質問,,junior_word_list,419;627,existing,junior_high,noun,質問,2
+quick,junior_high,速い,,junior_word_list,1676,existing,junior_high,adjective,速い・すばやい,2
+quickly,junior_high,すぐに,,junior_word_list,420;1902,existing,junior_high,adverb,すばやく,2
+quiet,junior_high,静かな,,junior_word_list,421;716,existing,junior_high,adjective,静かな,2
+quietly,junior_high,静かに，落ち着いて,,junior_word_list,1677,existing,junior_high,adverb,静かに,2
+quite,junior_high,かなり，相当,かなり,junior_word_list;high_word_list,1678;498,existing,junior_high,adverb,かなり・まったく,2
+rabbit,junior_high,ウサギ,,junior_word_list,422;707,existing,junior_high,noun,ウサギ,2
+race,junior_high,競走,,junior_word_list,1679,existing,junior_high,noun,競走・人種,2
+railway,junior_high,鉄道,,junior_word_list,1681,existing,junior_high,noun,鉄道,2
+rain,junior_high,雨,,junior_word_list,1108;1682,existing,junior_high,noun;verb,雨 / 雨が降る,4
+rainy,junior_high,雨降りの,,junior_word_list,423;715;1684,existing,junior_high,adjective,雨降りの,2
+raise,junior_high,手などを挙げる,上げる,junior_word_list;high_word_list,1685;279,existing,junior_high,verb,上げる・育てる,2
+rat,junior_high,ネズミ,,junior_word_list,1109,existing,junior_high,noun,ネズミ,2
+raw,junior_high,生の,生の,junior_word_list;high_word_list,1110;1890;1775;2115,existing,junior_high,adjective,生の,2
+reach,junior_high,に着く，到着する,到着する,junior_word_list;high_word_list,1687;189,existing,junior_high,verb,届く・到着する,2
+read,junior_high,を読む,,junior_word_list,424,existing,junior_high,verb,読む（過去形） / 読む（過去分詞） / 読む,6
+reading,junior_high,読書,,junior_word_list,425,existing,junior_high,noun,読書,2
+ready,junior_high,用意できている,,junior_word_list,1111,existing,junior_high,adjective,用意できている,2
+real,junior_high,本当の,,junior_word_list,1688,existing,junior_high,adjective,本当の,2
+realize,junior_high,だと気づく,だとわかる,junior_word_list;high_word_list,1112;1876;486,existing,junior_high,verb,理解する・気づく,2
+really,junior_high,本当に、実際に,,junior_word_list,426,existing,junior_high,adverb,本当に,2
+reason,junior_high,理由,,junior_word_list,1113;1889,existing,junior_high,noun,理由・原因,2
+receive,junior_high,を受け取る,受け取る,junior_word_list;high_word_list,1689;300,existing,junior_high,verb,受け取る,2
+recently,junior_high,最近,最近,junior_word_list;high_word_list,1690;345,existing,junior_high,adverb,最近,2
+recognize,junior_high,だと分かる,,junior_word_list,1114,existing,high_school,verb,認識する・認める,2
+red,junior_high,赤,,junior_word_list,427,existing,junior_high,adjective,赤い,2
+relate,junior_high,を～に関係させる,,junior_word_list,1691,existing,high_school,verb,関係づける・関連する,2
+remember,junior_high,を思い出す,覚えている,junior_word_list;high_word_list,1116;429,existing,junior_high,verb,覚えている・思い出す,2
+reply,junior_high,と答える,返答する,junior_word_list;high_word_list,1119;1916;142,existing,junior_high,noun,返事,2
+report,junior_high,報告,,junior_word_list,1697,existing,junior_high,noun,報告・レポート,2
+research,junior_high,を研究する,研究,junior_word_list;high_word_list,1120;1121;377,existing,high_school,noun,研究・調査,2
+researcher,junior_high,研究者,,junior_word_list,1698,existing,high_school,noun,研究者,2
+respect,junior_high,を尊敬する,尊敬,junior_word_list;high_word_list,1701;232,existing,high_school,noun,尊敬・点・配慮,2
+rest,junior_high,休息,,junior_word_list,428;1123;1702,existing,junior_high,verb,休む・休息する,2
+result,junior_high,結果,結果,junior_word_list;high_word_list,1124;380,existing,high_school,noun,結果,2
+return,junior_high,帰る、戻る,,junior_word_list,1126,existing,junior_high,verb,帰る・戻る,2
+rice,junior_high,米、ご飯,,junior_word_list,429,existing,junior_high,noun,米・ご飯,2
+rich,junior_high,金持ちの,,junior_word_list,430,existing,junior_high,adjective,金持ちの・豊かな,2
+ride,junior_high,乗る,,junior_word_list,431;1127,existing,junior_high,verb,乗る（過去分詞） / 乗る / 乗る（過去形）,4
+right,junior_high,右,正しい,junior_word_list;high_word_list,432;433;1128;1705;254,existing,junior_high,adjective;noun,正しい・右の / 右・権利,4
+ring,junior_high,指輪,,junior_word_list,1130,existing,junior_high,noun,指輪・輪,2
+rise,junior_high,のぼる、上がる、上昇する,上がる,junior_word_list;high_word_list,1131;280,existing,junior_high,verb,上がる・起き上がる / 上がる・起き上がる（過去分詞） / 上がる・起き上がる（過去形）,4
+river,junior_high,川,,junior_word_list,434;668,existing,junior_high,noun,川,2
+road,junior_high,道,,junior_word_list,1132;1706,existing,junior_high,noun,道・道路,2
+rock,junior_high,岩,,junior_word_list,1133,existing,junior_high,noun,岩・石,2
+rode,junior_high,乗った,,junior_word_list,1134,existing,junior_high,verb,乗る（過去形）,1
+role,junior_high,役、役割,役割,junior_word_list;high_word_list,435;127,existing,high_school,noun,役割,2
+roof,junior_high,屋根,,junior_word_list,703,existing,junior_high,noun,屋根,2
+room,junior_high,部屋,,junior_word_list,436,existing,junior_high,noun,部屋,2
+root,junior_high,根,,junior_word_list,1707,existing,junior_high,noun,根,2
+rose,junior_high,昇った,,junior_word_list,1708,existing,junior_high,verb;noun,上がる・起き上がる（過去形） / バラ,3
+round,junior_high,丸い,,junior_word_list,437;1709,existing,junior_high,adverb,周りに・回って,2
+row,junior_high,列,,junior_word_list,1135;1710,existing,junior_high,verb,こぐ,2
+ruler,junior_high,定規,,junior_word_list,438,existing,junior_high,noun,定規・支配者,2
+run,junior_high,走る,,junior_word_list,439;1712,existing,junior_high,verb,走る（過去形） / 走る（過去分詞） / 走る,5
+rush,junior_high,殺到,突進する,junior_word_list;high_word_list,1715;1014;1517,existing,junior_high,noun,急ぎ・混雑,2
+sad,junior_high,悲しい,,junior_word_list,440,existing,junior_high,adjective,悲しい,2
+said,junior_high,言った（過去形）,,junior_word_list,441;1717,existing,junior_high,verb,言う（過去形） / 言う（過去分詞）,2
+sailor,junior_high,船員,,junior_word_list,1138,existing,junior_high,noun,船員,2
+salad,junior_high,サラダ,,junior_word_list,442,existing,junior_high,noun,サラダ,2
+salt,junior_high,塩,,junior_word_list,1140;1718,existing,junior_high,noun,塩,2
+same,junior_high,同一の,,junior_word_list,1141;1719,existing,junior_high,adjective,同じ,2
+satisfy,junior_high,を満足させる,,junior_word_list,1720,existing,high_school,verb,満足させる・条件を満たす,2
+saturday,junior_high,土曜日,,junior_word_list,443,existing,junior_high,noun,土曜日,2
+save,junior_high,を節約する,,junior_word_list,1142;1721,existing,junior_high,verb,救う・節約する,2
+saw,junior_high,見た（過去形）,,junior_word_list,444,existing,junior_high,verb,見る・わかる（過去形）,1
+say,junior_high,を言う,,junior_word_list,445;1143,existing,junior_high,verb,言う（過去形） / 言う（過去分詞） / 言う,4
+school,junior_high,学校,,junior_word_list,446,existing,junior_high,noun,学校,2
+science,junior_high,科学,科学,junior_word_list;high_word_list,447;444,existing,junior_high,noun,科学・理科,2
+scientist,junior_high,科学者,,junior_word_list,448;1910,existing,junior_high,noun,科学者,2
+sea,junior_high,海,,junior_word_list,449;640,existing,junior_high,noun,海,2
+season,junior_high,季節,,junior_word_list,450,existing,junior_high,noun,季節,2
+second,junior_high,2番目,,junior_word_list,451;1145;1724,existing,junior_high,ordinal,第2の・2番目の,2
+secret,junior_high,秘密,,junior_word_list,1725,existing,junior_high,noun,秘密,2
+see,junior_high,を見る,,junior_word_list,452;453;454;631,existing,junior_high,verb,見る・わかる（過去形） / 見る・わかる / 見る・わかる（過去分詞）,4
+seem,junior_high,～のように思われる,に見える,junior_word_list;high_word_list,1146;1726;474,existing,junior_high,verb,〜のように思われる,2
+select,junior_high,を選ぶ,選び出す,junior_word_list;high_word_list,1147;1015;1518,existing,junior_high,verb,選ぶ,2
+sell,junior_high,を売る,,junior_word_list,455,existing,junior_high,verb,売る / 売る（過去形） / 売る（過去分詞）,4
+send,junior_high,を送る,,junior_word_list,1149,existing,junior_high,verb,送る / 送る（過去形） / 送る（過去分詞）,4
+senior,junior_high,年上の，上級の,,junior_word_list,1727,existing,junior_high,adjective,年上の・上級の,2
+sense,junior_high,感覚,,junior_word_list,1150,existing,junior_high,noun,感覚・意味・センス,2
+sent,junior_high,送った,,junior_word_list,1151;1728,existing,junior_high,verb,送る（過去形） / 送る（過去分詞）,2
+sentence,junior_high,文,,junior_word_list,1152;1918,existing,junior_high,noun,文,2
+september,junior_high,9月,,junior_word_list,456,existing,junior_high,noun,9月,2
+serious,junior_high,重大な,,junior_word_list,1153,existing,high_school,adjective,深刻な・真剣な,2
+set,junior_high,置く,,junior_word_list,655,existing,junior_high,verb,置く・設定する（過去形） / 置く・設定する（過去分詞） / 置く・設定する,6
+seven,junior_high,7,,junior_word_list,457,existing,junior_high,numeral,7・七つ,2
+seventeen,junior_high,17,,junior_word_list,458,existing,junior_high,numeral,17・十七,2
+seventy,junior_high,70,,junior_word_list,459,existing,junior_high,numeral,70・七十,2
+shade,junior_high,陰，日陰,,junior_word_list,1729,existing,junior_high,noun,日陰・影,2
+shake,junior_high,震える,,junior_word_list,1730,existing,junior_high,verb,震える・振る / 震える・振る（過去分詞） / 震える・振る（過去形）,4
+shape,junior_high,形,,junior_word_list,1156,existing,high_school,noun,形・形状,2
+share,junior_high,を共有する,分かち合う,junior_word_list;high_word_list,1157;149,existing,junior_high,verb,分け合う・共有する,2
+she,junior_high,彼女は,,junior_word_list,460,existing,junior_high,pronoun,彼女は・彼女が,2
+sheep,junior_high,ヒツジ,,junior_word_list,461,existing,junior_high,noun,羊,2
+ship,junior_high,船,,junior_word_list,462,existing,junior_high,noun,船,2
+shirt,junior_high,シャツ,,junior_word_list,1733,existing,junior_high,noun,シャツ,2
+shoe,junior_high,くつ,,junior_word_list,463,existing,junior_high,noun,靴,2
+shoot,junior_high,撃つ,,junior_word_list,1734,existing,junior_high,verb,撃つ・撮影する / 撃つ・撮影する（過去形） / 撃つ・撮影する（過去分詞）,4
+shop,junior_high,店,,junior_word_list,464;1158,existing,junior_high,verb;noun,買い物をする / 店,4
+shopping,junior_high,買物,,junior_word_list,465,existing,junior_high,noun,買い物,2
+short,junior_high,短い,,junior_word_list,466,existing,junior_high,adjective,短い・背が低い,2
+should,junior_high,すべきである,,junior_word_list,1159,existing,junior_high,auxiliary,〜すべきだ・〜のはずだ / 〜すべきではない,3
+shoulder,junior_high,肩,,junior_word_list,467;708,existing,junior_high,noun,肩,2
+shout,junior_high,叫ぶ,,junior_word_list,1160,existing,junior_high,verb,叫ぶ,2
+show,junior_high,を見せる,,junior_word_list,468;1161,existing,junior_high,verb;noun,見せる / ショー・番組 / 見せる（過去分詞）,5
+sick,junior_high,病気の,,junior_word_list,470,existing,junior_high,adjective,病気の,2
+side,junior_high,側面,,junior_word_list,1162;1735,existing,junior_high,noun,側面・側,2
+sign,junior_high,合図，標識,兆候,junior_word_list;high_word_list,1737;209,existing,junior_high,noun,合図・標識・印,2
+signal,junior_high,信号,,junior_word_list,1738,existing,junior_high,noun,信号・合図,2
+silent,junior_high,静かな,,junior_word_list,1739,existing,junior_high,adjective,静かな・無言の,2
+silk,junior_high,絹,,junior_word_list,1740,existing,junior_high,noun,絹,2
+silver,junior_high,銀,,junior_word_list,1741,existing,junior_high,noun,銀,2
+similar,junior_high,同じような,,junior_word_list,1164,existing,high_school,adjective,似ている・同様の,2
+simple,junior_high,単純な，簡単な,,junior_word_list,1742,existing,junior_high,adjective,簡単な・質素な,2
+since,junior_high,～以来,,junior_word_list,1743,existing,junior_high,conjunction,〜以来・〜なので,2
+sing,junior_high,を歌う,,junior_word_list,471,existing,junior_high,verb,歌う（過去形） / 歌う / 歌う（過去分詞）,4
+singer,junior_high,歌手,,junior_word_list,472,existing,junior_high,noun,歌手,2
+sister,junior_high,姉妹,,junior_word_list,473,existing,junior_high,noun,姉妹・姉・妹,2
+sit,junior_high,座る,,junior_word_list,474;630,existing,junior_high,verb,座る（過去形） / 座る（過去分詞） / 座る,4
+site,junior_high,場所,場所,junior_word_list;high_word_list,1744;1785;2125,existing,high_school,noun,場所・用地・サイト,2
+six,junior_high,6,,junior_word_list,475,existing,junior_high,numeral,6・六つ,2
+sixteen,junior_high,16,,junior_word_list,476,existing,junior_high,numeral,16・十六,2
+sixth,junior_high,6番目,,junior_word_list,477,existing,junior_high,ordinal,6番目の,2
+sixty,junior_high,60,,junior_word_list,478,existing,junior_high,numeral,60・六十,2
+skill,junior_high,技術,,junior_word_list,1166,existing,high_school,noun,技能・能力,2
+sky,junior_high,空,,junior_word_list,1167;1745,existing,junior_high,noun,空,2
+sleep,junior_high,眠る,,junior_word_list,479;686;1746,existing,junior_high,verb,眠る / 眠る（過去形） / 眠る（過去分詞）,4
+sleepy,junior_high,眠い,,junior_word_list,1747,existing,junior_high,adjective,眠い,2
+slowly,junior_high,ゆっくりと,,junior_word_list,606;1168,existing,junior_high,adverb,ゆっくりと,2
+small,junior_high,小さい,,junior_word_list,480,existing,junior_high,adjective,小さな,2
+smell,junior_high,においがする,臭う,junior_word_list;high_word_list,1748;648,existing,junior_high,verb,においがする・においをかぐ / においがする・においをかぐ（過去形） / においがする・においをかぐ（過去分詞）,4
+smile,junior_high,ほほえむ,,junior_word_list,481;1169,existing,junior_high,noun,ほほ笑み・笑顔,2
+smoke,junior_high,煙,,junior_word_list,1749,existing,junior_high,noun,煙,2
+snake,junior_high,ヘビ,,junior_word_list,482,existing,junior_high,noun,蛇,2
+snow,junior_high,雪,,junior_word_list,483;1171,existing,junior_high,noun,雪,2
+snowy,junior_high,雪の降る,,junior_word_list,484,existing,junior_high,adjective,雪の降る,2
+so,junior_high,とても,,junior_word_list,591,existing,junior_high,adverb,とても・だから,2
+society,junior_high,社会,社会,junior_word_list;high_word_list,1172;311,existing,high_school,noun,社会,2
+soft,junior_high,やわらかい,,junior_word_list,1173,existing,junior_high,adjective,柔らかい,2
+soil,junior_high,土,,junior_word_list,1752,existing,junior_high,noun,土・土壌,2
+sold,junior_high,売った,,junior_word_list,1753,existing,junior_high,verb,売る（過去形） / 売る（過去分詞）,2
+solve,junior_high,を解決する,解く,junior_word_list;high_word_list,1754;438,existing,junior_high,verb,解決する,2
+some,junior_high,いくつかの,,junior_word_list,485,existing,junior_high,adjective,いくつかの・多少の,2
+someone,junior_high,だれか，ある人,,junior_word_list,1756,existing,junior_high,pronoun,誰か,2
+something,junior_high,なにか,,junior_word_list,486,existing,junior_high,pronoun,何か・あるもの,2
+sometime,junior_high,いつか,,junior_word_list,1174,existing,junior_high,adverb,いつか,2
+sometimes,junior_high,ときどき,,junior_word_list,487,existing,junior_high,adverb,時々,2
+son,junior_high,息子,,junior_word_list,1758,existing,junior_high,noun,息子,2
+song,junior_high,歌,,junior_word_list,488,existing,junior_high,noun,歌,2
+soon,junior_high,すぐに,,junior_word_list,489,existing,junior_high,adverb,すぐに,2
+sorry,junior_high,残念で,,junior_word_list,1175,existing,junior_high,adjective,すまなく思って・残念な,2
+sort,junior_high,種類,種類,junior_word_list;high_word_list,1759;302,existing,junior_high,noun,種類,2
+sound,junior_high,に聞こえる,,junior_word_list,490,existing,junior_high,noun;verb,音 / 〜のように聞こえる,4
+soup,junior_high,スープ,,junior_word_list,491,existing,junior_high,noun,スープ,2
+south,junior_high,南,,junior_word_list,619;723,existing,junior_high,noun,南,2
+speak,junior_high,を話す,,junior_word_list,492,existing,junior_high,verb,話す / 話す（過去形） / 話す（過去分詞）,4
+special,junior_high,特別の,,junior_word_list,493,existing,junior_high,adjective,特別な,2
+speech,junior_high,演説,,junior_word_list,494,existing,junior_high,noun,演説・スピーチ,2
+spell,junior_high,をつづる,,junior_word_list,495,existing,junior_high,verb,つづる,2
+spelling,junior_high,綴り,,junior_word_list,1761,existing,junior_high,noun,つづり,2
+spend,junior_high,を過ごす,費やす,junior_word_list;high_word_list,496;663;168,existing,junior_high,verb,費やす・過ごす / 費やす・過ごす（過去形） / 費やす・過ごす（過去分詞）,4
+spoke,junior_high,話した,,junior_word_list,1178,existing,junior_high,verb,話す（過去形）,1
+spring,junior_high,春,,junior_word_list,497;1181,existing,junior_high,noun,春,2
+square,junior_high,正方形の,,junior_word_list,1763,existing,junior_high,noun,正方形・広場,2
+stamp,junior_high,切手,,junior_word_list,609,existing,junior_high,noun,切手・スタンプ,2
+stand,junior_high,立つ,,junior_word_list,498;1764,existing,junior_high,verb,立つ / 立つ（過去形） / 立つ（過去分詞）,4
+star,junior_high,星,,junior_word_list,499,existing,junior_high,noun,星・スター,2
+station,junior_high,駅,,junior_word_list,500,existing,junior_high,noun,駅・場所,2
+statue,junior_high,像,,junior_word_list,1767,existing,junior_high,noun,像・銅像,2
+stay,junior_high,滞在する,,junior_word_list,501;1183;1868,existing,junior_high,verb;noun,滞在する・とどまる / 滞在,4
+step,junior_high,足元，階段,,junior_word_list,1769,existing,junior_high,noun,一歩・階段・段階,2
+still,junior_high,まだ,,junior_word_list,502;1872,existing,junior_high,adverb,まだ・なお,2
+stone,junior_high,石,,junior_word_list,1185,existing,junior_high,noun,石,2
+stop,junior_high,止める,,junior_word_list,503;1770,existing,junior_high,verb;noun,止まる・止める / 停留所・停止,4
+store,junior_high,を蓄える,,junior_word_list,1771,existing,junior_high,noun,店,2
+story,junior_high,物語,,junior_word_list,1186,existing,junior_high,noun,話・物語,2
+straight,junior_high,真っすぐに,,junior_word_list,504,existing,junior_high,adverb,まっすぐに,2
+strange,junior_high,奇妙な,奇妙な,junior_word_list;high_word_list,1187;412,existing,junior_high,adjective,奇妙な,2
+stranger,junior_high,見知らぬ人,他人,junior_word_list;high_word_list,1772;375,existing,junior_high,noun,見知らぬ人,2
+street,junior_high,通り,,junior_word_list,505,existing,junior_high,noun,通り・街路,2
+strike,junior_high,打つ,叩く,junior_word_list;high_word_list,1188;20,existing,junior_high,verb,打つ・ぶつかる / 打つ・ぶつかる（過去形） / 打つ・ぶつかる（過去分詞）,4
+strong,junior_high,強い,,junior_word_list,506,existing,junior_high,adjective,強い・丈夫な,2
+student,junior_high,生徒,,junior_word_list,507,existing,junior_high,noun,学生・生徒,2
+study,junior_high,を勉強する,,junior_word_list,508;1774,existing,junior_high,verb,勉強する,2
+subject,junior_high,教科、科目,教科,junior_word_list;high_word_list,509;109,existing,junior_high,noun,科目・主題,2
+subway,junior_high,地下鉄,,junior_word_list,510,existing,junior_high,noun,地下鉄,2
+succeed,junior_high,成功する,,junior_word_list,1776,existing,junior_high,verb,成功する,2
+success,junior_high,成功,成功,junior_word_list;high_word_list,1189;259,existing,junior_high,noun,成功,2
+successful,junior_high,成功した,,junior_word_list,1777,existing,high_school,adjective,成功した・うまくいった,2
+such,junior_high,そのような,,junior_word_list,1190,existing,junior_high,adjective,そのような,2
+suddenly,junior_high,突然に,,junior_word_list,1928,existing,junior_high,adverb,突然,2
+sugar,junior_high,砂糖,,junior_word_list,1191,existing,junior_high,noun,砂糖,2
+summer,junior_high,夏,,junior_word_list,511,existing,junior_high,noun,夏,2
+sun,junior_high,太陽,,junior_word_list,1192,existing,junior_high,noun,太陽,2
+sunday,junior_high,日曜日,,junior_word_list,512,existing,junior_high,noun,日曜日,2
+sunny,junior_high,晴れの,,junior_word_list,513,existing,junior_high,adjective,晴れた,2
+sunset,junior_high,日没,,junior_word_list,1778,existing,junior_high,noun,日没・夕焼け,2
+supermarket,junior_high,スーパーマーケット,,junior_word_list,514,existing,junior_high,noun,スーパーマーケット,2
+support,junior_high,を支援する，応援する,,junior_word_list,1782,existing,high_school,noun,支援・支持,2
+sure,junior_high,もちろん,確信して,junior_word_list;high_word_list,515;516;654;430,existing,junior_high,adjective,確信して・確かな,2
+surely,junior_high,確かに,確かに,junior_word_list;high_word_list,1783;876;1379,existing,junior_high,adverb,確かに・きっと,2
+surprise,junior_high,驚くべきこと,,junior_word_list,517,existing,high_school,noun,驚き・意外な出来事,2
+survey,junior_high,調査,調査,junior_word_list;high_word_list,1786;625,existing,high_school,noun,調査,2
+survive,junior_high,生き残る,,junior_word_list,1788,existing,high_school,verb,生き残る・切り抜ける,2
+sweet,junior_high,甘い,,junior_word_list,518;1790,existing,junior_high,adjective,甘い,2
+swim,junior_high,泳ぐ,,junior_word_list,519,existing,junior_high,verb,泳ぐ（過去形） / 泳ぐ / 泳ぐ（過去分詞）,4
+swimming,junior_high,水泳,,junior_word_list,520;1791,existing,high_school,noun,水泳,2
+table,junior_high,つくえ,,junior_word_list,521,existing,junior_high,noun,テーブル・表,2
+take,junior_high,を撮る,,junior_word_list,522;523;634;635,existing,junior_high,verb,取る・連れていく・時間がかかる / 取る・連れていく・時間がかかる（過去分詞） / 取る・連れていく・時間がかかる（過去形）,4
+talk,junior_high,話す,,junior_word_list,524;625,existing,junior_high,verb,話す,2
+tall,junior_high,背が高い,,junior_word_list,1194,existing,junior_high,adjective,背の高い,2
+taught,junior_high,教えた,,junior_word_list,1195,existing,junior_high,verb,教える（過去形） / 教える（過去分詞）,2
+tea,junior_high,お茶,,junior_word_list,632,existing,junior_high,noun,お茶,2
+teach,junior_high,教える,,junior_word_list,525;639,existing,junior_high,verb,教える（過去形） / 教える（過去分詞） / 教える,4
+teacher,junior_high,先生、教師,,junior_word_list,526,existing,junior_high,noun,先生・教師,2
+tear,junior_high,涙,引き裂く,junior_word_list;high_word_list,1794;1019;1522,existing,junior_high,noun,涙,2
+technology,junior_high,科学技術,,junior_word_list,1196,existing,high_school,noun,技術・科学技術,2
+telephone,junior_high,電話,,junior_word_list,527,existing,junior_high,noun,電話,2
+tell,junior_high,に話す,,junior_word_list,528;636,existing,junior_high,verb,教える・語る / 教える・語る（過去形） / 教える・語る（過去分詞）,4
+temple,junior_high,寺,,junior_word_list,529,existing,junior_high,noun,寺・寺院,2
+ten,junior_high,10,,junior_word_list,530,existing,junior_high,numeral,10・十,2
+tenth,junior_high,10番目,,junior_word_list,531,existing,junior_high,ordinal,10番目の,2
+textbook,junior_high,教科書,,junior_word_list,532;701,existing,junior_high,noun,教科書,2
+than,junior_high,よりも,,junior_word_list,1197,existing,junior_high,conjunction,〜よりも,2
+thank,junior_high,に感謝する,,junior_word_list,533,existing,junior_high,verb,感謝する,2
+that,junior_high,あの,,junior_word_list,534;535,existing,junior_high,conjunction;pronoun,〜ということ / あれ・それ / あれら・それら,5
+the,junior_high,その,,junior_word_list,536,existing,junior_high,article,その・例の,2
+theater,junior_high,劇場,,junior_word_list,537;1908,existing,junior_high,noun,劇場,2
+their,junior_high,彼らの,,junior_word_list,538,existing,junior_high,pronoun,彼らの・それらの,2
+theirs,junior_high,彼らのもの,,junior_word_list,539,existing,junior_high,pronoun,彼らのもの・それらのもの,2
+them,junior_high,彼らを,,junior_word_list,540,existing,junior_high,pronoun,彼らを・それらを,2
+themselves,junior_high,彼ら自身,,junior_word_list,1798,existing,junior_high,pronoun,彼ら自身・それら自身,2
+then,junior_high,そのとき,,junior_word_list,1799;1800,existing,junior_high,adverb,それから・そのとき,2
+there,junior_high,そこに,,junior_word_list,541,existing,junior_high,adverb,そこに・そこで,2
+these,junior_high,これらの,,junior_word_list,542;1198,existing,junior_high,pronoun,これら,1
+they,junior_high,彼らは,,junior_word_list,543,existing,junior_high,pronoun,彼らは・それらは,2
+thing,junior_high,もの、こと,,junior_word_list,544,existing,junior_high,noun,物・こと,2
+think,junior_high,考える,,junior_word_list,545;629,existing,junior_high,verb,考える・思う / 考える・思う（過去形） / 考える・思う（過去分詞）,4
+third,junior_high,3番目,,junior_word_list,546;1801;1802,existing,junior_high,ordinal,第3の・3番目の,2
+thirteen,junior_high,13,,junior_word_list,547,existing,junior_high,numeral,13・十三,2
+thirty,junior_high,30,,junior_word_list,548,existing,junior_high,numeral,30・三十,2
+this,junior_high,これ,,junior_word_list,549;550,existing,junior_high,pronoun,これら / これ,3
+those,junior_high,あれらの,,junior_word_list,551;1804,existing,junior_high,pronoun,あれら・それら,1
+though,junior_high,だけれども,,junior_word_list,1805,existing,high_school,conjunction,〜だけれども,2
+thought,junior_high,考え,考えること,junior_word_list;high_word_list,1806;1106;1609,existing,junior_high,verb;noun,考える・思う（過去形） / 考える・思う（過去分詞） / 考え・思考,4
+thousand,junior_high,千,,junior_word_list,552;700,existing,junior_high,numeral;noun,1000 / 千,4
+three,junior_high,3,,junior_word_list,553,existing,junior_high,numeral,3・三つ,2
+through,junior_high,を通り抜けて,,junior_word_list,1808,existing,junior_high,preposition,〜を通って・〜を通じて,2
+throw,junior_high,投げる,,junior_word_list,674,existing,junior_high,verb,投げる（過去形） / 投げる / 投げる（過去分詞）,4
+thursday,junior_high,木曜日,,junior_word_list,554,existing,junior_high,noun,木曜日,2
+tie,junior_high,ネクタイ,,junior_word_list,1809,existing,junior_high,noun,ネクタイ・結びつき,2
+tiger,junior_high,トラ,,junior_word_list,555,existing,junior_high,noun,トラ,2
+time,junior_high,時間,,junior_word_list,556,existing,junior_high,noun,時・回数,2
+tiny,junior_high,ごく小さな,ごく小さい,junior_word_list;high_word_list,1200;1924;1143;1646,existing,junior_high,adjective,とても小さな,2
+tired,junior_high,疲れた,,junior_word_list,557;666,existing,junior_high,adjective,疲れた,1
+title,junior_high,題名，表題,,junior_word_list,1811,existing,junior_high,noun,題名・タイトル,2
+to,junior_high,【方向・到達】の方へ,,junior_word_list,558,existing,junior_high,preposition,〜へ・〜に,2
+today,junior_high,今日、現在,,junior_word_list,559,existing,junior_high,adverb,今日・現在,2
+together,junior_high,一緒に,,junior_word_list,560,existing,junior_high,adverb,一緒に,2
+told,junior_high,に伝えた,,junior_word_list,561,existing,junior_high,verb,教える・語る（過去形） / 教える・語る（過去分詞）,2
+tomorrow,junior_high,明日,,junior_word_list,562,existing,junior_high,adverb,明日,2
+tonight,junior_high,今夜は,,junior_word_list,1812,existing,junior_high,adverb,今夜,2
+too,junior_high,もまた,,junior_word_list,563;564,existing,junior_high,adverb,〜もまた・〜すぎる,2
+took,junior_high,撮った,,junior_word_list,565,existing,junior_high,verb,取る・連れていく・時間がかかる（過去形）,1
+tooth,junior_high,歯,,junior_word_list,566;681,existing,junior_high,noun,歯,3
+touch,junior_high,にさわる,,junior_word_list,567,existing,junior_high,verb,触れる,2
+tourist,junior_high,観光客,,junior_word_list,1201,existing,high_school,noun,旅行者・観光客,2
+tower,junior_high,塔,,junior_word_list,569,existing,junior_high,noun,塔・タワー,2
+town,junior_high,町,,junior_word_list,570,existing,junior_high,noun,町,2
+toy,junior_high,おもちゃ,,junior_word_list,1815,existing,junior_high,noun,おもちゃ,2
+trade,junior_high,貿易,,junior_word_list,1816,existing,junior_high,noun,貿易・取引,2
+traditional,junior_high,伝統的な,伝統的な,junior_word_list;high_word_list,571;198,existing,high_school,adjective,伝統的な,2
+train,junior_high,列車,,junior_word_list,572,existing,junior_high,noun;verb,列車・電車 / 訓練する,4
+travel,junior_high,旅行,,junior_word_list,574,existing,junior_high,noun,旅行,2
+treasure,junior_high,宝物,宝,junior_word_list;high_word_list,1819;1853;2193,existing,junior_high,noun,宝物,2
+tree,junior_high,木,,junior_word_list,575,existing,junior_high,noun,木,2
+trip,junior_high,旅行,,junior_word_list,576,existing,junior_high,noun,旅行・短い旅,2
+try,junior_high,を試す,,junior_word_list,577,existing,junior_high,verb,試す・やってみる,2
+tuesday,junior_high,火曜日,,junior_word_list,578,existing,junior_high,noun,火曜日,2
+turn,junior_high,順番,,junior_word_list,579;580,existing,junior_high,verb,曲がる・回る・変化する,2
+twelfth,junior_high,12番目,,junior_word_list,581,existing,junior_high,ordinal,12番目の,2
+twelve,junior_high,12,,junior_word_list,582,existing,junior_high,numeral,12・十二,2
+twentieth,junior_high,20番目,,junior_word_list,583,existing,junior_high,ordinal,20番目の,2
+twenty,junior_high,20,,junior_word_list,584,existing,junior_high,numeral,20・二十,2
+twice,junior_high,2倍、2度,,junior_word_list,1206;1931;1933,existing,junior_high,adverb,2回・2倍,2
+two,junior_high,2,,junior_word_list,585,existing,junior_high,numeral,2・二つ,2
+umbrella,junior_high,傘,,junior_word_list,586;1906,existing,junior_high,noun,傘,2
+uncle,junior_high,おじ,,junior_word_list,612;1207,existing,junior_high,noun,おじ,2
+under,junior_high,下の,,junior_word_list,587,existing,junior_high,preposition,〜の下に,2
+understand,junior_high,を理解する,,junior_word_list,588;647,existing,junior_high,verb,理解する / 理解する（過去形） / 理解する（過去分詞）,4
+understood,junior_high,を理解した,,junior_word_list,1208,existing,junior_high,verb,理解する（過去形） / 理解する（過去分詞）,2
+unhappy,junior_high,不幸な,,junior_word_list,1823,existing,junior_high,adjective,不幸な・うれしくない,2
+uniform,junior_high,制服,,junior_word_list,1824,existing,junior_high,noun,制服,2
+universe,junior_high,宇宙,宇宙,junior_word_list;high_word_list,1825;453,existing,junior_high,noun,宇宙,2
+university,junior_high,大学,大学,junior_word_list;high_word_list,1210;229,existing,high_school,noun,大学,2
+until,junior_high,まで，までは,,junior_word_list,1826,existing,junior_high,conjunction,〜するまで,2
+up,junior_high,上へ,,junior_word_list,589,existing,junior_high,adverb,上へ・上に,2
+use,junior_high,使う,,junior_word_list,592;1829,existing,junior_high;high_school,verb;noun,使う / 使用・利用 / 使われた・使った,5
+useful,junior_high,役に立つ,役に立つ,junior_word_list;high_word_list,665;128,existing,junior_high,adjective,役に立つ,2
+usual,junior_high,通常の,,junior_word_list,1211,existing,junior_high,adjective,通常の,2
+usually,junior_high,普段、ふつう,,junior_word_list,598,existing,junior_high,adverb,ふつう・たいてい,2
+vacation,junior_high,休暇,,junior_word_list,682,existing,junior_high,noun,休暇,2
+valley,junior_high,谷,,junior_word_list,1830,existing,junior_high,noun,谷,2
+various,junior_high,いろいろな,様々な,junior_word_list;high_word_list,1212;493,existing,high_school,adjective,さまざまな,2
+vegetable,junior_high,野菜,,junior_word_list,680,existing,junior_high,noun,野菜,2
+very,junior_high,非常に,,junior_word_list,594,existing,junior_high,adverb,非常に・とても,2
+village,junior_high,町、村,,junior_word_list,616,existing,junior_high,noun,村,2
+visitor,junior_high,観光客,,junior_word_list,1832,existing,junior_high,noun,訪問者,2
+wait,junior_high,待つ,,junior_word_list,602,existing,junior_high,verb,待つ,2
+wake,junior_high,目が覚める,,junior_word_list,1213,existing,junior_high,verb,目が覚める・起こす / 目が覚める・起こす（過去形） / 目が覚める・起こす（過去分詞）,4
+want,junior_high,欲しい,,junior_word_list,593,existing,junior_high,verb,欲しい・望む,2
+war,junior_high,戦争,戦争,junior_word_list;high_word_list,1215;1833;245,existing,junior_high,noun,戦争,2
+warm,junior_high,温暖な,,junior_word_list,608;1216,existing,junior_high,adjective,暖かい,2
+waste,junior_high,ごみ，廃棄物,浪費する,junior_word_list;high_word_list,1834;110,existing,junior_high,noun,ごみ・浪費,2
+watch,junior_high,腕時計,,junior_word_list,1217,existing,junior_high,verb;noun,見る・見守る / 腕時計,4
+water,junior_high,水,,junior_word_list,694,existing,junior_high,noun,水,2
+wave,junior_high,波,,junior_word_list,1218;1888,existing,junior_high,noun,波,2
+way,junior_high,方法,,junior_word_list,1219,existing,junior_high,noun,道・方法,2
+weak,junior_high,弱い,,junior_word_list,1220;1835,existing,junior_high,adjective,弱い,2
+wear,junior_high,着る,身につけている,junior_word_list;high_word_list,1221;1837;265,existing,junior_high,verb,着ている・身につけている / 着ている・身につけている（過去形） / 着ている・身につけている（過去分詞）,4
+weather,junior_high,天気,気候,junior_word_list;high_word_list,1881;405,existing,junior_high,noun,天気,2
+weekly,junior_high,週刊の,,junior_word_list,1838,existing,junior_high,adjective,毎週の・週刊の,2
+weight,junior_high,重さ,重さ,junior_word_list;high_word_list,1223;293,existing,high_school,noun,重さ・体重・重要性,2
+well,junior_high,健康な,,junior_word_list,637,existing,junior_high,adverb;adjective,最もよく・最も上手に / よりよく・より上手に / 健康な・元気な / よく・上手に,6
+west,junior_high,西,,junior_word_list,603;1226,existing,junior_high,noun,西,2
+wet,junior_high,濡れている,,junior_word_list,1840,existing,junior_high,adjective,濡れている,2
+when,junior_high,するとき,,junior_word_list,1227;1862,existing,junior_high,conjunction,〜するとき,2
+where,junior_high,どこ,,junior_word_list,599,existing,junior_high,adverb,どこに・どこで,2
+which,junior_high,どちらの,,junior_word_list,1228,existing,junior_high,pronoun,どちら・どれ,2
+while,junior_high,しばらくの間,一方で,junior_word_list;high_word_list,1842;478,existing,junior_high,conjunction,〜している間に・一方で,2
+whole,junior_high,すべての,全ての,junior_word_list;high_word_list,1843;242,existing,junior_high,adjective,全体の・すべての,2
+wide,junior_high,幅が広い,,junior_word_list,1229;1844,existing,junior_high,adjective,幅が広い,2
+wife,junior_high,妻,,junior_word_list,1230,existing,junior_high,noun,妻 / 妻たち,3
+wild,junior_high,野生の,,junior_word_list,1231,existing,junior_high,adjective,野生の・荒々しい,2
+will,junior_high,～するつもり,,junior_word_list,1232,existing,junior_high,auxiliary,彼は〜するでしょう・〜するつもりだ / 私は〜するつもりだ・〜でしょう / それは〜するでしょう / 彼女は〜するでしょう・〜するつもりだ / 彼らは〜するでしょう・彼女らは〜するつもりだ / 私たちは〜するでしょう・〜するつもりだ / 〜するつもりだ・〜だろう / 〜しないだろう・〜するつもりはない / 〜だろう・〜したものだった / あなたは〜するでしょう・〜するつもりだ,11
+wind,junior_high,風,,junior_word_list,1233;1845,existing,junior_high,noun,風,2
+wish,junior_high,望む,,junior_word_list,1235;1848,existing,junior_high,verb,望む・願う,2
+with,junior_high,～と一緒に,,junior_word_list,1236,existing,junior_high,preposition,〜と一緒に・〜を持って,2
+woke,junior_high,目が覚めた,,junior_word_list,1237,existing,junior_high,verb,目が覚める・起こす（過去形）,1
+won,junior_high,勝った,,junior_word_list,1849,existing,junior_high,verb,勝つ（過去形） / 勝つ（過去分詞）,2
+wonder,junior_high,～かなと思う,かなと思う,junior_word_list;high_word_list,1238;1239;1897;499,existing,junior_high,verb,不思議に思う,2
+wood,junior_high,木材,,junior_word_list,1240,existing,junior_high,noun,木材・森,2
+word,junior_high,言葉,,junior_word_list,649,existing,junior_high,noun,言葉・単語,2
+work,junior_high,仕事,,junior_word_list,590;1241,existing,junior_high,verb;noun,働く・うまくいく / 仕事・作品,4
+world,junior_high,世界,,junior_word_list,1242,existing,junior_high,noun,世界,2
+worry,junior_high,心配させる,心配させる,junior_word_list;high_word_list,688;271,existing,junior_high,verb,心配する・心配させる,2
+worth,junior_high,の価値がある,価値ある,junior_word_list;high_word_list,1850;447,existing,high_school,adjective,〜の価値がある,2
+would,junior_high,だろうに,,junior_word_list,1851,existing,junior_high,auxiliary,彼は〜するだろう・〜したいだろう / 私は〜したい・私は〜するだろう / それは〜するだろう / 彼女は〜するだろう・〜したいだろう / 彼らは〜するだろう・〜したいだろう / 私たちは〜するだろう・〜したいだろう / 〜だろう・〜したものだった / 〜しないだろう・〜しなかっただろう / あなたは〜するだろう・〜したいだろう,9
+writer,junior_high,作家,,junior_word_list,1243,existing,junior_high,noun,作家・書く人,2
+wrong,junior_high,間違った,間違い,junior_word_list;high_word_list,1854;419,existing,junior_high,adjective,間違った,2
+wrote,junior_high,書いた,,junior_word_list,1244,existing,junior_high,verb,書く（過去形）,1
+year,junior_high,年,,junior_word_list,1855,existing,junior_high,noun,年,2
+yen,junior_high,円,,junior_word_list,1856,existing,junior_high,noun,円,2
+yesterday,junior_high,昨日,,junior_word_list,597,existing,junior_high,adverb,昨日,2
+yet,junior_high,まだ,,junior_word_list,607;1857;1858,existing,junior_high,adverb,まだ・もう,2
+young,junior_high,若い,,junior_word_list,1245,existing,junior_high,adjective,若い,2
+youth,junior_high,若さ,,junior_word_list,1859,existing,junior_high,noun,若さ・若者,2
+zone,junior_high,地帯,,junior_word_list,1860,existing,junior_high,noun,地帯・区域,2
+zoo,junior_high,動物園,,junior_word_list,1874,existing,junior_high,noun,動物園,2
+ability,high_school,,能力,high_word_list,179,existing,high_school,noun,能力・才能,2
+addition,high_school,,追加,high_word_list,505,existing,high_school,noun,追加・加えること,2
+adjust,high_school,,調節する,high_word_list,1969;2309,existing,high_school,verb,調整する・適応する,2
+advantage,high_school,,有利,high_word_list,123,existing,high_school,noun,利点・有利な点,2
+allow,high_school,,許可する,high_word_list,400,existing,high_school,verb,許す・可能にする,2
+appreciate,high_school,,感謝する,high_word_list,423,existing,high_school,verb,感謝する・正しく理解する,2
+approach,high_school,,近づく,high_word_list,390,existing,high_school,noun,方法・接近,2
+appropriate,high_school,,適当な,high_word_list,815;1318,existing,high_school,adjective,適切な・ふさわしい,2
+argue,high_school,,論じる,high_word_list,62,existing,high_school,verb,主張する・議論する,2
+aspect,high_school,,局面,high_word_list,393,existing,high_school,noun,側面・様相,2
+atmosphere,high_school,,雰囲気,high_word_list,147,existing,high_school,noun,雰囲気・大気,2
+attitude,high_school,,態度,high_word_list,231,existing,high_school,noun,態度・考え方,2
+attract,high_school,,引きつける,high_word_list,1110;1613,existing,high_school,verb,引きつける・魅了する,2
+author,high_school,,著者,high_word_list,517,existing,high_school,noun,著者・作者,4
+avoid,high_school,,避ける,high_word_list,167,existing,high_school,verb,避ける,2
+beneath,high_school,,下に,high_word_list,1834;2174,existing,high_school,preposition,〜の下に・〜にふさわしくない,2
+benefit,high_school,,利益,high_word_list,119,existing,high_school,noun,利益・恩恵・利点,2
+bite,high_school,,噛む,high_word_list,44,existing,high_school,noun,かむこと・一口,2
+cause,high_school,,原因,high_word_list,374,existing,high_school,noun,原因・理由,2
+cell,high_school,,細胞,high_word_list,1803;2143,existing,high_school,noun,細胞・小部屋,2
+comfortable,high_school,,心地の良い,high_word_list,1131;1634,existing,high_school,adjective,快適な・心地よい,2
+community,high_school,,共同社会,high_word_list,395,existing,high_school,noun,地域社会・共同体,2
+complain,high_school,,不満を言う,high_word_list,1114;1617,existing,high_school,verb,不平を言う・訴える,2
+complete,high_school,,完全な,high_word_list,425,existing,high_school,adjective,完全な・完了した,2
+completely,high_school,,完全に,high_word_list,424,existing,high_school,adverb,完全に・すっかり,2
+concern,high_school,,懸案する,high_word_list,378,existing,high_school,noun,関心・懸念・関係,2
+conduct,high_school,,行為,high_word_list,528,existing,high_school,noun,行動・ふるまい,2
+consider,high_school,,考慮する,high_word_list,480;485,existing,high_school,verb,よく考える・〜と見なす,2
+consumption,high_school,,消費,high_word_list,533,existing,high_school,noun,消費・消耗,2
+contain,high_school,,含有する,high_word_list,414,existing,high_school,verb,含む・収容する,2
+contrast,high_school,,対照,high_word_list,535,existing,high_school,noun,対照・違い,2
+correct,high_school,,正解,high_word_list,252,existing,high_school,adjective,正しい・適切な,2
+deal,high_school,,取引する,high_word_list,307,existing,high_school,noun,取引・扱い・量,2
+degree,high_school,,程度,high_word_list,201,existing,high_school,noun,程度・度・学位,2
+department,high_school,,部門,high_word_list,152,existing,high_school,noun,部門・学科・売り場,2
+describe,high_school,,述べる,high_word_list,479,existing,high_school,verb,描写する・説明する,2
+despite,high_school,,もかかわらず,high_word_list,1194;1697,existing,high_school,preposition,〜にもかかわらず,2
+diet,high_school,,食事,high_word_list,551,existing,high_school,noun,食事・食生活・ダイエット,2
+direction,high_school,,方向,high_word_list,140,existing,high_school,noun,方向・指示,2
+distance,high_school,,距離,high_word_list,399,existing,high_school,noun,距離,2
+dozen,high_school,,12の,high_word_list,503,existing,junior_high,numeral,12個・1ダース,2
+due,high_school,,期限の,high_word_list,351,existing,high_school,adjective,期限の来た・当然支払われる・〜する予定で,2
+economic,high_school,,経済の,high_word_list,90,existing,high_school,adjective,経済の・経済的な,2
+education,high_school,,教育,high_word_list,394,existing,high_school,noun,教育,2
+effect,high_school,,効果,high_word_list,357,existing,high_school,noun,効果・影響・結果,2
+equipment,high_school,,装置,high_word_list,239,existing,high_school,noun,設備・装備・用具,2
+exactly,high_school,,正確に,high_word_list,253,existing,high_school,adverb,正確に・まさに,2
+examine,high_school,,検査する,high_word_list,979;1482,existing,high_school,verb,調べる・診察する,2
+except,high_school,,除いて,high_word_list,290,existing,high_school,conjunction,〜を除いて・ただし,2
+exist,high_school,,存在する,high_word_list,233,existing,high_school,verb,存在する,2
+experiment,high_school,,実験,high_word_list,314,existing,high_school,noun,実験,2
+expert,high_school,,専門家,high_word_list,775;1278,existing,high_school,noun,専門家,2
+explanation,high_school,,説明,high_word_list,560,existing,high_school,noun,説明,2
+express,high_school,,表現する,high_word_list,161,existing,high_school,adjective,急行の・明確な,2
+factor,high_school,,要因,high_word_list,121,existing,high_school,noun,要因・要素,2
+fear,high_school,,恐れる,high_word_list,93,existing,high_school,noun,恐れ・不安,2
+fix,high_school,,固定する,high_word_list,982;1485,existing,high_school,noun,解決策・修理・苦境,2
+forever,high_school,,永遠に,high_word_list,870;1373,existing,junior_high,adverb,永遠に,2
+gain,high_school,,得る,high_word_list,12,existing,high_school,noun,利益・増加・獲得,2
+global,high_school,,地球の,high_word_list,834;1337,existing,high_school,adjective,世界的な・地球規模の,2
+goal,high_school,,目標,high_word_list,568,existing,junior_high,noun,目標・得点・ゴール,2
+hang,high_school,,つるす,high_word_list,802;1305,existing,high_school,verb,掛かる・掛ける・つるす,2
+hardly,high_school,,ほとんどない,high_word_list,471,existing,high_school,adverb,ほとんど〜ない,2
+hate,high_school,,ひどく嫌う,high_word_list,1121;1624,existing,high_school,verb,ひどく嫌う,2
+immediately,high_school,,即座に,high_word_list,237,existing,high_school,adverb,すぐに・直ちに,2
+indicate,high_school,,指し示す,high_word_list,329,existing,high_school,verb,示す・指し示す,2
+individual,high_school,,個人の,high_word_list,367,existing,high_school,adjective,個々の・個人の,2
+instrument,high_school,,道具,high_word_list,1755;2095,existing,junior_high,noun,楽器・器具,2
+involve,high_school,,巻き込む,high_word_list,416,existing,high_school,verb,含む・関わらせる,2
+issue,high_school,,問題,high_word_list,129,existing,high_school,noun,問題・論点・発行物,2
+item,high_school,,項目,high_word_list,582,existing,high_school,noun,項目・品物,2
+lack,high_school,,不足,high_word_list,155,existing,high_school,noun,不足・欠如,2
+laughter,high_school,,笑い,high_word_list,586,existing,high_school,noun,笑い・笑い声,2
+leisure,high_school,,余暇,high_word_list,587,existing,high_school,noun,余暇・自由時間,2
+likely,high_school,,起こりそうな,high_word_list,403,existing,high_school,adjective,ありそうな・可能性が高い,2
+major,high_school,,主な,high_word_list,30,existing,high_school,adjective,主要な・大きな,2
+material,high_school,,材料,high_word_list,340,existing,high_school,noun,材料・資料,2
+meal,high_school,,食事,high_word_list,274,existing,high_school,noun,食事,2
+mention,high_school,,言及する,high_word_list,481,existing,high_school,noun,言及,2
+method,high_school,,方法,high_word_list,139,existing,high_school,noun,方法,2
+muscle,high_school,,筋肉,high_word_list,39,existing,high_school,noun,筋肉,2
+nation,high_school,,国家,high_word_list,347,existing,high_school,noun,国家・国民,2
+nervous,high_school,,あがっている,high_word_list,1185;1688,existing,high_school,adjective,緊張した・神経質な,2
+nor,high_school,,もない,high_word_list,103,existing,high_school,conjunction,〜もまた…ない,2
+notice,high_school,,気づく,high_word_list,803;1306,existing,high_school,noun,通知・掲示・注意,2
+object,high_school,,物体,high_word_list,150,existing,high_school,noun,物体・対象・目的,2
+occur,high_school,,発生する,high_word_list,175,existing,high_school,verb,起こる・発生する,2
+opportunity,high_school,,機会,high_word_list,408,existing,high_school,noun,機会・好機,2
+opposite,high_school,,反対の,high_word_list,846;1349,existing,high_school,adjective,反対の・向かい側の,2
+participate,high_school,,参加する,high_word_list,997;1500,existing,high_school,verb,参加する,2
+particular,high_school,,特定の,high_word_list,183,existing,high_school,adjective,特定の・特別な,2
+party,high_school,,政党,high_word_list,256,existing,junior_high,noun,パーティー・政党,2
+passage,high_school,,一節,high_word_list,603,existing,high_school,noun,一節・通路・経過,2
+passenger,high_school,,乗客,high_word_list,604,existing,high_school,noun,乗客,2
+patient,high_school,,我慢強い,high_word_list,1037;1540,existing,high_school,noun,患者,2
+percentage,high_school,,割合,high_word_list,47,existing,high_school,noun,割合・百分率,2
+physical,high_school,,身体の,high_word_list,264,existing,high_school,adjective,身体の・物理的な,2
+popularity,high_school,,人気,high_word_list,609,existing,high_school,noun,人気・評判,2
+population,high_school,,人口,high_word_list,261,existing,high_school,noun,人口・集団,2
+prefer,high_school,,より好む,high_word_list,466,existing,high_school,verb,〜を好む・むしろ選ぶ,2
+present,high_school,,現在の,high_word_list,292,existing,junior_high,noun,プレゼント,2
+psychologist,high_school,,心理学者,high_word_list,949;1452,existing,high_school,noun,心理学者,2
+public,high_school,,公共の,high_word_list,358,existing,high_school,adjective,公共の・公の,2
+purpose,high_school,,目的,high_word_list,131,existing,high_school,noun,目的・意図,2
+quality,high_school,,質,high_word_list,315,existing,high_school,noun,質・品質・特質,2
+rather,high_school,,むしろ,high_word_list,106,existing,high_school,adverb,かなり・むしろ,2
+ray,high_school,,光線,high_word_list,1811;2151,existing,high_school,noun,光線・一筋の光,2
+recent,high_school,,最近の,high_word_list,344,existing,high_school,adjective,最近の,2
+reduce,high_school,,減らす,high_word_list,372,existing,high_school,verb,減らす・減少させる,2
+relieve,high_school,,和らげる,high_word_list,1953;2293,existing,high_school,verb,和らげる・安心させる,2
+remain,high_school,,残る,high_word_list,469,existing,high_school,verb,残る・〜のままである,2
+repair,high_school,,修理する,high_word_list,1011;1514,existing,high_school,noun,修理,2
+represent,high_school,,表す,high_word_list,8,existing,high_school,verb,表す・代表する,2
+responsibility,high_school,,責任,high_word_list,248,existing,high_school,noun,責任・責務,2
+seat,high_school,,着席させる,high_word_list,212,existing,junior_high,noun,座席,2
+several,high_school,,幾つかの,high_word_list,501,existing,high_school,adjective,いくつかの・数人の,2
+slightly,high_school,,わずかに,high_word_list,1050;1553,existing,high_school,adverb,わずかに・少し,2
+social,high_school,,社会の,high_word_list,86,existing,junior_high,adjective,社会の・社交の,2
+source,high_school,,源,high_word_list,371,existing,high_school,noun,源・出所・情報源,2
+state,high_school,,状態,high_word_list,277,existing,high_school,noun,状態・州・国家,4
+strategy,high_school,,戦略,high_word_list,244,existing,high_school,noun,戦略・方策,2
+suggest,high_school,,提案する,high_word_list,202,existing,high_school,verb,提案する・示唆する,2
+suit,high_school,,適合する,high_word_list,1017;1520,existing,junior_high,noun,スーツ,2
+summit,high_school,,頂上,high_word_list,723;1226,existing,high_school,noun,頂上・首脳会議,2
+suppose,high_school,,だと思う,high_word_list,484,existing,high_school,verb,思う・仮定する,2
+surface,high_school,,表面,high_word_list,160,existing,high_school,noun,表面,2
+task,high_school,,仕事,high_word_list,333,existing,high_school,noun,仕事・課題,2
+taste,high_school,,味,high_word_list,136,existing,high_school,noun,味・好み,2
+term,high_school,,期間,high_word_list,410,existing,high_school,noun,用語・期間・条件,2
+theory,high_school,,理論,high_word_list,117,existing,high_school,noun,理論・説,2
+therefore,high_school,,それゆえ,high_word_list,488,existing,high_school,adverb,それゆえに・したがって,2
+throughout,high_school,,至るところに,high_word_list,327,existing,high_school,preposition,〜の至る所に・〜の間ずっと,2
+till,high_school,,まで,high_word_list,470,existing,junior_high,preposition,〜まで,2
+toward,high_school,,向かって,high_word_list,356,existing,junior_high,preposition,〜の方へ・〜に向かって,2
+traffic,high_school,,交通,high_word_list,359,existing,high_school,noun,交通・交通量,2
+unless,high_school,,でない限り,high_word_list,476,existing,high_school,conjunction,〜でない限り,2
+unlike,high_school,,とは違って,high_word_list,1149;1652,existing,high_school,preposition,〜とは違って,2
+upset,high_school,,気持ちが動揺した,high_word_list,1219;1722,existing,high_school,adjective,動揺した・腹を立てた,2
+via,high_school,,～経由で,high_word_list,1078;1581,existing,high_school,preposition,〜を経由して・〜によって,2
+welcome,high_school,,歓迎される,high_word_list,1146;1649,existing,junior_high,adjective,歓迎される,2
+whereas,high_school,,である一方で,high_word_list,2062;2402,existing,exam,conjunction,〜である一方,2
+whether,high_school,,どちらか,high_word_list,475,existing,high_school,conjunction,〜かどうか,2
+whom,high_school,,誰を,high_word_list,19,existing,high_school,pronoun,誰を・誰に・〜する人を,2
+win,high_school,,勝つ,high_word_list,288,existing,junior_high,verb,勝つ / 勝つ（過去形） / 勝つ（過去分詞）,4
+within,high_school,,以内で,high_word_list,101,existing,high_school,preposition,〜以内に・〜の内側に,2

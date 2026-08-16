@@ -1,0 +1,406 @@
+// src/app/tools/english-tts/page.tsx
+// 2026/07/18 3:45
+
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
+const VOICES = [
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "fable",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+  "verse",
+  "marin",
+  "cedar",
+];
+
+const MAX_INPUT_CHARS = 4096;
+
+export default function EnglishTtsToolPage() {
+  const [text, setText] = useState("");
+  const [voice, setVoice] = useState("marin");
+  const [speed, setSpeed] = useState(0.9);
+  const [filename, setFilename] = useState("english_tts.mp3");
+  const [instructions, setInstructions] = useState(
+    "Read clearly and naturally for English learners. Pause naturally at line breaks."
+  );
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState("");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [accessStatus, setAccessStatus] = useState<
+    "checking" | "allowed" | "denied"
+  >("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAccess = async () => {
+      if (!supabase) {
+        if (!cancelled) {
+          setAccessStatus("denied");
+        }
+        return;
+      }
+
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error || !session?.access_token) {
+        if (!cancelled) {
+          setAccessStatus("denied");
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/internal/admin-status", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!cancelled) {
+          setAccessStatus(response.ok ? "allowed" : "denied");
+        }
+      } catch {
+        if (!cancelled) {
+          setAccessStatus("denied");
+        }
+      }
+    };
+
+    void checkAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const charCount = text.length;
+
+  const lineCount = useMemo(() => {
+    if (!text.trim()) return 0;
+    return text.split(/\r?\n/).filter((line) => line.trim()).length;
+  }, [text]);
+
+  async function handleConvert() {
+    setBusy(true);
+    setStatus("音声ファイルを生成しています…");
+    setAudioUrl(null);
+
+    try {
+      if (!supabase) {
+        throw new Error("ログイン情報を確認できません。");
+      }
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        throw new Error(
+          "このツールを利用するには、登録済みアカウントでログインしてください。",
+        );
+      }
+
+      const res = await fetch("/api/tools/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          text,
+          voice,
+          speed,
+          filename,
+          instructions,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "変換に失敗しました。");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "english_tts.mp3";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setStatus("完了しました。MP3ファイルをダウンロードできます。");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "エラーが発生しました。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (accessStatus === "checking") {
+    return (
+      <main
+        style={{
+          maxWidth: 720,
+          margin: "0 auto",
+          padding: "48px 20px",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <p>利用権限を確認しています…</p>
+      </main>
+    );
+  }
+
+  if (accessStatus === "denied") {
+    return (
+      <main
+        style={{
+          maxWidth: 720,
+          margin: "0 auto",
+          padding: "48px 20px",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <h1 style={{ fontSize: 24, marginBottom: 12 }}>
+          内部利用者限定ツール
+        </h1>
+        <p style={{ lineHeight: 1.8 }}>
+          登録済みのPARARI管理者アカウントでログインしてください。
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main
+      style={{
+        maxWidth: 1180,
+        margin: "0 auto",
+        padding: "32px 20px",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+      }}
+    >
+      <h1 style={{ fontSize: 28, marginBottom: 8 }}>
+        英語テキスト音声化ツール
+      </h1>
+
+      <p style={{ color: "#555", marginBottom: 24 }}>
+        左に英文を貼り付け、右で声と速度を指定すると、連続した1つのMP3ファイルを作成します。
+        改行は読み上げの区切りとして利用できます。
+      </p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.2fr) minmax(320px, 0.8fr)",
+          gap: 20,
+          alignItems: "start",
+        }}
+      >
+        <section
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 12,
+            padding: 16,
+            background: "#fff",
+          }}
+        >
+          <h2 style={{ fontSize: 18, marginBottom: 12 }}>入力テキスト</h2>
+
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={
+              "英文を貼り付けてください。\n\nOne day, a fox came into a farmer’s garden.\nIt was very hot, and the fox was very thirsty.\nSuddenly, he saw a vine."
+            }
+            style={{
+              width: "100%",
+              minHeight: 520,
+              boxSizing: "border-box",
+              padding: 14,
+              border: "1px solid #ccc",
+              borderRadius: 10,
+              fontSize: 15,
+              lineHeight: 1.7,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}
+          />
+
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              color: charCount > MAX_INPUT_CHARS ? "#b00020" : "#666",
+            }}
+          >
+            {charCount} / {MAX_INPUT_CHARS} 文字　・　{lineCount} 行
+          </div>
+        </section>
+
+        <section
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 12,
+            padding: 16,
+            background: "#fafafa",
+          }}
+        >
+          <h2 style={{ fontSize: 18, marginBottom: 12 }}>音声設定</h2>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>声</div>
+            <select
+              value={voice}
+              onChange={(e) => setVoice(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #ccc",
+              }}
+            >
+              {VOICES.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              速度：{speed.toFixed(2)}
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="1.3"
+              step="0.05"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              style={{ width: "100%" }}
+            />
+            <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+              教材用は 0.85〜0.95 くらいがおすすめです。
+            </div>
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              ファイル名
+            </div>
+            <input
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              placeholder="english_tts.mp3"
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                boxSizing: "border-box",
+              }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: 16 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>読み方の指示</div>
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              style={{
+                width: "100%",
+                minHeight: 100,
+                boxSizing: "border-box",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                lineHeight: 1.5,
+              }}
+            />
+          </label>
+
+          <button
+            onClick={handleConvert}
+            disabled={
+              busy ||
+              !text.trim() ||
+              charCount > MAX_INPUT_CHARS
+            }
+            style={{
+              width: "100%",
+              padding: "13px 16px",
+              borderRadius: 10,
+              border: "none",
+              background:
+                busy || !text.trim() || charCount > MAX_INPUT_CHARS
+                  ? "#999"
+                  : "#111",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 700,
+              cursor:
+                busy || !text.trim() || charCount > MAX_INPUT_CHARS
+                  ? "not-allowed"
+                  : "pointer",
+            }}
+          >
+            {busy ? "生成中…" : "MP3を作成"}
+          </button>
+
+          {status && (
+            <p style={{ marginTop: 14, color: busy ? "#555" : "#222" }}>
+              {status}
+            </p>
+          )}
+
+          {audioUrl && (
+            <div style={{ marginTop: 16 }}>
+              <audio
+                controls
+                src={audioUrl}
+                style={{ width: "100%" }}
+              />
+
+              <a
+                href={audioUrl}
+                download={filename || "english_tts.mp3"}
+                style={{
+                  display: "block",
+                  marginTop: 12,
+                  textAlign: "center",
+                  color: "#0645ad",
+                  fontWeight: 600,
+                }}
+              >
+                MP3をもう一度ダウンロード
+              </a>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}

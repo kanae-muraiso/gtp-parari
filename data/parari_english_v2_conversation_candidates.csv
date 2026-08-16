@@ -1,0 +1,525 @@
+expression,normalized_expression,entry_kind,meaning_ja_primary,meaning_ja_all,parari_level,importance,min_eiken_level,eiken_levels,label_raw_all,source_refs,row_count
+After you.,after you.,conversation,お さきに どうぞ。,お さきに どうぞ。 / お先さきにどうぞ。 / どうぞお先さきに。,junior_high,1,5,5;4;3,会話表現,5:196;4:902;3:14,3
+All right.,all right.,conversation,いいよ。,いいよ。,junior_high,1,5,5,,5:144,1
+Almost!,almost!,conversation,おしい！,おしい！,junior_high,1,5,5,,5:39,1
+Are you OK?,are you ok?,conversation,だいじょうぶ？,だいじょうぶ？ / 大丈夫だいじょうぶ？,junior_high,1,5,5;4,,5:265;4:739,2
+Are you ready to order?,are you ready to order?,conversation,ごちゅうもんは おきまりですか？,ごちゅうもんは おきまりですか？,junior_high,1,5,5,,5:626,1
+Be quiet.,be quiet.,conversation,しずかにして。,しずかにして。,junior_high,1,5,5,,5:88,1
+Bless you.,bless you.,conversation,おだいじに。,おだいじに。,junior_high,1,5,5,くしゃみ,5:200,1
+Breakfast is ready.,breakfast is ready.,conversation,あさごはん できたよ。,あさごはん できたよ。,junior_high,1,5,5,,5:573,1
+Brush your teeth.,brush your teeth.,conversation,はを みがいてね。,はを みがいてね。,junior_high,1,5,5,,5:528,1
+Calm down.,calm down.,conversation,おちついて。,おちついて。 / 落おち着ついて。,junior_high,1,5,5;4,,5:190;4:854,2
+Can I ask a question?,can i ask a question?,conversation,しつもん しても いいですか？,しつもん しても いいですか？ / 質問しつもんしてもいいですか。,junior_high,1,5,5;3,会話表現,5:610;3:53,2
+Can I help you?,can i help you?,conversation,おてつだい しましょうか？,おてつだい しましょうか？ / お手伝てつだいしましょうか？ / いらっしゃいませ。何なにかお探さがしですか。,junior_high,1,5,5;4;3,会話表現,5:439;4:778;3:214,3
+Can I join you?,can i join you?,conversation,いれて？,いれて？,junior_high,1,5,5,,5:446,1
+Can you help me?,can you help me?,conversation,てつだって くれる？,てつだって くれる？,junior_high,1,5,5,,5:501,1
+Cheer up.,cheer up.,conversation,げんきだして。,げんきだして。 / 元気げんきだして。 / 元気げんきを出だして。,junior_high,1,5,5;4;3,会話表現,5:111;4:740;3:500,3
+Cheers!,cheers!,conversation,かんぱい！,かんぱい！,junior_high,1,5,5,,5:32,1
+Clean your room.,clean your room.,conversation,へやを そうじして。,へやを そうじして。,junior_high,1,5,5,,5:475,1
+Close your book.,close your book.,conversation,ほんを とじて。,ほんを とじて。,junior_high,1,5,5,,5:452,1
+Come here.,come here.,conversation,こっちに きて。,こっちに きて。,junior_high,1,5,5,,5:177,1
+"Come in, please.","come in, please.",conversation,どうぞ おはいりください。,どうぞ おはいりください。,junior_high,1,5,5,,5:491,1
+Congratulations.,congratulations.,conversation,おめでとう。,おめでとう。,junior_high,1,5,5;3,会話表現,5:449;3:515,2
+Cool!,cool!,conversation,かっこいい！,かっこいい！,junior_high,1,5,5,,5:6,1
+Did you sleep well?,did you sleep well?,conversation,よく ねむれた？,よく ねむれた？,junior_high,1,5,5,,5:580,1
+Dinner is ready.,dinner is ready.,conversation,ばんごはん できたよ。,ばんごはん できたよ。 / ごはんができたよ。,junior_high,1,5,5;3,会話表現,5:478;3:531,2
+Do you understand?,do you understand?,conversation,わかりますか？,わかりますか？,junior_high,1,5,5,,5:551,1
+Do your best.,do your best.,conversation,ぜんりょくで がんばって。,ぜんりょくで がんばって。,junior_high,1,5,5,,5:350,1
+Don't be late.,don't be late.,conversation,おくれないでね。,おくれないでね。,junior_high,1,5,5,,5:373,1
+Don't give up.,don't give up.,conversation,あきらめないで。,あきらめないで。,junior_high,1,5,5;4,,5:377;4:860,2
+Don't touch it.,don't touch it.,conversation,さわらないで。,さわらないで。,junior_high,1,5,5,,5:429,1
+Don't worry.,don't worry.,conversation,しんぱいしないで。,しんぱいしないで。 / 心配しんぱいしないで。,junior_high,1,5,5;4,,5:275;4:736,2
+Excuse me.,excuse me.,conversation,すみません。,すみません。,junior_high,1,5,5;4,,5:134;4:813,2
+Follow me.,follow me.,conversation,ついてきて。,ついてきて。,junior_high,1,5,5,,5:180,1
+Get well soon.,get well soon.,conversation,はやく よくなってね。,はやく よくなってね。 / 早はやくよくなってね。,junior_high,1,5,5;4;3,会話表現,5:380;4:863;3:377,3
+Go straight.,go straight.,conversation,まっすぐ いって。,まっすぐ いって。 / まっすぐ行いってください。,junior_high,1,5,5;4,,5:295;4:784,2
+Good afternoon.,good afternoon.,conversation,こんにちは。,こんにちは。,junior_high,1,5,5,ひるすぎ,5:393,1
+Good evening.,good evening.,conversation,こんばんは。,こんばんは。,junior_high,1,5,5,,5:321,1
+Good idea.,good idea.,conversation,いいね。,いいね。,junior_high,1,5,5,,5:147,1
+Good job.,good job.,conversation,よくできました。,よくできました。,junior_high,1,5,5,,5:91,1
+Good luck.,good luck.,conversation,がんばってね。,がんばってね。,junior_high,1,5,5,,5:167,1
+"Good morning, everyone.","good morning, everyone.",conversation,みなさん おはよう。,みなさん おはよう。,junior_high,1,5,5,,5:619,1
+Good morning.,good morning.,conversation,おはよう。,おはよう。,junior_high,1,5,5,,5:318,1
+Good night.,good night.,conversation,おやすみ。,おやすみ。,junior_high,1,5,5,,5:209,1
+Goodbye.,goodbye.,conversation,さようなら。,さようなら。,junior_high,1,5,5,,5:45,1
+Great!,great!,conversation,すごい！,すごい！,junior_high,1,5,5,,5:19,1
+Guess what!,guess what!,conversation,ねえ きいて！,ねえ きいて！,junior_high,1,5,5,,5:249,1
+Happy birthday.,happy birthday.,conversation,おたんじょうび おめでとう。,おたんじょうび おめでとう。,junior_high,1,5,5,,5:406,1
+Have a good day.,have a good day.,conversation,よい いちにちを。,よい いちにちを。,junior_high,1,5,5,,5:511,1
+Have a nice day.,have a nice day.,conversation,よいいちにちを。,よいいちにちを。,junior_high,1,5,5,,5:495,1
+Have a nice trip.,have a nice trip.,conversation,よい たびを。,よい たびを。 / よい旅たびを。,junior_high,1,5,5;4,,5:541;4:831,2
+Hello? (on the phone),hello? (on the phone),conversation,もしもし？,もしもし？,junior_high,1,5,5,,5:632,1
+Help!,help!,conversation,たすけて！,たすけて！,junior_high,1,5,5,,5:13,1
+Here you are.,here you are.,conversation,はい、どうぞ。,はい、どうぞ。,junior_high,1,5,5;3,会話表現,5:347;3:11,2
+"Here, take this.","here, take this.",conversation,はい、これ どうぞ。,はい、これ どうぞ。,junior_high,1,5,5,,5:488,1
+"Hold on, please.","hold on, please.",conversation,すこし まってください。,すこし まってください。 / 少すこしお待まちください。 / 少々しょうしょうお待まちください。,junior_high,1,5,5;4;3,会話表現,5:469;4:780;3:440,3
+How are you?,how are you?,conversation,げんき？,げんき？,junior_high,1,5,5,,5:308,1
+How do you say this?,how do you say this?,conversation,これ なんて いうの？,これ なんて いうの？,junior_high,1,5,5,,5:600,1
+How much is it?,how much is it?,conversation,いくらですか？,いくらですか？,junior_high,1,5,5,,5:436,1
+How old are you?,how old are you?,conversation,なんさいですか？,なんさいですか？,junior_high,1,5,5,,5:498,1
+How's the weather?,how's the weather?,conversation,てんきは どう？,てんきは どう？,junior_high,1,5,5,,5:554,1
+Hurry up.,hurry up.,conversation,いそいで。,いそいで。,junior_high,1,5,5,,5:108,1
+I agree.,i agree.,conversation,さんせい。,さんせい。,junior_high,1,5,5,,5:62,1
+I can't.,i can't.,conversation,できないんだ。,できないんだ。,junior_high,1,5,5,,5:65,1
+I did it!,i did it!,conversation,できた！,できた！,junior_high,1,5,5,,5:114,1
+I don't know.,i don't know.,conversation,わからない。,わからない。,junior_high,1,5,5,,5:337,1
+I don't like it.,i don't like it.,conversation,すきじゃ ないな。,すきじゃ ないな。,junior_high,1,5,5,,5:505,1
+I don't understand.,i don't understand.,conversation,わかりません。,わかりません。,junior_high,1,5,5,,5:564,1
+I have a question.,i have a question.,conversation,しつもんが あります。,しつもんが あります。,junior_high,1,5,5,,5:560,1
+I like it.,i like it.,conversation,すきだよ。,すきだよ。,junior_high,1,5,5,,5:203,1
+I lost.,i lost.,conversation,まけちゃった。,まけちゃった。,junior_high,1,5,5,,5:42,1
+I love it.,i love it.,conversation,だいすき。,だいすき。,junior_high,1,5,5,,5:206,1
+I think so.,i think so.,conversation,そうおもうよ。,そうおもうよ。,junior_high,1,5,5,,5:259,1
+I understand.,i understand.,conversation,わかります。,わかります。 / わかりました。,junior_high,1,5,5;4,,5:331;4:856,2
+I won!,i won!,conversation,かった！,かった！,junior_high,1,5,5,,5:22,1
+I'll call you back.,i'll call you back.,conversation,あとで かけなおすね。,あとで かけなおすね。 / あとでかけ直なおすね。 / 折おり返かえし電話でんわするよ。,junior_high,1,5,5;4;3,会話表現,5:577;4:782;3:88,3
+I'll take it.,i'll take it.,conversation,それを ください。,それを ください。 / これにします。,junior_high,1,5,5;3,会話表現,5:344;3:225,2
+I'm coming.,i'm coming.,conversation,いま いくよ。,いま いくよ。 / 今いま行いくよ。,junior_high,1,5,5;4,,5:255;4:797,2
+I'm fine.,i'm fine.,conversation,げんきだよ。,げんきだよ。,junior_high,1,5,5,,5:75,1
+I'm from Japan.,i'm from japan.,conversation,にほん しゅっしんです。,にほん しゅっしんです。,junior_high,1,5,5,,5:409,1
+I'm full.,i'm full.,conversation,おなかいっぱい。,おなかいっぱい。 / おなかいっぱいです。,junior_high,1,5,5;4;3,会話表現,5:98;4:793;3:278,3
+I'm good.,i'm good.,conversation,ちょうしいいよ。,ちょうしいいよ。,junior_high,1,5,5,,5:78,1
+I'm happy.,i'm happy.,conversation,うれしいよ。,うれしいよ。,junior_high,1,5,5,,5:154,1
+I'm home.,i'm home.,conversation,ただいま。,ただいま。,junior_high,1,5,5;3,会話表現,5:104;3:528,2
+I'm hungry.,i'm hungry.,conversation,おなかが すいたよ。,おなかが すいたよ。,junior_high,1,5,5,,5:216,1
+I'm just looking.,i'm just looking.,conversation,みているだけです。,みているだけです。 / 見みているだけです。,junior_high,1,5,5;3,会話表現,5:524;3:218,2
+I'm leaving.,i'm leaving.,conversation,いってきます。,いってきます。,junior_high,1,5,5,,5:291,1
+I'm not sure.,i'm not sure.,conversation,よく わからないな。,よく わからないな。 / よく分わからないな。,junior_high,1,5,5;4,,5:341;4:804,2
+I'm proud of you.,i'm proud of you.,conversation,きみを ほこりに おもうよ。,きみを ほこりに おもうよ。 / きみを誇ほこりに思おもうよ。 / あなたを誇ほこりに思おもうよ。,junior_high,1,5,5;4;3,会話表現,5:544;4:827;3:495,3
+I'm sleepy.,i'm sleepy.,conversation,ねむいよ。,ねむいよ。,junior_high,1,5,5,,5:213,1
+I'm sorry.,i'm sorry.,conversation,ごめんなさい。,ごめんなさい。,junior_high,1,5,5,,5:131,1
+I'm thirsty.,i'm thirsty.,conversation,のどが かわいたよ。,のどが かわいたよ。,junior_high,1,5,5,,5:272,1
+I'm tired.,i'm tired.,conversation,つかれたよ。,つかれたよ。,junior_high,1,5,5,,5:124,1
+It's cloudy.,it's cloudy.,conversation,くもりだよ。,くもりだよ。,junior_high,1,5,5,,5:288,1
+It's cold today.,it's cold today.,conversation,きょうは さむいね。,きょうは さむいね。,junior_high,1,5,5,,5:465,1
+It's cute.,it's cute.,conversation,かわいいね。,かわいいね。,junior_high,1,5,5,,5:150,1
+It's delicious.,it's delicious.,conversation,おいしいよ。,おいしいよ。,junior_high,1,5,5,,5:403,1
+It's fun.,it's fun.,conversation,たのしいよ。,たのしいよ。,junior_high,1,5,5,,5:95,1
+It's hot today.,it's hot today.,conversation,きょうは あついね。,きょうは あついね。,junior_high,1,5,5,,5:416,1
+It's mine.,it's mine.,conversation,わたしのだよ。,わたしのだよ。,junior_high,1,5,5,,5:193,1
+It's Monday today.,it's monday today.,conversation,きょうは げつようびだよ。,きょうは げつようびだよ。,junior_high,1,5,5,,5:557,1
+It's my turn.,it's my turn.,conversation,わたしの ばん。,わたしの ばん。 / 私わたしの番ばんだよ。,junior_high,1,5,5;4,,5:357;4:823,2
+It's near here.,it's near here.,conversation,この ちかくだよ。,この ちかくだよ。 / この近ちかくだよ。,junior_high,1,5,5;4,,5:419;4:758,2
+It's over there.,it's over there.,conversation,あそこだよ。,あそこだよ。,junior_high,1,5,5,,5:482,1
+It's rainy.,it's rainy.,conversation,あめだよ。,あめだよ。,junior_high,1,5,5,,5:236,1
+It's snowy.,it's snowy.,conversation,ゆきだよ。,ゆきだよ。,junior_high,1,5,5,,5:239,1
+It's sunny.,it's sunny.,conversation,はれだよ。,はれだよ。,junior_high,1,5,5,,5:232,1
+It's three o'clock.,it's three o'clock.,conversation,3じだよ。,3じだよ。,junior_high,1,5,5,,5:570,1
+It's too expensive.,it's too expensive.,conversation,たかすぎるよ。,たかすぎるよ。 / 高たかすぎるよ。 / 高たかすぎます。,junior_high,1,5,5;4;3,会話表現,5:567;4:735;3:236,3
+It's windy.,it's windy.,conversation,かぜが つよいね。,かぜが つよいね。,junior_high,1,5,5,,5:242,1
+It's your turn.,it's your turn.,conversation,きみの ばんだよ。,きみの ばんだよ。,junior_high,1,5,5,,5:426,1
+It's yours.,it's yours.,conversation,きみのだよ。,きみのだよ。,junior_high,1,5,5,,5:252,1
+Just a minute.,just a minute.,conversation,ちょっと まってね。,ちょっと まってね。,junior_high,1,5,5,,5:370,1
+Let me see.,let me see.,conversation,ちょっと みせて。,ちょっと みせて。,junior_high,1,5,5,,5:268,1
+Let's begin.,let's begin.,conversation,はじめよう。,はじめよう。,junior_high,1,5,5,,5:282,1
+Let's eat.,let's eat.,conversation,たべよう。,たべよう。,junior_high,1,5,5,,5:157,1
+Let's go to bed.,let's go to bed.,conversation,もう ねよう。,もう ねよう。,junior_high,1,5,5,,5:514,1
+Let's go.,let's go.,conversation,いこう。,いこう。,junior_high,1,5,5,,5:101,1
+Let's play.,let's play.,conversation,あそぼう。,あそぼう。,junior_high,1,5,5,,5:229,1
+Let's share.,let's share.,conversation,わけっこ しよう。,わけっこ しよう。,junior_high,1,5,5,,5:298,1
+Let's start.,let's start.,conversation,はじめよう。,はじめよう。,junior_high,1,5,5,,5:305,1
+Let's take the bus.,let's take the bus.,conversation,バスに のろう。,バスに のろう。,junior_high,1,5,5,,5:583,1
+Listen!,listen!,conversation,きいて！,きいて！,junior_high,1,5,5,,5:36,1
+"Listen, please.","listen, please.",conversation,きいてね。,きいてね。,junior_high,1,5,5,,5:400,1
+Long time no see.,long time no see.,conversation,ひさしぶり。,ひさしぶり。 / 久ひさしぶり。 / 久しぶりひさしぶり。,junior_high,1,5,5;4;3,会話表現,5:534;4:757;3:9,3
+Look at me.,look at me.,conversation,こっちを みて。,こっちを みて。,junior_high,1,5,5,,5:262,1
+Look!,look!,conversation,みて！,みて！,junior_high,1,5,5,,5:9,1
+May I come in?,may i come in?,conversation,はいっても いいですか？,はいっても いいですか？ / 入はいってもいいですか？ / 入はいってもいいですか。,junior_high,1,5,5;4;3,会話表現,5:387;4:815;3:49,3
+May I go to the bathroom?,may i go to the bathroom?,conversation,トイレに いっても いいですか？,トイレに いっても いいですか？,junior_high,1,5,5,,5:629,1
+May I speak to Tom?,may i speak to tom?,conversation,トムさんを おねがいします。,トムさんを おねがいします。,junior_high,1,5,5,,5:587,1
+May I try it?,may i try it?,conversation,ためしても いい？,ためしても いい？,junior_high,1,5,5,,5:360,1
+Maybe next time.,maybe next time.,conversation,また こんど。,また こんど。 / また今度こんど。,junior_high,1,5,5;4,,5:462;4:743,2
+"Me, too.","me, too.",conversation,わたしも。,わたしも。,junior_high,1,5,5,,5:59,1
+My name is Ken.,my name is ken.,conversation,ぼくの なまえは ケンです。,ぼくの なまえは ケンです。,junior_high,1,5,5,,5:432,1
+Never mind.,never mind.,conversation,きにしないで。,きにしないで。 / 気きにしないで。,junior_high,1,5,5;3,会話表現,5:223;3:25,2
+"Nice to meet you, too.","nice to meet you, too.",conversation,こちらこそ はじめまして。,こちらこそ はじめまして。,junior_high,1,5,5,,5:616,1
+Nice to meet you.,nice to meet you.,conversation,はじめまして。,はじめまして。,junior_high,1,5,5,,5:537,1
+No problem.,no problem.,conversation,だいじょうぶだよ。,だいじょうぶだよ。 / 問題もんだいないよ。,junior_high,1,5,5;4;3,会話表現,5:219;4:776;3:16,3
+"No, thank you.","no, thank you.",conversation,いいえ、けっこうです。,いいえ、けっこうです。,junior_high,1,5,5;4,,5:367;4:896,2
+Not bad.,not bad.,conversation,まあまあだよ。,まあまあだよ。,junior_high,1,5,5,,5:55,1
+Of course.,of course.,conversation,もちろん。,もちろん。,junior_high,1,5,5;4,,5:141;4:817,2
+"One more time, please.","one more time, please.",conversation,もういちど おねがいします。,もういちど おねがいします。,junior_high,1,5,5,,5:613,1
+Open your book.,open your book.,conversation,ほんを ひらいて。,ほんを ひらいて。,junior_high,1,5,5,,5:413,1
+Pass me the ball.,pass me the ball.,conversation,ボールを パスして。,ボールを パスして。,junior_high,1,5,5,,5:547,1
+Please call me back.,please call me back.,conversation,あとで かけなおしてね。,あとで かけなおしてね。 / 折おり返かえし電話でんわしてください。,junior_high,1,5,5;3,会話表現,5:596;3:467,2
+Please say it again.,please say it again.,conversation,もういちど いってください。,もういちど いってください。,junior_high,1,5,5,,5:593,1
+Raise your hand.,raise your hand.,conversation,てを あげて。,てを あげて。,junior_high,1,5,5,,5:459,1
+Really?,really?,conversation,ほんとう？,ほんとう？,junior_high,1,5,5,,5:29,1
+Repeat after me.,repeat after me.,conversation,あとに ついて いって。,あとに ついて いって。,junior_high,1,5,5,,5:455,1
+See you later.,see you later.,conversation,またあとでね。,またあとでね。,junior_high,1,5,5,,5:364,1
+See you tomorrow.,see you tomorrow.,conversation,またあした。,またあした。,junior_high,1,5,5,,5:521,1
+See you.,see you.,conversation,またね。,またね。,junior_high,1,5,5,,5:52,1
+Sit down.,sit down.,conversation,すわって。,すわって。,junior_high,1,5,5,,5:85,1
+Sounds good.,sounds good.,conversation,いいね。,いいね。,junior_high,1,5,5,,5:285,1
+Speaking.,speaking.,conversation,わたしです。,わたしです。,junior_high,1,5,5,,5:72,1
+Stand up.,stand up.,conversation,たって。,たって。,junior_high,1,5,5,,5:81,1
+Stop!,stop!,conversation,とまって！,とまって！,junior_high,1,5,5,,5:16,1
+Sure.,sure.,conversation,いいよ。,いいよ。,junior_high,1,5,5,,5:3,1
+Take care.,take care.,conversation,きをつけてね。,きをつけてね。 / 気きをつけてね。,junior_high,1,5,5;4;3,会話表現,5:121;4:754;3:3,3
+Take it easy.,take it easy.,conversation,むりしないでね。,むりしないでね。,junior_high,1,5,5;4,,5:354;4:741,2
+Thank you very much.,thank you very much.,conversation,どうも ありがとう。,どうも ありがとう。,junior_high,1,5,5,,5:590,1
+Thank you.,thank you.,conversation,ありがとう。,ありがとう。,junior_high,1,5,5,,5:127,1
+Thanks.,thanks.,conversation,ありがと。,ありがと。,junior_high,1,5,5,,5:26,1
+That's all for today.,that's all for today.,conversation,きょうは ここまで。,きょうは ここまで。,junior_high,1,5,5,,5:603,1
+That's all.,that's all.,conversation,それで ぜんぶです。,それで ぜんぶです。,junior_high,1,5,5,,5:226,1
+That's OK.,that's ok.,conversation,だいじょうぶだよ。,だいじょうぶだよ。,junior_high,1,5,5,,5:137,1
+That's right.,that's right.,conversation,そのとおり。,そのとおり。,junior_high,1,5,5,,5:327,1
+That's too bad.,that's too bad.,conversation,それは ざんねん。,それは ざんねん。 / それは残念ざんねん。 / それは残念ざんねんだね。,junior_high,1,5,5;4;3,会話表現,5:423;4:765;3:511,3
+This is Ken.,this is ken.,conversation,ケンです。,ケンです。,junior_high,1,5,5,,5:311,1
+"This way, please.","this way, please.",conversation,こちらへ どうぞ。,こちらへ どうぞ。,junior_high,1,5,5,,5:531,1
+Time's up.,time's up.,conversation,じかんだよ。,じかんだよ。,junior_high,1,5,5,,5:186,1
+Try again.,try again.,conversation,もういちど やってみて。,もういちど やってみて。,junior_high,1,5,5,,5:183,1
+Turn left.,turn left.,conversation,ひだりに まがって。,ひだりに まがって。,junior_high,1,5,5,,5:163,1
+Turn off the TV.,turn off the tv.,conversation,テレビを けして。,テレビを けして。,junior_high,1,5,5,,5:518,1
+Turn right.,turn right.,conversation,みぎに まがって。,みぎに まがって。,junior_high,1,5,5,,5:245,1
+Wait for me.,wait for me.,conversation,まってよ。,まってよ。,junior_high,1,5,5,,5:314,1
+Wake up!,wake up!,conversation,おきて！,おきて！,junior_high,1,5,5,,5:68,1
+Wash your hands.,wash your hands.,conversation,てを あらってね。,てを あらってね。,junior_high,1,5,5,,5:472,1
+Watch out!,watch out!,conversation,あぶない！,あぶない！,junior_high,1,5,5;4,,5:173;4:824,2
+Watch your step.,watch your step.,conversation,あしもとに きをつけて。,あしもとに きをつけて。 / 足元あしもとに気きをつけて。,junior_high,1,5,5;4,,5:485;4:900,2
+Welcome home.,welcome home.,conversation,おかえり。,おかえり。,junior_high,1,5,5,,5:324,1
+Welcome.,welcome.,conversation,ようこそ。,ようこそ。,junior_high,1,5,5,,5:49,1
+Well done.,well done.,conversation,よく やったね。,よく やったね。,junior_high,1,5,5,,5:170,1
+What day is it?,what day is it?,conversation,きょうは なんようび？,きょうは なんようび？,junior_high,1,5,5,,5:442,1
+What time is it?,what time is it?,conversation,いま なんじ？,いま なんじ？,junior_high,1,5,5,,5:508,1
+What time?,what time?,conversation,なんじに？,なんじに？,junior_high,1,5,5,,5:160,1
+What's this in English?,what's this in english?,conversation,これは えいごで なんていうの？,これは えいごで なんていうの？,junior_high,1,5,5,,5:623,1
+What's this?,what's this?,conversation,これは なに？,これは なに？,junior_high,1,5,5,,5:301,1
+What's wrong?,what's wrong?,conversation,どうしたの？,どうしたの？,junior_high,1,5,5;4,,5:334;4:738,2
+Where is the station?,where is the station?,conversation,えきは どこ？,えきは どこ？,junior_high,1,5,5,,5:606,1
+Whose is this?,whose is this?,conversation,これ だれの？,これ だれの？,junior_high,1,5,5,,5:383,1
+Wonderful!,wonderful!,conversation,すばらしい！,すばらしい！,junior_high,1,5,5,,5:118,1
+"Yes, please.","yes, please.",conversation,はい、おねがいします。,はい、おねがいします。 / はい、お願ねがいします。,junior_high,1,5,5;4,,5:278;4:919,2
+You can do it.,you can do it.,conversation,きみなら できるよ。,きみなら できるよ。 / きみならできるよ。,junior_high,1,5,5;4,,5:390;4:861,2
+You have the wrong number.,you have the wrong number.,conversation,ばんごうが ちがいます。,ばんごうが ちがいます。 / 番号ばんごうが違ちがいます。,junior_high,1,5,5;4,,5:633;4:781,2
+You're welcome.,you're welcome.,conversation,どういたしまして。,どういたしまして。,junior_high,1,5,5;4;3,会話表現,5:396;4:810;3:20,3
+Anything to drink?,anything to drink?,conversation,お飲のみ物ものは？,お飲のみ物ものは？,junior_high,1,4,4,,4:895,1
+At nine o'clock.,at nine o'clock.,conversation,9時じだよ。,9時じだよ。,junior_high,1,4,4,,4:761,1
+Be careful.,be careful.,conversation,気きをつけて。,気きをつけて。,junior_high,1,4,4,,4:774,1
+Better luck next time.,better luck next time.,conversation,次つぎはうまくいくよ。,次つぎはうまくいくよ。,junior_high,1,4,4,,4:842,1
+Can I ask you something?,can i ask you something?,conversation,ちょっと聞きいてもいい？,ちょっと聞きいてもいい？,junior_high,1,4,4,,4:906,1
+Can I borrow yours?,can i borrow yours?,conversation,借かりてもいい？,借かりてもいい？,junior_high,1,4,4,,4:727,1
+Can I leave a message?,can i leave a message?,conversation,伝言でんごんをお願ねがいできますか？,伝言でんごんをお願ねがいできますか？,junior_high,1,4,4,,4:783,1
+Can I return this?,can i return this?,conversation,これ、返品へんぴんできますか？,これ、返品へんぴんできますか？,junior_high,1,4,4,,4:911,1
+Can I take a photo?,can i take a photo?,conversation,写真しゃしんを撮とってもいい？,写真しゃしんを撮とってもいい？,junior_high,1,4,4,,4:888,1
+Can you do me a favor?,can you do me a favor?,conversation,お願ねがいがあるんだけど。,お願ねがいがあるんだけど。,junior_high,1,4,4,,4:843,1
+Congratulations!,congratulations!,conversation,おめでとう！,おめでとう！,junior_high,1,4,4,,4:766,1
+Could I have a smaller size?,could i have a smaller size?,conversation,もっと小ちいさいサイズはありますか？,もっと小ちいさいサイズはありますか？,junior_high,1,4,4,,4:913,1
+Could we have the bill?,could we have the bill?,conversation,お会計かいけいをお願ねがいします。,お会計かいけいをお願ねがいします。,junior_high,1,4,4;3,会話表現,4:791;3:269,2
+Could you help me with this?,could you help me with this?,conversation,これを手伝てつだってくれる？,これを手伝てつだってくれる？,junior_high,1,4,4,,4:816,1
+Could you say that again?,could you say that again?,conversation,もう一度いちど言いってくれる？,もう一度いちど言いってくれる？ / もう一度いちど言いってくれますか。,junior_high,1,4,4;3,会話表現,4:768;3:55,2
+Could you speak slowly?,could you speak slowly?,conversation,ゆっくり話はなしてくれる？,ゆっくり話はなしてくれる？,junior_high,1,4,4,,4:769,1
+Could you take our picture?,could you take our picture?,conversation,私わたしたちの写真しゃしんを撮とってくれますか？,私わたしたちの写真しゃしんを撮とってくれますか？,junior_high,1,4,4,,4:890,1
+Could you tell me the way?,could you tell me the way?,conversation,道みちを教おしえてくれますか？,道みちを教おしえてくれますか？,junior_high,1,4,4,,4:788,1
+Did you make this?,did you make this?,conversation,これ、作つくったの？,これ、作つくったの？,junior_high,1,4,4,,4:898,1
+Dinner is almost ready.,dinner is almost ready.,conversation,ごはんはもうすぐできるよ。,ごはんはもうすぐできるよ。,junior_high,1,4,4,,4:801,1
+Do you have it in blue?,do you have it in blue?,conversation,青あおいのはありますか？,青あおいのはありますか？ / 青あおはありますか。,junior_high,1,4,4;3,会話表現,4:731;3:240,2
+Do you play any sports?,do you play any sports?,conversation,何なにかスポーツをする？,何なにかスポーツをする？,junior_high,1,4,4,,4:838,1
+Do you take cards?,do you take cards?,conversation,カードは使つかえますか？,カードは使つかえますか？,junior_high,1,4,4,,4:910,1
+Don't forget your umbrella.,don't forget your umbrella.,conversation,傘かさを忘わすれないでね。,傘かさを忘わすれないでね。,junior_high,1,4,4,,4:799,1
+Don't mention it.,don't mention it.,conversation,気きにしないで。,気きにしないで。 / いえいえ。,junior_high,1,4,4;3,会話表現,4:927;3:44,2
+Drive safely.,drive safely.,conversation,運転うんてん、気きをつけてね。,運転うんてん、気きをつけてね。,junior_high,1,4,4,,4:923,1
+Everything will be fine.,everything will be fine.,conversation,きっと大丈夫だいじょうぶ。,きっと大丈夫だいじょうぶ。,junior_high,1,4,4,,4:855,1
+Good luck on your test.,good luck on your test.,conversation,テスト、がんばってね。,テスト、がんばってね。,junior_high,1,4,4,,4:773,1
+Happy birthday!,happy birthday!,conversation,お誕生日たんじょうびおめでとう！,お誕生日たんじょうびおめでとう！,junior_high,1,4,4,,4:874,1
+Have a nice weekend.,have a nice weekend.,conversation,よい週末しゅうまつを。,よい週末しゅうまつを。,junior_high,1,4,4,,4:756,1
+"Help me, please.","help me, please.",conversation,助たすけて。,助たすけて。,junior_high,1,4,4,,4:853,1
+Help yourself.,help yourself.,conversation,自由じゆうにどうぞ。,自由じゆうにどうぞ。,junior_high,1,4,4,,4:775,1
+Here's a present for you.,here's a present for you.,conversation,これ、プレゼントだよ。,これ、プレゼントだよ。,junior_high,1,4,4,,4:875,1
+Here's your change.,here's your change.,conversation,おつりです。,おつりです。,junior_high,1,4,4,,4:733,1
+How about Sunday?,how about sunday?,conversation,日曜日にちようびはどう？,日曜日にちようびはどう？,junior_high,1,4,4,,4:744,1
+How do I get to the airport?,how do i get to the airport?,conversation,空港くうこうへはどう行いく？,空港くうこうへはどう行いく？,junior_high,1,4,4,,4:828,1
+How do you spell it?,how do you spell it?,conversation,どう書かくの？,どう書かくの？,junior_high,1,4,4,,4:771,1
+How much are they?,how much are they?,conversation,それらはいくら？,それらはいくら？,junior_high,1,4,4,,4:729,1
+How was your trip?,how was your trip?,conversation,旅行りょこうはどうだった？,旅行りょこうはどうだった？,junior_high,1,4,4,,4:777,1
+How was your weekend?,how was your weekend?,conversation,週末しゅうまつはどうだった？,週末しゅうまつはどうだった？,junior_high,1,4,4,,4:794,1
+How's the weather there?,how's the weather there?,conversation,そっちの天気てんきはどう？,そっちの天気てんきはどう？,junior_high,1,4,4,,4:833,1
+"Hurry up, please.","hurry up, please.",conversation,急いそいでね。,急いそいでね。,junior_high,1,4,4,,4:869,1
+I agree with you.,i agree with you.,conversation,賛成さんせいです。,賛成さんせいです。 / あなたに賛成さんせいです。,junior_high,1,4,4;3,会話表現,4:748;3:390,2
+I can help you.,i can help you.,conversation,手伝てつだえるよ。,手伝てつだえるよ。,junior_high,1,4,4,,4:737,1
+I can't believe it.,i can't believe it.,conversation,信しんじられない。,信しんじられない。,junior_high,1,4,4,,4:883,1
+I can't decide.,i can't decide.,conversation,決きめられないな。,決きめられないな。,junior_high,1,4,4,,4:850,1
+I don't think so.,i don't think so.,conversation,そうは思おもわないな。,そうは思おもわないな。,junior_high,1,4,4,,4:805,1
+I feel much better.,i feel much better.,conversation,ずいぶん良よくなったよ。,ずいぶん良よくなったよ。,junior_high,1,4,4,,4:862,1
+I had a great time.,i had a great time.,conversation,とても楽たのしかった。,とても楽たのしかった。,junior_high,1,4,4,,4:763,1
+I have a headache.,i have a headache.,conversation,頭あたまが痛いたいんだ。,頭あたまが痛いたいんだ。 / 頭あたまが痛いたいです。,junior_high,1,4,4;3,会話表現,4:864;3:346,2
+I have no idea.,i have no idea.,conversation,まったく分わからない。,まったく分わからない。,junior_high,1,4,4,,4:821,1
+I like playing tennis.,i like playing tennis.,conversation,テニスをするのが好すき。,テニスをするのが好すき。,junior_high,1,4,4,,4:837,1
+I made a mistake.,i made a mistake.,conversation,間違まちがえちゃった。,間違まちがえちゃった。 / まちがえました。,junior_high,1,4,4;3,会話表現,4:825;3:489,2
+I owe you one.,i owe you one.,conversation,恩おんに着きるよ。,恩おんに着きるよ。 / 借かりができたよ。,junior_high,1,4,4;3,会話表現,4:926;3:42,2
+I prefer tea.,i prefer tea.,conversation,私わたしはお茶ちゃがいいな。,私わたしはお茶ちゃがいいな。,junior_high,1,4,4,,4:807,1
+I should get going.,i should get going.,conversation,そろそろ帰かえるね。,そろそろ帰かえるね。,junior_high,1,4,4,,4:921,1
+"I think so, too.","i think so, too.",conversation,私わたしもそう思おもう。,私わたしもそう思おもう。,junior_high,1,4,4,,4:749,1
+I went to the zoo.,i went to the zoo.,conversation,動物園どうぶつえんに行いったよ。,動物園どうぶつえんに行いったよ。,junior_high,1,4,4,,4:795,1
+"I'd like a salad, please.","i'd like a salad, please.",conversation,サラダをお願ねがいします。,サラダをお願ねがいします。,junior_high,1,4,4;3,会話表現,4:790;3:251,2
+I'd love to.,i'd love to.,conversation,ぜひ。,ぜひ。,junior_high,1,4,4,,4:818,1
+I'll do my best.,i'll do my best.,conversation,全力ぜんりょくでがんばるよ。,全力ぜんりょくでがんばるよ。,junior_high,1,4,4,,4:858,1
+I'll have the same.,i'll have the same.,conversation,同おなじものをください。,同おなじものをください。 / 同おなじものをお願ねがいします。,junior_high,1,4,4;3,会話表現,4:894;3:273,2
+I'll miss you.,i'll miss you.,conversation,寂さびしくなるよ。,寂さびしくなるよ。,junior_high,1,4,4,,4:885,1
+I'll take this one.,i'll take this one.,conversation,これをください。,これをください。,junior_high,1,4,4,,4:732,1
+I'll think about it.,i'll think about it.,conversation,考かんがえてみます。,考かんがえてみます。,junior_high,1,4,4,,4:915,1
+I'm a little hungry.,i'm a little hungry.,conversation,少すこしおなかすいた。,少すこしおなかすいた。,junior_high,1,4,4,,4:891,1
+I'm afraid I can't.,i'm afraid i can't.,conversation,ごめん、できないんだ。,ごめん、できないんだ。,junior_high,1,4,4,,4:845,1
+I'm almost done.,i'm almost done.,conversation,もうすぐ終おわるよ。,もうすぐ終おわるよ。,junior_high,1,4,4,,4:868,1
+I'm doing my homework.,i'm doing my homework.,conversation,宿題しゅくだいをしているよ。,宿題しゅくだいをしているよ。,junior_high,1,4,4,,4:796,1
+I'm glad to hear that.,i'm glad to hear that.,conversation,それを聞きいてうれしいよ。,それを聞きいてうれしいよ。 / それを聞きいてうれしいです。,junior_high,1,4,4;3,会話表現,4:881;3:526,2
+"I'm just looking, thanks.","i'm just looking, thanks.",conversation,見みているだけです。,見みているだけです。,junior_high,1,4,4,,4:908,1
+I'm looking for a gift.,i'm looking for a gift.,conversation,プレゼントを探さがしているの。,プレゼントを探さがしているの。 / プレゼントを探さがしています。,junior_high,1,4,4;3,会話表現,4:730;3:234,2
+I'm looking forward to it.,i'm looking forward to it.,conversation,楽たのしみにしているよ。,楽たのしみにしているよ。 / 楽たのしみにしています。,junior_high,1,4,4;3,会話表現,4:802;3:581,2
+I'm not good at it.,i'm not good at it.,conversation,それは苦手にがてなんだ。,それは苦手にがてなんだ。,junior_high,1,4,4,,4:839,1
+I'm sorry I'm late.,i'm sorry i'm late.,conversation,遅おくれてごめんなさい。,遅おくれてごめんなさい。,junior_high,1,4,4,,4:811,1
+"In my opinion, yes.","in my opinion, yes.",conversation,私わたしの考かんがえではそうだね。,私わたしの考かんがえではそうだね。,junior_high,1,4,4,,4:849,1
+It depends.,it depends.,conversation,場合ばあいによるね。,場合ばあいによるね。,junior_high,1,4,4,,4:806,1
+It doesn't fit.,it doesn't fit.,conversation,サイズが合あわないんだ。,サイズが合あわないんだ。,junior_high,1,4,4,,4:912,1
+It leaves at noon.,it leaves at noon.,conversation,正午しょうごに出発しゅっぱつするよ。,正午しょうごに出発しゅっぱつするよ。,junior_high,1,4,4,,4:830,1
+It looks delicious.,it looks delicious.,conversation,おいしそう。,おいしそう。 / おいしそうです。,junior_high,1,4,4;3,会話表現,4:897;3:405,2
+It takes ten minutes.,it takes ten minutes.,conversation,10分ふんかかるよ。,10分ふんかかるよ。,junior_high,1,4,4,,4:762,1
+It was delicious.,it was delicious.,conversation,おいしかった。,おいしかった。,junior_high,1,4,4,,4:764,1
+It was nice meeting you.,it was nice meeting you.,conversation,お会あいできてよかったです。,お会あいできてよかったです。,junior_high,1,4,4,,4:903,1
+It's getting cold.,it's getting cold.,conversation,寒さむくなってきたね。,寒さむくなってきたね。 / 寒さむくなってきました。,junior_high,1,4,4;3,会話表現,4:834;3:322,2
+It's getting late.,it's getting late.,conversation,もう遅おそいね。,もう遅おそいね。,junior_high,1,4,4,,4:920,1
+It's May 5th.,it's may 5th.,conversation,5月がつ5日かだよ。,5月がつ5日かだよ。,junior_high,1,4,4,,4:872,1
+It's next to the bank.,it's next to the bank.,conversation,銀行ぎんこうのとなりだよ。,銀行ぎんこうのとなりだよ。,junior_high,1,4,4,,4:786,1
+It's on me.,it's on me.,conversation,私わたしがおごるよ。,私わたしがおごるよ。,junior_high,1,4,4,,4:852,1
+It's on the table.,it's on the table.,conversation,テーブルの上うえだよ。,テーブルの上うえだよ。,junior_high,1,4,4,,4:759,1
+It's too spicy for me.,it's too spicy for me.,conversation,私わたしには辛からすぎる。,私わたしには辛からすぎる。 / 私わたしには辛からすぎます。,junior_high,1,4,4;3,会話表現,4:792;3:267,2
+It's up to you.,it's up to you.,conversation,きみに任まかせるよ。,きみに任まかせるよ。,junior_high,1,4,4,,4:750,1
+"Just a moment, please.","just a moment, please.",conversation,少々しょうしょうお待まちください。,少々しょうしょうお待まちください。,junior_high,1,4,4,,4:814,1
+Keep in touch.,keep in touch.,conversation,連絡れんらくを取とり合あおうね。,連絡れんらくを取とり合あおうね。,junior_high,1,4,4,,4:886,1
+Let me check.,let me check.,conversation,確認かくにんするね。,確認かくにんするね。,junior_high,1,4,4,,4:772,1
+Let me give you a hand.,let me give you a hand.,conversation,手てを貸かすよ。,手てを貸かすよ。,junior_high,1,4,4,,4:899,1
+Let me think about it.,let me think about it.,conversation,考かんがえさせて。,考かんがえさせて。,junior_high,1,4,4,,4:857,1
+Let's celebrate!,let's celebrate!,conversation,お祝いわいしよう！,お祝いわいしよう！,junior_high,1,4,4,,4:877,1
+Let's do this again.,let's do this again.,conversation,また今度こんどやろうね。,また今度こんどやろうね。,junior_high,1,4,4,,4:925,1
+Let's go together.,let's go together.,conversation,いっしょに行いこう。,いっしょに行いこう。,junior_high,1,4,4,,4:747,1
+Let's keep in touch.,let's keep in touch.,conversation,これからも連絡れんらくしよう。,これからも連絡れんらくしよう。,junior_high,1,4,4,,4:887,1
+Let's meet at the station.,let's meet at the station.,conversation,駅えきで会あおう。,駅えきで会あおう。,junior_high,1,4,4,,4:745,1
+Let's order pizza.,let's order pizza.,conversation,ピザを頼たのもう。,ピザを頼たのもう。,junior_high,1,4,4,,4:892,1
+Let's see.,let's see.,conversation,ええと。,ええと。,junior_high,1,4,4,,4:820,1
+Let's split the bill.,let's split the bill.,conversation,割わり勘かんにしよう。,割わり勘かんにしよう。,junior_high,1,4,4,,4:851,1
+Let's stay in touch.,let's stay in touch.,conversation,これからもよろしくね。,これからもよろしくね。,junior_high,1,4,4,,4:905,1
+Let's take a break.,let's take a break.,conversation,休憩きゅうけいしよう。,休憩きゅうけいしよう。,junior_high,1,4,4;3,会話表現,4:867;3:115,2
+Let's take a taxi.,let's take a taxi.,conversation,タクシーに乗のろう。,タクシーに乗のろう。,junior_high,1,4,4,,4:832,1
+Let's try again.,let's try again.,conversation,もう一度いちどやってみよう。,もう一度いちどやってみよう。,junior_high,1,4,4,,4:826,1
+Make a wish.,make a wish.,conversation,願ねがいごとをして。,願ねがいごとをして。,junior_high,1,4,4,,4:878,1
+Make yourself at home.,make yourself at home.,conversation,くつろいでね。,くつろいでね。,junior_high,1,4,4,,4:917,1
+May I see the menu?,may i see the menu?,conversation,メニューを見みせてください。,メニューを見みせてください。 / メニューを見みてもいいですか。,junior_high,1,4,4;3,会話表現,4:789;3:256,2
+May I take a message?,may i take a message?,conversation,伝言でんごんを受うけましょうか？,伝言でんごんを受うけましょうか？,junior_high,1,4,4,,4:779,1
+May I try it on?,may i try it on?,conversation,試着しちゃくしてもいい？,試着しちゃくしてもいい？,junior_high,1,4,4,,4:734,1
+May I use your bathroom?,may i use your bathroom?,conversation,トイレをお借かりできますか？,トイレをお借かりできますか？,junior_high,1,4,4,,4:916,1
+Maybe another day.,maybe another day.,conversation,また別べつの日ひに。,また別べつの日ひに。,junior_high,1,4,4,,4:846,1
+Me neither.,me neither.,conversation,私わたしも(〜ない)。,私わたしも(〜ない)。,junior_high,1,4,4,,4:808,1
+Mind the gap.,mind the gap.,conversation,隙間すきまに注意ちゅうい。,隙間すきまに注意ちゅうい。,junior_high,1,4,4,,4:901,1
+My birthday is in July.,my birthday is in july.,conversation,誕生日たんじょうびは7月がつだよ。,誕生日たんじょうびは7月がつだよ。,junior_high,1,4,4,,4:873,1
+Of course you can.,of course you can.,conversation,もちろんいいよ。,もちろんいいよ。,junior_high,1,4,4,,4:844,1
+Practice makes perfect.,practice makes perfect.,conversation,練習れんしゅうあるのみだよ。,練習れんしゅうあるのみだよ。,junior_high,1,4,4,,4:840,1
+Same to you.,same to you.,conversation,あなたもね。,あなたもね。,junior_high,1,4,4,,4:904,1
+Say cheese!,say cheese!,conversation,はい、チーズ！,はい、チーズ！,junior_high,1,4,4,,4:889,1
+See you next week.,see you next week.,conversation,また来週らいしゅう。,また来週らいしゅう。,junior_high,1,4,4,,4:755,1
+She's a nurse.,she's a nurse.,conversation,彼女かのじょは看護師かんごしだよ。,彼女かのじょは看護師かんごしだよ。,junior_high,1,4,4,,4:760,1
+Sounds good to me.,sounds good to me.,conversation,いいね。,いいね。,junior_high,1,4,4,,4:819,1
+"Sure, go ahead.","sure, go ahead.",conversation,いいよ、どうぞ。,いいよ、どうぞ。,junior_high,1,4,4,,4:907,1
+"Sure, here you are.","sure, here you are.",conversation,いいよ、はいどうぞ。,いいよ、はいどうぞ。,junior_high,1,4,4,,4:728,1
+Take an umbrella.,take an umbrella.,conversation,傘かさを持もっていきな。,傘かさを持もっていきな。,junior_high,1,4,4,,4:835,1
+Take this medicine.,take this medicine.,conversation,この薬くすりを飲のんで。,この薬くすりを飲のんで。 / この薬くすりを飲のんでください。,junior_high,1,4,4;3,会話表現,4:866;3:355,2
+Text me when you arrive.,text me when you arrive.,conversation,着ついたら連絡れんらくしてね。,着ついたら連絡れんらくしてね。,junior_high,1,4,4,,4:924,1
+Thank you for your help.,thank you for your help.,conversation,手伝てつだってくれてありがとう。,手伝てつだってくれてありがとう。,junior_high,1,4,4,,4:809,1
+Thanks for having me.,thanks for having me.,conversation,招まねいてくれてありがとう。,招まねいてくれてありがとう。,junior_high,1,4,4,,4:922,1
+Thanks for inviting me.,thanks for inviting me.,conversation,誘さそってくれてありがとう。,誘さそってくれてありがとう。,junior_high,1,4,4,,4:880,1
+That sounds fun.,that sounds fun.,conversation,楽たのしそう。,楽たのしそう。,junior_high,1,4,4,,4:742,1
+That's a good idea.,that's a good idea.,conversation,それはいい考かんがえだね。,それはいい考かんがえだね。 / それはいい考かんがえです。,junior_high,1,4,4;3,会話表現,4:751;3:388,2
+That's a relief.,that's a relief.,conversation,ほっとした。,ほっとした。,junior_high,1,4,4,,4:803,1
+That's all right.,that's all right.,conversation,大丈夫だいじょうぶだよ。,大丈夫だいじょうぶだよ。 / 大丈夫だいじょうぶですよ。,junior_high,1,4,4;3,会話表現,4:812;3:22,2
+That's fine with me.,that's fine with me.,conversation,私わたしはそれでいいよ。,私わたしはそれでいいよ。,junior_high,1,4,4,,4:847,1
+That's great!,that's great!,conversation,すごいね！,すごいね！,junior_high,1,4,4,,4:767,1
+That's perfect.,that's perfect.,conversation,ぴったりだね。,ぴったりだね。,junior_high,1,4,4,,4:914,1
+That's very kind of you.,that's very kind of you.,conversation,ご親切しんせつにどうも。,ご親切しんせつにどうも。,junior_high,1,4,4,,4:879,1
+That's wonderful news.,that's wonderful news.,conversation,すばらしい知しらせだね。,すばらしい知しらせだね。,junior_high,1,4,4,,4:882,1
+Turn left at the corner.,turn left at the corner.,conversation,角かどを左ひだりに曲まがって。,角かどを左ひだりに曲まがって。 / 角かどを左ひだりに曲まがってください。,junior_high,1,4,4;3,会話表現,4:785;3:306,2
+Turn off the light.,turn off the light.,conversation,電気でんきを消けしてね。,電気でんきを消けしてね。,junior_high,1,4,4,,4:800,1
+Wash your hands first.,wash your hands first.,conversation,先さきに手てを洗あらってね。,先さきに手てを洗あらってね。,junior_high,1,4,4,,4:798,1
+We're going to be late.,we're going to be late.,conversation,遅おくれちゃうよ。,遅おくれちゃうよ。,junior_high,1,4,4,,4:870,1
+Welcome back.,welcome back.,conversation,おかえり。,おかえり。 / おかえりなさい。,junior_high,1,4,4;3,会話表現,4:753;3:5,2
+What a surprise!,what a surprise!,conversation,びっくり！,びっくり！,junior_high,1,4,4,,4:884,1
+What do you think?,what do you think?,conversation,どう思おもう？,どう思おもう？,junior_high,1,4,4,,4:848,1
+What does this mean?,what does this mean?,conversation,これはどういう意味いみ？,これはどういう意味いみ？,junior_high,1,4,4,,4:770,1
+What happened?,what happened?,conversation,何なにがあったの？,何なにがあったの？,junior_high,1,4,4,,4:859,1
+What time is it now?,what time is it now?,conversation,今いま何時なんじ？,今いま何時なんじ？,junior_high,1,4,4,,4:822,1
+What would you like?,what would you like?,conversation,何なににする？,何なににする？,junior_high,1,4,4,,4:893,1
+What's the date today?,what's the date today?,conversation,今日きょうは何日なんにち？,今日きょうは何日なんにち？,junior_high,1,4,4,,4:871,1
+What's your hobby?,what's your hobby?,conversation,趣味しゅみは何なに？,趣味しゅみは何なに？,junior_high,1,4,4,,4:836,1
+Where is the fitting room?,where is the fitting room?,conversation,試着室しちゃくしつはどこですか？,試着室しちゃくしつはどこですか？,junior_high,1,4,4,,4:909,1
+Which train should I take?,which train should i take?,conversation,どの電車でんしゃに乗のればいい？,どの電車でんしゃに乗のればいい？,junior_high,1,4,4,,4:829,1
+Why don't we take a bus?,why don't we take a bus?,conversation,バスに乗のらない？,バスに乗のらない？ / バスで行いかない？,junior_high,1,4,4;3,会話表現,4:746;3:99,2
+Would you like some tea?,would you like some tea?,conversation,お茶ちゃはいかが？,お茶ちゃはいかが？,junior_high,1,4,4,,4:918,1
+You can't miss it.,you can't miss it.,conversation,すぐ分わかるよ。,すぐ分わかるよ。,junior_high,1,4,4,,4:787,1
+You did a great job.,you did a great job.,conversation,よくがんばったね。,よくがんばったね。,junior_high,1,4,4,,4:841,1
+You should see a doctor.,you should see a doctor.,conversation,医者いしゃに行いったほうがいいよ。,医者いしゃに行いったほうがいいよ。,junior_high,1,4,4,,4:865,1
+You shouldn't have.,you shouldn't have.,conversation,気きをつかわせてごめんね。,気きをつかわせてごめんね。,junior_high,1,4,4,,4:876,1
+You're right.,you're right.,conversation,そのとおりだね。,そのとおりだね。,junior_high,1,4,4,,4:752,1
+Are you busy now?,are you busy now?,conversation,今いま忙いそがしいですか。,今いま忙いそがしいですか。,junior_high,2,3,3,会話表現,3:165,1
+Can I speak to Ken?,can i speak to ken?,conversation,ケンさんをお願ねがいします。,ケンさんをお願ねがいします。,junior_high,2,3,3,会話表現,3:438,1
+Can I try it on?,can i try it on?,conversation,試着しちゃくしてもいいですか。,試着しちゃくしてもいいですか。,junior_high,2,3,3,会話表現,3:64,1
+Can I try this on?,can i try this on?,conversation,これを試着しちゃくしてもいいですか。,これを試着しちゃくしてもいいですか。,junior_high,2,3,3,会話表現,3:223,1
+Can you carry this for me?,can you carry this for me?,conversation,これを運はこんでくれる？,これを運はこんでくれる？,junior_high,2,3,3,会話表現,3:69,1
+Can you hear me?,can you hear me?,conversation,聞きこえますか。,聞きこえますか。,junior_high,2,3,3,会話表現,3:451,1
+Can you take out the trash?,can you take out the trash?,conversation,ごみを出だしてくれる？,ごみを出だしてくれる？,junior_high,2,3,3,会話表現,3:539,1
+"Can you wrap it, please?","can you wrap it, please?",conversation,包つつんでもらえますか。,包つつんでもらえますか。,junior_high,2,3,3,会話表現,3:242,1
+"Check your email, please.","check your email, please.",conversation,メールを確認かくにんしてください。,メールを確認かくにんしてください。,junior_high,2,3,3,会話表現,3:460,1
+Could I have some water?,could i have some water?,conversation,お水みずをいただけますか。,お水みずをいただけますか。,junior_high,2,3,3,会話表現,3:253,1
+Could you help me with math?,could you help me with math?,conversation,数学すうがくを手伝てつだってくれますか。,数学すうがくを手伝てつだってくれますか。,junior_high,2,3,3,会話表現,3:207,1
+Could you show me the way?,could you show me the way?,conversation,道みちを教おしえてくれますか。,道みちを教おしえてくれますか。,junior_high,2,3,3,会話表現,3:60,1
+Do you have a larger size?,do you have a larger size?,conversation,もっと大おおきいサイズはありますか。,もっと大おおきいサイズはありますか。,junior_high,2,3,3,会話表現,3:220,1
+Do you take credit cards?,do you take credit cards?,conversation,クレジットカードは使つかえますか。,クレジットカードは使つかえますか。,junior_high,2,3,3,会話表現,3:229,1
+Don't forget to lock the door.,don't forget to lock the door.,conversation,ドアのかぎを忘わすれないで。,ドアのかぎを忘わすれないで。,junior_high,2,3,3,会話表現,3:537,1
+Don't stay up late.,don't stay up late.,conversation,夜更よふかししないで。,夜更よふかししないで。,junior_high,2,3,3,会話表現,3:366,1
+Drink plenty of water.,drink plenty of water.,conversation,水みずをたくさん飲のんで。,水みずをたくさん飲のんで。,junior_high,2,3,3,会話表現,3:368,1
+Go straight ahead.,go straight ahead.,conversation,まっすぐ進すすんでください。,まっすぐ進すすんでください。,junior_high,2,3,3,会話表現,3:308,1
+Here is your change.,here is your change.,conversation,おつりです。,おつりです。,junior_high,2,3,3,会話表現,3:247,1
+How about next Sunday?,how about next sunday?,conversation,次つぎの日曜日にちようびはどう？,次つぎの日曜日にちようびはどう？,junior_high,2,3,3,会話表現,3:126,1
+How about some coffee?,how about some coffee?,conversation,コーヒーはどう？,コーヒーはどう？,junior_high,2,3,3,会話表現,3:102,1
+How about this one?,how about this one?,conversation,これはどう？,これはどう？,junior_high,2,3,3,会話表現,3:113,1
+How are you feeling?,how are you feeling?,conversation,気分きぶんはどうですか。,気分きぶんはどうですか。,junior_high,2,3,3,会話表現,3:341,1
+How long does it take?,how long does it take?,conversation,どのくらいかかりますか。,どのくらいかかりますか。,junior_high,2,3,3,会話表現,3:300,1
+I appreciate it.,i appreciate it.,conversation,感謝かんしゃしています。,感謝かんしゃしています。,junior_high,2,3,3,会話表現,3:31,1
+I can't find my key.,i can't find my key.,conversation,かぎが見みつかりません。,かぎが見みつかりません。,junior_high,2,3,3,会話表現,3:471,1
+I caught a cold.,i caught a cold.,conversation,風邪かぜをひきました。,風邪かぜをひきました。,junior_high,2,3,3,会話表現,3:350,1
+I didn't practice much.,i didn't practice much.,conversation,あまり練習れんしゅうしませんでした。,あまり練習れんしゅうしませんでした。,junior_high,2,3,3,会話表現,3:429,1
+I don't eat meat.,i don't eat meat.,conversation,肉にくは食たべません。,肉にくは食たべません。,junior_high,2,3,3,会話表現,3:286,1
+I don't know the answer.,i don't know the answer.,conversation,答こたえがわかりません。,答こたえがわかりません。,junior_high,2,3,3,会話表現,3:203,1
+I don't like spicy food.,i don't like spicy food.,conversation,辛からい食べ物たべものは好すきではありません。,辛からい食べ物たべものは好すきではありません。,junior_high,2,3,3,会話表現,3:383,1
+I enjoy reading.,i enjoy reading.,conversation,読書どくしょを楽たのしんでいます。,読書どくしょを楽たのしんでいます。,junior_high,2,3,3,会話表現,3:401,1
+I feel much better now.,i feel much better now.,conversation,もうずっとよくなりました。,もうずっとよくなりました。,junior_high,2,3,3,会話表現,3:357,1
+I forgot my homework.,i forgot my homework.,conversation,宿題しゅくだいを忘わすれました。,宿題しゅくだいを忘わすれました。,junior_high,2,3,3,会話表現,3:179,1
+I forgot my ticket.,i forgot my ticket.,conversation,切符きっぷを忘わすれました。,切符きっぷを忘わすれました。,junior_high,2,3,3,会話表現,3:478,1
+I got a good score.,i got a good score.,conversation,いい点てんを取とりました。,いい点てんを取とりました。,junior_high,2,3,3,会話表現,3:209,1
+I got off at the wrong station.,i got off at the wrong station.,conversation,間違まちがった駅えきで降おりました。,間違まちがった駅えきで降おりました。,junior_high,2,3,3,会話表現,3:313,1
+I got your message.,i got your message.,conversation,メッセージを受うけ取とりました。,メッセージを受うけ取とりました。,junior_high,2,3,3,会話表現,3:462,1
+I have a fever.,i have a fever.,conversation,熱ねつがあります。,熱ねつがあります。,junior_high,2,3,3,会話表現,3:344,1
+I have an appointment.,i have an appointment.,conversation,約束やくそくがあります。,約束やくそくがあります。,junior_high,2,3,3,会話表現,3:559,1
+I have plans tomorrow.,i have plans tomorrow.,conversation,明日あしたは予定よていがあります。,明日あしたは予定よていがあります。,junior_high,2,3,3,会話表現,3:143,1
+I have to study for the exam.,i have to study for the exam.,conversation,試験勉強しけんべんきょうをしなければなりません。,試験勉強しけんべんきょうをしなければなりません。,junior_high,2,3,3,会話表現,3:192,1
+I left it at home.,i left it at home.,conversation,それを家いえに置おいてきました。,それを家いえに置おいてきました。,junior_high,2,3,3,会話表現,3:482,1
+I left school early.,i left school early.,conversation,早退そうたいしました。,早退そうたいしました。,junior_high,2,3,3,会話表現,3:187,1
+I like this one.,i like this one.,conversation,こちらが好すきです。,こちらが好すきです。,junior_high,2,3,3,会話表現,3:379,1
+I lost my wallet.,i lost my wallet.,conversation,財布さいふをなくしました。,財布さいふをなくしました。,junior_high,2,3,3,会話表現,3:473,1
+I love autumn leaves.,i love autumn leaves.,conversation,紅葉こうようが大好だいすきです。。,紅葉こうようが大好だいすきです。。,junior_high,2,3,3,会話表現,3:335,1
+I need my dictionary.,i need my dictionary.,conversation,辞書じしょが必要ひつようです。,辞書じしょが必要ひつようです。,junior_high,2,3,3,会話表現,3:181,1
+I need to make a copy.,i need to make a copy.,conversation,コピーを取とる必要ひつようがあります。,コピーを取とる必要ひつようがあります。,junior_high,2,3,3,会話表現,3:561,1
+I need to see a doctor.,i need to see a doctor.,conversation,医者いしゃに診みてもらう必要ひつようがあります。,医者いしゃに診みてもらう必要ひつようがあります。,junior_high,2,3,3,会話表現,3:363,1
+I practice every day.,i practice every day.,conversation,毎日まいにち練習れんしゅうします。,毎日まいにち練習れんしゅうします。,junior_high,2,3,3,会話表現,3:410,1
+I prefer tea to coffee.,i prefer tea to coffee.,conversation,コーヒーよりお茶ちゃのほうが好すきです。,コーヒーよりお茶ちゃのほうが好すきです。,junior_high,2,3,3,会話表現,3:394,1
+I twisted my ankle.,i twisted my ankle.,conversation,足首あしくびをひねりました。,足首あしくびをひねりました。,junior_high,2,3,3,会話表現,3:372,1
+I want to go again.,i want to go again.,conversation,また行いきたいです。,また行いきたいです。,junior_high,2,3,3,会話表現,3:572,1
+I was stuck in traffic.,i was stuck in traffic.,conversation,渋滞じゅうたいにはまっていました。,渋滞じゅうたいにはまっていました。,junior_high,2,3,3,会話表現,3:564,1
+I'll be back by six.,i'll be back by six.,conversation,6時ろくじまでに戻もどります。,6時ろくじまでに戻もどります。,junior_high,2,3,3,会話表現,3:555,1
+I'll be right back.,i'll be right back.,conversation,すぐ戻もどるよ。,すぐ戻もどるよ。,junior_high,2,3,3,会話表現,3:97,1
+I'll be there at two.,i'll be there at two.,conversation,2時にじに着つきます。,2時にじに着つきます。,junior_high,2,3,3,会話表現,3:157,1
+I'll carry it for you.,i'll carry it for you.,conversation,それをあなたのために運はこぶよ。,それをあなたのために運はこぶよ。,junior_high,2,3,3,会話表現,3:82,1
+I'll get the door.,i'll get the door.,conversation,ドアを開あけるよ。,ドアを開あけるよ。,junior_high,2,3,3,会話表現,3:86,1
+I'll send you the photo.,i'll send you the photo.,conversation,写真しゃしんを送おくるね。,写真しゃしんを送おくるね。,junior_high,2,3,3,会話表現,3:456,1
+I'll text you later.,i'll text you later.,conversation,あとでメッセージするね。,あとでメッセージするね。,junior_high,2,3,3,会話表現,3:445,1
+I'm a little tired.,i'm a little tired.,conversation,少すこし疲つかれています。,少すこし疲つかれています。,junior_high,2,3,3,会話表現,3:374,1
+I'm a little worried.,i'm a little worried.,conversation,少すこし不安ふあんです。,少すこし不安ふあんです。,junior_high,2,3,3,会話表現,3:423,1
+I'm doing the laundry.,i'm doing the laundry.,conversation,洗濯せんたくをしています。,洗濯せんたくをしています。,junior_high,2,3,3,会話表現,3:542,1
+I'm free this afternoon.,i'm free this afternoon.,conversation,今日きょうの午後ごごは空あいています。,今日きょうの午後ごごは空あいています。,junior_high,2,3,3,会話表現,3:141,1
+I'm going to the station.,i'm going to the station.,conversation,駅えきに行いきます。,駅えきに行いきます。,junior_high,2,3,3,会話表現,3:289,1
+I'm happy for you.,i'm happy for you.,conversation,あなたのことがうれしいよ。,あなたのことがうれしいよ。,junior_high,2,3,3,会話表現,3:517,1
+I'm interested in art.,i'm interested in art.,conversation,美術びじゅつに興味きょうみがあります。,美術びじゅつに興味きょうみがあります。,junior_high,2,3,3,会話表現,3:399,1
+I'm leaving on Monday.,i'm leaving on monday.,conversation,月曜日げつようびに出発しゅっぱつします。,月曜日げつようびに出発しゅっぱつします。,junior_high,2,3,3,会話表現,3:146,1
+I'm nervous about the test.,i'm nervous about the test.,conversation,テストが心配しんぱいです。,テストが心配しんぱいです。,junior_high,2,3,3,会話表現,3:212,1
+I'm on my lunch break.,i'm on my lunch break.,conversation,昼休ひるやすみ中ちゅうです。,昼休ひるやすみ中ちゅうです。,junior_high,2,3,3,会話表現,3:570,1
+I'm on my way.,i'm on my way.,conversation,今いま向むかっています。,今いま向むかっています。,junior_high,2,3,3,会話表現,3:154,1
+I'm on the school team.,i'm on the school team.,conversation,学校がっこうのチームに入はいっています。,学校がっこうのチームに入はいっています。,junior_high,2,3,3,会話表現,3:412,1
+I'm out of money.,i'm out of money.,conversation,お金かねが足たりません。,お金かねが足たりません。,junior_high,2,3,3,会話表現,3:245,1
+I'm ready to go.,i'm ready to go.,conversation,出でかける準備じゅんびができました。,出でかける準備じゅんびができました。,junior_high,2,3,3,会話表現,3:168,1
+I'm ready to order.,i'm ready to order.,conversation,注文ちゅうもんの準備じゅんびができました。,注文ちゅうもんの準備じゅんびができました。,junior_high,2,3,3,会話表現,3:258,1
+I'm running late.,i'm running late.,conversation,少すこし遅おくれています。,少すこし遅おくれています。,junior_high,2,3,3,会話表現,3:174,1
+Is breakfast included?,is breakfast included?,conversation,朝食ちょうしょくはついていますか。,朝食ちょうしょくはついていますか。,junior_high,2,3,3,会話表現,3:275,1
+Is this the right way?,is this the right way?,conversation,この道みちで合あっていますか。,この道みちで合あっていますか。,junior_high,2,3,3,会話表現,3:311,1
+It can't be helped.,it can't be helped.,conversation,しかたないよ。,しかたないよ。,junior_high,2,3,3,会話表現,3:27,1
+It sounds great.,it sounds great.,conversation,それはよさそうです。,それはよさそうです。,junior_high,2,3,3,会話表現,3:385,1
+It starts at ten.,it starts at ten.,conversation,10時じゅうじに始はじまります。,10時じゅうじに始はじまります。,junior_high,2,3,3,会話表現,3:159,1
+It's a ten-minute walk.,it's a ten-minute walk.,conversation,歩あるいて10分ふんです。,歩あるいて10分ふんです。,junior_high,2,3,3,会話表現,3:302,1
+It's almost nine.,it's almost nine.,conversation,もうすぐ9時くじです。,もうすぐ9時くじです。,junior_high,2,3,3,会話表現,3:137,1
+It's just around the corner.,it's just around the corner.,conversation,すぐそこの角かどです。,すぐそこの角かどです。,junior_high,2,3,3,会話表現,3:566,1
+It's my piece of cake.,it's my piece of cake.,conversation,それは私わたしのケーキです。,それは私わたしのケーキです。,junior_high,2,3,3,会話表現,3:588,1
+It's on sale today.,it's on sale today.,conversation,今日きょうはセールです。,今日きょうはセールです。,junior_high,2,3,3,会話表現,3:231,1
+It's too cold to go out.,it's too cold to go out.,conversation,外そとに出でるには寒さむすぎます。,外そとに出でるには寒さむすぎます。,junior_high,2,3,3,会話表現,3:330,1
+It's too crowded.,it's too crowded.,conversation,人ひとが多おおすぎます。,人ひとが多おおすぎます。,junior_high,2,3,3,会話表現,3:586,1
+Keep trying.,keep trying.,conversation,あきらめずに続つづけて。,あきらめずに続つづけて。,junior_high,2,3,3,会話表現,3:509,1
+Let me help you.,let me help you.,conversation,手伝てつだわせてください。,手伝てつだわせてください。,junior_high,2,3,3,会話表現,3:80,1
+Let me know.,let me know.,conversation,教おしえてね。,教おしえてね。,junior_high,2,3,3,会話表現,3:91,1
+Let's cheer for them.,let's cheer for them.,conversation,みんなを応援おうえんしよう。,みんなを応援おうえんしよう。,junior_high,2,3,3,会話表現,3:427,1
+Let's eat out tonight.,let's eat out tonight.,conversation,今夜こんやは外食がいしょくしよう。,今夜こんやは外食がいしょくしよう。,junior_high,2,3,3,会話表現,3:108,1
+Let's leave early.,let's leave early.,conversation,早はやく出発しゅっぱつしよう。,早はやく出発しゅっぱつしよう。,junior_high,2,3,3,会話表現,3:132,1
+Let's meet at noon.,let's meet at noon.,conversation,正午しょうごに会あおう。,正午しょうごに会あおう。,junior_high,2,3,3,会話表現,3:124,1
+Let's meet in front of the station.,let's meet in front of the station.,conversation,駅前えきまえで会あいましょう。,駅前えきまえで会あいましょう。,junior_high,2,3,3,会話表現,3:553,1
+May I borrow this book?,may i borrow this book?,conversation,この本ほんを借かりてもいいですか。,この本ほんを借かりてもいいですか。,junior_high,2,3,3,会話表現,3:71,1
+May I use the computer?,may i use the computer?,conversation,コンピューターを使つかってもいいですか。,コンピューターを使つかってもいいですか。,junior_high,2,3,3,会話表現,3:196,1
+My bike is broken.,my bike is broken.,conversation,自転車じてんしゃがこわれています。,自転車じてんしゃがこわれています。,junior_high,2,3,3,会話表現,3:476,1
+My passport is missing.,my passport is missing.,conversation,パスポートが見当みあたりません。,パスポートが見当みあたりません。,junior_high,2,3,3,会話表現,3:319,1
+My phone is out of battery.,my phone is out of battery.,conversation,携帯けいたいの電池でんちが切きれました。,携帯けいたいの電池でんちが切きれました。,junior_high,2,3,3,会話表現,3:449,1
+My pleasure.,my pleasure.,conversation,よろこんで。,よろこんで。,junior_high,2,3,3,会話表現,3:33,1
+My shoes are wet.,my shoes are wet.,conversation,靴くつがぬれています。,靴くつがぬれています。,junior_high,2,3,3,会話表現,3:487,1
+My stomach hurts.,my stomach hurts.,conversation,おなかが痛いたいです。,おなかが痛いたいです。,junior_high,2,3,3,会話表現,3:361,1
+"No tomatoes, please.","no tomatoes, please.",conversation,トマトは抜ぬいてください。,トマトは抜ぬいてください。,junior_high,2,3,3,会話表現,3:262,1
+Open your textbooks.,open your textbooks.,conversation,教科書きょうかしょを開ひらいてください。,教科書きょうかしょを開ひらいてください。,junior_high,2,3,3,会話表現,3:201,1
+Please call me later.,please call me later.,conversation,あとで電話でんわしてください。,あとで電話でんわしてください。,junior_high,2,3,3,会話表現,3:66,1
+Please clean your room.,please clean your room.,conversation,部屋へやを片づけかたづけてください。,部屋へやを片づけかたづけてください。,junior_high,2,3,3,会話表現,3:544,1
+Please hand in your report.,please hand in your report.,conversation,レポートを提出ていしゅつしてください。,レポートを提出ていしゅつしてください。,junior_high,2,3,3,会話表現,3:185,1
+Please leave a message.,please leave a message.,conversation,伝言でんごんを残のこしてください。,伝言でんごんを残のこしてください。,junior_high,2,3,3,会話表現,3:434,1
+Please set the table.,please set the table.,conversation,テーブルを準備じゅんびしてください。,テーブルを準備じゅんびしてください。,junior_high,2,3,3,会話表現,3:533,1
+Please speak more slowly.,please speak more slowly.,conversation,もっとゆっくり話はなしてください。,もっとゆっくり話はなしてください。,junior_high,2,3,3,会話表現,3:58,1
+Please tell me when to get off.,please tell me when to get off.,conversation,降おりるときに教おしえてください。,降おりるときに教おしえてください。,junior_high,2,3,3,会話表現,3:317,1
+Please turn off the light.,please turn off the light.,conversation,電気でんきを消けしてください。,電気でんきを消けしてください。,junior_high,2,3,3,会話表現,3:75,1
+Please wait a minute.,please wait a minute.,conversation,ちょっと待まってください。,ちょっと待まってください。,junior_high,2,3,3,会話表現,3:47,1
+Save some for me.,save some for me.,conversation,少すこし残のこしておいて。,少すこし残のこしておいて。,junior_high,2,3,3,会話表現,3:280,1
+Shall I help you?,shall i help you?,conversation,手伝てつだいましょうか。,手伝てつだいましょうか。,junior_high,2,3,3,会話表現,3:77,1
+Shall we play tennis?,shall we play tennis?,conversation,テニスをしようか。,テニスをしようか。,junior_high,2,3,3,会話表現,3:119,1
+Shall we start now?,shall we start now?,conversation,今いま始はじめようか。,今いま始はじめようか。,junior_high,2,3,3,会話表現,3:104,1
+Shall we watch a movie?,shall we watch a movie?,conversation,映画えいがを見みようか。,映画えいがを見みようか。,junior_high,2,3,3,会話表現,3:130,1
+Something is wrong.,something is wrong.,conversation,何なにかおかしいです。,何なにかおかしいです。,junior_high,2,3,3,会話表現,3:484,1
+Sorry to bother you.,sorry to bother you.,conversation,おじゃましてすみません。,おじゃましてすみません。,junior_high,2,3,3,会話表現,3:36,1
+"Sorry, wrong number.","sorry, wrong number.",conversation,すみません、番号ばんごうを間違まちがえました。,すみません、番号ばんごうを間違まちがえました。,junior_high,2,3,3,会話表現,3:465,1
+Sounds fun.,sounds fun.,conversation,楽たのしそう。,楽たのしそう。,junior_high,2,3,3,会話表現,3:522,1
+Spring is my favorite season.,spring is my favorite season.,conversation,春はるがいちばん好すきな季節きせつです。,春はるがいちばん好すきな季節きせつです。,junior_high,2,3,3,会話表現,3:328,1
+Summer vacation starts soon.,summer vacation starts soon.,conversation,もうすぐ夏休なつやすみです。,もうすぐ夏休なつやすみです。,junior_high,2,3,3,会話表現,3:333,1
+Take an umbrella with you.,take an umbrella with you.,conversation,傘かさを持もって行いって。,傘かさを持もって行いって。,junior_high,2,3,3,会話表現,3:324,1
+Take your time.,take your time.,conversation,ゆっくりでいいよ。,ゆっくりでいいよ。,junior_high,2,3,3,会話表現,3:506,1
+Tell me if you need anything.,tell me if you need anything.,conversation,何なにか必要ひつようなら言いってね。,何なにか必要ひつようなら言いってね。,junior_high,2,3,3,会話表現,3:93,1
+Thank you anyway.,thank you anyway.,conversation,とにかくありがとう。,とにかくありがとう。,junior_high,2,3,3,会話表現,3:38,1
+That happens sometimes.,that happens sometimes.,conversation,そういうこともあるよ。,そういうこともあるよ。,junior_high,2,3,3,会話表現,3:498,1
+That was a great game.,that was a great game.,conversation,すばらしい試合しあいでした。,すばらしい試合しあいでした。,junior_high,2,3,3,会話表現,3:432,1
+That's too difficult for me.,that's too difficult for me.,conversation,それは私わたしには難むずかしすぎます。,それは私わたしには難むずかしすぎます。,junior_high,2,3,3,会話表現,3:407,1
+The class is over.,the class is over.,conversation,授業じゅぎょうは終おわりです。,授業じゅぎょうは終おわりです。,junior_high,2,3,3,会話表現,3:198,1
+The connection is bad.,the connection is bad.,conversation,電波でんぱが悪わるいです。,電波でんぱが悪わるいです。,junior_high,2,3,3,会話表現,3:454,1
+The food is delicious.,the food is delicious.,conversation,料理りょうりがおいしいです。,料理りょうりがおいしいです。,junior_high,2,3,3,会話表現,3:264,1
+The game starts soon.,the game starts soon.,conversation,試合しあいはもうすぐ始はじまります。,試合しあいはもうすぐ始はじまります。,junior_high,2,3,3,会話表現,3:416,1
+The line is busy.,the line is busy.,conversation,話はなしし中ちゅうです。,話はなしし中ちゅうです。,junior_high,2,3,3,会話表現,3:443,1
+The room is dark.,the room is dark.,conversation,部屋へやが暗くらいです。,部屋へやが暗くらいです。,junior_high,2,3,3,会話表現,3:548,1
+The sun is coming out.,the sun is coming out.,conversation,日ひがさしてきました。,日ひがさしてきました。,junior_high,2,3,3,会話表現,3:339,1
+The train leaves soon.,the train leaves soon.,conversation,電車でんしゃはもうすぐ出でます。,電車でんしゃはもうすぐ出でます。,junior_high,2,3,3,会話表現,3:148,1
+There's a big lake there.,there's a big lake there.,conversation,そこには大おおきな湖みずうみがあります。,そこには大おおきな湖みずうみがあります。,junior_high,2,3,3,会話表現,3:583,1
+This is my favorite song.,this is my favorite song.,conversation,これは私わたしのいちばん好すきな歌うたです。,これは私わたしのいちばん好すきな歌うたです。,junior_high,2,3,3,会話表現,3:396,1
+This is my first time.,this is my first time.,conversation,これが初はじめてです。,これが初はじめてです。,junior_high,2,3,3,会話表現,3:575,1
+This is my second time.,this is my second time.,conversation,これで2回目かいめです。,これで2回目かいめです。,junior_high,2,3,3,会話表現,3:577,1
+This seat is taken.,this seat is taken.,conversation,この席せきは空あいていません。,この席せきは空あいていません。,junior_high,2,3,3,会話表現,3:297,1
+This smells good.,this smells good.,conversation,いいにおいがします。,いいにおいがします。,junior_high,2,3,3,会話表現,3:284,1
+"Turn on the light, please.","turn on the light, please.",conversation,電気でんきをつけてください。,電気でんきをつけてください。,junior_high,2,3,3,会話表現,3:550,1
+We don't have practice today.,we don't have practice today.,conversation,今日きょうは練習れんしゅうがありません。,今日きょうは練習れんしゅうがありません。,junior_high,2,3,3,会話表現,3:190,1
+We had a test this morning.,we had a test this morning.,conversation,今朝けさテストがありました。,今朝けさテストがありました。,junior_high,2,3,3,会話表現,3:176,1
+We have plenty of time.,we have plenty of time.,conversation,時間じかんはたっぷりあります。,時間じかんはたっぷりあります。,junior_high,2,3,3,会話表現,3:170,1
+We lost by one point.,we lost by one point.,conversation,1点差てんさで負まけました。,1点差てんさで負まけました。,junior_high,2,3,3,会話表現,3:421,1
+We missed the train.,we missed the train.,conversation,電車でんしゃに乗のり遅おくれました。,電車でんしゃに乗のり遅おくれました。,junior_high,2,3,3,会話表現,3:295,1
+We should hurry.,we should hurry.,conversation,急いそがないと。,急いそがないと。,junior_high,2,3,3,会話表現,3:152,1
+We won the match.,we won the match.,conversation,試合しあいに勝かちました。,試合しあいに勝かちました。,junior_high,2,3,3,会話表現,3:418,1
+What a surprise.,what a surprise.,conversation,びっくりした。,びっくりした。,junior_high,2,3,3,会話表現,3:520,1
+What time should we meet?,what time should we meet?,conversation,何時なんじに会あいましょうか。,何時なんじに会あいましょうか。,junior_high,2,3,3,会話表現,3:163,1
+Which bus should I take?,which bus should i take?,conversation,どのバスに乗のればいいですか。,どのバスに乗のればいいですか。,junior_high,2,3,3,会話表現,3:291,1
+Why don't we go swimming?,why don't we go swimming?,conversation,泳およぎに行いかない？,泳およぎに行いかない？,junior_high,2,3,3,会話表現,3:121,1
+Why don't you ask her?,why don't you ask her?,conversation,彼女かのじょに聞きいてみたら？,彼女かのじょに聞きいてみたら？,junior_high,2,3,3,会話表現,3:110,1
+Why don't you come with us?,why don't you come with us?,conversation,いっしょに来きたら？,いっしょに来きたら？,junior_high,2,3,3,会話表現,3:135,1
+You did your best.,you did your best.,conversation,よくがんばったね。,よくがんばったね。,junior_high,2,3,3,会話表現,3:493,1
+You should get some rest.,you should get some rest.,conversation,少すこし休やすんだほうがいいよ。,少すこし休やすんだほうがいいよ。,junior_high,2,3,3,会話表現,3:352,1
+You'll be fine.,you'll be fine.,conversation,きっとうまくいくよ。,きっとうまくいくよ。,junior_high,2,3,3,会話表現,3:504,1

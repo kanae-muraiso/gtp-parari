@@ -1,0 +1,66 @@
+// apps/tools/parari/src/components/parari/panels/registry.ts
+// apps/tools/parari/src/components/parari/panels/registry.ts
+// 2026-06-25 JST - PanelDefinition registry / APPLICATION登録
+
+import type { PanelDefinition } from "./panelDefinitionTypes";
+import { accordionDefinition } from "./accordion/accordionDefinition";
+import { applicationDefinition } from "./application/applicationDefinition";
+import { membershipDefinition } from "./membership/membershipDefinition";
+import { audioDefinition } from "./audio/audioDefinition";
+import { bookInfoDefinition } from "./bookinfo/bookInfoDefinition";
+import { chapterInfoDefinition } from "./chapterinfo/chapterInfoDefinition";
+import { pageInfoDefinition } from "./pageinfo/pageInfoDefinition";
+import { buttonDefinition } from "./button/buttonDefinition";
+import { imageDefinition } from "./image/imageDefinition";
+import { linksDefinition } from "./links/linksDefinition";
+import { listDefinition } from "./list/listDefinition";
+import { menuDefinition } from "./menu/menuDefinition";
+import { noticeDefinition } from "./notice/noticeDefinition";
+import { qaDefinition } from "./qa/qaDefinition";
+import { unknownDefinition } from "./unknown/unknownDefinition";
+import { videoDefinition } from "./video/videoDefinition";
+import { youtubeDefinition } from "./youtube/youtubeDefinition";
+import { instagramDefinition } from "./instagram/instagramDefinition";
+import { etTextPanelDefinition } from "./ettext";
+import { webInfoDefinition } from "./webinfo/webInfoDefinition";
+import { formDefinition } from "./form/formDefinition";
+
+const panelDefinitions: Record<string, PanelDefinition<any>> = {
+  ETTEXT: etTextPanelDefinition,
+  BOOK: bookInfoDefinition,
+  WEB: webInfoDefinition,
+  CHAPTER: chapterInfoDefinition,
+  PAGE: pageInfoDefinition,
+  NOTICE: noticeDefinition,
+  ACCORDION: accordionDefinition,
+  BUTTON: buttonDefinition,
+  LINKS: linksDefinition,
+  MENU: menuDefinition,
+  LIST: listDefinition,
+  QA: qaDefinition,
+  IMAGE: imageDefinition,
+  VIDEO: videoDefinition,
+  AUDIO: audioDefinition,
+  YOUTUBE: youtubeDefinition,
+  INSTAGRAM: instagramDefinition,
+  FORM: formDefinition,
+  APPLICATION: applicationDefinition,
+  MEMBERSHIP: membershipDefinition,
+    
+};
+
+export function getPanelDefinition(tag: string): PanelDefinition<any> {
+  const normalizedTag = tag.trim().toUpperCase();
+
+  return panelDefinitions[normalizedTag] ?? unknownDefinition;
+}
+
+export function hasPanelDefinition(tag: string): boolean {
+  const normalizedTag = tag.trim().toUpperCase();
+
+  return Boolean(panelDefinitions[normalizedTag]);
+}
+
+export function getRegisteredPanelTags(): string[] {
+  return Object.keys(panelDefinitions);
+}

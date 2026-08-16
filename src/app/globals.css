@@ -1,0 +1,12 @@
+/* apps/tools/parari/src/app/globals.css */
+/* 2026-02-28 12:28 JST */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 最低限のベース（なくても動くが、あると見やすい） */
+html,
+body {
+  height: 100%;
+}

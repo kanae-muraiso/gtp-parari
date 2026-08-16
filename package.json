@@ -1,0 +1,38 @@
+{
+  "name": "parari",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "typecheck": "tsc --noEmit",
+    "build:english-glossary": "node scripts/build-parari-english-glossary.mjs"
+  },
+  "dependencies": {
+    "@lexical/link": "^0.43.0",
+    "@lexical/markdown": "^0.43.0",
+    "@lexical/react": "^0.43.0",
+    "@lexical/rich-text": "^0.43.0",
+    "@lexical/selection": "^0.43.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "cheerio": "^1.2.0",
+    "heic-to": "^1.4.2",
+    "jszip": "^3.10.1",
+    "lexical": "^0.43.0",
+    "next": "latest",
+    "openai": "^6.19.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "stripe": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.33",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.9.3"
+  }
+}

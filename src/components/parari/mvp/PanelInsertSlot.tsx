@@ -1,0 +1,260 @@
+// src/components/parari/mvp/PanelInsertSlot.tsx
+// 2026/08/04 6:16
+// src/components/parari/mvp/PanelInsertSlot.tsx
+// PART: Hover-reveal zero-gap panel insert slot
+// - 文章・画像は直接表示
+// - YouTube / Instagram / 音声は「メディア」へまとめる
+// - お知らせ / リスト / ボタン / 開閉 / リンク / QAは「パネル」へまとめる
+// - BOOK / CHAPTER / PAGE / BLANK_PAGEは「区切り」へまとめる
+
+"use client";
+
+import { useState } from "react";
+
+export type PanelInsertTag =
+  | "TEXT"
+  | "BOOK"
+  | "CHAPTER"
+  | "PAGE"
+  | "BLANK_PAGE"
+  | "IMAGE"
+  | "YOUTUBE"
+  | "INSTAGRAM"
+  | "AUDIO"
+  | "NOTICE"
+  | "LIST"
+  | "BUTTON"
+  | "ACCORDION"
+  | "LINKS"
+  | "QA"
+  | "FORM"
+  | "APPLICATION"
+  | "MEMBERSHIP"
+  | "GATEWAY";
+
+export type PanelInsertItem = {
+  tag: PanelInsertTag;
+  label: string;
+};
+
+type PanelInsertSlotProps = {
+  items: PanelInsertItem[];
+  structureItems?: PanelInsertItem[];
+  onSelect: (tag: PanelInsertTag) => void;
+};
+
+type InsertMenuName =
+  | "media"
+  | "panel"
+  | "operation"
+  | "structure"
+  | null;
+
+const DIRECT_TAGS: PanelInsertTag[] = ["TEXT", "IMAGE"];
+
+const MEDIA_TAGS: PanelInsertTag[] = [
+  "YOUTUBE",
+  "INSTAGRAM",
+  "AUDIO",
+];
+
+const PANEL_TAGS: PanelInsertTag[] = [
+  "NOTICE",
+  "LIST",
+  "BUTTON",
+  "ACCORDION",
+  "LINKS",
+  "QA",
+];
+
+const OPERATION_TAGS: PanelInsertTag[] = [
+  "FORM",
+  "APPLICATION",
+  "MEMBERSHIP",
+  "GATEWAY",
+];
+
+export function PanelInsertSlot({
+  items,
+  structureItems = [],
+  onSelect,
+}: PanelInsertSlotProps) {
+  const [open, setOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<InsertMenuName>(null);
+
+  const directItems = items.filter((item) =>
+    DIRECT_TAGS.includes(item.tag),
+  );
+
+  const mediaItems = items.filter((item) =>
+    MEDIA_TAGS.includes(item.tag),
+  );
+
+  const panelItems = items.filter((item) =>
+    PANEL_TAGS.includes(item.tag),
+  );
+    
+    const operationItems = items.filter((item) =>
+      OPERATION_TAGS.includes(item.tag),
+    );
+
+  const closeAll = () => {
+    setOpen(false);
+    setOpenMenu(null);
+  };
+
+  const selectItem = (tag: PanelInsertTag) => {
+    closeAll();
+    onSelect(tag);
+  };
+
+  const toggleMenu = (menu: Exclude<InsertMenuName, null>) => {
+    setOpenMenu((current) => (current === menu ? null : menu));
+  };
+
+  return (
+    <div
+      className={[
+        "group relative z-10 flex items-center justify-center transition-all",
+        open ? "min-h-10 py-1" : "h-0 min-h-0 py-0",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "absolute left-0 right-0 flex items-center justify-center transition-all",
+          open
+            ? "top-0 rounded-2xl bg-neutral-50 py-1 shadow-sm"
+            : "-top-3 h-6",
+        ].join(" ")}
+      >
+        {!open ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className={[
+              "grid h-5 w-5 place-items-center rounded-full border border-neutral-200 bg-white",
+              "text-[10px] leading-none text-neutral-300 shadow-sm transition",
+              "opacity-0 hover:border-neutral-300 hover:text-neutral-500",
+              "group-hover:opacity-100",
+            ].join(" ")}
+            aria-label="パネルを追加"
+            title="ここにパネルを追加"
+          >
+            ＋
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center justify-center gap-1 px-2">
+            <button
+              type="button"
+              onClick={closeAll}
+              className="mr-1 grid h-5 w-5 place-items-center rounded-full text-[10px] text-neutral-300 hover:bg-white hover:text-neutral-500"
+              aria-label="閉じる"
+            >
+              ×
+            </button>
+
+            {directItems.map((item) => (
+              <button
+                key={item.tag}
+                type="button"
+                onClick={() => selectItem(item.tag)}
+                className="rounded-full border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-500 shadow-sm hover:bg-neutral-100 hover:text-neutral-800"
+              >
+                {item.label}
+              </button>
+            ))}
+
+            {mediaItems.length > 0 ? (
+              <InsertDropdown
+                label="メディア"
+                open={openMenu === "media"}
+                items={mediaItems}
+                onToggle={() => toggleMenu("media")}
+                onSelect={selectItem}
+              />
+            ) : null}
+
+            {panelItems.length > 0 ? (
+              <InsertDropdown
+                label="パネル"
+                open={openMenu === "panel"}
+                items={panelItems}
+                onToggle={() => toggleMenu("panel")}
+                onSelect={selectItem}
+              />
+            ) : null}
+
+             {operationItems.length > 0 ? (
+               <InsertDropdown
+                 label="運営"
+                 open={openMenu === "operation"}
+                 items={operationItems}
+                 onToggle={() => toggleMenu("operation")}
+                 onSelect={selectItem}
+               />
+             ) : null}
+             
+            {structureItems.length > 0 ? (
+              <InsertDropdown
+                label="区切り"
+                open={openMenu === "structure"}
+                items={structureItems}
+                onToggle={() => toggleMenu("structure")}
+                onSelect={selectItem}
+              />
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type InsertDropdownProps = {
+  label: string;
+  open: boolean;
+  items: PanelInsertItem[];
+  onToggle: () => void;
+  onSelect: (tag: PanelInsertTag) => void;
+};
+
+function InsertDropdown({
+  label,
+  open,
+  items,
+  onToggle,
+  onSelect,
+}: InsertDropdownProps) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={[
+          "rounded-full border px-2 py-1 text-[10px] font-semibold shadow-sm",
+          open
+            ? "border-neutral-400 bg-neutral-800 text-white"
+            : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100",
+        ].join(" ")}
+        aria-expanded={open}
+      >
+        {label} ▾
+      </button>
+
+      {open ? (
+        <div className="absolute left-1/2 top-full z-30 mt-1 min-w-32 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
+          {items.map((item) => (
+            <button
+              key={item.tag}
+              type="button"
+              onClick={() => onSelect(item.tag)}
+              className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}

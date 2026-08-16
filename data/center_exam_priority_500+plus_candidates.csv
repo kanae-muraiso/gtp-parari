@@ -1,0 +1,15 @@
+source_file,action,source_rank,word,lemma,pos,form_type,sense_id,meaning_ja,level,importance,category,note,note2,center_word_original,center_pos,center_pmw,review_reason
+auto,add,70,out,out,adverb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=RB; center_pmw=1000+,out,RB,1000+,
+review,add,119,used,used,verb,past_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVN; center_pmw=1000+,used,VVN,1000+,pos_review
+auto,add,131,however,however,adverb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=RB; center_pmw=1000+,however,RB,1000+,
+auto,add,168,any,any,adverb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=RB; center_pmw=500+,any,RB,500+,
+auto,add,175,mr,mr,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,mr,NN,500+,
+auto,add,184,lot,lot,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,lot,NN,500+,
+auto,add,187,increase,increase,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,increase,NN,500+,
+auto,add,219,ok,ok,verb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VV; center_pmw=500+,ok,VV,500+,
+auto,add,235,accord,accord,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,accord,NN,500+,
+auto,add,247,experience,experience,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,experience,NN,500+,
+auto,add,254,state,state,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,state,NN,500+,
+auto,add,262,activity,activity,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,activity,NN,500+,
+auto,add,271,author,author,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,author,NN,500+,
+review,add,276,mrs,mrs,noun,plural,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NNS; center_pmw=500+,mrs,NNS,500+,pos_review

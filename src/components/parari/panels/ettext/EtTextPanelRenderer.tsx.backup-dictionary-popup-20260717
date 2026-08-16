@@ -1,0 +1,1044 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  formatParariEnglishGlossaryMeaning,
+  getBestParariEnglishGlossaryEntry,
+} from "@/lib/parari/english/basicWordGlossary";
+import { EtTextPanelData, EtTextSegment } from "./types";
+
+type EtTextPanelRendererProps = {
+  data: EtTextPanelData;
+};
+
+type PracticeMode = "listening" | "reading";
+type ReadingInteractionMode = "listen" | "dictionary";
+type ListeningDisplayMode = "start" | "play" | "repeat";
+
+type WebAudioStatus = "idle" | "loading" | "ready" | "error";
+
+type ActiveWebAudioPlayback = {
+  source: AudioBufferSourceNode;
+  startedAt: number;
+  offset: number;
+  duration: number;
+  segment: EtTextSegment;
+  repeat: boolean;
+  continueAfterEnd: boolean;
+  token: number;
+};
+
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds)) return "0:00.00";
+
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds - minutes * 60;
+  return `${minutes}:${rest.toFixed(2).padStart(5, "0")}`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getAudioContextConstructor(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext ||
+    null
+  );
+}
+
+function getSegmentAtTime(
+  segments: EtTextSegment[],
+  time: number
+): EtTextSegment | null {
+  return (
+    segments.find(
+      (segment) => time >= segment.audioStart && time < segment.audioEnd
+    ) ?? null
+  );
+}
+
+export function EtTextPanelRenderer({ data }: EtTextPanelRendererProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const activeWebAudioRef = useRef<ActiveWebAudioPlayback | null>(null);
+  const playbackTokenRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const clickTimerRef = useRef<number | null>(null);
+  const dictionaryRootRef = useRef<HTMLDivElement | null>(null);
+
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>("listening");
+  const [readingInteractionMode, setReadingInteractionMode] =
+    useState<ReadingInteractionMode>("listen");
+  const [activeDictionaryKey, setActiveDictionaryKey] = useState<string | null>(
+    null
+  );
+  const [listeningDisplayMode, setListeningDisplayMode] =
+    useState<ListeningDisplayMode>("start");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
+  const [isSegmentPlaying, setIsSegmentPlaying] = useState(false);
+  const [isSegmentRepeating, setIsSegmentRepeating] = useState(false);
+  const [webAudioStatus, setWebAudioStatus] =
+    useState<WebAudioStatus>("idle");
+  const [webAudioError, setWebAudioError] = useState("");
+
+  const sortedSegments = useMemo(
+    () => [...(data.segments ?? [])].sort((a, b) => a.audioStart - b.audioStart),
+    [data.segments]
+  );
+
+  const activeSegment = useMemo(
+    () => getSegmentAtTime(sortedSegments, currentTime),
+    [sortedSegments, currentTime]
+  );
+
+  const currentSegment =
+    sortedSegments[currentSegmentIndex] ?? sortedSegments[0] ?? null;
+
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+
+      if (clickTimerRef.current != null) {
+        window.clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
+
+      if (audioContextRef.current) {
+        void audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const root = dictionaryRootRef.current;
+      const target = event.target;
+
+      if (!root || !(target instanceof Node) || !root.contains(target)) {
+        setActiveDictionaryKey(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!data.audioUrl) {
+      setWebAudioStatus("idle");
+      setWebAudioError("");
+      audioBufferRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAudioBuffer() {
+      setWebAudioStatus("loading");
+      setWebAudioError("");
+      audioBufferRef.current = null;
+
+      try {
+        const AudioContextConstructor = getAudioContextConstructor();
+
+        if (!AudioContextConstructor) {
+          throw new Error("このブラウザではAudioContextを利用できません。");
+        }
+
+        let audioContext = audioContextRef.current;
+
+        if (!audioContext || audioContext.state === "closed") {
+          audioContext = new AudioContextConstructor();
+          audioContextRef.current = audioContext;
+        }
+
+        const response = await fetch(data.audioUrl, {
+          method: "GET",
+          mode: "cors",
+          cache: "force-cache",
+        });
+
+        if (!response.ok) {
+          throw new Error(`音声ファイルを取得できませんでした: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        if (cancelled) return;
+
+        audioBufferRef.current = audioBuffer;
+        setWebAudioStatus("ready");
+      } catch (error) {
+        if (cancelled) return;
+
+        audioBufferRef.current = null;
+        setWebAudioStatus("error");
+        setWebAudioError(
+          error instanceof Error
+            ? error.message
+            : "Web Audio用の音声読み込みに失敗しました。"
+        );
+      }
+    }
+
+    void loadAudioBuffer();
+
+    return () => {
+      cancelled = true;
+      stopWebAudioSegment();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.audioUrl]);
+
+  useEffect(() => {
+    if (!activeSegment) return;
+
+    const index = sortedSegments.findIndex(
+      (segment) => segment.id === activeSegment.id
+    );
+
+    if (index >= 0) {
+      setCurrentSegmentIndex(index);
+    }
+  }, [activeSegment, sortedSegments]);
+
+  function clearRaf() {
+    if (rafRef.current != null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }
+
+  function updateWebAudioPlayhead(token: number) {
+    const active = activeWebAudioRef.current;
+    const audioContext = audioContextRef.current;
+
+    if (!active || !audioContext || active.token !== token) return;
+
+    const elapsed = audioContext.currentTime - active.startedAt;
+    const nextTime = clamp(
+      active.offset + elapsed,
+      active.segment.audioStart,
+      active.segment.audioEnd
+    );
+
+    setCurrentTime(nextTime);
+
+    rafRef.current = window.requestAnimationFrame(() =>
+      updateWebAudioPlayhead(token)
+    );
+  }
+
+  function stopHtmlAudio() {
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    audio.pause();
+  }
+
+  function stopWebAudioSegment() {
+    clearRaf();
+
+    const active = activeWebAudioRef.current;
+    activeWebAudioRef.current = null;
+    playbackTokenRef.current += 1;
+
+    if (active) {
+      try {
+        active.source.onended = null;
+        active.source.stop();
+      } catch {
+        // すでに停止済みの場合は無視
+      }
+    }
+
+    setIsSegmentPlaying(false);
+    setIsSegmentRepeating(false);
+  }
+
+  function stopAllAudio() {
+    stopHtmlAudio();
+    stopWebAudioSegment();
+  }
+
+  function stopAndShowStart() {
+    stopAllAudio();
+    setListeningDisplayMode("start");
+  }
+
+  async function ensureAudioContext(): Promise<AudioContext | null> {
+    const AudioContextConstructor = getAudioContextConstructor();
+
+    if (!AudioContextConstructor) {
+      setWebAudioStatus("error");
+      setWebAudioError("このブラウザではAudioContextを利用できません。");
+      return null;
+    }
+
+    let audioContext = audioContextRef.current;
+
+    if (!audioContext || audioContext.state === "closed") {
+      audioContext = new AudioContextConstructor();
+      audioContextRef.current = audioContext;
+    }
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    return audioContext;
+  }
+
+  async function playSegmentWithWebAudio(
+    segment: EtTextSegment,
+    options?: { repeat?: boolean; continueAfterEnd?: boolean }
+  ) {
+    const repeat = Boolean(options?.repeat);
+    const continueAfterEnd = Boolean(options?.continueAfterEnd);
+    const audioBuffer = audioBufferRef.current;
+    const audioContext = await ensureAudioContext();
+
+    if (!audioContext || !audioBuffer) {
+      // Web Audioがまだ準備できていないときだけ、audioタグでフォールバック
+      await playSegmentFallback(segment, { repeat });
+      return;
+    }
+
+    stopAllAudio();
+
+    const duration = Math.max(0.01, segment.audioEnd - segment.audioStart);
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+
+    const token = playbackTokenRef.current + 1;
+    playbackTokenRef.current = token;
+
+    activeWebAudioRef.current = {
+      source,
+      startedAt: audioContext.currentTime,
+      offset: segment.audioStart,
+      duration,
+      segment,
+      repeat,
+      continueAfterEnd,
+      token,
+    };
+
+    setCurrentTime(segment.audioStart);
+    setCurrentSegmentIndex(
+      Math.max(
+        0,
+        sortedSegments.findIndex((item) => item.id === segment.id)
+      )
+    );
+    setIsSegmentPlaying(true);
+    setIsSegmentRepeating(repeat);
+    setListeningDisplayMode(repeat ? "repeat" : "play");
+
+    source.onended = () => {
+      const active = activeWebAudioRef.current;
+
+      if (!active || active.token !== token) return;
+
+      clearRaf();
+
+      const currentIndex = sortedSegments.findIndex(
+        (item) => item.id === segment.id
+      );
+      const nextSegment = sortedSegments[currentIndex + 1] ?? null;
+
+      if (active.continueAfterEnd) {
+        activeWebAudioRef.current = null;
+        setIsSegmentPlaying(false);
+        setIsSegmentRepeating(false);
+        setListeningDisplayMode("play");
+
+        if (nextSegment) {
+          void playContinuousFromSegment(nextSegment);
+        } else {
+          setCurrentTime(segment.audioEnd);
+        }
+
+        return;
+      }
+
+      if (active.repeat) {
+        activeWebAudioRef.current = null;
+        void playSegmentWithWebAudio(segment, { repeat: true });
+        return;
+      }
+
+      activeWebAudioRef.current = null;
+      setCurrentTime(segment.audioEnd);
+      setIsSegmentPlaying(false);
+      setIsSegmentRepeating(false);
+    };
+
+    source.start(audioContext.currentTime, segment.audioStart, duration);
+    updateWebAudioPlayhead(token);
+  }
+
+  async function playSegmentFallback(
+    segment: EtTextSegment,
+    options?: { repeat?: boolean; continueAfterEnd?: boolean }
+  ) {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const repeat = Boolean(options?.repeat);
+
+    stopWebAudioSegment();
+
+    audio.pause();
+    audio.currentTime = segment.audioStart;
+    setCurrentTime(segment.audioStart);
+    setListeningDisplayMode("play");
+    setIsSegmentPlaying(true);
+    setIsSegmentRepeating(repeat);
+    setListeningDisplayMode(repeat ? "repeat" : "play");
+
+    const stopAt = segment.audioEnd;
+
+    const handleTimeUpdate = () => {
+      if (audio.currentTime < stopAt) return;
+
+      if (repeat) {
+        audio.currentTime = segment.audioStart;
+        void audio.play();
+        return;
+      }
+
+      audio.pause();
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      setCurrentTime(stopAt);
+      setIsSegmentPlaying(false);
+      setIsSegmentRepeating(false);
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+
+    try {
+      await audio.play();
+    } catch {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      setIsSegmentPlaying(false);
+      setIsSegmentRepeating(false);
+    }
+  }
+
+  async function playSegmentByIndex(index: number, options?: { repeat?: boolean }) {
+    if (sortedSegments.length === 0) return;
+
+    const nextIndex = clamp(index, 0, sortedSegments.length - 1);
+    const segment = sortedSegments[nextIndex];
+
+    if (!segment) return;
+
+    setCurrentSegmentIndex(nextIndex);
+    await playSegmentWithWebAudio(segment, options);
+  }
+
+  async function playContinuousFromSegment(segment: EtTextSegment | null) {
+    const audio = audioRef.current;
+    if (!audio || !segment) return;
+
+    stopWebAudioSegment();
+
+    audio.currentTime = segment.audioStart;
+    setCurrentTime(segment.audioStart);
+    setCurrentSegmentIndex(
+      Math.max(
+        0,
+        sortedSegments.findIndex((item) => item.id === segment.id)
+      )
+    );
+
+    try {
+      await audio.play();
+    } catch {
+      // autoplay制限など。ユーザー操作中なら通常は通る
+    }
+  }
+
+  function handleHtmlAudioTimeUpdate() {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setCurrentTime(audio.currentTime);
+  }
+
+  function resetToFirstSegment() {
+    const firstSegment = sortedSegments[0] ?? null;
+    if (!firstSegment) return;
+
+    stopAllAudio();
+
+    const audio = audioRef.current;
+    if (audio) {
+      audio.currentTime = firstSegment.audioStart;
+    }
+
+    setCurrentSegmentIndex(0);
+    setCurrentTime(firstSegment.audioStart);
+    setListeningDisplayMode("start");
+  }
+
+  async function handleCentralListeningClick() {
+    const target = activeSegment ?? currentSegment;
+
+    if (!target) return;
+
+    // START状態のクリックはPLAY開始
+    if (listeningDisplayMode === "start") {
+      setListeningDisplayMode("play");
+      await playContinuousFromSegment(target);
+      return;
+    }
+
+    // PLAY状態のクリックだけREPEATへ移行
+    if (listeningDisplayMode === "play") {
+      setListeningDisplayMode("repeat");
+      await playSegmentWithWebAudio(target, { repeat: true });
+      return;
+    }
+
+    // REPEAT中のクリックはREPEAT維持
+    await playSegmentWithWebAudio(target, { repeat: true });
+  }
+
+  function handleCentralListeningDoubleClick() {
+    if (clickTimerRef.current != null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
+    const target = activeSegment ?? currentSegment;
+
+    if (!target) return;
+
+    // START/PLAY中のダブルクリックは、その位置からPLAY
+    if (listeningDisplayMode !== "repeat") {
+      setListeningDisplayMode("play");
+      void playContinuousFromSegment(target);
+      return;
+    }
+
+    // REPEAT中のダブルクリックは、今のsegmentを最後まで鳴らしてから
+    // 次のsegmentからPLAYへつなぐ。
+    setListeningDisplayMode("play");
+    void playSegmentWithWebAudio(target, {
+      repeat: false,
+      continueAfterEnd: true,
+    });
+  }
+
+  function handleCentralListeningSingleClick() {
+    if (clickTimerRef.current != null) {
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      void handleCentralListeningClick();
+      clickTimerRef.current = null;
+    }, 180);
+  }
+
+  async function handlePreviousSegment() {
+    if (sortedSegments.length === 0) return;
+
+    const nextIndex = clamp(currentSegmentIndex - 1, 0, sortedSegments.length - 1);
+    const segment = sortedSegments[nextIndex];
+
+    if (!segment) return;
+
+    setCurrentSegmentIndex(nextIndex);
+
+    if (listeningDisplayMode === "repeat") {
+      // REPEATモードでは、移動先segmentをリピート
+      await playSegmentWithWebAudio(segment, { repeat: true });
+      return;
+    }
+
+    // START/PLAYモードでは、移動先segmentの先頭から連続再生
+    setListeningDisplayMode("play");
+    await playContinuousFromSegment(segment);
+  }
+
+  async function handleNextSegment() {
+    if (sortedSegments.length === 0) return;
+
+    const nextIndex = clamp(currentSegmentIndex + 1, 0, sortedSegments.length - 1);
+    const segment = sortedSegments[nextIndex];
+
+    if (!segment) return;
+
+    setCurrentSegmentIndex(nextIndex);
+
+    if (listeningDisplayMode === "repeat") {
+      // REPEATモードでは、移動先segmentをリピート
+      await playSegmentWithWebAudio(segment, { repeat: true });
+      return;
+    }
+
+    // START/PLAYモードでは、移動先segmentの先頭から連続再生
+    setListeningDisplayMode("play");
+    await playContinuousFromSegment(segment);
+  }
+
+  async function handleReadingPlay() {
+    const target = activeSegment ?? currentSegment ?? sortedSegments[0] ?? null;
+
+    if (!target) return;
+
+    setListeningDisplayMode("play");
+    await playContinuousFromSegment(target);
+  }
+
+  async function handleReadingRepeat() {
+    const target = activeSegment ?? currentSegment ?? sortedSegments[0] ?? null;
+
+    if (!target) return;
+
+    setListeningDisplayMode("repeat");
+    await playSegmentWithWebAudio(target, { repeat: true });
+  }
+
+  async function handleCompactModeToggle() {
+    const target = activeSegment ?? currentSegment ?? sortedSegments[0] ?? null;
+
+    if (!target) return;
+
+    // 初期状態ではPLAY開始
+    if (listeningDisplayMode === "start") {
+      setListeningDisplayMode("play");
+      await playContinuousFromSegment(target);
+      return;
+    }
+
+    // PLAYからREPEATへ
+    if (listeningDisplayMode === "play") {
+      setListeningDisplayMode("repeat");
+      await playSegmentWithWebAudio(target, { repeat: true });
+      return;
+    }
+
+    // REPEATからPLAYへ。
+    // 現在鳴っているsegmentは途中で切らず、
+    // 最後まで鳴った後、次segmentから連続再生する。
+    setListeningDisplayMode("play");
+    setIsSegmentRepeating(false);
+
+    const activePlayback = activeWebAudioRef.current;
+
+    if (activePlayback) {
+      activePlayback.repeat = false;
+      activePlayback.continueAfterEnd = true;
+      return;
+    }
+
+    await playContinuousFromSegment(target);
+  }
+
+  function renderCompactController() {
+    const modeLabel =
+      listeningDisplayMode === "repeat" ? "REPEAT" : "PLAY";
+
+    const nextPracticeMode: PracticeMode =
+      practiceMode === "listening" ? "reading" : "listening";
+
+    const switchLabel =
+      practiceMode === "listening" ? "READING" : "LISTENING";
+
+    return (
+      <div className="mx-auto w-full max-w-md">
+        <div className="grid grid-cols-[44px_44px_minmax(88px,1fr)_44px_minmax(96px,auto)] items-center gap-2">
+          <button
+            type="button"
+            onClick={resetToFirstSegment}
+            className="flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white text-lg text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+            aria-label="最初のsegmentへ"
+            title="最初へ"
+          >
+            ⏮
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              void handlePreviousSegment();
+            }}
+            className="flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white text-lg text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+            aria-label="前のsegmentへ"
+            title="前へ"
+          >
+            ◀
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              void handleCompactModeToggle();
+            }}
+            className={
+              listeningDisplayMode === "repeat"
+                ? "h-11 rounded-md bg-black px-3 text-xs font-semibold tracking-[0.12em] text-red-500 hover:bg-slate-900 active:bg-black"
+                : "h-11 rounded-md bg-black px-3 text-xs font-semibold tracking-[0.12em] text-white hover:bg-slate-900 active:bg-black"
+            }
+            aria-label={`現在の再生モード: ${modeLabel}`}
+            title={
+              listeningDisplayMode === "repeat"
+                ? "PLAYモードへ戻る"
+                : listeningDisplayMode === "start"
+                  ? "連続再生を開始"
+                  : "REPEATモードへ切り替える"
+            }
+          >
+            {modeLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              void handleNextSegment();
+            }}
+            className="flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white text-lg text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+            aria-label="次のsegmentへ"
+            title="次へ"
+          >
+            ▶
+          </button>
+
+          <button
+            type="button"
+            onClick={() => switchMode(nextPracticeMode)}
+            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+          >
+            {switchLabel}
+          </button>
+        </div>
+
+        <div className="mt-2 flex justify-center">
+          <button
+            type="button"
+            onClick={stopAndShowStart}
+            className="flex h-9 min-w-16 items-center justify-center rounded-md bg-slate-900 px-5 text-base text-white hover:bg-slate-700 active:bg-black"
+            aria-label="停止"
+            title="停止"
+          >
+            ■
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function switchMode(nextMode: PracticeMode) {
+    stopAllAudio();
+    setActiveDictionaryKey(null);
+    setPracticeMode(nextMode);
+  }
+
+  function switchReadingInteractionMode(nextMode: ReadingInteractionMode) {
+    setActiveDictionaryKey(null);
+    setReadingInteractionMode(nextMode);
+  }
+
+  function renderDictionaryAwareText(
+    source: string,
+    keyPrefix: string
+  ): React.ReactNode[] {
+    const pattern = /\b[A-Za-z][A-Za-z'’-]*\b/g;
+    const runs: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let wordIndex = 0;
+
+    while ((match = pattern.exec(source)) !== null) {
+      if (match.index > lastIndex) {
+        runs.push(
+          <React.Fragment key={`${keyPrefix}-text-${lastIndex}`}>
+            {source.slice(lastIndex, match.index)}
+          </React.Fragment>
+        );
+      }
+
+      const word = match[0];
+      const cleanWord = word.replace(/[’']/g, "'");
+      const entry =
+        cleanWord.length >= 2
+          ? getBestParariEnglishGlossaryEntry(cleanWord)
+          : null;
+      const meaning = entry
+        ? formatParariEnglishGlossaryMeaning(entry)
+            .replace(/[{}]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+        : "";
+      const noteKey = `${keyPrefix}-word-${wordIndex}`;
+      const isOpen = activeDictionaryKey === noteKey;
+      const dictionaryEnabled = readingInteractionMode === "dictionary";
+
+      if (!meaning) {
+        runs.push(
+          <React.Fragment key={noteKey}>{word}</React.Fragment>
+        );
+      } else {
+        runs.push(
+          <span key={noteKey} className="relative inline-block align-baseline">
+            <button
+              type="button"
+              onPointerDown={(event) => {
+                if (dictionaryEnabled || event.shiftKey) {
+                  event.stopPropagation();
+                }
+              }}
+              onClick={(event) => {
+                if (!dictionaryEnabled && !event.shiftKey) {
+                  return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                setActiveDictionaryKey((current) =>
+                  current === noteKey ? null : noteKey
+                );
+              }}
+              onDoubleClick={(event) => {
+                if (dictionaryEnabled || event.shiftKey) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
+              className={
+                dictionaryEnabled
+                  ? "inline border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-4 hover:bg-amber-50"
+                  : "inline border-0 bg-transparent p-0 text-inherit"
+              }
+              style={{ font: "inherit" }}
+            >
+              {word}
+            </button>
+
+            {isOpen ? (
+              <span
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                }}
+                className="absolute left-1/2 top-full z-30 mt-2 w-64 -translate-x-1/2 rounded-2xl border border-neutral-200 bg-white p-3 text-left text-xs leading-5 text-neutral-700 shadow-xl"
+              >
+                {meaning}
+              </span>
+            ) : null}
+          </span>
+        );
+      }
+
+      lastIndex = match.index + word.length;
+      wordIndex += 1;
+    }
+
+    if (lastIndex < source.length) {
+      runs.push(
+        <React.Fragment key={`${keyPrefix}-text-last`}>
+          {source.slice(lastIndex)}
+        </React.Fragment>
+      );
+    }
+
+    return runs;
+  }
+
+  function renderReadingText() {
+    if (!data.text) return null;
+
+    if (sortedSegments.length === 0) {
+      return (
+        <div className="whitespace-pre-wrap leading-8 text-slate-800">
+          {renderDictionaryAwareText(data.text, "whole-text")}
+        </div>
+      );
+    }
+
+    const runs: React.ReactNode[] = [];
+    let cursor = 0;
+
+    sortedSegments.forEach((segment) => {
+      const start = clamp(segment.charStart, 0, data.text.length);
+      const end = clamp(segment.charEnd, start, data.text.length);
+
+      if (cursor < start) {
+        runs.push(
+          <span key={`plain-${segment.id}-${cursor}`}>
+            {renderDictionaryAwareText(
+              data.text.slice(cursor, start),
+              `plain-${segment.id}-${cursor}`
+            )}
+          </span>
+        );
+      }
+
+      const isActive =
+        currentTime >= segment.audioStart && currentTime < segment.audioEnd;
+
+      runs.push(
+        <span
+          key={segment.id}
+          className={
+            isActive
+              ? "rounded bg-yellow-200 px-0.5 text-slate-950"
+              : "rounded px-0.5"
+          }
+          onDoubleClick={
+            readingInteractionMode === "listen"
+              ? () => {
+                  void playSegmentWithWebAudio(segment, { repeat: true });
+                }
+              : undefined
+          }
+          title={`${formatTime(segment.audioStart)} - ${formatTime(
+            segment.audioEnd
+          )}`}
+        >
+          {renderDictionaryAwareText(
+            data.text.slice(start, end),
+            `segment-${segment.id}`
+          )}
+        </span>
+      );
+
+      cursor = end;
+    });
+
+    if (cursor < data.text.length) {
+      runs.push(
+        <span key="plain-last">
+          {renderDictionaryAwareText(
+            data.text.slice(cursor),
+            "plain-last"
+          )}
+        </span>
+      );
+    }
+
+    return (
+      <div className="whitespace-pre-wrap leading-8 text-slate-800">{runs}</div>
+    );
+  }
+
+  if (!data.audioUrl && !data.text) {
+    return (
+      <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+        ETTEXTの音声・本文がまだ設定されていません。
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={dictionaryRootRef}
+      className="space-y-4 rounded-md border border-slate-200 bg-white p-4"
+    >
+      <audio
+        ref={audioRef}
+        src={data.audioUrl || undefined}
+        controls={false}
+        className="hidden"
+        onTimeUpdate={handleHtmlAudioTimeUpdate}
+        onLoadedMetadata={handleHtmlAudioTimeUpdate}
+        onPlay={() => {
+          setListeningDisplayMode("play");
+          setIsSegmentRepeating(false);
+        }}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+        <div>
+          ETTEXT / {practiceMode === "listening" ? "Listening" : "Reading"} /{" "}
+          {formatTime(currentTime)}
+        </div>
+
+        <div>
+          Web Audio: {webAudioStatus}
+          {webAudioError ? (
+            <span className="ml-2 text-orange-700">{webAudioError}</span>
+          ) : null}
+        </div>
+      </div>
+
+      {practiceMode === "listening" ? (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleCentralListeningSingleClick}
+            onDoubleClick={handleCentralListeningDoubleClick}
+            className="flex min-h-[260px] w-full cursor-pointer select-none items-center justify-center rounded-xl bg-black shadow-inner hover:bg-black active:bg-slate-950"
+            aria-label="Listening再生エリア。クリックでPLAYまたはREPEAT、ダブルクリックでPLAY"
+            title=""
+          >
+            <span
+              className={
+                listeningDisplayMode === "repeat"
+                  ? "text-sm font-medium tracking-[0.24em] text-red-500"
+                  : "text-sm font-medium tracking-[0.24em] text-white/70"
+              }
+            >
+              {listeningDisplayMode === "repeat" ? "REPEAT" : "PLAY"}
+            </span>
+          </button>
+
+          {renderCompactController()}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => switchReadingInteractionMode("listen")}
+              className={
+                readingInteractionMode === "listen"
+                  ? "rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm"
+                  : "rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              }
+            >
+              🎧 LISTEN
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchReadingInteractionMode("dictionary")}
+              className={
+                readingInteractionMode === "dictionary"
+                  ? "rounded-full bg-amber-400 px-4 py-2 text-xs font-semibold text-amber-950 shadow-sm"
+                  : "rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+              }
+            >
+              📖 DICTIONARY
+            </button>
+          </div>
+
+          {renderReadingText()}
+
+          {renderCompactController()}
+
+          
+        </div>
+      )}
+    </div>
+  );
+}

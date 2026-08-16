@@ -1,0 +1,1576 @@
+expression,normalized_expression,entry_kind,meaning_ja_primary,meaning_ja_all,parari_level,importance,min_eiken_level,eiken_levels,label_raw_all,source_refs,row_count
+a lot of,a lot of,phrase,たくさんの,たくさんの,junior_high,1,5,5;4;3,熟語,5:555;4:96;3:95,3
+and so on,and so on,phrase,などなど,などなど,junior_high,1,5,5;4;3;pre2;2,熟語,5:588;4:388;3:1204;pre2:108;2:2099,5
+at noon,at noon,phrase,正午しょうごに,正午しょうごに,junior_high,1,5,5;4;3,熟語,5:502;4:390;3:862,3
+be interested in,be interested in,phrase,に興味きょうみがある,に興味きょうみがある,junior_high,1,5,5;4;3,熟語,5:625;4:721;3:127,3
+be(get) excited,be(get) excited,phrase,興奮こうふんをする,興奮こうふんをする,junior_high,1,5,5;4,,5:621;4:564,2
+between A and B,between a and b,phrase,AとBの間あいだ,AとBの間あいだ / AとBの間，AとBの中間,junior_high,1,5,5;4;3;2,熟語,5:624;4:677;3:167;2:636,4
+by bus,by bus,phrase,バスで,バスで,junior_high,1,5,5;4;3,熟語,5:460;4:470;3:719,3
+by car,by car,phrase,車くるまで,車くるまで,junior_high,1,5,5;4;3,熟語,5:461;4:573;3:835,3
+check ～ out,check ~ out,phrase,を確認かくにんする,を確認かくにんする,junior_high,1,5,5;4;3,熟語,5:611;4:720;3:961,3
+elementary school,elementary school,phrase,小学校しょうがっこう,小学校しょうがっこう,junior_high,1,5,5;4;3,熟語,5:628;4:374;4:398;3:773,4
+entrance ceremony,entrance ceremony,phrase,入学式にゅうがくしき,入学式にゅうがくしき,junior_high,1,5,5;4;3,熟語,5:630;4:641;3:775,3
+farewell party,farewell party,phrase,送別会そうべつかい,送別会そうべつかい,junior_high,1,5,5;4;3,熟語,5:618;4:485;3:772,3
+field trip,field trip,phrase,遠足えんそく,遠足えんそく,junior_high,1,5,5;4;3,熟語,5:591;4:453;3:763,3
+for here,for here,phrase,ここで食たべる,ここで食たべる,junior_high,1,5,5;4;3,熟語,5:549;4:602;3:1155,3
+get up,get up,phrase,起おきる,起おきる,junior_high,1,5,5;4;3,熟語,5:458;4:516;3:1111,3
+go back to,go back to,phrase,に戻もどる,に戻もどる,junior_high,1,5,5;4,,5:595;4:710,2
+go straight,go straight,phrase,まっすぐ行いく,まっすぐ行いく,junior_high,1,5,5;4;3,熟語,5:608;4:688;3:735,3
+have a headache,have a headache,phrase,頭痛ずつうがする,頭痛ずつうがする,junior_high,1,5,5;4;3,熟語,5:622;4:592;3:789,3
+help with,help with,phrase,を助たすける,を助たすける,junior_high,1,5,5;4;3,熟語,5:586;4:712;3:679,3
+high school,high school,phrase,高校こうこう,高校こうこう,junior_high,1,5,5;4,,5:605;4:686,2
+How about,how about,phrase,はどうですか？,はどうですか？,junior_high,1,5,5;4;3,熟語,5:582;4:696;3:30,3
+junior high school,junior high school,phrase,中学校ちゅうがっこう,中学校ちゅうがっこう,junior_high,1,5,5;4;3,名詞,5:631;4:645;3:1028,3
+learn a lot from,learn a lot from,phrase,からたくさん学まなぶ,からたくさん学まなぶ,junior_high,1,5,5;4;3,熟語,5:627;4:668;3:1193,3
+learn about,learn about,phrase,について学まなぶ,について学まなぶ,junior_high,1,5,5;4;3,熟語,5:602;4:591;3:747,3
+listen to,listen to,phrase,聴きく,聴きく,junior_high,1,5,5;4,,5:585;4:410,2
+look at,look at,phrase,を見みる,を見みる,junior_high,1,5,5;4;3,熟語,5:503;4:452;3:1192,3
+middle school,middle school,phrase,中学校ちゅうがっこう,中学校ちゅうがっこう,junior_high,1,5,5,,5:615,1
+on the way,on the way,phrase,道みちの途中とちゅうで,道みちの途中とちゅうで,junior_high,1,5,5;4;3,熟語,5:594;4:628;3:725,3
+on weekends,on weekends,phrase,週末しゅうまつに,週末しゅうまつに,junior_high,1,5,5;4;3,熟語,5:604;4:538;3:202,3
+on your left,on your left,phrase,左側ひだりがわに,左側ひだりがわに,junior_high,1,5,5;4,,5:612;4:715,2
+on your right,on your right,phrase,右側みぎがわに,右側みぎがわに,junior_high,1,5,5;4;3,熟語,5:617;4:606;3:783,3
+say again,say again,phrase,もう一度いちど言いう,もう一度いちど言いう,junior_high,1,5,5;4;3,熟語,5:584;4:404;3:675,3
+school festival,school festival,phrase,文化祭ぶんかさい,文化祭ぶんかさい,junior_high,1,5,5;4;3,名詞,5:620;4:678;3:486,3
+sit down,sit down,phrase,座すわる,座すわる,junior_high,1,5,5;4;3,熟語,5:553;4:504;3:1168,3
+stand up,stand up,phrase,立たつ,立たつ / 立つ，起きる,junior_high,1,5,5;4;2,熟語,5:550;4:598;2:828,3
+stay up,stay up,phrase,起おきている,起おきている / (夜遅くまで)起きている，覚醒している,junior_high,1,5,5;4;3;2,熟語,5:504;4:552;3:1075;2:882,4
+take a rest,take a rest,phrase,休憩きゅうけいする,休憩きゅうけいする,junior_high,1,5,5;4;3,熟語,5:609;4:530;3:954,3
+take out,take out,phrase,持もち帰かえり,持もち帰かえり,junior_high,1,5,5;4;3,熟語,5:548;4:425;3:889,3
+to go,to go,phrase,持もち帰かえり,持もち帰かえり,junior_high,1,5,5;4;3,熟語,5:379;4:553;3:1014,3
+wait for,wait for,phrase,を待まつ,を待まつ / を待つ，を待ち受ける,junior_high,1,5,5;4;3;2,熟語,5:552;4:643;3:571;2:601,4
+walk to,walk to,phrase,へ歩あるいて行いく,へ歩あるいて行いく,junior_high,1,5,5;4,,5:500;4:440,2
+with a smile,with a smile,phrase,笑顔えがおで,笑顔えがおで,junior_high,1,5,5;4;3,熟語,5:614;4:672;3:850,3
+worry about,worry about,phrase,について心配しんぱいする,について心配しんぱいする,junior_high,1,5,5;4;3,熟語,5:607;4:442;3:614,3
+write down,write down,phrase,書かく,書かく,junior_high,1,5,5;4;3,熟語,5:592;4:562;3:804,3
+a few,a few,phrase,いくらかの,いくらかの,junior_high,1,4,4;3,形容詞,4:385;3:558,2
+arrive at,arrive at,phrase,に到着とうちゃくする,に到着とうちゃくする,junior_high,1,4,4;3,熟語,4:387;3:895,2
+ask about,ask about,phrase,～について聞きく,～について聞きく,junior_high,1,4,4,,4:391,1
+ask for,ask for,phrase,～に求もとめる,～に求もとめる,junior_high,1,4,4,,4:443,1
+be born,be born,phrase,生うまれる,生うまれる,junior_high,1,4,4;3,熟語,4:662;3:206,2
+be famous for,be famous for,phrase,で有名ゆうめいである,で有名ゆうめいである,junior_high,1,4,4;3,熟語,4:723;3:854,2
+be scared of,be scared of,phrase,が怖こわい,が怖こわい,junior_high,1,4,4;3,熟語,4:386;3:1108,2
+call back,call back,phrase,折おり返かえし電話でんわする,折おり返かえし電話でんわする,junior_high,1,4,4;3,熟語,4:472;3:1166,2
+decide to,decide to,phrase,に決きめる,に決きめる,junior_high,1,4,4;3,熟語,4:484;3:1054,2
+even so,even so,phrase,それでも,それでも,junior_high,1,4,4;3,熟語,4:714;3:927,2
+every minutes,every minutes,phrase,毎分まいふんごとに,毎分まいふんごとに,junior_high,1,4,4;3,熟語,4:511;3:722,2
+for example,for example,phrase,例たとえば,例たとえば / 例えば，たとえ… としても,junior_high,1,4,4;3;2,熟語,4:396;3:1049;2:109,3
+foreign language,foreign language,phrase,外国語がいこくご,外国語がいこくご,junior_high,1,4,4;3,名詞,4:648;3:1050,2
+from now on,from now on,phrase,これから,これから / これからは / これから先も，今後も,junior_high,1,4,4;3;2,熟語,4:718;3:795;2:621,3
+from the experience,from the experience,phrase,経験けいけんから,経験けいけんから,junior_high,1,4,4;3,熟語,4:463;3:765,2
+from ～ to ～,from ~ to ~,phrase,～から～まで,～から～まで,junior_high,1,4,4;3,熟語,4:722;3:1132,2
+get along with,get along with,phrase,うまくやる,うまくやる / とうまくやっていく,junior_high,1,4,4;3;pre2;2,熟語,4:574;3:949;pre2:111;2:2187,4
+get tired,get tired,phrase,疲つかれる,疲つかれる,junior_high,1,4,4;3,熟語,4:719;3:1096,2
+go abroad,go abroad,phrase,外国がいこくに行いく,外国がいこくに行いく,junior_high,1,4,4;3,熟語,4:412;3:658,2
+go to,go to,phrase,へ行いく,へ行いく,junior_high,1,4,4;3,熟語,4:624;3:1157,2
+in the future,in the future,phrase,将来しょうらいに,将来しょうらいに,junior_high,1,4,4;3,熟語,4:629;3:356,2
+keep in touch,keep in touch,phrase,連絡れんらくを取とり合あう,連絡れんらくを取とり合あう,junior_high,1,4,4;3,熟語,4:619;3:856,2
+kind to,kind to,phrase,に対たいして親切しんせつな,に対たいして親切しんせつな,junior_high,1,4,4;3,熟語,4:505;3:1205,2
+leave for,leave for,phrase,へ出でかける,へ出でかける,junior_high,1,4,4;3,熟語,4:614;3:1176,2
+Let us(Let's),let us(let's),phrase,～しましょう,～しましょう,junior_high,1,4,4;3,熟語,4:535;3:767,2
+live abroad,live abroad,phrase,海外かいがいで生活せいかつする,海外かいがいで生活せいかつする,junior_high,1,4,4;3,熟語,4:717;3:852,2
+live in,live in,phrase,に住すむ,に住すむ,junior_high,1,4,4,,4:514,1
+look after,look after,phrase,の面倒めんどうを見みる,の面倒めんどうを見みる,junior_high,1,4,4;3,熟語,4:481;3:1169,2
+make own bed,make own bed,phrase,ベッドを整ととのえる,ベッドを整ととのえる,junior_high,1,4,4,,4:434,1
+most of,most of,phrase,のほとんど,のほとんど,junior_high,1,4,4;3,熟語,4:406;3:815,2
+on the wall,on the wall,phrase,壁かべに,壁かべに,junior_high,1,4,4;3,熟語,4:653;3:917,2
+one day,one day,phrase,ある日ひ,ある日ひ / ある日，いつか,junior_high,1,4,4;3;pre2;2,熟語,4:436;3:114;pre2:1356;2:289,4
+over there,over there,phrase,あそこに,あそこに,junior_high,1,4,4;3,熟語,4:639;3:100,2
+search for,search for,phrase,を探索たんさくする,を探索たんさくする / を探索する,junior_high,1,4,4;3;pre2,熟語,4:604;3:965;pre2:25,3
+show around,show around,phrase,に見みせて回まわる,に見みせて回まわる,junior_high,1,4,4,,4:428,1
+someone in need,someone in need,phrase,助たすけが必要ひつような人ひと,助たすけが必要ひつような人ひと / 助けたすけが必要ひつような人ひと,junior_high,1,4,4;3,熟語,4:550;3:1105,2
+stand by,stand by,phrase,そばに立たつ,そばに立たつ,junior_high,1,4,4;3,熟語,4:654;3:745,2
+stationery shop,stationery shop,phrase,文房具店ぶんぼうぐてん,文房具店ぶんぼうぐてん,junior_high,1,4,4;3,名詞,4:636;3:962,2
+take care of,take care of,phrase,の面倒めんどうを見みる,の面倒めんどうを見みる,junior_high,1,4,4;3,熟語,4:510;3:178,2
+take it back,take it back,phrase,取とり戻もどす,取とり戻もどす,junior_high,1,4,4;3,熟語,4:635;3:1180,2
+talk about,talk about,phrase,について話はなす,について話はなす,junior_high,1,4,4;3,熟語,4:572;3:304,2
+talk to,talk to,phrase,に話はなしかける,に話はなしかける,junior_high,1,4,4;3,熟語,4:395;3:450,2
+think of,think of,phrase,思おもい付つく,思おもい付つく,junior_high,1,4,4;3,熟語,4:473;3:391,2
+too ～ for,too ~ for,phrase,～すぎる,～すぎる,junior_high,1,4,4;3,熟語,4:502;3:696,2
+try hard,try hard,phrase,一生懸命いっしょうけんめいする,一生懸命いっしょうけんめいする,junior_high,1,4,4;3,熟語,4:716;3:1198,2
+try on,try on,phrase,試着しちゃくする,試着しちゃくする / 試着する,junior_high,1,4,4;3;pre2;2,熟語,4:547;4:724;3:123;pre2:144;2:2182,5
+try to,try to,phrase,しようとする,しようとする / 試ためす,junior_high,1,4,4;3,熟語,4:607;4:725;3:732,3
+work for,work for,phrase,のために働はたらく,のために働はたらく,junior_high,1,4,4;3,熟語,4:512;4:726;3:369,3
+a kind of,a kind of,phrase,一種いっしゅの,一種いっしゅの,junior_high,2,3,3,熟語,3:595,1
+a second,a second,phrase,少すこしの間あいだ,少すこしの間あいだ,junior_high,2,3,3,熟語,3:685,1
+according to,according to,phrase,によれば,によれば / によると，との情報によれば / によれば，に基づいて,junior_high,1,3,3;pre2;2,熟語;前置詞,3:884;pre2:267;2:36;2:2167,4
+after a while,after a while,phrase,しばらくして,しばらくして,junior_high,2,3,3,熟語,3:1122,1
+agree to,agree to,phrase,を承諾しょうだくする,を承諾しょうだくする,junior_high,2,3,3,熟語,3:791,1
+agree with,agree with,phrase,に賛成さんせいである,に賛成さんせいである / に賛成である，支持する,junior_high,1,3,3;pre2;2,熟語,3:461;pre2:1415;2:383,3
+all day long,all day long,phrase,一日中いちにちじゅう,一日中いちにちじゅう,junior_high,2,3,3,熟語,3:845,1
+all over,all over,phrase,の至いたる所ところに,の至いたる所ところに,junior_high,2,3,3,熟語,3:930,1
+all the time,all the time,phrase,常つねに,常つねに / いつも，いつでも,junior_high,1,3,3;pre1;1,熟語,3:1000;pre1:1764;1:2250,3
+an average of,an average of,phrase,の平均へいきん,の平均へいきん,junior_high,2,3,3,熟語,3:1079,1
+as a result of,as a result of,phrase,の結果けっか,の結果けっか,junior_high,2,3,3,熟語,3:673,1
+as a whole,as a whole,phrase,全体ぜんたいで,全体ぜんたいで / 全体の，すべてを含む，全般的,junior_high,2,3,3;1,熟語,3:1013;1:1672,2
+as soon as possible,as soon as possible,phrase,できるだけ早はやく,できるだけ早はやく,junior_high,2,3,3,熟語,3:1102,1
+as usual,as usual,phrase,いつものように,いつものように,junior_high,2,3,3,熟語,3:536,1
+as well,as well,phrase,同様どうように,同様どうように / 同様に，その上,junior_high,1,3,3;pre2;2,熟語;副詞,3:1045;pre2:121;2:610,3
+ask 人 about,ask 人 about,phrase,人ひとに～について聞きく,人ひとに～について聞きく,junior_high,2,3,3,熟語,3:1150,1
+ask 人 for,ask 人 for,phrase,人ひとに求もとめる,人ひとに求もとめる,junior_high,2,3,3,熟語,3:1002,1
+at first,at first,phrase,最初さいしょは,最初さいしょは / 最初は，初めに,junior_high,1,3,3;pre2;2,熟語,3:585;pre2:4;2:540,3
+at last,at last,phrase,ついに,ついに / ついに，やっと,junior_high,1,3,3;pre2;2,熟語,3:619;pre2:1318;2:234,3
+at least,at least,phrase,少すくなくとも,少すくなくとも / 少なくとも，最低限,junior_high,2,3,3;2,熟語,3:1165;2:863,2
+at most,at most,phrase,多おおくとも,多おおくとも / 多くとも，せいぜい,junior_high,1,3,3;pre2;2,熟語,3:724;pre2:109;2:447;2:2089,4
+at that time,at that time,phrase,あの時ときは,あの時ときは / あの時は，そのとき,junior_high,1,3,3;pre2;2,熟語,3:599;pre2:1349;2:279,3
+be about to,be about to,phrase,する直前ちょくぜんである,する直前ちょくぜんである,junior_high,2,3,3,熟語,3:918,1
+be afraid of,be afraid of,phrase,を恐おそれる,を恐おそれる,junior_high,2,3,3,熟語,3:347,1
+be amazed at,be amazed at,phrase,に驚おどろかされる,に驚おどろかされる,junior_high,2,3,3,熟語,3:1038,1
+be aware of,be aware of,phrase,に気づきづいている,に気づきづいている / に気づいている，認識している,junior_high,2,3,3;2,熟語,3:1179;2:685,2
+be concerned with,be concerned with,phrase,に関係かんけいしている,に関係かんけいしている / に関係している，関連している,junior_high,1,3,3;pre2;2,熟語,3:941;pre2:1456;2:443,3
+be different from,be different from,phrase,とは異ことなる,とは異ことなる,junior_high,2,3,3,熟語,3:435,1
+be excited,be excited,phrase,興奮こうふんをする,興奮こうふんをする,junior_high,2,3,3,熟語,3:781,1
+be familiar with,be familiar with,phrase,に馴染なじみがある,に馴染なじみがある / に馴染みがある,junior_high,2,3,3;2,熟語,3:1145;2:528,2
+be full of,be full of,phrase,で一杯いっぱいの,で一杯いっぱいの,junior_high,2,3,3,熟語,3:1196,1
+be good at,be good at,phrase,～が上手じょうずである,～が上手じょうずである / ～が上手である,junior_high,2,3,3;pre2,熟語,3:375;pre2:122,2
+be in danger of,be in danger of,phrase,の危険きけんにさらされている,の危険きけんにさらされている,junior_high,2,3,3,熟語,3:900,1
+be in need of,be in need of,phrase,を必要ひつようとする,を必要ひつようとする,junior_high,2,3,3,熟語,3:991,1
+be in trouble,be in trouble,phrase,困こまっている,困こまっている,junior_high,2,3,3,熟語,3:829,1
+be kind to,be kind to,phrase,～に親切しんせつにする,～に親切しんせつにする,junior_high,2,3,3,熟語,3:458,1
+be known as,be known as,phrase,として知しられている,として知しられている / として知られている，として認知されている,junior_high,1,3,3;pre2;2,熟語,3:1006;pre2:1259;2:118,3
+be likely to,be likely to,phrase,する可能性かのうせいが高たかい,する可能性かのうせいが高たかい / する可能性が高い，しそうになる / しそうである，する可能性が高い，ありそうな,junior_high,1,3,3;pre2;2;pre1;1,熟語,3:988;pre2:1226;2:20;pre1:2863;1:1429,5
+be made of,be made of,phrase,で出来できている,で出来できている,junior_high,2,3,3,熟語,3:805,1
+be proud of,be proud of,phrase,を誇ほこりに思おもう,を誇ほこりに思おもう,junior_high,2,3,3,熟語,3:227,1
+be ready for,be ready for,phrase,の用意よういができている,の用意よういができている,junior_high,2,3,3,熟語,3:847,1
+be responsible for,be responsible for,phrase,に対たいして責任せきにんがある,に対たいして責任せきにんがある / に対して責任がある,junior_high,2,3,3;pre2,熟語,3:1160;pre2:123,2
+be satisfied with,be satisfied with,phrase,に満足まんぞくしている,に満足まんぞくしている,junior_high,2,3,3,熟語,3:1047,1
+be sick of,be sick of,phrase,にうんざりしてる,にうんざりしてる / にうんざりしている,junior_high,2,3,3;pre2,熟語,3:942;pre2:136,2
+because of,because of,phrase,～が理由で,～が理由で / ～が理由で，目的のために,junior_high,1,3,3;pre2;2,熟語,3:59;pre2:1459;2:448,3
+believe in,believe in,phrase,を信しんじる,を信しんじる / を信じる，を信用する / を信じる，信用する,junior_high,1,3,3;2;pre1;1,熟語,3:784;2:534;pre1:1902;1:48,4
+believe it or not,believe it or not,phrase,信しんじられないだろうけど,信しんじられないだろうけど / 信じられるか，そうでないか，信頼できるか,junior_high,2,3,3;1,熟語,3:867;1:1880,2
+belong to,belong to,phrase,に属ぞくしている,に属ぞくしている,junior_high,2,3,3,熟語,3:1058,1
+both of,both of,phrase,二つふたつとも,二つふたつとも,junior_high,2,3,3,熟語,3:729,1
+by the way,by the way,phrase,ところで,ところで,junior_high,2,3,3,熟語,3:1093,1
+carbon dioxide,carbon dioxide,phrase,二酸化炭素にさんかたんそ,二酸化炭素にさんかたんそ / 二酸化炭素，CO2,junior_high,2,3,3;2,名詞,3:976;2:627,2
+care for,care for,phrase,の面倒めんどうを見みる,の面倒めんどうを見みる,junior_high,2,3,3,熟語,3:790,1
+check out,check out,phrase,を調査ちょうさする,を調査ちょうさする,junior_high,2,3,3,熟語,3:937,1
+city hall,city hall,phrase,市庁舎しちょうしゃ,市庁舎しちょうしゃ,junior_high,2,3,3,名詞,3:195,1
+count on,count on,phrase,を当あてにする,を当あてにする / に頼る，を当てにする,junior_high,1,3,3;pre1;1,熟語,3:1035;pre1:1344;1:1156,3
+day after day,day after day,phrase,毎日まいにち,毎日まいにち,junior_high,2,3,3,熟語,3:922,1
+day in，day out,"day in,day out",phrase,来くる日ひも来くる日ひも,来くる日ひも来くる日ひも,junior_high,2,3,3,熟語,3:967,1
+depend on,depend on,phrase,に依存いぞんする,に依存いぞんする / に頼る，依存する,junior_high,1,3,3;pre2;2,熟語,3:981;pre2:1413;2:381,3
+die out,die out,phrase,絶滅ぜつめつする,絶滅ぜつめつする / 廃れる，消滅していく / 廃れる，流行が過ぎる，死に絶える,junior_high,1,3,3;pre1;1,熟語,3:1167;pre1:2139;1:1688,3
+do a favor,do a favor,phrase,に頼たのみ事ごとを聞きく,に頼たのみ事ごとを聞きく,junior_high,2,3,3,熟語,3:887,1
+drop by,drop by,phrase,に立たち寄よる,"に立たち寄よる / ちょっと立ち寄る, 立ち寄る / に立ち寄る，短時間訪れる，少し顔を出す",junior_high,1,3,3;pre2;2;pre1;1,熟語,3:1029;pre2:8;2:493;pre1:1803;1:1664,5
+drop out,drop out,phrase,中退ちゅうたいする,中退ちゅうたいする,junior_high,2,3,3,熟語,3:682,1
+each other,each other,phrase,お互たがいに,お互たがいに / お互い，それぞれ,junior_high,1,3,3;pre2;2,熟語,3:230;pre2:1402;2:363,3
+eat out,eat out,phrase,外食がいしょくする,外食がいしょくする,junior_high,2,3,3,熟語,3:736,1
+electronic device,electronic device,phrase,電子機器でんしきき,電子機器でんしきき,junior_high,2,3,3,熟語,3:743,1
+encourage to ～,encourage to ~,phrase,に～するように促うながす,に～するように促うながす,junior_high,2,3,3,熟語,3:948,1
+enough to,enough to,phrase,するのに十分じゅうぶん,するのに十分じゅうぶん,junior_high,2,3,3,熟語,3:979,1
+even if,even if,phrase,たとえ～だとしても,たとえ～だとしても / たとえ～だとしても，仮に～であっても,junior_high,2,3,3;2,接続詞;熟語,3:1149;2:2219,2
+every year,every year,phrase,毎年まいとし,毎年まいとし,junior_high,2,3,3,熟語,3:503,1
+fall asleep,fall asleep,phrase,眠ねむる,眠ねむる,junior_high,2,3,3,熟語,3:1052,1
+fall in love with,fall in love with,phrase,に恋こいをする,に恋こいをする,junior_high,2,3,3,熟語,3:898,1
+far from,far from,phrase,～から遠とおい,～から遠とおい,junior_high,2,3,3,熟語,3:270,1
+feel free to,feel free to,phrase,気軽きがるにする,気軽きがるにする,junior_high,2,3,3,熟語,3:792,1
+fill in,fill in,phrase,に必要事項ひつようじこうを記入きにゅうする,に必要事項ひつようじこうを記入きにゅうする,junior_high,2,3,3,熟語,3:993,1
+for a while,for a while,phrase,暫しばらくの間あいだ,暫しばらくの間あいだ,junior_high,2,3,3,熟語,3:1073,1
+for free,for free,phrase,無料むりょうで,無料むりょうで / 無料で，無償で,junior_high,2,3,3;2,熟語,3:622;2:558,2
+for instance,for instance,phrase,例たとえば,例たとえば / 例えば，たとえ… としても,junior_high,1,3,3;pre2;2;pre1,熟語,3:1025;pre2:1254;2:106;pre1:884,4
+fossil fuel,fossil fuel,phrase,化石燃料かせきねんりょう,化石燃料かせきねんりょう / 化石燃料,junior_high,1,3,3;pre2;2,熟語;名詞,3:751;pre2:1426;2:402,3
+from A to B,from a to b,phrase,AからBまで,AからBまで,junior_high,2,3,3,熟語,3:935,1
+from now,from now,phrase,これからは,これからは,junior_high,2,3,3,熟語,3:1069,1
+get attention,get attention,phrase,注意ちゅういを引ひく,注意ちゅういを引ひく,junior_high,2,3,3,熟語,3:811,1
+get fired,get fired,phrase,解雇かいこされる,解雇かいこされる,junior_high,2,3,3,熟語,3:744,1
+get lost,get lost,phrase,道みちに迷まよう,道みちに迷まよう,junior_high,2,3,3,熟語,3:998,1
+get married,get married,phrase,結婚けっこんする,結婚けっこんする,junior_high,2,3,3,熟語,3:194,1
+get off,get off,phrase,降おりる,降おりる,junior_high,2,3,3,熟語,3:349,1
+get on,get on,phrase,乗のり込こむ,乗のり込こむ,junior_high,2,3,3,熟語,3:759,1
+get out,get out,phrase,外そとへ出でる,外そとへ出でる,junior_high,2,3,3,熟語,3:870,1
+get out of,get out of,phrase,の外そとに出でる,の外そとに出でる,junior_high,2,3,3,熟語,3:1067,1
+get over,get over,phrase,を乗のりこえる,を乗のりこえる / を乗りこえる，克服する,junior_high,2,3,3;2,熟語,3:945;2:2223,2
+get rid of,get rid of,phrase,を取とり除のぞく,を取とり除のぞく / を取り除く，除去する / 取り除く,junior_high,1,3,3;pre2;2,熟語,3:1040;pre2:209;2:615;2:2012,4
+give a ride,give a ride,phrase,を車くるまに乗のせる,を車くるまに乗のせる,junior_high,2,3,3,熟語,3:720,1
+go ahead,go ahead,phrase,先さきに行いく,先さきに行いく,junior_high,2,3,3,熟語,3:876,1
+go through,go through,phrase,人生じんせいを送おくる,人生じんせいを送おくる,junior_high,2,3,3,熟語,3:1020,1
+hand out,hand out,phrase,を配くばる,を配くばる / 配布する，分け与える,junior_high,2,3,3;1,熟語,3:964;1:1744,2
+have to,have to,phrase,～しなければならない,～しなければならない,junior_high,2,3,3,熟語,3:87,1
+hear from,hear from,phrase,から連絡れんらくがある,から連絡れんらくがある / から便りがある，連絡をもらう,junior_high,1,3,3;pre2;2,熟語,3:977;pre2:433;2:238,3
+hope to,hope to,phrase,したいと思おもう,したいと思おもう,junior_high,2,3,3,熟語,3:956,1
+how often,how often,phrase,どのぐらいの頻度ひんど,どのぐらいの頻度ひんど,junior_high,2,3,3,熟語,3:117,1
+human being,human being,phrase,人間にんげん,人間にんげん,junior_high,2,3,3,名詞,3:865,1
+human rights,human rights,phrase,人権じんけん,人権じんけん,junior_high,2,3,3,名詞,3:910,1
+hurry up,hurry up,phrase,急いそぐ,急いそぐ,junior_high,2,3,3,熟語,3:246,1
+in a hurry,in a hurry,phrase,急いそいで,急いそいで / 急いで,junior_high,2,3,3;pre2,熟語,3:831;pre2:141,2
+in advance,in advance,phrase,前まえもって,前まえもって / 前もって，事前に / 前もって，あらかじめ,junior_high,1,3,3;pre2;2;pre1;1,熟語,3:681;pre2:140;2:287;pre1:1735;1:2012,5
+in case of,in case of,phrase,の場合ばあいには,の場合ばあいには,junior_high,2,3,3,熟語,3:794,1
+in case ～,in case ~,phrase,～した場合ばあいには,～した場合ばあいには,junior_high,2,3,3,熟語,3:801,1
+in conclusion,in conclusion,phrase,結論けつろんとして,結論けつろんとして / 結論として，最終的に,junior_high,2,3,3;1,熟語,3:814;1:3568,2
+in detail,in detail,phrase,詳細しょうさいに,詳細しょうさいに / 詳細に，具体的に / 詳細に，詳しく,junior_high,1,3,3;pre2;2;1,熟語,3:968;pre2:1252;2:101;1:2146,4
+in fact,in fact,phrase,実際じっさいには,"実際じっさいには / 実際には, 実際 / 実際，実際には",junior_high,1,3,3;2;pre1;1,熟語,3:398;2:501;pre1:1346;1:1980,4
+in front of,in front of,phrase,の前まえに,の前まえに,junior_high,2,3,3,熟語,3:85,1
+in good shape,in good shape,phrase,良い状態よいじょうたいで,良い状態よいじょうたいで,junior_high,2,3,3,熟語,3:992,1
+in season,in season,phrase,旬しゅんで,旬しゅんで,junior_high,2,3,3,熟語,3:670,1
+in those days,in those days,phrase,当時とうじは,当時とうじは,junior_high,2,3,3,熟語,3:543,1
+instead of,instead of,phrase,の代かわりに,の代かわりに / の代わりに，代わって / のかわりに,junior_high,1,3,3;pre2;2,熟語,3:1126;pre2:210;2:751;2:2199,4
+just a moment,just a moment,phrase,少すこしの間あいだ,少すこしの間あいだ,junior_high,2,3,3,熟語,3:441,1
+just in case,just in case,phrase,もしもの場合ばあいに備そなえて,もしもの場合ばあいに備そなえて,junior_high,2,3,3,熟語,3:761,1
+less than,less than,phrase,未満みまん,未満みまん,junior_high,2,3,3,熟語,3:623,1
+look for,look for,phrase,を探さがす,を探さがす,junior_high,2,3,3,熟語,3:56,1
+look forward to,look forward to,phrase,～を楽たのしみにする,"～を楽たのしみにする / ～を楽しみにする, 期待する",junior_high,2,3,3;2,熟語,3:145;2:503,2
+lots of,lots of,phrase,たくさんの,たくさんの,junior_high,2,3,3,熟語,3:188,1
+make all the difference,make all the difference,phrase,大おおきな違ちがいを生うむ,大おおきな違ちがいを生うむ,junior_high,2,3,3,熟語,3:797,1
+more and more,more and more,phrase,ますます多おおくの,ますます多おおくの / ますます多くの，更に,junior_high,1,3,3;pre2;2,熟語,3:688;pre2:1236;2:62,3
+more than,more than,phrase,より多おおい,より多おおい,junior_high,2,3,3,熟語,3:252,1
+need to,need to,phrase,～する必要ひつようがある,～する必要ひつようがある,junior_high,2,3,3,熟語,3:94,1
+not always,not always,phrase,いつもとは限かぎらない,いつもとは限かぎらない / 必ずしもではない，いつもとは限らない,junior_high,1,3,3;pre2;2,熟語,3:777;pre2:1348;2:277,3
+not at all,not at all,phrase,全まったくない,全まったくない,junior_high,2,3,3,熟語,3:603,1
+not only but also ～,not only but also ~,phrase,だけでなく～もまた,だけでなく～もまた,junior_high,2,3,3,熟語,3:800,1
+nuclear power,nuclear power,phrase,原子力げんしりょく,原子力げんしりょく,junior_high,2,3,3,名詞,3:1187,1
+on foot,on foot,phrase,歩あるいて,歩あるいて / 歩いて,junior_high,2,3,3;pre2,熟語,3:896;pre2:127,2
+on the other hand,on the other hand,phrase,一方いっぽうで,一方いっぽうで / 一方で，他方で,junior_high,1,3,3;pre2;2,熟語;接続詞,3:881;pre2:1241;2:76,3
+one by one,one by one,phrase,一ひとつずつ,一ひとつずつ,junior_high,2,3,3,熟語,3:844,1
+out of order,out of order,phrase,故障こしょうして,故障こしょうして / 故障して / 故障中で，順番が乱れて,junior_high,1,3,3;pre2;1,熟語,3:909;pre2:128;1:2652,3
+paper crane,paper crane,phrase,折おり鶴づる,折おり鶴づる,junior_high,2,3,3,名詞,3:940,1
+parking lot,parking lot,phrase,駐車場ちゅうしゃじょう,駐車場ちゅうしゃじょう / 駐車場，停車場 / 駐車場，停車場，車を停める場所,junior_high,1,3,3;pre2;2;1,名詞,3:1191;pre2:1408;2:372;1:1488,4
+pass by,pass by,phrase,通とおり過すぎる,通とおり過すぎる,junior_high,2,3,3,熟語,3:1130,1
+pick up,pick up,phrase,拾ひろう,拾ひろう,junior_high,2,3,3,熟語,3:274,1
+plastic bag,plastic bag,phrase,ビニールぶくろ,ビニールぶくろ / ビニール袋，プラスチック袋,junior_high,1,3,3;pre2;2,名詞,3:1026;pre2:1427;2:404,3
+police officer,police officer,phrase,警察官けいさつかん,警察官けいさつかん,junior_high,2,3,3,名詞,3:1140,1
+prefer A to B,prefer a to b,phrase,BよりAを好このむ,BよりAを好このむ,junior_high,2,3,3,熟語,3:841,1
+rather than,rather than,phrase,ではなく,ではなく / よりむしろ，ではなくて,junior_high,1,3,3;pre2;2,熟語;接続詞,3:807;pre2:1271;2:133,3
+relate to ～,relate to ~,phrase,を～に関係かんけいさせる,を～に関係かんけいさせる,junior_high,2,3,3,接続詞,3:1080,1
+right away,right away,phrase,直ただちに、すぐに,直ただちに、すぐに,junior_high,2,3,3,熟語,3:266,1
+run away,run away,phrase,逃にげ去さる,逃にげ去さる / 逃げ去る，逃亡する,junior_high,2,3,3;2,熟語,3:353;2:530,2
+run out of,run out of,phrase,を使つかい果はたす,を使つかい果はたす / を使い果たす，使い尽くす / を使い果たす，消耗する,junior_high,1,3,3;pre2;2,熟語,3:810;pre2:118;2:2156,3
+show 人 around,show 人 around,phrase,人ひとに見みせて回まわる,人ひとに見みせて回まわる,junior_high,2,3,3,熟語,3:1171,1
+so far,so far,phrase,これまでは,これまでは,junior_high,2,3,3;pre2,熟語,3:843;pre2:119,2
+so that ～,so that ~,phrase,するために,するために,junior_high,2,3,3,熟語,3:893,1
+so ～ that ～,so ~ that ~,phrase,とてもなので～だ,とてもなので～だ / とても…なので,junior_high,2,3,3;pre2,熟語;接続詞,3:698;pre2:643,2
+sold out,sold out,phrase,売うり切きれ,売うり切きれ,junior_high,2,3,3,熟語,3:177,1
+stay with,stay with,phrase,～と一緒いっしょに過すごす,～と一緒いっしょに過すごす,junior_high,2,3,3,熟語,3:365,1
+such as,such as,phrase,のような,のような / のような，似たような,junior_high,1,3,3;pre2;2,熟語,3:766;pre2:1284;2:154,3
+take part in,take part in,phrase,に参加さんかする,に参加さんかする / に参加する，参与する,junior_high,1,3,3;pre2;2,熟語,3:219;pre2:21;2:565,3
+tell to ～,tell to ~,phrase,に～するように言いう,に～するように言いう,junior_high,2,3,3,熟語,3:741,1
+this way,this way,phrase,このように,このように,junior_high,2,3,3,熟語,3:1113,1
+thousands of,thousands of,phrase,何千なんぜんもの,何千なんぜんもの,junior_high,2,3,3,熟語,3:697,1
+too to ～,too to ~,phrase,～するには過すぎる,～するには過すぎる,junior_high,2,3,3,熟語,3:1127,1
+turn off,turn off,phrase,を消けす,を消けす,junior_high,2,3,3,熟語,3:342,1
+turn on,turn on,phrase,を点つける,を点つける,junior_high,2,3,3,熟語,3:340,1
+up to,up to,phrase,まで,まで / ～まで，～に至る,junior_high,1,3,3;pre2;2,熟語,3:1164;pre2:1423;2:399,3
+up until,up until,phrase,まで,まで,junior_high,2,3,3,熟語,3:691,1
+what about,what about,phrase,～はどうですか,～はどうですか,junior_high,2,3,3,熟語,3:52,1
+what to,what to,phrase,何なにをすべきか,何なにをすべきか,junior_high,2,3,3,熟語,3:824,1
+would like to ～,would like to ~,phrase,に～してほしい,に～してほしい,junior_high,2,3,3,熟語,3:737,1
+a number of,a number of,phrase,たくさんの，多数の,たくさんの，多数の,high_school,2,pre2,pre2;2,熟語,pre2:1225;2:19,2
+a variety of,a variety of,phrase,いろいろな，さまざまな,いろいろな，さまざまな,high_school,2,pre2,pre2;2,熟語,pre2:1261;2:121,2
+after all,after all,phrase,結局，最終的に,結局，最終的に,high_school,1,pre2,pre2;2;pre1,熟語,pre2:134;2:367;pre1:366,3
+all the way,all the way,phrase,はるばる，わざわざ,はるばる，わざわざ,high_school,2,pre2,pre2;2,熟語,pre2:1386;2:343,2
+answer for,answer for,phrase,責任を負う，引き受ける,責任を負う，引き受ける,high_school,2,pre2,pre2;2,熟語,pre2:1346;2:273,2
+appeal to,appeal to,phrase,に訴える,に訴える,high_school,2,pre2,pre2,熟語,pre2:120,1
+apply to,apply to,phrase,に適用する，に応用する,に適用する，に応用する,high_school,2,pre2,pre2;2,熟語,pre2:1297;2:194,2
+as a result,as a result,phrase,結果として，その結果,結果として，その結果,high_school,2,pre2,pre2;2,接続詞,pre2:1;2:1,2
+as to,as to,phrase,に関して，について,に関して，について,high_school,2,pre2,pre2;2,接続詞,pre2:1370;2:317,2
+at a time,at a time,phrase,１度に，同時に,１度に，同時に,high_school,2,pre2,pre2;2,熟語,pre2:1407;2:371,2
+at any cost,at any cost,phrase,どんな犠牲を払っても，何がなんでも,どんな犠牲を払っても，何がなんでも,high_school,2,pre2,pre2;2,熟語,pre2:1343;2:270,2
+at one time,at one time,phrase,一度に，同時に,一度に，同時に,high_school,2,pre2,pre2;2,熟語,pre2:1385;2:342,2
+at present,at present,phrase,現在は，今は,現在は，今は,high_school,2,pre2,pre2;2,熟語,pre2:1366;2:309,2
+at the same time,at the same time,phrase,同時に，一斉に,同時に，一斉に,high_school,2,pre2,pre2;2,熟語,pre2:1257;2:116,2
+bank account,bank account,phrase,銀行口座，貯金口座,銀行口座，貯金口座 / 銀行口座，銀行での預金や取引のアカウント，銀行預金口座，口座,high_school,1,pre2,pre2;2;1,熟語,pre2:1295;2:186;1:1741,3
+be adjusted to,be adjusted to,phrase,に調整する，調節する,に調整する，調節する,high_school,2,pre2,pre2;2,熟語,pre2:1396;2:357,2
+be affected by,be affected by,phrase,の影響を受ける，影響される,の影響を受ける，影響される,high_school,2,pre2,pre2;2,熟語,pre2:1351;2:281,2
+be awake,be awake,phrase,目を覚ましている，覚醒している,目を覚ましている，覚醒している,high_school,2,pre2,pre2;2,熟語,pre2:1391;2:349,2
+be beneficial to,be beneficial to,phrase,に有益である，役立つ,に有益である，役立つ,high_school,2,pre2,pre2;2,熟語,pre2:1399;2:360,2
+be born with,be born with,phrase,生まれつき，生来の,生まれつき，生来の,high_school,2,pre2,pre2;2,熟語,pre2:1273;2:136,2
+be filled with,be filled with,phrase,で満たされている，充実している,で満たされている，充実している,high_school,2,pre2,pre2;2,熟語,pre2:105;2:430,2
+be popular with,be popular with,phrase,に人気がある,に人気がある,high_school,2,pre2,pre2,熟語,pre2:135,1
+be unlikely to,be unlikely to,phrase,起こりそうにない,起こりそうにない,high_school,2,pre2,pre2,熟語,pre2:137,1
+break into,break into,phrase,に押し入る，侵入する,に押し入る，侵入する,high_school,2,pre2,pre2;2,熟語,pre2:1389;2:347,2
+by chance,by chance,phrase,偶然に，たまたま,偶然に，たまたま,high_school,2,pre2,pre2;2,熟語,pre2:1239;2:69,2
+by the time,by the time,phrase,するまでには,するまでには,high_school,2,pre2,pre2,接続詞,pre2:101,1
+call it a day,call it a day,phrase,終了する，仕事を切り上げる,終了する，仕事を切り上げる / 終わる，終了する,high_school,1,pre2,pre2;2;1,熟語,pre2:1390;2:348;1:2265,3
+call off,call off,phrase,を中止する,を中止する,high_school,1,pre2,pre2;2;pre1,熟語,pre2:124;2:2193;pre1:3031,3
+capable of,capable of,phrase,ができる，可能で,ができる，可能で,high_school,2,pre2,pre2;2,熟語,pre2:1309;2:220,2
+catch up with,catch up with,phrase,に追いつく，付いていく,に追いつく，付いていく,high_school,2,pre2,pre2;2,熟語,pre2:138;2:916,2
+check for,check for,phrase,を調べる，確認する,を調べる，確認する,high_school,2,pre2,pre2;2,熟語,pre2:1403;2:366,2
+claim to do,claim to do,phrase,することを主張する,することを主張する,high_school,2,pre2,pre2;2,熟語,pre2:1414;2:382,2
+come up with,come up with,phrase,を思いつく，を考え出す,を思いつく，を考え出す,high_school,1,pre2,pre2;2;1,熟語,pre2:26;2:393;2:2109;1:3795,4
+concentrate on,concentrate on,phrase,に集中する，専念する,に集中する，専念する,high_school,2,pre2,pre2;2,熟語,pre2:1447;2:433,2
+cut down on,cut down on,phrase,を切り詰める，節約する,を切り詰める，節約する / 削減する，減らす,high_school,1,pre2,pre2;2;1,熟語,pre2:1425;2:401;1:4121,3
+differ from,differ from,phrase,とは違って，との違い,とは違って，との違い,high_school,2,pre2,pre2;2,熟語,pre2:139;2:860,2
+do me a favor,do me a favor,phrase,お願いをする,お願いをする,high_school,2,pre2,pre2,熟語,pre2:110,1
+do well,do well,phrase,うまくやる，成功する,うまくやる，成功する,high_school,2,pre2,pre2;2,熟語,pre2:1465;2:461,2
+dress up,dress up,phrase,着飾る,着飾る,high_school,2,pre2,pre2,熟語,pre2:22,1
+drop off,drop off,phrase,落ちる，落とす,落ちる，落とす / 外れる，降りる,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1453;2:439;pre1:1504;1:2364,4
+end up,end up,phrase,最終的に，することになる,最終的に，することになる,high_school,1,pre2,pre2;2;pre1;1,動詞;熟語,pre2:1227;2:32;pre1:9;1:1861,4
+even though,even though,phrase,～だけれども，～であるのに,～だけれども，～であるのに,high_school,2,pre2,pre2;2,接続詞,pre2:106;2:638,2
+far off,far off,phrase,はるかかなたの，遠くの,はるかかなたの，遠くの,high_school,2,pre2,pre2;2,熟語,pre2:1451;2:437,2
+fill out,fill out,phrase,書き込む，記入する,書き込む，記入する / に必要事項を記入する，記載する,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:148;2:623;pre1:1992;1:1610,4
+find out,find out,phrase,見つけ出す,見つけ出す,high_school,2,pre2,pre2,熟語,pre2:24,1
+five senses,five senses,phrase,五感，感覚器官,五感，感覚器官,high_school,2,pre2,pre2;2,熟語,pre2:1357;2:290,2
+float,float,phrase,浮かぶ,浮かぶ,high_school,2,pre2,pre2,熟語,pre2:465,1
+for fear of,for fear of,phrase,を恐れて，を怖がって,を恐れて，を怖がって,high_school,2,pre2,pre2;2,熟語,pre2:1266;2:128,2
+for some time,for some time,phrase,しばらくの間，一時的に,しばらくの間，一時的に,high_school,2,pre2,pre2;2,熟語,pre2:1406;2:370,2
+from time to time,from time to time,phrase,時々，偶に,時々，偶に,high_school,2,pre2,pre2;2,熟語,pre2:1338;2:265,2
+get along,get along,phrase,うまくやる，仲良くやる,うまくやる，仲良くやる,high_school,2,pre2,pre2;2,熟語,pre2:1281;2:150,2
+get back,get back,phrase,取り戻す,取り戻す,high_school,2,pre2,pre2,熟語,pre2:112,1
+guilty of,guilty of,phrase,罪を犯して，違法行為をして,罪を犯して，違法行為をして,high_school,2,pre2,pre2;2,熟語,pre2:1312;2:224,2
+have an effect on,have an effect on,phrase,に影響を及ぼす，影響する,に影響を及ぼす，影響する,high_school,2,pre2,pre2;2,熟語,pre2:1393;2:353,2
+have effects on,have effects on,phrase,に影響を与える，に作用する,に影響を与える，に作用する,high_school,2,pre2,pre2;2,熟語,pre2:1355;2:285,2
+heart rate,heart rate,phrase,心拍数，脈拍,心拍数，脈拍,high_school,2,pre2,pre2;2,名詞,pre2:1398;2:359,2
+hundreds of,hundreds of,phrase,何百もの,何百もの,high_school,2,pre2,pre2;2,熟語,pre2:1460;2:449,2
+in addition,in addition,phrase,追加として，さらに,追加として，さらに,high_school,2,pre2,pre2;2,熟語;接続詞,pre2:104;2:73,2
+in case,in case,phrase,万一に備えて，予防するために,万一に備えて，予防するために / 万一に備えて,high_school,1,pre2,pre2;2,接続詞;熟語,pre2:125;2:630;2:2165,3
+in common,in common,phrase,共通して，一般的に,共通して，一般的に,high_school,2,pre2,pre2;2,熟語,pre2:1350;2:280,2
+in contrast,in contrast,phrase,対照的に，これに対して,対照的に，これに対して,high_school,1,pre2,pre2;2;pre1,接続詞;熟語,pre2:1253;2:105;pre1:22,3
+in demand,in demand,phrase,需要のある，求められる,需要のある，求められる,high_school,2,pre2,pre2;2,熟語,pre2:1339;2:266,2
+in order to,in order to,phrase,～するために，～の目的で,～するために，～の目的で,high_school,1,pre2,pre2;2;pre1,熟語,pre2:1223;2:6;pre1:36,3
+in particular,in particular,phrase,特に，とりわけ,特に，とりわけ / 特に，特に重要な，とりわけ,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:102;2:15;pre1:2365;1:1496,4
+in reality,in reality,phrase,実際に，現実に,実際に，現実に,high_school,2,pre2,pre2;2,熟語,pre2:1412;2:377,2
+in response,in response,phrase,に応じて，に対応して,に応じて，に対応して,high_school,2,pre2,pre2;2,熟語,pre2:1354;2:284,2
+in response to,in response to,phrase,に応じて，に反応して,に応じて，に反応して,high_school,1,pre2,pre2;2;pre1,熟語,pre2:1256;2:113;pre1:251,3
+in spite of,in spite of,phrase,にも関わらず，けれども,にも関わらず，けれども / にも関わらず,high_school,1,pre2,pre2;2;pre1,熟語,pre2:113;2:2141;pre1:899,3
+in the long run,in the long run,phrase,長い目で見れば，長期間に,長い目で見れば，長期間に,high_school,2,pre2,pre2;2,熟語,pre2:1471;2:467,2
+in the meantime,in the meantime,phrase,とりあえず，それまでは,とりあえず，それまでは,high_school,2,pre2,pre2;2,熟語,pre2:1341;2:268,2
+in the past,in the past,phrase,過去に,過去に,high_school,2,pre2,pre2,熟語,pre2:5,1
+in touch,in touch,phrase,連絡中，連絡が取れて,連絡中，連絡が取れて,high_school,2,pre2,pre2;2,熟語,pre2:1304;2:208,2
+insist on,insist on,phrase,するように強く求める，強調する,するように強く求める，強調する / を主張する，を要求する,high_school,1,pre2,pre2;2;1,熟語,pre2:1347;2:274;1:3945,3
+intend to,intend to,phrase,するつもりである，する意図がある,するつもりである，する意図がある,high_school,1,pre2,pre2;2;pre1,熟語,pre2:1365;2:308;pre1:81,3
+invest in,invest in,phrase,に投資する，に資本を提供する,に投資する，に資本を提供する / に投資する，資金を提供する,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1286;2:158;pre1:2607;1:838,4
+it is common to hear,it is common to hear,phrase,を聞くのが一般的です，よく聞かれる,を聞くのが一般的です，よく聞かれる,high_school,2,pre2,pre2;2,熟語,pre2:1416;2:384,2
+keep in mind,keep in mind,phrase,を心に留めておく,を心に留めておく,high_school,2,pre2,pre2,熟語,pre2:114,1
+keep up with,keep up with,phrase,に遅れず付いていく，遅れないで追随する,に遅れず付いていく，遅れないで追随する / に遅れず付いていく，ついていく,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1282;2:151;pre1:2803;1:1103,4
+laugh at,laugh at,phrase,を見て笑う，楽しむ,を見て笑う，楽しむ,high_school,2,pre2,pre2;2,熟語,pre2:1448;2:434,2
+lead to,lead to,phrase,に導く，～につながる,に導く，～につながる,high_school,2,pre2,pre2;2,熟語,pre2:1234;2:54,2
+learn by heart,learn by heart,phrase,暗記する,暗記する / 暗記する，体で覚える,high_school,2,pre2,pre2;1,熟語,pre2:1409;1:2409,2
+leave out,leave out,phrase,除外する，取り除く,除外する，取り除く / を省略する，を除外する,high_school,1,pre2,pre2;2;1,熟語,pre2:1454;2:440;1:2796,3
+let A do,let a do,phrase,Aにさせる,Aにさせる,high_school,2,pre2,pre2,熟語,pre2:241,1
+look down on,look down on,phrase,を下に見る,を下に見る / を見下す，軽視する,high_school,1,pre2,pre2;pre1;1,熟語,pre2:208;pre1:1511;1:786,3
+look up,look up,phrase,を調べる,を調べる,high_school,2,pre2,pre2,熟語,pre2:2,1
+lose face,lose face,phrase,面子を失う，恥をかく,面子を失う，恥をかく,high_school,2,pre2,pre2;2,熟語,pre2:1345;2:272,2
+made of,made of,phrase,で出来ている，構成されている,で出来ている，構成されている,high_school,2,pre2,pre2;2,熟語,pre2:1277;2:141,2
+make a difference,make a difference,phrase,違いを生む，差をつける,違いを生む，差をつける,high_school,2,pre2,pre2;2,熟語,pre2:1367;2:310,2
+make sure,make sure,phrase,を確かめる，必ず手配する,を確かめる，必ず手配する,high_school,2,pre2,pre2;2,熟語,pre2:1278;2:145,2
+not only A but also B,not only a but also b,phrase,AだけでなくBもまた，Aと同様Bも,AだけでなくBもまた，Aと同様Bも,high_school,2,pre2,pre2;2,接続詞,pre2:1224;2:18,2
+not yet,not yet,phrase,まだ，今のところ,まだ，今のところ,high_school,2,pre2,pre2;2,熟語,pre2:1353;2:283,2
+on account of,on account of,phrase,のため，目的の,のため，目的の,high_school,2,pre2,pre2;2,熟語,pre2:1268;2:130,2
+on average,on average,phrase,平均して，平均値で,平均して，平均値で / 平均して，平均する，平均値で,high_school,1,pre2,pre2;2;1,熟語,pre2:126;2:688;1:1327,3
+on behalf of,on behalf of,phrase,の代わりに，代わって,の代わりに，代わって,high_school,2,pre2,pre2;2,熟語,pre2:1267;2:129,2
+on purpose,on purpose,phrase,故意に，わざと,故意に，わざと,high_school,2,pre2,pre2;2,熟語,pre2:129;2:312,2
+on the contrary,on the contrary,phrase,その反対で，それどころか,その反対で，それどころか,high_school,2,pre2,pre2;2,接続詞,pre2:1344;2:271,2
+on the way to,on the way to,phrase,道の途中で,道の途中で,high_school,2,pre2,pre2,熟語,pre2:115,1
+over time,over time,phrase,超過勤務，延長時間,超過勤務，延長時間,high_school,2,pre2,pre2;2,熟語,pre2:1404;2:368,2
+participate in,participate in,phrase,に参加する，に加わる,に参加する，に加わる,high_school,2,pre2,pre2;2,熟語,pre2:142;2:146,2
+plenty of,plenty of,phrase,たくさんの,たくさんの,high_school,2,pre2,pre2,熟語,pre2:211,1
+prevent A from B,prevent a from b,phrase,AをBから防ぐ，AをBから保護する,AをBから防ぐ，AをBから保護する / AをBから防ぐ，AをBから保護する，AをBから妨げる,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1270;2:132;pre1:2180;1:584,4
+provide A with B,provide a with b,phrase,AにBを提供する，AがBを供給する,AにBを提供する，AがBを供給する / AにBを供給する，AにBを提供する,high_school,1,pre2,pre2;2;1,熟語,pre2:1469;2:465;1:951,3
+pull away,pull away,phrase,引き離す，引き剥がす,引き離す，引き剥がす,high_school,2,pre2,pre2;2,熟語,pre2:1387;2:345,2
+put down,put down,phrase,置く,置く / 下へ降ろす，下に置く,high_school,2,pre2,pre2;1,熟語,pre2:116;1:3657,2
+reach out,reach out,phrase,手を延ばす，手を差し出す,手を延ばす，手を差し出す,high_school,2,pre2,pre2;2,熟語,pre2:1265;2:127,2
+related to,related to,phrase,に関連する，に関わる,に関連する，に関わる,high_school,2,pre2,pre2;2,熟語,pre2:1359;2:295,2
+rely on,rely on,phrase,に頼る，を当てにする,に頼る，を当てにする,high_school,1,pre2,pre2;2;pre1,熟語,pre2:117;2:176;2:2086;pre1:1101,4
+remind of,remind of,phrase,を思い出させる，気づかせる,を思い出させる，気づかせる,high_school,2,pre2,pre2;2,熟語,pre2:1446;2:432,2
+show off,show off,phrase,見せびらかす,見せびらかす / 見せびらかす，自慢する,high_school,1,pre2,pre2;pre1;1,熟語,pre2:146;pre1:1399;1:1544,3
+similar to,similar to,phrase,に似ている，類似している,に似ている，類似している,high_school,2,pre2,pre2;2,熟語,pre2:145;2:316,2
+since then,since then,phrase,それ以来，それ以降,それ以来，それ以降,high_school,2,pre2,pre2;2,熟語,pre2:1274;2:138,2
+sooner or later,sooner or later,phrase,遅かれ早かれ,遅かれ早かれ,high_school,2,pre2,pre2,熟語,pre2:143,1
+stand out,stand out,phrase,目立つ，すぐれている,目立つ，すぐれている / 目立つ，注目を集める，注目を浴びる,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1340;2:267;pre1:2956;1:1698,4
+stay away from,stay away from,phrase,離れている，距離がある,離れている，距離がある,high_school,2,pre2,pre2,熟語,pre2:130,1
+straight on,straight on,phrase,まっすぐに，直線的に,まっすぐに，直線的に,high_school,2,pre2,pre2;2,熟語,pre2:1450;2:436,2
+succeed in,succeed in,phrase,に成功する,に成功する,high_school,2,pre2,pre2,熟語,pre2:133,1
+suffer from,suffer from,phrase,で苦しむ，悩まされる,で苦しむ，悩まされる,high_school,1,pre2,pre2;2,熟語,pre2:131;2:60;2:2047,3
+take after,take after,phrase,をまねる，に似る,をまねる，に似る,high_school,1,pre2,pre2;2;pre1,熟語,pre2:1311;2:223;pre1:3236,3
+take over,take over,phrase,"を引き継ぐ, 継承","を引き継ぐ, 継承",high_school,1,pre2,pre2;2;pre1,熟語,pre2:103;2:494;pre1:3183,3
+thanks to,thanks to,phrase,のおかげで，感謝して,のおかげで，感謝して,high_school,2,pre2,pre2;2,熟語,pre2:99;2:652,2
+the other,the other,phrase,もう一方の，反対側の,もう一方の，反対側の,high_school,2,pre2,pre2;2,形容詞,pre2:1455;2:441,2
+throw away,throw away,phrase,廃棄する，を捨てる,廃棄する，を捨てる,high_school,2,pre2,pre2;2,熟語,pre2:1419;2:391,2
+to some extent,to some extent,phrase,いくらか，ある程度,いくらか，ある程度,high_school,2,pre2,pre2;2,熟語,pre2:1342;2:269,2
+try out,try out,phrase,を試す，十分に試してみる,を試す，十分に試してみる,high_school,1,pre2,pre2;2;pre1,熟語,pre2:1388;2:346;pre1:619,3
+turn A into B,turn a into b,phrase,AをBに(質的に)変える，AをBに(質的に)転換する,AをBに(質的に)変える，AをBに(質的に)転換する,high_school,2,pre2,pre2;2,熟語,pre2:1275;2:139,2
+turn down,turn down,phrase,断る,断る / を断る，拒む / を断る，拒む，拒絶する,high_school,1,pre2,pre2;pre1;1,熟語,pre2:147;pre1:2523;1:958,3
+turn into,turn into,phrase,に変わる，に転ずる,に変わる，に転ずる,high_school,2,pre2,pre2;2,熟語,pre2:1424;2:400,2
+vote for,vote for,phrase,に賛成する，に投票する,に賛成する，に投票する,high_school,1,pre2,pre2;2;1,熟語,pre2:1290;2:177;1:3892,3
+well off,well off,phrase,裕福な，富裕な,裕福な，富裕な,high_school,2,pre2,pre2;2,形容詞,pre2:1449;2:435,2
+what is called,what is called,phrase,いわゆる，通称,いわゆる，通称,high_school,2,pre2,pre2;2,熟語,pre2:1400;2:361,2
+What is more,what is more,phrase,さらに，その上,さらに，その上 / さらに，さらには,high_school,1,pre2,pre2;2;pre1;1,接続詞;熟語,pre2:1405;2:369;pre1:113;1:1135,4
+work out,work out,phrase,練習する，運動する,練習する，運動する / 体を鍛える，うまく行く，解決する,high_school,1,pre2,pre2;2;pre1;1,熟語,pre2:1313;2:225;pre1:2406;1:61,4
+a bunch of,a bunch of,phrase,たくさんの，多量の,たくさんの，多量の,high_school,3,2,2;1,熟語,2:2264;1:2969,2
+a couple of,a couple of,phrase,少数の,少数の,high_school,3,2,2,熟語,2:2209,1
+absorb in,absorb in,phrase,吸収する，没頭する,吸収する，没頭する,high_school,3,2,2,熟語,2:791,1
+account for,account for,phrase,を説明する，解説する,を説明する，解説する,high_school,3,2,2,熟語,2:767,1
+act on,act on,phrase,を決定する，決議する,を決定する，決議する / に従って行動する，従う,high_school,1,2,2;pre1;1,熟語,2:903;pre1:2611;1:601,3
+add to,add to,phrase,付け加える，増やす,付け加える，増やす,high_school,3,2,2,熟語,2:944,1
+all around the world,all around the world,phrase,世界中の，全世界の,世界中の，全世界の,high_school,3,2,2,熟語,2:373,1
+along with,along with,phrase,に沿って,に沿って / に沿って，従って，伴って,high_school,1,2,2;pre1;1,熟語,2:2106;pre1:1673;1:459,3
+amount to,amount to,phrase,成る，達する,成る，達する,high_school,3,2,2,熟語,2:568,1
+apply for,apply for,phrase,を申し込む,を申し込む,high_school,3,2,2,熟語,2:2029,1
+as a matter of fact,as a matter of fact,phrase,実際のところ,実際のところ,high_school,3,2,2,熟語,2:2002,1
+as far as I know,as far as i know,phrase,私の知る限り,私の知る限り,high_school,3,2,2,熟語,2:2014,1
+as follows,as follows,phrase,次のとおり，以下の通り,次のとおり，以下の通り,high_school,3,2,2,熟語,2:929,1
+as if,as if,phrase,まるで～かのように,まるで～かのように,high_school,3,2,2,熟語,2:2017,1
+as though,as though,phrase,まるで，あたかも,まるで，あたかも,high_school,3,2,2,接続詞,2:505,1
+associated with,associated with,phrase,と関連した，紐づいた,と関連した，紐づいた,high_school,3,2,2,熟語,2:549,1
+at a loss,at a loss,phrase,途方に暮れて，困惑して,途方に暮れて，困惑して,high_school,3,2,2,熟語,2:686,1
+at best,at best,phrase,せいぜい，良くとも,せいぜい，良くとも,high_school,3,2,2,副詞,2:603,1
+at times,at times,phrase,時々,時々,high_school,3,2,2,熟語,2:2231,1
+attach to,attach to,phrase,に添える，に取り付ける,に添える，に取り付ける,high_school,3,2,2,熟語,2:622,1
+be accustomed to,be accustomed to,phrase,に慣れている，馴染んでいる,に慣れている，馴染んでいる,high_school,3,2,2,熟語,2:937,1
+be concerned about,be concerned about,phrase,について気をかける，心配する,について気をかける，心配する,high_school,3,2,2,熟語,2:703,1
+be connected to,be connected to,phrase,に接続する，をつなぐ,に接続する，をつなぐ,high_school,3,2,2,熟語,2:570,1
+be considered to,be considered to,phrase,と見なされる，と認識される,と見なされる，と認識される,high_school,3,2,2,熟語,2:567,1
+be effective at,be effective at,phrase,で効果的である,で効果的である,high_school,3,2,2,熟語,2:647,1
+be engaged in,be engaged in,phrase,に従事している,に従事している,high_school,3,2,2,熟語,2:2207,1
+be involved in,be involved in,phrase,に関与する，に介入する,に関与する，に介入する,high_school,3,2,2,熟語,2:571,1
+be known for,be known for,phrase,で知られている，有名である,で知られている，有名である,high_school,3,2,2,熟語,2:542,1
+be made from,be made from,phrase,から作られる，を原料とする,から作られる，を原料とする,high_school,3,2,2,熟語,2:574,1
+be obliged to,be obliged to,phrase,義務付けられる，やむを得ずする,義務付けられる，やむを得ずする / 義務を負う，責任を持つ,high_school,3,2,2;1,熟語,2:810;1:3372,2
+be pleased with,be pleased with,phrase,を喜ぶ，喜びを感じる,を喜ぶ，喜びを感じる,high_school,3,2,2,熟語,2:506,1
+be short of,be short of,phrase,が不足する，欠ける,が不足する，欠ける,high_school,3,2,2,熟語,2:692,1
+be threatened to,be threatened to,phrase,に脅かされる，に恐れられる,に脅かされる，に恐れられる,high_school,3,2,2,熟語,2:577,1
+be well of,be well of,phrase,元気で,元気で,high_school,3,2,2,熟語,2:2210,1
+be willing to,be willing to,phrase,する気のある,する気のある,high_school,3,2,2,熟語,2:2194,1
+before long,before long,phrase,間もなく,間もなく / まもなく，遠からず,high_school,3,2,2;1,熟語,2:2072;1:2381,2
+blame for,blame for,phrase,の責任を問う，を責める,の責任を問う，を責める,high_school,3,2,2,熟語,2:848,1
+bound for,bound for,phrase,行きの，方向の,行きの，方向の / 行きの，向けの,high_school,3,2,2;1,熟語,2:892;1:3081,2
+break out,break out,phrase,勃発する,勃発する,high_school,3,2,2;pre1,熟語,2:2176;pre1:3036,2
+bring up,bring up,phrase,持ち出す,持ち出す,high_school,3,2,2,熟語,2:2078,1
+by degrees,by degrees,phrase,徐々に,徐々に,high_school,3,2,2,熟語,2:2168,1
+by heart,by heart,phrase,体で覚えて，身体的に覚える,体で覚えて，身体的に覚える,high_school,3,2,2,熟語,2:956,1
+by means of,by means of,phrase,によって，を用いて,によって，を用いて,high_school,3,2,2,熟語,2:909;2:2258,2
+by nature,by nature,phrase,本来，生来,本来，生来,high_school,3,2,2,熟語,2:858,1
+by the end of,by the end of,phrase,の終わりまでに,の終わりまでに,high_school,3,2,2,熟語,2:2075,1
+calm down,calm down,phrase,落ち着く，安心する,落ち着く，安心する,high_school,3,2,2,熟語,2:535,1
+carry out,carry out,phrase,を成し遂げる，実行する,を成し遂げる，実行する / を成し遂げる,high_school,1,2,2;pre1,熟語,2:396;2:2184;pre1:3347,3
+come across,come across,phrase,を横切る，出くわす,を横切る，出くわす,high_school,1,2,2;pre1,熟語,2:884;2:2188;pre1:3169,3
+come into being,come into being,phrase,生まれ出る，生ずる,生まれ出る，生ずる,high_school,3,2,2,熟語,2:683,1
+come out,come out,phrase,出てくる，世に出る,出てくる，世に出る,high_school,3,2,2,熟語,2:880,1
+complain of,complain of,phrase,の不満を漏らす，について苦情を言う,の不満を漏らす，について苦情を言う / を訴える，の不平を言う,high_school,1,2,2;pre1;1,熟語,2:832;pre1:334;1:3215,3
+congratulations on,congratulations on,phrase,に対するお祝い，祝福,に対するお祝い，祝福,high_school,3,2,2,熟語,2:552,1
+consist of,consist of,phrase,から成り立っている,から成り立っている,high_school,3,2,2,熟語,2:2217,1
+cope with,cope with,phrase,に対処する，に対応する,に対処する，に対応する / に対処する,high_school,1,2,2;pre1,熟語,2:213;2:2129;pre1:3013,3
+cut down,cut down,phrase,を減らす，削減する,を減らす，削減する,high_school,3,2,2;pre1,熟語,2:2287;pre1:847,2
+deal with,deal with,phrase,に対処する，に対応する,に対処する，に対応する / に対処する,high_school,1,2,2;pre1,熟語,2:22;2:2064;pre1:805,3
+do away with,do away with,phrase,廃止する，取り消す,廃止する，取り消す / 廃止する / を廃止する，除く，無くす,high_school,1,2,2;pre1;1,熟語,2:807;2:2274;pre1:61;1:1616,4
+due to,due to,phrase,が原因で，によって,が原因で，によって / が原因で / のせいで，の理由で,high_school,1,2,2;pre1;1,熟語,2:431;2:2058;pre1:1333;1:1221,4
+entitle to,entitle to,phrase,に資格を与える，認定する,に資格を与える，認定する,high_school,3,2,2,熟語,2:781,1
+except for,except for,phrase,を除いては，を別にすれば,を除いては，を別にすれば,high_school,3,2,2,熟語,2:604,1
+first of all,first of all,phrase,まず第一に，まず以て,まず第一に，まず以て,high_school,3,2,2,熟語,2:551,1
+focus on,focus on,phrase,に焦点を合わせる，に注目する,に焦点を合わせる，に注目する,high_school,3,2,2,熟語,2:702,1
+for sure,for sure,phrase,確かに，間違いなく,確かに，間違いなく,high_school,3,2,2,熟語,2:741,1
+for the time being,for the time being,phrase,当面の間,当面の間,high_school,3,2,2,熟語,2:1895,1
+get away with,get away with,phrase,を持ち逃げする，盗み出す,を持ち逃げする，盗み出す / を避ける，からやり過ごす,high_school,1,2,2;pre1;1,熟語,2:823;pre1:1757;1:1064,3
+get by,get by,phrase,どうにか切り抜ける,どうにか切り抜ける / どうにか切り抜ける，何とか乗り越える，うまく乗り切る,high_school,1,2,2;pre1;1,熟語,2:2128;pre1:240;1:973,3
+get used to,get used to,phrase,慣れる，習慣づく,慣れる，習慣づく,high_school,3,2,2,熟語,2:679,1
+give out,give out,phrase,配布する，発表する,配布する，発表する,high_school,3,2,2,熟語,2:756,1
+go after,go after,phrase,を追いかける，追跡する,を追いかける，追跡する / を追いかける，を求める,high_school,3,2,2;1,熟語,2:857;1:2726,2
+hand in,hand in,phrase,を提出する,を提出する,high_school,3,2,2,熟語,2:2206,1
+hang up,hang up,phrase,中断する,中断する,high_school,3,2,2;pre1,熟語,2:2173;pre1:3097,2
+health insurance,health insurance,phrase,健康保険,健康保険,high_school,3,2,2,名詞,2:561,1
+How come,how come,phrase,どうして～,どうして～,high_school,3,2,2,熟語,2:2230,1
+in a row,in a row,phrase,一列に，連続的に,一列に，連続的に,high_school,3,2,2,熟語,2:689,1
+in charge of,in charge of,phrase,の担当をして，担当している,の担当をして，担当している / の担当をして,high_school,3,2,2,熟語,2:172;2:2253,2
+in contrast to,in contrast to,phrase,とは対照的に,とは対照的に,high_school,3,2,2,熟語,2:2237,1
+in danger of,in danger of,phrase,の危険にさらされている，危険に直面している,の危険にさらされている，危険に直面している,high_school,3,2,2;pre1,熟語,2:940;pre1:1665,2
+in effect,in effect,phrase,効果のある，効いている,効果のある，効いている,high_school,3,2,2,熟語,2:606,1
+in exchange,in exchange,phrase,と引き換えに，代わりに,と引き換えに，代わりに,high_school,3,2,2;pre1,熟語,2:886;pre1:465,2
+in fashion,in fashion,phrase,流行っている，流行している,流行っている，流行している,high_school,3,2,2,熟語,2:607,1
+in general,in general,phrase,一般的に，普通,一般的に，普通,high_school,3,2,2,熟語,2:612,1
+in need of,in need of,phrase,を必要として，～がぜひとも必要,を必要として，～がぜひとも必要,high_school,3,2,2,熟語,2:684,1
+in other words,in other words,phrase,言い換えれば，つまり,言い換えれば，つまり,high_school,3,2,2;pre1,熟語,2:548;pre1:421,2
+in place,in place,phrase,決まった場所に，適切で,決まった場所に，適切で,high_school,3,2,2,熟語,2:866,1
+in practice,in practice,phrase,"実際には, 実際","実際には, 実際",high_school,3,2,2,熟語,2:498,1
+in shape,in shape,phrase,健康に,健康に,high_school,3,2,2,熟語,2:2213,1
+in short,in short,phrase,要するに，つまり,要するに，つまり,high_school,3,2,2;pre1,熟語,2:817;pre1:1017,2
+in some way,in some way,phrase,何らかの方法で,何らかの方法で,high_school,3,2,2,熟語,2:569,1
+in stock,in stock,phrase,在庫あり，在庫のある,在庫あり，在庫のある,high_school,3,2,2,熟語,2:893,1
+in terms of,in terms of,phrase,に関して，の点から,に関して，の点から,high_school,3,2,2,熟語,2:739;2:2074,2
+in time,in time,phrase,丁度よい時に，丁度間に合って,丁度よい時に，丁度間に合って,high_school,3,2,2,熟語,2:743,1
+in tough,in tough,phrase,苦労して，厳しい,苦労して，厳しい,high_school,3,2,2,熟語,2:681,1
+in trouble,in trouble,phrase,困った状況にある,困った状況にある,high_school,3,2,2,熟語,2:602,1
+in turn,in turn,phrase,順番に，順次,順番に，順次,high_school,3,2,2,熟語,2:941,1
+in vain,in vain,phrase,無駄に，軽々しく,無駄に，軽々しく,high_school,3,2,2;pre1,熟語,2:915;pre1:3059,2
+keep up,keep up,phrase,保持する，維持する,保持する，維持する,high_school,3,2,2,熟語,2:775,1
+large amount of,large amount of,phrase,大量の，たくさんの,大量の，たくさんの,high_school,3,2,2,熟語,2:696,1
+live on,live on,phrase,生き続ける，存続する,生き続ける，存続する,high_school,3,2,2,熟語,2:918,1
+look into,look into,phrase,を調べる/調査,を調べる/調査 / を調べる / を研究する，を調査する,high_school,1,2,2;pre1;1,熟語,2:497;2:2114;pre1:1487;1:1886,4
+look over,look over,phrase,見渡す，展望する,見渡す，展望する / 見渡す,high_school,1,2,2;pre1,熟語,2:776;2:2034;pre1:3332,3
+look through,look through,phrase,をひと通り調べる，を見抜く,をひと通り調べる，を見抜く / に目を通す，一通り調べる,high_school,3,2,2;1,熟語,2:834;1:3190,2
+look up to,look up to,phrase,を尊敬する，を敬う,を尊敬する，を敬う,high_school,3,2,2;pre1,熟語,2:943;pre1:7,2
+make fun of,make fun of,phrase,をからかう,をからかう,high_school,3,2,2,熟語,2:2107,1
+make sense,make sense,phrase,意味をなす,意味をなす,high_school,3,2,2,熟語,2:2214,1
+make up,make up,phrase,用意する，片付ける,用意する，片付ける,high_school,3,2,2,熟語,2:952,1
+memory loss,memory loss,phrase,記憶喪失，記憶消失,記憶喪失，記憶消失,high_school,3,2,2,名詞,2:562,1
+no longer,no longer,phrase,もはや～でない，既に～ない,もはや～でない，既に～ない / もはや～でない,high_school,1,2,2;pre1,熟語,2:102;2:2037;pre1:225,3
+nursery school,nursery school,phrase,保育園，幼稚園,保育園，幼稚園,high_school,3,2,2,熟語,2:727,1
+off duty,off duty,phrase,非番の，勤務時間外で,非番の，勤務時間外で / 非番の，勤務時間外の,high_school,3,2,2;1,熟語,2:917;1:3199,2
+on demand,on demand,phrase,要求に応じて，要求があり次第,要求に応じて，要求があり次第,high_school,3,2,2,熟語,2:608,1
+on duty,on duty,phrase,勤務時間中で，当番の,勤務時間中で，当番の,high_school,3,2,2,熟語,2:629;2:2104,2
+on schedule,on schedule,phrase,予定通りに，計画通りに,予定通りに，計画通りに,high_school,3,2,2,熟語,2:499,1
+on the run,on the run,phrase,逃げて，奔走して,逃げて，奔走して / 逃走中の，走っている，逃げ足を使って,high_school,1,2,2;pre1;1,熟語,2:653;pre1:1316;1:920,3
+out of breath,out of breath,phrase,息切れして,息切れして,high_school,3,2,2,名詞,2:2190,1
+out of date,out of date,phrase,時代遅れの，古風な,時代遅れの，古風な,high_school,3,2,2;pre1,熟語,2:680;pre1:3395,2
+out of place,out of place,phrase,場違いで，不適切で,場違いで，不適切で / 場違いの，不適切な,high_school,1,2,2;pre1;1,熟語,2:642;pre1:593;1:3943,3
+out of stock,out of stock,phrase,在庫切れ,在庫切れ,high_school,3,2,2,熟語,2:2294,1
+out of use,out of use,phrase,すたれて，使用できない,すたれて，使用できない,high_school,3,2,2,熟語,2:633,1
+pass out,pass out,phrase,気絶する，失神する,気絶する，失神する / 気絶する，出ていく,high_school,1,2,2;pre1;1,熟語,2:531;pre1:2277;1:1182,3
+persist in,persist in,phrase,固執する，やり通す,固執する，やり通す,high_school,3,2,2,熟語,2:912,1
+play a role in,play a role in,phrase,において役割を果たす,において役割を果たす,high_school,3,2,2,熟語,2:693,1
+provided that,provided that,phrase,と言う条件で,と言う条件で / である限り，という条件で,high_school,3,2,2;1,熟語,2:2038;1:3784,2
+pull down,pull down,phrase,引き下げる，取り壊す,引き下げる，取り壊す / 取り壊す，解体する，破壊する,high_school,3,2,2;1,熟語,2:926;1:1704,2
+pull off,pull off,phrase,もぎ取る，成功を掴む,もぎ取る，成功を掴む,high_school,3,2,2;1,熟語,2:2178;1:3166,2
+put away,put away,phrase,片付ける，整理する,片付ける，整理する,high_school,3,2,2,熟語,2:533,1
+put off,put off,phrase,延期する，繰り延べる,延期する，繰り延べる / 延期する,high_school,3,2,2,熟語,2:770;2:2015,2
+put together,put together,phrase,まとめる，一緒にする,まとめる，一緒にする,high_school,3,2,2,熟語,2:766,1
+put up with,put up with,phrase,に耐える,に耐える / 我慢する，耐える,high_school,3,2,2;1,熟語,2:2063;1:4095,2
+react to,react to,phrase,に反応する，受け止める,に反応する，受け止める,high_school,3,2,2,熟語,2:539,1
+refer to,refer to,phrase,を参照する，参考にする,を参照する，参考にする,high_school,3,2,2,熟語,2:599,1
+refrain from,refrain from,phrase,を控える，を遠慮する,を控える，を遠慮する / を控える，を慎む,high_school,1,2,2;1,熟語,2:1235;2:2263;1:3741,3
+relevant to,relevant to,phrase,に関連して，関連づけて,に関連して，関連づけて,high_school,3,2,2,熟語,2:773,1
+result in,result in,phrase,結果として，結果～になる,結果として，結果～になる,high_school,3,2,2,熟語,2:56;2:2024,2
+rule out,rule out,phrase,除外する,除外する / を除外する，締め出す,high_school,1,2,2;pre1;1,熟語,2:2009;pre1:613;1:113,3
+see in,see in,phrase,案内して部屋に入れる，迎える,案内して部屋に入れる，迎える,high_school,3,2,2,熟語,2:852,1
+settle down,settle down,phrase,定住する,定住する,high_school,3,2,2,熟語,2:2280,1
+show up,show up,phrase,現れる，出現する,現れる，出現する / 現れる / 姿を現す，姿を表わす,high_school,1,2,2;pre1;1,熟語,2:344;2:2236;pre1:2148;1:1252,4
+sit up,sit up,phrase,まっすぐ座る,まっすぐ座る,high_school,3,2,2;pre1,熟語,2:2260;pre1:3294,2
+speaking of,speaking of,phrase,と言えば，に関して,と言えば，に関して,high_school,3,2,2,熟語,2:600,1
+specialize in,specialize in,phrase,に特化する，専門とする,に特化する，専門とする,high_school,3,2,2;pre1,熟語,2:554;pre1:197,2
+stand still,stand still,phrase,停止，休止，行き詰まり,停止，休止，行き詰まり,high_school,3,2,2,熟語,2:736,1
+stare at,stare at,phrase,をじっと見つめる，を凝視する,をじっと見つめる，を凝視する / をじっと見つめる,high_school,1,2,2;1,熟語,2:114;2:2276;1:3049,3
+struggle with,struggle with,phrase,と闘う，に苦戦する,と闘う，に苦戦する / と闘う，争う,high_school,3,2,2;1,熟語,2:676;1:3860,2
+take A for granted,take a for granted,phrase,Aを当然のことと思う,Aを当然のことと思う / Aを当然と思う，Aを当たり前と考える,high_school,3,2,2;1,熟語,2:527;1:2495,2
+take care,take care,phrase,注意する，警戒する,注意する，警戒する,high_school,3,2,2,熟語,2:808,1
+take down,take down,phrase,降ろす，書き取る,降ろす，書き取る,high_school,3,2,2,熟語,2:762,1
+think over,think over,phrase,熟考する，よく考える,熟考する，よく考える,high_school,3,2,2,熟語,2:532;2:2166,2
+to start with,to start with,phrase,まず第一に，初めに,まず第一に，初めに,high_school,3,2,2,熟語,2:550,1
+traffic jam,traffic jam,phrase,交通渋滞，道路渋滞,交通渋滞，道路渋滞,high_school,3,2,2,名詞,2:1598,1
+turn in,turn in,phrase,提出する,提出する,high_school,3,2,2,熟語,2:1975,1
+under way,under way,phrase,進行中で，進行する,進行中で，進行する,high_school,3,2,2,熟語,2:682,1
+use up,use up,phrase,使い切る，消耗する,使い切る，消耗する,high_school,3,2,2,熟語,2:1135,1
+vending machine,vending machine,phrase,自動販売機,自動販売機,high_school,3,2,2,名詞,2:2161,1
+watch out,watch out,phrase,気を付ける,気を付ける,high_school,3,2,2,熟語,2:2177,1
+what is worse,what is worse,phrase,さらに悪いことには，更に悪化して,さらに悪いことには，更に悪化して,high_school,3,2,2,熟語,2:536,1
+with luck,with luck,phrase,運が良ければ，うまくいけば,運が良ければ，うまくいけば,high_school,3,2,2,熟語,2:579,1
+within reach,within reach,phrase,届く範囲で，手の届く範囲で,届く範囲で，手の届く範囲で,high_school,3,2,2,熟語,2:687,1
+worthy of,worthy of,phrase,ふさわしくて，に値して,ふさわしくて，に値して,high_school,3,2,2,熟語,2:942,1
+a range of,a range of,phrase,様々な，色々な,様々な，色々な,exam,3,pre1,pre1;1,熟語,pre1:1420;1:2108,2
+a wide range of,a wide range of,phrase,広範囲の,広範囲の,exam,3,pre1,pre1,熟語,pre1:3362,1
+abide by,abide by,phrase,遵守する,遵守する,exam,3,pre1,pre1,熟語,pre1:3133,1
+abound in,abound in,phrase,であふれている，に富む,であふれている，に富む,exam,3,pre1,pre1;1,熟語,pre1:806;1:3196,2
+abstain from,abstain from,phrase,を控える，慎む,を控える，慎む,exam,3,pre1,pre1;1,熟語,pre1:3376;1:3186,2
+across from,across from,phrase,の向かいに，対面に，の向かい側,の向かいに，対面に，の向かい側,exam,3,pre1,pre1;1,熟語,pre1:1956;1:467,2
+act up,act up,phrase,あばれる，騒ぐ,あばれる，騒ぐ,exam,3,pre1,pre1,熟語,pre1:101,1
+add up to,add up to,phrase,結局～になる，結果として,結局～になる，結果として,exam,3,pre1,pre1;1,熟語,pre1:2219;1:534,2
+adhere to,adhere to,phrase,にくっつく,にくっつく,exam,3,pre1,pre1,熟語,pre1:3022,1
+admire A for B,admire a for b,phrase,BについてAを賞賛する，AのBを素晴らしいと思う,BについてAを賞賛する，AのBを素晴らしいと思う / BについてAを賞賛する,exam,3,pre1,pre1;1,熟語,pre1:383;1:3297,2
+afford to,afford to,phrase,する余裕がある,する余裕がある,exam,3,pre1,pre1,熟語,pre1:46,1
+aim to,aim to,phrase,するつもりである，意図する,するつもりである，意図する,exam,3,pre1,pre1;1,熟語,pre1:1377;1:374,2
+air out,air out,phrase,が乾く，乾燥する,が乾く，乾燥する,exam,3,pre1,pre1,熟語,pre1:821,1
+all ears,all ears,phrase,耳を傾ける，熱心に聴く,耳を傾ける，熱心に聴く,exam,3,pre1,pre1;1,熟語,pre1:275;1:3957,2
+all thumbs,all thumbs,phrase,不器用な，ぶざまな,不器用な，ぶざまな / 手先が不器用な，ぶざまな,exam,3,pre1,pre1;1,熟語,pre1:973;1:3027,2
+all told,all told,phrase,全体で，結局,全体で，結局,exam,3,pre1,pre1;1,熟語,pre1:513;1:3437,2
+allow for,allow for,phrase,を考慮に入れる，余裕を持つ,を考慮に入れる，余裕を持つ,exam,3,pre1,pre1;1,熟語,pre1:1596;1:1950,2
+annual fee,annual fee,phrase,年会費，年会料,年会費，年会料,exam,3,pre1,pre1;1,名詞,pre1:2953;1:2113,2
+application form,application form,phrase,申込用紙，願書,申込用紙，願書 / 申込用紙，願書，申請書,exam,3,pre1,pre1;1,名詞,pre1:2622;1:1562,2
+as a last resort,as a last resort,phrase,最後の手段として，切羽詰まって,最後の手段として，切羽詰まって,exam,3,pre1,pre1;1,熟語,pre1:1154;1:3614,2
+as before,as before,phrase,以前の様に，以前と同等に,以前の様に，以前と同等に,exam,3,pre1,pre1;1,熟語,pre1:2790;1:2074,2
+as it stands,as it stands,phrase,現状では，現在のところ,現状では，現在のところ / 現状では，今のところでは，現在の状態で,exam,3,pre1,pre1;1,熟語,pre1:1268;1:1316,2
+as it turns out,as it turns out,phrase,結局のところ，最終的に,結局のところ，最終的に / 結局のところ，最終的に，ついに,exam,3,pre1,pre1;1,熟語,pre1:2608;1:1930,2
+associate A with B,associate a with b,phrase,AとBを関係づける,AとBを関係づける / AとBを関係づける，AとBを連携させる,exam,3,pre1,pre1;1,熟語,pre1:2224;1:1828,2
+at close quarters,at close quarters,phrase,間近に，接近して,間近に，接近して,exam,3,pre1,pre1;1,熟語,pre1:500;1:2674,2
+at face value,at face value,phrase,額面通り，表面通りの価値で,額面通り，表面通りの価値で,exam,3,pre1,pre1;1,熟語,pre1:100;1:3307,2
+at fault,at fault,phrase,落ち度がある，咎められるべき,落ち度がある，咎められるべき,exam,3,pre1,pre1;1,熟語,pre1:1485;1:2197,2
+at random,at random,phrase,無作為に，手あたり次第に,無作為に，手あたり次第に,exam,3,pre1,pre1;1,熟語,pre1:1995;1:1883,2
+at the moment,at the moment,phrase,今のところ，現状,今のところ，現状 / 今のところ，現状，現在点,exam,3,pre1,pre1;1,熟語,pre1:2693;1:1718,2
+attribute A to B,attribute a to b,phrase,AをBに依るものとする，AをBとみなす,AをBに依るものとする，AをBとみなす,exam,3,pre1,pre1;1,熟語,pre1:2231;1:1232,2
+avail oneself of,avail oneself of,phrase,を利用する，を活用する,を利用する，を活用する,exam,3,pre1,pre1;1,熟語,pre1:1079;1:2701,2
+back down,back down,phrase,手を引く，引き下がる,手を引く，引き下がる / 手を引く，撤退する,exam,3,pre1,pre1;1,熟語,pre1:2459;1:773,2
+back off,back off,phrase,後退する，後ろに下がる,後退する，後ろに下がる,exam,3,pre1,pre1;1,熟語,pre1:1199;1:701,2
+back up,back up,phrase,を後援する，後退させる,を後援する，後退させる,exam,3,pre1,pre1;1,熟語,pre1:1707;1:1769,2
+bail out,bail out,phrase,脱出する，救済する,脱出する，救済する,exam,3,pre1,pre1;1,熟語,pre1:3345;1:3125,2
+bank on,bank on,phrase,を当てにする，頼る,を当てにする，頼る / を当てにする，依存する,exam,3,pre1,pre1;1,熟語,pre1:646;1:782,2
+bargain for,bargain for,phrase,について交渉する，話し合う,について交渉する，話し合う,exam,3,pre1,pre1;1,熟語,pre1:724;1:3150,2
+barge in,barge in,phrase,入り込む，押しかける,入り込む，押しかける,exam,3,pre1,pre1;1,熟語,pre1:590;1:3463,2
+be aimed at,be aimed at,phrase,を狙っている，が意図されている,を狙っている，が意図されている,exam,3,pre1,pre1;1,熟語,pre1:1730;1:728,2
+be akin to,be akin to,phrase,に似ている，と同種である,に似ている，と同種である,exam,3,pre1,pre1;1,熟語,pre1:155;1:3357,2
+be bound up with,be bound up with,phrase,と密接な関係のある，深く関係した,と密接な関係のある，深く関係した,exam,3,pre1,pre1;1,熟語,pre1:685;1:3809,2
+be critical of,be critical of,phrase,に批判的である，否定的な,に批判的である，否定的な / に批判的である，否定的な，批評的である,exam,3,pre1,pre1;1,熟語,pre1:2505;1:1591,2
+be destitute of,be destitute of,phrase,に困窮する，を持っていない,に困窮する，を持っていない,exam,3,pre1,pre1;1,熟語,pre1:1182;1:2469,2
+be devoid of,be devoid of,phrase,を持っていない，に欠いている,を持っていない，に欠いている,exam,3,pre1,pre1;1,熟語,pre1:663;1:2570,2
+be doomed to,be doomed to,phrase,運命づけられる，の運命にある,運命づけられる，の運命にある,exam,3,pre1,pre1;1,熟語,pre1:1169;1:2850,2
+be incongruous with,be incongruous with,phrase,と矛盾する，と不一致である,と矛盾する，と不一致である,exam,3,pre1,pre1;1,熟語,pre1:167;1:2922,2
+be indebted to,be indebted to,phrase,に負債がある，恩義がある,に負債がある，恩義がある,exam,3,pre1,pre1;1,熟語,pre1:668;1:3301,2
+be keen to,be keen to,phrase,やる気がある，乗り気になっている,やる気がある，乗り気になっている,exam,3,pre1,pre1;1,熟語,pre1:995;1:3167,2
+be laid up,be laid up,phrase,寝込む，寝たきりになる，病床にある,寝込む，寝たきりになる，病床にある / 寝込む，寝たきりになる，病床にある，床についている,exam,3,pre1,pre1;1,熟語,pre1:1922;1:1508,2
+be obsessed with,be obsessed with,phrase,に取り付かれる，で頭がいっぱい,に取り付かれる，で頭がいっぱい,exam,3,pre1,pre1;1,熟語,pre1:714;1:3159,2
+be prone to,be prone to,phrase,する傾向がある，しがちである,する傾向がある，しがちである,exam,3,pre1,pre1;1,熟語,pre1:205;1:3043,2
+be reckless of,be reckless of,phrase,を気に掛けない，気にしない,を気に掛けない，気にしない,exam,3,pre1,pre1;1,熟語,pre1:493;1:2697,2
+be tidied up,be tidied up,phrase,きちんと片づけた，整えた,きちんと片づけた，整えた,exam,3,pre1,pre1;1,熟語,pre1:2606;1:64,2
+be weary of,be weary of,phrase,にうんざりしている,にうんざりしている / にうんざりしている，飽き飽きしている,exam,3,pre1,pre1;1,熟語,pre1:1160;1:2576,2
+bear down,bear down,phrase,圧迫する，制圧する,圧迫する，制圧する,exam,3,pre1,pre1;1,熟語,pre1:1144;1:2926,2
+bear the brunt of,bear the brunt of,phrase,の矢面に立つ，まともに受ける,の矢面に立つ，まともに受ける,exam,3,pre1,pre1;1,熟語,pre1:377;1:3011,2
+behind the scenes,behind the scenes,phrase,舞台裏で，陰で,舞台裏で，陰で,exam,3,pre1,pre1;1,熟語,pre1:1060;1:3419,2
+benefit from,benefit from,phrase,で利益を得る，儲かる,で利益を得る，儲かる / で利益を得る，儲かる，利ざやを稼ぐ,exam,3,pre1,pre1;1,熟語,pre1:2979;1:1621,2
+bestow A on B,bestow a on b,phrase,BにAを授ける，BにAを費やす,BにAを授ける，BにAを費やす,exam,3,pre1,pre1;1,熟語,pre1:384;1:3609,2
+beyond question,beyond question,phrase,疑いもなく，確かに,疑いもなく，確かに,exam,3,pre1,pre1;1,熟語,pre1:1096;1:2538,2
+biased against,biased against,phrase,に対する偏見，偏った見方,に対する偏見，偏った見方,exam,3,pre1,pre1;1,熟語,pre1:2624;1:34,2
+blast off,blast off,phrase,発射される,発射される / 発射される，打ち上げられる,exam,3,pre1,pre1;1,熟語,pre1:1466;1:1178,2
+blend in,blend in,phrase,溶け合う，調和する,溶け合う，調和する,exam,3,pre1,pre1;1,熟語,pre1:342;1:163,2
+blood vessel,blood vessel,phrase,血管，血の管,血管，血の管 / 血管，動脈,exam,3,pre1,pre1;1,名詞,pre1:2097;1:1884,2
+blow in,blow in,phrase,風が吹き込む，突然現れる,風が吹き込む，突然現れる,exam,3,pre1,pre1;1,熟語,pre1:514;1:2549,2
+boil down to,boil down to,phrase,煮詰める，結局～になる,煮詰める，結局～になる,exam,3,pre1,pre1;1,熟語,pre1:320;1:2480,2
+boil over,boil over,phrase,沸騰してこぼれる，憤慨する,沸騰してこぼれる，憤慨する,exam,3,pre1,pre1;1,熟語,pre1:725;1:2920,2
+bounce back,bounce back,phrase,持ち直す，回復する,持ち直す，回復する,exam,3,pre1,pre1;1,熟語,pre1:2785;1:395,2
+bow out,bow out,phrase,お辞儀して退出する，身を引く,お辞儀して退出する，身を引く,exam,3,pre1,pre1;1,熟語,pre1:624;1:3093,2
+bowl over,bowl over,phrase,を打ち倒す，仰天させる,を打ち倒す，仰天させる,exam,3,pre1,pre1;1,熟語,pre1:641;1:3814,2
+branch off,branch off,phrase,分岐する，枝を広げる,分岐する，枝を広げる,exam,3,pre1,pre1;1,熟語,pre1:1434;1:850,2
+branch out,branch out,phrase,枝を出す，手を広げる,枝を出す，手を広げる,exam,3,pre1,pre1;1,熟語,pre1:933;1:3616,2
+break down,break down,phrase,を壊す，解体する,を壊す，解体する,exam,3,pre1,pre1;1,熟語,pre1:2860;1:1204,2
+break in,break in,phrase,押し入る,押し入る,exam,3,pre1,pre1,熟語,pre1:3339,1
+break into tears,break into tears,phrase,涙が出る，泣き出す,涙が出る，泣き出す,exam,3,pre1,pre1;1,熟語,pre1:143;1:2617,2
+break up,break up,phrase,別れる,別れる,exam,3,pre1,pre1,熟語,pre1:212,1
+bring A in,bring a in,phrase,Aを持ち込む，持参する,Aを持ち込む，持参する,exam,3,pre1,pre1;1,熟語,pre1:1664;1:1386,2
+bring about,bring about,phrase,を引き起こす，発生させる,を引き起こす，発生させる,exam,3,pre1,pre1,熟語,pre1:1000,1
+bring off,bring off,phrase,を成し遂げる，達成する，完成させる,を成し遂げる，達成する，完成させる,exam,3,pre1,pre1;1,熟語,pre1:2731;1:342,2
+bring on,bring on,phrase,を引き起こす，を発生させる,を引き起こす，を発生させる / を引き起こす，誘発する,exam,3,pre1,pre1;1,熟語,pre1:1327;1:830,2
+bring out,bring out,phrase,を引き出す，引き起こす,を引き出す，引き起こす / を引き出す，引き起こす，招く,exam,3,pre1,pre1;1,熟語,pre1:2528;1:988,2
+brush off,brush off,phrase,をすげなく断る，無視する，拒否する,をすげなく断る，無視する，拒否する,exam,3,pre1,pre1;1,熟語,pre1:713;1:431,2
+buck for,buck for,phrase,得ようと努める，求める,得ようと努める，求める,exam,3,pre1,pre1;1,熟語,pre1:666;1:2941,2
+buckle down,buckle down,phrase,精を出す，全力を尽くす,精を出す，全力を尽くす / 精を出す，全力を尽くす，尽力する,exam,3,pre1,pre1;1,熟語,pre1:1930;1:1776,2
+build up,build up,phrase,増大する，築き上げる,増大する，築き上げる,exam,3,pre1,pre1,熟語,pre1:819,1
+burn out,burn out,phrase,を焼き尽くす，を灼き尽くす,を焼き尽くす，を灼き尽くす / を焼き尽くす，燃え切る，火で追い出す,exam,3,pre1,pre1;1,熟語,pre1:2345;1:478,2
+buy over,buy over,phrase,買収する，味方に抱き込む,買収する，味方に抱き込む,exam,3,pre1,pre1;1,熟語,pre1:532;1:3937,2
+buy up,buy up,phrase,全部買う，買収する,全部買う，買収する,exam,3,pre1,pre1;1,熟語,pre1:1071;1:3572,2
+by contract,by contract,phrase,契約で，契約上の,契約で，契約上の,exam,3,pre1,pre1;1,熟語,pre1:1249;1:543,2
+by default,by default,phrase,既定では，初期段階から,既定では，初期段階から,exam,3,pre1,pre1;1,熟語,pre1:887;1:3540,2
+by dint of,by dint of,phrase,によって，の力で,によって，の力で,exam,3,pre1,pre1;1,熟語,pre1:842;1:2624,2
+by the same token,by the same token,phrase,同様に，さらに,同様に，さらに,exam,3,pre1,pre1,熟語,pre1:388,1
+call down,call down,phrase,下に向って叫ぶ，叱りつける,下に向って叫ぶ，叱りつける,exam,3,pre1,pre1;1,熟語,pre1:1034;1:3604,2
+call on,call on,phrase,を訪問する，要求する,を訪問する，要求する,exam,3,pre1,pre1;1,熟語,pre1:2051;1:2177,2
+capitalize on,capitalize on,phrase,に資本を投下する，を利用する,に資本を投下する，を利用する,exam,3,pre1,pre1;1,熟語,pre1:789;1:3514,2
+carry off,carry off,phrase,運び去る，誘拐する,運び去る，誘拐する,exam,3,pre1,pre1;1,熟語,pre1:536;1:2851,2
+carry through,carry through,phrase,やり通す，達成する,やり通す，達成する,exam,3,pre1,pre1;1,熟語,pre1:1859;1:557,2
+cast away,cast away,phrase,投げ捨てる，処分する,投げ捨てる，処分する,exam,3,pre1,pre1;1,熟語,pre1:644;1:2962,2
+cast off,cast off,phrase,投げ捨てる，縄を解く,投げ捨てる，縄を解く,exam,3,pre1,pre1;1,熟語,pre1:454;1:3637,2
+catch a glimpse of,catch a glimpse of,phrase,をちらっと見る，垣間見る,をちらっと見る，垣間見る,exam,3,pre1,pre1;1,熟語,pre1:903;1:3073,2
+catch on,catch on,phrase,流行する，受け入れられる,流行する，受け入れられる / 流行する，受け入れられる，人気を博す,exam,3,pre1,pre1;1,熟語,pre1:1926;1:907,2
+catch up,catch up,phrase,遅れを取り戻す，追いつく，遅延を補う,遅れを取り戻す，追いつく，遅延を補う,exam,3,pre1,pre1;1,熟語,pre1:2996;1:271,2
+categorize A as B,categorize a as b,phrase,AをBの範疇に分ける，AをBとして分類する,AをBの範疇に分ける，AをBとして分類する,exam,3,pre1,pre1;1,熟語,pre1:1522;1:2045,2
+cave in,cave in,phrase,陥没する,陥没する,exam,3,pre1,pre1,熟語,pre1:3386,1
+cheat on,cheat on,phrase,でズルをする，裏切る,でズルをする，裏切る / でずるをする，裏切る,exam,3,pre1,pre1;1,熟語,pre1:939;1:2699,2
+chip in,chip in,phrase,寄付する，金を出す,寄付する，金を出す,exam,3,pre1,pre1;1,熟語,pre1:1594;1:1962,2
+classify A as B,classify a as b,phrase,AをBに分類する,AをBに分類する / AをBに分類する，AをBで仕分けする,exam,3,pre1,pre1;1,熟語,pre1:2593;1:1928,2
+clean cut,clean cut,phrase,きちんとした，整然とした,きちんとした，整然とした,exam,3,pre1,pre1;1,形容詞,pre1:2270;1:230,2
+cling to,cling to,phrase,にしがみつく,にしがみつく,exam,3,pre1,pre1,熟語,pre1:3199,1
+close in,close in,phrase,を閉じ込める，隔離する,を閉じ込める，隔離する / を閉じ込める，隔離する，密閉するように閉じる,exam,3,pre1,pre1;1,熟語,pre1:2359;1:1377,2
+come along,come along,phrase,一緒に行く，共に進む,一緒に行く，共に進む,exam,3,pre1,pre1;1,熟語,pre1:2876;1:699,2
+come around,come around,phrase,遠回りする，立ち寄る,遠回りする，立ち寄る,exam,3,pre1,pre1;1,熟語,pre1:977;1:3177,2
+come before,come before,phrase,の前に現れる，先立って現れる,の前に現れる，先立って現れる,exam,3,pre1,pre1;1,熟語,pre1:1524;1:1127,2
+come down to,come down to,phrase,結局～になる，に帰する,結局～になる，に帰する,exam,3,pre1,pre1;1,熟語,pre1:1260;1:740,2
+come down with,come down with,phrase,病気などにかかる，罹患する,病気などにかかる，罹患する,exam,3,pre1,pre1;1,熟語,pre1:43;1:155,2
+come off,come off,phrase,から取れる，外れる,から取れる，外れる / から取れる，外れる，取り外す,exam,3,pre1,pre1;1,熟語,pre1:2108;1:1360,2
+come through,come through,phrase,を通り抜ける，やり通す,を通り抜ける，やり通す / を通り抜ける，障害などを通過する，やり通す,exam,3,pre1,pre1;1,熟語,pre1:2825;1:1712,2
+come to a head,come to a head,phrase,山場を迎える，クライマックスを迎える,山場を迎える，クライマックスを迎える,exam,3,pre1,pre1;1,熟語,pre1:1784;1:2215,2
+confess to,confess to,phrase,を白状する，告白する,を白状する，告白する / を白状する，告白する，自白する,exam,3,pre1,pre1;1,熟語,pre1:2453;1:1379,2
+conflict with,conflict with,phrase,と相容れない，合わない,と相容れない，合わない,exam,3,pre1,pre1;1,熟語,pre1:2582;1:2029,2
+conform to,conform to,phrase,に順応する，慣れる，適応する,に順応する，慣れる，適応する,exam,3,pre1,pre1;1,熟語,pre1:1230;1:331,2
+conjure up,conjure up,phrase,素早く出す，呪文で呼び出す,素早く出す，呪文で呼び出す,exam,3,pre1,pre1;1,熟語,pre1:519;1:3422,2
+contend with,contend with,phrase,と戦う，張り合う,と戦う，張り合う,exam,3,pre1,pre1;1,熟語,pre1:216;1:3921,2
+contribute to,contribute to,phrase,に貢献する,に貢献する / に貢献する，助けとなる，役立つ,exam,3,pre1,pre1;1,熟語,pre1:2743;1:963,2
+cough up,cough up,phrase,咳払いする,咳払いする / 咳払いする，咳き込む,exam,3,pre1,pre1;1,熟語,pre1:3014;1:3866,2
+count for,count for,phrase,の価値がある，価値が認められる,の価値がある，価値が認められる / の価値がある，価値の高い，（～するに）値する,exam,3,pre1,pre1;1,熟語,pre1:2029;1:1510,2
+cover for,cover for,phrase,を覆う，代理となる,を覆う，代理となる,exam,3,pre1,pre1,熟語,pre1:706,1
+crack up,crack up,phrase,大破する，くじける,大破する，くじける,exam,3,pre1,pre1;1,熟語,pre1:2502;1:1091,2
+crash down,crash down,phrase,崩れる，台無しになる,崩れる，台無しになる / 崩れる，台無しになる，崩壊する,exam,3,pre1,pre1;1,熟語,pre1:2060;1:1549,2
+critical of,critical of,phrase,を批判する，非難する,を批判する，非難する / を批判する，非難する，批評する,exam,3,pre1,pre1;1,熟語,pre1:2947;1:501,2
+cross out,cross out,phrase,線を引いて消す，を抹消する,線を引いて消す，を抹消する,exam,3,pre1,pre1;1,熟語,pre1:1270;1:397,2
+cross over,cross over,phrase,越えて渡る，越えていく,越えて渡る，越えていく / 越えて渡る，超えていく，通り過ぎる,exam,3,pre1,pre1;1,熟語,pre1:2986;1:1675,2
+cut back on,cut back on,phrase,切り戻す,切り戻す,exam,3,pre1,pre1,熟語,pre1:3350,1
+cut in,cut in,phrase,切り込む，干渉する,切り込む，干渉する,exam,3,pre1,pre1;1,熟語,pre1:2548;1:1172,2
+cut off,cut off,phrase,を断つ，切る,を断つ，切る,exam,3,pre1,pre1;1,熟語,pre1:233;1:853,2
+"day in, day out","day in, day out",phrase,明けても暮れても，毎日毎日,明けても暮れても，毎日毎日,exam,3,pre1,pre1;1,熟語,pre1:751;1:2835,2
+die down,die down,phrase,下火になる，(騒ぎが)静まる,下火になる，(騒ぎが)静まる,exam,3,pre1,pre1,熟語,pre1:512,1
+dish out,dish out,phrase,盛り付ける，配膳する,盛り付ける，配膳する,exam,3,pre1,pre1;1,熟語,pre1:448;1:879,2
+dispose of,dispose of,phrase,廃棄する，処分する,廃棄する，処分する,exam,3,pre1,pre1,動詞,pre1:792,1
+distance A from B,distance a from b,phrase,AをBから遠ざける，AをBから隔てる,AをBから遠ざける，AをBから隔てる,exam,3,pre1,pre1;1,熟語,pre1:2515;1:1868,2
+distract A from B,distract a from b,phrase,Aの気をBからそらす,Aの気をBからそらす,exam,3,pre1,pre1;1,熟語,pre1:2236;1:2078,2
+donate A to B,donate a to b,phrase,AをBに寄付する,AをBに寄付する / AをBに寄付する，AをBに寄贈する,exam,3,pre1,pre1;1,熟語,pre1:2370;1:2295,2
+down payment,down payment,phrase,頭金，手付金,頭金，手付金,exam,3,pre1,pre1;1,名詞,pre1:1787;1:1012,2
+down the drain,down the drain,phrase,排水路に流されて，失われて,排水路に流されて，失われて,exam,3,pre1,pre1;1,熟語,pre1:703;1:3917,2
+doze off,doze off,phrase,うとうと眠る,うとうと眠る,exam,3,pre1,pre1,熟語,pre1:3246,1
+drag on,drag on,phrase,長引く，続きすぎる,長引く，続きすぎる,exam,3,pre1,pre1;1,熟語,pre1:306;1:551,2
+drive off,drive off,phrase,を追い払う，排除する,を追い払う，排除する,exam,3,pre1,pre1;1,熟語,pre1:1531;1:555,2
+drop back,drop back,phrase,後退する，後ろに下がる,後退する，後ろに下がる / 後退する，後ずさる,exam,3,pre1,pre1;1,熟語,pre1:1769;1:626,2
+drum up,drum up,phrase,呼び集める，募集する,呼び集める，募集する,exam,3,pre1,pre1;1,熟語,pre1:396;1:2908,2
+dual citizenship,dual citizenship,phrase,二重国籍，二重国籍者,二重国籍，二重国籍者,exam,3,pre1,pre1;1,名詞,pre1:1452;1:1956,2
+eager to,eager to,phrase,したがる，熱意を持って,したがる，熱意を持って,exam,3,pre1,pre1,熟語,pre1:126,1
+ease into,ease into,phrase,にゆっくりと入る，スムーズに入る，滞りなく入る,にゆっくりと入る，スムーズに入る，滞りなく入る,exam,3,pre1,pre1;1,熟語,pre1:2430;1:526,2
+eat up,eat up,phrase,食べつくす，使い果たす,食べつくす，使い果たす,exam,3,pre1,pre1,熟語,pre1:2496,1
+edge out,edge out,phrase,徐々に押しのける，辛勝する,徐々に押しのける，辛勝する,exam,3,pre1,pre1;1,熟語,pre1:949;1:3702,2
+embroil in,embroil in,phrase,に巻き込む，関与させる,に巻き込む，関与させる,exam,3,pre1,pre1;1,熟語,pre1:507;1:3938,2
+end up with,end up with,phrase,で終わる，の羽目になる,で終わる，の羽目になる,exam,3,pre1,pre1;1,熟語,pre1:207;1:2897,2
+equate A with B,equate a with b,phrase,AとBを等しくする，AをBと同等にする,AとBを等しくする，AをBと同等にする,exam,3,pre1,pre1;1,熟語,pre1:325;1:3404,2
+exert oneself to,exert oneself to,phrase,するために努力する，するために尽力する,するために努力する，するために尽力する,exam,3,pre1,pre1;1,熟語,pre1:954;1:2904,2
+experiment with,experiment with,phrase,を試す，実験する,を試す，実験する,exam,3,pre1,pre1;1,熟語,pre1:1550;1:657,2
+expose A to B,expose a to b,phrase,AをBにさらす,AをBにさらす / AをBにさらす，AをBに露出する,exam,3,pre1,pre1;1,熟語,pre1:2737;1:1556,2
+face off,face off,phrase,対決する，向き合う，立ち向かう,対決する，向き合う，立ち向かう,exam,3,pre1,pre1;1,熟語,pre1:2850;1:276,2
+fade out,fade out,phrase,消える，消えていく,消える，消えていく,exam,3,pre1,pre1,熟語,pre1:3042,1
+fall apart,fall apart,phrase,崩壊する，ばらばらに壊れる,崩壊する，ばらばらに壊れる,exam,3,pre1,pre1,熟語,pre1:262,1
+fall away,fall away,phrase,弱まる，落ちる,弱まる，落ちる,exam,3,pre1,pre1;1,熟語,pre1:1478;1:726,2
+fall back on,fall back on,phrase,に頼る，信じる,に頼る，信じる,exam,3,pre1,pre1;1,熟語,pre1:194;1:1148,2
+fall for,fall for,phrase,に夢中になる，騙される，引きつけられる,に夢中になる，騙される，引きつけられる,exam,3,pre1,pre1;1,熟語,pre1:80;1:344,2
+fall in with,fall in with,phrase,と知り合いになる，交際する,と知り合いになる，交際する,exam,3,pre1,pre1;1,熟語,pre1:356;1:2546,2
+fall into,fall into,phrase,に属する，分類される,に属する，分類される,exam,3,pre1,pre1;1,熟語,pre1:2793;1:548,2
+fall off,fall off,phrase,減少する,減少する / 減少する，減る,exam,3,pre1,pre1;1,熟語,pre1:1610;1:785,2
+fall out of favor with,fall out of favor with,phrase,に嫌われる，のお気に入りでなくなる,に嫌われる，のお気に入りでなくなる,exam,3,pre1,pre1;1,熟語,pre1:2530;1:2040,2
+fall prey to,fall prey to,phrase,の餌食になる，犠牲になる,の餌食になる，犠牲になる,exam,3,pre1,pre1;1,熟語,pre1:351;1:3796,2
+fall through,fall through,phrase,失敗に終わる，駄目になる，台無しになる,失敗に終わる，駄目になる，台無しになる,exam,3,pre1,pre1;1,熟語,pre1:2826;1:330,2
+fall under,fall under,phrase,支配下に入る，分類される,支配下に入る，分類される,exam,3,pre1,pre1;1,熟語,pre1:2013;1:123,2
+far cry from,far cry from,phrase,叫び声から遠い，からほど遠い,叫び声から遠い，からほど遠い,exam,3,pre1,pre1;1,熟語,pre1:908;1:3094,2
+feed off,feed off,phrase,から取って食べる，情報を得る，採取して利用する,から取って食べる，情報を得る，採取して利用する,exam,3,pre1,pre1;1,熟語,pre1:528;1:480,2
+feed on,feed on,phrase,にエサをやる，(～を)えさとする,にエサをやる，(～を)えさとする,exam,3,pre1,pre1,熟語,pre1:498,1
+feel for,feel for,phrase,を感じる，同情する，を体感する,を感じる，同情する，を体感する,exam,3,pre1,pre1;1,熟語,pre1:2269;1:357,2
+fight back,fight back,phrase,応戦する，やり返す,応戦する，やり返す,exam,3,pre1,pre1;1,熟語,pre1:2786;1:2270,2
+figure out,figure out,phrase,がわかる,がわかる,exam,3,pre1,pre1,熟語,pre1:3066,1
+file a suit,file a suit,phrase,提訴する，訴訟を提出する,提訴する，訴訟を提出する / 提訴する，訴訟を提出する，告訴する,exam,3,pre1,pre1;1,熟語,pre1:1621;1:1513,2
+finish off,finish off,phrase,を完成させる，完遂させる,を完成させる，完遂させる,exam,3,pre1,pre1;1,熟語,pre1:2063;1:559,2
+fire up,fire up,phrase,点火する，起動する,点火する，起動する,exam,3,pre1,pre1;1,熟語,pre1:2368;1:698,2
+fish for,fish for,phrase,聞き出す，誘い出す,聞き出す，誘い出す,exam,3,pre1,pre1;1,熟語,pre1:522;1:2934,2
+fit in,fit in,phrase,うまく馴染む，溶け込む,うまく馴染む，溶け込む,exam,3,pre1,pre1;1,熟語,pre1:1441;1:2354,2
+fit into,fit into,phrase,に溶け込む，調和する,に溶け込む，調和する,exam,3,pre1,pre1,熟語,pre1:1151,1
+flare up,flare up,phrase,急に燃え上がる，勃発する,急に燃え上がる，勃発する,exam,3,pre1,pre1;1,熟語,pre1:344;1:2403,2
+for the good of,for the good of,phrase,のために，の(利益の)ために,のために，の(利益の)ために,exam,3,pre1,pre1;1,熟語,pre1:770;1:3187,2
+force down,force down,phrase,を無理やり飲み込む，強いて飲み込む，無理に飲み込む,を無理やり飲み込む，強いて飲み込む，無理に飲み込む,exam,3,pre1,pre1;1,熟語,pre1:1818;1:301,2
+from hand to mouth,from hand to mouth,phrase,その日暮らしで，将来の備えをしないで,その日暮らしで，将来の備えをしないで,exam,3,pre1,pre1;1,熟語,pre1:429;1:3723,2
+frown upon,frown upon,phrase,眉をひそめる,眉をひそめる,exam,3,pre1,pre1,熟語,pre1:3115,1
+get down to,get down to,phrase,に下りる，取り組む,に下りる，取り組む,exam,3,pre1,pre1;1,熟語,pre1:2872;1:2140,2
+get in on,get in on,phrase,加わる，乗り込む,加わる，乗り込む,exam,3,pre1,pre1;1,熟語,pre1:1898;1:1971,2
+get into,get into,phrase,に入り込む，合格する,に入り込む，合格する,exam,3,pre1,pre1;1,熟語,pre1:1647;1:865,2
+get on with,get on with,phrase,とうまくやっていく，スムーズに進める,とうまくやっていく，スムーズに進める,exam,3,pre1,pre1;1,熟語,pre1:2889;1:652,2
+get past,get past,phrase,のそばを通る，通り抜ける,のそばを通る，通り抜ける,exam,3,pre1,pre1;1,熟語,pre1:112;1:2724,2
+get wet to the skin,get wet to the skin,phrase,ずぶ濡れになる，びしょ濡れになる,ずぶ濡れになる，びしょ濡れになる,exam,3,pre1,pre1;1,熟語,pre1:563;1:2514,2
+give away,give away,phrase,無償で配る，暴露する,無償で配る，暴露する,exam,3,pre1,pre1;1,熟語,pre1:2950;1:1110,2
+give in,give in,phrase,降伏する，投降する,降伏する，投降する,exam,3,pre1,pre1;1,熟語,pre1:1732;1:417,2
+give off,give off,phrase,を放つ，放出する,を放つ，放出する / を放つ，放出する，発散する,exam,3,pre1,pre1;1,熟語,pre1:215;1:975,2
+give over,give over,phrase,を任せる，委ねる,を任せる，委ねる,exam,3,pre1,pre1;1,熟語,pre1:1914;1:818,2
+give rise to,give rise to,phrase,を生じさせる，を引き起こす,を生じさせる，を引き起こす,exam,3,pre1,pre1;1,熟語,pre1:2644;1:98,2
+give way,give way,phrase,道を譲る，くじける,道を譲る，くじける,exam,3,pre1,pre1;1,熟語,pre1:779;1:3546,2
+go against,go against,phrase,に反して，に逆らって，反対に,に反して，に逆らって，反対に,exam,3,pre1,pre1;1,熟語,pre1:1256;1:530,2
+go astray,go astray,phrase,行方不明になる，堕落する,行方不明になる，堕落する,exam,3,pre1,pre1;1,熟語,pre1:169;1:3766,2
+go back on,go back on,phrase,を裏切る，約束を破る,を裏切る，約束を破る,exam,3,pre1,pre1;1,熟語,pre1:2555;1:1226,2
+go nuts,go nuts,phrase,気がふれる，怒り狂う,気がふれる，怒り狂う,exam,3,pre1,pre1;1,熟語,pre1:432;1:2906,2
+go over,go over,phrase,を繰り返す,を繰り返す / を繰り返す，再び行う,exam,3,pre1,pre1;1,熟語,pre1:2680;1:1000,2
+go under,go under,phrase,失敗する，破産する，失敗に終わる,失敗する，破産する，失敗に終わる,exam,3,pre1,pre1;1,熟語,pre1:525;1:313,2
+grant A to B,grant a to b,phrase,BにAを供与する，BにAを提供する,BにAを供与する，BにAを提供する,exam,3,pre1,pre1;1,熟語,pre1:1655;1:1815,2
+grow into,grow into,phrase,に発展する，進展する,に発展する，進展する / に発展する，進行する，進展する,exam,3,pre1,pre1;1,熟語,pre1:1520;1:580,2
+grow out of,grow out of,phrase,から生じる，脱皮する,から生じる，脱皮する / から生じる，生まれる,exam,3,pre1,pre1;1,熟語,pre1:2072;1:1444,2
+gun for,gun for,phrase,を追い求める，必死になる,を追い求める，必死になる,exam,3,pre1,pre1;1,熟語,pre1:1118;1:3236,2
+hail from,hail from,phrase,の出身である，(船が)から来る,の出身である，(船が)から来る,exam,3,pre1,pre1;1,熟語,pre1:1131;1:3953,2
+hand off,hand off,phrase,を渡す，手渡す,を渡す，手渡す / を渡す，手渡す，与える,exam,3,pre1,pre1;1,熟語,pre1:2387;1:959,2
+hang around,hang around,phrase,うろつく，徘徊する,うろつく，徘徊する / うろつく，徘徊する，歩き回る,exam,3,pre1,pre1;1,熟語,pre1:1221;1:976,2
+hang on,hang on,phrase,しがみつく，頑張る,しがみつく，頑張る,exam,3,pre1,pre1;1,熟語,pre1:6;1:1993,2
+hang on to,hang on to,phrase,にしがみつく，執着する,にしがみつく，執着する,exam,3,pre1,pre1;1,熟語,pre1:2005;1:114,2
+hang out,hang out,phrase,くつろぐ，リラックスする,くつろぐ，リラックスする,exam,3,pre1,pre1;1,熟語,pre1:2464;1:541,2
+have a flat tire,have a flat tire,phrase,タイヤがパンクする，パンクしている,タイヤがパンクする，パンクしている,exam,3,pre1,pre1;1,熟語,pre1:992;1:3338,2
+have access to,have access to,phrase,を利用できる，を利用可能,を利用できる，を利用可能,exam,3,pre1,pre1;1,熟語,pre1:2241;1:2179,2
+have off,have off,phrase,取り外す，休暇を取る,取り外す，休暇を取る,exam,3,pre1,pre1;1,熟語,pre1:731;1:3934,2
+head off,head off,phrase,を回避する，阻止する,を回避する，阻止する / を回避する，阻止する，避ける,exam,3,pre1,pre1;1,熟語,pre1:1236;1:1622,2
+head out,head out,phrase,出発する，去る,出発する，去る,exam,3,pre1,pre1;1,熟語,pre1:2830;1:1118,2
+head over heels,head over heels,phrase,真っ逆さまに，逆さまに,真っ逆さまに，逆さまに,exam,3,pre1,pre1;1,熟語,pre1:1156;1:3325,2
+hit the books,hit the books,phrase,猛勉強する，必死に勉強する,猛勉強する，必死に勉強する / 猛勉強する，必死に勉強する，一生懸命学ぶ,exam,3,pre1,pre1;1,熟語,pre1:2772;1:1478,2
+hold off,hold off,phrase,を寄せ付けない，引き離す,を寄せ付けない，引き離す,exam,3,pre1,pre1,熟語,pre1:1114,1
+hold over,hold over,phrase,を持ち越す，延期する,を持ち越す，延期する,exam,3,pre1,pre1;1,熟語,pre1:1723;1:33,2
+hold up,hold up,phrase,持ちこたえる，耐える,持ちこたえる，耐える,exam,3,pre1,pre1;1,熟語,pre1:2134;1:184,2
+identify A as B,identify a as b,phrase,AがBだと分かる，認識する,AがBだと分かる，認識する,exam,3,pre1,pre1,熟語,pre1:1005,1
+ill at ease,ill at ease,phrase,落ち着かない，不安な,落ち着かない，不安な,exam,3,pre1,pre1;1,形容詞,pre1:548;1:3548,2
+in a nutshell,in a nutshell,phrase,一言で言えば，極めて簡単に言えば,一言で言えば，極めて簡単に言えば,exam,3,pre1,pre1;1,熟語,pre1:683;1:3520,2
+in abundance,in abundance,phrase,大量に，豊富に,大量に，豊富に,exam,3,pre1,pre1;1,熟語,pre1:934;1:3454,2
+in all likelihood,in all likelihood,phrase,おそらく，ほぼ確実に,おそらく，ほぼ確実に,exam,3,pre1,pre1;1,熟語,pre1:1090;1:3727,2
+in anticipation of,in anticipation of,phrase,を予期して，見込んで,を予期して，見込んで,exam,3,pre1,pre1;1,熟語,pre1:852;1:3088,2
+in development,in development,phrase,開発中の，開発過程において,開発中の，開発過程において / 開発中の，進行中の，現在開発されている,exam,3,pre1,pre1;1,熟語,pre1:2246;1:1516,2
+in disguise,in disguise,phrase,変装した，～したふり,変装した，～したふり,exam,3,pre1,pre1;1,熟語,pre1:848;1:2981,2
+in excess,in excess,phrase,過度に，余分に,過度に，余分に / 過度に，余分に，過剰に,exam,3,pre1,pre1;1,熟語,pre1:1807;1:1409,2
+in line with,in line with,phrase,に従って，一致して，合致して,に従って，一致して，合致して,exam,3,pre1,pre1;1,熟語,pre1:2577;1:506,2
+in mind,in mind,phrase,頭に置いて，考慮して,頭に置いて，考慮して / 頭に置いて，考慮して，考えに入れる,exam,3,pre1,pre1;1,熟語,pre1:2540;1:1573,2
+in order,in order,phrase,順序通りに，整った,順序通りに，整った / 順序通りに，整った，順番通りに,exam,3,pre1,pre1;1,熟語,pre1:1901;1:1338,2
+in person,in person,phrase,直接に，対面で,直接に，対面で,exam,3,pre1,pre1;1,熟語,pre1:1881;1:95,2
+in place of,in place of,phrase,の代わりに，変わって,の代わりに，変わって,exam,3,pre1,pre1;1,熟語,pre1:469;1:126,2
+in pursuit of,in pursuit of,phrase,を追跡して，追いかけて,を追跡して，追いかけて,exam,3,pre1,pre1;1,熟語,pre1:2243;1:654,2
+in substance,in substance,phrase,実質上，実際には，事実上,実質上，実際には，事実上,exam,3,pre1,pre1;1,熟語,pre1:120;1:3818,2
+in the abstract,in the abstract,phrase,理論上は，理論的には,理論上は，理論的には,exam,3,pre1,pre1;1,熟語,pre1:778;1:3223,2
+in the concrete,in the concrete,phrase,具体的に，具体化すると,具体的に，具体化すると,exam,3,pre1,pre1;1,熟語,pre1:304;1:3970,2
+in the first place,in the first place,phrase,最初に，元々,最初に，元々,exam,3,pre1,pre1;1,熟語,pre1:2090;1:2264,2
+in the mood for,in the mood for,phrase,したい気分である，する気になっている,したい気分である，する気になっている,exam,3,pre1,pre1;1,熟語,pre1:839;1:3068,2
+in the red,in the red,phrase,赤字で，赤字経営で,赤字で，赤字経営で,exam,3,pre1,pre1;1,熟語,pre1:123;1:3837,2
+in the suburbs of,in the suburbs of,phrase,の郊外で，の近郊で,の郊外で，の近郊で,exam,3,pre1,pre1;1,熟語,pre1:476;1:3668,2
+in token of,in token of,phrase,の証拠に，のしるしとして,の証拠に，のしるしとして,exam,3,pre1,pre1;1,熟語,pre1:652;1:3725,2
+inflict A on B,inflict a on b,phrase,BにAを与える，負わせる,BにAを与える，負わせる,exam,3,pre1,pre1;1,熟語,pre1:890;1:2585,2
+infringe on,infringe on,phrase,侵害する，侵犯する,侵害する，侵犯する,exam,3,pre1,pre1;1,熟語,pre1:309;1:2391,2
+inquire after,inquire after,phrase,の安否を尋ねる，を見舞う,の安否を尋ねる，を見舞う,exam,3,pre1,pre1;1,熟語,pre1:701;1:3446,2
+integrate A into B,integrate a into b,phrase,AをBに統合する，AをBに併合する,AをBに統合する，AをBに併合する / AをBに統合する，AをBに併合する，AをBに結合する,exam,3,pre1,pre1;1,熟語,pre1:2571;1:1779,2
+iron out,iron out,phrase,解決する，しわを伸ばす,解決する，しわを伸ばす,exam,3,pre1,pre1;1,熟語,pre1:747;1:2548,2
+issue A to B,issue a to b,phrase,AをBに支給する，発行する,AをBに支給する，発行する / AをBに支給する，AをBに発行する,exam,3,pre1,pre1;1,熟語,pre1:428;1:3716,2
+jack up,jack up,phrase,吊り上げる，ジャッキで上げる,吊り上げる，ジャッキで上げる,exam,3,pre1,pre1;1,熟語,pre1:1011;1:2811,2
+jump at,jump at,phrase,に飛びつく，すぐに受け入れる,に飛びつく，すぐに受け入れる,exam,3,pre1,pre1;1,熟語,pre1:2801;1:191,2
+just around the corner,just around the corner,phrase,目前に来ている，間近である,目前に来ている，間近である / 目前に来ている，すぐ近く,exam,3,pre1,pre1;1,熟語,pre1:1623;1:1299,2
+keep A away from B,keep a away from b,phrase,AをBから遠ざける,AをBから遠ざける,exam,3,pre1,pre1;1,熟語,pre1:1932;1:2100,2
+keep A out of B,keep a out of b,phrase,AをBに入れない，AをBに含めない,AをBに入れない，AをBに含めない,exam,3,pre1,pre1;1,熟語,pre1:2339;1:1354,2
+keep at,keep at,phrase,を根気よく続ける，継続する,を根気よく続ける，継続する,exam,3,pre1,pre1;1,熟語,pre1:230;1:3107,2
+keep down,keep down,phrase,身を低くする，大きな声を出さずにいる,身を低くする，大きな声を出さずにいる,exam,3,pre1,pre1;1,熟語,pre1:885;1:2702,2
+keep up on,keep up on,phrase,の最新状況を把握する，追いつく,の最新状況を把握する，追いつく,exam,3,pre1,pre1;1,熟語,pre1:2249;1:151,2
+kick around,kick around,phrase,粗末に扱う，酷使する,粗末に扱う，酷使する,exam,3,pre1,pre1;1,熟語,pre1:2279;1:2111,2
+kick off,kick off,phrase,始める，追い払う,始める，追い払う / 始める，追い払う，開始する,exam,3,pre1,pre1;1,熟語,pre1:1591;1:1648,2
+knock down,knock down,phrase,を取り壊す，打ち倒す,を取り壊す，打ち倒す,exam,3,pre1,pre1,熟語,pre1:89,1
+land A with B,land a with b,phrase,AにBを引き受けさせる，AにBをやらせる,AにBを引き受けさせる，AにBをやらせる / AにBを引き受けさせる,exam,3,pre1,pre1;1,熟語,pre1:423;1:3184,2
+law enforcement,law enforcement,phrase,法の執行,法の執行 / 法の執行，法の適用，法の施行,exam,3,pre1,pre1;1,名詞,pre1:2482;1:1020,2
+lay down,lay down,phrase,を横たえる，倒す,を横たえる，倒す,exam,3,pre1,pre1;1,熟語,pre1:965;1:3606,2
+lay off,lay off,phrase,を解雇する，首にする,を解雇する，首にする,exam,3,pre1,pre1;1,熟語,pre1:96;1:564,2
+leap in,leap in,phrase,飛び込む，急上昇,飛び込む，急上昇,exam,3,pre1,pre1,熟語,pre1:63,1
+least of all,least of all,phrase,とりわけ，最も～ない,とりわけ，最も～ない,exam,3,pre1,pre1;1,副詞,pre1:565;1:2642,2
+leave off,leave off,phrase,脱いだままでいる，着ずにいる,脱いだままでいる，着ずにいる / 脱いだままでいる，着ずにいる，脱衣したまま，着るのをやめる,exam,3,pre1,pre1;1,熟語,pre1:1964;1:1891,2
+let A go,let a go,phrase,Aを解雇する，自由にする,Aを解雇する，自由にする,exam,3,pre1,pre1;1,熟語,pre1:2849;1:1831,2
+let on,let on,phrase,漏らす，白状する,漏らす，白状する,exam,3,pre1,pre1;1,熟語,pre1:572;1:2900,2
+let out,let out,phrase,外に出す，解放する,外に出す，解放する,exam,3,pre1,pre1;1,熟語,pre1:1897;1:2023,2
+let up,let up,phrase,やめる，弱まる，止む,やめる，弱まる，止む,exam,3,pre1,pre1;1,熟語,pre1:1516;1:521,2
+level off,level off,phrase,平らにする，水平にする,平らにする，水平にする,exam,3,pre1,pre1;1,熟語,pre1:2740;1:108,2
+lie on,lie on,phrase,責任がある，のしかかる，横になる,責任がある，のしかかる，横になる,exam,3,pre1,pre1;1,熟語,pre1:315;1:2376,2
+life expectancy,life expectancy,phrase,余命，残りの寿命,余命，残りの寿命 / 余命，生命の期間,exam,3,pre1,pre1;1,名詞,pre1:814;1:553,2
+lift off,lift off,phrase,離陸する，飛び立つ,離陸する，飛び立つ,exam,3,pre1,pre1;1,熟語,pre1:1328;1:1058,2
+light bulb,light bulb,phrase,電球，蛍光灯,電球，蛍光灯 / 電球，光球，蛍光灯,exam,3,pre1,pre1;1,名詞,pre1:2276;1:581,2
+live up to,live up to,phrase,に従って動く，期待に応える,に従って動く，期待に応える,exam,3,pre1,pre1;1,熟語,pre1:1283;1:1816,2
+lock in,lock in,phrase,を閉じ込める，密封するように閉じる,を閉じ込める，密封するように閉じる / を閉じ込める，隔離する,exam,3,pre1,pre1;1,熟語,pre1:2642;1:1145,2
+lock up,lock up,phrase,刑務所，留置所,刑務所，留置所,exam,3,pre1,pre1;1,名詞,pre1:1968;1:2001,2
+look to,look to,phrase,を頼りにする，信頼する,を頼りにする，信頼する / を頼りにする，信頼する，頼りにする,exam,3,pre1,pre1;1,熟語,pre1:1262;1:964,2
+lose out to,lose out to,phrase,に負ける，で死ぬ,に負ける，で死ぬ / に負ける，敗れる,exam,3,pre1,pre1;1,熟語,pre1:1343;1:808,2
+low frequency,low frequency,phrase,低周波，低頻度,低周波，低頻度,exam,3,pre1,pre1;1,名詞,pre1:1499;1:130,2
+make a fuss,make a fuss,phrase,大騒ぎする，騒ぎ立てる,大騒ぎする，騒ぎ立てる,exam,3,pre1,pre1;1,熟語,pre1:571;1:3212,2
+make allowance for,make allowance for,phrase,を大目に見る，を考慮に入れる,を大目に見る，を考慮に入れる,exam,3,pre1,pre1;1,熟語,pre1:485;1:2646,2
+make ends meet,make ends meet,phrase,収支を合わせる，つじつまを合わせる,収支を合わせる，つじつまを合わせる,exam,3,pre1,pre1;1,熟語,pre1:2267;1:53,2
+make haste,make haste,phrase,急ぐ，手早くする,急ぐ，手早くする,exam,3,pre1,pre1;1,熟語,pre1:395;1:2978,2
+make it,make it,phrase,やり遂げる，たどり着く,やり遂げる，たどり着く / やり遂げる，たどり着く，成し遂げる,exam,3,pre1,pre1;1,熟語,pre1:1640;1:1536,2
+make out,make out,phrase,理解する，うまくやる,理解する，うまくやる,exam,3,pre1,pre1;1,熟語,pre1:1364;1:2367,2
+make over,make over,phrase,を作り替える，を改装する,を作り替える，を改装する / を作り替える，改造する,exam,3,pre1,pre1;1,熟語,pre1:2173;1:823,2
+map out,map out,phrase,綿密に計画する，詳細に計画する，地図に精密に示す,綿密に計画する，詳細に計画する，地図に精密に示す / 綿密に計画する，地図に精密に示す,exam,3,pre1,pre1;1,熟語,pre1:19;1:3164,2
+match A with B,match a with b,phrase,AをBと適合させる,AをBと適合させる / AをBと適合させる，AをBに合わせる,exam,3,pre1,pre1;1,熟語,pre1:2820;1:1898,2
+miltary service,miltary service,phrase,兵役，徴兵,兵役，徴兵 / 兵役，兵役の義務,exam,3,pre1,pre1;1,名詞,pre1:2919;1:1280,2
+mingle with,mingle with,phrase,と混ざる，交じる,と混ざる，交じる,exam,3,pre1,pre1;1,熟語,pre1:767;1:3330,2
+miss out,miss out,phrase,機会を逃す，見落とす，見過ごす,機会を逃す，見落とす，見過ごす,exam,3,pre1,pre1;1,熟語,pre1:901;1:476,2
+no better than,no better than,phrase,と変わらない，同じぐらい悪い,と変わらない，同じぐらい悪い / と変わらない，同等の,exam,3,pre1,pre1;1,熟語,pre1:1558;1:1268,2
+no sweat,no sweat,phrase,容易に，お安い御用で,容易に，お安い御用で,exam,3,pre1,pre1;1,熟語,pre1:845;1:2772,2
+nod off,nod off,phrase,眠り込む，眠る,眠り込む，眠る / 眠り込む，眠る，深く眠る,exam,3,pre1,pre1;1,熟語,pre1:2764;1:1586,2
+not absolutely,not absolutely,phrase,絶対ではない，必ず，ではない,絶対ではない，必ず，ではない,exam,3,pre1,pre1;1,副詞,pre1:825;1:3381,2
+not surprisingly,not surprisingly,phrase,当たり前の事だが，もちろんのことだが，当然のことながら,当たり前の事だが，もちろんのことだが，当然のことながら,exam,3,pre1,pre1;1,副詞,pre1:1933;1:314,2
+obstacle to,obstacle to,phrase,への障壁，の妨害,への障壁，の妨害,exam,3,pre1,pre1;1,熟語,pre1:2647;1:2349,2
+odds and ends,odds and ends,phrase,がらくた，半端なもの,がらくた，半端なもの,exam,3,pre1,pre1;1,名詞,pre1:826;1:3907,2
+on balance,on balance,phrase,考慮すると，結局,考慮すると，結局,exam,3,pre1,pre1;1,熟語,pre1:2318;1:2063,2
+on standby,on standby,phrase,待機して，キャンセル待ちをして,待機して，キャンセル待ちをして,exam,3,pre1,pre1;1,熟語,pre1:1626;1:2077,2
+on the rise,on the rise,phrase,上昇中で，増加中,上昇中で，増加中,exam,3,pre1,pre1;1,熟語,pre1:1657;1:124,2
+opt for,opt for,phrase,選ぶ，選択する,選ぶ，選択する,exam,3,pre1,pre1,熟語,pre1:237,1
+out in the cold,out in the cold,phrase,冷たくされて，無視されて,冷たくされて，無視されて,exam,3,pre1,pre1;1,熟語,pre1:487;1:2899,2
+out of bounds,out of bounds,phrase,立入禁止で，境界線を越えて,立入禁止で，境界線を越えて,exam,3,pre1,pre1;1,熟語,pre1:490;1:3586,2
+out of nowhere,out of nowhere,phrase,いきなり，突然,いきなり，突然 / いきなり，突然に，予告なく,exam,3,pre1,pre1;1,熟語,pre1:2142;1:1730,2
+out of the question,out of the question,phrase,話にならない，不可能な,話にならない，不可能な,exam,3,pre1,pre1;1,熟語,pre1:1509;1:710,2
+out of the woods,out of the woods,phrase,森の外へ，困難を脱して,森の外へ，困難を脱して,exam,3,pre1,pre1;1,熟語,pre1:419;1:3570,2
+pack up,pack up,phrase,を荷造りする，詰める,を荷造りする，詰める,exam,3,pre1,pre1;1,熟語,pre1:2887;1:52,2
+paid vacation,paid vacation,phrase,有給休暇，給与付きの休暇,有給休暇，給与付きの休暇,exam,3,pre1,pre1;1,名詞,pre1:2936;1:1416,2
+pass for,pass for,phrase,として通る，通過する,として通る，通過する,exam,3,pre1,pre1;1,熟語,pre1:362;1:758,2
+pass off,pass off,phrase,次第に消える，徐々に消える,次第に消える，徐々に消える,exam,3,pre1,pre1;1,熟語,pre1:354;1:408,2
+pass on,pass on,phrase,通り過ぎる，を伝える,通り過ぎる，を伝える / 通り過ぎる，通る,exam,3,pre1,pre1;1,熟語,pre1:461;1:994,2
+pass over,pass over,phrase,を無視する，通り越す,を無視する，通り越す,exam,3,pre1,pre1;1,熟語,pre1:286;1:1170,2
+pass through,pass through,phrase,を通る，通り抜ける,を通る，通り抜ける,exam,3,pre1,pre1;1,熟語,pre1:483;1:2566,2
+pay down,pay down,phrase,頭金として払う，即金で払う,頭金として払う，即金で払う,exam,3,pre1,pre1;1,熟語,pre1:403;1:2758,2
+pay off,pay off,phrase,全部払う，完済する,全部払う，完済する,exam,3,pre1,pre1;1,熟語,pre1:1739;1:43,2
+pay regard to,pay regard to,phrase,を尊重する，尊敬する,を尊重する，尊敬する,exam,3,pre1,pre1;1,熟語,pre1:227;1:2412,2
+peel away,peel away,phrase,むく，剥がす,むく，剥がす,exam,3,pre1,pre1,熟語,pre1:222,1
+pertain to,pertain to,phrase,に関係する，にふさわしい,に関係する，にふさわしい,exam,3,pre1,pre1;1,熟語,pre1:313;1:3397,2
+phase out,phase out,phrase,段階的に廃止する，撤去する,段階的に廃止する，撤去する,exam,3,pre1,pre1;1,熟語,pre1:108;1:2728,2
+pick over,pick over,phrase,吟味して選ぶ，選び抜く,吟味して選ぶ，選び抜く,exam,3,pre1,pre1;1,熟語,pre1:2349;1:206,2
+pick through,pick through,phrase,を探る，選りすぐる,を探る，選りすぐる,exam,3,pre1,pre1;1,熟語,pre1:2044;1:1065,2
+pick up the pieces,pick up the pieces,phrase,欠片を拾う，事態を修復する,欠片を拾う，事態を修復する,exam,3,pre1,pre1;1,熟語,pre1:579;1:2545,2
+pick up the thread,pick up the thread,phrase,再び続ける，再開する,再び続ける，再開する,exam,3,pre1,pre1;1,熟語,pre1:736;1:2658,2
+pile in,pile in,phrase,どっと中に入る，一気に入る,どっと中に入る，一気に入る,exam,3,pre1,pre1;1,熟語,pre1:617;1:254,2
+pile up,pile up,phrase,を積み上げる，積み重ねる，山積みにする，集積する,を積み上げる，積み重ねる，山積みにする，集積する,exam,3,pre1,pre1;1,熟語,pre1:1724;1:267,2
+pin down,pin down,phrase,を留める，押さえつける,を留める，押さえつける,exam,3,pre1,pre1,熟語,pre1:1137,1
+place limitation on,place limitation on,phrase,に制限を加える，限界を与える,に制限を加える，限界を与える / に制限を加える，限界を設ける,exam,3,pre1,pre1;1,熟語,pre1:2753;1:1010,2
+play at,play at,phrase,起用する，遊ぶ,起用する，遊ぶ,exam,3,pre1,pre1;1,熟語,pre1:1794;1:2199,2
+play down,play down,phrase,を軽く扱う，手軽に扱う，を見くびる,を軽く扱う，手軽に扱う，を見くびる,exam,3,pre1,pre1;1,熟語,pre1:1937;1:528,2
+play out,play out,phrase,最後まで演じる，遊ぶ，最後まで続ける,最後まで演じる，遊ぶ，最後まで続ける,exam,3,pre1,pre1;1,熟語,pre1:2885;1:361,2
+plunge A into B,plunge a into b,phrase,AがBに飛び込む，突進する,AがBに飛び込む，突進する,exam,3,pre1,pre1,熟語,pre1:273,1
+point out,point out,phrase,を指摘する，指示する,を指摘する，指示する,exam,3,pre1,pre1;1,熟語,pre1:1569;1:2290,2
+pop up,pop up,phrase,飛び出す，出現する,飛び出す，出現する,exam,3,pre1,pre1,熟語,pre1:400,1
+pore over,pore over,phrase,を凝視する，熟読する,を凝視する，熟読する,exam,3,pre1,pre1;1,熟語,pre1:744;1:2692,2
+prop up,prop up,phrase,添える，支える,添える，支える,exam,3,pre1,pre1,熟語,pre1:193,1
+public official,public official,phrase,公務員,公務員 / 公務員，官僚,exam,3,pre1,pre1;1,名詞,pre1:1407;1:1753,2
+pull in,pull in,phrase,到着する，片側に寄る,到着する，片側に寄る,exam,3,pre1,pre1;1,熟語,pre1:2151;1:134,2
+pull over,pull over,phrase,車を止める，車を停止させる,車を止める，車を停止させる / 車を止める，車を停止させる，停車させる,exam,3,pre1,pre1;1,熟語,pre1:150;1:368,2
+pull through,pull through,phrase,を乗り越える，を超える,を乗り越える，を超える,exam,3,pre1,pre1;1,熟語,pre1:896;1:389,2
+push through,push through,phrase,押し通す，芽が出る,押し通す，芽が出る,exam,3,pre1,pre1;1,熟語,pre1:2008;1:1223,2
+put A into place,put a into place,phrase,Aを実行する，Aを遂行する,Aを実行する，Aを遂行する,exam,3,pre1,pre1;1,熟語,pre1:2441;1:1464,2
+put A to sleep,put a to sleep,phrase,Aを眠らせる，安楽死させる,Aを眠らせる，安楽死させる,exam,3,pre1,pre1;1,熟語,pre1:1323;1:2259,2
+put an end to,put an end to,phrase,を終わらせる，終了させる,を終わらせる，終了させる,exam,3,pre1,pre1;1,熟語,pre1:2883;1:224,2
+put emphasis on,put emphasis on,phrase,に重点を置く，を重んじる,に重点を置く，を重んじる,exam,3,pre1,pre1;1,熟語,pre1:1112;1:3286,2
+put forth,put forth,phrase,を進める，出す,を進める，出す,exam,3,pre1,pre1;1,熟語,pre1:2697;1:141,2
+put up at,put up at,phrase,に泊まる，宿泊する,に泊まる，宿泊する,exam,3,pre1,pre1;1,熟語,pre1:135;1:2967,2
+read off,read off,phrase,を読み上げる，すらすら読む,を読み上げる，すらすら読む / を読み上げる，すらすら読む，声に出して読む,exam,3,pre1,pre1;1,熟語,pre1:2384;1:919,2
+real estate,real estate,phrase,不動産，物件,不動産，物件,exam,3,pre1,pre1;1,名詞,pre1:2171;1:677,2
+rebel against,rebel against,phrase,に反抗する，対抗する,に反抗する，対抗する,exam,3,pre1,pre1;1,熟語,pre1:2446;1:692,2
+regardless of,regardless of,phrase,にも関わらず，それにも関わらず,にも関わらず，それにも関わらず / に関係なく，それにも関わらず,exam,3,pre1,pre1;1,熟語,pre1:1688;1:299,2
+register for,register for,phrase,に登録する，に記録する,に登録する，に記録する / に登録する，に記録する，に記載する,exam,3,pre1,pre1;1,熟語,pre1:2261;1:350,2
+reproach A for B,reproach a for b,phrase,BのことでAを非難する，咎める,BのことでAを非難する，咎める,exam,3,pre1,pre1;1,熟語,pre1:1186;1:2447,2
+rest on,rest on,phrase,に基づく，に頼る,に基づく，に頼る,exam,3,pre1,pre1;1,熟語,pre1:875;1:2818,2
+right off,right off,phrase,すぐに，直ちに,すぐに，直ちに,exam,3,pre1,pre1;1,副詞,pre1:634;1:2431,2
+rise and shine,rise and shine,phrase,起き上がる，起床する,起き上がる，起床する,exam,3,pre1,pre1;1,熟語,pre1:141;1:3261,2
+role model,role model,phrase,お手本，模範,お手本，模範,exam,3,pre1,pre1;1,熟語,pre1:1722;1:801,2
+roll up,roll up,phrase,を巻き上げる，巻く,を巻き上げる，巻く,exam,3,pre1,pre1;1,熟語,pre1:1258;1:78,2
+root out,root out,phrase,根絶する，一掃する,根絶する，一掃する,exam,3,pre1,pre1;1,熟語,pre1:841;1:3931,2
+rough up,rough up,phrase,手荒く扱う，かき乱す,手荒く扱う，かき乱す,exam,3,pre1,pre1,熟語,pre1:162,1
+round and round,round and round,phrase,グルグルと，うろうろと,グルグルと，うろうろと,exam,3,pre1,pre1;1,熟語,pre1:546;1:3429,2
+round up,round up,phrase,寄せ集める，切り上げる,寄せ集める，切り上げる,exam,3,pre1,pre1;1,熟語,pre1:2417;1:25,2
+rub in,rub in,phrase,刷り込む，繰り返し言う,刷り込む，繰り返し言う / 刷り込む，教え込む,exam,3,pre1,pre1;1,熟語,pre1:254;1:631,2
+rule of thumb,rule of thumb,phrase,親指で計測すること，大雑把な方法,親指で計測すること，大雑把な方法,exam,3,pre1,pre1;1,名詞,pre1:350;1:3427,2
+run against,run against,phrase,にぶつかる，偶然出会う,にぶつかる，偶然出会う / にぶつかる，出くわす,exam,3,pre1,pre1;1,熟語,pre1:2153;1:649,2
+run down,run down,phrase,流れ落ちる，荒廃する,流れ落ちる，荒廃する,exam,3,pre1,pre1;1,熟語,pre1:577;1:736,2
+run errands,run errands,phrase,使い走りをする，お使いをする,使い走りをする，お使いをする,exam,3,pre1,pre1;1,熟語,pre1:674;1:3445,2
+sales quota,sales quota,phrase,売上ノルマ，販売割当,売上ノルマ，販売割当,exam,3,pre1,pre1;1,名詞,pre1:2042;1:2185,2
+saving account,saving account,phrase,普通預金，通常の預金,普通預金，通常の預金 / 普通預金，通常の預金，銀行預金,exam,3,pre1,pre1;1,名詞,pre1:2855;1:924,2
+scoop up,scoop up,phrase,すくい取る，くみ上げる,すくい取る，くみ上げる,exam,3,pre1,pre1,熟語,pre1:252,1
+scratch out,scratch out,phrase,線を引いて消す，を抹消する,線を引いて消す，を抹消する / (線を引いて)消す，取り消す,exam,3,pre1,pre1;1,熟語,pre1:1728;1:719,2
+see out,see out,phrase,見送る，見届ける,見送る，見届ける,exam,3,pre1,pre1,熟語,pre1:257,1
+see through,see through,phrase,を見抜く，見通す，透視する,を見抜く，見通す，透視する,exam,3,pre1,pre1;1,熟語,pre1:2681;1:304,2
+seldom if ever,seldom if ever,phrase,めったに，しない,めったに，しない,exam,3,pre1,pre1;1,熟語,pre1:603;1:2927,2
+sell out,sell out,phrase,売りつくす，売却する,売りつくす，売却する,exam,3,pre1,pre1;1,熟語,pre1:1860;1:2337,2
+send in,send in,phrase,に送る，提出する,に送る，提出する,exam,3,pre1,pre1,熟語,pre1:915,1
+send out for,send out for,phrase,お使いに出す，出前を頼む,お使いに出す，出前を頼む / お使いに出す，依頼する,exam,3,pre1,pre1;1,熟語,pre1:2018;1:1443,2
+set a precedent,set a precedent,phrase,先例を作る，前例を作る,先例を作る，前例を作る,exam,3,pre1,pre1;1,熟語,pre1:136;1:3472,2
+set aside,set aside,phrase,横に置く，取っておく,横に置く，取っておく,exam,3,pre1,pre1;1,熟語,pre1:2443;1:888,2
+set forth,set forth,phrase,説明する，を明らかにする,説明する，を明らかにする,exam,3,pre1,pre1;1,熟語,pre1:414;1:2762,2
+set in,set in,phrase,始まる，起こる,始まる，起こる / 始まる，起こる，発生する,exam,3,pre1,pre1;1,熟語,pre1:1563;1:949,2
+set off,set off,phrase,を引き起こす,を引き起こす / を引き起こす，招く，原因となる,exam,3,pre1,pre1;1,熟語,pre1:1970;1:972,2
+settle up,settle up,phrase,を支払う，払い戻す,を支払う，払い戻す,exam,3,pre1,pre1;1,熟語,pre1:2213;1:412,2
+sew up,sew up,phrase,縫合する，縫い合わせる,縫合する，縫い合わせる / 縫合する，うまくまとめる,exam,3,pre1,pre1;1,熟語,pre1:192;1:2812,2
+shake up,shake up,phrase,大きく変える，再編する,大きく変える，再編する,exam,3,pre1,pre1;1,熟語,pre1:2297;1:595,2
+shed light on,shed light on,phrase,に光を放つ，当てる,に光を放つ，当てる,exam,3,pre1,pre1;1,熟語,pre1:127;1:2788,2
+shelf life,shelf life,phrase,保存可能期間，賞味期限,保存可能期間，賞味期限,exam,3,pre1,pre1;1,名詞,pre1:785;1:3750,2
+shut out,shut out,phrase,を締め出す，閉め出す,を締め出す，閉め出す / を締め出す，閉め出す，遮る,exam,3,pre1,pre1;1,熟語,pre1:1383;1:962,2
+side job,side job,phrase,副業，アルバイト,副業，アルバイト,exam,3,pre1,pre1;1,名詞,pre1:1340;1:1267,2
+sign up,sign up,phrase,登録する，署名する,登録する，署名する,exam,3,pre1,pre1;1,熟語,pre1:2704;1:702,2
+sink in,sink in,phrase,浸透する，理解される,浸透する，理解される,exam,3,pre1,pre1;1,熟語,pre1:1309;1:2205,2
+sit by,sit by,phrase,傍観する，見守る,傍観する，見守る / 傍観する，見物する，見守る,exam,3,pre1,pre1;1,熟語,pre1:1385;1:1778,2
+skim over,skim over,phrase,流し読みする，ざっと読む，素早く読む,流し読みする，ざっと読む，素早く読む,exam,3,pre1,pre1;1,熟語,pre1:2729;1:484,2
+sleep over,sleep over,phrase,外泊する，を見落とす,外泊する，を見落とす,exam,3,pre1,pre1;1,熟語,pre1:606;1:2769,2
+slip by,slip by,phrase,そっと通り過ぎる，静かに通過する,そっと通り過ぎる，静かに通過する / そっと通り過ぎる，静かに過ぎる,exam,3,pre1,pre1;1,熟語,pre1:1755;1:672,2
+slip of the tongue,slip of the tongue,phrase,失言，口を滑らせる,失言，口を滑らせる,exam,3,pre1,pre1;1,熟語,pre1:1099;1:3955,2
+slip up,slip up,phrase,やり損なう，うっかり誤る,やり損なう，うっかり誤る,exam,3,pre1,pre1;1,熟語,pre1:2255;1:2129,2
+smooth over,smooth over,phrase,丸く収める，穏便に済ます,丸く収める，穏便に済ます,exam,3,pre1,pre1;1,熟語,pre1:1349;1:70,2
+snap out of,snap out of,phrase,から素早く脱出する，抜け出す,から素早く脱出する，抜け出す,exam,3,pre1,pre1;1,熟語,pre1:629;1:3574,2
+sort out,sort out,phrase,分類する，改善する,分類する，改善する / 分類する，改善する，類別する,exam,3,pre1,pre1;1,熟語,pre1:1851;1:1422,2
+speak for,speak for,phrase,を代弁する，の代理で話す，言い表す,を代弁する，の代理で話す，言い表す,exam,3,pre1,pre1;1,熟語,pre1:1295;1:282,2
+speak ill of,speak ill of,phrase,の悪口を言う，を悪く言う,の悪口を言う，を悪く言う,exam,3,pre1,pre1;1,熟語,pre1:509;1:3405,2
+speaking of which,speaking of which,phrase,と言えば，に関して,と言えば，に関して / と言えば，それについて,exam,3,pre1,pre1;1,熟語,pre1:1246;1:1739,2
+split up,split up,phrase,を分ける，分割する，区別する,を分ける，分割する，区別する,exam,3,pre1,pre1;1,熟語,pre1:2048;1:514,2
+spring from,spring from,phrase,から生じる，から生まれる,から生じる，から生まれる,exam,3,pre1,pre1;1,熟語,pre1:1103;1:3278,2
+stand down,stand down,phrase,身を引く，後退する,身を引く，後退する,exam,3,pre1,pre1;1,熟語,pre1:253;1:561,2
+stand over,stand over,phrase,を監督する，延期する,を監督する，延期する,exam,3,pre1,pre1;1,熟語,pre1:987;1:198,2
+stand up to,stand up to,phrase,に抵抗する，耐える，反抗する,に抵抗する，耐える，反抗する,exam,3,pre1,pre1;1,熟語,pre1:1905;1:335,2
+stay in touch with,stay in touch with,phrase,と連絡を取り続ける，絶えず連絡する,と連絡を取り続ける，絶えず連絡する / と連絡を取り続ける，絶えず連絡する，つながりを保つ,exam,3,pre1,pre1;1,熟語,pre1:2166;1:306,2
+stay off,stay off,phrase,から離れる，距離を取る,から離れる，距離を取る,exam,3,pre1,pre1;1,熟語,pre1:1758;1:1049,2
+step down,step down,phrase,降りる，身を引く,降りる，身を引く,exam,3,pre1,pre1;1,熟語,pre1:1208;1:689,2
+stick around,stick around,phrase,居残る，うろうろする,居残る，うろうろする,exam,3,pre1,pre1;1,熟語,pre1:2428;1:797,2
+stick to,stick to,phrase,にくっつく，接着する,にくっつく，接着する,exam,3,pre1,pre1;1,熟語,pre1:1635;1:2069,2
+stick up,stick up,phrase,上に突き出る，両手を挙げさせる,上に突き出る，両手を挙げさせる,exam,3,pre1,pre1;1,熟語,pre1:1085;1:3505,2
+stick up for,stick up for,phrase,を支持する，を弁護する，を擁護する,を支持する，を弁護する，を擁護する,exam,3,pre1,pre1;1,熟語,pre1:1883;1:437,2
+stick with,stick with,phrase,に固執する，堅持する,に固執する，堅持する,exam,3,pre1,pre1;1,熟語,pre1:1389;1:179,2
+stir up,stir up,phrase,をかき混ぜる，刺激する,をかき混ぜる，刺激する,exam,3,pre1,pre1;1,熟語,pre1:1362;1:1165,2
+stop by,stop by,phrase,立ち寄る，短時間訪れる,立ち寄る，短時間訪れる / 立ち寄る，寄る,exam,3,pre1,pre1;1,熟語,pre1:2599;1:1820,2
+stop over,stop over,phrase,立ち寄る,立ち寄る,exam,3,pre1,pre1,熟語,pre1:3295,1
+strip A of B,strip a of b,phrase,AからBを取り去る，奪う,AからBを取り去る，奪う,exam,3,pre1,pre1;1,熟語,pre1:1106;1:2713,2
+stumbling block,stumbling block,phrase,障害，障害物,障害，障害物,exam,3,pre1,pre1;1,名詞,pre1:187;1:3645,2
+subject to,subject to,phrase,の支配下にある，によると,の支配下にある，によると,exam,3,pre1,pre1;1,熟語,pre1:2265;1:1085,2
+sum up,sum up,phrase,を合計する，要約する,を合計する，要約する / を合計する，集計する,exam,3,pre1,pre1;1,熟語,pre1:2655;1:1262,2
+summer solstice,summer solstice,phrase,夏至,夏至,exam,3,pre1,pre1,名詞,pre1:2455,1
+swallow up,swallow up,phrase,飲み込む，使い尽くす,飲み込む，使い尽くす,exam,3,pre1,pre1;1,熟語,pre1:742;1:3950,2
+take a beating,take a beating,phrase,負ける，敗北する,負ける，敗北する,exam,3,pre1,pre1;1,熟語,pre1:380;1:2450,2
+take in,take in,phrase,を摂取する，取り入れる,を摂取する，取り入れる,exam,3,pre1,pre1;1,熟語,pre1:2214;1:1208,2
+take offense at,take offense at,phrase,に怒る，腹を立てる,に怒る，腹を立てる,exam,3,pre1,pre1;1,熟語,pre1:299;1:2841,2
+take on,take on,phrase,を雇う，引き受ける，採用する,を雇う，引き受ける，採用する,exam,3,pre1,pre1;1,熟語,pre1:1845;1:324,2
+take pride in,take pride in,phrase,を誇りにする，自慢する,を誇りにする，自慢する,exam,3,pre1,pre1;1,熟語,pre1:1627;1:1298,2
+take root,take root,phrase,根付く，定着する,根付く，定着する,exam,3,pre1,pre1;1,熟語,pre1:1003;1:2561,2
+take the plunge,take the plunge,phrase,思い切ってやる，やってみる,思い切ってやる，やってみる,exam,3,pre1,pre1;1,熟語,pre1:1109;1:3008,2
+take up,take up,phrase,を取り上げる,を取り上げる / を取り上げる，没収する，取り除く,exam,3,pre1,pre1;1,熟語,pre1:2485;1:1023,2
+talk back to,talk back to,phrase,に口答えする，言い返す,に口答えする，言い返す,exam,3,pre1,pre1;1,熟語,pre1:1190;1:2815,2
+talk down to,talk down to,phrase,見下して話す，軽蔑して話す,見下して話す，軽蔑して話す,exam,3,pre1,pre1;1,熟語,pre1:2336;1:804,2
+talk up,talk up,phrase,を大袈裟にほめる，過大に評価する,を大袈裟にほめる，過大に評価する,exam,3,pre1,pre1;1,熟語,pre1:2742;1:1069,2
+tear down,tear down,phrase,解体する,解体する / 解体する，分解する,exam,3,pre1,pre1;1,熟語,pre1:3010;1:2509,2
+tear off,tear off,phrase,引きちぎる，脱ぎ捨てる,引きちぎる，脱ぎ捨てる,exam,3,pre1,pre1;1,熟語,pre1:787;1:3050,2
+tell on,tell on,phrase,言いつける，密告する,言いつける，密告する,exam,3,pre1,pre1;1,熟語,pre1:1916;1:385,2
+the lion's share,the lion's share,phrase,最大の分け前，大きすぎる分け前,最大の分け前，大きすぎる分け前,exam,3,pre1,pre1;1,名詞,pre1:338;1:3425,2
+think out,think out,phrase,考え抜く，熟考する,考え抜く，熟考する,exam,3,pre1,pre1;1,熟語,pre1:968;1:3831,2
+threaten with extinction,threaten with extinction,phrase,絶滅の危機に瀕する,絶滅の危機に瀕する,exam,3,pre1,pre1,熟語,pre1:1299,1
+throw off,throw off,phrase,を投げ捨てる，放り出す，放棄する,を投げ捨てる，放り出す，放棄する,exam,3,pre1,pre1;1,熟語,pre1:2187;1:309,2
+throw up,throw up,phrase,吐く,吐く,exam,3,pre1,pre1,熟語,pre1:3286,1
+tide over,tide over,phrase,乗り切る，切り抜ける,乗り切る，切り抜ける,exam,3,pre1,pre1;1,熟語,pre1:739;1:3912,2
+tidy up,tidy up,phrase,片付ける,片付ける,exam,3,pre1,pre1,熟語,pre1:3132,1
+tie up,tie up,phrase,を縛り上げる，束縛する,を縛り上げる，束縛する,exam,3,pre1,pre1;1,熟語,pre1:2285;1:641,2
+tighten up,tighten up,phrase,締め付ける,締め付ける,exam,3,pre1,pre1,熟語,pre1:3170,1
+tip over,tip over,phrase,ひっくり返る，転覆する,ひっくり返る，転覆する,exam,3,pre1,pre1;1,熟語,pre1:2858;1:1014,2
+to be honest,to be honest,phrase,正直に言うと，実を言うと,正直に言うと，実を言うと,exam,3,pre1,pre1;1,熟語,pre1:2040;1:1937,2
+to begin with,to begin with,phrase,最初に，最初から,最初に，最初から,exam,3,pre1,pre1,熟語,pre1:1173,1
+to date,to date,phrase,これまで，現在まで,これまで，現在まで,exam,3,pre1,pre1;1,熟語,pre1:2079;1:2212,2
+to excess,to excess,phrase,過剰に，過度に,過剰に，過度に,exam,3,pre1,pre1;1,熟語,pre1:472;1:2990,2
+to no avail,to no avail,phrase,無駄に，役に立たずに,無駄に，役に立たずに,exam,3,pre1,pre1;1,熟語,pre1:303;1:3680,2
+to say the least,to say the least,phrase,控えめに言っても，遠からず,控えめに言っても，遠からず,exam,3,pre1,pre1;1,熟語,pre1:691;1:3854,2
+to the point,to the point,phrase,適切な，要領を得た,適切な，要領を得た / 適切な，要領を得た，適当な,exam,3,pre1,pre1;1,熟語,pre1:1697;1:904,2
+toxic to,toxic to,phrase,に有毒な，～に対して毒性を持つ,に有毒な，～に対して毒性を持つ,exam,3,pre1,pre1;1,熟語,pre1:1253;1:2008,2
+track down,track down,phrase,の跡を辿る，追い詰める,の跡を辿る，追い詰める,exam,3,pre1,pre1,熟語,pre1:861,1
+trade in,trade in,phrase,を下取りに出す，下取りする,を下取りに出す，下取りする / を下取りに出す，下取りする，交換する,exam,3,pre1,pre1;1,熟語,pre1:1388;1:1027,2
+transmit A to B,transmit a to b,phrase,AをBに伝染させる，移す,AをBに伝染させる，移す / AをBに伝染させる，感染させる,exam,3,pre1,pre1;1,熟語,pre1:1506;1:1798,2
+trifle with,trifle with,phrase,ぞんざいに扱う，適当に扱う,ぞんざいに扱う，適当に扱う / ぞんざいに扱う，いい加減にあしらう,exam,3,pre1,pre1;1,熟語,pre1:800;1:2709,2
+tuck in,tuck in,phrase,押し込む，詰め込む,押し込む，詰め込む,exam,3,pre1,pre1,熟語,pre1:70,1
+tuition fee,tuition fee,phrase,授業料，学費,授業料，学費,exam,3,pre1,pre1,名詞,pre1:243,1
+tune up,tune up,phrase,を調整する，整備する,を調整する，整備する,exam,3,pre1,pre1;1,熟語,pre1:2458;1:2343,2
+turn over,turn over,phrase,をひっくり返す,をひっくり返す,exam,3,pre1,pre1,熟語,pre1:238,1
+turn pale,turn pale,phrase,青ざめる，血色が悪くなる,青ざめる，血色が悪くなる,exam,3,pre1,pre1;1,熟語,pre1:849;1:2672,2
+under fire,under fire,phrase,攻撃を受けて，批判を受けて,攻撃を受けて，批判を受けて,exam,3,pre1,pre1;1,熟語,pre1:223;1:3531,2
+under warranty,under warranty,phrase,保証内，保険の有効な,保証内，保険の有効な / 保証期間中，保証されている,exam,3,pre1,pre1;1,熟語,pre1:2039;1:207,2
+up for,up for,phrase,に参加しようとしている，参画しようとしている,に参加しようとしている，参画しようとしている / に参加しようとしている，参画しようとしている，加わろうとしている，に向けて意気込んでいる,exam,3,pre1,pre1;1,熟語,pre1:1543;1:1894,2
+ups and downs,ups and downs,phrase,浮き沈み，上昇と下降,浮き沈み，上昇と下降,exam,3,pre1,pre1;1,名詞,pre1:323;1:3811,2
+vice versa,vice versa,phrase,反対に，反対もまた,反対に，反対もまた / 反対に，反対もまた，逆に,exam,3,pre1,pre1;1,熟語,pre1:2415;1:1540,2
+walk off with,walk off with,phrase,から歩いて出る，立ち去る,から歩いて出る，立ち去る,exam,3,pre1,pre1;1,熟語,pre1:1643;1:2092,2
+want for,want for,phrase,に欠ける，必要とする,に欠ける，必要とする,exam,3,pre1,pre1;1,熟語,pre1:822;1:3556,2
+wash away,wash away,phrase,を洗い流す，を洗い落とす,を洗い流す，を洗い落とす,exam,3,pre1,pre1,熟語,pre1:997,1
+water down,water down,phrase,水で薄める，和らげる,水で薄める，和らげる,exam,3,pre1,pre1;1,熟語,pre1:106;1:3321,2
+water vapor,water vapor,phrase,水蒸気，蒸気,水蒸気，蒸気,exam,3,pre1,pre1;1,名詞,pre1:1374;1:616,2
+wear off,wear off,phrase,擦り切れる，徐々に減る,擦り切れる，徐々に減る / 擦り切れる，摩耗する，徐々に減る，少なくなる,exam,3,pre1,pre1;1,熟語,pre1:3000;1:1746,2
+weed out,weed out,phrase,取り除く，引き抜く,取り除く，引き抜く,exam,3,pre1,pre1;1,熟語,pre1:245;1:2656,2
+weigh on,weigh on,phrase,の重荷になる，負担になる，の負荷となる,の重荷になる，負担になる，の負荷となる,exam,3,pre1,pre1;1,熟語,pre1:1586;1:355,2
+what if,what if,phrase,もし～ならば,もし～ならば,exam,3,pre1,pre1,熟語,pre1:1233,1
+win over,win over,phrase,に勝つ，説得する,に勝つ，説得する,exam,3,pre1,pre1,熟語,pre1:2489,1
+wind up,wind up,phrase,巻き上げる，終わりにする,巻き上げる，終わりにする,exam,3,pre1,pre1;1,熟語,pre1:828;1:3662,2
+wipe up,wipe up,phrase,拭く,拭く,exam,3,pre1,pre1,熟語,pre1:3191,1
+wisdom tooth,wisdom tooth,phrase,親知らず，知歯,親知らず，知歯,exam,3,pre1,pre1;1,名詞,pre1:2712;1:1724,2
+with all,with all,phrase,にも関わらず，全力でも,にも関わらず，全力でも / にも関わらず，尽力しても,exam,3,pre1,pre1;1,熟語,pre1:1747;1:634,2
+without so much as,without so much as,phrase,さえしないで，すらしない,さえしないで，すらしない,exam,3,pre1,pre1,熟語,pre1:1077,1
+word for word,word for word,phrase,一言一句，文字通りに,一言一句，文字通りに,exam,3,pre1,pre1;1,熟語,pre1:811;1:3594,2
+work off,work off,phrase,徐々に取れる，減らす,徐々に取れる，減らす,exam,3,pre1,pre1;1,熟語,pre1:921;1:2611,2
+wrap up,wrap up,phrase,纏める，結束する,纏める，結束する,exam,3,pre1,pre1;1,熟語,pre1:1607;1:383,2
+wrestle with,wrestle with,phrase,取っ組み合う，取り組む,取っ組み合う，取り組む,exam,3,pre1,pre1;1,熟語,pre1:809;1:3306,2
+a touch of,a touch of,phrase,ほんの少しの，一抹の,ほんの少しの，一抹の,exam,3,1,1,,1:2379,1
+add up,add up,phrase,足し合わせる，合計する,足し合わせる，合計する,exam,3,1,1,,1:3148,1
+adjust A to B,adjust a to b,phrase,AとBを調整する，AをBに合わせる,AとBを調整する，AをBに合わせる,exam,3,1,1,,1:2801,1
+advise A on B,advise a on b,phrase,AにBについて助言する，AにBにアドバイスする,AにBについて助言する，AにBにアドバイスする,exam,3,1,1,,1:1290,1
+alive and well,alive and well,phrase,健在で，元気で，健全で,健在で，元気で，健全で,exam,3,1,1,,1:2487,1
+all in one,all in one,phrase,全て含んで，一致して,全て含んで，一致して,exam,3,1,1,,1:3517,1
+allay fears,allay fears,phrase,恐怖を和らげる,恐怖を和らげる,exam,3,1,1,,1:4138,1
+an eye for an eye,an eye for an eye,phrase,目には目を，同じことをやり返す,目には目を，同じことをやり返す,exam,3,1,1,,1:2820,1
+and the like,and the like,phrase,など，および同類の物,など，および同類の物,exam,3,1,1,,1:2654,1
+and yet,and yet,phrase,それなのに，尚且つ,それなのに，尚且つ,exam,3,1,1,,1:2428,1
+around the clock,around the clock,phrase,一日中，24時間体制,一日中，24時間体制,exam,3,1,1,,1:2749,1
+around the corner,around the corner,phrase,間もなく，曲がり角のあたりに,間もなく，曲がり角のあたりに,exam,3,1,1,,1:3919,1
+as A as any,as a as any,phrase,Aで誰にも劣らず，Aで際立って,Aで誰にも劣らず，Aで際立って,exam,3,1,1,,1:3764,1
+as A as ever,as a as ever,phrase,いつものようにAな，相変わらずAな,いつものようにAな，相変わらずAな,exam,3,1,1,,1:3596,1
+as far as A is concerned,as far as a is concerned,phrase,Aに関すると，Aに関する限りでは,Aに関すると，Aに関する限りでは,exam,3,1,1,,1:3448,1
+as is,as is,phrase,そのまま，現状のままで,そのまま，現状のままで,exam,3,1,1,,1:3231,1
+as it happens,as it happens,phrase,それが起こるとき，その際に,それが起こるとき，その際に,exam,3,1,1,,1:2424,1
+as much as to say,as much as to say,phrase,と言わんばかりに，と言っているかのように,と言わんばかりに，と言っているかのように,exam,3,1,1,,1:2606,1
+as yet,as yet,phrase,今のところ，現状，現在点,今のところ，現状，現在点,exam,3,1,1,,1:1725,1
+ascribe A to B,ascribe a to b,phrase,AからBに帰する,AからBに帰する,exam,3,1,1,,1:2645,1
+ask A out,ask a out,phrase,Aを誘い出す，Aをデートに誘う,Aを誘い出す，Aをデートに誘う,exam,3,1,1,,1:3686,1
+associate with,associate with,phrase,と関連付ける，を関連させる,と関連付ける，を関連させる,exam,3,1,1,,1:3031,1
+assure A of B,assure a of b,phrase,BのAを保証する，AにBを保証する,BのAを保証する，AにBを保証する,exam,3,1,1,,1:3218,1
+at a premium,at a premium,phrase,特別に，割増の,特別に，割増の,exam,3,1,1,,1:2862,1
+at a standstill,at a standstill,phrase,停止中の，行き詰って,停止中の，行き詰って,exam,3,1,1,,1:3719,1
+at ease,at ease,phrase,気楽に，気負いなく,気楽に，気負いなく,exam,3,1,1,,1:3222,1
+at hand,at hand,phrase,手元に，近い将来,手元に，近い将来,exam,3,1,1,,1:1844,1
+at home with,at home with,phrase,慣れて，精通して,慣れて，精通して,exam,3,1,1,,1:3198,1
+at intervals,at intervals,phrase,飛び飛びに，時々,飛び飛びに，時々,exam,3,1,1,,1:3337,1
+at issue,at issue,phrase,問題の，未解決の,問題の，未解決の,exam,3,1,1,,1:3493,1
+at large,at large,phrase,自由で，捕らわれないで,自由で，捕らわれないで,exam,3,1,1,,1:3749,1
+at length,at length,phrase,長い間，長々と,長い間，長々と,exam,3,1,1,,1:3401,1
+at no time,at no time,phrase,決して～しない，～することはない,決して～しない，～することはない,exam,3,1,1,,1:3251,1
+at one's disposal,at one's disposal,phrase,自由に，好きなように,自由に，好きなように,exam,3,1,1,,1:3399,1
+at the cost of,at the cost of,phrase,の代償を払って，を犠牲にして,の代償を払って，を犠牲にして,exam,3,1,1,,1:3771,1
+at the drop of a hat,at the drop of a hat,phrase,すぐに，躊躇せず,すぐに，躊躇せず,exam,3,1,1,,1:4142,1
+at the end of the day,at the end of the day,phrase,一日の終わりに，最終的に,一日の終わりに，最終的に,exam,3,1,1,,1:2677,1
+at the outset,at the outset,phrase,最初に，初めは,最初に，初めは,exam,3,1,1,,1:3876,1
+at the sacrifice of,at the sacrifice of,phrase,の犠牲によって，を犠牲にして,の犠牲によって，を犠牲にして,exam,3,1,1,,1:2414,1
+at worst,at worst,phrase,最悪の場合，もっとも悪い状況,最悪の場合，もっとも悪い状況,exam,3,1,1,,1:2473,1
+attend on,attend on,phrase,に参加する，付き添う,に参加する，付き添う,exam,3,1,1,,1:3841,1
+back away,back away,phrase,後退する，バックさせる,後退する，バックさせる,exam,3,1,1,,1:3797,1
+back down on,back down on,phrase,撤回する，取り消す,撤回する，取り消す,exam,3,1,1,,1:3603,1
+back out,back out,phrase,取り消す，約束を破る，撤回する,取り消す，約束を破る，撤回する,exam,3,1,1,,1:1910,1
+ball up,ball up,phrase,混乱する，台無しにする,混乱する，台無しにする,exam,3,1,1,,1:3691,1
+be about to do,be about to do,phrase,やろうとしている，まさに何かをしようとしている,やろうとしている，まさに何かをしようとしている,exam,3,1,1,,1:3471,1
+be addicted to,be addicted to,phrase,の中毒になる，癖になる,の中毒になる，癖になる,exam,3,1,1,,1:3206,1
+be alien to,be alien to,phrase,と調和せずに，相容れなくて,と調和せずに，相容れなくて,exam,3,1,1,,1:3132,1
+be applicable to,be applicable to,phrase,に当てはまる，に適している,に当てはまる，に適している,exam,3,1,1,,1:2787,1
+be appropriate to,be appropriate to,phrase,にふさわしい，適している,にふさわしい，適している,exam,3,1,1,,1:3868,1
+be apt to,be apt to,phrase,しがちである，する癖がある,しがちである，する癖がある,exam,3,1,1,,1:2828,1
+be badly off,be badly off,phrase,貧乏している，お金のない,貧乏している，お金のない,exam,3,1,1,,1:2401,1
+be bent on,be bent on,phrase,熱心で，決意を持って,熱心で，決意を持って,exam,3,1,1,,1:3785,1
+be consistent with,be consistent with,phrase,に首尾一貫している，一貫して,に首尾一貫している，一貫して,exam,3,1,1,,1:3618,1
+be crowded with,be crowded with,phrase,で混んでいる，混雑している,で混んでいる，混雑している,exam,3,1,1,,1:3677,1
+be devoted to,be devoted to,phrase,に専念した，に夢中な,に専念した，に夢中な,exam,3,1,1,,1:3880,1
+be disappointed at,be disappointed at,phrase,にがっかりして，に期待外れで,にがっかりして，に期待外れで,exam,3,1,1,,1:3026,1
+be distinct from,be distinct from,phrase,とは区別する，とは異なって,とは区別する，とは異なって,exam,3,1,1,,1:2971,1
+be distinguished for,be distinguished for,phrase,と区別される，名高い,と区別される，名高い,exam,3,1,1,,1:2794,1
+be faithful to,be faithful to,phrase,に忠義を尽くす，付いていく,に忠義を尽くす，付いていく,exam,3,1,1,,1:3042,1
+be identical to,be identical to,phrase,と同一である，と同じである,と同一である，と同じである,exam,3,1,1,,1:3421,1
+be impatient with,be impatient with,phrase,イライラして，もどかしくて,イライラして，もどかしくて,exam,3,1,1,,1:3813,1
+be in for,be in for,phrase,に直面しそうな，に参加する,に直面しそうな，に参加する,exam,3,1,1,,1:3015,1
+be incapable of,be incapable of,phrase,出来ない，不可能な,出来ない，不可能な,exam,3,1,1,,1:3851,1
+be inferior to,be inferior to,phrase,より劣って，下回って,より劣って，下回って,exam,3,1,1,,1:3191,1
+be innocent of,be innocent of,phrase,無罪の，罪のない,無罪の，罪のない,exam,3,1,1,,1:3458,1
+be into,be into,phrase,に夢中になる，に嵌っている,に夢中になる，に嵌っている,exam,3,1,1,,1:3747,1
+be liable to,be liable to,phrase,責任がある，責任を持つ,責任がある，責任を持つ,exam,3,1,1,,1:3014,1
+be located in,be located in,phrase,に位置している，に立っている,に位置している，に立っている,exam,3,1,1,,1:2148,1
+be obliged to do,be obliged to do,phrase,する義務がある，必要な行動,する義務がある，必要な行動,exam,3,1,1,,1:3679,1
+be oblivious of,be oblivious of,phrase,忘れがちな，気づかないで,忘れがちな，気づかないで,exam,3,1,1,,1:3779,1
+be proficient in,be proficient in,phrase,に精通している，熟知している,に精通している，熟知している,exam,3,1,1,,1:3076,1
+be qualified to,be qualified to,phrase,の資格がある,の資格がある,exam,3,1,1,,1:3507,1
+be reluctant to,be reluctant to,phrase,気が進まない，嫌がる,気が進まない，嫌がる,exam,3,1,1,,1:3902,1
+be suitable for,be suitable for,phrase,に適している，に適した,に適している，に適した,exam,3,1,1,,1:3294,1
+be versed in,be versed in,phrase,に精通している，に詳しい,に精通している，に詳しい,exam,3,1,1,,1:3712,1
+be vulnerable to,be vulnerable to,phrase,に弱い，傷つきやすい,に弱い，傷つきやすい,exam,3,1,1,,1:3516,1
+be worthy to,be worthy to,phrase,に値する，価値がある,に値する，価値がある,exam,3,1,1,,1:3162,1
+bear fruit,bear fruit,phrase,実を結ぶ，効果を生み出す,実を結ぶ，効果を生み出す,exam,3,1,1,,1:3485,1
+bear out,bear out,phrase,裏付ける，支持する,裏付ける，支持する,exam,3,1,1,,1:3180,1
+become of,become of,phrase,となる，になる,となる，になる,exam,3,1,1,,1:3349,1
+beef up,beef up,phrase,強化する，増強する,強化する，増強する,exam,3,1,1,,1:2446,1
+best for,best for,phrase,～にとって最良の，～に最適である,～にとって最良の，～に最適である,exam,3,1,1,,1:1996,1
+bet on,bet on,phrase,に賭ける，賭けをする,に賭ける，賭けをする,exam,3,1,1,,1:2430,1
+beware of,beware of,phrase,注意する，気を付ける,注意する，気を付ける,exam,3,1,1,,1:3941,1
+beyond number,beyond number,phrase,数えきれないほど，無数の,数えきれないほど，無数の,exam,3,1,1,,1:3192,1
+bite on,bite on,phrase,に真剣に取り組む，に噛みつく,に真剣に取り組む，に噛みつく,exam,3,1,1,,1:2911,1
+bite the bullet,bite the bullet,phrase,勇気を振り絞る，我慢する,勇気を振り絞る，我慢する,exam,3,1,1,,1:4197,1
+black out,black out,phrase,消灯する，黒く塗りつぶす,消灯する，黒く塗りつぶす,exam,3,1,1,,1:3498,1
+bottom out,bottom out,phrase,底をつく，底値に達する,底をつく，底値に達する,exam,3,1,1,,1:2961,1
+break the ice,break the ice,phrase,話の口火を切る，切り出す,話の口火を切る，切り出す,exam,3,1,1,,1:3843,1
+break the news,break the news,phrase,悲報を伝える，悲しみを知らせる,悲報を伝える，悲しみを知らせる,exam,3,1,1,,1:2598,1
+break through,break through,phrase,突破する，切り抜ける，乗り越える,突破する，切り抜ける，乗り越える,exam,3,1,1,,1:1791,1
+bring down,bring down,phrase,降ろす，仕留める,降ろす，仕留める,exam,3,1,1,,1:2426,1
+brush aside,brush aside,phrase,無視する，軽視する,無視する，軽視する,exam,3,1,1,,1:4145,1
+build A into B,build a into b,phrase,AをBに組み入れる,AをBに組み入れる,exam,3,1,1,,1:3355,1
+build out,build out,phrase,構築する，増築する,構築する，増築する,exam,3,1,1,,1:2865,1
+bump into,bump into,phrase,に突き当たる，偶然会う,に突き当たる，偶然会う,exam,3,1,1,,1:3687,1
+burst into,burst into,phrase,乱入する，急にし始める,乱入する，急にし始める,exam,3,1,1,,1:2144,1
+burst into laughter,burst into laughter,phrase,吹き出す，どっと笑い出す,吹き出す，どっと笑い出す,exam,3,1,1,,1:3636,1
+buy off,buy off,phrase,お金で解決する，金を払って免れる,お金で解決する，金を払って免れる,exam,3,1,1,,1:2810,1
+buy out,buy out,phrase,買い取る，株を買い取る,買い取る，株を買い取る,exam,3,1,1,,1:2542,1
+by any chance,by any chance,phrase,もしかして，万が一,もしかして，万が一,exam,3,1,1,,1:3828,1
+by coincidence,by coincidence,phrase,偶然に，たまたま,偶然に，たまたま,exam,3,1,1,,1:2936,1
+by force,by force,phrase,力ずくで，無理やり,力ずくで，無理やり,exam,3,1,1,,1:3324,1
+can afford to do,can afford to do,phrase,する余裕がある，～を買うお金がある,する余裕がある，～を買うお金がある,exam,3,1,1,,1:3232,1
+carry over,carry over,phrase,持ち越す，繰り返す,持ち越す，繰り返す,exam,3,1,1,,1:2636,1
+carve up,carve up,phrase,切り分ける，分割する,切り分ける，分割する,exam,3,1,1,,1:2438,1
+cash in,cash in,phrase,現金に変える，現金を投入する,現金に変える，現金を投入する,exam,3,1,1,,1:3174,1
+catch A's eye,catch a's eye,phrase,Aの目を引く，Aの興味を引く,Aの目を引く，Aの興味を引く,exam,3,1,1,,1:2768,1
+catch on with,catch on with,phrase,に追いつく，届く,に追いつく，届く,exam,3,1,1,,1:3416,1
+catch up on,catch up on,phrase,に追い付く，距離を詰める,に追い付く，距離を詰める,exam,3,1,1,,1:3626,1
+chalk up to,chalk up to,phrase,帰する，起因すると考える,帰する，起因すると考える,exam,3,1,1,,1:4136,1
+check up on,check up on,phrase,調べる，照合する,調べる，照合する,exam,3,1,1,,1:3674,1
+chew on,chew on,phrase,かじりつく，しゃぶり付く,かじりつく，しゃぶり付く,exam,3,1,1,,1:3481,1
+classify A into B,classify a into b,phrase,AをBに分類する,AをBに分類する,exam,3,1,1,,1:2665,1
+clean out,clean out,phrase,を一掃する，取り除く，排除する,を一掃する，取り除く，排除する,exam,3,1,1,,1:1015,1
+clear away,clear away,phrase,取り除く，片づける,取り除く，片づける,exam,3,1,1,,1:2712,1
+close call,close call,phrase,間一髪，際どいところ,間一髪，際どいところ,exam,3,1,1,,1:3037,1
+close out,close out,phrase,締め切る，売り払う,締め切る，売り払う,exam,3,1,1,,1:3123,1
+combine A with B,combine a with b,phrase,AとBを組み合わせる，AとBを組み混ぜる,AとBを組み合わせる，AとBを組み混ぜる,exam,3,1,1,,1:2276,1
+come away,come away,phrase,から離れていく，遠ざかる,から離れていく，遠ざかる,exam,3,1,1,,1:3000,1
+come in contact with,come in contact with,phrase,と接触する，連絡する,と接触する，連絡する,exam,3,1,1,,1:3054,1
+come in handy,come in handy,phrase,助けになる，便利な,助けになる，便利な,exam,3,1,1,,1:3745,1
+come into,come into,phrase,に入る，受け継ぐ,に入る，受け継ぐ,exam,3,1,1,,1:2218,1
+come out with,come out with,phrase,を見せる，口に出す,を見せる，口に出す,exam,3,1,1,,1:3348,1
+come to a halt,come to a halt,phrase,一旦停止する，一時的に止める,一旦停止する，一時的に止める,exam,3,1,1,,1:2740,1
+commit suicide,commit suicide,phrase,自殺する，自害する,自殺する，自害する,exam,3,1,1,,1:3396,1
+compare A to B,compare a to b,phrase,AをBと比べる，AをBと対比する,AをBと比べる，AをBと対比する,exam,3,1,1,,1:1755,1
+compare A with B,compare a with b,phrase,AとBを比較する,AとBを比較する,exam,3,1,1,,1:2462,1
+compete with,compete with,phrase,と競争する，と競う,と競争する，と競う,exam,3,1,1,,1:3632,1
+concentrate A on B,concentrate a on b,phrase,AをBに集中させる，AをBに専念させる,AをBに集中させる，AをBに専念させる,exam,3,1,1,,1:3361,1
+confide in,confide in,phrase,信じる，許す,信じる，許す,exam,3,1,1,,1:3072,1
+conform A to B,conform a to b,phrase,AをBに合わせる,AをBに合わせる,exam,3,1,1,,1:3353,1
+congratulate on,congratulate on,phrase,祝う，祝いの言葉を述べる,祝う，祝いの言葉を述べる,exam,3,1,1,,1:2396,1
+consent to,consent to,phrase,に納得する，を許す,に納得する，を許す,exam,3,1,1,,1:3366,1
+consider A as B,consider a as b,phrase,AをBと見なす，AをBと考える,AをBと見なす，AをBと考える,exam,3,1,1,,1:2421,1
+convict of,convict of,phrase,で有罪判決とする，有罪を宣告する,で有罪判決とする，有罪を宣告する,exam,3,1,1,,1:3030,1
+convince A of B,convince a of b,phrase,BについてAを納得させる,BについてAを納得させる,exam,3,1,1,,1:2397,1
+crack down,crack down,phrase,厳しく取り締まる，処罰する,厳しく取り締まる，処罰する,exam,3,1,1,,1:3319,1
+crank up,crank up,phrase,刺激する，始動する,刺激する，始動する,exam,3,1,1,,1:3282,1
+crash into,crash into,phrase,衝突する，ぶち当たる,衝突する，ぶち当たる,exam,3,1,1,,1:2631,1
+crop up,crop up,phrase,突然現れる，生じる,突然現れる，生じる,exam,3,1,1,,1:2823,1
+cut out for,cut out for,phrase,に向いている，向き,に向いている，向き,exam,3,1,1,,1:3871,1
+cut to the chase,cut to the chase,phrase,要点にすぐに入る，遠慮せず話す,要点にすぐに入る，遠慮せず話す,exam,3,1,1,,1:4062,1
+deal in,deal in,phrase,取り扱う，携わる，処理する,取り扱う，携わる，処理する,exam,3,1,1,,1:1808,1
+derive from,derive from,phrase,から派生する,から派生する,exam,3,1,1,,1:2887,1
+die of,die of,phrase,で死ぬ，亡くなる,で死ぬ，亡くなる,exam,3,1,1,,1:2569,1
+direct A to B,direct a to b,phrase,AにBへの道を教える，AをBへ誘導する,AにBへの道を教える，AをBへ誘導する,exam,3,1,1,,1:3634,1
+do A harm,do a harm,phrase,Aに害を及ぼす，傷つける,Aに害を及ぼす，傷つける,exam,3,1,1,,1:2951,1
+do an injustice to,do an injustice to,phrase,誤解する，価値を見誤る,誤解する，価値を見誤る,exam,3,1,1,,1:3652,1
+dodge a bullet,dodge a bullet,phrase,危機を回避する,危機を回避する,exam,3,1,1,,1:4131,1
+dos and don'ts,dos and don'ts,phrase,規則集，注意事項,規則集，注意事項,exam,3,1,1,,1:3078,1
+down the road,down the road,phrase,この先，将来,この先，将来,exam,3,1,1,,1:3817,1
+down to earth,down to earth,phrase,分別のある，現実的な,分別のある，現実的な,exam,3,1,1,,1:3316,1
+drag out,drag out,phrase,引き出す，長引かせる,引き出す，長引かせる,exam,3,1,1,,1:3786,1
+draw a line,draw a line,phrase,線を引く，一線を引く,線を引く，一線を引く,exam,3,1,1,,1:3960,1
+draw back,draw back,phrase,引き戻す，取り消す,引き戻す，取り消す,exam,3,1,1,,1:3684,1
+draw into,draw into,phrase,引き込む，引き入れる,引き込む，引き入れる,exam,3,1,1,,1:2620,1
+draw out,draw out,phrase,引き抜く，引き伸ばす,引き抜く，引き伸ばす,exam,3,1,1,,1:3597,1
+dream on,dream on,phrase,夢を見続ける，(命令文で)夢でも見てろ,夢を見続ける，(命令文で)夢でも見てろ,exam,3,1,1,,1:2682,1
+drink in,drink in,phrase,吸収する，見とれる,吸収する，見とれる,exam,3,1,1,,1:2913,1
+drink to,drink to,phrase,を祝って飲む，偲んで酒を飲む,を祝って飲む，偲んで酒を飲む,exam,3,1,1,,1:2995,1
+drink up,drink up,phrase,飲み干す，飲み尽くす,飲み干す，飲み尽くす,exam,3,1,1,,1:3641,1
+ease up,ease up,phrase,緩む，和らぐ,緩む，和らぐ,exam,3,1,1,,1:3067,1
+eat away,eat away,phrase,食い荒らす，侵食する,食い荒らす，侵食する,exam,3,1,1,,1:2670,1
+either way,either way,phrase,どちらにしても，どのみち,どちらにしても，どのみち,exam,3,1,1,,1:3370,1
+elaborate on,elaborate on,phrase,を詳しく述べる，詳しく話す,を詳しく述べる，詳しく話す,exam,3,1,1,,1:3064,1
+engage in,engage in,phrase,に従事する，～に携わる,に従事する，～に携わる,exam,3,1,1,,1:2829,1
+entrust A to B,entrust a to b,phrase,AからBに委託する，任せる,AからBに委託する，任せる,exam,3,1,1,,1:2756,1
+entrust A with B,entrust a with b,phrase,AにBを委託する，任せる,AにBを委託する，任せる,exam,3,1,1,,1:3952,1
+even out,even out,phrase,平らになる，安定する,平らになる，安定する,exam,3,1,1,,1:1083,1
+ever since,ever since,phrase,それ以来，それ以降,それ以来，それ以降,exam,3,1,1,,1:2780,1
+expand on,expand on,phrase,について詳しく話す，詳述する,について詳しく話す，詳述する,exam,3,1,1,,1:2416,1
+fade away,fade away,phrase,消えていく，消滅していく,消えていく，消滅していく,exam,3,1,1,,1:2554,1
+fall behind,fall behind,phrase,遅れる，追い越される,遅れる，追い越される,exam,3,1,1,,1:2679,1
+fall on,fall on,phrase,降りかかる，突然やってくる,降りかかる，突然やってくる,exam,3,1,1,,1:2786,1
+fall victim to,fall victim to,phrase,の犠牲になる，犠牲となる,の犠牲になる，犠牲となる,exam,3,1,1,,1:3659,1
+fence in,fence in,phrase,を囲い込む，さくで囲い込む,を囲い込む，さくで囲い込む,exam,3,1,1,,1:3930,1
+fend off,fend off,phrase,防ぐ，避ける,防ぐ，避ける,exam,3,1,1,,1:4213,1
+ferret out,ferret out,phrase,探し出す，暴く,探し出す，暴く,exam,3,1,1,,1:4078,1
+first and foremost,first and foremost,phrase,まず第一に，真っ先に,まず第一に，真っ先に,exam,3,1,1,,1:3161,1
+first and last,first and last,phrase,総じて，概して,総じて，概して,exam,3,1,1,,1:2980,1
+fit A with B,fit a with b,phrase,AにBを備え付ける，AにBを装備する,AにBを備え付ける，AにBを装備する,exam,3,1,1,,1:1481,1
+fit as a fiddle,fit as a fiddle,phrase,非常に健康で元気,非常に健康で元気,exam,3,1,1,,1:4139,1
+fix on,fix on,phrase,を固定する，取り付ける,を固定する，取り付ける,exam,3,1,1,,1:3138,1
+fix up,fix up,phrase,を修理する，決定する，を直す,を修理する，決定する，を直す,exam,3,1,1,,1:442,1
+follow through,follow through,phrase,最後までやり遂げる，計画を遂行する,最後までやり遂げる，計画を遂行する,exam,3,1,1,,1:3698,1
+for life,for life,phrase,一生の，生きるために,一生の，生きるために,exam,3,1,1,,1:2583,1
+for once,for once,phrase,今回だけ，この一回限り,今回だけ，この一回限り,exam,3,1,1,,1:2031,1
+for real,for real,phrase,本物の，本気で,本物の，本気で,exam,3,1,1,,1:2993,1
+for the benefit of,for the benefit of,phrase,のために，の(利益の)ために,のために，の(利益の)ために,exam,3,1,1,,1:2483,1
+for the purpose of,for the purpose of,phrase,の目的で，を目的に,の目的で，を目的に,exam,3,1,1,,1:3552,1
+for the rest,for the rest,phrase,残りについては，後は,残りについては，後は,exam,3,1,1,,1:2385,1
+forget oneself,forget oneself,phrase,我を忘れる，夢中になる,我を忘れる，夢中になる,exam,3,1,1,,1:3522,1
+frankly speaking,frankly speaking,phrase,率直に言うと，はっきりと言って，正直に言って，素直に言えば,率直に言うと，はっきりと言って，正直に言って，素直に言えば,exam,3,1,1,,1:1645,1
+free of charge,free of charge,phrase,無料で，タダで，無償で,無料で，タダで，無償で,exam,3,1,1,,1:3102,1
+free up,free up,phrase,解放する，自由にする,解放する，自由にする,exam,3,1,1,,1:3589,1
+fritter away,fritter away,phrase,時間を費やす，無駄遣いする,時間を費やす，無駄遣いする,exam,3,1,1,,1:447,1
+from A to Z,from a to z,phrase,最初から最後まで，終始,最初から最後まで，終始,exam,3,1,1,,1:3169,1
+from scratch,from scratch,phrase,最初から，初めから，最初から,最初から，初めから，最初から,exam,3,1,1,,1:1618,1
+from top to bottom,from top to bottom,phrase,上から下まで,上から下まで,exam,3,1,1,,1:3122,1
+gain on,gain on,phrase,追い上げる，侵食する,追い上げる，侵食する,exam,3,1,1,,1:2556,1
+gaze at,gaze at,phrase,を見つめている，をじっと見ている,を見つめている，をじっと見ている,exam,3,1,1,,1:3889,1
+gear up,gear up,phrase,準備を整える，ギアを高速に入れる，支度をする,準備を整える，ギアを高速に入れる，支度をする,exam,3,1,1,,1:1568,1
+get a kick out of something,get a kick out of something,phrase,何かから楽しみや興奮を感じる,何かから楽しみや興奮を感じる,exam,3,1,1,,1:4258,1
+get hold of,get hold of,phrase,を手に入れる，に連絡を取る,を手に入れる，に連絡を取る,exam,3,1,1,,1:3412,1
+get over with,get over with,phrase,を乗り越える，克服する,を乗り越える，克服する,exam,3,1,1,,1:2799,1
+give A credit for B,give a credit for b,phrase,BについてAを信用する，AのBを認める,BについてAを信用する，AのBを認める,exam,3,1,1,,1:2834,1
+give in to,give in to,phrase,屈する，譲歩する,屈する，譲歩する,exam,3,1,1,,1:4265,1
+give of,give of,phrase,分け与える，配布する,分け与える，配布する,exam,3,1,1,,1:3704,1
+glance at,glance at,phrase,一瞥する，ちらっと見る,一瞥する，ちらっと見る,exam,3,1,1,,1:3821,1
+glare at,glare at,phrase,睨みつける,睨みつける,exam,3,1,1,,1:3264,1
+go about,go about,phrase,歩き回る，広まる,歩き回る，広まる,exam,3,1,1,,1:1249,1
+go in for,go in for,phrase,に参加する，携わる,に参加する，携わる,exam,3,1,1,,1:3158,1
+go into effect,go into effect,phrase,影響が始まる，発行される,影響が始まる，発行される,exam,3,1,1,,1:2924,1
+go overboard,go overboard,phrase,極端に走る，夢中になる,極端に走る，夢中になる,exam,3,1,1,,1:3099,1
+go places,go places,phrase,遊びまわる，出世する,遊びまわる，出世する,exam,3,1,1,,1:3864,1
+go through with,go through with,phrase,で通り抜ける，通過する,で通り抜ける，通過する,exam,3,1,1,,1:3189,1
+go to extremes,go to extremes,phrase,極端に行く，行き過ぎる,極端に行く，行き過ぎる,exam,3,1,1,,1:2853,1
+good for nothing,good for nothing,phrase,何の役にも立たない，能なしの,何の役にも立たない，能なしの,exam,3,1,1,,1:3415,1
+grapple with,grapple with,phrase,取り組む，闘う,取り組む，闘う,exam,3,1,1,,1:4125,1
+grow on,grow on,phrase,成長する，大きくなる,成長する，大きくなる,exam,3,1,1,,1:1123,1
+halfway house,halfway house,phrase,中盤，妥協点,中盤，妥協点,exam,3,1,1,,1:3273,1
+hand down,hand down,phrase,を伝える，を降ろす,を伝える，を降ろす,exam,3,1,1,,1:3136,1
+hand in hand with,hand in hand with,phrase,手を取り合って，手を取って,手を取り合って，手を取って,exam,3,1,1,,1:3436,1
+hang in,hang in,phrase,頑張る，持ちこたえる,頑張る，持ちこたえる,exam,3,1,1,,1:3352,1
+hang over,hang over,phrase,持ち越される，継続する,持ち越される，継続する,exam,3,1,1,,1:2660,1
+hard of hearing,hard of hearing,phrase,難聴の，耳の遠い,難聴の，耳の遠い,exam,3,1,1,,1:3873,1
+hardly before,hardly before,phrase,～するやいなや，～するかしないうちに,～するやいなや，～するかしないうちに,exam,3,1,1,,1:3599,1
+have a clue,have a clue,phrase,手がかりがある，見当がつく,手がかりがある，見当がつく,exam,3,1,1,,1:2708,1
+have a tendency to,have a tendency to,phrase,する傾向がある，しがちである,する傾向がある，しがちである,exam,3,1,1,,1:3389,1
+have a whale of a time,have a whale of a time,phrase,楽しい時を過ごす，大いに楽しむ,楽しい時を過ごす，大いに楽しむ,exam,3,1,1,,1:4064,1
+head on,head on,phrase,正面から，真向かいに,正面から，真向かいに,exam,3,1,1,,1:3915,1
+hear out,hear out,phrase,最後まで聞く，傾聴する,最後まで聞く，傾聴する,exam,3,1,1,,1:2931,1
+hedge bets,hedge bets,phrase,賭けを保険する，危険性を減らす,賭けを保険する，危険性を減らす,exam,3,1,1,,1:3984,1
+help out,help out,phrase,手伝う，助ける，協力する,手伝う，助ける，協力する,exam,3,1,1,,1:1699,1
+hesitate to,hesitate to,phrase,をためらう，躊躇する,をためらう，躊躇する,exam,3,1,1,,1:3275,1
+hide out,hide out,phrase,隠れる，潜伏する,隠れる，潜伏する,exam,3,1,1,,1:3209,1
+high and low,high and low,phrase,高きも低きも，あらゆる人達,高きも低きも，あらゆる人達,exam,3,1,1,,1:2575,1
+hinge on,hinge on,phrase,決定する，定まる,決定する，定まる,exam,3,1,1,,1:3756,1
+hip to,hip to,phrase,に気づいている，認識している,に気づいている，認識している,exam,3,1,1,,1:3320,1
+hit it off,hit it off,phrase,仲良くやる，ウマが合う,仲良くやる，ウマが合う,exam,3,1,1,,1:2839,1
+hit the hay,hit the hay,phrase,寝る，床につく,寝る，床につく,exam,3,1,1,,1:4253,1
+hold on to,hold on to,phrase,にすがりつく，放さない,にすがりつく，放さない,exam,3,1,1,,1:3046,1
+hold out,hold out,phrase,持ちこたえる，我慢する,持ちこたえる，我慢する,exam,3,1,1,,1:201,1
+hold still,hold still,phrase,止まる，座る,止まる，座る,exam,3,1,1,,1:2648,1
+hole up,hole up,phrase,冬眠する，隠れる,冬眠する，隠れる,exam,3,1,1,,1:2601,1
+hone in on,hone in on,phrase,特定の対象に集中する,特定の対象に集中する,exam,3,1,1,,1:4101,1
+hook up,hook up,phrase,つなぐ，引っかける,つなぐ，引っかける,exam,3,1,1,,1:3578,1
+illustrate A with B,illustrate a with b,phrase,BでAを描く，BでAを表現する,BでAを描く，BでAを表現する,exam,3,1,1,,1:2440,1
+improve on,improve on,phrase,を改善する，改良する,を改善する，改良する,exam,3,1,1,,1:3849,1
+in a bad temper,in a bad temper,phrase,不機嫌に，機嫌の悪い,不機嫌に，機嫌の悪い,exam,3,1,1,,1:3386,1
+in a breath,in a breath,phrase,一息で，一気に,一息で，一気に,exam,3,1,1,,1:3576,1
+in a million,in a million,phrase,最高の，かけがえのない,最高の，かけがえのない,exam,3,1,1,,1:2565,1
+in a passion,in a passion,phrase,情熱を持って，熱心に,情熱を持って，熱心に,exam,3,1,1,,1:3061,1
+in a second,in a second,phrase,すぐに，一瞬で,すぐに，一瞬で,exam,3,1,1,,1:2592,1
+in a vacuum,in a vacuum,phrase,真空で，真空中で,真空で，真空中で,exam,3,1,1,,1:3257,1
+in addition to,in addition to,phrase,に加えて，のほかに,に加えて，のほかに,exam,3,1,1,,1:2628,1
+in all probability,in all probability,phrase,十中八九,十中八九,exam,3,1,1,,1:3299,1
+in an instant,in an instant,phrase,瞬時に，一瞬で,瞬時に，一瞬で,exam,3,1,1,,1:3202,1
+in consequence,in consequence,phrase,結果として，その結果,結果として，その結果,exam,3,1,1,,1:2974,1
+in contrast with,in contrast with,phrase,とは対照的に，～に対して,とは対照的に，～に対して,exam,3,1,1,,1:2746,1
+in diameter,in diameter,phrase,直径で，径で,直径で，径で,exam,3,1,1,,1:2718,1
+in dispute,in dispute,phrase,論争中の，議論の的となっている,論争中の，議論の的となっている,exam,3,1,1,,1:2512,1
+in doubt,in doubt,phrase,疑って，迷って,疑って，迷って,exam,3,1,1,,1:2560,1
+in due time,in due time,phrase,やがて，いつかは,やがて，いつかは,exam,3,1,1,,1:3233,1
+in excess of,in excess of,phrase,より過度に，を上回って,より過度に，を上回って,exam,3,1,1,,1:3247,1
+in focus,in focus,phrase,焦点があっている，ピントが合っている,焦点があっている，ピントが合っている,exam,3,1,1,,1:3387,1
+in haste,in haste,phrase,急いで，慌てて,急いで，慌てて,exam,3,1,1,,1:2466,1
+in hope of,in hope of,phrase,へ希望を抱いて，を期待して,へ希望を抱いて，を期待して,exam,3,1,1,,1:57,1
+in large,in large,phrase,大規模に，概して,大規模に，概して,exam,3,1,1,,1:3788,1
+in obedience to,in obedience to,phrase,従順で，応じて,従順で，応じて,exam,3,1,1,,1:3742,1
+in one's absence,in one's absence,phrase,不在中に，留守中に,不在中に，留守中に,exam,3,1,1,,1:2452,1
+in one's presence,in one's presence,phrase,目の前で，～のいる所で,目の前で，～のいる所で,exam,3,1,1,,1:3200,1
+in parallel,in parallel,phrase,並行して，並んで,並行して，並んで,exam,3,1,1,,1:3407,1
+in prospect,in prospect,phrase,予期されて，見込みがあって,予期されて，見込みがあって,exam,3,1,1,,1:2384,1
+in radius,in radius,phrase,半径で，内半径で,半径で，内半径で,exam,3,1,1,,1:3525,1
+in recognition of,in recognition of,phrase,の認識で，理解して,の認識で，理解して,exam,3,1,1,,1:3105,1
+in search of,in search of,phrase,を探して，探索して，探る,を探して，探索して，探る,exam,3,1,1,,1:1042,1
+in so far as,in so far as,phrase,する限りにおいて，～でありさえすれば,する限りにおいて，～でありさえすれば,exam,3,1,1,,1:2496,1
+in succession,in succession,phrase,連続して，引き続き,連続して，引き続き,exam,3,1,1,,1:3363,1
+in the affirmative,in the affirmative,phrase,肯定の，賛成の,肯定の，賛成の,exam,3,1,1,,1:3227,1
+in the middle of nowhere,in the middle of nowhere,phrase,辺ぴな所に，何もない所に,辺ぴな所に，何もない所に,exam,3,1,1,,1:3671,1
+in the midst of,in the midst of,phrase,の真っただ中，する中で,の真っただ中，する中で,exam,3,1,1,,1:2419,1
+in the nick of time,in the nick of time,phrase,ぎりぎりのところで，間一髪で,ぎりぎりのところで，間一髪で,exam,3,1,1,,1:4272,1
+in use,in use,phrase,使用中の，利用している,使用中の，利用している,exam,3,1,1,,1:1217,1
+in vogue,in vogue,phrase,流行している，流行っている,流行している，流行っている,exam,3,1,1,,1:3503,1
+in years,in years,phrase,年間で，一年を通して,年間で，一年を通して,exam,3,1,1,,1:2482,1
+inquire into,inquire into,phrase,に尋ねる，を取り調べる,に尋ねる，を取り調べる,exam,3,1,1,,1:3559,1
+inquire of,inquire of,phrase,を問い合わせる，尋ねる,を問い合わせる，尋ねる,exam,3,1,1,,1:2521,1
+inside out,inside out,phrase,裏返しに，ひっくり返して,裏返しに，ひっくり返して,exam,3,1,1,,1:2086,1
+interfere in,interfere in,phrase,に干渉する，介入する,に干渉する，介入する,exam,3,1,1,,1:2723,1
+interfere with,interfere with,phrase,に干渉する，介入する,に干渉する，介入する,exam,3,1,1,,1:3948,1
+irrespective of,irrespective of,phrase,に関わりなく，に関係なく,に関わりなく，に関係なく,exam,3,1,1,,1:3564,1
+jockey for position,jockey for position,phrase,位置を取り合う，競争する,位置を取り合う，競争する,exam,3,1,1,,1:4181,1
+jump on the bandwagon,jump on the bandwagon,phrase,流行に乗る，人気のものに飛びつく,流行に乗る，人気のものに飛びつく,exam,3,1,1,,1:4015,1
+just as well,just as well,phrase,差支えない，ちょうど良い,差支えない，ちょうど良い,exam,3,1,1,,1:2417,1
+keep A company,keep a company,phrase,Aに同行する，Aとともに行く,Aに同行する，Aとともに行く,exam,3,1,1,,1:624,1
+keep abreast of,keep abreast of,phrase,を常に把握している，通じている,を常に把握している，通じている,exam,3,1,1,,1:3468,1
+keep an eye on,keep an eye on,phrase,を見ておく，目を離さない,を見ておく，目を離さない,exam,3,1,1,,1:3856,1
+keep at bay,keep at bay,phrase,距離を保つ，抑制する,距離を保つ，抑制する,exam,3,1,1,,1:4256,1
+keep in,keep in,phrase,抑える，閉じ込める,抑える，閉じ込める,exam,3,1,1,,1:3878,1
+keep something at bay,keep something at bay,phrase,何かを抑える，遠ざける,何かを抑える，遠ざける,exam,3,1,1,,1:4156,1
+kick back,kick back,phrase,逆襲する，見返り,逆襲する，見返り,exam,3,1,1,,1:2662,1
+kick out,kick out,phrase,追い出す，追放する,追い出す，追放する,exam,3,1,1,,1:2943,1
+kill oneself,kill oneself,phrase,自殺する，自害する,自殺する，自害する,exam,3,1,1,,1:2898,1
+lay down the law,lay down the law,phrase,法則を定める，厳命する,法則を定める，厳命する,exam,3,1,1,,1:4041,1
+lay in,lay in,phrase,蓄える，仕入れる,蓄える，仕入れる,exam,3,1,1,,1:3120,1
+lean on,lean on,phrase,に寄りかかる，にもたれる,に寄りかかる，にもたれる,exam,3,1,1,,1:3239,1
+lean over,lean over,phrase,寄りかかる，屈む,寄りかかる，屈む,exam,3,1,1,,1:3106,1
+let off,let off,phrase,降ろす，放つ,降ろす，放つ,exam,3,1,1,,1:2895,1
+let the cat out of the bag,let the cat out of the bag,phrase,秘密を漏らす，バラす,秘密を漏らす，バラす,exam,3,1,1,,1:4117,1
+level out,level out,phrase,平らげる，平らにする,平らげる，平らにする,exam,3,1,1,,1:3710,1
+lie with,lie with,phrase,の役目である，次第である，,の役目である，次第である，,exam,3,1,1,,1:3926,1
+limit A to B,limit a to b,phrase,AをBに限定する，AをBに制限する,AをBに限定する，AをBに制限する,exam,3,1,1,,1:1470,1
+live off,live off,phrase,によって生きる，で生計を立てる,によって生きる，で生計を立てる,exam,3,1,1,,1:3965,1
+live out,live out,phrase,生き延びる，残りの人生を生きる,生き延びる，残りの人生を生きる,exam,3,1,1,,1:3681,1
+live through,live through,phrase,生き延びる，切り抜ける,生き延びる，切り抜ける,exam,3,1,1,,1:3565,1
+look beyond,look beyond,phrase,視野を広げる，先を見据える,視野を広げる，先を見据える,exam,3,1,1,,1:3734,1
+loosen up,loosen up,phrase,緩める，ほぐす,緩める，ほぐす,exam,3,1,1,,1:3933,1
+lop off,lop off,phrase,切り落とす，削除する，落とす,切り落とす，削除する，落とす,exam,3,1,1,,1:952,1
+loud and clear,loud and clear,phrase,はっきりと，明確に,はっきりと，明確に,exam,3,1,1,,1:3494,1
+make an end of,make an end of,phrase,で済ませる，終わらせる,で済ませる，終わらせる,exam,3,1,1,,1:3034,1
+make do with,make do with,phrase,で間に合わせる，でやりくりする,で間に合わせる，でやりくりする,exam,3,1,1,,1:2948,1
+make for,make for,phrase,へ向かう，に役立つ,へ向かう，に役立つ,exam,3,1,1,,1:2568,1
+make matters worse,make matters worse,phrase,問題を悪化させる，問題をよくない方向に導く,問題を悪化させる，問題をよくない方向に導く,exam,3,1,1,,1:3340,1
+make progress,make progress,phrase,進歩する，進展する,進歩する，進展する,exam,3,1,1,,1:807,1
+medical checkup,medical checkup,phrase,健康診断，医療診断,健康診断，医療診断,exam,3,1,1,,1:1426,1
+mess up,mess up,phrase,台無しにする，台無しにして価値や効果を無くす，損なう,台無しにする，台無しにして価値や効果を無くす，損なう,exam,3,1,1,,1:1709,1
+mete out,mete out,phrase,分配する，割り当てる,分配する，割り当てる,exam,3,1,1,,1:4112,1
+might as well do,might as well do,phrase,するかもしれない，起こり得る,するかもしれない，起こり得る,exam,3,1,1,,1:3694,1
+miss the boat,miss the boat,phrase,機会を逃す，失敗する,機会を逃す，失敗する,exam,3,1,1,,1:4206,1
+mother tongue,mother tongue,phrase,母国語，母語,母国語，母語,exam,3,1,1,,1:3220,1
+mull over,mull over,phrase,よく考える，熟考する,よく考える，熟考する,exam,3,1,1,,1:4266,1
+narrow down A to B,narrow down a to b,phrase,AをBに限定する，AをBに制限する,AをBに限定する，AをBに制限する,exam,3,1,1,,1:1440,1
+natural disaster,natural disaster,phrase,自然災害，天災,自然災害，天災,exam,3,1,1,,1:2094,1
+nip in the bud,nip in the bud,phrase,初期に阻止する，未然に防ぐ,初期に阻止する，未然に防ぐ,exam,3,1,1,,1:4193,1
+nip something in the bud,nip something in the bud,phrase,初めのうちに何かを抑止する，未然に防ぐ,初めのうちに何かを抑止する，未然に防ぐ,exam,3,1,1,,1:4169,1
+no less than,no less than,phrase,と同じほど，に劣らず,と同じほど，に劣らず,exam,3,1,1,,1:3327,1
+no offense,no offense,phrase,悪気はなく，悪気なく,悪気はなく，悪気なく,exam,3,1,1,,1:3225,1
+none the less,none the less,phrase,それでもなお，それにも関わらず,それでもなお，それにも関わらず,exam,3,1,1,,1:3562,1
+none the more,none the more,phrase,それでもなお，それにも関わらず,それでもなお，それにも関わらず,exam,3,1,1,,1:3782,1
+not necessarily,not necessarily,phrase,必ずしも必要でなく，必ずしも～ない,必ずしも必要でなく，必ずしも～ない,exam,3,1,1,,1:3304,1
+nothing much,nothing much,phrase,大したことはない，特に何もない,大したことはない，特に何もない,exam,3,1,1,,1:3690,1
+notify A of B,notify a of b,phrase,AにBを通知する,AにBを通知する,exam,3,1,1,,1:3245,1
+now and again,now and again,phrase,時々，時折,時々，時折,exam,3,1,1,,1:2664,1
+oddly enough,oddly enough,phrase,奇妙なことに，おかしなことに,奇妙なことに，おかしなことに,exam,3,1,1,,1:2588,1
+on a wing and a prayer,on a wing and a prayer,phrase,危険で不確実な状況で，祈りながら,危険で不確実な状況で，祈りながら,exam,3,1,1,,1:4069,1
+on bail,on bail,phrase,保釈中の，出所中の,保釈中の，出所中の,exam,3,1,1,,1:2484,1
+on edge,on edge,phrase,イライラして，もどかしくて,イライラして，もどかしくて,exam,3,1,1,,1:3211,1
+on hand,on hand,phrase,近くに，手元に,近くに，手元に,exam,3,1,1,,1:3023,1
+on principle,on principle,phrase,原則として，道徳的見地から,原則として，道徳的見地から,exam,3,1,1,,1:3280,1
+on second thought,on second thought,phrase,考え直してみると，再考した結果,考え直してみると，再考した結果,exam,3,1,1,,1:3241,1
+on the brink of,on the brink of,phrase,の危機に瀕して，の寸前で,の危機に瀕して，の寸前で,exam,3,1,1,,1:3610,1
+on the decline,on the decline,phrase,衰退中の，下降中の,衰退中の，下降中の,exam,3,1,1,,1:3474,1
+on the fence,on the fence,phrase,決断を保留する，中立である,決断を保留する，中立である,exam,3,1,1,,1:4140,1
+on the occasion of,on the occasion of,phrase,に際して，にあたって,に際して，にあたって,exam,3,1,1,,1:3020,1
+on the subject of,on the subject of,phrase,に関して，について,に関して，について,exam,3,1,1,,1:2520,1
+on the verge of,on the verge of,phrase,寸前で，今にも，しようとして,寸前で，今にも，しようとして,exam,3,1,1,,1:3705,1
+on trial,on trial,phrase,試用中で，審理中で,試用中で，審理中で,exam,3,1,1,,1:3510,1
+"on trial, under trial","on trial, under trial",phrase,試用中で，審理中で,試用中で，審理中で,exam,3,1,1,,1:3170,1
+once and for all,once and for all,phrase,これを最後に，最終的に,これを最後に，最終的に,exam,3,1,1,,1:3311,1
+one and only,one and only,phrase,たった一つだけ，一つ限りの,たった一つだけ，一つ限りの,exam,3,1,1,,1:3665,1
+operate on,operate on,phrase,を運営する，操作する,を運営する，操作する,exam,3,1,1,,1:3530,1
+originate in,originate in,phrase,に端を発する，起因する,に端を発する，起因する,exam,3,1,1,,1:3253,1
+out and about,out and about,phrase,出歩いて，外に出られる,出歩いて，外に出られる,exam,3,1,1,,1:2533,1
+out of hand,out of hand,phrase,手を離れて，手に負えなくなって,手を離れて，手に負えなくなって,exam,3,1,1,,1:2843,1
+out of the ordinary,out of the ordinary,phrase,並外れた，普通でない,並外れた，普通でない,exam,3,1,1,,1:3968,1
+out of the picture,out of the picture,phrase,目立たない，重要でない,目立たない，重要でない,exam,3,1,1,,1:2667,1
+owing to,owing to,phrase,のために，のおかげで,のために，のおかげで,exam,3,1,1,,1:2544,1
+pan out,pan out,phrase,砂金が出る，成功する,砂金が出る，成功する,exam,3,1,1,,1:2513,1
+pass the buck,pass the buck,phrase,責任を転嫁する，逃げる,責任を転嫁する，逃げる,exam,3,1,1,,1:4235,1
+pass up,pass up,phrase,逃す，失う，逸する,逃す，失う，逸する,exam,3,1,1,,1:1686,1
+pick up the tab,pick up the tab,phrase,勘定を払う，支払いをする,勘定を払う，支払いをする,exam,3,1,1,,1:3367,1
+place a ban on,place a ban on,phrase,を禁止する，禁じる,を禁止する，禁じる,exam,3,1,1,,1:2330,1
+play up,play up,phrase,を重視する，強調する，優先する,を重視する，強調する，優先する,exam,3,1,1,,1:536,1
+point up,point up,phrase,強調する，際立たせる,強調する，際立たせる,exam,3,1,1,,1:2791,1
+poke fun at,poke fun at,phrase,をからかう，を馬鹿にする,をからかう，を馬鹿にする,exam,3,1,1,,1:2720,1
+pony up,pony up,phrase,お金を出す，出資する，支払う,お金を出す，出資する，支払う,exam,3,1,1,,1:1413,1
+pop in,pop in,phrase,飛び込む，飛び入る,飛び込む，飛び入る,exam,3,1,1,,1:3601,1
+praise A for B,praise a for b,phrase,AをBについて賞賛する，AをBでほめる,AをBについて賞賛する，AをBでほめる,exam,3,1,1,,1:3830,1
+press for,press for,phrase,をせがむ，催促する,をせがむ，催促する,exam,3,1,1,,1:833,1
+pretend to do,pretend to do,phrase,するふりをする，～だと見せかける,するふりをする，～だと見せかける,exam,3,1,1,,1:3255,1
+prohibit A from doing,prohibit a from doing,phrase,Aがすることを禁止する,Aがすることを禁止する,exam,3,1,1,,1:3374,1
+pull away from,pull away from,phrase,から引き離す，分離する,から引き離す，分離する,exam,3,1,1,,1:3739,1
+pull into,pull into,phrase,引き入れる，引き込む,引き入れる，引き込む,exam,3,1,1,,1:2738,1
+pull someone's leg,pull someone's leg,phrase,冗談で誰かをからかう，いたずらする,冗談で誰かをからかう，いたずらする,exam,3,1,1,,1:4114,1
+pull the plug,pull the plug,phrase,停止させる，終わらせる,停止させる，終わらせる,exam,3,1,1,,1:2875,1
+pull together,pull together,phrase,力を結集する，協力する,力を結集する，協力する,exam,3,1,1,,1:2323,1
+pull up to,pull up to,phrase,追いつく，並ぶ,追いつく，並ぶ,exam,3,1,1,,1:3465,1
+push A back,push a back,phrase,Aを遅らせる，Aを抑制する,Aを遅らせる，Aを抑制する,exam,3,1,1,,1:1474,1
+put A aside,put a aside,phrase,Aを脇に置く，Aを放置する,Aを脇に置く，Aを放置する,exam,3,1,1,,1:54,1
+put A into practice,put a into practice,phrase,Aを実践する，実行する,Aを実践する，実行する,exam,3,1,1,,1:3309,1
+put in,put in,phrase,取り付ける，取り組む,取り付ける，取り組む,exam,3,1,1,,1:1071,1
+put it briefly,put it briefly,phrase,簡単に言うと，短く言うと,簡単に言うと，短く言うと,exam,3,1,1,,1:3024,1
+put through,put through,phrase,やり遂げる，に電話を繋ぐ,やり遂げる，に電話を繋ぐ,exam,3,1,1,,1:2778,1
+quarrel with,quarrel with,phrase,とけんかする，口論する,とけんかする，口論する,exam,3,1,1,,1:2954,1
+quash rumors,quash rumors,phrase,噂を抑制する，否定する,噂を抑制する，否定する,exam,3,1,1,,1:4152,1
+quite a bit,quite a bit,phrase,たくさんの，かなりの,たくさんの，かなりの,exam,3,1,1,,1:3700,1
+rake over the coals,rake over the coals,phrase,厳しく注意する,厳しく注意する,exam,3,1,1,,1:4109,1
+rank and file,rank and file,phrase,兵卒，一般人,兵卒，一般人,exam,3,1,1,,1:3527,1
+replace A as B,replace a as b,phrase,BとしてAに取って代わる，BとしてAの位置を占める,BとしてAに取って代わる，BとしてAの位置を占める,exam,3,1,1,,1:1219,1
+replace A by B,replace a by b,phrase,AをBで置き換える，AをBで代用する，AをBに変える,AをBで置き換える，AをBで代用する，AをBに変える,exam,3,1,1,,1:1923,1
+replace A with B,replace a with b,phrase,AをBに置き換える，AをBと交換する，AをBで代用する,AをBに置き換える，AをBと交換する，AをBで代用する,exam,3,1,1,,1:1806,1
+ring a bell,ring a bell,phrase,思い出させる，聞いたことのある,思い出させる，聞いたことのある,exam,3,1,1,,1:2474,1
+ring out,ring out,phrase,退出時間を記録する，鳴り響く,退出時間を記録する，鳴り響く,exam,3,1,1,,1:3097,1
+rise and fall,rise and fall,phrase,上下する，起伏する,上下する，起伏する,exam,3,1,1,,1:3012,1
+roll in,roll in,phrase,たくさん入る，転がり入る,たくさん入る，転がり入る,exam,3,1,1,,1:2669,1
+roll out,roll out,phrase,製品投入する，水平展開する,製品投入する，水平展開する,exam,3,1,1,,1:3895,1
+rub off,rub off,phrase,こすり落とす,こすり落とす,exam,3,1,1,,1:3936,1
+rumor has it that,rumor has it that,phrase,噂によると，らしい，との噂である,噂によると，らしい，との噂である,exam,3,1,1,,1:2932,1
+run off,run off,phrase,流出する，逃げる,流出する，逃げる,exam,3,1,1,,1:2717,1
+scold A for B,scold a for b,phrase,BのことでAを叱る,BのことでAを叱る,exam,3,1,1,,1:3524,1
+screw up,screw up,phrase,失敗する，しくじる,失敗する，しくじる,exam,3,1,1,,1:2784,1
+serve up,serve up,phrase,仕える，食卓に出す,仕える，食卓に出す,exam,3,1,1,,1:3924,1
+set A apart,set a apart,phrase,Aを離す,Aを離す,exam,3,1,1,,1:2946,1
+set at,set at,phrase,評価する，設置する,評価する，設置する,exam,3,1,1,,1:2687,1
+set back,set back,phrase,後退する，戻す,後退する，戻す,exam,3,1,1,,1:3859,1
+shell out,shell out,phrase,支払う，大金を払う,支払う，大金を払う,exam,3,1,1,,1:2562,1
+ship out,ship out,phrase,出荷する，積み出しする,出荷する，積み出しする,exam,3,1,1,,1:3500,1
+sit back,sit back,phrase,深く座る，傍観する,深く座る，傍観する,exam,3,1,1,,1:3661,1
+sit in,sit in,phrase,座り込む，座って抗議する,座り込む，座って抗議する,exam,3,1,1,,1:1007,1
+size up,size up,phrase,評価する，見極める,評価する，見極める,exam,3,1,1,,1:4035,1
+sleep in,sleep in,phrase,寝床に入る，ゆっくり寝る,寝床に入る，ゆっくり寝る,exam,3,1,1,,1:2485,1
+sleep on,sleep on,phrase,を一晩寝て考える，決定を一日延ばす,を一晩寝て考える，決定を一日延ばす,exam,3,1,1,,1:2553,1
+slip A's mind,slip a's mind,phrase,Aから忘れられる，～をAがうっかり忘れる,Aから忘れられる，～をAがうっかり忘れる,exam,3,1,1,,1:2458,1
+smell a rat,smell a rat,phrase,うさんくさいと感じる，疑う,うさんくさいと感じる，疑う,exam,3,1,1,,1:4224,1
+sneak up on,sneak up on,phrase,忍び寄る，こっそり近づく,忍び寄る，こっそり近づく,exam,3,1,1,,1:3290,1
+sniff out,sniff out,phrase,見つけ出す，嗅ぎつける,見つけ出す，嗅ぎつける,exam,3,1,1,,1:4270,1
+so as to,so as to,phrase,するように，なるように,するように，なるように,exam,3,1,1,,1:2925,1
+speak well of,speak well of,phrase,の事を良く言う，ほめる,の事を良く言う，ほめる,exam,3,1,1,,1:2528,1
+spell out,spell out,phrase,綴りを書く，綴りを言う,綴りを書く，綴りを言う,exam,3,1,1,,1:3630,1
+spill the beans,spill the beans,phrase,秘密を漏らす，口を滑らせる,秘密を漏らす，口を滑らせる,exam,3,1,1,,1:4107,1
+spit it out,spit it out,phrase,白状する，吐き出すように言う,白状する，吐き出すように言う,exam,3,1,1,,1:3004,1
+split off A from B,split off a from b,phrase,AをBから切り離す,AをBから切り離す,exam,3,1,1,,1:2256,1
+split the bill,split the bill,phrase,割り勘をする/割り勘,割り勘をする/割り勘,exam,3,1,1,,1:2457,1
+spring up,spring up,phrase,突然現れる，跳ね上がる,突然現れる，跳ね上がる,exam,3,1,1,,1:663,1
+squander opportunities,squander opportunities,phrase,機会を無駄にする,機会を無駄にする,exam,3,1,1,,1:4231,1
+stamp out,stamp out,phrase,踏み消す，鎮圧する,踏み消す，鎮圧する,exam,3,1,1,,1:3732,1
+stand to reason,stand to reason,phrase,筋が通る，道理にかなう,筋が通る，道理にかなう,exam,3,1,1,,1:3911,1
+starve to death,starve to death,phrase,飢え死にする，餓死する,飢え死にする，餓死する,exam,3,1,1,,1:3534,1
+state of the art,state of the art,phrase,最先端の，最先鋭の,最先端の，最先鋭の,exam,3,1,1,,1:1491,1
+stave off,stave off,phrase,避ける，防ぐ,避ける，防ぐ,exam,3,1,1,,1:4174,1
+stay put,stay put,phrase,入れたまま，元のままで,入れたまま，元のままで,exam,3,1,1,,1:2833,1
+steal the show,steal the show,phrase,話題をさらう，人気をさらう,話題をさらう，人気をさらう,exam,3,1,1,,1:3908,1
+step in,step in,phrase,介入する，立ち入る,介入する，立ち入る,exam,3,1,1,,1:2493,1
+sticking point,sticking point,phrase,障害，行き詰り,障害，行き詰り,exam,3,1,1,,1:3130,1
+stop A from doing B,stop a from doing b,phrase,AがBすることを止める，AがBするのを禁じる,AがBすることを止める，AがBするのを禁じる,exam,3,1,1,,1:824,1
+stop off,stop off,phrase,途中下車する，寄り道する,途中下車する，寄り道する,exam,3,1,1,,1:3323,1
+strictly speaking,strictly speaking,phrase,厳密に言えば，正確には,厳密に言えば，正確には,exam,3,1,1,,1:3850,1
+submit A to B,submit a to b,phrase,AをBに提出する,AをBに提出する,exam,3,1,1,,1:3115,1
+succumb to,succumb to,phrase,に負ける，で死ぬ,に負ける，で死ぬ,exam,3,1,1,,1:2507,1
+surrender to,surrender to,phrase,に降伏する，屈服する,に降伏する，屈服する,exam,3,1,1,,1:2877,1
+take A away from B,take a away from b,phrase,BからAを取る，BからAを除外する,BからAを取る，BからAを除外する,exam,3,1,1,,1:914,1
+take A by surprise,take a by surprise,phrase,Aを驚かせる,Aを驚かせる,exam,3,1,1,,1:3256,1
+take A into consideration,take a into consideration,phrase,Aを考慮に入れる,Aを考慮に入れる,exam,3,1,1,,1:3112,1
+take cover,take cover,phrase,隠れる，避難する,隠れる，避難する,exam,3,1,1,,1:3715,1
+take delight in,take delight in,phrase,喜びを得る，面白がる,喜びを得る，面白がる,exam,3,1,1,,1:3619,1
+take heart,take heart,phrase,勢い付く，元気になる,勢い付く，元気になる,exam,3,1,1,,1:3439,1
+take leave of,take leave of,phrase,と告別する，別れる,と告別する，別れる,exam,3,1,1,,1:2629,1
+take pains,take pains,phrase,苦労する，骨を折る,苦労する，骨を折る,exam,3,1,1,,1:2525,1
+take pity on,take pity on,phrase,に同情する，哀れむ,に同情する，哀れむ,exam,3,1,1,,1:3839,1
+take something with a grain of salt,take something with a grain of salt,phrase,疑いの目で何かを受け取る，懐疑的に,疑いの目で何かを受け取る，懐疑的に,exam,3,1,1,,1:4024,1
+take steps,take steps,phrase,順序を踏む，対策を打つ,順序を踏む，対策を打つ,exam,3,1,1,,1:3963,1
+take up with,take up with,phrase,と仲良くなる，と親しくなる,と仲良くなる，と親しくなる,exam,3,1,1,,1:3894,1
+talk over,talk over,phrase,相談する，議論する,相談する，議論する,exam,3,1,1,,1:1365,1
+tear up,tear up,phrase,引き裂く，引き剝がす,引き裂く，引き剝がす,exam,3,1,1,,1:3834,1
+tell A apart,tell a apart,phrase,Aを区別する，Aを見分ける,Aを区別する，Aを見分ける,exam,3,1,1,,1:2603,1
+tell off,tell off,phrase,小言を言う，叱りつける,小言を言う，叱りつける,exam,3,1,1,,1:2422,1
+ten to one,ten to one,phrase,10対1で，十中八九,10対1で，十中八九,exam,3,1,1,,1:3696,1
+tend to,tend to,phrase,する傾向がある，しがちである,する傾向がある，しがちである,exam,3,1,1,,1:2676,1
+tens of thousands,tens of thousands,phrase,何万もの，数万の,何万もの，数万の,exam,3,1,1,,1:3066,1
+the bottom line,the bottom line,phrase,最低限，最低ライン,最低限，最低ライン,exam,3,1,1,,1:3611,1
+think better of,think better of,phrase,よく考える，見直す,よく考える，見直す,exam,3,1,1,,1:2857,1
+think much of,think much of,phrase,を尊重する，評価する,を尊重する，評価する,exam,3,1,1,,1:3019,1
+threaten A with extinction,threaten a with extinction,phrase,Aを絶滅の危機にさらす，Aを危機に瀕させる,Aを絶滅の危機にさらす，Aを危機に瀕させる,exam,3,1,1,,1:1613,1
+throw in the towel,throw in the towel,phrase,降参する，あきらめる,降参する，あきらめる,exam,3,1,1,,1:4211,1
+thumb a ride,thumb a ride,phrase,ヒッチハイクする,ヒッチハイクする,exam,3,1,1,,1:4036,1
+tie into,tie into,phrase,結び付ける，調和させる,結び付ける，調和させる,exam,3,1,1,,1:3364,1
+to all appearances,to all appearances,phrase,どうみても，明らかに,どうみても，明らかに,exam,3,1,1,,1:3736,1
+to be frank,to be frank,phrase,率直に言って，正直なところ,率直に言って，正直なところ,exam,3,1,1,,1:2880,1
+to death,to death,phrase,死ぬまで，生涯,死ぬまで，生涯,exam,3,1,1,,1:3346,1
+to no purpose,to no purpose,phrase,何の目的もなく，無駄に,何の目的もなく，無駄に,exam,3,1,1,,1:3491,1
+to some degree,to some degree,phrase,ある程度，一定程度,ある程度，一定程度,exam,3,1,1,,1:3441,1
+to the full,to the full,phrase,いっぱいに，心ゆくまで,いっぱいに，心ゆくまで,exam,3,1,1,,1:3760,1
+top off,top off,phrase,仕上げをする，終える,仕上げをする，終える,exam,3,1,1,,1:3584,1
+touch down,touch down,phrase,着陸する，降り立つ,着陸する，降り立つ,exam,3,1,1,,1:3391,1
+touch off,touch off,phrase,発射させる，誘発する,発射させる，誘発する,exam,3,1,1,,1:3059,1
+town twinning,town twinning,phrase,姉妹都市提携，友好都市関係，姉妹都市の縁組み,姉妹都市提携，友好都市関係，姉妹都市の縁組み,exam,3,1,1,,1:1430,1
+toy with,toy with,phrase,いじくる，遊ぶ,いじくる，遊ぶ,exam,3,1,1,,1:4027,1
+trip up,trip up,phrase,をつまづかせる，揚げ足をとる,をつまづかせる，揚げ足をとる,exam,3,1,1,,1:1066,1
+trot out,trot out,phrase,持ち出す，言い出す,持ち出す，言い出す,exam,3,1,1,,1:3592,1
+true to life,true to life,phrase,写実的，そっくりの,写実的，そっくりの,exam,3,1,1,,1:2517,1
+turn away,turn away,phrase,追い返す，追放する，追い払う,追い返す，追放する，追い払う,exam,3,1,1,,1:1465,1
+turn out for,turn out for,phrase,に向かう，の方向に進む,に向かう，の方向に進む,exam,3,1,1,,1:2753,1
+twist someone's arm,twist someone's arm,phrase,強く説得する，押し付ける,強く説得する，押し付ける,exam,3,1,1,,1:4190,1
+under consideration,under consideration,phrase,検討中の，審議中の,検討中の，審議中の,exam,3,1,1,,1:2526,1
+under construction,under construction,phrase,建設中で，工事中,建設中で，工事中,exam,3,1,1,,1:2511,1
+under cover,under cover,phrase,内密に，隠れて,内密に，隠れて,exam,3,1,1,,1:2641,1
+under the table,under the table,phrase,こっそりと，そでの下で,こっそりと，そでの下で,exam,3,1,1,,1:2864,1
+up for grabs,up for grabs,phrase,容易に手に入る，誰が勝つかわからない,容易に手に入る，誰が勝つかわからない,exam,3,1,1,,1:3845,1
+up front,up front,phrase,前もって，率直に,前もって，率直に,exam,3,1,1,,1:1635,1
+up in arms,up in arms,phrase,怒って，反対して,怒って，反対して,exam,3,1,1,,1:4240,1
+up in the air,up in the air,phrase,漠然とした，未決定の,漠然とした，未決定の,exam,3,1,1,,1:3055,1
+up to now,up to now,phrase,今まで，現在まで,今まで，現在まで,exam,3,1,1,,1:3144,1
+up to speed,up to speed,phrase,事情を理解している，状況を把握している,事情を理解している，状況を把握している,exam,3,1,1,,1:3553,1
+vouch for,vouch for,phrase,を保証する，約束する,を保証する，約束する,exam,3,1,1,,1:3140,1
+walk away with,walk away with,phrase,と一緒に歩いて出る，と一緒に歩いて去る,と一緒に歩いて出る，と一緒に歩いて去る,exam,3,1,1,,1:3092,1
+walk on eggshells,walk on eggshells,phrase,非常に慎重に行動する,非常に慎重に行動する,exam,3,1,1,,1:3993,1
+wash out,wash out,phrase,洗い流す，洗い落とす,洗い流す，洗い落とす,exam,3,1,1,,1:3897,1
+wash up,wash up,phrase,顔や手を洗う，皿洗いをする,顔や手を洗う，皿洗いをする,exam,3,1,1,,1:2845,1
+watch one's step,watch one's step,phrase,足元を見る，注意する,足元を見る，注意する,exam,3,1,1,,1:3722,1
+watch over,watch over,phrase,見守る，見張る,見守る，見張る,exam,3,1,1,,1:2690,1
+way to go,way to go,phrase,良い調子，順調な状態,良い調子，順調な状態,exam,3,1,1,,1:3462,1
+wear and tear,wear and tear,phrase,磨耗，摩滅,磨耗，摩滅,exam,3,1,1,,1:3490,1
+when it comes to,when it comes to,phrase,のことになると，(話が)…ということになると,のことになると，(話が)…ということになると,exam,3,1,1,,1:3142,1
+wipe out,wipe out,phrase,を一掃する，全滅させる,を一掃する，全滅させる,exam,3,1,1,,1:2994,1
+with A start,with a start,phrase,はっとして，ビクッとして,はっとして，ビクッとして,exam,3,1,1,,1:2580,1
+with a vengeance,with a vengeance,phrase,すさまじい勢いで，猛烈に,すさまじい勢いで，猛烈に,exam,3,1,1,,1:2889,1
+with open arms,with open arms,phrase,両手を広げて，心から喜んで,両手を広げて，心から喜んで,exam,3,1,1,,1:2510,1
+without reserve,without reserve,phrase,遠慮せず，遠慮なく,遠慮せず，遠慮なく,exam,3,1,1,,1:2793,1
+without so much as doing,without so much as doing,phrase,さえしないで，すらしない,さえしないで，すらしない,exam,3,1,1,,1:2390,1
+worlds apart,worlds apart,phrase,別世界の，非常に異なって,別世界の，非常に異なって,exam,3,1,1,,1:2434,1
+write off,write off,phrase,すぐに書く，即座に記述する,すぐに書く，即座に記述する,exam,3,1,1,,1:2867,1
+write out,write out,phrase,書きつくす，書くことがなくなる,書きつくす，書くことがなくなる,exam,3,1,1,,1:2807,1
+x marks the spot,x marks the spot,phrase,目印，正確な位置,目印，正確な位置,exam,3,1,1,,1:4251,1
+yank someone's chain,yank someone's chain,phrase,人をからかう，困らせる,人をからかう，困らせる,exam,3,1,1,,1:3980,1
+yet again,yet again,phrase,再び，またまた,再び，またまた,exam,3,1,1,,1:2760,1
+zero in on,zero in on,phrase,に的を絞る，照準を合わせる,に的を絞る，照準を合わせる,exam,3,1,1,,1:2905,1

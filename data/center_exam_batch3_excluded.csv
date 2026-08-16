@@ -1,0 +1,36 @@
+exclude_reason,source_file,action,source_rank,word,lemma,pos,form_type,sense_id,meaning_ja,level,importance,category,note,note2,center_word_original,center_pos,center_pmw,review_reason
+source_file_review,review,add,119,used,used,verb,past_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVN; center_pmw=1000+,used,VVN,1000+,pos_review
+manual_exclude_word,auto,add,175,mr,mr,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,mr,NN,500+,
+manual_exclude_word,auto,add,219,ok,ok,verb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VV; center_pmw=500+,ok,VV,500+,
+manual_exclude_word,auto,add,235,accord,accord,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=500+,accord,NN,500+,
+source_file_review,review,add,276,mrs,mrs,noun,plural,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NNS; center_pmw=500+,mrs,NNS,500+,pos_review
+manual_exclude_word,auto,add,318,clothe,clothe,verb,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VV; center_pmw=100+,clothe,VV,100+,
+source_file_review,review,add,324,following,following,verb,present_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVG; center_pmw=100+,following,VVG,100+,pos_review
+manual_exclude_word,auto,add,346,john,john,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=100+,john,NN,100+,
+manual_exclude_word,auto,add,352,dr,dr,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=100+,dr,NN,100+,
+manual_exclude_word,auto,add,379,tom,tom,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=100+,tom,NN,100+,
+source_file_review,review,add,554,ms,ms,noun,plural,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NNS; center_pmw=100+,ms,NNS,100+,pos_review
+source_file_review,review,add,564,surprised,surprised,verb,past_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVN; center_pmw=100+,surprised,VVN,100+,pos_review
+source_file_review,review,add,573,germany,germany,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Germany,NP,100+,pos_review;proper_noun
+manual_exclude_word,auto,add,582,bob,bob,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=100+,bob,NN,100+,
+source_file_review,review,add,586,internet,internet,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Internet,NP,100+,pos_review;proper_noun
+source_file_review,review,add,639,france,france,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,France,NP,100+,pos_review;proper_noun
+source_file_review,review,add,646,tokyo,tokyo,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Tokyo,NP,100+,pos_review;proper_noun
+source_file_review,review,add,682,saying,saying,verb,present_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVG; center_pmw=100+,saying,VVG,100+,pos_review
+source_file_review,review,add,728,us(a),us(a),,,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=; center_pmw=100+,US(A),,100+,pos_review;multiword_or_symbol;unknown_pos
+manual_exclude_word,auto,add,750,sally,sally,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NN; center_pmw=100+,sally,NN,100+,
+source_file_review,review,add,764,ken,ken,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Ken,NP,100+,pos_review;proper_noun
+source_file_review,review,add,851,déjà(-vu),déjà(-vu),,,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=; center_pmw=100+,déjà(-vu),,100+,pos_review;multiword_or_symbol;unknown_pos
+source_file_review,review,add,862,lower,lower,adjective,comparative,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=JJR; center_pmw=100+,lower,JJR,100+,pos_review
+source_file_review,review,add,876,born,born,verb,past_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVN; center_pmw=100+,born,VVN,100+,pos_review
+source_file_review,review,add,881,indian,indian,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Indian,NP,100+,pos_review;proper_noun
+source_file_review,review,add,915,new york,new york,,,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=; center_pmw=100+,New York,,100+,pos_review;multiword_or_symbol;proper_noun;unknown_pos
+source_file_review,review,add,929,teenager,teenager,adjective,comparative,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=JJR; center_pmw=100+,teenager,JJR,100+,pos_review
+source_file_review,review,add,938,data,data,noun,plural,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NNS; center_pmw=100+,data,NNS,100+,pos_review
+source_file_review,review,add,995,species,species,noun,plural,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NNS; center_pmw=100+,species,NNS,100+,pos_review
+source_file_review,review,add,1001,brazil,brazil,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Brazil,NP,100+,pos_review;proper_noun
+source_file_review,review,add,1010,helping,helping,verb,present_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVG; center_pmw=100+,helping,VVG,100+,pos_review
+source_file_review,review,add,1016,moving,moving,verb,present_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVG; center_pmw=100+,moving,VVG,100+,pos_review
+source_file_review,review,add,1112,cox,cox,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,Cox,NP,100+,pos_review;proper_noun
+source_file_review,review,add,1138,surrounding,surrounding,verb,present_participle,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=VVG; center_pmw=100+,surrounding,VVG,100+,pos_review
+source_file_review,review,add,1144,uk,uk,noun,base,1,,high_school,2,center_exam,センター試験語彙リスト由来。意味は要補充,center_pos=NP; center_pmw=100+,UK,NP,100+,pos_review;acronym;proper_noun
