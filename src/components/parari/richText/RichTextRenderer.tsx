@@ -48,10 +48,10 @@ const defaultTheme: RichTextTheme = {
   documentClassName: "space-y-5",
   paragraphClassName:
     "text-[16.5px] leading-[1.9] text-neutral-900 whitespace-pre-wrap",
-  chapterClassName:
-    "pt-3 text-xl leading-snug font-semibold text-neutral-900",
-  subheadingClassName:
-    "pt-3 text-lg leading-snug font-semibold text-neutral-900",
+chapterClassName:
+  "pt-3 text-[24px] leading-[1.45] font-semibold text-neutral-900",
+subheadingClassName:
+  "pt-3 text-[19px] leading-[1.55] font-semibold text-neutral-900",
   boldClassName: "font-semibold",
   colorClassName: "",
   colorToneClassNames: {

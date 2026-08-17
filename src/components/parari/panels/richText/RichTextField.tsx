@@ -228,10 +228,10 @@ const RED_COLOR = "#dc2626";
 
 const theme = {
   paragraph: "mb-4 last:mb-0",
-  heading: {
-    h2: "mb-3 mt-6 text-xl font-bold leading-8 text-neutral-900",
-    h3: "mb-2 mt-5 text-lg font-bold leading-7 text-neutral-900",
-  },
+      heading: {
+        h2: "mb-3 mt-6 text-[24px] font-semibold leading-[1.45] text-neutral-900",
+        h3: "mb-2 mt-5 text-[19px] font-semibold leading-[1.55] text-neutral-900",
+      },
   text: {
     bold: "font-bold",
     italic: "italic",
