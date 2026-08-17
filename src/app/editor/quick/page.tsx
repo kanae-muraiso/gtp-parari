@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
@@ -37,7 +37,10 @@ export default function QuickEditorPage() {
     type: "idle",
     message: "",
   });
-
+    
+  const saveLockRef = useRef(false);
+  const createRequestIdRef = useRef<string | null>(null);
+    
   const fallbackTitle = useMemo(() => createFallbackTitle(), []);
 
   const effectiveTitle = title.trim() || fallbackTitle;
@@ -114,8 +117,12 @@ export default function QuickEditorPage() {
     }
   };
 
-  const handleSave = async () => {
-    const cleanBody = body.trim();
+    const handleSave = async () => {
+      if (saveLockRef.current) {
+        return;
+      }
+
+      const cleanBody = body.trim();
 
     if (!cleanBody && !mainImageUrl.trim()) {
       setStatus({
@@ -125,6 +132,14 @@ export default function QuickEditorPage() {
       return;
     }
 
+    saveLockRef.current = true;
+        
+        if (!createRequestIdRef.current) {
+          createRequestIdRef.current = crypto.randomUUID();
+        }
+
+        const createRequestId = createRequestIdRef.current;
+        
     setStatus({
       type: "saving",
       message: "保存しています…",
@@ -168,14 +183,15 @@ export default function QuickEditorPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          stableSlug,
-          template: {
-            kind: "page",
-            initialTitle: effectiveTitle,
-            ssot: content,
-          },
-        }),
+          body: JSON.stringify({
+            createRequestId,
+            stableSlug,
+            template: {
+              kind: "page",
+              initialTitle: effectiveTitle,
+              ssot: content,
+            },
+          }),
       });
 
       const result = (await response.json().catch(() => null)) as
@@ -209,6 +225,8 @@ export default function QuickEditorPage() {
             ? `保存に失敗しました: ${error.message}`
             : "保存に失敗しました。",
       });
+    } finally {
+      saveLockRef.current = false;
     }
   };
 

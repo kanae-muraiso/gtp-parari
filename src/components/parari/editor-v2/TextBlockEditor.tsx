@@ -14,6 +14,8 @@
 import { useRef, useState } from "react";
 import type { TextBlock } from "@/lib/parari/ssot-v2/panelTypes";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
+import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
+import { parseRichText } from "@/lib/parari/richText/parseRichText";
 
 type TextBlockMode = "view" | "edit";
 
@@ -86,7 +88,9 @@ export function TextBlockEditor({
         title="クリックして本文を編集"
       >
         {block.raw.trim().length > 0 ? (
-          <div className="whitespace-pre-wrap">{block.raw}</div>
+          <RichTextRenderer
+            document={parseRichText(normalizeTextBlockPreviewSource(block.raw))}
+                                        />
         ) : (
           <div className="text-neutral-300">{placeholder}</div>
         )}
@@ -150,5 +154,21 @@ export function TextBlockEditor({
         className="min-h-[420px] w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-3 text-base leading-8 text-neutral-900 outline-none placeholder:text-neutral-300 focus:border-neutral-400"
       />
     </div>
+  );
+}
+
+function normalizeTextBlockPreviewSource(value: string): string {
+  return String(value ?? "").replace(
+    /\[\[([^\]]+)\]\]\{([^}]+)\}/g,
+    (_full, label, note) => {
+      const safeLabel = String(label ?? "").trim();
+      const safeNote = String(note ?? "").trim();
+
+      if (!safeLabel || !safeNote) {
+        return _full;
+      }
+
+      return `[[${safeLabel}]](parari-note:${encodeURIComponent(safeNote)})`;
+    },
   );
 }

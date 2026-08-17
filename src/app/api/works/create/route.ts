@@ -17,6 +17,7 @@ import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 export const runtime = "nodejs";
 
 type CreateWorkBody = {
+  createRequestId?: unknown;
   stableSlug?: unknown;
   template?: {
     kind?: unknown;
@@ -86,6 +87,24 @@ function normalizeKind(value: unknown): "page" | "book" | "web" | null {
   }
 
   return null;
+}
+
+function normalizeCreateRequestId(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      normalized,
+    )
+  ) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function normalizeStableSlug(value: unknown): string | null {
@@ -213,6 +232,23 @@ export async function POST(request: NextRequest) {
     const initialTitle = normalizeTitle(body?.template?.initialTitle);
     const ssot = normalizeSsot(body?.template?.ssot);
 
+      const createRequestIdRaw = body?.createRequestId;
+      const createRequestId =
+        normalizeCreateRequestId(createRequestIdRaw);
+
+      if (
+        createRequestIdRaw !== undefined &&
+        createRequestId === null
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: "createRequestId が不正です。",
+          },
+          { status: 400 },
+        );
+      }
+      
     if (!kind || !stableSlug || ssot === null) {
       return NextResponse.json(
         {
@@ -389,62 +425,129 @@ export async function POST(request: NextRequest) {
 
     const currentWorkCount = workCount ?? 0;
 
-    if (isAtOrOverLimit(currentWorkCount, workLimit)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "WORK_LIMIT_REACHED",
-          plan: effectivePlan,
-          currentCount: currentWorkCount,
-          limit: workLimit,
-          message:
-            effectivePlan === "free"
-              ? "Freeプランでは作品を10作品まで作成できます。続けて作成するにはPlusをご利用ください。"
-              : "Plusプランの作品作成上限に達しています。",
-        },
-        { status: 403 },
-      );
-    }
+      if (createRequestId) {
+        const {
+          data: existingWork,
+          error: existingWorkError,
+        } = await supabaseAdmin
+          .from("parari_books")
+          .select("id, stable_slug")
+          .eq("owner", user.id)
+          .eq("create_request_id", createRequestId)
+          .maybeSingle();
 
-    const { data, error } = await supabaseAdmin
-      .from("parari_books")
-      .insert({
-        owner: user.id,
-        title: initialTitle,
-        stable_slug: stableSlug,
-        content: ssot,
-        visibility: "unlisted",
-        is_public: false,
-        is_deleted: false,
-        render_mode: kind === "book" ? "page" : "scroll",
-        physical_pagination: false,
-        updated_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+        if (existingWorkError) {
+          console.error(
+            "[api/works/create] idempotency lookup failed:",
+            existingWorkError,
+          );
 
-    if (error || !data?.id) {
-      console.error("[api/works/create] insert failed:", error);
+          return NextResponse.json(
+            {
+              ok: false,
+              message: "作品作成の重複確認に失敗しました。",
+            },
+            { status: 500 },
+          );
+        }
 
-      return NextResponse.json(
-        {
-          ok: false,
-          message: `作品作成に失敗しました: ${
-            error?.message ?? "unknown error"
-          }`,
-        },
-        { status: 500 },
-      );
-    }
+        if (existingWork?.id) {
+          return NextResponse.json({
+            ok: true,
+            id: existingWork.id,
+            stableSlug: existingWork.stable_slug,
+            reused: true,
+            plan: effectivePlan,
+            isMonitor,
+            currentCount: currentWorkCount,
+            limit: workLimit,
+          });
+        }
+      }
 
-    return NextResponse.json({
-      ok: true,
-      id: data.id,
-      plan: effectivePlan,
-      isMonitor,
-      currentCount: currentWorkCount + 1,
-      limit: workLimit,
-    });
+      if (isAtOrOverLimit(currentWorkCount, workLimit)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "WORK_LIMIT_REACHED",
+            plan: effectivePlan,
+            currentCount: currentWorkCount,
+            limit: workLimit,
+            message:
+              effectivePlan === "free"
+                ? "Freeプランでは作品を10作品まで作成できます。続けて作成するにはPlusをご利用ください。"
+                : "Plusプランの作品作成上限に達しています。",
+          },
+          { status: 403 },
+        );
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("parari_books")
+        .insert({
+          owner: user.id,
+          title: initialTitle,
+          stable_slug: stableSlug,
+          create_request_id: createRequestId,
+          content: ssot,
+          visibility: "unlisted",
+          is_public: false,
+          is_deleted: false,
+          render_mode: kind === "book" ? "page" : "scroll",
+          physical_pagination: false,
+          updated_at: new Date().toISOString(),
+        })
+        .select("id, stable_slug")
+        .single();
+
+      if (error?.code === "23505" && createRequestId) {
+        const {
+          data: existingWork,
+          error: existingWorkError,
+        } = await supabaseAdmin
+          .from("parari_books")
+          .select("id, stable_slug")
+          .eq("owner", user.id)
+          .eq("create_request_id", createRequestId)
+          .maybeSingle();
+
+        if (!existingWorkError && existingWork?.id) {
+          return NextResponse.json({
+            ok: true,
+            id: existingWork.id,
+            stableSlug: existingWork.stable_slug,
+            reused: true,
+            plan: effectivePlan,
+            isMonitor,
+            currentCount: currentWorkCount + 1,
+            limit: workLimit,
+          });
+        }
+      }
+
+      if (error || !data?.id) {
+        console.error("[api/works/create] insert failed:", error);
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message: `作品作成に失敗しました: ${
+              error?.message ?? "unknown error"
+            }`,
+          },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        id: data.id,
+        stableSlug: data.stable_slug,
+        plan: effectivePlan,
+        isMonitor,
+        currentCount: currentWorkCount + 1,
+        limit: workLimit,
+      });
   } catch (error) {
     console.error("[api/works/create] unexpected error:", error);
 
