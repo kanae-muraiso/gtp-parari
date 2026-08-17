@@ -1,5 +1,5 @@
-// apps/tools/parari/src/components/parari/richText/RichTextRenderer.tsx
-// apps/tools/parari/src/components/parari/richText/RichTextRenderer.tsx
+// src/components/parari/richText/RichTextRenderer.tsx
+// src/components/parari/richText/RichTextRenderer.tsx
 // 2026/06/11 19:23 JST
 
 "use client";
@@ -99,7 +99,7 @@ function renderInlineLinksInText(
   if (!text) return [];
 
   const pattern =
-    /(⟦lk:([^|⟧]+)\|([^⟧]+)⟧|\[\[([^\]]+)\]\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\[\[([^|\]｜]+)[|｜]([^\]]+)\]\])/g;
+    /(⟦lk:([^|⟧]+)\|([^⟧]+)⟧|\[\[([^\]]+)\]\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\[\[([^|\]｜]+)[|｜]([^\]]+)\]\]|\[\[([^\]]+)\]\]\{([^}]+)\})/g;
 
   const result: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -120,6 +120,7 @@ function renderInlineLinksInText(
 
     let href = "";
     let label = "";
+    let note = "";
 
     // ⟦lk:url|label⟧
     if (match[2] && match[3]) {
@@ -153,7 +154,23 @@ function renderInlineLinksInText(
       }
     }
 
-    if (href) {
+    // [[label]]{note}
+    else if (match[10] && match[11]) {
+      label = match[10].trim();
+      note = match[11].trim();
+    }
+
+    if (note) {
+      result.push(
+        <span
+          key={`${keyPrefix}-note-${index++}`}
+          title={note}
+          className="text-blue-600 underline decoration-dotted underline-offset-4"
+        >
+          {label}
+        </span>,
+      );
+    } else if (href) {
       result.push(
         <a
           key={`${keyPrefix}-link-${index++}`}
@@ -178,7 +195,7 @@ function renderInlineLinksInText(
 
   if (lastIndex < text.length) {
     result.push(
-      <React.Fragment key={`${keyPrefix}-text-${index++}`}>
+      <React.Fragment key={`${keyPrefix}-tail-${index++}`}>
         {text.slice(lastIndex)}
       </React.Fragment>,
     );
