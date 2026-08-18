@@ -86,7 +86,11 @@ function formatDateJa(
   }
 }
 
-export default function MembershipShelfPanel() {
+export default function MembershipShelfPanel({
+  previewMembershipId = null,
+}: {
+  previewMembershipId?: string | null;
+}) {
   const [
     memberships,
     setMemberships,
@@ -103,115 +107,126 @@ export default function MembershipShelfPanel() {
   const [errorMessage, setErrorMessage] =
     useState("");
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      setLoading(true);
-      setErrorMessage("");
-
-      if (!supabase) {
-        if (mounted) {
-          setLoading(false);
-          setErrorMessage(
-            "ログイン情報を確認できませんでした。",
-          );
+    useEffect(() => {
+        let mounted = true;
+        
+        async function load() {
+            setLoading(true);
+            setErrorMessage("");
+            
+            if (!supabase) {
+                if (mounted) {
+                    setLoading(false);
+                    setErrorMessage(
+                                    "ログイン情報を確認できませんでした。",
+                                    );
+                }
+                
+                return;
+            }
+            
+            const {
+                data: { session },
+            } =
+            await supabase.auth.getSession();
+            
+            if (!mounted) {
+                return;
+            }
+            
+            if (!session?.access_token) {
+                setLoading(false);
+                setErrorMessage(
+                                "Membershipの確認にはログインが必要です。",
+                                );
+                return;
+            }
+            
+            try {
+                const endpoint =
+                previewMembershipId
+                ? `/api/membership/preview?membership_id=${encodeURIComponent(
+                  previewMembershipId,
+                )}`
+                : "/api/my-memberships";
+                
+                const response = await fetch(
+                                             endpoint,
+                                             {
+                                                 method: "GET",
+                                                 headers: {
+                                                 Authorization:
+                                                     `Bearer ${session.access_token}`,
+                                                 },
+                                                 cache: "no-store",
+                                             },
+                                             );
+                
+                const result = await response
+                .json()
+                .catch(() => null);
+                
+                if (!mounted) {
+                    return;
+                }
+                
+                if (
+                    !response.ok ||
+                    !result?.ok
+                    ) {
+                        setErrorMessage(
+                                        result?.message ||
+                                        "Membershipを取得できませんでした。",
+                                        );
+                        return;
+                    }
+                
+                const nextMemberships =
+                previewMembershipId
+                ? result.membership
+                ? [result.membership]
+                : []
+                : Array.isArray(
+                                result.memberships,
+                                )
+                ? result.memberships
+                : [];
+                
+                setMemberships(
+                               nextMemberships,
+                               );
+                
+                if (
+                    nextMemberships.length > 0
+                    ) {
+                        setSelectedMembershipId(
+                                                nextMemberships[0].id,
+                                                );
+                    }
+            } catch (error) {
+                console.error(
+                              "load memberships failed:",
+                              error,
+                              );
+                
+                if (mounted) {
+                    setErrorMessage(
+                                    "Membershipを取得できませんでした。",
+                                    );
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
         }
-
-        return;
-      }
-
-      const {
-        data: { session },
-      } =
-        await supabase.auth.getSession();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (!session?.access_token) {
-        setLoading(false);
-        setErrorMessage(
-          "Membershipの確認にはログインが必要です。",
-        );
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          "/api/my-memberships",
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-            },
-            cache: "no-store",
-          },
-        );
-
-        const result = await response
-          .json()
-          .catch(() => null);
-
-        if (!mounted) {
-          return;
-        }
-
-        if (
-          !response.ok ||
-          !result?.ok
-        ) {
-          setErrorMessage(
-            result?.message ||
-              "Membershipを取得できませんでした。",
-          );
-          return;
-        }
-
-        const nextMemberships =
-          Array.isArray(
-            result.memberships,
-          )
-            ? result.memberships
-            : [];
-
-        setMemberships(
-          nextMemberships,
-        );
-
-        if (
-          nextMemberships.length > 0
-        ) {
-          setSelectedMembershipId(
-            nextMemberships[0].id,
-          );
-        }
-      } catch (error) {
-        console.error(
-          "load memberships failed:",
-          error,
-        );
-
-        if (mounted) {
-          setErrorMessage(
-            "Membershipを取得できませんでした。",
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+        
+        void load();
+        
+        return () => {
+            mounted = false;
+        };
+    }, [previewMembershipId]);
 
   const selectedMembership =
     useMemo(
@@ -253,62 +268,11 @@ export default function MembershipShelfPanel() {
 
   return (
     <div className="space-y-5">
-      {/* Membership一覧 */}
-      <section className="rounded-2xl border border-neutral-200 bg-white p-4">
-        <div className="mb-4">
-          <div className="text-sm font-bold text-neutral-950">
-            参加しているMembership
-          </div>
-
-          <div className="mt-1 text-xs text-neutral-500">
-            {memberships.length}件
-          </div>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          {memberships.map(
-            (membership) => {
-              const active =
-                membership.id ===
-                selectedMembershipId;
-
-              return (
-                <button
-                  key={membership.id}
-                  type="button"
-                  onClick={() =>
-                    setSelectedMembershipId(
-                      membership.id,
-                    )
-                  }
-                  className={[
-                    "rounded-2xl px-4 py-4 text-left transition",
-                    active
-                      ? "bg-neutral-950 text-white"
-                      : "bg-neutral-50 text-neutral-900 hover:bg-neutral-100",
-                  ].join(" ")}
-                >
-                  <div className="font-bold">
-                    {membership.name}
-                  </div>
-
-                  <div
-                    className={[
-                      "mt-1 text-xs",
-                      active
-                        ? "text-neutral-300"
-                        : "text-neutral-500",
-                    ].join(" ")}
-                  >
-                    {membership.works.length}
-                    作品
-                  </div>
-                </button>
-              );
-            },
-          )}
-        </div>
-      </section>
+          {!previewMembershipId ? (
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4">
+              ...
+            </section>
+          ) : null}
 
       {/* 選択したMembership */}
       {selectedMembership ? (

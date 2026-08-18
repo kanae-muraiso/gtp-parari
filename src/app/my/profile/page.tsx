@@ -17,6 +17,7 @@ import SettingsTabs, {
   type SettingsTab,
 } from "@/components/parari/settings/SettingsTabs";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
+import MembershipShelfPanel from "@/components/parari/MembershipShelfPanel";
 
 const USERNAME_RE = /^(?=.{5,32}$)[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -1909,6 +1910,14 @@ function HostSettingsPanel() {
       setUpdatingMembershipBookId,
     ] = useState<string | null>(null);
     
+    const [
+      previewMembership,
+      setPreviewMembership,
+    ] = useState<{
+      id: string;
+      name: string;
+    } | null>(null);
+    
   const [monitorStatusMessage, setMonitorStatusMessage] =
     useState("");
 
@@ -2325,6 +2334,7 @@ function HostSettingsPanel() {
                         </p>
                       ) : null}
                                                     
+                                                    <div className="mt-4 flex flex-wrap gap-2">
                                                     <button
                                                       type="button"
                                                       onClick={() => {
@@ -2337,6 +2347,20 @@ function HostSettingsPanel() {
                                                     >
                                                       メンバー限定作品を設定
                                                     </button>
+                                                    
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        setPreviewMembership({
+                                                          id: membership.id,
+                                                          name: membership.name,
+                                                        });
+                                                      }}
+                                                      className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50"
+                                                    >
+                                                      会員から見える棚を確認
+                                                    </button>
+                                                    </div>
                                                     
                     </div>
                   ))}
@@ -2438,6 +2462,42 @@ function HostSettingsPanel() {
                                                         
                 </div>
 
+                                                        {previewMembership ? (
+                                                          <div className="mt-8 border-t border-neutral-200 pt-8">
+                                                            <div className="mb-5 flex items-center justify-between gap-4">
+                                                              <div>
+                                                                <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+                                                                  MEMBER VIEW
+                                                                </div>
+
+                                                                <h4 className="mt-1 text-lg font-bold text-neutral-950">
+                                                                  会員から見える棚
+                                                                </h4>
+
+                                                                <p className="mt-1 text-xs text-neutral-500">
+                                                                  {previewMembership.name}
+                                                                </p>
+                                                              </div>
+
+                                                              <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                  setPreviewMembership(null)
+                                                                }
+                                                                className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-600 transition hover:bg-neutral-200"
+                                                              >
+                                                                閉じる
+                                                              </button>
+                                                            </div>
+
+                                                            <MembershipShelfPanel
+                                                              previewMembershipId={
+                                                                previewMembership.id
+                                                              }
+                                                            />
+                                                          </div>
+                                                        ) : null}
+                                                        
                 {membershipStatusMessage ? (
                   <p className="mt-4 text-xs leading-6 text-emerald-700">
                     {membershipStatusMessage}
