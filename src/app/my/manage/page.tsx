@@ -61,21 +61,37 @@ export default function MyManagePage() {
           <ManagementTabs active="manage" />
         </div>
 
-        {/* MANAGEMENT SUB MENU */}
-        <div className="mt-4">
-          <ParariTabs
-            items={MANAGE_TABS}
-            active={manageMode}
-            onChange={(key) =>
-              setManageMode(
-                key as ManageMode,
-              )
-            }
-          />
-        </div>
+          {/* MANAGEMENT SUB MENU */}
+          <div className="mt-4">
+            <ParariTabs
+              items={MANAGE_TABS}
+              active={manageMode}
+              onChange={(key) =>
+                setManageMode(
+                  key as ManageMode,
+                )
+              }
+            />
+          </div>
 
-        {/* CONTENT */}
-        <div className="mt-8">
+          {/* PLAN GUIDE */}
+          <div className="mt-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-xs leading-6 text-neutral-500 shadow-sm">
+            <span className="font-bold text-neutral-700">
+              必要なプラン：
+            </span>
+            FORM・APPLICATIONは
+            <span className="mx-1 font-bold text-neutral-900">
+              PLUS
+            </span>
+            、Membershipは
+            <span className="mx-1 font-bold text-neutral-900">
+              HOST
+            </span>
+            で利用できます。
+          </div>
+
+          {/* CONTENT */}
+          <div className="mt-8">
           {manageMode === "form" ? (
             <FormManagerPanel />
           ) : null}

@@ -8,7 +8,10 @@
 //   右上に管理側への入口を表示
 //
 // 管理側:
-//   ManagementTabsを使うため右上リンクは非表示にできる
+//   ManagementTabsを使うため管理リンクは表示せず、
+//   代わりに「利用に戻る」を表示する
+
+import Link from "next/link";
 
 import ManagementLinks from "@/components/parari/navigation/ManagementLinks";
 
@@ -35,7 +38,14 @@ export default function MyAreaHeader({
 
       {showManagementLinks ? (
         <ManagementLinks />
-      ) : null}
+      ) : (
+        <Link
+          href="/mypage"
+          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+        >
+          HOME
+        </Link>
+      )}
     </div>
   );
 }
