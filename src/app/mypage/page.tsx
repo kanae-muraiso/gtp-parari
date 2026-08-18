@@ -91,7 +91,7 @@ export default function MyPage() {
 
           {/* MAIN TABS */}
           <nav className="mt-6">
-            <div className="grid grid-cols-4 rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-sm">
               {tabs.map((tab) => {
                 const isActive = tab.label === "HOME";
 
@@ -101,7 +101,7 @@ export default function MyPage() {
                     href={tab.href}
                     title={tab.description}
                     className={[
-                      "flex h-10 items-center justify-center rounded-full px-3 text-sm font-bold transition",
+                      "flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold transition",
                       isActive
                         ? "bg-neutral-950 text-white"
                         : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950",
