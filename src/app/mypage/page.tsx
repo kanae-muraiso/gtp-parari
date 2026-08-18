@@ -90,28 +90,26 @@ export default function MyPage() {
 
 
           {/* MAIN TABS */}
-          <nav className="mt-6">
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-sm">
-              {tabs.map((tab) => {
-                const isActive = tab.label === "HOME";
+          <nav className="mt-6 flex flex-wrap gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
+            {tabs.map((tab) => {
+              const isActive = tab.label === "HOME";
 
-                return (
-                  <Link
-                    key={tab.label}
-                    href={tab.href}
-                    title={tab.description}
-                    className={[
-                      "flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold transition",
-                      isActive
-                        ? "bg-neutral-950 text-white"
-                        : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950",
-                    ].join(" ")}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </div>
+              return (
+                <Link
+                  key={tab.label}
+                  href={tab.href}
+                  title={tab.description}
+                  className={[
+                    "rounded-xl px-4 py-2 text-xs font-bold transition",
+                    isActive
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
           </nav>
 
 
@@ -181,17 +179,17 @@ export default function MyPage() {
 
           {/* BOOKSHELF MODE */}
           <div className="mb-5">
-            <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex flex-wrap gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() =>
                   setBookshelfMode("mine")
                 }
                 className={[
-                  "rounded-full px-5 py-2.5 text-sm font-bold transition",
+                  "rounded-xl px-4 py-2 text-xs font-bold transition",
                   bookshelfMode === "mine"
-                    ? "bg-neutral-950 text-white"
-                    : "text-neutral-500 hover:text-neutral-950",
+                    ? "bg-neutral-900 text-white"
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
                 ].join(" ")}
               >
                 マイ本棚
@@ -205,11 +203,11 @@ export default function MyPage() {
                   )
                 }
                 className={[
-                  "rounded-full px-5 py-2.5 text-sm font-bold transition",
+                  "rounded-xl px-4 py-2 text-xs font-bold transition",
                   bookshelfMode ===
                   "membership"
-                    ? "bg-neutral-950 text-white"
-                    : "text-neutral-500 hover:text-neutral-950",
+                    ? "bg-neutral-900 text-white"
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
                 ].join(" ")}
               >
                 メンバーシップ
