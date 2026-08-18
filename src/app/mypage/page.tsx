@@ -3,8 +3,11 @@
 
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+
 import BookShelfPanel from "@/components/parari/BookShelfPanel";
+import MembershipShelfPanel from "@/components/parari/MembershipShelfPanel";
 
 const tabs = [
   {
@@ -54,6 +57,13 @@ const notices = [
 
 
 export default function MyPage() {
+  const [
+    bookshelfMode,
+    setBookshelfMode,
+  ] = useState<
+    "mine" | "membership"
+  >("mine");
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
@@ -165,7 +175,49 @@ export default function MyPage() {
               </p>
             </div>
 
+          {/* BOOKSHELF MODE */}
+          <div className="mb-5">
+            <div className="inline-flex rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() =>
+                  setBookshelfMode("mine")
+                }
+                className={[
+                  "rounded-full px-5 py-2.5 text-sm font-bold transition",
+                  bookshelfMode === "mine"
+                    ? "bg-neutral-950 text-white"
+                    : "text-neutral-500 hover:text-neutral-950",
+                ].join(" ")}
+              >
+                マイ本棚
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBookshelfMode(
+                    "membership",
+                  )
+                }
+                className={[
+                  "rounded-full px-5 py-2.5 text-sm font-bold transition",
+                  bookshelfMode ===
+                  "membership"
+                    ? "bg-neutral-950 text-white"
+                    : "text-neutral-500 hover:text-neutral-950",
+                ].join(" ")}
+              >
+                メンバーシップ
+              </button>
+            </div>
+          </div>
+
+          {bookshelfMode === "mine" ? (
             <BookShelfPanel activeTab="shelf" />
+          ) : (
+            <MembershipShelfPanel />
+          )}
           </section>
 
 
