@@ -1,5 +1,4 @@
 // src/app/my/manage/page.tsx
-// src/app/my/manage/page.tsx
 // 2026/08/18 JST
 //
 // PARARI 運営
@@ -9,17 +8,20 @@
 //
 // 運営サブメニュー
 //   FORM / APPLICATION / Membership
+//
+// 現段階では既存管理画面への入口だけを設置。
+// 次工程から機能を順番に移設する。
 
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
-import MembershipManagerPanel from "@/components/parari/manage/MembershipManagerPanel";
 
 type ManageMode =
   | "form"
@@ -85,10 +87,49 @@ export default function MyManagePage() {
           ) : null}
 
           {manageMode === "membership" ? (
-            <MembershipManagerPanel />
+            <ManagePlaceholder
+              title="Membership"
+              description="Membershipの開設、会員、メンバー限定作品を管理します。"
+              href="/my/profile?tab=host"
+            />
           ) : null}
         </div>
       </div>
     </main>
+  );
+}
+
+function ManagePlaceholder({
+  title,
+  description,
+  href,
+}: {
+  title: string;
+  description: string;
+  href: string;
+}) {
+  return (
+    <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+        MANAGEMENT
+      </div>
+
+      <h2 className="mt-3 text-xl font-bold text-neutral-950">
+        {title}
+      </h2>
+
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-600">
+        {description}
+      </p>
+
+      <div className="mt-6">
+        <Link
+          href={href}
+          className="inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-neutral-700"
+        >
+          現在の管理画面を開く
+        </Link>
+      </div>
+    </section>
   );
 }

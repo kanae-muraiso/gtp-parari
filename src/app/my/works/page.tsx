@@ -10,12 +10,11 @@
 
 import React from "react";
 import Link from "next/link";
+
 import { supabase } from "@/lib/supabaseClient";
 import { getEffectivePlan } from "@/lib/billing/plan";
-import {
-  ParariOwnerTopBar,
-  ParariTopBarButton,
-} from "@/components/parari/ParariTopBars";
+import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 
 type WorkRow = {
   id: string;
@@ -474,49 +473,61 @@ export default function MyWorksPage() {
       }
     };
     
-  return (
-    <>
-      <ParariOwnerTopBar
-        hideLeftButton
-        title="作品リスト"
-        actions={
-          <>
-            <ParariTopBarButton href="/editor/quick">
-              今すぐ書く
-            </ParariTopBarButton>
-
-            <ParariTopBarButton href="/editor/new">
-              ＋ 新規作成
-            </ParariTopBarButton>
-
-            <ParariTopBarButton href="/my/profile?returnTo=%2Fmy%2Fworks">
-              設定
-            </ParariTopBarButton>
-          </>
-        }
-      />
-
-      <main className="min-h-screen bg-neutral-100 px-3 py-4 sm:px-4 sm:py-6">
-        <div className="mx-auto w-full max-w-[440px] sm:max-w-[720px]">
-          <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-                  MY WORKS
-                </div>
-                <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-                  自分の作品
-                </h1>
-                <p className="mt-2 text-sm leading-7 text-neutral-500">
-                  作品を編集したり、表示確認用のURLをコピーしたりできます。
-                </p>
-              </div>
-
-          <StatusBadge
-            status={status}
-            count={works.length + sharedWorks.length}
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+          {/* HEADER */}
+          <MyAreaHeader
+            title="作品"
+            showManagementLinks={false}
           />
-            </div>
+
+          {/* MANAGEMENT MAIN MENU */}
+          <div className="mt-6">
+            <ManagementTabs active="works" />
+          </div>
+
+          {/* WORKS CONTENT */}
+          <div className="mx-auto mt-8 w-full max-w-[720px]">
+            <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+                    MY WORKS
+                  </div>
+
+                  <h2 className="mt-2 text-xl font-bold text-neutral-950">
+                    自分の作品
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-7 text-neutral-500">
+                    作品を編集したり、表示確認用のURLをコピーしたりできます。
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-3">
+                  <StatusBadge
+                    status={status}
+                    count={works.length + sharedWorks.length}
+                  />
+
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Link
+                      href="/editor/quick"
+                      className="inline-flex rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
+                    >
+                      今すぐ書く
+                    </Link>
+
+                    <Link
+                      href="/editor/new"
+                      className="inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                    >
+                      ＋ 新規作成
+                    </Link>
+                  </div>
+                </div>
+              </div>
 
             {message ? (
               <div
@@ -845,11 +856,11 @@ export default function MyWorksPage() {
             </section>
           ) : null}
           
-        </div>
-      </main>
-    </>
-  );
-}
+            </div>
+          </div>
+        </main>
+      );
+      }
 
 function StatusBadge({
   status,

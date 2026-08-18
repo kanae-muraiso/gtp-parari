@@ -4,16 +4,23 @@
 //
 // PARARI settings tabs
 //
-// 表示UIは ParariTabs に統一。
+// 設定画面は
+// - 基本設定
+// - プラン
+//
+// の2つだけ。
+//
+// PLUS / HOST / PRO は画面の場所ではなく、
+// 利用できる機能を決めるプラン名として扱う。
+//
+// 旧URLとの互換のため SettingsTab の型は
+// 一時的に残している。
 
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
 export type SettingsTab =
   | "basic"
-  | "plan"
-  | "plus"
-  | "host"
-  | "pro";
+  | "plan";
 
 type SettingsTabsProps = {
   active: SettingsTab;
@@ -29,21 +36,6 @@ const ITEMS = [
     key: "plan",
     label: "プラン",
     href: "/billing",
-  },
-  {
-    key: "plus",
-    label: "PLUS",
-    href: "/my/profile?tab=plus",
-  },
-  {
-    key: "host",
-    label: "HOST",
-    href: "/my/profile?tab=host",
-  },
-  {
-    key: "pro",
-    label: "PRO",
-    href: "/my/profile?tab=pro",
   },
 ] satisfies Array<{
   key: SettingsTab;

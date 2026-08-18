@@ -6,6 +6,8 @@ import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
 import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
+import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 
 function LimitItem({ children }: { children: React.ReactNode }) {
   return (
@@ -20,36 +22,41 @@ function LimitItem({ children }: { children: React.ReactNode }) {
 }
 
 export default function BillingPage() {
-  return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-        <header className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">
-              PARARI BILLING
-            </p>
+    return (
+      <main className="min-h-screen bg-neutral-50 text-slate-900">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+          {/* HEADER */}
+          <MyAreaHeader
+            title="設定"
+            showManagementLinks={false}
+          />
 
-            <a
-              href="/my/profile?returnTo=%2Fmy%2Fworks"
-              className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
-              ← 設定へ戻る
-            </a>
+          {/* MANAGEMENT MAIN MENU */}
+          <div className="mt-6">
+            <ManagementTabs active="settings" />
           </div>
 
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-            プランとお支払い
-          </h1>
+          {/* SETTINGS */}
+          <div className="mx-auto mt-4 max-w-4xl">
+            <SettingsTabs active="plan" />
 
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-            現在のプラン確認、Plusへの申込、カード情報の変更や解約を
-            このページから行えます。
-          </p>
-        </header>
-          
-          <SettingsTabs active="plan" />
+            <div className="mt-6 flex flex-col gap-6">
+              <header className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">
+                  PLAN & BILLING
+                </p>
 
-        <CurrentPlanPanel />
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                  プランとお支払い
+                </h2>
+
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+                  現在のプラン確認、Plusへの申込、カード情報の変更や解約を
+                  このページから行えます。
+                </p>
+              </header>
+
+              <CurrentPlanPanel />
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">
@@ -191,6 +198,8 @@ export default function BillingPage() {
           <ParariLegalFooter />
         </div>
       </div>
+    </div>
+    </div>
     </main>
   );
 }
