@@ -1,6 +1,12 @@
 // src/components/parari/settings/SettingsTabs.tsx
-// 2026-08-14 JST
-// PART: PARARI settings primary tabs
+// src/components/parari/settings/SettingsTabs.tsx
+// 2026/08/18 JST
+//
+// PARARI settings tabs
+//
+// 表示UIは ParariTabs に統一。
+
+import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
 export type SettingsTab =
   | "basic"
@@ -13,11 +19,7 @@ type SettingsTabsProps = {
   active: SettingsTab;
 };
 
-const ITEMS: {
-  key: SettingsTab;
-  label: string;
-  href: string;
-}[] = [
+const ITEMS = [
   {
     key: "basic",
     label: "基本設定",
@@ -43,31 +45,19 @@ const ITEMS: {
     label: "PRO",
     href: "/my/profile?tab=pro",
   },
-];
+] satisfies Array<{
+  key: SettingsTab;
+  label: string;
+  href: string;
+}>;
 
 export default function SettingsTabs({
   active,
 }: SettingsTabsProps) {
   return (
-    <nav className="flex flex-wrap gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm">
-      {ITEMS.map((item) => {
-        const selected = item.key === active;
-
-        return (
-          <a
-            key={item.key}
-            href={item.href}
-            className={[
-              "rounded-xl px-4 py-2 text-xs font-bold transition",
-              selected
-                ? "bg-neutral-900 text-white"
-                : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
-            ].join(" ")}
-          >
-            {item.label}
-          </a>
-        );
-      })}
-    </nav>
+    <ParariTabs
+      items={ITEMS}
+      active={active}
+    />
   );
 }

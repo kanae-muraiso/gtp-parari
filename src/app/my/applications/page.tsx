@@ -7,7 +7,8 @@ import * as React from "react";
 import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
-
+import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 
 type EntryStatus =
   | "submitted"
@@ -402,24 +403,30 @@ export default function MyApplicationsPage() {
   }, []);
 
 
-  return (
-    <main className="min-h-screen bg-neutral-50 px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-8">
-          <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-            PARARI
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+          {/* HEADER */}
+          <MyAreaHeader title="申込" />
+
+          {/* PRIMARY TABS */}
+          <div className="mt-6">
+            <MyPrimaryTabs active="applications" />
           </div>
 
-          <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-            自分の申し込み
-          </h1>
+          {/* APPLICATIONS */}
+          <div className="mx-auto mt-8 max-w-2xl">
+            <div className="mb-6">
+              <div className="text-sm font-bold text-neutral-950">
+                自分の申し込み
+              </div>
 
-          <p className="mt-2 text-sm leading-7 text-neutral-500">
-            これまでに申し込んだ内容を確認できます。
-          </p>
-        </div>
+              <p className="mt-1 text-xs leading-6 text-neutral-500">
+                これまでに申し込んだ内容を確認できます。
+              </p>
+            </div>
 
-        {loading ? (
+            {loading ? (
           <div className="rounded-3xl border border-neutral-200 bg-white p-6">
             <p className="text-sm text-neutral-500">
               申し込み履歴を読み込んでいます...
@@ -647,15 +654,8 @@ export default function MyApplicationsPage() {
           </div>
         )}
 
-        <div className="mt-8">
-          <Link
-            href="/my/works"
-            className="text-sm font-bold text-neutral-500"
-          >
-            ← 自分の作品へ
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
-}
+            </div>
+          </div>
+        </main>
+      );
+      }
