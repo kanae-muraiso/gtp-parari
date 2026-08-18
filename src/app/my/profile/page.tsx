@@ -1,6 +1,6 @@
 // apps/tools/parari/src/app/my/profile/page.tsx
 // src/app/my/profile/page.tsx
-// 2026-06-30 13:42 JST
+// 2026/08/18 14:45
 // PART: MVP profile settings
 // コメント:
 // - /my/works から使う公開URL設定ページ
@@ -1878,6 +1878,37 @@ function HostSettingsPanel() {
       setMembershipStatusMessage,
     ] = useState("");
     
+    const [
+      selectedMembershipForWorks,
+      setSelectedMembershipForWorks,
+    ] = useState<{
+      id: string;
+      name: string;
+    } | null>(null);
+
+    const [
+      membershipBooks,
+      setMembershipBooks,
+    ] = useState<
+      Array<{
+        id: string;
+        title: string | null;
+        visibility: string | null;
+        updated_at?: string;
+        in_membership: boolean;
+      }>
+    >([]);
+
+    const [
+      isLoadingMembershipBooks,
+      setIsLoadingMembershipBooks,
+    ] = useState(false);
+
+    const [
+      updatingMembershipBookId,
+      setUpdatingMembershipBookId,
+    ] = useState<string | null>(null);
+    
   const [monitorStatusMessage, setMonitorStatusMessage] =
     useState("");
 
@@ -2075,6 +2106,147 @@ function HostSettingsPanel() {
       }
     }
     
+    async function loadMembershipBooks(
+      membership: {
+        id: string;
+        name: string;
+      },
+    ) {
+      if (!sharedSupabase) {
+        return;
+      }
+
+      setSelectedMembershipForWorks(membership);
+      setIsLoadingMembershipBooks(true);
+      setMembershipStatusMessage("");
+
+      try {
+        const {
+          data: { session },
+        } =
+          await sharedSupabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setMembershipStatusMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+          return;
+        }
+
+        const response = await fetch(
+          `/api/membership/works?membership_id=${encodeURIComponent(
+            membership.id,
+          )}`,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          },
+        );
+
+        const result = await response
+          .json()
+          .catch(() => null);
+
+        if (
+          !response.ok ||
+          !result?.ok
+        ) {
+          setMembershipStatusMessage(
+            result?.message ||
+              "作品一覧を取得できませんでした。",
+          );
+          return;
+        }
+
+        setMembershipBooks(
+          result.books ?? [],
+        );
+      } catch (error) {
+        console.error(
+          "load membership books failed:",
+          error,
+        );
+
+        setMembershipStatusMessage(
+          "作品一覧を取得できませんでした。",
+        );
+      } finally {
+        setIsLoadingMembershipBooks(false);
+      }
+    }
+    
+    async function handleToggleMembershipWork(
+      book: {
+        id: string;
+        in_membership: boolean;
+      },
+    ) {
+      if (
+        !sharedSupabase ||
+        !selectedMembershipForWorks
+      ) {
+        return;
+      }
+
+      setUpdatingMembershipBookId(book.id);
+      setMembershipStatusMessage("");
+
+      try {
+        const functionName =
+          book.in_membership
+            ? "remove_work_from_membership"
+            : "add_work_to_membership";
+
+        const parameters =
+          book.in_membership
+            ? {
+                p_membership_id:
+                  selectedMembershipForWorks.id,
+                p_book_id: book.id,
+              }
+            : {
+                p_membership_id:
+                  selectedMembershipForWorks.id,
+                p_book_id: book.id,
+                p_organization_id: null,
+              };
+
+        const { error } =
+          await sharedSupabase.rpc(
+            functionName,
+            parameters,
+          );
+
+        if (error) {
+          console.error(
+            "toggle membership work failed:",
+            error,
+          );
+
+          setMembershipStatusMessage(
+            "Membership作品を変更できませんでした。",
+          );
+          return;
+        }
+
+        // DBを再取得して正しいvisibilityも反映
+        await loadMembershipBooks(
+          selectedMembershipForWorks,
+        );
+
+        setMembershipStatusMessage(
+          book.in_membership
+            ? "Membershipから作品を外しました。作品は必要に応じてprivateになります。"
+            : "Membership限定作品に登録しました。",
+        );
+      } finally {
+        setUpdatingMembershipBookId(null);
+      }
+    }
+    
   return (
     <div className="mt-5 space-y-5">
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -2152,8 +2324,118 @@ function HostSettingsPanel() {
                           {membership.description}
                         </p>
                       ) : null}
+                                                    
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        void loadMembershipBooks({
+                                                          id: membership.id,
+                                                          name: membership.name,
+                                                        });
+                                                      }}
+                                                      className="mt-4 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50"
+                                                    >
+                                                      メンバー限定作品を設定
+                                                    </button>
+                                                    
                     </div>
                   ))}
+                                                        
+                                                        {selectedMembershipForWorks ? (
+                                                          <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+                                                            <div className="flex items-center justify-between gap-4">
+                                                              <div>
+                                                                <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+                                                                  MEMBERSHIP WORKS
+                                                                </div>
+
+                                                                <h4 className="mt-2 text-lg font-bold text-neutral-950">
+                                                                  {selectedMembershipForWorks.name}
+                                                                </h4>
+                                                              </div>
+
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                  setSelectedMembershipForWorks(
+                                                                    null,
+                                                                  );
+                                                                  setMembershipBooks([]);
+                                                                }}
+                                                                className="text-xs font-bold text-neutral-500"
+                                                              >
+                                                                閉じる
+                                                              </button>
+                                                            </div>
+
+                                                            <p className="mt-3 text-xs leading-6 text-neutral-500">
+                                                              登録すると、この作品はMembership限定作品になります。
+                                                              Membershipから最後に外した場合はprivateになります。
+                                                            </p>
+
+                                                            {isLoadingMembershipBooks ? (
+                                                              <div className="py-8 text-center text-sm text-neutral-400">
+                                                                読み込み中...
+                                                              </div>
+                                                            ) : (
+                                                              <div className="mt-5 space-y-2">
+                                                                {membershipBooks.map((book) => (
+                                                                  <div
+                                                                    key={book.id}
+                                                                    className="flex items-center justify-between gap-4 rounded-xl bg-white px-4 py-3"
+                                                                  >
+                                                                    <div className="min-w-0">
+                                                                      <div className="truncate text-sm font-bold text-neutral-900">
+                                                                        {book.title ||
+                                                                          "無題の作品"}
+                                                                      </div>
+
+                                                                      <div className="mt-1 text-xs text-neutral-400">
+                                                                        {book.in_membership
+                                                                          ? "Membership限定"
+                                                                          : book.visibility ||
+                                                                            "private"}
+                                                                      </div>
+                                                                    </div>
+
+                                                                    <button
+                                                                      type="button"
+                                                                      disabled={
+                                                                        updatingMembershipBookId ===
+                                                                        book.id
+                                                                      }
+                                                                      onClick={() => {
+                                                                        void handleToggleMembershipWork(
+                                                                          book,
+                                                                        );
+                                                                      }}
+                                                                      className={[
+                                                                        "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition",
+                                                                        book.in_membership
+                                                                          ? "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                                                                          : "bg-neutral-950 text-white hover:bg-neutral-700",
+                                                                      ].join(" ")}
+                                                                    >
+                                                                      {updatingMembershipBookId ===
+                                                                      book.id
+                                                                        ? "変更中..."
+                                                                        : book.in_membership
+                                                                          ? "解除"
+                                                                          : "登録"}
+                                                                    </button>
+                                                                  </div>
+                                                                ))}
+
+                                                                {membershipBooks.length === 0 ? (
+                                                                  <div className="py-8 text-center text-sm text-neutral-400">
+                                                                    登録できる作品がありません。
+                                                                  </div>
+                                                                ) : null}
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        ) : null}
+                                                        
                 </div>
 
                 {membershipStatusMessage ? (
