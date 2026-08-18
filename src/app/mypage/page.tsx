@@ -89,26 +89,30 @@ export default function MyPage() {
         </div>
 
 
-        {/* MAIN TABS */}
-        <nav className="mt-6 border-b border-neutral-200">
-          <div className="grid grid-cols-4">
-            {tabs.map((tab) => (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                title={tab.description}
-                className="group relative flex h-11 items-center justify-center border-b-2 border-transparent text-sm font-bold text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-950"
-              >
-                {tab.label}
+          {/* MAIN TABS */}
+          <nav className="mt-6">
+            <div className="grid grid-cols-4 rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+              {tabs.map((tab) => {
+                const isActive = tab.label === "HOME";
 
-                {/* PC hover explanation */}
-                <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-56 -translate-x-1/2 rounded-xl bg-neutral-950 px-3 py-2 text-center text-xs font-normal leading-5 text-white shadow-lg group-hover:sm:block">
-                  {tab.description}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </nav>
+                return (
+                  <Link
+                    key={tab.label}
+                    href={tab.href}
+                    title={tab.description}
+                    className={[
+                      "flex h-10 items-center justify-center rounded-full px-3 text-sm font-bold transition",
+                      isActive
+                        ? "bg-neutral-950 text-white"
+                        : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950",
+                    ].join(" ")}
+                  >
+                    {tab.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
 
 
         {/* NOTICE AREA
