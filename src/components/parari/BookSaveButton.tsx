@@ -142,13 +142,13 @@ export default function BookSaveButton({
             type="button"
             onClick={toggle}
             disabled={loading || saving}
-            className={`px-2 py-1 text-[12px] transition-colors
-          ${
-            isActive
-              ? "text-neutral-700"
-              : "text-neutral-400 hover:text-neutral-600"
-          }
-          disabled:opacity-40`}
+            className={`rounded-lg border px-3 py-1 text-[12px] font-semibold transition-colors
+            ${
+              isActive
+                ? "border-white bg-white text-black"
+                : "border-white/30 text-white hover:bg-white/10"
+            }
+            disabled:opacity-40`}
             >
             {loading
                 ? "..."
