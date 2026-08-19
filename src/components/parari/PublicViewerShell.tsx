@@ -11,6 +11,7 @@ import {
   ParariOwnerTopBar,
   ParariTopBarButton,
 } from "./ParariTopBars";
+import BookSaveButton from "./BookSaveButton";
 import ParariPanelViewer from "./viewer-v2/ParariPanelViewer";
 import { ParariBookViewer } from "./viewer-v2/ParariBookViewer";
 import { isBookLikeSsot } from "./viewer-v2/book/buildBookSheets";
@@ -80,9 +81,19 @@ export default function PublicViewerShell({
                     </ParariTopBarButton>
                   }
                 />
-              ) : (
-                <ParariBrandTopBar href="/" />
-              )}
+                          ) : (
+                            <ParariBrandTopBar
+                              href="/"
+                              actions={
+                                <BookSaveButton
+                                  bookId={bookId}
+                                  type="shelf"
+                                  idleLabel="保存"
+                                  activeLabel="保存済み"
+                                />
+                              }
+                            />
+                          )}
 
               {isWebLikeSsot(viewerContent) ? (
                 <ParariWebViewer

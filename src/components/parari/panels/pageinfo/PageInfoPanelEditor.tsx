@@ -3,8 +3,9 @@
 // 2026-06-29 11:05 JST
 // PART: Integrated PAGEINFO Panel Editor
 // コメント:
-// - PAGEINFOをPAGEヘッダー + URL + 公開設定 + 公開期限 + 表示設定の統合パネルにする
-// - title / subtitle / author / url / visibility / publishFrom / publishUntil / timezone / renderMode / mainImage / time / place / topics を編集可能にする
+// - PAGEINFOをPAGEヘッダー + URL + 公開期間 + 表示設定の統合パネルにする
+// - title / subtitle / author / url / publishFrom / publishUntil / timezone / renderMode / mainImage / time / place / topics を編集可能にする
+// - 作品自体の公開設定は「自分の作品」で管理する
 // - 公開期限は入力表示はローカル、SSOT保存はUTC ISO文字列にする
 // - 通常時はPAGEプレビュー、編集時だけフォームを開く
 
@@ -22,7 +23,6 @@ export type PageInfoPanelData = {
   raw: string;
 };
 
-type VisibilityValue = "private" | "unlisted" | "public";
 type RenderModeValue = "page-scroll" | "page" | "book" | "plain";
 
 async function normalizePageInfoImageFile(file: File): Promise<File> {
@@ -132,7 +132,6 @@ export function PageInfoPanelEditor({
         ? `${window.location.origin}${pagePublicPath}`
         : pagePublicPath;
     
-  const visibility = normalizeVisibility(getMetaValue(fields, ["visibility"], ""));
   const publishFrom = getMetaValue(fields, ["publishFrom", "publish_from"], "");
   const publishUntil = getMetaValue(fields, ["publishUntil", "publish_until"], "");
   const timezone = getMetaValue(fields, ["timezone"], "Asia/Tokyo");
@@ -573,21 +572,6 @@ export function PageInfoPanelEditor({
                共通HEADERのメニューに表示する
              </span>
            </label>
-           
-            <label className="block">
-              <span className="text-[11px] font-bold text-neutral-500">
-                公開設定
-              </span>
-              <select
-                value={visibility}
-                onChange={(event) => updateMeta("visibility", event.target.value)}
-                className="mt-1 w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-sky-400"
-              >
-                <option value="private">非公開</option>
-                <option value="unlisted">限定公開</option>
-                <option value="public">公開</option>
-              </select>
-            </label>
 
             <label className="block">
               <span className="text-[11px] font-bold text-neutral-500">
@@ -950,7 +934,6 @@ function hasMeaningfulPageInfo(raw: string): boolean {
       getMetaValue(fields, ["subtitle"], "") ||
       getMetaValue(fields, ["author"], "") ||
       getMetaValue(fields, ["url"], "") ||
-      getMetaValue(fields, ["visibility"], "") ||
       getMetaValue(fields, ["publishFrom", "publish_from"], "") ||
       getMetaValue(fields, ["publishUntil", "publish_until"], "") ||
       getMetaValue(fields, ["timezone"], "") ||
@@ -1000,13 +983,6 @@ function setColonMetaValue(raw: string, key: string, value: string): string {
   return [...lines, nextLine].join("\n");
 }
 
-function normalizeVisibility(value: string): VisibilityValue {
-  if (value === "private" || value === "unlisted" || value === "public") {
-    return value;
-  }
-
-  return "unlisted";
-}
 
 function normalizeRenderMode(value: string): RenderModeValue {
   if (
@@ -1019,19 +995,6 @@ function normalizeRenderMode(value: string): RenderModeValue {
   }
 
   return "page-scroll";
-}
-
-function visibilityLabel(value: VisibilityValue): string {
-  switch (value) {
-    case "private":
-      return "非公開";
-    case "unlisted":
-      return "限定公開";
-    case "public":
-      return "公開";
-    default:
-      return value;
-  }
 }
 
 function renderModeLabel(value: RenderModeValue): string {

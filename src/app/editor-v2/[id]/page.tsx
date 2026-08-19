@@ -42,8 +42,6 @@ type LoadStatus =
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
-type Visibility = "private" | "unlisted" | "public";
-
 async function fetchInternalAdminStatus(): Promise<boolean> {
   if (!sharedSupabase) {
     return false;
@@ -103,7 +101,6 @@ type UpdateWorkResponse = {
   message?: string;
   code?: string;
   plan?: string;
-  visibility?: Visibility;
   pageCount?: number;
   pageLimit?: number | null;
   publishedWorkLimit?: number | null;
@@ -877,10 +874,6 @@ export default function BookPanelSequenceEditorPage() {
       const nextTitle =
         extractWorkTitle(saveSsot) || row.title || "Untitled";
 
-      const nextVisibility =
-        extractWorkVisibility(saveSsot) ??
-        normalizeVisibility(row.visibility);
-
     const {
       data: { session },
       error: sessionError,
@@ -907,7 +900,6 @@ export default function BookPanelSequenceEditorPage() {
           workId: row.id,
           title: nextTitle,
           content: saveSsot,
-          visibility: nextVisibility,
           stableSlug: isWebLikeSsot(saveSsot)
             ? stableSlugDraft
             : undefined,
@@ -960,7 +952,6 @@ export default function BookPanelSequenceEditorPage() {
         ...row,
         title: nextTitle,
         content: saveSsot,
-        visibility: nextVisibility,
         stable_slug: savedStableSlug,
         updated_at: updatedAt,
         revision: result.revision ?? row.revision,
@@ -1416,18 +1407,6 @@ function normalizeWebWarningSlug(value: string): string {
     .replace(/\s+/g, "-");
 }
 
-function normalizeVisibility(value: string | null): Visibility {
-  if (value === "public" || value === "unlisted" || value === "private") {
-    return value;
-  }
-
-  if (value === "limited") {
-    return "unlisted";
-  }
-
-  return "private";
-}
-
 function extractWorkTitle(ssot: string): string {
   const normalized = String(ssot ?? "").replace(/\r\n/g, "\n").trimStart();
 
@@ -1519,25 +1498,6 @@ function isTargetInfoLine(line: string, tags: string[]): boolean {
   return tagPattern.test(line);
 }
 
-
-function extractWorkVisibility(ssot: string): Visibility | null {
-  const pageRaw = extractFirstPanelRaw(ssot, "PAGE");
-  const bookRaw = extractFirstPanelRaw(ssot, "BOOK");
-  const panelRaw = pageRaw || bookRaw;
-
-  if (!panelRaw) {
-    return null;
-  }
-
-  const fields = parseMetaFields(panelRaw);
-  const value = getMetaValue(fields, ["visibility"], "").trim();
-
-  if (!value) {
-    return null;
-  }
-
-  return normalizeVisibility(value);
-}
 
 // apps/tools/parari/src/app/editor-v2/[id]/page.tsx
 // 2026-06-29 19:35 JST

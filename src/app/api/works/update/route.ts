@@ -9,20 +9,16 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getEffectivePlan,
   getPlanLimits,
-  isAtOrOverLimit,
 } from "@/lib/billing/plan";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 
 export const runtime = "nodejs";
 
-type Visibility = "private" | "unlisted" | "public";
-
 type UpdateWorkBody = {
   workId?: unknown;
   title?: unknown;
   content?: unknown;
-  visibility?: unknown;
   stableSlug?: unknown;
     expectedRevision?: unknown;
 };
@@ -32,8 +28,6 @@ type CurrentWorkRow = {
   owner: string;
   title: string | null;
   content: string | null;
-  visibility: string | null;
-  is_public: boolean | null;
   is_deleted: boolean | null;
   stable_slug: string | null;
     revision: number;
@@ -95,18 +89,6 @@ function normalizeContent(value: unknown): string | null {
   }
 
   return value;
-}
-
-function normalizeVisibility(value: unknown): Visibility | null {
-  if (
-    value === "private" ||
-    value === "unlisted" ||
-    value === "public"
-  ) {
-    return value;
-  }
-
-  return null;
 }
 
 function normalizeExpectedRevision(value: unknown): number | null {
@@ -178,13 +160,6 @@ function countPagePanels(content: string | null | undefined): number {
     .length;
 }
 
-function isPublicWork(work: {
-  visibility?: string | null;
-  is_public?: boolean | null;
-}): boolean {
-  return work.visibility === "public" || work.is_public === true;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const token = getBearerToken(request);
@@ -221,7 +196,6 @@ export async function POST(request: NextRequest) {
       const workId = normalizeWorkId(body?.workId);
       const title = normalizeTitle(body?.title);
       const content = normalizeContent(body?.content);
-      const visibility = normalizeVisibility(body?.visibility);
 
       const expectedRevision =
         normalizeExpectedRevision(body?.expectedRevision);
@@ -234,7 +208,6 @@ export async function POST(request: NextRequest) {
       if (
         !workId ||
         content === null ||
-        !visibility ||
         expectedRevision === null ||
         (
           body?.stableSlug !== undefined &&
@@ -254,7 +227,7 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin
         .from("parari_books")
       .select(
-        "id,owner,title,content,visibility,is_public,is_deleted,stable_slug,revision",
+        "id,owner,title,content,is_deleted,stable_slug,revision",
       )
       .eq("id", workId)
         .maybeSingle();
@@ -447,90 +420,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ----------------------------------------------------
-    // 公開作品数制限
-    //
-    // 非公開・限定公開からpublicへ変更するときだけ加算判定する。
-    // すでに公開中の作品の再保存は加算しない。
-    // ----------------------------------------------------
-
-    const wasPublic = isPublicWork(currentWork);
-    const willBePublic = visibility === "public";
-    const publishedWorkLimit = isMonitor
-      ? null
-      : limits.publishedWorkLimit;
-
-    if (
-      !wasPublic &&
-      willBePublic &&
-      publishedWorkLimit !== null
-    ) {
-      const { count: publishedCount, error: countError } =
-        await supabaseAdmin
-          .from("parari_books")
-          .select("id", {
-            count: "exact",
-            head: true,
-          })
-        .eq("owner", ownerUserId)
-          .or("is_deleted.is.null,is_deleted.eq.false")
-          .or("visibility.eq.public,is_public.eq.true");
-
-      if (countError) {
-        console.error(
-          "[api/works/update] published count failed:",
-          countError,
-        );
-
-        return NextResponse.json(
-          {
-            ok: false,
-            message: "現在の公開作品数を確認できませんでした。",
-          },
-          { status: 500 },
-        );
-      }
-
-      const currentPublishedCount = publishedCount ?? 0;
-
-      if (
-        isAtOrOverLimit(
-          currentPublishedCount,
-          publishedWorkLimit,
-        )
-      ) {
-        return NextResponse.json(
-          {
-            ok: false,
-            code: "PUBLISHED_WORK_LIMIT_REACHED",
-            plan: effectivePlan,
-            currentPublishedCount,
-            limit: publishedWorkLimit,
-            message:
-              effectivePlan === "free"
-                ? "Freeプランでは3作品まで公開できます。別の作品を非公開にするか、Plusをご利用ください。"
-                : "Plusプランの公開作品数上限に達しています。",
-          },
-          { status: 403 },
-        );
-      }
-    }
-
     const updatedAt = new Date().toISOString();
 
       const updatePayload: {
         title: string;
         content: string;
-        visibility: Visibility;
-        is_public: boolean;
         updated_at: string;
         updated_by: string;
         stable_slug?: string | null;
       } = {
         title,
         content,
-        visibility,
-        is_public: willBePublic,
         updated_at: updatedAt,
         updated_by: user.id,
       };
@@ -584,10 +484,10 @@ export async function POST(request: NextRequest) {
         id: workId,
         plan: effectivePlan,
         isMonitor,
-        visibility,
+        
         pageCount: nextPageCount,
         pageLimit,
-        publishedWorkLimit,
+        
         updatedAt: updatedWork.updated_at ?? updatedAt,
         revision: updatedWork.revision,
         updatedBy: updatedWork.updated_by,
