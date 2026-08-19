@@ -1,21 +1,25 @@
 // apps/tools/parari/src/components/parari/BookShelfPanel.tsx
-// apps/tools/parari/src/components/parari/BookShelfPanel.tsx
-// 2026-04-24 JST
-
+// src/components/parari/BookShelfPanel.tsx
+// 2026-08-19 JST
+//
+// PARARI マイ本棚
+//
+// - 保存した作品
+// - ユーザーが作成した棚
+// - 最近読んだ作品
+//
+// 作品データ:
+//   /api/my-shelf
+//
+// 棚構造:
+//   user_shelves
+//   user_shelf_items
 
 "use client";
 
-/**
- * PART: BookShelfPanel
- * コメント:
- * - /api/my-shelf を唯一の取得元にする
- * - Authorization Bearer token 付きで取得する
- * - participant / managed は /event/[applicationId] に飛ぶ
- * - それ以外は /p/[bookId] に飛ぶ
- */
-
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+
 import { parseParari } from "../../lib/parariParse";
 import { getThemeClass, normalizeTheme } from "../../lib/shelfTheme";
 import { supabase } from "../../lib/supabaseClient";
@@ -26,19 +30,6 @@ type ShelfType =
   | "shelf"
   | "participant"
   | "managed";
-
-/**
- * PART: ShelfTab
- * コメント:
- * - 本棚画面の表示タブ
- * - アコーディオンではなく、1棚1画面で見せる
- */
-type ShelfTab =
-  | "shelf"
-  | "managed"
-  | "participant"
-  | "read_later"
-  | "viewed";
 
 type ShelfRow = {
   id: string;
@@ -62,6 +53,20 @@ type ShelfResponse = {
   managed: ShelfRow[];
 };
 
+type CustomShelfRow = {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+type CustomShelfItemRow = {
+  shelf_id: string;
+  book_id: string;
+  sort_order: number;
+  created_at: string;
+};
+
 function createEmptyShelfResponse(): ShelfResponse {
   return {
     shelf: [],
@@ -75,12 +80,17 @@ function createEmptyShelfResponse(): ShelfResponse {
 function getBookTitle(row: ShelfRow) {
   try {
     const parsed = row.content ? parseParari(row.content) : null;
-    if (parsed?.bookTitle?.trim()) return parsed.bookTitle.trim();
+
+    if (parsed?.bookTitle?.trim()) {
+      return parsed.bookTitle.trim();
+    }
   } catch {
     // noop
   }
 
-  if (row.title?.trim()) return row.title.trim();
+  if (row.title?.trim()) {
+    return row.title.trim();
+  }
 
   return "（無題）";
 }
@@ -88,30 +98,20 @@ function getBookTitle(row: ShelfRow) {
 function getBookImage(row: ShelfRow) {
   try {
     const parsed = row.content ? parseParari(row.content) : null;
-    return parsed?.bookCoverImage || parsed?.pages?.[0]?.imageUrl || "";
+
+    return (
+      parsed?.bookCoverImage ||
+      parsed?.pages?.[0]?.imageUrl ||
+      ""
+    );
   } catch {
     return "";
   }
 }
 
-function getShelfHref(row: ShelfRow) {
-  if (
-    (row.shelfType === "participant" || row.shelfType === "managed") &&
-    row.application_id
-  ) {
-    return `/event/${row.application_id}`;
-  }
-
-  return `/p/${row.id}`;
-}
-
-/**
- * PART: formatDateJa
- * コメント:
- * - 本棚カードの日付表示用
- */
 function formatDateJa(dateString: string | null) {
   if (!dateString) return "";
+
   try {
     return new Date(dateString).toLocaleDateString("ja-JP");
   } catch {
@@ -124,8 +124,9 @@ function shouldKeepRow(row: ShelfRow, userId: string) {
 
   if (!owner) return true;
 
-  if (row.shelfType === "shelf") return true;
-  if (row.shelfType === "managed") return owner === userId;
+  if (row.shelfType === "shelf") {
+    return true;
+  }
 
   return owner !== userId;
 }
@@ -133,11 +134,12 @@ function shouldKeepRow(row: ShelfRow, userId: string) {
 function ShelfCard({ row }: { row: ShelfRow }) {
   const title = getBookTitle(row);
   const img = getBookImage(row);
-  const href = getShelfHref(row);
-  const dateLabel = formatDateJa(row.shelfAddedAt || row.updated_at);
+  const dateLabel = formatDateJa(
+    row.shelfAddedAt || row.updated_at
+  );
 
   return (
-    <Link href={href} className="block">
+    <Link href={`/p/${row.id}`} className="block">
       <div className="group cursor-pointer">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
           {img ? (
@@ -178,7 +180,7 @@ function HorizontalShelf({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-xl bg-neutral-50 px-4 py-6 text-sm text-neutral-500">
+      <div className="rounded-xl bg-white/50 px-4 py-6 text-sm text-neutral-500">
         {emptyText}
       </div>
     );
@@ -196,58 +198,25 @@ function HorizontalShelf({
   );
 }
 
-function AccordionSection({
-  title,
-  items,
-  emptyText,
-  panelClassName,
-  defaultOpen = false,
-}: {
-  title: string;
-  items: ShelfRow[];
-  emptyText: string;
-  panelClassName: string;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className={`rounded-2xl border ${panelClassName}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left"
-      >
-        <div>
-          <div className="text-lg font-semibold">{title}</div>
-          <div className="mt-1 text-xs text-neutral-500">{items.length}件</div>
-        </div>
-
-        <div className="shrink-0 text-sm text-neutral-500">
-          {open ? "閉じる" : "開く"}
-        </div>
-      </button>
-
-      {open && (
-        <div className="border-t px-4 py-4">
-          <HorizontalShelf items={items} emptyText={emptyText} />
-        </div>
-      )}
-    </section>
-  );
-}
-
-export default function BookShelfPanel({
-  activeTab = "shelf",
-}: {
-  activeTab?: ShelfTab;
-}) {
+export default function BookShelfPanel() {
   const [loading, setLoading] = useState(true);
-  const [rowsByType, setRowsByType] = useState<ShelfResponse>(
-    createEmptyShelfResponse()
-  );
-  const [panelTheme, setPanelTheme] = useState<string | null>("cream");
-  const [userId, setUserId] = useState<string | null>(null);
+
+  const [rowsByType, setRowsByType] =
+    useState<ShelfResponse>(
+      createEmptyShelfResponse()
+    );
+
+  const [panelTheme, setPanelTheme] =
+    useState<string | null>("cream");
+
+  const [userId, setUserId] =
+    useState<string | null>(null);
+
+  const [customShelves, setCustomShelves] =
+    useState<CustomShelfRow[]>([]);
+
+  const [customShelfItems, setCustomShelfItems] =
+    useState<CustomShelfItemRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -257,8 +226,12 @@ export default function BookShelfPanel({
 
       if (!supabase) {
         if (!mounted) return;
+
         setRowsByType(createEmptyShelfResponse());
+        setCustomShelves([]);
+        setCustomShelfItems([]);
         setLoading(false);
+
         return;
       }
 
@@ -271,11 +244,18 @@ export default function BookShelfPanel({
       if (!user) {
         setUserId(null);
         setRowsByType(createEmptyShelfResponse());
+        setCustomShelves([]);
+        setCustomShelfItems([]);
         setLoading(false);
+
         return;
       }
 
       setUserId(user.id);
+
+      /*
+       * 本棚テーマ
+       */
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -285,7 +265,73 @@ export default function BookShelfPanel({
 
       if (!mounted) return;
 
-      setPanelTheme(profile?.shelf_panel_theme ?? "cream");
+      setPanelTheme(
+        profile?.shelf_panel_theme ?? "cream"
+      );
+
+      /*
+       * ユーザーが作った棚
+       */
+
+      const {
+        data: shelvesData,
+        error: shelvesError,
+      } = await supabase
+        .from("user_shelves")
+        .select("id,name,sort_order,created_at")
+        .eq("user_id", user.id)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (!mounted) return;
+
+      const shelves = !shelvesError &&
+        Array.isArray(shelvesData)
+        ? (shelvesData as CustomShelfRow[])
+        : [];
+
+      setCustomShelves(shelves);
+
+      /*
+       * 棚に入っている作品
+       */
+
+      if (shelves.length > 0) {
+        const shelfIds = shelves.map(
+          (shelf) => shelf.id
+        );
+
+        const {
+          data: shelfItemsData,
+          error: shelfItemsError,
+        } = await supabase
+          .from("user_shelf_items")
+          .select(
+            "shelf_id,book_id,sort_order,created_at"
+          )
+          .in("shelf_id", shelfIds)
+          .order("sort_order", {
+            ascending: true,
+          })
+          .order("created_at", {
+            ascending: true,
+          });
+
+        if (!mounted) return;
+
+        setCustomShelfItems(
+          !shelfItemsError &&
+            Array.isArray(shelfItemsData)
+            ? (shelfItemsData as CustomShelfItemRow[])
+            : []
+        );
+      } else {
+        setCustomShelfItems([]);
+      }
+
+      /*
+       * 保存作品・閲覧履歴など
+       */
 
       const {
         data: sessionData,
@@ -297,39 +343,67 @@ export default function BookShelfPanel({
       if (!accessToken) {
         setRowsByType(createEmptyShelfResponse());
         setLoading(false);
+
         return;
       }
 
-      const response = await fetch("/api/my-shelf", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      });
+      const response = await fetch(
+        "/api/my-shelf",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store",
+        }
+      );
 
       if (!mounted) return;
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        console.error("load /api/my-shelf failed:", response.status, errorText);
+        const errorText =
+          await response.text().catch(() => "");
 
-        setRowsByType(createEmptyShelfResponse());
+        console.error(
+          "load /api/my-shelf failed:",
+          response.status,
+          errorText
+        );
+
+        setRowsByType(
+          createEmptyShelfResponse()
+        );
+
         setLoading(false);
+
         return;
       }
 
-      const data = (await response.json()) as Partial<ShelfResponse>;
+      const data =
+        (await response.json()) as Partial<ShelfResponse>;
 
-      const normalized: ShelfResponse = {
-        shelf: Array.isArray(data.shelf) ? data.shelf : [],
-        read_later: Array.isArray(data.read_later) ? data.read_later : [],
-        viewed: Array.isArray(data.viewed) ? data.viewed : [],
-        participant: Array.isArray(data.participant) ? data.participant : [],
-        managed: Array.isArray(data.managed) ? data.managed : [],
-      };
+      setRowsByType({
+        shelf: Array.isArray(data.shelf)
+          ? data.shelf
+          : [],
+        read_later: Array.isArray(
+          data.read_later
+        )
+          ? data.read_later
+          : [],
+        viewed: Array.isArray(data.viewed)
+          ? data.viewed
+          : [],
+        participant: Array.isArray(
+          data.participant
+        )
+          ? data.participant
+          : [],
+        managed: Array.isArray(data.managed)
+          ? data.managed
+          : [],
+      });
 
-      setRowsByType(normalized);
       setLoading(false);
     }
 
@@ -340,106 +414,272 @@ export default function BookShelfPanel({
     };
   }, []);
 
-  const shelfItems = useMemo(() => {
-    if (!userId) return rowsByType.shelf;
-    return rowsByType.shelf.filter((row) => shouldKeepRow(row, userId));
+  /*
+   * 保存された全作品
+   */
+
+  const allSavedItems = useMemo(() => {
+    if (!userId) {
+      return rowsByType.shelf;
+    }
+
+    return rowsByType.shelf.filter(
+      (row) => shouldKeepRow(row, userId)
+    );
   }, [rowsByType.shelf, userId]);
 
-  const managedItems = useMemo(() => {
-    if (!userId) return rowsByType.managed;
-    return rowsByType.managed.filter((row) => shouldKeepRow(row, userId));
-  }, [rowsByType.managed, userId]);
+  /*
+   * どこかのユーザー棚に整理済みの作品ID
+   */
 
-  const participantItems = useMemo(() => {
-    if (!userId) return rowsByType.participant;
-    return rowsByType.participant.filter((row) => shouldKeepRow(row, userId));
-  }, [rowsByType.participant, userId]);
+  const organizedBookIds = useMemo(() => {
+    return new Set(
+      customShelfItems.map(
+        (item) => item.book_id
+      )
+    );
+  }, [customShelfItems]);
 
-  const readLaterItems = useMemo(() => {
-    if (!userId) return rowsByType.read_later;
-    return rowsByType.read_later.filter((row) => shouldKeepRow(row, userId));
-  }, [rowsByType.read_later, userId]);
+  /*
+   * まだどの棚にも整理していない保存作品
+   */
+
+  const savedItems = useMemo(() => {
+    return allSavedItems.filter(
+      (row) => !organizedBookIds.has(row.id)
+    );
+  }, [allSavedItems, organizedBookIds]);
+
+  /*
+   * 最近読んだ作品
+   */
 
   const viewedItems = useMemo(() => {
-    if (!userId) return rowsByType.viewed;
-    return rowsByType.viewed.filter((row) => shouldKeepRow(row, userId));
+    if (!userId) {
+      return rowsByType.viewed;
+    }
+
+    return rowsByType.viewed.filter(
+      (row) => shouldKeepRow(row, userId)
+    );
   }, [rowsByType.viewed, userId]);
 
-  const resolvedPanelTheme = normalizeTheme(panelTheme);
-  const themePanel = getThemeClass(resolvedPanelTheme);
-    
-    /**
-     * PART: shelf tab definitions
-     * コメント:
-     * - タブ名と表示する棚データをまとめる
-     */
-    const shelfTabs: {
-      key: ShelfTab;
-      label: string;
-      items: ShelfRow[];
-      emptyText: string;
-    }[] = [
-      {
-        key: "shelf",
-        label: "マイ本棚",
-        items: shelfItems,
-        emptyText: "まだ本棚に保存した作品はありません。",
-      },
-      {
-        key: "managed",
-        label: "マイ企画",
-        items: managedItems,
-        emptyText: "まだマイ企画はありません。",
-      },
-      {
-        key: "participant",
-        label: "参加中",
-        items: participantItems,
-        emptyText: "まだ参加中の企画はありません。",
-      },
-      {
-        key: "read_later",
-        label: "あとで読む",
-        items: readLaterItems,
-        emptyText: "まだ「あとで読む」に入れた作品はありません。",
-      },
-      {
-        key: "viewed",
-        label: "読んだ",
-        items: viewedItems,
-        emptyText: "まだ閲覧履歴はありません。",
-      },
-    ];
+  /*
+   * 作品ID → 作品
+   */
 
-    const activeShelf = shelfTabs.find((tab) => tab.key === activeTab) ?? shelfTabs[0];
+  const savedBookMap = useMemo(() => {
+    return new Map(
+      allSavedItems.map(
+        (row) => [row.id, row]
+      )
+    );
+  }, [allSavedItems]);
 
-    return (
-      <div className="space-y-5">
-        <div>
-          <h1 className="text-xl font-bold">本棚</h1>
+  /*
+   * ユーザー棚ごとの作品
+   */
+
+  const shelvesWithItems = useMemo(() => {
+    return customShelves.map((shelf) => {
+      const items = customShelfItems
+        .filter(
+          (item) =>
+            item.shelf_id === shelf.id
+        )
+        .map(
+          (item) =>
+            savedBookMap.get(item.book_id)
+        )
+        .filter(
+          (
+            row
+          ): row is ShelfRow =>
+            Boolean(row)
+        );
+
+      return {
+        ...shelf,
+        items,
+      };
+    });
+  }, [
+    customShelves,
+    customShelfItems,
+    savedBookMap,
+  ]);
+
+  /*
+   * 新しい棚を作る
+   */
+
+  async function handleCreateShelf() {
+    if (!supabase || !userId) return;
+
+    const rawName = window.prompt(
+      "新しい棚の名前を入力してください"
+    );
+
+    const name = rawName?.trim();
+
+    if (!name) return;
+
+    const nextSortOrder =
+      customShelves.length === 0
+        ? 0
+        : Math.max(
+            ...customShelves.map(
+              (shelf) => shelf.sort_order
+            )
+          ) + 1;
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("user_shelves")
+      .insert({
+        user_id: userId,
+        name,
+        sort_order: nextSortOrder,
+      })
+      .select(
+        "id,name,sort_order,created_at"
+      )
+      .single();
+
+    if (error) {
+      console.error(
+        "create user shelf failed:",
+        error
+      );
+
+      window.alert(
+        "棚を作成できませんでした。"
+      );
+
+      return;
+    }
+
+    setCustomShelves((current) => [
+      ...current,
+      data as CustomShelfRow,
+    ]);
+  }
+
+  const resolvedPanelTheme =
+    normalizeTheme(panelTheme);
+
+  const themePanel =
+    getThemeClass(resolvedPanelTheme);
+
+  return (
+    <div className="space-y-8">
+      {loading ? (
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-neutral-500">
+          本棚を読み込み中…
         </div>
+      ) : null}
 
-        {loading ? (
-          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-neutral-500">
-            本棚を読み込み中…
-          </div>
-        ) : null}
+      {!loading ? (
+        <>
+          {/* 保存した作品 */}
 
-        <section className={`min-h-[55vh] rounded-2xl border ${themePanel.panel} p-4`}>
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <div className="text-lg font-semibold">{activeShelf.label}</div>
+          <section
+            className={`rounded-2xl border ${themePanel.panel} p-4`}
+          >
+            <div className="mb-4">
+              <div className="text-lg font-semibold">
+                保存した作品
+              </div>
+
               <div className="mt-1 text-xs text-neutral-500">
-                {activeShelf.items.length}件
+                {savedItems.length}件
               </div>
             </div>
-          </div>
 
-          <HorizontalShelf
-            items={activeShelf.items}
-            emptyText={activeShelf.emptyText}
-          />
-        </section>
-      </div>
-    );
+            <HorizontalShelf
+              items={savedItems}
+              emptyText="まだ整理していない保存作品はありません。"
+            />
+          </section>
+
+          {/* 自分で作った棚 */}
+
+          <section className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-lg font-semibold text-neutral-950">
+                  自分の棚
+                </div>
+
+                <div className="mt-1 text-xs text-neutral-500">
+                  好きな名前の棚を作って作品を整理できます。
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCreateShelf}
+                className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+              >
+                ＋ 棚を作る
+              </button>
+            </div>
+
+            {shelvesWithItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-sm text-neutral-500">
+                まだ自分の棚はありません。
+              </div>
+            ) : (
+              shelvesWithItems.map(
+                (shelf) => (
+                  <section
+                    key={shelf.id}
+                    className={`rounded-2xl border ${themePanel.panel} p-4`}
+                  >
+                    <div className="mb-4">
+                      <div className="text-lg font-semibold">
+                        {shelf.name}
+                      </div>
+
+                      <div className="mt-1 text-xs text-neutral-500">
+                        {shelf.items.length}件
+                      </div>
+                    </div>
+
+                    <HorizontalShelf
+                      items={shelf.items}
+                      emptyText="この棚にはまだ作品がありません。"
+                    />
+                  </section>
+                )
+              )
+            )}
+          </section>
+
+          {/* 最近読んだ作品 */}
+
+          <section
+            className={`rounded-2xl border ${themePanel.panel} p-4`}
+          >
+            <div className="mb-4">
+              <div className="text-lg font-semibold">
+                最近読んだ作品
+              </div>
+
+              <div className="mt-1 text-xs text-neutral-500">
+                {viewedItems.length}件
+              </div>
+            </div>
+
+            <HorizontalShelf
+              items={viewedItems}
+              emptyText="まだ閲覧した作品はありません。"
+            />
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
 }

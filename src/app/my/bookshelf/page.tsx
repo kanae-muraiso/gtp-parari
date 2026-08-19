@@ -76,7 +76,7 @@ export default function MyBookshelfPage() {
           </div>
 
           {bookshelfMode === "mine" ? (
-            <BookShelfPanel activeTab="shelf" />
+            <BookShelfPanel />
           ) : (
             <MembershipShelfPanel />
           )}
