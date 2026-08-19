@@ -16,6 +16,8 @@ import { getEffectivePlan } from "@/lib/billing/plan";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 
+type Visibility = "private" | "unlisted" | "public";
+
 type WorkRow = {
   id: string;
   title: string | null;
@@ -45,6 +47,10 @@ export default function MyWorksPage() {
   const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
   const [copiedWorkId, setCopiedWorkId] = React.useState<string | null>(null);
   const [deletingWorkIds, setDeletingWorkIds] = React.useState<string[]>([]);
+    
+    const [changingVisibilityWorkId, setChangingVisibilityWorkId] =
+      React.useState<string | null>(null);
+    
     const [addingCollaboratorWorkId, setAddingCollaboratorWorkId] =
       React.useState<string | null>(null);
     
@@ -234,6 +240,102 @@ export default function MyWorksPage() {
     }
   }, []);
 
+    const onChangeVisibility = React.useCallback(
+      async (
+        work: WorkRow,
+        nextVisibility: Visibility,
+      ) => {
+        if (!currentUserId) {
+          window.alert("公開設定を変更するにはログインが必要です。");
+          return;
+        }
+
+        const currentVisibility =
+          work.visibility === "private" ||
+          work.visibility === "unlisted" ||
+          work.visibility === "public"
+            ? work.visibility
+            : "unlisted";
+
+        if (currentVisibility === nextVisibility) {
+          return;
+        }
+
+        if (nextVisibility === "public") {
+          const ok = window.confirm(
+            "この作品を一般公開しますか？\n\n一般公開すると、誰でもこの作品を閲覧できるようになります。",
+          );
+
+          if (!ok) {
+            return;
+          }
+        }
+
+        setChangingVisibilityWorkId(work.id);
+
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
+          const accessToken = session?.access_token;
+
+          if (!accessToken) {
+            window.alert("ログイン情報を確認できませんでした。");
+            return;
+          }
+
+          const response = await fetch("/api/works/visibility", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              workId: work.id,
+              visibility: nextVisibility,
+            }),
+          });
+
+          const result = (await response.json().catch(() => null)) as
+            | {
+                ok?: boolean;
+                visibility?: Visibility;
+                isPublic?: boolean;
+                publishedAt?: string | null;
+                message?: string;
+              }
+            | null;
+
+          if (!response.ok || !result?.ok || !result.visibility) {
+            window.alert(
+              result?.message ?? "公開設定を変更できませんでした。",
+            );
+            return;
+          }
+
+          setWorks((current) =>
+            current.map((item) =>
+              item.id === work.id
+                ? {
+                    ...item,
+                    visibility: result.visibility ?? nextVisibility,
+                    is_public:
+                      result.isPublic ?? nextVisibility === "public",
+                  }
+                : item,
+            ),
+          );
+        } catch (error) {
+          console.error("[my/works] visibility update failed:", error);
+          window.alert("公開設定の変更中にエラーが発生しました。");
+        } finally {
+          setChangingVisibilityWorkId(null);
+        }
+      },
+      [currentUserId],
+    );
+    
   const onDelete = React.useCallback(
     async (workId: string, title: string) => {
       if (!currentUserId) {
@@ -804,9 +906,28 @@ export default function MyWorksPage() {
                               {kind}
                             </span>
 
-                            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-500">
-                              {resolveVisibilityLabel(work.visibility)}
-                            </span>
+                          <select
+                            value={
+                              work.visibility === "private" ||
+                              work.visibility === "unlisted" ||
+                              work.visibility === "public"
+                                ? work.visibility
+                                : "unlisted"
+                            }
+                            onChange={(event) =>
+                              void onChangeVisibility(
+                                work,
+                                event.target.value as Visibility,
+                              )
+                            }
+                            disabled={changingVisibilityWorkId === work.id}
+                            className="rounded-full border-0 bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-500 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`${title}の公開設定`}
+                          >
+                            <option value="private">非公開</option>
+                            <option value="unlisted">限定公開</option>
+                            <option value="public">公開</option>
+                          </select>
 
                             <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">
                               Editor
