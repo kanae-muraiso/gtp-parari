@@ -118,7 +118,27 @@ export default function MyPage() {
             </div>
           </section>
 
+          {/* PUBLIC WORKS */}
 
+          <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="flex items-center justify-between gap-4">
+
+              <div>
+                <div className="text-sm font-bold text-neutral-950">
+                  公開作品
+                </div>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  PARARIで公開された作品を探して読める機能を準備しています。
+                </p>
+              </div>
+
+              <div className="shrink-0 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-400">
+                今後公開予定
+              </div>
+
+            </div>
+          </section>
           
 
         </div>
