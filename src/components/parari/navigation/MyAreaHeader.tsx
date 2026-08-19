@@ -14,6 +14,7 @@
 import Link from "next/link";
 
 import ManagementLinks from "@/components/parari/navigation/ManagementLinks";
+import LogoutButton from "@/components/parari/navigation/LogoutButton";
 
 type MyAreaHeaderProps = {
   title: string;
@@ -36,16 +37,20 @@ export default function MyAreaHeader({
         </h1>
       </div>
 
-      {showManagementLinks ? (
-        <ManagementLinks />
-      ) : (
-        <Link
-          href="/mypage"
-          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-        >
-          HOME
-        </Link>
-      )}
+          <div className="flex items-center gap-2">
+            {showManagementLinks ? (
+              <ManagementLinks />
+            ) : (
+              <Link
+                href="/mypage"
+                className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+              >
+                HOME
+              </Link>
+            )}
+
+            <LogoutButton />
+          </div>
     </div>
   );
 }
