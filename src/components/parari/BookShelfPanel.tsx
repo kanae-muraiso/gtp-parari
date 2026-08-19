@@ -688,7 +688,7 @@ export default function BookShelfPanel() {
       if (!supabase || !userId) return;
 
       const ok = window.confirm(
-        "この作品を本棚から外しますか？"
+        "この作品の保存を解除しますか？"
       );
 
       if (!ok) return;
@@ -835,7 +835,7 @@ export default function BookShelfPanel() {
                            }
                            className="text-xs text-neutral-400 hover:text-neutral-700"
                          >
-                           本棚から外す
+                           保存を解除
                          </button>
                        </div>
                      )}
@@ -901,7 +901,7 @@ export default function BookShelfPanel() {
                                     }
                                     className="text-xs text-neutral-500 hover:text-neutral-900"
                                   >
-                                    棚から外す
+                                    保存した作品へ戻す
                                   </button>
 
                                   <button
@@ -913,7 +913,7 @@ export default function BookShelfPanel() {
                                     }
                                     className="text-xs text-neutral-400 hover:text-neutral-700"
                                   >
-                                    本棚から外す
+                                    保存を解除
                                   </button>
                                 </div>
                               )}
