@@ -131,16 +131,23 @@ function shouldKeepRow(row: ShelfRow, userId: string) {
   return owner !== userId;
 }
 
-function ShelfCard({ row }: { row: ShelfRow }) {
+function ShelfCard({
+  row,
+  actions,
+}: {
+  row: ShelfRow;
+  actions?: React.ReactNode;
+}) {
   const title = getBookTitle(row);
   const img = getBookImage(row);
+  const href = `/p/${row.id}`;
   const dateLabel = formatDateJa(
     row.shelfAddedAt || row.updated_at
   );
 
   return (
-    <Link href={`/p/${row.id}`} className="block">
-      <div className="group cursor-pointer">
+    <div className="group">
+      <Link href={href} className="block">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
           {img ? (
             <img
@@ -154,29 +161,42 @@ function ShelfCard({ row }: { row: ShelfRow }) {
             </div>
           )}
         </div>
+      </Link>
 
-        <div className="mt-3 space-y-1">
-          <div className="line-clamp-2 text-[16px] font-medium leading-6 text-gray-900">
-            {title}
+      <div className="mt-3 space-y-1">
+        <Link
+          href={href}
+          className="block line-clamp-2 text-[16px] font-medium leading-6 text-gray-900 hover:underline"
+        >
+          {title}
+        </Link>
+
+        {dateLabel ? (
+          <div className="text-xs text-gray-400">
+            {dateLabel}
           </div>
+        ) : null}
 
-          {dateLabel ? (
-            <div className="text-xs text-gray-400">
-              {dateLabel}
-            </div>
-          ) : null}
-        </div>
+        {actions ? (
+          <div className="pt-2">
+            {actions}
+          </div>
+        ) : null}
       </div>
-    </Link>
+    </div>
   );
 }
 
 function HorizontalShelf({
   items,
   emptyText,
+  renderActions,
 }: {
   items: ShelfRow[];
   emptyText: string;
+  renderActions?: (
+    row: ShelfRow
+  ) => React.ReactNode;
 }) {
   if (items.length === 0) {
     return (
@@ -192,6 +212,11 @@ function HorizontalShelf({
         <ShelfCard
           key={`${row.shelfType}-${row.id}-${row.shelfAddedAt ?? ""}`}
           row={row}
+          actions={
+            renderActions
+              ? renderActions(row)
+              : undefined
+          }
         />
       ))}
     </div>
@@ -567,6 +592,171 @@ export default function BookShelfPanel() {
     ]);
   }
 
+    async function handleAddToShelf(
+      bookId: string,
+      shelfId: string
+    ) {
+      if (!supabase || !shelfId) return;
+
+      const shelfItems =
+        customShelfItems.filter(
+          (item) => item.shelf_id === shelfId
+        );
+
+      const nextSortOrder =
+        shelfItems.length === 0
+          ? 0
+          : Math.max(
+              ...shelfItems.map(
+                (item) => item.sort_order
+              )
+            ) + 1;
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("user_shelf_items")
+        .insert({
+          shelf_id: shelfId,
+          book_id: bookId,
+          sort_order: nextSortOrder,
+        })
+        .select(
+          "shelf_id,book_id,sort_order,created_at"
+        )
+        .single();
+
+      if (error) {
+        console.error(
+          "add book to shelf failed:",
+          error
+        );
+
+        window.alert(
+          "棚へ整理できませんでした。"
+        );
+
+        return;
+      }
+
+      setCustomShelfItems((current) => [
+        ...current,
+        data as CustomShelfItemRow,
+      ]);
+    }
+
+    async function handleRemoveFromShelf(
+      shelfId: string,
+      bookId: string
+    ) {
+      if (!supabase) return;
+
+      const { error } = await supabase
+        .from("user_shelf_items")
+        .delete()
+        .eq("shelf_id", shelfId)
+        .eq("book_id", bookId);
+
+      if (error) {
+        console.error(
+          "remove book from shelf failed:",
+          error
+        );
+
+        window.alert(
+          "棚から外せませんでした。"
+        );
+
+        return;
+      }
+
+      setCustomShelfItems((current) =>
+        current.filter(
+          (item) =>
+            !(
+              item.shelf_id === shelfId &&
+              item.book_id === bookId
+            )
+        )
+      );
+    }
+
+    async function handleRemoveFromBookshelf(
+      bookId: string
+    ) {
+      if (!supabase || !userId) return;
+
+      const ok = window.confirm(
+        "この作品を本棚から外しますか？"
+      );
+
+      if (!ok) return;
+
+      /*
+       * 名前付き棚からも外す
+       */
+
+      const {
+        error: shelfItemsError,
+      } = await supabase
+        .from("user_shelf_items")
+        .delete()
+        .eq("book_id", bookId);
+
+      if (shelfItemsError) {
+        console.error(
+          "remove shelf items failed:",
+          shelfItemsError
+        );
+
+        window.alert(
+          "本棚から外せませんでした。"
+        );
+
+        return;
+      }
+
+      /*
+       * 保存そのものを解除
+       */
+
+      const {
+        error: bookshelfError,
+      } = await supabase
+        .from("user_bookshelf")
+        .delete()
+        .eq("user_id", userId)
+        .eq("book_id", bookId)
+        .eq("type", "shelf");
+
+      if (bookshelfError) {
+        console.error(
+          "remove bookshelf item failed:",
+          bookshelfError
+        );
+
+        window.alert(
+          "本棚から外せませんでした。"
+        );
+
+        return;
+      }
+
+      setCustomShelfItems((current) =>
+        current.filter(
+          (item) => item.book_id !== bookId
+        )
+      );
+
+      setRowsByType((current) => ({
+        ...current,
+        shelf: current.shelf.filter(
+          (row) => row.id !== bookId
+        ),
+      }));
+    }
+    
   const resolvedPanelTheme =
     normalizeTheme(panelTheme);
 
@@ -598,10 +788,58 @@ export default function BookShelfPanel() {
               </div>
             </div>
 
-            <HorizontalShelf
-              items={savedItems}
-              emptyText="まだ整理していない保存作品はありません。"
-            />
+                   <HorizontalShelf
+                     items={savedItems}
+                     emptyText="まだ整理していない保存作品はありません。"
+                     renderActions={(row) => (
+                       <div className="space-y-2">
+                         <select
+                           defaultValue=""
+                           onChange={(event) => {
+                             const shelfId =
+                               event.target.value;
+
+                             if (!shelfId) return;
+
+                             void handleAddToShelf(
+                               row.id,
+                               shelfId
+                             );
+
+                             event.target.value = "";
+                           }}
+                           className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-2 text-xs text-neutral-700"
+                         >
+                           <option value="">
+                             棚へ整理…
+                           </option>
+
+                           {customShelves.map(
+                             (shelf) => (
+                               <option
+                                 key={shelf.id}
+                                 value={shelf.id}
+                               >
+                                 {shelf.name}
+                               </option>
+                             )
+                           )}
+                         </select>
+
+                         <button
+                           type="button"
+                           onClick={() =>
+                             void handleRemoveFromBookshelf(
+                               row.id
+                             )
+                           }
+                           className="text-xs text-neutral-400 hover:text-neutral-700"
+                         >
+                           本棚から外す
+                         </button>
+                       </div>
+                     )}
+                   />
           </section>
 
           {/* 自分で作った棚 */}
@@ -648,10 +886,38 @@ export default function BookShelfPanel() {
                       </div>
                     </div>
 
-                    <HorizontalShelf
-                      items={shelf.items}
-                      emptyText="この棚にはまだ作品がありません。"
-                    />
+                            <HorizontalShelf
+                              items={shelf.items}
+                              emptyText="この棚にはまだ作品がありません。"
+                              renderActions={(row) => (
+                                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleRemoveFromShelf(
+                                        shelf.id,
+                                        row.id
+                                      )
+                                    }
+                                    className="text-xs text-neutral-500 hover:text-neutral-900"
+                                  >
+                                    棚から外す
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleRemoveFromBookshelf(
+                                        row.id
+                                      )
+                                    }
+                                    className="text-xs text-neutral-400 hover:text-neutral-700"
+                                  >
+                                    本棚から外す
+                                  </button>
+                                </div>
+                              )}
+                            />
                   </section>
                 )
               )
