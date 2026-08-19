@@ -709,9 +709,28 @@ export default function MyWorksPage() {
                           <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-600">
                             {kind}
                           </span>
-                          <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-500">
-                            {resolveVisibilityLabel(work.visibility)}
-                          </span>
+                        <select
+                          value={
+                            work.visibility === "private" ||
+                            work.visibility === "unlisted" ||
+                            work.visibility === "public"
+                              ? work.visibility
+                              : "unlisted"
+                          }
+                          onChange={(event) =>
+                            void onChangeVisibility(
+                              work,
+                              event.target.value as Visibility,
+                            )
+                          }
+                          disabled={changingVisibilityWorkId === work.id}
+                          className="rounded-full border-0 bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-500 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`${title}の公開設定`}
+                        >
+                          <option value="private">非公開</option>
+                          <option value="unlisted">限定公開</option>
+                          <option value="public">公開</option>
+                        </select>
                         </div>
 
                         <h2 className="truncate text-base font-bold text-neutral-950">
