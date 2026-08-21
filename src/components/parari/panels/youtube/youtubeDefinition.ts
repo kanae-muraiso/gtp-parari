@@ -8,6 +8,7 @@ import {
   type YoutubePanelData,
 } from "./parseYoutubePanel";
 import { serializeYoutubePanel } from "./serializeYoutubePanel";
+import { YoutubePanelRenderer } from "./YoutubePanelRenderer";
 
 export const youtubeDefinition: PanelDefinition<YoutubePanelData> = {
   tag: "YOUTUBE",
@@ -22,5 +23,6 @@ export const youtubeDefinition: PanelDefinition<YoutubePanelData> = {
     return serializeYoutubePanel(data);
   },
 
-  Editor: YoutubePanelEditor,
+    Editor: YoutubePanelEditor,
+    Renderer: YoutubePanelRenderer,
 };
