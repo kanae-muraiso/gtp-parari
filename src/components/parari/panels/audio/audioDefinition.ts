@@ -8,6 +8,7 @@ import {
   type AudioPanelData,
 } from "./parseAudioPanel";
 import { serializeAudioPanel } from "./serializeAudioPanel";
+import { AudioPanelRenderer } from "./AudioPanelRenderer";
 
 export const audioDefinition: PanelDefinition<AudioPanelData> = {
   tag: "AUDIO",
@@ -22,5 +23,6 @@ export const audioDefinition: PanelDefinition<AudioPanelData> = {
     return serializeAudioPanel(data);
   },
 
-  Editor: AudioPanelEditor,
+    Editor: AudioPanelEditor,
+    Renderer: AudioPanelRenderer,
 };

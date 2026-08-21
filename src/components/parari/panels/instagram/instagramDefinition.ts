@@ -8,6 +8,7 @@ import {
   type InstagramPanelData,
 } from "./parseInstagramPanel";
 import { serializeInstagramPanel } from "./serializeInstagramPanel";
+import { InstagramPanelRenderer } from "./InstagramPanelRenderer";
 
 export const instagramDefinition: PanelDefinition<InstagramPanelData> = {
   tag: "INSTAGRAM",
@@ -15,5 +16,7 @@ export const instagramDefinition: PanelDefinition<InstagramPanelData> = {
   description: "Instagram投稿・Reelを表示するパネルです。",
   parse: parseInstagramPanel,
   serialize: serializeInstagramPanel,
-  Editor: InstagramPanelEditor,
+
+    Editor: InstagramPanelEditor,
+    Renderer: InstagramPanelRenderer,
 };

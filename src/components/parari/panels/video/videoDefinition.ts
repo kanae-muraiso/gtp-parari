@@ -9,6 +9,7 @@ import {
   type VideoPanelData,
 } from "./parseVideoPanel";
 import { serializeVideoPanel } from "./serializeVideoPanel";
+import { VideoPanelRenderer } from "./VideoPanelRenderer";
 
 export const videoDefinition: PanelDefinition<VideoPanelData> = {
   tag: "VIDEO",
@@ -23,5 +24,6 @@ export const videoDefinition: PanelDefinition<VideoPanelData> = {
     return serializeVideoPanel(data);
   },
 
-  Editor: VideoPanelEditor,
+    Editor: VideoPanelEditor,
+    Renderer: VideoPanelRenderer,
 };
