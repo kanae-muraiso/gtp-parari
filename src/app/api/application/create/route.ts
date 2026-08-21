@@ -179,7 +179,8 @@ export async function POST(request: Request) {
     const { count, error: countError } = await (adminClient as any)
       .from("applications")
       .select("id", { count: "exact", head: true })
-      .eq("owner_user_id", user.id);
+      .eq("owner_user_id", user.id)
+      .eq("origin", "manual");
 
     if (countError) {
       console.error("count applications failed:", {

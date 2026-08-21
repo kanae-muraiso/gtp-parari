@@ -426,6 +426,10 @@ export async function POST(
       .eq(
         "owner_user_id",
         auth.user.id,
+      )
+      .eq(
+        "origin",
+        "manual",
       );
 
     if (countError) {

@@ -11,9 +11,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
@@ -53,63 +51,10 @@ const MANAGE_TABS = [
 
 
 export default function MyManagePage() {
-  const router =
-    useRouter();
-
   const [
     manageMode,
     setManageMode,
   ] = useState<ManageMode>("form");
-
-
-  /*
-   * URLから現在の運営タブを復元する。
-   *
-   * /my/manage?tab=calendar
-   * の状態で戻ってきた場合、
-   * CALENDARを再表示する。
-   */
-  useEffect(() => {
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
-
-    const tab =
-      params.get("tab");
-
-    if (
-      tab === "form" ||
-      tab === "application" ||
-      tab === "calendar" ||
-      tab === "membership"
-    ) {
-      setManageMode(
-        tab,
-      );
-    }
-  }, []);
-
-
-  function changeManageMode(
-    nextMode: ManageMode,
-  ) {
-    setManageMode(
-      nextMode,
-    );
-
-    /*
-     * タブ切替自体は履歴を増やさない。
-     * ただし現在地をURLには残す。
-     */
-    router.replace(
-      `/my/manage?tab=${nextMode}`,
-      {
-        scroll: false,
-      },
-    );
-  }
-
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -129,7 +74,7 @@ export default function MyManagePage() {
             items={MANAGE_TABS}
             active={manageMode}
             onChange={(key) =>
-              changeManageMode(
+              setManageMode(
                 key as ManageMode,
               )
             }
