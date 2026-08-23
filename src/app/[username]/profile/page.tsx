@@ -29,6 +29,12 @@ import {
     isExpired
 } from "@/lib/parariExpiry";
 import HeroPanel from "@/components/parari/HeroPanel";
+import EventClassBrandPanel, {
+    type EventClassBrandItem,
+} from "@/components/parari/EventClassBrandPanel";
+import PublicPagePatternRenderer, {
+    type PublicPagePattern,
+} from "@/components/parari/public-page/PublicPagePatternRenderer";
 
 type ProfileRow = {
   user_id: string;
@@ -71,6 +77,8 @@ type ProfileRow = {
     
     homepage_profile_image_style?: HomepageProfileImageStyle | null;
     homepage_profile_align?: HomepageProfileAlign | null;
+
+    public_page_pattern?: string | null;
 };
 
 type BookRow = {
@@ -116,6 +124,21 @@ type HomepageLogoAlign = "left" | "center" | "right";
 
 type HomepageProfileImageStyle = "circle" | "logo" | "none";
 type HomepageProfileAlign = "left" | "center" | "right";
+
+function normalizePublicPagePattern(
+    value: string | null | undefined,
+): PublicPagePattern | null {
+    if (
+        value === "person-first" ||
+        value === "offer-first" ||
+        value === "story-first" ||
+        value === "welcome-first"
+    ) {
+        return value;
+    }
+
+    return null;
+}
 
 function formatDateJa(dateString: string | null) {
     if (!dateString) return "";
@@ -248,6 +271,8 @@ export default function UserProfilePage() {
     const [profile, setProfile] = useState<ProfileRow | null>(null);
     const [books, setBooks] = useState<BookRow[]>([]);
     const [links, setLinks] = useState<ProfileLinkRow[]>([]);
+    const [eventClassItems, setEventClassItems] =
+      useState<EventClassBrandItem[]>([]);
     const [activeTab, setActiveTab] = useState<UserTab>("profile");
     const [didApplyFirstLook, setDidApplyFirstLook] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -284,7 +309,7 @@ export default function UserProfilePage() {
             } = await supabase
             .from("profiles")
             .select(
-              "user_id, username, display_name, bio, profile_body, is_monitor, tab_label_profile, tab_label_links, tab_label_works, avatar_url, cover_image_url, cta_enabled, cta_label, cta_href, profile_body, homepage_mode, homepage_book_id, homepage_tag_key, firstlook_tag_key, firstlook_layout, homepage_menu_count, homepage_header_logo_url, homepage_header_logo_align, homepage_show_username, homepage_profile_image_style, homepage_profile_align, homepage_tab1_layout, homepage_tab2_layout, homepage_tab3_layout, homepage_tab1_type, homepage_tab2_type, homepage_tab3_type"
+              "user_id, username, display_name, bio, profile_body, is_monitor, tab_label_profile, tab_label_links, tab_label_works, avatar_url, cover_image_url, cta_enabled, cta_label, cta_href, profile_body, homepage_mode, homepage_book_id, homepage_tag_key, firstlook_tag_key, firstlook_layout, homepage_menu_count, homepage_header_logo_url, homepage_header_logo_align, homepage_show_username, homepage_profile_image_style, homepage_profile_align, homepage_tab1_layout, homepage_tab2_layout, homepage_tab3_layout, homepage_tab1_type, homepage_tab2_type, homepage_tab3_type, public_page_pattern"
             )
             .eq("username", username)
             .maybeSingle();
@@ -344,6 +369,34 @@ export default function UserProfilePage() {
                 setLinks(linksData as ProfileLinkRow[]);
             }
             
+
+            const calendarResponse =
+              await fetch(
+                `/api/calendar/profile-items?username=${encodeURIComponent(username)}`,
+                {
+                  cache: "no-store",
+                },
+              );
+
+            const calendarResult =
+              await calendarResponse
+                .json()
+                .catch(() => null);
+
+            if (
+              calendarResponse.ok &&
+              calendarResult?.ok &&
+              Array.isArray(
+                calendarResult.items,
+              )
+            ) {
+              setEventClassItems(
+                calendarResult.items as EventClassBrandItem[],
+              );
+            } else {
+              setEventClassItems([]);
+            }
+
             setLoading(false);
         };
         
@@ -386,6 +439,85 @@ export default function UserProfilePage() {
                 );
     }
     
+    const publicPagePattern =
+      normalizePublicPagePattern(
+        profile.public_page_pattern,
+      );
+
+    const eventContent =
+      eventClassItems.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {eventClassItems.map((item) => (
+            <EventClassBrandPanel
+              key={item.id}
+              item={item}
+            />
+          ))}
+        </div>
+      ) : null;
+
+    const worksContent =
+      worksTabBooks.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          {worksTabBooks.map((book) => (
+            <WorkCard
+              key={book.id}
+              username={profile.username}
+              book={book}
+            />
+          ))}
+        </div>
+      ) : null;
+
+    const linksContent =
+      links.length > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {links.map((link) => (
+            <a
+              key={link.id}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm font-semibold text-neutral-800 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <span className="mr-2">
+                {link.icon || "🔗"}
+              </span>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      ) : null;
+
+    if (publicPagePattern) {
+      return (
+        <PublicPagePatternRenderer
+          pattern={publicPagePattern}
+          displayName={
+            profile.display_name || ""
+          }
+          username={profile.username}
+          bio={profile.bio}
+          profileBody={profile.profile_body}
+          avatarUrl={profile.avatar_url}
+          coverImageUrl={profile.cover_image_url}
+          showUsername={
+            profile.homepage_show_username !== false
+          }
+          showCTA={Boolean(
+            profile.cta_enabled &&
+            profile.cta_label &&
+            profile.cta_href
+          )}
+          ctaLabel={profile.cta_label}
+          ctaHref={profile.cta_href}
+          eventContent={eventContent}
+          worksContent={worksContent}
+          linksContent={linksContent}
+        />
+      );
+    }
+
     const homepageMode = profile.homepage_mode ?? "profile";
     
     const homepageMenuCount = Math.min(
@@ -442,6 +574,31 @@ export default function UserProfilePage() {
               ctaLabel={profile.cta_label || ""}
               ctaHref={profile.cta_href || ""}
             />
+
+            {eventClassItems.length > 0 ? (
+              <section className="mb-8">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-neutral-950">
+                    クラス・イベント
+                  </h2>
+
+                  <span className="text-sm text-neutral-400">
+                    {eventClassItems.length}件
+                  </span>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {eventClassItems.map(
+                    (item) => (
+                      <EventClassBrandPanel
+                        key={item.id}
+                        item={item}
+                      />
+                    ),
+                  )}
+                </div>
+              </section>
+            ) : null}
             
             
             {homepageMode !== "tag" && homepageMenuCount > 1 ? (

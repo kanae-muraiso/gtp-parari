@@ -1,0 +1,278 @@
+// src/components/parari/settings/CalendarApplicationList.tsx
+// 2026-08-22 JST
+//
+// APPLICATION画面からCALENDAR itemの予約設定を行う。
+// calendar-origin APPLICATIONの有無に関係なく、
+// CALENDAR itemそのものを一覧表示する。
+
+"use client";
+
+import * as React from "react";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+import CalendarBookingSettingsEditor from "@/components/parari/manage/CalendarBookingSettingsEditor";
+
+
+type CalendarItem = {
+  id: string;
+  title: string;
+  location: string | null;
+  status: "active" | "archived";
+};
+
+
+export default function CalendarApplicationList() {
+  const [
+    items,
+    setItems,
+  ] =
+    React.useState<
+      CalendarItem[]
+    >([]);
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+  const [
+    openItemId,
+    setOpenItemId,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setMessage("");
+
+      try {
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth
+            .getSession();
+
+        if (
+          !session?.access_token
+        ) {
+          if (!cancelled) {
+            setMessage(
+              "CALENDARを確認するにはログインが必要です。",
+            );
+          }
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/calendar/items",
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => null,
+            );
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result?.ok
+        ) {
+          setMessage(
+            result?.message ??
+              "CALENDARのクラス・イベントを取得できませんでした。",
+          );
+
+          return;
+        }
+
+        const rawItems =
+          Array.isArray(
+            result.items,
+          )
+            ? result.items
+            : Array.isArray(
+                  result.calendarItems,
+                )
+              ? result.calendarItems
+              : [];
+
+        setItems(
+          rawItems.filter(
+            (
+              item: CalendarItem,
+            ) =>
+              item.status !==
+              "archived",
+          ),
+        );
+      } catch (error) {
+        console.error(
+          "[CalendarApplicationList] load failed:",
+          error,
+        );
+
+        if (!cancelled) {
+          setMessage(
+            "CALENDARのクラス・イベントを取得できませんでした。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  return (
+    <div className="mt-12">
+      <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">
+        CALENDAR × APPLICATION
+      </div>
+
+      <div className="mt-1 text-base font-bold text-neutral-950">
+        クラス・イベント予約
+      </div>
+
+      <p className="mt-1 text-xs leading-5 text-neutral-500">
+        CALENDARで作成したクラス・イベントに予約を設定します。
+      </p>
+
+
+      {loading ? (
+        <p className="mt-5 text-sm text-neutral-500">
+          CALENDARを読み込んでいます...
+        </p>
+      ) : null}
+
+
+      {!loading &&
+      items.length === 0 ? (
+        <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+          <div className="text-sm font-bold text-neutral-900">
+            クラス・イベントはありません
+          </div>
+
+          <p className="mt-1 text-xs leading-5 text-neutral-500">
+            CALENDARでクラス・イベントを作成すると、ここに表示されます。
+          </p>
+        </div>
+      ) : null}
+
+
+      {!loading &&
+      items.length > 0 ? (
+        <div className="mt-5 space-y-3">
+          {items.map(
+            (item) => {
+              const isOpen =
+                openItemId ===
+                item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-neutral-200 bg-white p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-bold text-neutral-400">
+                        CALENDAR
+                      </div>
+
+                      <div className="mt-1 text-lg font-bold text-neutral-950">
+                        {item.title}
+                      </div>
+
+                      {item.location ? (
+                        <div className="mt-2 text-sm text-neutral-500">
+                          {item.location}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenItemId(
+                          isOpen
+                            ? null
+                            : item.id,
+                        )
+                      }
+                      className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
+                    >
+                      {isOpen
+                        ? "予約設定を閉じる"
+                        : "予約設定"}
+                    </button>
+                  </div>
+
+
+                  {isOpen ? (
+                    <div className="mt-5 border-t border-neutral-100 pt-5">
+                      <CalendarBookingSettingsEditor
+                        calendarItemId={
+                          item.id
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            },
+          )}
+        </div>
+      ) : null}
+
+
+      {message ? (
+        <p className="mt-4 text-sm leading-6 text-neutral-600">
+          {message}
+        </p>
+      ) : null}
+    </div>
+  );
+}

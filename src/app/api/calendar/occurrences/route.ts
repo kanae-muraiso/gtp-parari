@@ -23,6 +23,11 @@ import {
 } from "@/lib/billing/supabaseAdmin";
 
 
+import {
+  syncRecurringBookingsForGeneratedOccurrences,
+} from "@/lib/calendar/syncRecurringBookingsForGeneratedOccurrences";
+
+
 type GenerateOccurrencesBody = {
   scheduleId?: unknown;
 };
@@ -573,26 +578,190 @@ function buildOccurrenceDates(
         : 1;
 
 
-    const stepDays =
-      7 *
-      interval;
+    const rawWeekday =
+      Array.isArray(
+        rule.byWeekday,
+      )
+        ? Number(
+            rule.byWeekday[0],
+          )
+        : Number.NaN;
+
+
+    /*
+     * ISO weekday
+     * Mon=1 ... Sun=7
+     *
+     * 旧SCHEDULEとの互換性のため、
+     * byWeekday がない場合だけ
+     * start_date の曜日を使う。
+     */
+    function getIsoWeekdayForDate(
+      dateText: string,
+    ): number {
+      const [
+        year,
+        month,
+        day,
+      ] =
+        dateText
+          .split("-")
+          .map(Number);
+
+      const date =
+        new Date(
+          Date.UTC(
+            year,
+            month - 1,
+            day,
+          ),
+        );
+
+      const jsDay =
+        date.getUTCDay();
+
+      return (
+        jsDay === 0
+          ? 7
+          : jsDay
+      );
+    }
+
+
+    const weekday =
+      Number.isInteger(
+        rawWeekday,
+      ) &&
+      rawWeekday >= 1 &&
+      rawWeekday <= 7
+        ? rawWeekday
+        : getIsoWeekdayForDate(
+            startDate,
+          );
 
 
     const dates:
       string[] = [];
 
 
+    /*
+     * 毎週
+     *
+     * start_date は「開催期間の開始日」。
+     * その日自体が開催曜日である必要はない。
+     *
+     * 例：
+     * start_date = 2026-08-01(土)
+     * byWeekday  = 5(金)
+     *
+     * → 最初の開催日は 2026-08-07(金)
+     */
+    if (
+      interval === 1
+    ) {
+      let current =
+        startDate;
+
+
+      for (
+        let offset = 0;
+        offset < 7;
+        offset += 1
+      ) {
+        if (
+          getIsoWeekdayForDate(
+            current,
+          ) ===
+          weekday
+        ) {
+          break;
+        }
+
+        current =
+          addDays(
+            current,
+            1,
+          );
+      }
+
+
+      while (
+        current <=
+        horizon
+      ) {
+        dates.push(
+          current,
+        );
+
+        current =
+          addDays(
+            current,
+            7,
+          );
+      }
+
+
+      return dates;
+    }
+
+
+    /*
+     * 隔週など interval > 1
+     *
+     * 周期には基準日が必要。
+     * 新SCHEDULEでは recurrence_rule.anchorDate を使う。
+     *
+     * 旧データには anchorDate がないため、
+     * start_date を従来どおり基準日にする。
+     */
+    const rawAnchorDate =
+      typeof rule.anchorDate ===
+        "string"
+        ? rule.anchorDate.trim()
+        : "";
+
+
     let current =
-      startDate;
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        rawAnchorDate,
+      )
+        ? rawAnchorDate
+        : startDate;
+
+
+    const stepDays =
+      7 *
+      interval;
+
+
+    /*
+     * anchorDate が期間開始より前の場合は、
+     * 周期を維持したまま期間内まで進める。
+     */
+    while (
+      current <
+      startDate
+    ) {
+      current =
+        addDays(
+          current,
+          stepDays,
+        );
+    }
 
 
     while (
       current <=
       horizon
     ) {
-      dates.push(
-        current,
-      );
+      if (
+        current >=
+        startDate
+      ) {
+        dates.push(
+          current,
+        );
+      }
 
       current =
         addDays(
@@ -627,6 +796,46 @@ function buildOccurrenceDates(
         : 1;
 
 
+    const startParts =
+      startDate
+        .split("-")
+        .map(Number);
+
+    const startYear =
+      startParts[0];
+
+    const startMonth =
+      startParts[1];
+
+    const legacyStartDay =
+      startParts[2];
+
+
+    const rawMonthDay =
+      Array.isArray(
+        rule.byMonthDay,
+      )
+        ? Number(
+            rule.byMonthDay[0],
+          )
+        : Number.NaN;
+
+
+    /*
+     * 旧SCHEDULEとの互換性：
+     * byMonthDay がなければ
+     * start_date の日を使う。
+     */
+    const monthDay =
+      Number.isInteger(
+        rawMonthDay,
+      ) &&
+      rawMonthDay >= 1 &&
+      rawMonthDay <= 31
+        ? rawMonthDay
+        : legacyStartDay;
+
+
     const dates:
       string[] = [];
 
@@ -637,30 +846,142 @@ function buildOccurrenceDates(
 
     while (
       monthOffset <
-      240
+      1200
     ) {
-      const candidate =
-        monthlyDate(
-          startDate,
-          monthOffset,
+      /*
+       * 対象月の1日をまず作る。
+       * Dateの月繰り上がりを利用する。
+       */
+      const monthBase =
+        new Date(
+          Date.UTC(
+            startYear,
+            startMonth - 1 +
+              monthOffset,
+            1,
+          ),
         );
 
 
+      const targetYear =
+        monthBase
+          .getUTCFullYear();
+
+      const targetMonth =
+        monthBase
+          .getUTCMonth() +
+        1;
+
+
+      const candidateDate =
+        new Date(
+          Date.UTC(
+            targetYear,
+            targetMonth - 1,
+            monthDay,
+          ),
+        );
+
+
+      /*
+       * 2月31日などは
+       * JSでは翌月へ繰り上がる。
+       * その場合は「その月には開催日なし」
+       * としてスキップする。
+       */
+      const isValidCandidate =
+        candidateDate
+          .getUTCFullYear() ===
+          targetYear &&
+        candidateDate
+          .getUTCMonth() ===
+          targetMonth - 1 &&
+        candidateDate
+          .getUTCDate() ===
+          monthDay;
+
+
       if (
-        candidate &&
-        candidate >
+        isValidCandidate
+      ) {
+        const candidate =
+          [
+            String(
+              targetYear,
+            ).padStart(
+              4,
+              "0",
+            ),
+
+            String(
+              targetMonth,
+            ).padStart(
+              2,
+              "0",
+            ),
+
+            String(
+              monthDay,
+            ).padStart(
+              2,
+              "0",
+            ),
+          ].join("-");
+
+
+        if (
+          candidate >
           horizon
-      ) {
-        break;
-      }
+        ) {
+          break;
+        }
 
 
-      if (
-        candidate
-      ) {
-        dates.push(
-          candidate,
-        );
+        /*
+         * start_date は期間開始日なので、
+         * 同じ月でも期間開始より前の日は
+         * 開催しない。
+         */
+        if (
+          candidate >=
+          startDate
+        ) {
+          dates.push(
+            candidate,
+          );
+        }
+      } else {
+        /*
+         * 無効な日付でも、
+         * 対象月そのものが horizon を超えたら終了。
+         */
+        const monthKey =
+          [
+            String(
+              targetYear,
+            ).padStart(
+              4,
+              "0",
+            ),
+
+            String(
+              targetMonth,
+            ).padStart(
+              2,
+              "0",
+            ),
+          ].join("-");
+
+
+        if (
+          monthKey >
+          horizon.slice(
+            0,
+            7,
+          )
+        ) {
+          break;
+        }
       }
 
 
@@ -791,6 +1112,7 @@ export async function GET(
           id,
           calendar_item_id,
           calendar_schedule_id,
+          source_starts_at,
           starts_at,
           ends_at,
           timezone,
@@ -838,10 +1160,222 @@ export async function GET(
   }
 
 
+  const occurrenceRows =
+    data ?? [];
+
+
+  /*
+   * 各開催回の現在予約数をまとめて取得する。
+   *
+   * calendar_occurrences
+   *   ↓ calendar_item_id
+   * calendar-origin applications
+   *   ↓ application_id
+   * application_entries
+   *
+   * withdrawn / cancelled は現在予約数に含めない。
+   */
+  const calendarItemIds =
+    Array.from(
+      new Set(
+        occurrenceRows
+          .map(
+            (occurrence) =>
+              String(
+                occurrence
+                  .calendar_item_id ??
+                  "",
+              ),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+
+  const occurrenceIds =
+    occurrenceRows.map(
+      (occurrence) =>
+        String(
+          occurrence.id,
+        ),
+    );
+
+
+  const applicationIdByItemId =
+    new Map<
+      string,
+      string
+    >();
+
+
+  if (
+    calendarItemIds.length >
+    0
+  ) {
+    const {
+      data: bookingApplications,
+      error:
+        bookingApplicationsError,
+    } =
+      await supabaseAdmin
+        .from(
+          "applications",
+        )
+        .select(
+          `
+            id,
+            calendar_item_id
+          `,
+        )
+        .eq(
+          "origin",
+          "calendar",
+        )
+        .in(
+          "calendar_item_id",
+          calendarItemIds,
+        );
+
+
+    if (
+      bookingApplicationsError
+    ) {
+      console.error(
+        "[calendar/occurrences GET] booking applications load failed:",
+        bookingApplicationsError,
+      );
+    } else {
+      for (
+        const application of
+        bookingApplications ?? []
+      ) {
+        if (
+          application
+            .calendar_item_id
+        ) {
+          applicationIdByItemId.set(
+            String(
+              application
+                .calendar_item_id,
+            ),
+            String(
+              application.id,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+
+  const reservationCountByOccurrenceId =
+    new Map<
+      string,
+      number
+    >();
+
+
+  const applicationIds =
+    Array.from(
+      new Set(
+        applicationIdByItemId
+          .values(),
+      ),
+    );
+
+
+  if (
+    applicationIds.length >
+      0 &&
+    occurrenceIds.length >
+      0
+  ) {
+    const {
+      data: bookingEntries,
+      error:
+        bookingEntriesError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .select(
+          `
+            calendar_occurrence_id
+          `,
+        )
+        .in(
+          "application_id",
+          applicationIds,
+        )
+        .in(
+          "calendar_occurrence_id",
+          occurrenceIds,
+        )
+        .in(
+          "status",
+          [
+            "submitted",
+            "confirmed",
+            "rejected",
+          ],
+        );
+
+
+    if (
+      bookingEntriesError
+    ) {
+      console.error(
+        "[calendar/occurrences GET] reservation counts load failed:",
+        bookingEntriesError,
+      );
+    } else {
+      for (
+        const entry of
+        bookingEntries ?? []
+      ) {
+        const occurrenceId =
+          String(
+            entry
+              .calendar_occurrence_id ??
+              "",
+          );
+
+
+        if (!occurrenceId) {
+          continue;
+        }
+
+
+        reservationCountByOccurrenceId.set(
+          occurrenceId,
+          (
+            reservationCountByOccurrenceId.get(
+              occurrenceId,
+            ) ?? 0
+          ) + 1,
+        );
+      }
+    }
+  }
+
+
   return NextResponse.json({
     ok: true,
+
     occurrences:
-      data ?? [],
+      occurrenceRows.map(
+        (occurrence) => ({
+          ...occurrence,
+
+          reservation_count:
+            reservationCountByOccurrenceId.get(
+              String(
+                occurrence.id,
+              ),
+            ) ?? 0,
+        }),
+      ),
   });
 }
 
@@ -1088,6 +1622,15 @@ export async function POST(
       calendar_schedule_id:
         schedule.id,
 
+      /*
+       * 定期ルール上の本来の開催日時。
+       *
+       * 「この回だけ変更」しても
+       * この値は変更しない。
+       */
+      source_starts_at:
+        startsAt.toISOString(),
+
       starts_at:
         startsAt.toISOString(),
 
@@ -1144,7 +1687,7 @@ export async function POST(
         rows,
         {
           onConflict:
-            "calendar_schedule_id,starts_at",
+            "calendar_schedule_id,source_starts_at",
 
           ignoreDuplicates:
             true,
@@ -1172,6 +1715,54 @@ export async function POST(
   }
 
 
+  let recurringSync;
+
+
+  try {
+    recurringSync =
+      await syncRecurringBookingsForGeneratedOccurrences({
+        calendarScheduleId:
+          String(
+            schedule.id,
+          ),
+
+        sourceStartsAt:
+          rows.map(
+            (row) =>
+              String(
+                row
+                  .source_starts_at,
+              ),
+          ),
+      });
+  } catch (syncError) {
+    console.error(
+      "[calendar/occurrences POST] recurring booking sync failed:",
+      syncError,
+    );
+
+
+    /*
+     * OCCURRENCE自体は既に作成済み。
+     *
+     * このAPIを再実行しても
+     * OCCURRENCEはignoreDuplicates、
+     * APPLICATION ENTRYも重複防止されるため
+     * 安全に再同期できる。
+     */
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催予定は作成されましたが、自動予約を反映できませんでした。もう一度実行してください。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
   return NextResponse.json({
     ok: true,
 
@@ -1181,5 +1772,7 @@ export async function POST(
      */
     occurrenceCount:
       rows.length,
+
+    recurringSync,
   });
 }

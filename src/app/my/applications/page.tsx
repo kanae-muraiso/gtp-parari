@@ -68,6 +68,121 @@ type MyApplicationEntry = {
 };
 
 
+type ParticipatingClass = {
+  schedule_id: string;
+
+  application_id:
+    | string
+    | null;
+
+  title: string;
+
+  location:
+    | string
+    | null;
+
+  next_occurrence_id:
+    | string
+    | null;
+
+  next_starts_at:
+    | string
+    | null;
+
+  next_ends_at:
+    | string
+    | null;
+
+  timezone:
+    | string
+    | null;
+
+  reservation_count: number;
+  pending_count: number;
+  auto_booking: boolean;
+};
+
+
+function getViewerTimezone() {
+  try {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Tokyo"
+    );
+  } catch {
+    return "Asia/Tokyo";
+  }
+}
+
+
+function formatDateTimeInTimezone(
+  value:
+    | string
+    | null
+    | undefined,
+  timezone:
+    | string
+    | null
+    | undefined,
+) {
+  if (!value) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "—";
+  }
+
+
+  try {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          timezone ||
+          "Asia/Tokyo",
+
+        year:
+          "numeric",
+
+        month:
+          "numeric",
+
+        day:
+          "numeric",
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    ).format(
+      date,
+    );
+  } catch {
+    return "—";
+  }
+}
+
+
 function formatDateTime(
   value:
     | string
@@ -266,6 +381,25 @@ function getAgreement(
 
 export default function MyApplicationsPage() {
   const [
+    deviceTimezone,
+    setDeviceTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  React.useEffect(
+    () => {
+      setDeviceTimezone(
+        getViewerTimezone(),
+      );
+    },
+    [],
+  );
+
+
+  const [
     entries,
     setEntries,
   ] = React.useState<
@@ -276,6 +410,13 @@ export default function MyApplicationsPage() {
     loading,
     setLoading,
   ] = React.useState(true);
+
+  const [
+    classes,
+    setClasses,
+  ] = React.useState<
+    ParticipatingClass[]
+  >([]);
 
   const [
     message,
@@ -373,6 +514,55 @@ export default function MyApplicationsPage() {
           result.entries ??
             [],
         );
+
+
+        try {
+          const calendarResponse =
+            await fetch(
+              "/api/calendar/my",
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+
+                cache:
+                  "no-store",
+              },
+            );
+
+
+          const calendarResult =
+            (await calendarResponse
+              .json()
+              .catch(
+                () => null,
+              )) as
+              | {
+                  ok?: boolean;
+
+                  classes?:
+                    ParticipatingClass[];
+                }
+              | null;
+
+
+          if (
+            !cancelled &&
+            calendarResponse.ok &&
+            calendarResult?.ok
+          ) {
+            setClasses(
+              calendarResult.classes ??
+                [],
+            );
+          }
+        } catch (calendarError) {
+          console.error(
+            "my participating classes load failed:",
+            calendarError,
+          );
+        }
       } catch (error) {
         console.error(
           "my applications load failed:",
@@ -413,6 +603,158 @@ export default function MyApplicationsPage() {
           <div className="mt-6">
             <MyPrimaryTabs active="applications" />
           </div>
+
+          {/* PARTICIPATING CLASSES */}
+          {!loading &&
+          classes.length > 0 ? (
+            <div className="mx-auto mt-8 max-w-2xl">
+              <div className="mb-4">
+                <div className="text-sm font-bold text-neutral-950">
+                  参加中
+                </div>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  継続して参加しているクラスやイベントです。
+                </p>
+              </div>
+
+
+              <div className="space-y-4">
+                {classes.map(
+                  (item) => (
+                    <section
+                      key={
+                        item.schedule_id
+                      }
+                      className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h2 className="text-lg font-bold text-neutral-950">
+                            {item.title}
+                          </h2>
+
+                          {item.location ? (
+                            <div className="mt-1 text-sm text-neutral-500">
+                              {item.location}
+                            </div>
+                          ) : null}
+                        </div>
+
+
+                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
+                          {item.auto_booking
+                            ? "自動予約中"
+                            : "参加中"}
+                        </span>
+                      </div>
+
+
+                      {item.next_starts_at ? (
+                        <div className="mt-5 rounded-2xl bg-neutral-50 p-4">
+                          <div className="text-xs font-bold text-neutral-400">
+                            次回
+                          </div>
+
+
+                          <div className="mt-1 text-sm font-bold text-neutral-950">
+                            {formatDateTimeInTimezone(
+                              item.next_starts_at,
+                              item.timezone,
+                            )}
+                          </div>
+
+
+                          <div className="mt-2 text-xs leading-6 text-neutral-500">
+                            開催基準時間帯：
+                            <span className="font-bold text-neutral-700">
+                              {item.timezone ||
+                                "Asia/Tokyo"}
+                            </span>
+                          </div>
+
+
+                          {(item.timezone ||
+                            "Asia/Tokyo") !==
+                          deviceTimezone ? (
+                            <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
+                              <div className="text-xs font-bold text-amber-900">
+                                ⚠ 開催基準時間帯とあなたの現地時間が異なります
+                              </div>
+
+                              <div className="mt-2 space-y-1 text-xs leading-6 text-amber-900">
+                                <div>
+                                  <span className="font-bold">
+                                    開催基準時間：
+                                  </span>
+
+                                  {formatDateTimeInTimezone(
+                                    item.next_starts_at,
+                                    item.timezone ||
+                                      "Asia/Tokyo",
+                                  )}
+
+                                  {" "}
+
+                                  （
+                                  {item.timezone ||
+                                    "Asia/Tokyo"}
+                                  ）
+                                </div>
+
+
+                                <div>
+                                  <span className="font-bold">
+                                    あなたの現地時間：
+                                  </span>
+
+                                  {formatDateTimeInTimezone(
+                                    item.next_starts_at,
+                                    deviceTimezone,
+                                  )}
+
+                                  {" "}
+
+                                  （
+                                  {deviceTimezone}
+                                  ）
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-2 text-xs leading-6 text-neutral-400">
+                              あなたの現地時間帯と同じです
+                              （
+                              {deviceTimezone}
+                              ）
+                            </div>
+                          )}
+
+
+                          <div className="mt-3 text-xs text-neutral-500">
+                            今後の予約　
+                            {item.reservation_count}
+                            回
+                          </div>
+                        </div>
+                      ) : null}
+
+
+                      {item.next_occurrence_id ? (
+                        <Link
+                          href={`/calendar/${item.next_occurrence_id}`}
+                          className="mt-5 inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700"
+                        >
+                          参加内容を見る
+                        </Link>
+                      ) : null}
+                    </section>
+                  ),
+                )}
+              </div>
+            </div>
+          ) : null}
+
 
           {/* APPLICATIONS */}
           <div className="mx-auto mt-8 max-w-2xl">

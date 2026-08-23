@@ -1,0 +1,1721 @@
+"use client";
+
+import {
+  useState,
+  type ReactNode,
+} from "react";
+
+import type { PublicPagePattern } from "@/components/parari/public-page/PublicPageStrategyWizard";
+
+type PublicPageDesign =
+  | "clean"
+  | "photo"
+  | "pop"
+  | "neon"
+  | "soft"
+  | "editorial";
+
+type Draft = {
+  name: string;
+  headline: string;
+  intro: string;
+  about: string;
+  origin: string;
+  value: string;
+  activity: string;
+  audience: string;
+  outcome: string;
+  welcome: string;
+};
+
+type DraftKey = keyof Draft;
+type EditorKey = DraftKey | "actions";
+
+type ActionType =
+  | "calendar"
+  | "reserve"
+  | "apply"
+  | "read"
+  | "contact"
+  | "details"
+  | "sns"
+  | "external";
+
+type ActionDraft = {
+  id: string;
+  type: ActionType | "";
+  label: string;
+};
+
+const EMPTY_DRAFT: Draft = {
+  name: "",
+  headline: "",
+  intro: "",
+  about: "",
+  origin: "",
+  value: "",
+  activity: "",
+  audience: "",
+  outcome: "",
+  welcome: "",
+};
+
+const PATTERNS: Array<{
+  id: PublicPagePattern;
+  code: string;
+  title: string;
+}> = [
+  {
+    id: "person-first",
+    code: "PERSON FIRST",
+    title: "人から始まる",
+  },
+  {
+    id: "offer-first",
+    code: "OFFER FIRST",
+    title: "やっていることから始まる",
+  },
+  {
+    id: "story-first",
+    code: "STORY FIRST",
+    title: "物語から始まる",
+  },
+  {
+    id: "welcome-first",
+    code: "WELCOME FIRST",
+    title: "安心から始まる",
+  },
+];
+
+const DESIGNS: Array<{
+  id: PublicPageDesign;
+  code: string;
+  title: string;
+  description: string;
+  swatch: string;
+}> = [
+  {
+    id: "clean",
+    code: "CLEAN",
+    title: "すっきり",
+    description:
+      "白と余白を中心にした端正な世界観。",
+    swatch:
+      "bg-gradient-to-br from-white via-neutral-100 to-neutral-300",
+  },
+  {
+    id: "photo",
+    code: "PHOTO",
+    title: "写真を主役に",
+    description:
+      "大きな写真と落ち着いた文字で見せます。",
+    swatch:
+      "bg-gradient-to-br from-[#566253] via-[#ceb294] to-[#323b31]",
+  },
+  {
+    id: "pop",
+    code: "POP",
+    title: "明るく元気に",
+    description:
+      "強い色と大きな文字。イベントやダンスにも。",
+    swatch:
+      "bg-gradient-to-br from-[#ff43a4] via-[#ff823f] to-[#ffe72f]",
+  },
+  {
+    id: "neon",
+    code: "NEON",
+    title: "夜と音楽",
+    description:
+      "暗い背景と鮮やかな色。音楽やナイトイベント向け。",
+    swatch:
+      "bg-gradient-to-br from-[#ff20c5] via-[#5642ff] to-[#00e8ff]",
+  },
+  {
+    id: "soft",
+    code: "SOFT",
+    title: "やさしく",
+    description:
+      "淡い色と丸みで親しみやすい印象に。",
+    swatch:
+      "bg-gradient-to-br from-[#f8d9df] via-[#eadcff] to-[#d7f1e5]",
+  },
+  {
+    id: "editorial",
+    code: "EDITORIAL",
+    title: "雑誌のように",
+    description:
+      "写真・余白・文章を静かに読ませます。",
+    swatch:
+      "bg-gradient-to-br from-[#181818] via-[#aaa399] to-[#f2eee4]",
+  },
+];
+
+const ACTION_OPTIONS: Array<{
+  value: ActionType;
+  label: string;
+  defaultLabel: string;
+}> = [
+  {
+    value: "calendar",
+    label: "この人の開催予定を見る",
+    defaultLabel: "開催予定を見る",
+  },
+  {
+    value: "reserve",
+    label: "予約してほしい",
+    defaultLabel: "予約する",
+  },
+  {
+    value: "apply",
+    label: "参加・応募してほしい",
+    defaultLabel: "参加・応募する",
+  },
+  {
+    value: "read",
+    label: "作品を読んでほしい",
+    defaultLabel: "作品を読む",
+  },
+  {
+    value: "contact",
+    label: "問い合わせてほしい",
+    defaultLabel: "問い合わせる",
+  },
+  {
+    value: "details",
+    label: "詳しい情報を見てほしい",
+    defaultLabel: "詳しく見る",
+  },
+  {
+    value: "sns",
+    label: "SNSを見てほしい",
+    defaultLabel: "SNSを見る",
+  },
+  {
+    value: "external",
+    label: "外部サイトを見てほしい",
+    defaultLabel: "サイトを見る",
+  },
+];
+
+const FIELD_META: Record<
+  DraftKey,
+  {
+    code: string;
+    question: string;
+    placeholder: string;
+    rows: number;
+  }
+> = {
+  name: {
+    code: "NAME",
+    question: "あなたの名前",
+    placeholder: "表示する名前",
+    rows: 1,
+  },
+  headline: {
+    code: "HEADLINE",
+    question: "最初に、何と伝えますか？",
+    placeholder: "最初に目に入るひとこと",
+    rows: 2,
+  },
+  intro: {
+    code: "INTRO",
+    question: "短く紹介すると？",
+    placeholder: "あなたや活動について短く",
+    rows: 3,
+  },
+  about: {
+    code: "ABOUT",
+    question:
+      "あなたについて、何を知ってほしいですか？",
+    placeholder:
+      "このページを見る人に伝えたいあなた自身のこと",
+    rows: 5,
+  },
+  origin: {
+    code: "WHY",
+    question: "なぜ、これを始めたのですか？",
+    placeholder: "始めたきっかけや理由",
+    rows: 4,
+  },
+  value: {
+    code: "VALUE",
+    question: "何を大切にしていますか？",
+    placeholder: "活動の中で大切にしていること",
+    rows: 3,
+  },
+  activity: {
+    code: "ACTIVITY",
+    question: "今、何をしていますか？",
+    placeholder: "現在の活動・サービス・取り組み",
+    rows: 4,
+  },
+  audience: {
+    code: "FOR YOU",
+    question: "誰に届けたいですか？",
+    placeholder: "このページを届けたい人",
+    rows: 3,
+  },
+  outcome: {
+    code: "OUTCOME",
+    question:
+      "その人に、どうなってほしいですか？",
+    placeholder:
+      "感じてほしいこと、得てほしい時間や変化",
+    rows: 3,
+  },
+  welcome: {
+    code: "WELCOME",
+    question:
+      "初めての人に、まず何と伝えますか？",
+    placeholder:
+      "安心してもらうための最初のひとこと",
+    rows: 3,
+  },
+};
+
+const FIELD_ORDER: Record<
+  PublicPagePattern,
+  EditorKey[]
+> = {
+  "person-first": [
+    "name",
+    "headline",
+    "intro",
+    "about",
+    "origin",
+    "activity",
+    "audience",
+    "actions",
+  ],
+
+  "offer-first": [
+    "headline",
+    "audience",
+    "outcome",
+    "activity",
+    "name",
+    "about",
+    "origin",
+    "value",
+    "actions",
+  ],
+
+  "story-first": [
+    "headline",
+    "origin",
+    "value",
+    "name",
+    "about",
+    "activity",
+    "audience",
+    "actions",
+  ],
+
+  "welcome-first": [
+    "welcome",
+    "audience",
+    "activity",
+    "outcome",
+    "name",
+    "about",
+    "value",
+    "actions",
+  ],
+};
+
+const THEMES: Record<
+  PublicPageDesign,
+  {
+    page: string;
+    muted: string;
+    eyebrow: string;
+    headline: string;
+    divider: string;
+  }
+> = {
+  clean: {
+    page: "bg-white text-neutral-950",
+    muted: "text-neutral-600",
+    eyebrow: "text-neutral-400",
+    headline:
+      "font-sans tracking-[-0.035em]",
+    divider: "bg-neutral-200",
+  },
+
+  photo: {
+    page:
+      "bg-[#f2eee7] text-neutral-950",
+    muted: "text-neutral-600",
+    eyebrow: "text-[#826c57]",
+    headline:
+      "font-serif tracking-[-0.025em]",
+    divider: "bg-[#cfc3b6]",
+  },
+
+  pop: {
+    page:
+      "bg-[#fff3a6] text-[#181818]",
+    muted: "text-[#55483f]",
+    eyebrow: "text-[#e72d84]",
+    headline:
+      "font-sans tracking-[-0.055em]",
+    divider: "bg-black/20",
+  },
+
+  neon: {
+    page:
+      "bg-[#090812] text-white",
+    muted: "text-white/65",
+    eyebrow: "text-[#58f5ff]",
+    headline:
+      "font-sans tracking-[-0.045em]",
+    divider: "bg-white/20",
+  },
+
+  soft: {
+    page:
+      "bg-[#fff8f6] text-[#3e3437]",
+    muted: "text-[#78696e]",
+    eyebrow: "text-[#a67b89]",
+    headline:
+      "font-sans tracking-[-0.035em]",
+    divider: "bg-[#eadde1]",
+  },
+
+  editorial: {
+    page:
+      "bg-[#f0ece3] text-[#161616]",
+    muted: "text-neutral-600",
+    eyebrow: "text-neutral-700",
+    headline:
+      "font-serif tracking-[-0.035em]",
+    divider: "bg-[#161616]",
+  },
+};
+
+function Text({
+  value,
+  placeholder,
+}: {
+  value: string;
+  placeholder: string;
+}) {
+  return value.trim() ? (
+    <>{value}</>
+  ) : (
+    <span className="opacity-30">
+      {placeholder}
+    </span>
+  );
+}
+
+function Visual({
+  design,
+  compact = false,
+}: {
+  design: PublicPageDesign;
+  compact?: boolean;
+}) {
+  const height = compact
+    ? "h-24"
+    : "h-64 sm:h-80";
+
+  if (design === "pop") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#ffe137]`}
+      >
+        <div className="absolute -left-8 -top-9 h-32 w-32 rounded-full bg-[#ff3fa3]" />
+        <div className="absolute right-[-20px] top-5 h-28 w-28 rotate-12 bg-[#4963ff]" />
+        <div className="absolute bottom-[-50px] left-[35%] h-40 w-40 rounded-full bg-[#43e5bd]" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rotate-[-5deg] bg-white px-4 py-2 text-[9px] font-black tracking-[0.18em] text-black shadow-[5px_5px_0_0_#000]">
+            PHOTO / VISUAL
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "neon") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#090812]`}
+      >
+        <div className="absolute -left-12 top-0 h-44 w-44 rounded-full bg-[#ff22be] opacity-60 blur-3xl" />
+        <div className="absolute -right-10 bottom-0 h-44 w-44 rounded-full bg-[#00e7ff] opacity-55 blur-3xl" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="px-4 py-2 text-[9px] font-black tracking-[0.22em] text-[#58f5ff]">
+            NIGHT / VISUAL
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "soft") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#f8e4e7]`}
+      >
+        <div className="absolute -left-9 -top-12 h-40 w-40 rounded-full bg-[#e7d5ff]" />
+        <div className="absolute -right-8 top-8 h-36 w-36 rounded-full bg-[#d5efe5]" />
+        <div className="absolute bottom-[-50px] left-[30%] h-44 w-44 rounded-full bg-[#ffded0]" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-full bg-white/70 px-4 py-2 text-[9px] font-black tracking-[0.16em] text-[#806b73]">
+            PHOTO
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "editorial") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#cbc4b8]`}
+      >
+        <div className="absolute left-[16%] top-0 h-full w-[54%] bg-gradient-to-b from-[#85817b] to-[#ddd6cb]" />
+
+        <div className="absolute bottom-3 right-3 text-[8px] font-black tracking-[0.2em] text-black/40">
+          IMAGE 01
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "photo") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-gradient-to-br from-[#65715f] via-[#d0b59a] to-[#384238]`}
+      >
+        <div className="absolute inset-0 bg-black/10" />
+
+        <div className="absolute bottom-4 left-4 rounded-full bg-white/80 px-3 py-1.5 text-[8px] font-black tracking-[0.18em] text-neutral-700">
+          YOUR PHOTO
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${height} bg-gradient-to-br from-neutral-300 via-white to-neutral-100`}
+    />
+  );
+}
+
+function PageSection({
+  design,
+  code,
+  children,
+}: {
+  design: PublicPageDesign;
+  code: string;
+  children: ReactNode;
+}) {
+  const theme = THEMES[design];
+
+  return (
+    <section className="py-7 sm:py-9">
+      <div
+        className={[
+          "text-[9px] font-black tracking-[0.2em]",
+          theme.eyebrow,
+        ].join(" ")}
+      >
+        {code}
+      </div>
+
+      <div className="mt-4">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ActionButtons({
+  design,
+  actions,
+}: {
+  design: PublicPageDesign;
+  actions: ActionDraft[];
+}) {
+  const active =
+    actions.filter((item) => item.type);
+
+  if (active.length === 0) {
+    return (
+      <div className="mt-10 text-sm font-black opacity-25">
+        次の一歩
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-10 flex flex-wrap gap-3">
+      {active.map((action, index) => {
+        const label =
+          action.label.trim() ||
+          ACTION_OPTIONS.find(
+            (item) =>
+              item.value === action.type,
+          )?.defaultLabel ||
+          "次の一歩";
+
+        if (design === "editorial") {
+          return (
+            <div
+              key={action.id}
+              className="border-b border-current pb-1 text-sm font-black"
+            >
+              {label} →
+            </div>
+          );
+        }
+
+        if (design === "pop") {
+          return (
+            <div
+              key={action.id}
+              className={[
+                "rounded-full px-6 py-3 text-sm font-black text-white shadow-[4px_4px_0_0_#181818]",
+                index % 2 === 0
+                  ? "bg-[#2850ff]"
+                  : "bg-[#ed308c]",
+              ].join(" ")}
+            >
+              {label}
+            </div>
+          );
+        }
+
+        if (design === "neon") {
+          return (
+            <div
+              key={action.id}
+              className={[
+                "rounded-full px-6 py-3 text-sm font-black",
+                index % 2 === 0
+                  ? "bg-[#c8ff2e] text-black"
+                  : "bg-[#ff27c3] text-white",
+              ].join(" ")}
+            >
+              {label}
+            </div>
+          );
+        }
+
+        if (design === "soft") {
+          return (
+            <div
+              key={action.id}
+              className="rounded-full bg-[#765d75] px-6 py-3 text-sm font-black text-white"
+            >
+              {label}
+            </div>
+          );
+        }
+
+        if (design === "photo") {
+          return (
+            <div
+              key={action.id}
+              className="rounded-full bg-[#4b4036] px-6 py-3 text-sm font-black text-white"
+            >
+              {label}
+            </div>
+          );
+        }
+
+        return (
+          <div
+            key={action.id}
+            className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-black text-white"
+          >
+            {label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MiniModel({
+  pattern,
+  design,
+}: {
+  pattern: PublicPagePattern;
+  design: PublicPageDesign;
+}) {
+  const theme = THEMES[design];
+
+  const heading =
+    pattern === "person-first"
+      ? "この人を知る"
+      : pattern === "offer-first"
+        ? "何を届ける？"
+        : pattern === "story-first"
+          ? "なぜ始めた？"
+          : "まず安心を。";
+
+  return (
+    <div
+      className={[
+        "h-[300px] overflow-hidden",
+        theme.page,
+      ].join(" ")}
+    >
+      {pattern === "person-first" ? (
+        <Visual
+          design={design}
+          compact
+        />
+      ) : null}
+
+      <div className="p-4">
+        <div
+          className={[
+            "text-[8px] font-black tracking-[0.2em]",
+            theme.eyebrow,
+          ].join(" ")}
+        >
+          {
+            PATTERNS.find(
+              (item) =>
+                item.id === pattern,
+            )?.code
+          }
+        </div>
+
+        <div
+          className={[
+            "mt-3 text-xl font-black leading-tight",
+            theme.headline,
+          ].join(" ")}
+        >
+          {heading}
+        </div>
+
+        <div
+          className={[
+            "my-5 h-px",
+            theme.divider,
+          ].join(" ")}
+        />
+
+        <div className="space-y-4">
+          <div className="h-2 w-4/5 rounded-full bg-current opacity-10" />
+          <div className="h-2 w-3/5 rounded-full bg-current opacity-10" />
+          <div className="h-2 w-full rounded-full bg-current opacity-10" />
+          <div className="h-2 w-2/3 rounded-full bg-current opacity-10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FullModel({
+  pattern,
+  design,
+  draft,
+  actions,
+}: {
+  pattern: PublicPagePattern;
+  design: PublicPageDesign;
+  draft: Draft;
+  actions: ActionDraft[];
+}) {
+  const theme = THEMES[design];
+
+  const shellClass = [
+    "overflow-hidden shadow-xl transition-all duration-300",
+    theme.page,
+    design === "editorial"
+      ? "rounded-none"
+      : "rounded-[34px]",
+  ].join(" ");
+
+  if (pattern === "person-first") {
+    return (
+      <div className={shellClass}>
+        <Visual design={design} />
+
+        <div className="mx-auto max-w-3xl px-6 pb-14">
+          <div className="pt-8">
+            <div
+              className={[
+                "text-[10px] font-black tracking-[0.2em]",
+                theme.eyebrow,
+              ].join(" ")}
+            >
+              PERSON FIRST
+            </div>
+
+            <div className="mt-3 text-2xl font-black">
+              <Text
+                value={draft.name}
+                placeholder="あなたの名前"
+              />
+            </div>
+
+            <h1
+              className={[
+                "mt-5 text-4xl font-black leading-tight sm:text-6xl",
+                theme.headline,
+              ].join(" ")}
+            >
+              <Text
+                value={draft.headline}
+                placeholder="最初に伝えるひとこと"
+              />
+            </h1>
+
+            <div
+              className={[
+                "mt-6 max-w-2xl whitespace-pre-wrap text-base leading-8",
+                theme.muted,
+              ].join(" ")}
+            >
+              <Text
+                value={draft.intro}
+                placeholder="短い紹介"
+              />
+            </div>
+          </div>
+
+          <PageSection
+            design={design}
+            code="ABOUT"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.about}
+                placeholder="あなたについて"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="WHY"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.origin}
+                placeholder="なぜ、この活動をしているのか"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="ACTIVITY"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-base font-bold leading-8">
+              <Text
+                value={draft.activity}
+                placeholder="今している活動"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="FOR YOU"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.audience}
+                placeholder="誰に届けたいのか"
+              />
+            </div>
+          </PageSection>
+
+          <ActionButtons
+            design={design}
+            actions={actions}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "offer-first") {
+    return (
+      <div className={shellClass}>
+        <div className="mx-auto max-w-3xl px-6 py-14">
+          <div
+            className={[
+              "text-[10px] font-black tracking-[0.2em]",
+              theme.eyebrow,
+            ].join(" ")}
+          >
+            OFFER FIRST
+          </div>
+
+          <h1
+            className={[
+              "mt-5 text-4xl font-black leading-tight sm:text-6xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.headline}
+              placeholder="何を提供しているのか"
+            />
+          </h1>
+
+          <div
+            className={[
+              "mt-6 max-w-2xl text-base leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.audience}
+              placeholder="誰のためのものか"
+            />
+          </div>
+
+          <PageSection
+            design={design}
+            code="WHAT YOU GET"
+          >
+            <div className="max-w-2xl text-2xl font-black leading-9">
+              <Text
+                value={draft.outcome}
+                placeholder="どんな時間・価値を届けるのか"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="OFFER"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-lg font-bold leading-9">
+              <Text
+                value={draft.activity}
+                placeholder="具体的な活動・サービス"
+              />
+            </div>
+          </PageSection>
+
+          <Visual design={design} />
+
+          <PageSection
+            design={design}
+            code="PERSON"
+          >
+            <div className="text-2xl font-black">
+              <Text
+                value={draft.name}
+                placeholder="それをしている人"
+              />
+            </div>
+
+            <div
+              className={[
+                "mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-8",
+                theme.muted,
+              ].join(" ")}
+            >
+              <Text
+                value={draft.about}
+                placeholder="その人について"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="WHY"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.origin}
+                placeholder="なぜ、それをしているのか"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="VALUE"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.value}
+                placeholder="大切にしていること"
+              />
+            </div>
+          </PageSection>
+
+          <ActionButtons
+            design={design}
+            actions={actions}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "story-first") {
+    return (
+      <div className={shellClass}>
+        <div className="mx-auto max-w-3xl px-6 py-14">
+          <div
+            className={[
+              "text-[10px] font-black tracking-[0.2em]",
+              theme.eyebrow,
+            ].join(" ")}
+          >
+            STORY FIRST
+          </div>
+
+          <h1
+            className={[
+              "mt-6 text-4xl font-black leading-tight sm:text-6xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.headline}
+              placeholder="物語の入口"
+            />
+          </h1>
+
+          <div
+            className={[
+              "my-9 h-px w-16",
+              theme.divider,
+            ].join(" ")}
+          />
+
+          <div className="max-w-2xl whitespace-pre-wrap text-lg leading-9">
+            <Text
+              value={draft.origin}
+              placeholder="始めたきっかけ"
+            />
+          </div>
+
+          <PageSection
+            design={design}
+            code="VALUE"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.value}
+                placeholder="続けている理由・大切にしていること"
+              />
+            </div>
+          </PageSection>
+
+          <Visual design={design} />
+
+          <PageSection
+            design={design}
+            code="PERSON"
+          >
+            <div className="text-2xl font-black">
+              <Text
+                value={draft.name}
+                placeholder="この物語の人"
+              />
+            </div>
+
+            <div
+              className={[
+                "mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-8",
+                theme.muted,
+              ].join(" ")}
+            >
+              <Text
+                value={draft.about}
+                placeholder="その人について"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="NOW"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-base font-bold leading-8">
+              <Text
+                value={draft.activity}
+                placeholder="その結果、今していること"
+              />
+            </div>
+          </PageSection>
+
+          <PageSection
+            design={design}
+            code="FOR YOU"
+          >
+            <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+              <Text
+                value={draft.audience}
+                placeholder="誰に届けたいのか"
+              />
+            </div>
+          </PageSection>
+
+          <ActionButtons
+            design={design}
+            actions={actions}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={shellClass}>
+      <div className="mx-auto max-w-3xl px-6 py-14">
+        <div
+          className={[
+            "text-[10px] font-black tracking-[0.2em]",
+            theme.eyebrow,
+          ].join(" ")}
+        >
+          WELCOME FIRST
+        </div>
+
+        <h1
+          className={[
+            "mt-5 text-4xl font-black leading-tight sm:text-6xl",
+            theme.headline,
+          ].join(" ")}
+        >
+          <Text
+            value={draft.welcome}
+            placeholder="まず安心してもらう言葉"
+          />
+        </h1>
+
+        <div
+          className={[
+            "mt-6 max-w-2xl text-base leading-8",
+            theme.muted,
+          ].join(" ")}
+        >
+          <Text
+            value={draft.audience}
+            placeholder="こんな人へ"
+          />
+        </div>
+
+        <Visual design={design} />
+
+        <PageSection
+          design={design}
+          code="WHAT"
+        >
+          <div className="max-w-2xl whitespace-pre-wrap text-base font-bold leading-8">
+            <Text
+              value={draft.activity}
+              placeholder="ここでは何をするのか"
+            />
+          </div>
+        </PageSection>
+
+        <PageSection
+          design={design}
+          code="FIRST STEP"
+        >
+          <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+            <Text
+              value={draft.outcome}
+              placeholder="最初の一歩で、どうなってほしいのか"
+            />
+          </div>
+        </PageSection>
+
+        <PageSection
+          design={design}
+          code="PERSON"
+        >
+          <div className="text-2xl font-black">
+            <Text
+              value={draft.name}
+              placeholder="迎える人"
+            />
+          </div>
+
+          <div
+            className={[
+              "mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.about}
+              placeholder="どんな人なのか"
+            />
+          </div>
+        </PageSection>
+
+        <PageSection
+          design={design}
+          code="VALUE"
+        >
+          <div className="max-w-2xl whitespace-pre-wrap text-sm leading-8">
+            <Text
+              value={draft.value}
+              placeholder="大切にしていること"
+            />
+          </div>
+        </PageSection>
+
+        <ActionButtons
+          design={design}
+          actions={actions}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DraftField({
+  number,
+  fieldKey,
+  value,
+  onChange,
+}: {
+  number: number;
+  fieldKey: DraftKey;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const meta = FIELD_META[fieldKey];
+
+  return (
+    <label className="block">
+      <div className="flex items-start gap-3">
+        <div className="pt-0.5 text-[10px] font-black text-neutral-300">
+          {String(number).padStart(2, "0")}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-[9px] font-black tracking-[0.16em] text-neutral-400">
+            {meta.code}
+          </div>
+
+          <div className="mt-1 text-sm font-black leading-6 text-neutral-900">
+            {meta.question}
+          </div>
+
+          <textarea
+            value={value}
+            onChange={(event) =>
+              onChange(event.target.value)
+            }
+            rows={meta.rows}
+            placeholder={meta.placeholder}
+            className="mt-3 w-full resize-none rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
+          />
+        </div>
+      </div>
+    </label>
+  );
+}
+
+function ActionsEditor({
+  number,
+  actions,
+  setActions,
+}: {
+  number: number;
+  actions: ActionDraft[];
+  setActions: React.Dispatch<
+    React.SetStateAction<ActionDraft[]>
+  >;
+}) {
+  const canAdd =
+    actions.length > 0 &&
+    actions.every((item) => item.type);
+
+  const updateType = (
+    id: string,
+    type: ActionType | "",
+  ) => {
+    setActions((current) =>
+      current.map((item) => {
+        if (item.id !== id) {
+          return item;
+        }
+
+        const defaultLabel =
+          ACTION_OPTIONS.find(
+            (option) =>
+              option.value === type,
+          )?.defaultLabel ?? "";
+
+        return {
+          ...item,
+          type,
+          label: defaultLabel,
+        };
+      }),
+    );
+  };
+
+  const updateLabel = (
+    id: string,
+    label: string,
+  ) => {
+    setActions((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              label,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const addAction = () => {
+    if (!canAdd) {
+      return;
+    }
+
+    setActions((current) => [
+      ...current,
+      {
+        id: `action-${Date.now()}-${current.length}`,
+        type: "",
+        label: "",
+      },
+    ]);
+  };
+
+  const removeAction = (id: string) => {
+    setActions((current) => {
+      if (current.length === 1) {
+        return [
+          {
+            id: "action-1",
+            type: "",
+            label: "",
+          },
+        ];
+      }
+
+      return current.filter(
+        (item) => item.id !== id,
+      );
+    });
+  };
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="pt-0.5 text-[10px] font-black text-neutral-300">
+        {String(number).padStart(2, "0")}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="text-[9px] font-black tracking-[0.16em] text-neutral-400">
+          ACTION
+        </div>
+
+        <div className="mt-1 text-sm font-black leading-6 text-neutral-900">
+          次に、何をしてほしいですか？
+        </div>
+
+        <p className="mt-1 text-xs leading-6 text-neutral-500">
+          一つ決めたあと、必要なら次のアクションを追加できます。
+        </p>
+
+        <div className="mt-4 space-y-3">
+          {actions.map((action, index) => (
+            <div
+              key={action.id}
+              className="rounded-2xl bg-white p-3 ring-1 ring-neutral-200"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[9px] font-black text-neutral-400">
+                  ACTION {index + 1}
+                </div>
+
+                {actions.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeAction(action.id)
+                    }
+                    className="text-[10px] font-bold text-neutral-400 hover:text-red-600"
+                  >
+                    削除
+                  </button>
+                ) : null}
+              </div>
+
+              <select
+                value={action.type}
+                onChange={(event) =>
+                  updateType(
+                    action.id,
+                    event.target
+                      .value as ActionType | "",
+                  )
+                }
+                className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-500"
+              >
+                <option value="">
+                  選択してください
+                </option>
+
+                {ACTION_OPTIONS.map(
+                  (option) => (
+                    <option
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </option>
+                  ),
+                )}
+              </select>
+
+              {action.type ? (
+                <label className="mt-3 block">
+                  <div className="text-[9px] font-black tracking-[0.14em] text-neutral-400">
+                    BUTTON LABEL
+                  </div>
+
+                  <input
+                    value={action.label}
+                    onChange={(event) =>
+                      updateLabel(
+                        action.id,
+                        event.target.value,
+                      )
+                    }
+                    className="mt-2 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-neutral-500"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        {canAdd ? (
+          <button
+            type="button"
+            onClick={addAction}
+            className="mt-3 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-black text-neutral-700 transition hover:border-neutral-500"
+          >
+            ＋ アクションを追加
+          </button>
+        ) : null}
+
+        {actions.some(
+          (item) =>
+            item.type === "calendar",
+        ) ? (
+          <div className="mt-3 text-xs leading-6 text-neutral-500">
+            「開催予定を見る」は将来、このユーザーが公開しているCALENDARのクラス・イベント一覧につなぎます。
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export default function PublicPageModelLab({
+  initialPattern,
+  onBack,
+}: {
+  initialPattern: PublicPagePattern;
+  onBack: () => void;
+}) {
+  const [stage, setStage] =
+    useState<"design" | "edit">(
+      "design",
+    );
+
+  const [pattern, setPattern] =
+    useState<PublicPagePattern>(
+      initialPattern,
+    );
+
+  const [design, setDesign] =
+    useState<PublicPageDesign>("clean");
+
+  const [draft, setDraft] =
+    useState<Draft>(EMPTY_DRAFT);
+
+  const [actions, setActions] =
+    useState<ActionDraft[]>([
+      {
+        id: "action-1",
+        type: "",
+        label: "",
+      },
+    ]);
+
+  const setField = (
+    key: DraftKey,
+    value: string,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  if (stage === "design") {
+    return (
+      <section className="space-y-6">
+        <div className="rounded-[32px] bg-neutral-950 p-6 text-white sm:p-8">
+          <div className="text-[10px] font-black tracking-[0.22em] text-neutral-500">
+            PAGE STRATEGY
+          </div>
+
+          <div className="mt-2 text-sm font-black text-neutral-300">
+            {
+              PATTERNS.find(
+                (item) =>
+                  item.id === pattern,
+              )?.code
+            }
+          </div>
+
+          <h2 className="mt-5 text-2xl font-black sm:text-3xl">
+            次に、世界観を選びます。
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-400">
+            ここで決定する必要はありません。
+            編集中にも、いつでも変更できます。
+          </p>
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300"
+          >
+            ← PAGE STRATEGYへ
+          </button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {DESIGNS.map((item) => {
+            const selected =
+              item.id === design;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  setDesign(item.id)
+                }
+                className={[
+                  "overflow-hidden rounded-[28px] border bg-white text-left transition",
+                  selected
+                    ? "border-neutral-950 ring-2 ring-neutral-950"
+                    : "border-neutral-200 hover:border-neutral-500",
+                ].join(" ")}
+              >
+                <MiniModel
+                  pattern={pattern}
+                  design={item.id}
+                />
+
+                <div className="p-5">
+                  <div className="text-[9px] font-black tracking-[0.18em] text-neutral-400">
+                    {item.code}
+                  </div>
+
+                  <div className="mt-2 text-base font-black text-neutral-950">
+                    {item.title}
+                  </div>
+
+                  <div className="mt-2 text-xs leading-6 text-neutral-500">
+                    {item.description}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() =>
+              setStage("edit")
+            }
+            className="rounded-full bg-neutral-950 px-7 py-3 text-sm font-black text-white"
+          >
+            この世界観で編集へ →
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const editorOrder =
+    FIELD_ORDER[pattern];
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-[32px] bg-neutral-950 p-5 text-white sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-black tracking-[0.2em] text-neutral-500">
+              PAGE EDITOR
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="rounded-full bg-white px-3 py-1.5 text-[9px] font-black text-neutral-950">
+                {
+                  PATTERNS.find(
+                    (item) =>
+                      item.id === pattern,
+                  )?.code
+                }
+              </span>
+
+              <span className="rounded-full border border-neutral-700 px-3 py-1.5 text-[9px] font-black text-neutral-300">
+                {
+                  DESIGNS.find(
+                    (item) =>
+                      item.id === design,
+                  )?.code
+                }
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-xs font-bold text-neutral-400 hover:text-white"
+          >
+            PAGE STRATEGYへ戻る
+          </button>
+        </div>
+      </div>
+
+      <section className="rounded-[28px] border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="text-[9px] font-black tracking-[0.18em] text-neutral-400">
+          MODEL
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {PATTERNS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() =>
+                setPattern(item.id)
+              }
+              className={[
+                "rounded-full px-4 py-2 text-xs font-black transition",
+                pattern === item.id
+                  ? "bg-neutral-950 text-white"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+              ].join(" ")}
+            >
+              {item.code}
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-3 text-xs leading-6 text-neutral-500">
+          MODELを変えると、下の入力欄もその伝え方の順番に並び替わります。入力済みの内容は消えません。
+        </p>
+
+        <div className="mt-5 text-[9px] font-black tracking-[0.18em] text-neutral-400">
+          DESIGN
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {DESIGNS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() =>
+                setDesign(item.id)
+              }
+              className={[
+                "rounded-full px-4 py-2 text-xs font-black transition",
+                design === item.id
+                  ? "bg-neutral-950 text-white"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+              ].join(" ")}
+            >
+              {item.code}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        <aside className="rounded-[32px] bg-neutral-50 p-5">
+          <div className="mb-6">
+            <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+              CONTENT
+            </div>
+
+            <div className="mt-2 text-lg font-black text-neutral-950">
+              この順番で伝えます。
+            </div>
+          </div>
+
+          <div className="space-y-7">
+            {editorOrder.map(
+              (key, index) =>
+                key === "actions" ? (
+                  <ActionsEditor
+                    key="actions"
+                    number={index + 1}
+                    actions={actions}
+                    setActions={setActions}
+                  />
+                ) : (
+                  <DraftField
+                    key={key}
+                    number={index + 1}
+                    fieldKey={key}
+                    value={draft[key]}
+                    onChange={(value) =>
+                      setField(
+                        key,
+                        value,
+                      )
+                    }
+                  />
+                ),
+            )}
+          </div>
+        </aside>
+
+        <div>
+          <div className="sticky top-4">
+            <div className="mb-3 text-[10px] font-black tracking-[0.18em] text-neutral-400">
+              LIVE PAGE
+            </div>
+
+            <FullModel
+              pattern={pattern}
+              design={design}
+              draft={draft}
+              actions={actions}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

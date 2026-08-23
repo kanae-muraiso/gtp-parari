@@ -1,56 +1,1527 @@
 // src/app/my/calendar/page.tsx
-// 2026/08/20 JST
+// 2026-08-22 JST
 //
-// PARARI 利用者用「カレンダー」
+// PARARI 利用者用カレンダー
 //
-// 作者側のCALENDAR管理は /my/manage。
-// ここは読者・参加者本人の予定を集約する場所。
+// 予定:
+//   今日から14日間の実際の参加予定
+//
+// 参加中:
+//   参加しているクラスをschedule単位で表示
+
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 
 
+type CalendarView =
+  | "upcoming"
+  | "classes";
+
+
+type UpcomingItem = {
+  entry_id: string;
+  application_id: string;
+  occurrence_id: string;
+  schedule_id: string;
+  item_id: string;
+
+  starts_at: string;
+
+  ends_at:
+    | string
+    | null;
+
+  timezone: string;
+
+  title: string;
+
+  location:
+    | string
+    | null;
+
+  occurrence_status: string;
+  booking_status: string;
+};
+
+
+type ParticipatingClass = {
+  schedule_id: string;
+
+  application_id:
+    | string
+    | null;
+
+  title: string;
+
+  location:
+    | string
+    | null;
+
+  next_occurrence_id:
+    | string
+    | null;
+
+  next_starts_at:
+    | string
+    | null;
+
+  next_ends_at:
+    | string
+    | null;
+
+  timezone:
+    | string
+    | null;
+
+  reservation_count: number;
+  pending_count: number;
+  auto_booking: boolean;
+};
+
+
+type CalendarData = {
+  range: {
+    from: string;
+    to: string;
+    days: number;
+  };
+
+  upcoming:
+    UpcomingItem[];
+
+  events:
+    UpcomingItem[];
+
+  classes:
+    ParticipatingClass[];
+};
+
+
+const WEEKDAYS = [
+  "日",
+  "月",
+  "火",
+  "水",
+  "木",
+  "金",
+  "土",
+];
+
+
+function viewerTimezone() {
+  try {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Tokyo"
+    );
+  } catch {
+    return "Asia/Tokyo";
+  }
+}
+
+
+function safeTimezone(
+  value:
+    | string
+    | null
+    | undefined,
+) {
+  return value ||
+    "Asia/Tokyo";
+}
+
+
+function formatDate(
+  value: string,
+  timezone?: string | null,
+) {
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "—";
+  }
+
+
+  try {
+    const parts =
+      new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          timeZone:
+            safeTimezone(timezone),
+
+          month:
+            "numeric",
+
+          day:
+            "numeric",
+
+          weekday:
+            "short",
+        },
+      ).formatToParts(
+        date,
+      );
+
+
+    const month =
+      parts.find(
+        (part) =>
+          part.type ===
+          "month",
+      )?.value;
+
+
+    const day =
+      parts.find(
+        (part) =>
+          part.type ===
+          "day",
+      )?.value;
+
+
+    const weekday =
+      parts.find(
+        (part) =>
+          part.type ===
+          "weekday",
+      )?.value;
+
+
+    return `${month}/${day}（${weekday}）`;
+  } catch {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        month:
+          "numeric",
+
+        day:
+          "numeric",
+
+        weekday:
+          "short",
+      },
+    ).format(
+      date,
+    );
+  }
+}
+
+
+function formatTime(
+  value:
+    | string
+    | null,
+  timezone?: string | null,
+) {
+  if (!value) {
+    return "";
+  }
+
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "";
+  }
+
+
+  try {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          safeTimezone(timezone),
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hour12:
+          false,
+      },
+    ).format(
+      date,
+    );
+  } catch {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hour12:
+          false,
+      },
+    ).format(
+      date,
+    );
+  }
+}
+
+
+function getCalendarDateParts(
+  value: string,
+  timezone?: string | null,
+) {
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return null;
+  }
+
+
+  try {
+    const parts =
+      new Intl.DateTimeFormat(
+        "en-CA",
+        {
+          timeZone:
+            safeTimezone(timezone),
+
+          year:
+            "numeric",
+
+          month:
+            "numeric",
+
+          day:
+            "numeric",
+        },
+      ).formatToParts(
+        date,
+      );
+
+
+    const year =
+      Number(
+        parts.find(
+          (part) =>
+            part.type ===
+            "year",
+        )?.value,
+      );
+
+
+    const month =
+      Number(
+        parts.find(
+          (part) =>
+            part.type ===
+            "month",
+        )?.value,
+      );
+
+
+    const day =
+      Number(
+        parts.find(
+          (part) =>
+            part.type ===
+            "day",
+        )?.value,
+      );
+
+
+    if (
+      !Number.isFinite(year) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(day)
+    ) {
+      return null;
+    }
+
+
+    return {
+      year,
+      month,
+      day,
+    };
+  } catch {
+    return {
+      year:
+        date.getFullYear(),
+
+      month:
+        date.getMonth() +
+        1,
+
+      day:
+        date.getDate(),
+    };
+  }
+}
+
+
+function bookingStatusLabel(
+  status: string,
+) {
+  if (
+    status ===
+    "submitted"
+  ) {
+    return "承認待ち";
+  }
+
+  if (
+    status ===
+    "confirmed"
+  ) {
+    return "予約済み";
+  }
+
+  return status;
+}
+
+
 export default function MyCalendarPage() {
+  const [
+    view,
+    setView,
+  ] =
+    React.useState<
+      CalendarView
+    >(
+      "upcoming",
+    );
+
+
+  const [
+    monthCursor,
+    setMonthCursor,
+  ] =
+    React.useState(
+      () => {
+        const now =
+          new Date();
+
+        return new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1,
+        );
+      },
+    );
+
+
+  const [
+    data,
+    setData,
+  ] =
+    React.useState<
+      CalendarData | null
+    >(null);
+
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  /*
+   * deviceTimezone:
+   *   端末・ブラウザの時間帯
+   *
+   * displayTimezone:
+   *   MY CALENDARで現在表示している時間帯
+   *
+   * 手動変更は保存しない。
+   * 再読み込みすれば端末の時間帯へ戻る。
+   */
+  const [
+    deviceTimezone,
+    setDeviceTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  const [
+    displayTimezone,
+    setDisplayTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  React.useEffect(
+    () => {
+      const detected =
+        viewerTimezone();
+
+      setDeviceTimezone(
+        detected,
+      );
+
+      setDisplayTimezone(
+        detected,
+      );
+    },
+    [],
+  );
+
+
+  React.useEffect(() => {
+    let cancelled =
+      false;
+
+
+    async function load() {
+      setLoading(true);
+      setMessage("");
+
+
+      try {
+        if (!supabase) {
+          setMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+
+          return;
+        }
+
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase
+            .auth
+            .getSession();
+
+
+        if (
+          !session
+            ?.access_token
+        ) {
+          setMessage(
+            "カレンダーを見るにはログインしてください。",
+          );
+
+          return;
+        }
+
+
+        const response =
+          await fetch(
+            "/api/calendar/my",
+            {
+              method:
+                "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              cache:
+                "no-store",
+            },
+          );
+
+
+        const result =
+          (await response
+            .json()
+            .catch(
+              () => null,
+            )) as
+            | {
+                ok?: boolean;
+
+                range?:
+                  CalendarData["range"];
+
+                upcoming?:
+                  UpcomingItem[];
+
+                events?:
+                  UpcomingItem[];
+
+                classes?:
+                  ParticipatingClass[];
+
+                message?:
+                  string;
+              }
+            | null;
+
+
+        if (cancelled) {
+          return;
+        }
+
+
+        if (
+          !response.ok ||
+          !result?.ok
+        ) {
+          setMessage(
+            result
+              ?.message ||
+              "カレンダーを取得できませんでした。",
+          );
+
+          return;
+        }
+
+
+        setData({
+          range:
+            result.range ?? {
+              from: "",
+              to: "",
+              days: 14,
+            },
+
+          upcoming:
+            result.upcoming ??
+            [],
+
+          events:
+            result.events ??
+            [],
+
+          classes:
+            result.classes ??
+            [],
+        });
+      } catch (error) {
+        console.error(
+          "my calendar load failed:",
+          error,
+        );
+
+
+        if (
+          !cancelled
+        ) {
+          setMessage(
+            "カレンダーを取得できませんでした。",
+          );
+        }
+      } finally {
+        if (
+          !cancelled
+        ) {
+          setLoading(false);
+        }
+      }
+    }
+
+
+    void load();
+
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const timezoneOptions =
+    React.useMemo(
+      () => {
+        const values =
+          new Set<string>([
+            deviceTimezone,
+            "Asia/Tokyo",
+            "America/New_York",
+            "America/Los_Angeles",
+            "Pacific/Honolulu",
+            "Europe/London",
+            "Europe/Paris",
+            "Asia/Singapore",
+            "Australia/Sydney",
+            "UTC",
+          ]);
+
+
+        for (
+          const event of
+          data?.events ?? []
+        ) {
+          if (
+            event.timezone
+          ) {
+            values.add(
+              event.timezone,
+            );
+          }
+        }
+
+
+        return Array.from(
+          values,
+        );
+      },
+      [
+        data,
+        deviceTimezone,
+      ],
+    );
+
+
+  const [
+    monthApplicationFilter,
+    setMonthApplicationFilter,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const monthFilterOptions =
+    React.useMemo(
+      () => {
+        const map =
+          new Map<
+            string,
+            string
+          >();
+
+
+        for (
+          const event of
+          data?.events ?? []
+        ) {
+          if (
+            !map.has(
+              event.application_id,
+            )
+          ) {
+            map.set(
+              event.application_id,
+              event.title,
+            );
+          }
+        }
+
+
+        return Array.from(
+          map.entries(),
+        )
+          .map(
+            ([
+              applicationId,
+              title,
+            ]) => ({
+              applicationId,
+              title,
+            }),
+          )
+          .sort(
+            (a, b) =>
+              a.title.localeCompare(
+                b.title,
+                "ja",
+              ),
+          );
+      },
+      [
+        data,
+      ],
+    );
+
+
+  const monthModel =
+    React.useMemo(
+      () => {
+        const year =
+          monthCursor
+            .getFullYear();
+
+        const monthIndex =
+          monthCursor
+            .getMonth();
+
+        const firstWeekday =
+          new Date(
+            year,
+            monthIndex,
+            1,
+          ).getDay();
+
+        const daysInMonth =
+          new Date(
+            year,
+            monthIndex + 1,
+            0,
+          ).getDate();
+
+
+        const eventsByDay =
+          new Map<
+            number,
+            UpcomingItem[]
+          >();
+
+
+        for (
+          const event of
+          data?.events ?? []
+        ) {
+          if (
+            monthApplicationFilter &&
+            event.application_id !==
+              monthApplicationFilter
+          ) {
+            continue;
+          }
+
+
+          const parts =
+            getCalendarDateParts(
+              event.starts_at,
+              displayTimezone,
+            );
+
+
+          if (
+            !parts ||
+            parts.year !==
+              year ||
+            parts.month !==
+              monthIndex + 1
+          ) {
+            continue;
+          }
+
+
+          const list =
+            eventsByDay.get(
+              parts.day,
+            ) ?? [];
+
+
+          list.push(
+            event,
+          );
+
+
+          eventsByDay.set(
+            parts.day,
+            list,
+          );
+        }
+
+
+        const cells:
+          Array<number | null> =
+          [];
+
+
+        for (
+          let index = 0;
+          index <
+          firstWeekday;
+          index += 1
+        ) {
+          cells.push(
+            null,
+          );
+        }
+
+
+        for (
+          let day = 1;
+          day <=
+          daysInMonth;
+          day += 1
+        ) {
+          cells.push(
+            day,
+          );
+        }
+
+
+        while (
+          cells.length %
+            7 !==
+          0
+        ) {
+          cells.push(
+            null,
+          );
+        }
+
+
+        return {
+          year,
+          month:
+            monthIndex + 1,
+          cells,
+          eventsByDay,
+        };
+      },
+      [
+        data,
+        monthCursor,
+        monthApplicationFilter,
+        displayTimezone,
+      ],
+    );
+
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <MyAreaHeader title="カレンダー" />
 
+
         <div className="mt-6">
           <MyPrimaryTabs active="calendar" />
         </div>
 
-        <div className="mt-8">
-          <section className="rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
-            <div className="max-w-2xl">
-              <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
-                CALENDAR
-              </div>
 
-              <h2 className="mt-3 text-xl font-bold text-neutral-950">
-                あなたの予定が、ここに集まります。
-              </h2>
+        <div className="mx-auto mt-8 max-w-2xl">
+          {/* VIEW SWITCH */}
+          <div className="grid grid-cols-2 rounded-2xl bg-neutral-200 p-1">
+            <button
+              type="button"
+              onClick={() =>
+                setView(
+                  "upcoming",
+                )
+              }
+              className={[
+                "rounded-xl px-4 py-3 text-sm font-bold transition",
+                view ===
+                "upcoming"
+                  ? "bg-white text-neutral-950 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900",
+              ].join(
+                " ",
+              )}
+            >
+              予定
+            </button>
 
-              <p className="mt-3 text-sm leading-7 text-neutral-600">
-                予約したクラスやイベント、
-                登録した先生の予定などを、
-                ここでまとめて確認できるようになります。
+            <button
+              type="button"
+              onClick={() =>
+                setView(
+                  "classes",
+                )
+              }
+              className={[
+                "rounded-xl px-4 py-3 text-sm font-bold transition",
+                view ===
+                "classes"
+                  ? "bg-white text-neutral-950 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900",
+              ].join(
+                " ",
+              )}
+            >
+              参加中
+            </button>
+          </div>
+
+
+          {loading ? (
+            <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6">
+              <p className="text-sm text-neutral-500">
+                カレンダーを読み込んでいます...
+              </p>
+            </div>
+          ) : message ? (
+            <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6">
+              <p className="text-sm leading-7 text-neutral-600">
+                {message}
               </p>
 
-              <div className="mt-6 rounded-2xl bg-neutral-50 p-5">
-                <div className="text-sm font-bold text-neutral-900">
-                  表示予定
+              <Link
+                href="/login?returnTo=/my/calendar"
+                className="mt-5 inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white"
+              >
+                ログイン
+              </Link>
+            </div>
+          ) : view ===
+            "upcoming" ? (
+            <section className="mt-6">
+              <div className="mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-400">
+                      表示時間帯
+                    </div>
+
+                    <div className="mt-1 text-sm font-bold text-neutral-950">
+                      {displayTimezone}
+                    </div>
+                  </div>
+
+
+                  <select
+                    value={
+                      displayTimezone
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setDisplayTimezone(
+                        event.target.value,
+                      )
+                    }
+                    className="max-w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-700 outline-none"
+                  >
+                    {timezoneOptions.map(
+                      (
+                        timezone,
+                      ) => (
+                        <option
+                          key={
+                            timezone
+                          }
+                          value={
+                            timezone
+                          }
+                        >
+                          {timezone}
+                        </option>
+                      ),
+                    )}
+                  </select>
                 </div>
 
-                <div className="mt-3 space-y-2 text-sm leading-6 text-neutral-600">
-                  <div>・予約したクラス・イベント</div>
-                  <div>・登録した先生の開催予定</div>
-                  <div>・Membership内の予定</div>
-                  <div>・申込や提出などの締切</div>
+
+                {displayTimezone !==
+                deviceTimezone ? (
+                  <div className="mt-3 rounded-2xl border border-red-300 bg-red-50 p-4">
+                    <div className="text-sm font-bold text-red-800">
+                      ⚠ 現地時間ではありません
+                    </div>
+
+                    <p className="mt-1 text-xs leading-6 text-red-700">
+                      現在、
+                      <strong>
+                        {displayTimezone}
+                      </strong>
+                      の時間で表示しています。
+                      端末の時間帯は
+                      <strong>
+                        {deviceTimezone}
+                      </strong>
+                      です。
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDisplayTimezone(
+                          deviceTimezone,
+                        )
+                      }
+                      className="mt-3 rounded-full bg-red-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-800"
+                    >
+                      現地時間に戻す
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-neutral-950">
+                  これからの予定
+                </h2>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  今日から14日間の予約・参加予定です。
+                </p>
+              </div>
+
+
+              {!data ||
+              data.upcoming
+                .length ===
+                0 ? (
+                <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center">
+                  <div className="text-base font-bold text-neutral-950">
+                    直近の予定はありません
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    予約したクラスやイベントがここに表示されます。
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {data.upcoming.map(
+                    (
+                      item,
+                    ) => (
+                      <Link
+                        key={
+                          item.entry_id
+                        }
+                        href={`/calendar/${item.occurrence_id}`}
+                        className="block rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-300 hover:shadow"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="min-w-[88px]">
+                            <div className="text-sm font-bold text-neutral-950">
+                              {formatDate(
+                                item.starts_at,
+                                displayTimezone,
+                              )}
+                            </div>
+
+                            <div className="mt-1 text-sm text-neutral-500">
+                              {formatTime(
+                                item.starts_at,
+                                displayTimezone,
+                              )}
+                              {item.ends_at
+                                ? `–${formatTime(
+                                    item.ends_at,
+                                    displayTimezone,
+                                  )}`
+                                : ""}
+                            </div>
+                          </div>
+
+
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-neutral-950">
+                              {item.title}
+                            </div>
+
+                            {item.location ? (
+                              <div className="mt-1 text-sm leading-6 text-neutral-500">
+                                {item.location}
+                              </div>
+                            ) : null}
+
+                            <div className="mt-2">
+                              <span className="inline-flex rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
+                                {bookingStatusLabel(
+                                  item.booking_status,
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+
+                          <div className="pt-1 text-lg text-neutral-300">
+                            ›
+                          </div>
+                        </div>
+                      </Link>
+                    ),
+                  )}
+                </div>
+              )}
+
+
+              <div className="mt-10 border-t border-neutral-200 pt-8">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-bold text-neutral-950">
+                      月間カレンダー
+                    </h2>
+
+                    <p className="mt-1 text-xs leading-6 text-neutral-500">
+                      予約・参加予定を月単位で確認できます。
+                    </p>
+                  </div>
+
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="前の月"
+                      onClick={() => {
+                        setMonthCursor(
+                          new Date(
+                            monthModel.year,
+                            monthModel.month - 2,
+                            1,
+                          ),
+                        );
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-lg text-neutral-600 transition hover:bg-neutral-50"
+                    >
+                      ‹
+                    </button>
+
+                    <div className="min-w-[110px] text-center text-sm font-bold text-neutral-950">
+                      {monthModel.year}年
+                      {monthModel.month}月
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label="次の月"
+                      onClick={() => {
+                        setMonthCursor(
+                          new Date(
+                            monthModel.year,
+                            monthModel.month,
+                            1,
+                          ),
+                        );
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-lg text-neutral-600 transition hover:bg-neutral-50"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+
+
+                {monthFilterOptions.length > 0 ? (
+                  <div className="mb-4 overflow-x-auto">
+                    <div className="flex min-w-max gap-2 pb-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMonthApplicationFilter(
+                            null,
+                          )
+                        }
+                        className={[
+                          "whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition",
+                          monthApplicationFilter ===
+                          null
+                            ? "bg-neutral-950 text-white"
+                            : "border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50",
+                        ].join(
+                          " ",
+                        )}
+                      >
+                        すべて
+                      </button>
+
+
+                      {monthFilterOptions.map(
+                        (
+                          option,
+                        ) => (
+                          <button
+                            key={
+                              option.applicationId
+                            }
+                            type="button"
+                            onClick={() =>
+                              setMonthApplicationFilter(
+                                option.applicationId,
+                              )
+                            }
+                            className={[
+                              "whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition",
+                              monthApplicationFilter ===
+                              option.applicationId
+                                ? "bg-neutral-950 text-white"
+                                : "border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50",
+                            ].join(
+                              " ",
+                            )}
+                          >
+                            {
+                              option.title
+                            }
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+
+                <div className="overflow-x-auto rounded-3xl border border-neutral-200 bg-white">
+                  <div className="min-w-[640px]">
+                    <div className="grid grid-cols-7 border-b border-neutral-200 bg-neutral-50">
+                      {[
+                        "日",
+                        "月",
+                        "火",
+                        "水",
+                        "木",
+                        "金",
+                        "土",
+                      ].map(
+                        (
+                          weekday,
+                        ) => (
+                          <div
+                            key={
+                              weekday
+                            }
+                            className="px-2 py-3 text-center text-xs font-bold text-neutral-400"
+                          >
+                            {weekday}
+                          </div>
+                        ),
+                      )}
+                    </div>
+
+
+                    <div className="grid grid-cols-7">
+                      {monthModel.cells.map(
+                        (
+                          day,
+                          index,
+                        ) => {
+                          const dayEvents =
+                            day
+                              ? monthModel
+                                  .eventsByDay
+                                  .get(
+                                    day,
+                                  ) ??
+                                []
+                              : [];
+
+
+                          return (
+                            <div
+                              key={
+                                `${monthModel.year}-${monthModel.month}-${index}`
+                              }
+                              className={[
+                                "min-h-[104px] border-b border-r border-neutral-100 p-2",
+                                day
+                                  ? "bg-white"
+                                  : "bg-neutral-50",
+                              ].join(
+                                " ",
+                              )}
+                            >
+                              {day ? (
+                                <>
+                                  <div className="text-xs font-bold text-neutral-500">
+                                    {day}
+                                  </div>
+
+                                  <div className="mt-2 space-y-1">
+                                    {dayEvents
+                                      .slice(
+                                        0,
+                                        3,
+                                      )
+                                      .map(
+                                        (
+                                          event,
+                                        ) => (
+                                          <Link
+                                            key={
+                                              event.entry_id
+                                            }
+                                            href={`/calendar/${event.occurrence_id}`}
+                                            className="block truncate rounded-lg bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-700 transition hover:bg-neutral-200"
+                                            title={
+                                              event.title
+                                            }
+                                          >
+                                            {formatTime(
+                                              event.starts_at,
+                                              displayTimezone,
+                                            )}
+                                            {" "}
+                                            {event.title}
+                                          </Link>
+                                        ),
+                                      )}
+
+                                    {dayEvents.length >
+                                    3 ? (
+                                      <div className="px-1 text-[10px] text-neutral-400">
+                                        ＋
+                                        {dayEvents.length -
+                                          3}
+                                        件
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </>
+                              ) : null}
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : (
+            <section className="mt-6">
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-neutral-950">
+                  参加中のクラス
+                </h2>
+
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  継続して参加しているクラスや、今後の予約があるクラスです。
+                </p>
+              </div>
+
+
+              {!data ||
+              data.classes
+                .length ===
+                0 ? (
+                <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center">
+                  <div className="text-base font-bold text-neutral-950">
+                    参加中のクラスはありません
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    クラスを予約するとここに表示されます。
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {data.classes.map(
+                    (
+                      item,
+                    ) => (
+                      <section
+                        key={
+                          item.schedule_id
+                        }
+                        className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-bold text-neutral-950">
+                              {item.title}
+                            </h2>
+
+                            {item.location ? (
+                              <div className="mt-1 text-sm leading-6 text-neutral-500">
+                                {item.location}
+                              </div>
+                            ) : null}
+                          </div>
+
+
+                          {item.auto_booking ? (
+                            <span className="rounded-full bg-neutral-950 px-3 py-1 text-xs font-bold text-white">
+                              自動予約中
+                            </span>
+                          ) : null}
+                        </div>
+
+
+                        <div className="mt-5 rounded-2xl bg-neutral-50 p-4">
+                          {item.next_starts_at ? (
+                            <>
+                              <div className="text-xs font-bold text-neutral-400">
+                                次回開催
+                              </div>
+
+                              <div className="mt-1 text-sm font-bold text-neutral-950">
+                                {formatDate(
+                                  item.next_starts_at,
+                                  displayTimezone,
+                                )}
+                                {" "}
+                                {formatTime(
+                                  item.next_starts_at,
+                                  displayTimezone,
+                                )}
+                                {item.next_ends_at
+                                  ? `–${formatTime(
+                                      item.next_ends_at,
+                                      displayTimezone,
+                                    )}`
+                                  : ""}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-neutral-500">
+                              次回開催日はまだ決まっていません。
+                            </div>
+                          )}
+
+
+                          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-neutral-500">
+                            <span>
+                              今後の予約{" "}
+                              <strong className="text-neutral-900">
+                                {item.reservation_count}
+                              </strong>
+                              回
+                            </span>
+
+                            {item.pending_count >
+                            0 ? (
+                              <span>
+                                承認待ち{" "}
+                                <strong className="text-neutral-900">
+                                  {item.pending_count}
+                                </strong>
+                                回
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+
+                        {item.next_occurrence_id ? (
+                          <Link
+                            href={`/calendar/${item.next_occurrence_id}`}
+                            className="mt-5 inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700"
+                          >
+                            予約を確認・変更
+                          </Link>
+                        ) : null}
+                      </section>
+                    ),
+                  )}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </main>

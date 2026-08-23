@@ -278,6 +278,8 @@ export async function GET(
     .select(
       `
         id,
+        origin,
+        calendar_item_id,
         application_type,
         title,
         description,
@@ -343,7 +345,16 @@ export async function GET(
     }
 
     const applicationCount =
-      applications?.length ?? 0;
+      (
+        applications ??
+        []
+      ).filter(
+        (
+          application,
+        ) =>
+          application.origin ===
+          "manual",
+      ).length;
 
     return NextResponse.json({
       ok: true,
@@ -756,6 +767,8 @@ export async function POST(
     .select(
       `
         id,
+        origin,
+        calendar_item_id,
         application_type,
         title,
         description,
@@ -1105,6 +1118,8 @@ export async function PATCH(
     .select(
       `
         id,
+        origin,
+        calendar_item_id,
         application_type,
         title,
         description,

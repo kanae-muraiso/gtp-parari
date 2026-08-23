@@ -1,0 +1,1163 @@
+// src/app/calendar/[occurrenceId]/page.tsx
+// 2026-08-20 JST
+//
+// PARARI CALENDAR
+// 公開開催回ページ
+//
+// /calendar/{occurrenceId}
+//
+// ログイン不要で閲覧可能。
+// 予約時のみPARARIログインが必要。
+
+"use client";
+
+import * as React from "react";
+
+import Link from "next/link";
+
+import {
+  useParams,
+} from "next/navigation";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+
+type PublicOccurrence = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  location: string | null;
+  capacity: number | null;
+  minimum_capacity: number | null;
+  fee_amount:
+    | number
+    | string
+    | null;
+  fee_currency: string;
+  status: string;
+  description_work_id:
+    | string
+    | null;
+};
+
+
+type OccurrenceHistoryEvent = {
+  id: string;
+
+  event_type:
+    | "updated"
+    | "cancelled"
+    | "resumed"
+    | string;
+
+  before_data:
+    Record<string, unknown>
+    | null;
+
+  after_data:
+    Record<string, unknown>
+    | null;
+
+  created_at: string;
+};
+
+
+type BookingInfo = {
+  application_id:
+    | string
+    | null;
+  acceptance_mode:
+    | string
+    | null;
+  open: boolean;
+  reserved_count: number;
+  remaining:
+    | number
+    | null;
+  sold_out: boolean;
+  is_past: boolean;
+  is_booked: boolean;
+  is_owner: boolean;
+
+  booked_at:
+    | string
+    | null;
+
+  history:
+    OccurrenceHistoryEvent[];
+};
+
+
+type PageData = {
+  occurrence:
+    PublicOccurrence;
+
+  organizer: {
+    username:
+      | string
+      | null;
+
+    display_name:
+      | string
+      | null;
+  };
+
+  booking:
+    BookingInfo;
+};
+
+
+function formatDateTime(
+  value: string,
+  timezone: string,
+) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      timeZone:
+        timezone,
+
+      year:
+        "numeric",
+
+      month:
+        "long",
+
+      day:
+        "numeric",
+
+      weekday:
+        "short",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    },
+  ).format(
+    new Date(
+      value,
+    ),
+  );
+}
+
+
+function formatTime(
+  value: string,
+  timezone: string,
+) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      timeZone:
+        timezone,
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    },
+  ).format(
+    new Date(
+      value,
+    ),
+  );
+}
+
+
+function getFeeLabel(
+  amount:
+    | number
+    | string
+    | null,
+  currency: string,
+) {
+  if (
+    amount === null
+  ) {
+    return null;
+  }
+
+
+  const value =
+    Number(
+      amount,
+    );
+
+
+  if (
+    value === 0
+  ) {
+    return "無料";
+  }
+
+
+  if (
+    currency ===
+    "JPY"
+  ) {
+    return `${value.toLocaleString(
+      "ja-JP",
+    )}円`;
+  }
+
+
+  return `${value.toLocaleString()} ${currency}`;
+}
+
+
+function formatHistoryDateTime(
+  value: string,
+  timezone: string,
+) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      timeZone:
+        timezone,
+
+      month:
+        "numeric",
+
+      day:
+        "numeric",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    },
+  ).format(
+    new Date(
+      value,
+    ),
+  );
+}
+
+
+function getHistoryMessages(
+  event:
+    OccurrenceHistoryEvent,
+  timezone: string,
+  reservationWasActive:
+    boolean,
+): string[] {
+  const before =
+    event.before_data ??
+    {};
+
+  const after =
+    event.after_data ??
+    {};
+
+
+  if (
+    event.event_type ===
+    "cancelled"
+  ) {
+    return [
+      "主催者により休講・中止になりました。",
+    ];
+  }
+
+
+  if (
+    event.event_type ===
+    "resumed"
+  ) {
+    return [
+      reservationWasActive
+        ? "休講が取り消され、開催予定に戻りました。あなたの予約もそのまま有効です。"
+        : "休講が取り消され、開催予定に戻りました。",
+    ];
+  }
+
+
+  const messages:
+    string[] = [];
+
+
+  const beforeStartsAt =
+    typeof before.starts_at ===
+    "string"
+      ? before.starts_at
+      : null;
+
+  const afterStartsAt =
+    typeof after.starts_at ===
+    "string"
+      ? after.starts_at
+      : null;
+
+
+  if (
+    beforeStartsAt &&
+    afterStartsAt &&
+    beforeStartsAt !==
+      afterStartsAt
+  ) {
+    messages.push(
+      `開催日時が ${formatHistoryDateTime(
+        beforeStartsAt,
+        timezone,
+      )} → ${formatHistoryDateTime(
+        afterStartsAt,
+        timezone,
+      )} に変更されました。`,
+    );
+  }
+
+
+  const beforeEndsAt =
+    typeof before.ends_at ===
+    "string"
+      ? before.ends_at
+      : null;
+
+  const afterEndsAt =
+    typeof after.ends_at ===
+    "string"
+      ? after.ends_at
+      : null;
+
+
+  if (
+    beforeEndsAt &&
+    afterEndsAt &&
+    beforeEndsAt !==
+      afterEndsAt &&
+    beforeStartsAt ===
+      afterStartsAt
+  ) {
+    messages.push(
+      `終了時刻が ${formatHistoryDateTime(
+        beforeEndsAt,
+        timezone,
+      )} → ${formatHistoryDateTime(
+        afterEndsAt,
+        timezone,
+      )} に変更されました。`,
+    );
+  }
+
+
+  const beforeLocation =
+    typeof before.location ===
+    "string"
+      ? before.location
+      : "";
+
+  const afterLocation =
+    typeof after.location ===
+    "string"
+      ? after.location
+      : "";
+
+
+  if (
+    beforeLocation !==
+    afterLocation
+  ) {
+    messages.push(
+      `会場が「${
+        beforeLocation ||
+        "未設定"
+      }」→「${
+        afterLocation ||
+        "未設定"
+      }」に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.capacity !==
+    after.capacity
+  ) {
+    messages.push(
+      `定員が ${
+        before.capacity ??
+        "未設定"
+      } → ${
+        after.capacity ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.minimum_capacity !==
+    after.minimum_capacity
+  ) {
+    messages.push(
+      `最低開催人数が ${
+        before.minimum_capacity ??
+        "未設定"
+      } → ${
+        after.minimum_capacity ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.fee_amount !==
+    after.fee_amount
+  ) {
+    messages.push(
+      `料金が ${
+        before.fee_amount ??
+        "未設定"
+      } → ${
+        after.fee_amount ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    messages.length ===
+    0
+  ) {
+    messages.push(
+      "開催内容が変更されました。",
+    );
+  }
+
+
+  return messages;
+}
+
+
+export default function CalendarOccurrencePage() {
+  const params =
+    useParams<{
+      occurrenceId:
+        string;
+    }>();
+
+
+  const occurrenceId =
+    typeof params
+      .occurrenceId ===
+    "string"
+      ? params
+          .occurrenceId
+      : "";
+
+
+  const [
+    data,
+    setData,
+  ] =
+    React.useState<
+      PageData | null
+    >(null);
+
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+
+  const [
+    booking,
+    setBooking,
+  ] =
+    React.useState(false);
+
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  async function getAccessToken() {
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth
+        .getSession();
+
+
+    return (
+      session?.access_token ??
+      null
+    );
+  }
+
+
+  async function load() {
+    if (!occurrenceId) {
+      return;
+    }
+
+
+    setLoading(true);
+
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+
+      const headers:
+        Record<
+          string,
+          string
+        > = {};
+
+
+      if (
+        accessToken
+      ) {
+        headers.Authorization =
+          `Bearer ${accessToken}`;
+      }
+
+
+      const response =
+        await fetch(
+          `/api/calendar/public?occurrenceId=${encodeURIComponent(
+            occurrenceId,
+          )}`,
+          {
+            method:
+              "GET",
+
+            headers,
+
+            cache:
+              "no-store",
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setData(null);
+
+        setMessage(
+          result?.message ??
+            "開催情報を取得できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setData({
+        occurrence:
+          result.occurrence,
+
+        organizer:
+          result.organizer,
+
+        booking:
+          result.booking,
+      });
+    } catch (error) {
+      console.error(
+        "[calendar occurrence page] load failed:",
+        error,
+      );
+
+
+      setMessage(
+        "開催情報を取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  React.useEffect(() => {
+    void load();
+  }, [
+    occurrenceId,
+  ]);
+
+
+  async function reserve() {
+    if (
+      !data ||
+      booking
+    ) {
+      return;
+    }
+
+
+    setMessage("");
+
+
+    const accessToken =
+      await getAccessToken();
+
+
+    /*
+     * 予約にはログイン必須。
+     * ログイン後に同じ開催ページへ戻す。
+     */
+    if (
+      !accessToken
+    ) {
+      const returnTo =
+        window.location
+          .pathname;
+
+
+      window.location.href =
+        `/login?returnTo=${encodeURIComponent(
+          returnTo,
+        )}`;
+
+      return;
+    }
+
+
+    if (
+      !data.booking
+        .application_id
+    ) {
+      setMessage(
+        "現在、この開催回は予約できません。",
+      );
+
+      return;
+    }
+
+
+    setBooking(true);
+
+
+    try {
+      const response =
+        await fetch(
+          "/api/application/submit",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                applicationId:
+                  data.booking
+                    .application_id,
+
+                occurrenceId:
+                  data.occurrence
+                    .id,
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "予約できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setMessage(
+        "予約しました。",
+      );
+
+
+      /*
+       * 残席・予約済み状態を再取得。
+       */
+      await load();
+    } catch (error) {
+      console.error(
+        "[calendar occurrence page] booking failed:",
+        error,
+      );
+
+
+      setMessage(
+        "予約できませんでした。",
+      );
+    } finally {
+      setBooking(false);
+    }
+  }
+
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center text-sm text-neutral-500">
+          開催情報を読み込んでいます...
+        </div>
+      </main>
+    );
+  }
+
+
+  if (!data) {
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <div className="mx-auto max-w-2xl px-4 py-16">
+          <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center">
+            <div className="font-bold text-neutral-900">
+              開催情報を表示できません
+            </div>
+
+            {message ? (
+              <div className="mt-3 text-sm text-neutral-500">
+                {message}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+
+  const {
+    occurrence,
+    organizer,
+    booking:
+      bookingInfo,
+  } = data;
+
+
+  const feeLabel =
+    getFeeLabel(
+      occurrence.fee_amount,
+      occurrence.fee_currency,
+    );
+
+
+  const organizerName =
+    organizer.display_name ||
+    organizer.username ||
+    null;
+
+
+  const timeline:
+    Array<{
+      id: string;
+      created_at: string;
+      messages: string[];
+    }> = [];
+
+
+  if (
+    bookingInfo.booked_at
+  ) {
+    timeline.push({
+      id:
+        "booking-created",
+
+      created_at:
+        bookingInfo.booked_at,
+
+      messages: [
+        "予約しました。",
+      ],
+    });
+  }
+
+
+  for (
+    const event of
+      bookingInfo.history ??
+      []
+  ) {
+    const reservationWasActive =
+      Boolean(
+        bookingInfo.booked_at &&
+        new Date(
+          bookingInfo.booked_at,
+        ).getTime() <=
+          new Date(
+            event.created_at,
+          ).getTime(),
+      );
+
+
+    timeline.push({
+      id:
+        event.id,
+
+      created_at:
+        event.created_at,
+
+      messages:
+        getHistoryMessages(
+          event,
+          occurrence.timezone,
+          reservationWasActive,
+        ),
+    });
+  }
+
+
+  timeline.sort(
+    (
+      a,
+      b,
+    ) =>
+      new Date(
+        a.created_at,
+      ).getTime() -
+      new Date(
+        b.created_at,
+      ).getTime(),
+  );
+
+
+  let bookingLabel =
+    "予約する";
+
+
+  if (
+    occurrence.status ===
+    "cancelled"
+  ) {
+    bookingLabel =
+      "休講・中止";
+  } else if (
+    bookingInfo.is_owner
+  ) {
+    bookingLabel =
+      "主催者";
+  } else if (
+    bookingInfo.is_booked
+  ) {
+    bookingLabel =
+      "予約済み";
+  } else if (
+    bookingInfo.sold_out
+  ) {
+    bookingLabel =
+      "満席";
+  } else if (
+    bookingInfo.is_past
+  ) {
+    bookingLabel =
+      "開催済み";
+  } else if (
+    !bookingInfo.open
+  ) {
+    bookingLabel =
+      "予約受付停止中";
+  }
+
+
+  const canBook =
+    bookingInfo.open &&
+    !bookingInfo.is_owner &&
+    !bookingInfo.is_booked;
+
+
+  return (
+    <main className="min-h-screen bg-neutral-50">
+      <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
+        <div className="mb-4 text-xs font-bold tracking-[0.18em] text-neutral-400">
+          PARARI CALENDAR
+        </div>
+
+
+        <article className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+          <div className="p-6 sm:p-9">
+            {occurrence.status ===
+            "cancelled" ? (
+              <div className="mb-6 rounded-2xl border border-neutral-300 bg-neutral-100 px-5 py-4">
+                <div className="text-sm font-bold text-neutral-900">
+                  この開催回は休講・中止になりました。
+                </div>
+
+                <div className="mt-1 text-xs leading-5 text-neutral-500">
+                  この回の予約受付は行っていません。
+                </div>
+              </div>
+            ) : null}
+
+
+            <h1 className="text-2xl font-bold leading-tight text-neutral-950 sm:text-3xl">
+              {
+                occurrence.title
+              }
+            </h1>
+
+
+            {organizerName ? (
+              <div className="mt-3 text-sm text-neutral-500">
+                主催：
+                {
+                  organizerName
+                }
+              </div>
+            ) : null}
+
+
+            <div className="mt-8 space-y-5">
+              <div>
+                <div className="text-xs font-bold text-neutral-400">
+                  日時
+                </div>
+
+                <div className="mt-1 text-base font-bold text-neutral-900">
+                  {formatDateTime(
+                    occurrence.starts_at,
+                    occurrence.timezone,
+                  )}
+                  {" 〜 "}
+                  {formatTime(
+                    occurrence.ends_at,
+                    occurrence.timezone,
+                  )}
+                </div>
+
+                <div className="mt-1 text-xs text-neutral-400">
+                  {
+                    occurrence.timezone
+                  }
+                </div>
+              </div>
+
+
+              {occurrence.location ? (
+                <div>
+                  <div className="text-xs font-bold text-neutral-400">
+                    会場
+                  </div>
+
+                  <div className="mt-1 text-base text-neutral-800">
+                    {
+                      occurrence.location
+                    }
+                  </div>
+                </div>
+              ) : null}
+
+
+              {feeLabel ? (
+                <div>
+                  <div className="text-xs font-bold text-neutral-400">
+                    料金
+                  </div>
+
+                  <div className="mt-1 text-base text-neutral-800">
+                    {
+                      feeLabel
+                    }
+                  </div>
+                </div>
+              ) : null}
+
+
+              {occurrence.capacity !==
+              null ? (
+                <div>
+                  <div className="text-xs font-bold text-neutral-400">
+                    定員
+                  </div>
+
+                  <div className="mt-1 text-base text-neutral-800">
+                    {
+                      occurrence.capacity
+                    }
+                    名
+
+                    {bookingInfo.remaining !==
+                    null ? (
+                      <span className="ml-3 text-sm text-neutral-500">
+                        残り
+                        {
+                          bookingInfo.remaining
+                        }
+                        名
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+
+              {occurrence.minimum_capacity ? (
+                <div>
+                  <div className="text-xs font-bold text-neutral-400">
+                    最低開催人数
+                  </div>
+
+                  <div className="mt-1 text-base text-neutral-800">
+                    {
+                      occurrence.minimum_capacity
+                    }
+                    名
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+
+            {occurrence.description_work_id ? (
+              <div className="mt-8">
+                <Link
+                  href={`/p/${occurrence.description_work_id}`}
+                  className="text-sm font-bold text-neutral-700 underline underline-offset-4"
+                >
+                  クラス・イベントの詳しい説明を見る
+                </Link>
+              </div>
+            ) : null}
+
+
+            {message ? (
+              <div className="mt-7 rounded-2xl bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-700">
+                {message}
+              </div>
+            ) : null}
+
+
+            <div className="mt-8">
+              <button
+                type="button"
+                disabled={
+                  !canBook ||
+                  booking
+                }
+                onClick={() => {
+                  void reserve();
+                }}
+                className={
+                  canBook
+                    ? "w-full rounded-full bg-neutral-950 px-6 py-4 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+                    : "w-full cursor-default rounded-full bg-neutral-100 px-6 py-4 text-sm font-bold text-neutral-500"
+                }
+              >
+                {booking
+                  ? "予約しています..."
+                  : bookingLabel}
+              </button>
+
+
+              {canBook ? (
+                <p className="mt-3 text-center text-xs leading-5 text-neutral-400">
+                  予約にはPARARIへのログインが必要です。
+                </p>
+              ) : null}
+            </div>
+
+
+
+            {timeline.length >
+            0 ? (
+              <section className="mt-10 border-t border-neutral-200 pt-8">
+                <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                  HISTORY
+                </div>
+
+                <h2 className="mt-2 text-lg font-bold text-neutral-950">
+                  {bookingInfo.is_owner
+                    ? "この開催回の変更履歴"
+                    : "あなたの予約・変更履歴"}
+                </h2>
+
+
+                <div className="mt-6 space-y-6">
+                  {timeline.map(
+                    (
+                      item,
+                    ) => (
+                      <div
+                        key={
+                          item.id
+                        }
+                        className="relative border-l border-neutral-200 pl-5"
+                      >
+                        <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-neutral-400" />
+
+                        <div className="text-xs font-bold text-neutral-400">
+                          {formatHistoryDateTime(
+                            item.created_at,
+                            occurrence.timezone,
+                          )}
+                        </div>
+
+                        <div className="mt-2 space-y-1">
+                          {item.messages.map(
+                            (
+                              historyMessage,
+                              index,
+                            ) => (
+                              <div
+                                key={
+                                  `${item.id}-${index}`
+                                }
+                                className="text-sm leading-6 text-neutral-700"
+                              >
+                                {
+                                  historyMessage
+                                }
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </section>
+            ) : null}
+
+          </div>
+        </article>
+      </div>
+    </main>
+  );
+}

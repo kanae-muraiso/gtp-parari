@@ -11,6 +11,8 @@
 
 "use client";
 
+import CalendarScheduleBookingPanel from "@/components/parari/calendar/CalendarScheduleBookingPanel";
+
 import * as React from "react";
 
 import Link from "next/link";
@@ -45,6 +47,27 @@ type PublicOccurrence = {
 };
 
 
+type OccurrenceHistoryEvent = {
+  id: string;
+
+  event_type:
+    | "updated"
+    | "cancelled"
+    | "resumed"
+    | string;
+
+  before_data:
+    Record<string, unknown>
+    | null;
+
+  after_data:
+    Record<string, unknown>
+    | null;
+
+  created_at: string;
+};
+
+
 type BookingInfo = {
   application_id:
     | string
@@ -53,6 +76,20 @@ type BookingInfo = {
     | string
     | null;
   open: boolean;
+
+  deadline_minutes_before:
+    number;
+
+  deadline_at:
+    | string
+    | null;
+
+  deadline_passed:
+    boolean;
+
+  recurring_booking_enabled:
+    boolean;
+
   reserved_count: number;
   remaining:
     | number
@@ -61,6 +98,13 @@ type BookingInfo = {
   is_past: boolean;
   is_booked: boolean;
   is_owner: boolean;
+
+  booked_at:
+    | string
+    | null;
+
+  history:
+    OccurrenceHistoryEvent[];
 };
 
 
@@ -184,6 +228,233 @@ function getFeeLabel(
 }
 
 
+function formatHistoryDateTime(
+  value: string,
+  timezone: string,
+) {
+  return new Intl.DateTimeFormat(
+    "ja-JP",
+    {
+      timeZone:
+        timezone,
+
+      month:
+        "numeric",
+
+      day:
+        "numeric",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    },
+  ).format(
+    new Date(
+      value,
+    ),
+  );
+}
+
+
+function getHistoryMessages(
+  event:
+    OccurrenceHistoryEvent,
+  timezone: string,
+  reservationWasActive:
+    boolean,
+): string[] {
+  const before =
+    event.before_data ??
+    {};
+
+  const after =
+    event.after_data ??
+    {};
+
+
+  if (
+    event.event_type ===
+    "cancelled"
+  ) {
+    return [
+      "主催者により休講・中止になりました。",
+    ];
+  }
+
+
+  if (
+    event.event_type ===
+    "resumed"
+  ) {
+    return [
+      reservationWasActive
+        ? "休講が取り消され、開催予定に戻りました。あなたの予約もそのまま有効です。"
+        : "休講が取り消され、開催予定に戻りました。",
+    ];
+  }
+
+
+  const messages:
+    string[] = [];
+
+
+  const beforeStartsAt =
+    typeof before.starts_at ===
+    "string"
+      ? before.starts_at
+      : null;
+
+  const afterStartsAt =
+    typeof after.starts_at ===
+    "string"
+      ? after.starts_at
+      : null;
+
+
+  if (
+    beforeStartsAt &&
+    afterStartsAt &&
+    beforeStartsAt !==
+      afterStartsAt
+  ) {
+    messages.push(
+      `開催日時が ${formatHistoryDateTime(
+        beforeStartsAt,
+        timezone,
+      )} → ${formatHistoryDateTime(
+        afterStartsAt,
+        timezone,
+      )} に変更されました。`,
+    );
+  }
+
+
+  const beforeEndsAt =
+    typeof before.ends_at ===
+    "string"
+      ? before.ends_at
+      : null;
+
+  const afterEndsAt =
+    typeof after.ends_at ===
+    "string"
+      ? after.ends_at
+      : null;
+
+
+  if (
+    beforeEndsAt &&
+    afterEndsAt &&
+    beforeEndsAt !==
+      afterEndsAt &&
+    beforeStartsAt ===
+      afterStartsAt
+  ) {
+    messages.push(
+      `終了時刻が ${formatHistoryDateTime(
+        beforeEndsAt,
+        timezone,
+      )} → ${formatHistoryDateTime(
+        afterEndsAt,
+        timezone,
+      )} に変更されました。`,
+    );
+  }
+
+
+  const beforeLocation =
+    typeof before.location ===
+    "string"
+      ? before.location
+      : "";
+
+  const afterLocation =
+    typeof after.location ===
+    "string"
+      ? after.location
+      : "";
+
+
+  if (
+    beforeLocation !==
+    afterLocation
+  ) {
+    messages.push(
+      `会場が「${
+        beforeLocation ||
+        "未設定"
+      }」→「${
+        afterLocation ||
+        "未設定"
+      }」に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.capacity !==
+    after.capacity
+  ) {
+    messages.push(
+      `定員が ${
+        before.capacity ??
+        "未設定"
+      } → ${
+        after.capacity ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.minimum_capacity !==
+    after.minimum_capacity
+  ) {
+    messages.push(
+      `最低開催人数が ${
+        before.minimum_capacity ??
+        "未設定"
+      } → ${
+        after.minimum_capacity ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    before.fee_amount !==
+    after.fee_amount
+  ) {
+    messages.push(
+      `料金が ${
+        before.fee_amount ??
+        "未設定"
+      } → ${
+        after.fee_amount ??
+        "未設定"
+      } に変更されました。`,
+    );
+  }
+
+
+  if (
+    messages.length ===
+    0
+  ) {
+    messages.push(
+      "開催内容が変更されました。",
+    );
+  }
+
+
+  return messages;
+}
+
+
 export default function CalendarOccurrencePage() {
   const params =
     useParams<{
@@ -225,6 +496,117 @@ export default function CalendarOccurrencePage() {
 
 
   const [
+    recurringActive,
+    setRecurringActive,
+  ] =
+    React.useState(false);
+
+
+  const [
+    recurringStateLoading,
+    setRecurringStateLoading,
+  ] =
+    React.useState(false);
+
+
+  const [
+    recurringWorking,
+    setRecurringWorking,
+  ] =
+    React.useState(false);
+
+
+  const [
+    recurringSetupOpen,
+    setRecurringSetupOpen,
+  ] =
+    React.useState(false);
+
+
+  const [
+    recurringPeriodMode,
+    setRecurringPeriodMode,
+  ] =
+    React.useState<
+      "schedule" |
+      "unlimited" |
+      "until"
+    >("unlimited");
+
+
+  const [
+    recurringEndDate,
+    setRecurringEndDate,
+  ] =
+    React.useState("");
+
+
+  const [
+    recurringReminderEnabled,
+    setRecurringReminderEnabled,
+  ] =
+    React.useState(true);
+
+
+  const [
+    recurringReminderDate,
+    setRecurringReminderDate,
+  ] =
+    React.useState("");
+
+
+  const [
+    recurringSavedEndOn,
+    setRecurringSavedEndOn,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    recurringSavedRemindOn,
+    setRecurringSavedRemindOn,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    recurringScheduleEndOn,
+    setRecurringScheduleEndOn,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    recurringScheduleLastStartsAt,
+    setRecurringScheduleLastStartsAt,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    recurringSummary,
+    setRecurringSummary,
+  ] =
+    React.useState<{
+      reservedCount: number;
+      firstStartsAt: string | null;
+      lastStartsAt: string | null;
+    }>({
+      reservedCount: 0,
+      firstStartsAt: null,
+      lastStartsAt: null,
+    });
+
+
+  const [
     message,
     setMessage,
   ] =
@@ -245,6 +627,375 @@ export default function CalendarOccurrencePage() {
       session?.access_token ??
       null
     );
+  }
+
+
+  function subtractDateKeyDays(
+    value: string,
+    days: number,
+  ): string {
+    const parts =
+      value
+        .split("-")
+        .map(Number);
+
+    if (
+      parts.length !== 3 ||
+      parts.some(
+        (part) =>
+          !Number.isFinite(
+            part,
+          ),
+      )
+    ) {
+      return "";
+    }
+
+    const [
+      year,
+      month,
+      day,
+    ] = parts;
+
+    const date =
+      new Date(
+        Date.UTC(
+          year,
+          month - 1,
+          day,
+        ),
+      );
+
+    date.setUTCDate(
+      date.getUTCDate() -
+        days,
+    );
+
+    return [
+      date
+        .getUTCFullYear(),
+      String(
+        date.getUTCMonth() +
+          1,
+      ).padStart(
+        2,
+        "0",
+      ),
+      String(
+        date.getUTCDate(),
+      ).padStart(
+        2,
+        "0",
+      ),
+    ].join("-");
+  }
+
+
+  function formatDateKey(
+    value: string | null,
+  ): string {
+    if (!value) {
+      return "-";
+    }
+
+    const [
+      year,
+      month,
+      day,
+    ] =
+      value
+        .split("-");
+
+    if (
+      !year ||
+      !month ||
+      !day
+    ) {
+      return value;
+    }
+
+    return `${Number(
+      year,
+    )}年${Number(
+      month,
+    )}月${Number(
+      day,
+    )}日`;
+  }
+
+
+  function formatIsoDate(
+    value: string | null,
+    timeZone: string,
+  ): string {
+    if (!value) {
+      return "-";
+    }
+
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
+      return "-";
+    }
+
+    try {
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          timeZone,
+          month:
+            "numeric",
+          day:
+            "numeric",
+          weekday:
+            "short",
+        },
+      ).format(date);
+    } catch {
+      return date
+        .toLocaleDateString(
+          "ja-JP",
+        );
+    }
+  }
+
+
+  function openRecurringBookingSetup() {
+    if (
+      recurringScheduleEndOn
+    ) {
+      setRecurringPeriodMode(
+        "schedule",
+      );
+
+      setRecurringEndDate(
+        recurringScheduleEndOn,
+      );
+
+      setRecurringReminderEnabled(
+        true,
+      );
+
+      setRecurringReminderDate(
+        subtractDateKeyDays(
+          recurringScheduleEndOn,
+          7,
+        ),
+      );
+    } else {
+      setRecurringPeriodMode(
+        "unlimited",
+      );
+
+      setRecurringEndDate(
+        "",
+      );
+
+      setRecurringReminderEnabled(
+        true,
+      );
+
+      setRecurringReminderDate(
+        "",
+      );
+    }
+
+
+    setMessage("");
+
+    setRecurringSetupOpen(
+      true,
+    );
+  }
+
+
+  async function loadRecurringBookingState() {
+    if (!occurrenceId) {
+      return;
+    }
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      setRecurringActive(false);
+      return;
+    }
+
+    setRecurringStateLoading(
+      true,
+    );
+
+    try {
+      const response =
+        await fetch(
+          `/api/calendar/recurring-bookings?occurrenceId=${encodeURIComponent(
+            occurrenceId,
+          )}`,
+          {
+            method: "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            cache: "no-store",
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        console.error(
+          "[calendar occurrence page] recurring state failed:",
+          result,
+        );
+
+        setRecurringActive(
+          false,
+        );
+
+        return;
+      }
+
+      const isActive =
+        result.active === true;
+
+
+      setRecurringActive(
+        isActive,
+      );
+
+
+      const savedEndOn =
+        typeof result
+          ?.recurringBooking
+          ?.end_on ===
+        "string"
+          ? result
+              .recurringBooking
+              .end_on
+          : null;
+
+
+      const savedRemindOn =
+        typeof result
+          ?.recurringBooking
+          ?.remind_on ===
+        "string"
+          ? result
+              .recurringBooking
+              .remind_on
+          : null;
+
+
+      setRecurringSavedEndOn(
+        savedEndOn,
+      );
+
+      setRecurringSavedRemindOn(
+        savedRemindOn,
+      );
+
+
+      const scheduleEndOn =
+        typeof result
+          ?.schedule
+          ?.endOn ===
+        "string"
+          ? result
+              .schedule
+              .endOn
+          : null;
+
+
+      const scheduleLastStartsAt =
+        typeof result
+          ?.schedule
+          ?.lastOccurrenceStartsAt ===
+        "string"
+          ? result
+              .schedule
+              .lastOccurrenceStartsAt
+          : null;
+
+
+      setRecurringScheduleEndOn(
+        scheduleEndOn,
+      );
+
+      setRecurringScheduleLastStartsAt(
+        scheduleLastStartsAt,
+      );
+
+
+      const rawSummary =
+        result?.summary;
+
+
+      setRecurringSummary({
+        reservedCount:
+          Number.isFinite(
+            Number(
+              rawSummary
+                ?.reservedCount,
+            ),
+          )
+            ? Number(
+                rawSummary
+                  .reservedCount,
+              )
+            : 0,
+
+        firstStartsAt:
+          typeof rawSummary
+            ?.firstStartsAt ===
+          "string"
+            ? rawSummary
+                .firstStartsAt
+            : null,
+
+        lastStartsAt:
+          typeof rawSummary
+            ?.lastStartsAt ===
+          "string"
+            ? rawSummary
+                .lastStartsAt
+            : null,
+      });
+
+
+      if (isActive) {
+        setRecurringSetupOpen(
+          false,
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[calendar occurrence page] recurring state failed:",
+        error,
+      );
+
+      setRecurringActive(false);
+    } finally {
+      setRecurringStateLoading(
+        false,
+      );
+    }
   }
 
 
@@ -478,6 +1229,264 @@ export default function CalendarOccurrencePage() {
   }
 
 
+  React.useEffect(() => {
+    if (
+      !data?.booking
+        .recurring_booking_enabled
+    ) {
+      setRecurringActive(
+        false,
+      );
+
+      return;
+    }
+
+    void loadRecurringBookingState();
+  }, [
+    occurrenceId,
+    data?.booking
+      .recurring_booking_enabled,
+  ]);
+
+
+  async function startRecurringBooking() {
+    if (
+      recurringWorking ||
+      !occurrenceId
+    ) {
+      return;
+    }
+
+    const endOn =
+      recurringPeriodMode ===
+        "schedule"
+        ? recurringScheduleEndOn
+        : recurringPeriodMode ===
+            "until"
+          ? recurringEndDate
+              .trim()
+          : null;
+
+
+    if (
+      recurringPeriodMode !==
+        "unlimited" &&
+      !endOn
+    ) {
+      setMessage(
+        "参加する最終日を指定してください。",
+      );
+
+      return;
+    }
+
+
+    if (
+      endOn &&
+      recurringScheduleEndOn &&
+      endOn >
+        recurringScheduleEndOn
+    ) {
+      setMessage(
+        `このクラスは${formatDateKey(
+          recurringScheduleEndOn,
+        )}までの予定です。`,
+      );
+
+      return;
+    }
+
+
+    const remindOn =
+      endOn &&
+      recurringReminderEnabled
+        ? recurringReminderDate
+            .trim()
+        : null;
+
+
+    if (
+      endOn &&
+      recurringReminderEnabled &&
+      !remindOn
+    ) {
+      setMessage(
+        "お知らせ日を指定してください。",
+      );
+
+      return;
+    }
+
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      const returnTo =
+        `/calendar/${occurrenceId}`;
+
+      window.location.href =
+        `/login?returnTo=${encodeURIComponent(
+          returnTo,
+        )}`;
+
+      return;
+    }
+
+    setRecurringWorking(true);
+    setMessage("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/calendar/recurring-bookings",
+          {
+            method: "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId,
+
+                endOn,
+
+                remindOn,
+              }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "継続予約を開始できませんでした。",
+        );
+
+        return;
+      }
+
+      setRecurringActive(true);
+
+      setRecurringSetupOpen(
+        false,
+      );
+
+      setMessage(
+        "継続予約を開始しました。",
+      );
+
+      await load();
+      await loadRecurringBookingState();
+    } catch (error) {
+      console.error(
+        "[calendar occurrence page] recurring booking failed:",
+        error,
+      );
+
+      setMessage(
+        "継続予約を開始できませんでした。",
+      );
+    } finally {
+      setRecurringWorking(false);
+    }
+  }
+
+
+  async function stopRecurringBooking() {
+    if (
+      recurringWorking ||
+      !occurrenceId
+    ) {
+      return;
+    }
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      return;
+    }
+
+    setRecurringWorking(true);
+    setMessage("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/calendar/recurring-bookings",
+          {
+            method: "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId,
+              }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "継続予約を終了できませんでした。",
+        );
+
+        return;
+      }
+
+      setRecurringActive(false);
+
+      setMessage(
+        "継続予約を終了しました。この回の予約はそのまま残ります。",
+      );
+    } catch (error) {
+      console.error(
+        "[calendar occurrence page] stop recurring booking failed:",
+        error,
+      );
+
+      setMessage(
+        "継続予約を終了できませんでした。",
+      );
+    } finally {
+      setRecurringWorking(false);
+    }
+  }
+
+
   if (loading) {
     return (
       <main className="min-h-screen bg-neutral-50">
@@ -531,11 +1540,90 @@ export default function CalendarOccurrencePage() {
     null;
 
 
+  const timeline:
+    Array<{
+      id: string;
+      created_at: string;
+      messages: string[];
+    }> = [];
+
+
+  if (
+    bookingInfo.booked_at
+  ) {
+    timeline.push({
+      id:
+        "booking-created",
+
+      created_at:
+        bookingInfo.booked_at,
+
+      messages: [
+        "予約しました。",
+      ],
+    });
+  }
+
+
+  for (
+    const event of
+      bookingInfo.history ??
+      []
+  ) {
+    const reservationWasActive =
+      Boolean(
+        bookingInfo.booked_at &&
+        new Date(
+          bookingInfo.booked_at,
+        ).getTime() <=
+          new Date(
+            event.created_at,
+          ).getTime(),
+      );
+
+
+    timeline.push({
+      id:
+        event.id,
+
+      created_at:
+        event.created_at,
+
+      messages:
+        getHistoryMessages(
+          event,
+          occurrence.timezone,
+          reservationWasActive,
+        ),
+    });
+  }
+
+
+  timeline.sort(
+    (
+      a,
+      b,
+    ) =>
+      new Date(
+        a.created_at,
+      ).getTime() -
+      new Date(
+        b.created_at,
+      ).getTime(),
+  );
+
+
   let bookingLabel =
     "予約する";
 
 
   if (
+    occurrence.status ===
+    "cancelled"
+  ) {
+    bookingLabel =
+      "休講・中止";
+  } else if (
     bookingInfo.is_owner
   ) {
     bookingLabel =
@@ -556,11 +1644,10 @@ export default function CalendarOccurrencePage() {
     bookingLabel =
       "開催済み";
   } else if (
-    occurrence.status ===
-    "cancelled"
+    bookingInfo.deadline_passed
   ) {
     bookingLabel =
-      "休講・中止";
+      "予約受付終了";
   } else if (
     !bookingInfo.open
   ) {
@@ -575,6 +1662,17 @@ export default function CalendarOccurrencePage() {
     !bookingInfo.is_booked;
 
 
+  const canStartRecurring =
+    bookingInfo
+      .recurring_booking_enabled &&
+    bookingInfo.open &&
+    !bookingInfo.is_owner &&
+    !bookingInfo.is_past &&
+    !bookingInfo.deadline_passed &&
+    occurrence.status ===
+      "scheduled";
+
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
@@ -585,6 +1683,20 @@ export default function CalendarOccurrencePage() {
 
         <article className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
           <div className="p-6 sm:p-9">
+            {occurrence.status ===
+            "cancelled" ? (
+              <div className="mb-6 rounded-2xl border border-neutral-300 bg-neutral-100 px-5 py-4">
+                <div className="text-sm font-bold text-neutral-900">
+                  この開催回は休講・中止になりました。
+                </div>
+
+                <div className="mt-1 text-xs leading-5 text-neutral-500">
+                  この回の予約受付は行っていません。
+                </div>
+              </div>
+            ) : null}
+
+
             <h1 className="text-2xl font-bold leading-tight text-neutral-950 sm:text-3xl">
               {
                 occurrence.title
@@ -750,8 +1862,469 @@ export default function CalendarOccurrencePage() {
                 </p>
               ) : null}
             </div>
+
+
+
+            {timeline.length >
+            0 ? (
+              <section className="mt-10 border-t border-neutral-200 pt-8">
+                <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                  HISTORY
+                </div>
+
+                <h2 className="mt-2 text-lg font-bold text-neutral-950">
+                  {bookingInfo.is_owner
+                    ? "この開催回の変更履歴"
+                    : "あなたの予約・変更履歴"}
+                </h2>
+
+
+                <div className="mt-6 space-y-6">
+                  {timeline.map(
+                    (
+                      item,
+                    ) => (
+                      <div
+                        key={
+                          item.id
+                        }
+                        className="relative border-l border-neutral-200 pl-5"
+                      >
+                        <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-neutral-400" />
+
+                        <div className="text-xs font-bold text-neutral-400">
+                          {formatHistoryDateTime(
+                            item.created_at,
+                            occurrence.timezone,
+                          )}
+                        </div>
+
+                        <div className="mt-2 space-y-1">
+                          {item.messages.map(
+                            (
+                              historyMessage,
+                              index,
+                            ) => (
+                              <div
+                                key={
+                                  `${item.id}-${index}`
+                                }
+                                className="text-sm leading-6 text-neutral-700"
+                              >
+                                {
+                                  historyMessage
+                                }
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </section>
+            ) : null}
+
           </div>
-        </article>
+        
+          <CalendarScheduleBookingPanel
+            occurrenceId={
+              occurrence.id
+            }
+          />
+
+
+          {false &&
+          bookingInfo
+            .recurring_booking_enabled &&
+          !bookingInfo.is_owner &&
+          (
+            recurringActive ||
+            canStartRecurring ||
+            recurringStateLoading
+          ) ? (
+            <div className="border-t border-neutral-200 bg-neutral-50 px-6 py-6 sm:px-9">
+              <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                継続予約
+              </div>
+
+              {recurringStateLoading ? (
+                <p className="mt-2 text-sm text-neutral-500">
+                  継続予約を確認しています...
+                </p>
+              ) : recurringActive ? (
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-neutral-950">
+                    <span>✓</span>
+                    <span>
+                      継続予約中
+                    </span>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
+                    <div className="text-xs font-bold text-neutral-500">
+                      現在予約済み
+                    </div>
+
+                    {recurringSummary
+                      .reservedCount >
+                    0 ? (
+                      <div className="mt-1 text-sm font-bold text-neutral-950">
+                        {formatIsoDate(
+                          recurringSummary
+                            .firstStartsAt,
+                          occurrence
+                            .timezone,
+                        )}
+                        {" ～ "}
+                        {formatIsoDate(
+                          recurringSummary
+                            .lastStartsAt,
+                          occurrence
+                            .timezone,
+                        )}
+                        {"　"}
+                        全
+                        {recurringSummary
+                          .reservedCount}
+                        回
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-sm text-neutral-600">
+                        現在、今後の予約はありません。
+                      </div>
+                    )}
+
+
+                    <div className="mt-4 text-xs font-bold text-neutral-500">
+                      継続期間
+                    </div>
+
+                    <div className="mt-1 text-sm text-neutral-800">
+                      {recurringSavedEndOn
+                        ? `${formatDateKey(
+                            recurringSavedEndOn,
+                          )}まで`
+                        : recurringScheduleEndOn
+                          ? `${formatDateKey(
+                              recurringScheduleEndOn,
+                            )}まで`
+                          : "期間を決めずに継続"}
+                    </div>
+
+
+                    {recurringSavedRemindOn ? (
+                      <>
+                        <div className="mt-4 text-xs font-bold text-neutral-500">
+                          お知らせ予定
+                        </div>
+
+                        <div className="mt-1 text-sm text-neutral-800">
+                          {formatDateKey(
+                            recurringSavedRemindOn,
+                          )}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+
+
+                  <p className="mt-3 text-xs leading-5 text-neutral-500">
+                    現在生成されている今後の開催回が予約されています。
+                  </p>
+
+
+                  <button
+                    type="button"
+                    disabled={
+                      recurringWorking
+                    }
+                    onClick={() => {
+                      void stopRecurringBooking();
+                    }}
+                    className="mt-4 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+                  >
+                    {recurringWorking
+                      ? "処理しています..."
+                      : "継続予約をやめる"}
+                  </button>
+                </div>
+              ) : canStartRecurring ? (
+                <div className="mt-3">
+                  {!recurringSetupOpen ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={
+                          recurringWorking
+                        }
+                        onClick={
+                          openRecurringBookingSetup
+                        }
+                        className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                      >
+                        今後も継続して予約する
+                      </button>
+
+                      <p className="mt-2 text-xs leading-5 text-neutral-500">
+                        この回から、同じ定期スケジュールの今後の開催回を継続して予約します。
+                      </p>
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                      <div className="text-sm font-bold text-neutral-950">
+                        いつまで参加しますか？
+                      </div>
+
+
+                      {recurringScheduleEndOn ? (
+                        <>
+                          <div className="mt-3 rounded-xl bg-neutral-50 px-3 py-3 text-xs leading-5 text-neutral-600">
+                            現在の最終開催回
+                            <div className="mt-0.5 font-bold text-neutral-950">
+                              {recurringScheduleLastStartsAt
+                                ? formatIsoDate(
+                                    recurringScheduleLastStartsAt,
+                                    occurrence
+                                      .timezone,
+                                  )
+                                : formatDateKey(
+                                    recurringScheduleEndOn,
+                                  )}
+                            </div>
+                          </div>
+
+
+                          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+                            <input
+                              type="radio"
+                              name="recurring-period"
+                              checked={
+                                recurringPeriodMode ===
+                                "schedule"
+                              }
+                              onChange={() => {
+                                setRecurringPeriodMode(
+                                  "schedule",
+                                );
+
+                                setRecurringEndDate(
+                                  recurringScheduleEndOn,
+                                );
+
+                                if (
+                                  recurringReminderEnabled
+                                ) {
+                                  setRecurringReminderDate(
+                                    subtractDateKeyDays(
+                                      recurringScheduleEndOn,
+                                      7,
+                                    ),
+                                  );
+                                }
+                              }}
+                            />
+
+                            <span>
+                              最終開催回まで参加する
+                            </span>
+                          </label>
+                        </>
+                      ) : (
+                        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+                          <input
+                            type="radio"
+                            name="recurring-period"
+                            checked={
+                              recurringPeriodMode ===
+                              "unlimited"
+                            }
+                            onChange={() => {
+                              setRecurringPeriodMode(
+                                "unlimited",
+                              );
+                            }}
+                          />
+
+                          <span>
+                            期間を決めずに継続する
+                          </span>
+                        </label>
+                      )}
+
+
+                      <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+                        <input
+                          type="radio"
+                          name="recurring-period"
+                          checked={
+                            recurringPeriodMode ===
+                            "until"
+                          }
+                          onChange={() => {
+                            setRecurringPeriodMode(
+                              "until",
+                            );
+                          }}
+                        />
+
+                        <span>
+                          この日まで参加する
+                        </span>
+                      </label>
+
+
+                      {recurringPeriodMode ===
+                      "until" ? (
+                        <div className="mt-3 pl-6">
+                          <input
+                            type="date"
+                            value={
+                              recurringEndDate
+                            }
+                            max={
+                              recurringScheduleEndOn ||
+                              undefined
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              const value =
+                                event
+                                  .target
+                                  .value;
+
+                              setRecurringEndDate(
+                                value,
+                              );
+
+                              if (
+                                recurringReminderEnabled
+                              ) {
+                                setRecurringReminderDate(
+                                  value
+                                    ? subtractDateKeyDays(
+                                        value,
+                                        7,
+                                      )
+                                    : "",
+                                );
+                              }
+                            }}
+                            className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-950"
+                          />
+
+
+                          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+                            <input
+                              type="checkbox"
+                              checked={
+                                recurringReminderEnabled
+                              }
+                              onChange={(
+                                event,
+                              ) => {
+                                const checked =
+                                  event
+                                    .target
+                                    .checked;
+
+                                setRecurringReminderEnabled(
+                                  checked,
+                                );
+
+                                if (
+                                  checked &&
+                                  recurringEndDate &&
+                                  !recurringReminderDate
+                                ) {
+                                  setRecurringReminderDate(
+                                    subtractDateKeyDays(
+                                      recurringEndDate,
+                                      7,
+                                    ),
+                                  );
+                                }
+                              }}
+                            />
+
+                            <span>
+                              終了前に知らせる
+                            </span>
+                          </label>
+
+
+                          {recurringReminderEnabled ? (
+                            <div className="mt-3">
+                              <div className="mb-1 text-xs text-neutral-500">
+                                お知らせ日
+                              </div>
+
+                              <input
+                                type="date"
+                                value={
+                                  recurringReminderDate
+                                }
+                                max={
+                                  recurringEndDate ||
+                                  undefined
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  setRecurringReminderDate(
+                                    event
+                                      .target
+                                      .value,
+                                  )
+                                }
+                                className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-950"
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={
+                            recurringWorking
+                          }
+                          onClick={() => {
+                            void startRecurringBooking();
+                          }}
+                          className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                        >
+                          {recurringWorking
+                            ? "予約しています..."
+                            : "継続予約を開始"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            recurringWorking
+                          }
+                          onClick={() =>
+                            setRecurringSetupOpen(
+                              false,
+                            )
+                          }
+                          className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+</article>
       </div>
     </main>
   );

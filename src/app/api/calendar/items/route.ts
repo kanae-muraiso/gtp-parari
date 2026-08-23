@@ -5,6 +5,7 @@
 //
 // GET  : 自分のcalendar item一覧
 // POST : calendar itemを新規作成
+// PATCH: calendar itemの基本情報を更新
 //
 // calendar_items = 「何をするか」のSSOT
 // 日時はここでは持たない。
@@ -29,7 +30,15 @@ type CreateCalendarItemBody = {
   feeAmount?: unknown;
   feeCurrency?: unknown;
   descriptionWorkId?: unknown;
+  summary?: unknown;
+  showInProfile?: unknown;
 };
+
+
+type UpdateCalendarItemBody =
+  CreateCalendarItemBody & {
+    calendarItemId?: unknown;
+  };
 
 
 function getBearerToken(
@@ -186,6 +195,8 @@ export async function GET(
           fee_amount,
           fee_currency,
           description_work_id,
+          summary,
+          show_in_profile,
           status,
           created_at,
           updated_at
@@ -357,6 +368,14 @@ export async function POST(
       body?.descriptionWorkId,
     );
 
+  const summary =
+    normalizeNullableText(
+      body?.summary,
+    );
+
+  const showInProfile =
+    body?.showInProfile === true;
+
   const {
     data,
     error,
@@ -391,6 +410,11 @@ export async function POST(
         description_work_id:
           descriptionWorkId,
 
+        summary,
+
+        show_in_profile:
+          showInProfile,
+
         status:
           "active",
       })
@@ -405,6 +429,8 @@ export async function POST(
           fee_amount,
           fee_currency,
           description_work_id,
+          summary,
+          show_in_profile,
           status,
           created_at,
           updated_at
@@ -426,6 +452,333 @@ export async function POST(
         ok: false,
         message:
           "クラス・イベントを作成できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    item: data,
+  });
+}
+// ============================================================
+// PATCH
+// calendar itemの基本情報を更新
+// calendar_items = 「何をするか」のSSOT
+// ============================================================
+
+export async function PATCH(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(request);
+
+  if (auth.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
+    );
+  }
+
+  const body =
+    (await request
+      .json()
+      .catch(() => null)) as
+      | UpdateCalendarItemBody
+      | null;
+
+  const calendarItemId =
+    String(
+      body?.calendarItemId ?? "",
+    ).trim();
+
+  if (!calendarItemId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントを指定してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const {
+    data: currentItem,
+    error: currentItemError,
+  } =
+    await supabaseAdmin
+      .from("calendar_items")
+      .select(
+        `
+          id,
+          title,
+          duration_minutes,
+          location,
+          capacity,
+          minimum_capacity,
+          fee_amount,
+          fee_currency,
+          description_work_id,
+          summary,
+          show_in_profile,
+          status
+        `,
+      )
+      .eq(
+        "id",
+        calendarItemId,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .maybeSingle();
+
+  if (
+    currentItemError ||
+    !currentItem
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントが見つかりません。",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+  const has = (
+    key: keyof UpdateCalendarItemBody,
+  ) =>
+    Object.prototype.hasOwnProperty.call(
+      body ?? {},
+      key,
+    );
+
+  const title =
+    has("title")
+      ? String(
+          body?.title ?? "",
+        ).trim()
+      : String(
+          currentItem.title ?? "",
+        ).trim();
+
+  if (!title) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベント名を入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (title.length > 120) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベント名は120文字以内で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const durationMinutes =
+    has("durationMinutes")
+      ? normalizePositiveInteger(
+          body?.durationMinutes,
+        )
+      : Number(
+          currentItem.duration_minutes,
+        );
+
+  if (!durationMinutes) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "時間を1分以上で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const capacity =
+    has("capacity")
+      ? normalizePositiveInteger(
+          body?.capacity,
+        )
+      : currentItem.capacity;
+
+  const minimumCapacity =
+    has("minimumCapacity")
+      ? normalizePositiveInteger(
+          body?.minimumCapacity,
+        )
+      : currentItem.minimum_capacity;
+
+  if (
+    capacity !== null &&
+    minimumCapacity !== null &&
+    minimumCapacity > capacity
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "最低開催人数は定員以下にしてください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const feeAmount =
+    has("feeAmount")
+      ? normalizeNonNegativeNumber(
+          body?.feeAmount,
+        )
+      : currentItem.fee_amount;
+
+  const requestedCurrency =
+    has("feeCurrency")
+      ? String(
+          body?.feeCurrency ?? "",
+        )
+          .trim()
+          .toUpperCase()
+      : String(
+          currentItem.fee_currency ??
+            "JPY",
+        )
+          .trim()
+          .toUpperCase();
+
+  const feeCurrency =
+    /^[A-Z]{3}$/.test(
+      requestedCurrency,
+    )
+      ? requestedCurrency
+      : "JPY";
+
+  const location =
+    has("location")
+      ? normalizeNullableText(
+          body?.location,
+        )
+      : currentItem.location;
+
+  const descriptionWorkId =
+    has("descriptionWorkId")
+      ? normalizeNullableText(
+          body?.descriptionWorkId,
+        )
+      : currentItem.description_work_id;
+
+  const summary =
+    has("summary")
+      ? normalizeNullableText(
+          body?.summary,
+        )
+      : currentItem.summary;
+
+  const showInProfile =
+    has("showInProfile")
+      ? body?.showInProfile === true
+      : currentItem.show_in_profile === true;
+
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin
+      .from("calendar_items")
+      .update({
+        title,
+        duration_minutes:
+          durationMinutes,
+        location,
+        capacity,
+        minimum_capacity:
+          minimumCapacity,
+        fee_amount:
+          feeAmount,
+        fee_currency:
+          feeCurrency,
+        description_work_id:
+          descriptionWorkId,
+        summary,
+        show_in_profile:
+          showInProfile,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "id",
+        calendarItemId,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .select(
+        `
+          id,
+          title,
+          duration_minutes,
+          location,
+          capacity,
+          minimum_capacity,
+          fee_amount,
+          fee_currency,
+          description_work_id,
+          summary,
+          show_in_profile,
+          status,
+          created_at,
+          updated_at
+        `,
+      )
+      .single();
+
+  if (
+    error ||
+    !data
+  ) {
+    console.error(
+      "[calendar/items PATCH] failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントを更新できませんでした。",
       },
       {
         status: 500,

@@ -1,0 +1,1064 @@
+"use client";
+
+import * as React from "react";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+
+type ScheduleOccurrence = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  title: string;
+  location: string | null;
+  reserved_count: number;
+  remaining: number | null;
+  sold_out: boolean;
+  deadline_passed: boolean;
+  open: boolean;
+  is_booked: boolean;
+};
+
+
+type ScheduleData = {
+  application_id: string | null;
+  is_owner: boolean;
+  recurring_booking_enabled: boolean;
+  available_through: string | null;
+  occurrences: ScheduleOccurrence[];
+};
+
+
+type Props = {
+  occurrenceId: string;
+};
+
+
+export default function CalendarScheduleBookingPanel({
+  occurrenceId,
+}: Props) {
+  const [
+    data,
+    setData,
+  ] =
+    React.useState<ScheduleData | null>(
+      null,
+    );
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+  const [
+    workingIds,
+    setWorkingIds,
+  ] =
+    React.useState<Set<string>>(
+      new Set(),
+    );
+
+  const [
+    bulkWorking,
+    setBulkWorking,
+  ] =
+    React.useState(false);
+
+  const [
+    autoActive,
+    setAutoActive,
+  ] =
+    React.useState(false);
+
+  const [
+    autoWorking,
+    setAutoWorking,
+  ] =
+    React.useState(false);
+
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  async function getAccessToken() {
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth
+        .getSession();
+
+    return (
+      session?.access_token ??
+      null
+    );
+  }
+
+
+  function goLogin() {
+    const returnTo =
+      `/calendar/${occurrenceId}`;
+
+    window.location.href =
+      `/login?returnTo=${encodeURIComponent(
+        returnTo,
+      )}`;
+  }
+
+
+  async function load() {
+    setLoading(true);
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+      const response =
+        await fetch(
+          `/api/calendar/schedule-bookings?occurrenceId=${encodeURIComponent(
+            occurrenceId,
+          )}`,
+          {
+            headers:
+              accessToken
+                ? {
+                    Authorization:
+                      `Bearer ${accessToken}`,
+                  }
+                : undefined,
+
+            cache:
+              "no-store",
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "開催予定を確認できませんでした。",
+        );
+
+        return;
+      }
+
+      setData({
+        application_id:
+          result.application_id ??
+          null,
+
+        is_owner:
+          result.is_owner ===
+          true,
+
+        recurring_booking_enabled:
+          result
+            .recurring_booking_enabled ===
+          true,
+
+        available_through:
+          typeof result
+            .available_through ===
+          "string"
+            ? result
+                .available_through
+            : null,
+
+        occurrences:
+          Array.isArray(
+            result.occurrences,
+          )
+            ? result.occurrences
+            : [],
+      });
+    } catch (error) {
+      console.error(
+        "[CalendarScheduleBookingPanel] load failed:",
+        error,
+      );
+
+      setMessage(
+        "開催予定を確認できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  async function loadAutoBookingState() {
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      setAutoActive(false);
+      return;
+    }
+
+
+    try {
+      const response =
+        await fetch(
+          `/api/calendar/recurring-bookings?occurrenceId=${encodeURIComponent(
+            occurrenceId,
+          )}`,
+          {
+            method:
+              "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            cache:
+              "no-store",
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      setAutoActive(
+        response.ok &&
+        result?.ok &&
+        result.active ===
+          true,
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarScheduleBookingPanel] auto state failed:",
+        error,
+      );
+
+      setAutoActive(false);
+    }
+  }
+
+
+  React.useEffect(() => {
+    void load();
+    void loadAutoBookingState();
+  }, [
+    occurrenceId,
+  ]);
+
+
+  function formatDate(
+    iso: string,
+    timezone: string,
+  ) {
+    const date =
+      new Date(iso);
+
+    try {
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          timeZone:
+            timezone,
+
+          month:
+            "numeric",
+
+          day:
+            "numeric",
+
+          weekday:
+            "short",
+        },
+      ).format(date);
+    } catch {
+      return date
+        .toLocaleDateString(
+          "ja-JP",
+        );
+    }
+  }
+
+
+  function formatTime(
+    iso: string,
+    timezone: string,
+  ) {
+    const date =
+      new Date(iso);
+
+    try {
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          timeZone:
+            timezone,
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          hour12:
+            false,
+        },
+      ).format(date);
+    } catch {
+      return "";
+    }
+  }
+
+
+  async function submitReservation(
+    accessToken: string,
+    targetOccurrenceId: string,
+  ) {
+    if (
+      !data?.application_id
+    ) {
+      return {
+        ok: false,
+        message:
+          "予約受付情報がありません。",
+      };
+    }
+
+    const response =
+      await fetch(
+        "/api/application/submit",
+        {
+          method:
+            "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+
+            "Content-Type":
+              "application/json",
+          },
+
+          body:
+            JSON.stringify({
+              applicationId:
+                data.application_id,
+
+              occurrenceId:
+                targetOccurrenceId,
+            }),
+        },
+      );
+
+    const result =
+      await response
+        .json()
+        .catch(
+          () => null,
+        );
+
+    return {
+      ok:
+        response.ok &&
+        result?.ok,
+
+      message:
+        result?.message ??
+        null,
+    };
+  }
+
+
+  function setOccurrenceWorking(
+    occurrenceId: string,
+    working: boolean,
+  ) {
+    setWorkingIds(
+      (current) => {
+        const next =
+          new Set(
+            current,
+          );
+
+        if (working) {
+          next.add(
+            occurrenceId,
+          );
+        } else {
+          next.delete(
+            occurrenceId,
+          );
+        }
+
+        return next;
+      },
+    );
+  }
+
+
+  async function reserveOne(
+    targetOccurrenceId: string,
+  ) {
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      goLogin();
+      return;
+    }
+
+    setOccurrenceWorking(
+      targetOccurrenceId,
+      true,
+    );
+
+    setMessage("");
+
+    try {
+      const result =
+        await submitReservation(
+          accessToken,
+          targetOccurrenceId,
+        );
+
+      if (!result.ok) {
+        setMessage(
+          result.message ??
+            "予約できませんでした。",
+        );
+
+        return;
+      }
+
+      setMessage(
+        "予約しました。",
+      );
+
+      await load();
+    } finally {
+      setOccurrenceWorking(
+        targetOccurrenceId,
+        false,
+      );
+    }
+  }
+
+
+  async function cancelOne(
+    targetOccurrenceId: string,
+  ) {
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      goLogin();
+      return;
+    }
+
+    setOccurrenceWorking(
+      targetOccurrenceId,
+      true,
+    );
+
+    setMessage("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/calendar/schedule-bookings",
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId:
+                  targetOccurrenceId,
+              }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "予約を取り消せませんでした。",
+        );
+
+        return;
+      }
+
+      setMessage(
+        "予約を取り消しました。",
+      );
+
+      await load();
+    } finally {
+      setOccurrenceWorking(
+        targetOccurrenceId,
+        false,
+      );
+    }
+  }
+
+
+  async function reserveVisible() {
+    if (
+      !data ||
+      bulkWorking
+    ) {
+      return;
+    }
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      goLogin();
+      return;
+    }
+
+    const targets =
+      data.occurrences
+        .filter(
+          (item) =>
+            item.open &&
+            !item.is_booked,
+        );
+
+    if (
+      targets.length ===
+      0
+    ) {
+      return;
+    }
+
+    setBulkWorking(true);
+    setMessage("");
+
+    let successCount =
+      0;
+
+    let failedCount =
+      0;
+
+    try {
+      for (
+        const target of targets
+      ) {
+        const result =
+          await submitReservation(
+            accessToken,
+            target.id,
+          );
+
+        if (result.ok) {
+          successCount += 1;
+        } else {
+          failedCount += 1;
+        }
+      }
+
+      if (
+        failedCount > 0
+      ) {
+        setMessage(
+          `${successCount}件予約しました。${failedCount}件は予約できませんでした。`,
+        );
+      } else {
+        setMessage(
+          `${successCount}件予約しました。`,
+        );
+      }
+
+      await load();
+    } finally {
+      setBulkWorking(false);
+    }
+  }
+
+
+  async function startAutoBooking() {
+    if (autoWorking) {
+      return;
+    }
+
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      goLogin();
+      return;
+    }
+
+
+    setAutoWorking(true);
+    setMessage("");
+
+
+    try {
+      const response =
+        await fetch(
+          "/api/calendar/recurring-bookings",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId,
+
+                endOn:
+                  null,
+
+                remindOn:
+                  null,
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "自動予約を開始できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setAutoActive(true);
+
+      setMessage(
+        "今後追加される開催日も自動で予約する設定にしました。",
+      );
+
+
+      await load();
+      await loadAutoBookingState();
+    } catch (error) {
+      console.error(
+        "[CalendarScheduleBookingPanel] start auto booking failed:",
+        error,
+      );
+
+      setMessage(
+        "自動予約を開始できませんでした。",
+      );
+    } finally {
+      setAutoWorking(false);
+    }
+  }
+
+
+  async function stopAutoBooking() {
+    if (autoWorking) {
+      return;
+    }
+
+
+    const accessToken =
+      await getAccessToken();
+
+    if (!accessToken) {
+      goLogin();
+      return;
+    }
+
+
+    setAutoWorking(true);
+    setMessage("");
+
+
+    try {
+      const response =
+        await fetch(
+          "/api/calendar/recurring-bookings",
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId,
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "自動予約を終了できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setAutoActive(false);
+
+      setMessage(
+        "自動予約を終了しました。予約済みの開催日はそのままです。",
+      );
+
+
+      await loadAutoBookingState();
+    } catch (error) {
+      console.error(
+        "[CalendarScheduleBookingPanel] stop auto booking failed:",
+        error,
+      );
+
+      setMessage(
+        "自動予約を終了できませんでした。",
+      );
+    } finally {
+      setAutoWorking(false);
+    }
+  }
+
+
+  if (loading) {
+    return (
+      <section className="border-t border-neutral-200 px-6 py-6 sm:px-9">
+        <div className="text-sm text-neutral-500">
+          開催予定を確認しています...
+        </div>
+      </section>
+    );
+  }
+
+
+  if (
+    !data ||
+    data.is_owner ||
+    data.occurrences.length ===
+      0
+  ) {
+    return null;
+  }
+
+
+  const firstOccurrence =
+    data.occurrences[0];
+
+  const bookableCount =
+    data.occurrences
+      .filter(
+        (item) =>
+          item.open &&
+          !item.is_booked,
+      )
+      .length;
+
+
+  return (
+    <section className="border-t border-neutral-200 px-6 py-7 sm:px-9">
+      <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+        今後の開催予定
+      </div>
+
+
+      {data.available_through ? (
+        <p className="mt-2 text-sm leading-6 text-neutral-700">
+          現在予約できる開催日は
+          {" "}
+          <span className="font-bold text-neutral-950">
+            {formatDate(
+              firstOccurrence
+                .starts_at,
+              firstOccurrence
+                .timezone,
+            )}
+            {" ～ "}
+            {formatDate(
+              data
+                .available_through,
+              firstOccurrence
+                .timezone,
+            )}
+          </span>
+          {" "}
+          まで決まっています。
+        </p>
+      ) : null}
+
+
+      <div className="mt-5 divide-y divide-neutral-100 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+        {data.occurrences.map(
+          (item) => {
+            const working =
+              workingIds.has(
+                item.id,
+              );
+
+            let label =
+              "予約する";
+
+            let disabled =
+              false;
+
+
+            if (working) {
+              label =
+                "処理中...";
+
+              disabled =
+                true;
+            } else if (
+              item.is_booked
+            ) {
+              label =
+                "予約を取消";
+            } else if (
+              item.sold_out
+            ) {
+              label =
+                "満席";
+
+              disabled =
+                true;
+            } else if (
+              item.deadline_passed
+            ) {
+              label =
+                "受付終了";
+
+              disabled =
+                true;
+            } else if (
+              !item.open
+            ) {
+              label =
+                "受付停止";
+
+              disabled =
+                true;
+            }
+
+
+            return (
+              <div
+                key={
+                  item.id
+                }
+                className="flex items-center justify-between gap-4 px-4 py-3.5"
+              >
+                <div>
+                  <div className="text-sm font-bold text-neutral-950">
+                    {formatDate(
+                      item.starts_at,
+                      item.timezone,
+                    )}
+                    {" "}
+                    {formatTime(
+                      item.starts_at,
+                      item.timezone,
+                    )}
+                  </div>
+
+
+                  {item.remaining !==
+                  null ? (
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      残り
+                      {item.remaining}
+                      名
+                    </div>
+                  ) : null}
+                </div>
+
+
+                <button
+                  type="button"
+                  disabled={
+                    disabled
+                  }
+                  onClick={() => {
+                    if (
+                      item.is_booked
+                    ) {
+                      void cancelOne(
+                        item.id,
+                      );
+                    } else {
+                      void reserveOne(
+                        item.id,
+                      );
+                    }
+                  }}
+                  className={
+                    item.is_booked
+                      ? "shrink-0 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+                      : "shrink-0 rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700 disabled:bg-neutral-200 disabled:text-neutral-500"
+                  }
+                >
+                  {label}
+                </button>
+              </div>
+            );
+          },
+        )}
+      </div>
+
+
+      <button
+        type="button"
+        disabled={
+          bulkWorking ||
+          bookableCount === 0
+        }
+        onClick={() => {
+          void reserveVisible();
+        }}
+        className="mt-5 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-900 transition hover:bg-neutral-50 disabled:opacity-40"
+      >
+        {bulkWorking
+          ? "予約しています..."
+          : "表示中の開催日をすべて予約"}
+      </button>
+
+
+      {data.recurring_booking_enabled ? (
+        autoActive ? (
+          <div className="mt-3 rounded-2xl bg-neutral-950 px-4 py-4 text-white">
+            <div className="text-sm font-bold">
+              ✓ 自動予約中
+            </div>
+
+            <p className="mt-1 text-xs leading-5 text-neutral-300">
+              今後、新しい開催日が追加された場合も自動的に予約されます。
+            </p>
+
+            <button
+              type="button"
+              disabled={
+                autoWorking
+              }
+              onClick={() => {
+                void stopAutoBooking();
+              }}
+              className="mt-3 rounded-full border border-neutral-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:opacity-40"
+            >
+              {autoWorking
+                ? "処理しています..."
+                : "自動予約をやめる"}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <button
+              type="button"
+              disabled={
+                autoWorking
+              }
+              onClick={() => {
+                void startAutoBooking();
+              }}
+              className="w-full rounded-xl bg-neutral-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+            >
+              {autoWorking
+                ? "設定しています..."
+                : "今後追加される開催日も自動で予約"}
+            </button>
+
+            <p className="mt-2 text-xs leading-5 text-neutral-500">
+              新しい開催日が追加された場合も、自動的に予約します。
+            </p>
+          </div>
+        )
+      ) : null}
+
+
+      <p className="mt-4 text-xs leading-5 text-neutral-500">
+        予約した開催日は、あとから追加・キャンセルできます。
+      </p>
+
+
+      {message ? (
+        <div className="mt-4 rounded-xl bg-neutral-100 px-4 py-3 text-sm text-neutral-700">
+          {message}
+        </div>
+      ) : null}
+    </section>
+  );
+}

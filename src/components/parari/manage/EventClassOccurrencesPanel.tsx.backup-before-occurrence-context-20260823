@@ -1,0 +1,430 @@
+// src/components/parari/manage/EventClassOccurrencesPanel.tsx
+// 2026-08-23 JST
+//
+// 1つのイベント・クラス（calendar_item）に属する
+// 実開催回（calendar_occurrence）を子パネルとして表示する。
+// 子パネルを開くと、その回だけの詳細を変更できる。
+
+"use client";
+
+import * as React from "react";
+
+import CalendarOccurrenceEditor from "@/components/parari/manage/CalendarOccurrenceEditor";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+
+type CalendarOccurrence = {
+  id: string;
+  calendar_item_id: string;
+  calendar_schedule_id: string | null;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  title: string;
+  location: string | null;
+  capacity: number | null;
+  reservation_count?: number;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
+  status:
+    | "scheduled"
+    | "cancelled"
+    | "completed";
+};
+
+
+type Props = {
+  calendarItemId: string;
+};
+
+
+function formatDateTime(
+  occurrence: CalendarOccurrence,
+) {
+  try {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          occurrence.timezone,
+
+        year:
+          "numeric",
+
+        month:
+          "short",
+
+        day:
+          "numeric",
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    ).format(
+      new Date(
+        occurrence.starts_at,
+      ),
+    );
+  } catch {
+    return occurrence.starts_at;
+  }
+}
+
+
+export default function EventClassOccurrencesPanel({
+  calendarItemId,
+}: Props) {
+  const [
+    occurrences,
+    setOccurrences,
+  ] =
+    React.useState<
+      CalendarOccurrence[]
+    >([]);
+
+  const [
+    selectedOccurrence,
+    setSelectedOccurrence,
+  ] =
+    React.useState<
+      CalendarOccurrence | null
+    >(null);
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  async function load() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth
+          .getSession();
+
+
+      if (
+        !session?.access_token
+      ) {
+        setMessage(
+          "開催予定を見るにはログインが必要です。",
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/occurrences",
+          {
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            cache:
+              "no-store",
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setMessage(
+          result?.message ??
+            "開催予定を取得できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const rows =
+        Array.isArray(
+          result.occurrences,
+        )
+          ? result.occurrences
+          : [];
+
+
+      setOccurrences(
+        rows
+          .filter(
+            (
+              occurrence: CalendarOccurrence,
+            ) =>
+              occurrence
+                .calendar_item_id ===
+              calendarItemId,
+          )
+          .sort(
+            (
+              a: CalendarOccurrence,
+              b: CalendarOccurrence,
+            ) =>
+              new Date(
+                a.starts_at,
+              ).getTime() -
+              new Date(
+                b.starts_at,
+              ).getTime(),
+          ),
+      );
+    } catch (error) {
+      console.error(
+        "[EventClassOccurrencesPanel] load failed:",
+        error,
+      );
+
+      setMessage(
+        "開催予定を取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  React.useEffect(
+    () => {
+      void load();
+    },
+    [
+      calendarItemId,
+    ],
+  );
+
+
+  if (loading) {
+    return (
+      <p className="text-sm text-neutral-500">
+        開催予定を読み込んでいます...
+      </p>
+    );
+  }
+
+
+  if (message) {
+    return (
+      <p className="text-sm text-neutral-600">
+        {
+          message
+        }
+      </p>
+    );
+  }
+
+
+  if (
+    occurrences.length ===
+    0
+  ) {
+    return (
+      <div className="rounded-2xl bg-neutral-50 px-4 py-5 text-sm text-neutral-500">
+        開催予定はまだありません。
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-neutral-500">
+        開催予定{" "}
+        <strong className="text-neutral-800">
+          {
+            occurrences.length
+          }
+        </strong>
+        {" "}
+        回
+      </div>
+
+
+      {occurrences.map(
+        (
+          occurrence,
+        ) => {
+          const isOpen =
+            selectedOccurrence
+              ?.id ===
+            occurrence.id;
+
+
+          return (
+            <div
+              key={
+                occurrence.id
+              }
+              className={
+                occurrence.status ===
+                "cancelled"
+                  ? "rounded-2xl border border-neutral-200 bg-neutral-50 p-4 opacity-70"
+                  : "rounded-2xl border border-neutral-200 bg-white p-4"
+              }
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOccurrence(
+                    isOpen
+                      ? null
+                      : occurrence,
+                  );
+                }}
+                className="flex w-full items-start justify-between gap-4 text-left"
+              >
+                <div>
+                  <div className="text-sm font-bold text-neutral-950">
+                    {formatDateTime(
+                      occurrence,
+                    )}
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
+                    {occurrence.location ? (
+                      <span>
+                        {
+                          occurrence.location
+                        }
+                      </span>
+                    ) : null}
+
+                    <span>
+                      参加者{" "}
+                      {
+                        occurrence.reservation_count ??
+                        0
+                      }
+                      {occurrence.capacity !==
+                      null
+                        ? ` / ${occurrence.capacity}`
+                        : ""}
+                    </span>
+
+                    {occurrence.status ===
+                    "cancelled" ? (
+                      <span className="font-bold text-red-600">
+                        休講
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <span className="shrink-0 text-xs font-bold text-neutral-400">
+                  {isOpen
+                    ? "▲"
+                    : "▼"}
+                </span>
+              </button>
+
+
+              {isOpen ? (
+                <div className="mt-4 border-t border-neutral-100 pt-4">
+                  <CalendarOccurrenceEditor
+                    occurrence={
+                      occurrence
+                    }
+                    onClose={() => {
+                      setSelectedOccurrence(
+                        null,
+                      );
+                    }}
+                    onSaved={(
+                      updated,
+                    ) => {
+                      setOccurrences(
+                        (
+                          current,
+                        ) =>
+                          current.map(
+                            (
+                              currentOccurrence,
+                            ) =>
+                              currentOccurrence.id ===
+                              updated.id
+                                ? {
+                                    ...currentOccurrence,
+                                    ...updated,
+                                  }
+                                : currentOccurrence,
+                          ),
+                      );
+
+                      setSelectedOccurrence(
+                        null,
+                      );
+                    }}
+                    onCancelled={(
+                      updated,
+                    ) => {
+                      setOccurrences(
+                        (
+                          current,
+                        ) =>
+                          current.map(
+                            (
+                              currentOccurrence,
+                            ) =>
+                              currentOccurrence.id ===
+                              updated.id
+                                ? {
+                                    ...currentOccurrence,
+                                    ...updated,
+                                  }
+                                : currentOccurrence,
+                          ),
+                      );
+
+                      setSelectedOccurrence(
+                        null,
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          );
+        },
+      )}
+    </div>
+  );
+}

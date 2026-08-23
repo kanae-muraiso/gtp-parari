@@ -1,0 +1,745 @@
+"use client";
+
+import { useState } from "react";
+
+import type { PublicPagePattern } from "@/components/parari/public-page/PublicPageStrategyWizard";
+
+type Draft = {
+  name: string;
+  headline: string;
+  intro: string;
+  about: string;
+  origin: string;
+  value: string;
+  activity: string;
+  audience: string;
+  welcome: string;
+  action: string;
+};
+
+const EMPTY_DRAFT: Draft = {
+  name: "",
+  headline: "",
+  intro: "",
+  about: "",
+  origin: "",
+  value: "",
+  activity: "",
+  audience: "",
+  welcome: "",
+  action: "",
+};
+
+const PATTERNS: Array<{
+  id: PublicPagePattern;
+  code: string;
+  title: string;
+  description: string;
+}> = [
+  {
+    id: "person-first",
+    code: "PERSON FIRST",
+    title: "人から始まる",
+    description: "まず「誰なのか」を見せて、活動へつなげる。",
+  },
+  {
+    id: "offer-first",
+    code: "OFFER FIRST",
+    title: "やっていることから始まる",
+    description: "提供しているものを先に見せ、人や理由へつなげる。",
+  },
+  {
+    id: "story-first",
+    code: "STORY FIRST",
+    title: "物語から始まる",
+    description: "始めた理由や考え方から、現在の活動へつなげる。",
+  },
+  {
+    id: "welcome-first",
+    code: "WELCOME FIRST",
+    title: "安心から始まる",
+    description: "初めての人への声かけから、活動と人を伝える。",
+  },
+];
+
+function Placeholder({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="text-neutral-400">
+      {children}
+    </span>
+  );
+}
+
+function Text({
+  value,
+  placeholder,
+}: {
+  value: string;
+  placeholder: string;
+}) {
+  return value.trim() ? (
+    <>{value}</>
+  ) : (
+    <Placeholder>{placeholder}</Placeholder>
+  );
+}
+
+function MiniModel({
+  pattern,
+}: {
+  pattern: PublicPagePattern;
+}) {
+  if (pattern === "person-first") {
+    return (
+      <div className="h-[330px] bg-white">
+        <div className="h-28 bg-gradient-to-br from-neutral-300 to-neutral-100" />
+
+        <div className="-mt-6 px-4">
+          <div className="h-12 w-12 rounded-full border-4 border-white bg-neutral-900" />
+
+          <div className="mt-3 text-lg font-black">
+            あなたの名前
+          </div>
+
+          <div className="mt-2 text-xs font-bold text-neutral-400">
+            最初のひとこと
+          </div>
+
+          <div className="mt-5 space-y-2">
+            <div className="h-2 w-full rounded bg-neutral-100" />
+            <div className="h-2 w-4/5 rounded bg-neutral-100" />
+          </div>
+
+          <div className="mt-5 rounded-xl bg-neutral-50 p-3 text-[9px] font-bold text-neutral-400">
+            あなたについて
+          </div>
+
+          <div className="mt-3 rounded-xl bg-neutral-950 p-3 text-center text-[9px] font-bold text-white">
+            次の一歩
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "offer-first") {
+    return (
+      <div className="h-[330px] bg-[#f4efe8] p-4">
+        <div className="text-[8px] font-black tracking-widest text-[#937963]">
+          OFFER
+        </div>
+
+        <div className="mt-4 text-xl font-black leading-tight">
+          何をしているのか
+        </div>
+
+        <div className="mt-3 text-[10px] text-neutral-500">
+          誰のためのものか
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-white p-4 shadow-sm">
+          <div className="text-[9px] font-black text-neutral-400">
+            活動・サービス
+          </div>
+
+          <div className="mt-3 h-16 rounded-xl bg-neutral-100" />
+        </div>
+
+        <div className="mt-4 text-[9px] font-bold text-neutral-500">
+          それをしている人
+        </div>
+
+        <div className="mt-4 rounded-full bg-neutral-950 px-3 py-2 text-center text-[9px] font-bold text-white">
+          次の一歩
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "story-first") {
+    return (
+      <div className="h-[330px] bg-[#19211e] p-5 text-white">
+        <div className="text-[8px] font-black tracking-widest text-[#91a399]">
+          STORY
+        </div>
+
+        <div className="mt-5 text-xl font-black leading-tight">
+          物語の入口
+        </div>
+
+        <div className="mt-5 h-px w-10 bg-[#71847a]" />
+
+        <div className="mt-5 text-[10px] leading-5 text-[#c5d0ca]">
+          始めたきっかけ
+          <br />
+          大切にしていること
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[#53645b] p-3 text-[9px] text-[#aebbb4]">
+          今していること
+        </div>
+
+        <div className="mt-5 text-[9px] font-bold">
+          次の一歩 →
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[330px] bg-[#fbf6ef] p-4">
+      <div className="rounded-2xl bg-[#e8b99c] p-4">
+        <div className="text-[8px] font-black tracking-widest text-[#755142]">
+          WELCOME
+        </div>
+
+        <div className="mt-4 text-xl font-black leading-tight text-[#352823]">
+          まず安心してもらう言葉
+        </div>
+
+        <div className="mt-3 text-[10px] leading-5 text-[#6e5145]">
+          こんな人へ
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="rounded-xl bg-white p-3 text-[9px] font-bold text-neutral-500">
+          ここでは何をする？
+        </div>
+
+        <div className="rounded-xl bg-white p-3 text-[9px] font-bold text-neutral-500">
+          迎える人について
+        </div>
+
+        <div className="rounded-xl bg-white p-3 text-[9px] font-bold text-neutral-500">
+          初めての一歩
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  placeholder,
+  rows = 2,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  rows?: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 text-[9px] font-black tracking-[0.16em] text-neutral-400">
+        {label}
+      </div>
+
+      <textarea
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full resize-none rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
+      />
+    </label>
+  );
+}
+
+function FullModel({
+  pattern,
+  draft,
+}: {
+  pattern: PublicPagePattern;
+  draft: Draft;
+}) {
+  if (pattern === "person-first") {
+    return (
+      <div className="overflow-hidden rounded-[32px] bg-white shadow-lg">
+        <div className="h-56 bg-gradient-to-br from-neutral-300 via-neutral-100 to-neutral-200" />
+
+        <div className="mx-auto max-w-3xl px-6 pb-12">
+          <div className="-mt-10 h-20 w-20 rounded-full border-4 border-white bg-neutral-950" />
+
+          <div className="mt-5 text-3xl font-black">
+            <Text
+              value={draft.name}
+              placeholder="あなたの名前"
+            />
+          </div>
+
+          <h1 className="mt-5 text-4xl font-black leading-tight">
+            <Text
+              value={draft.headline}
+              placeholder="最初に伝えるひとこと"
+            />
+          </h1>
+
+          <div className="mt-5 text-base leading-8 text-neutral-600">
+            <Text
+              value={draft.intro}
+              placeholder="短い紹介"
+            />
+          </div>
+
+          <div className="mt-10 border-t border-neutral-200 pt-8">
+            <div className="text-[10px] font-black tracking-widest text-neutral-400">
+              ABOUT
+            </div>
+
+            <div className="mt-4 whitespace-pre-wrap text-sm leading-8 text-neutral-700">
+              <Text
+                value={draft.about}
+                placeholder="あなたについて"
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-3xl bg-neutral-50 p-5">
+            <div className="text-[10px] font-black tracking-widest text-neutral-400">
+              ACTIVITY
+            </div>
+
+            <div className="mt-3 text-sm leading-7">
+              <Text
+                value={draft.activity}
+                placeholder="今している活動"
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 inline-flex rounded-full bg-neutral-950 px-6 py-3 text-sm font-black text-white">
+            <Text
+              value={draft.action}
+              placeholder="次の一歩"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "offer-first") {
+    return (
+      <div className="overflow-hidden rounded-[32px] bg-[#f4efe8] shadow-lg">
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <div className="text-[10px] font-black tracking-[0.2em] text-[#947a63]">
+            OFFER
+          </div>
+
+          <h1 className="mt-5 text-4xl font-black leading-tight">
+            <Text
+              value={draft.headline}
+              placeholder="何を提供しているのか"
+            />
+          </h1>
+
+          <div className="mt-5 text-base leading-8 text-neutral-600">
+            <Text
+              value={draft.audience}
+              placeholder="誰のためのものか"
+            />
+          </div>
+
+          <div className="mt-10 rounded-[28px] bg-white p-6 shadow-sm">
+            <div className="text-[10px] font-black tracking-widest text-neutral-400">
+              WHAT I DO
+            </div>
+
+            <div className="mt-4 whitespace-pre-wrap text-lg font-bold leading-8">
+              <Text
+                value={draft.activity}
+                placeholder="具体的な活動・サービス・内容"
+              />
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <div className="text-[10px] font-black tracking-widest text-neutral-400">
+              ABOUT
+            </div>
+
+            <div className="mt-3 text-xl font-black">
+              <Text
+                value={draft.name}
+                placeholder="それをしている人"
+              />
+            </div>
+
+            <div className="mt-4 text-sm leading-8 text-neutral-600">
+              <Text
+                value={draft.about}
+                placeholder="その人について"
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 inline-flex rounded-full bg-neutral-950 px-6 py-3 text-sm font-black text-white">
+            <Text
+              value={draft.action}
+              placeholder="次の一歩"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "story-first") {
+    return (
+      <div className="overflow-hidden rounded-[32px] bg-[#19211e] text-white shadow-lg">
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <div className="text-[10px] font-black tracking-[0.22em] text-[#91a399]">
+            STORY
+          </div>
+
+          <h1 className="mt-6 text-4xl font-black leading-tight">
+            <Text
+              value={draft.headline}
+              placeholder="物語の入口"
+            />
+          </h1>
+
+          <div className="mt-8 h-px w-12 bg-[#75877d]" />
+
+          <div className="mt-8 whitespace-pre-wrap text-base leading-9 text-[#d0d9d4]">
+            <Text
+              value={draft.origin}
+              placeholder="始めたきっかけ"
+            />
+          </div>
+
+          <div className="mt-8 whitespace-pre-wrap text-sm leading-8 text-[#aebdb5]">
+            <Text
+              value={draft.value}
+              placeholder="続けている理由・大切にしていること"
+            />
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-[#53645b] p-5">
+            <div className="text-[10px] font-black tracking-widest text-[#87998f]">
+              NOW
+            </div>
+
+            <div className="mt-3 text-sm leading-8">
+              <Text
+                value={draft.activity}
+                placeholder="その結果、今していること"
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 text-sm font-black">
+            <Text
+              value={draft.action}
+              placeholder="次の一歩 →"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-[32px] bg-[#fbf6ef] shadow-lg">
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-[28px] bg-[#e8b99c] p-7">
+          <div className="text-[10px] font-black tracking-[0.2em] text-[#755142]">
+            WELCOME
+          </div>
+
+          <h1 className="mt-5 text-4xl font-black leading-tight text-[#352823]">
+            <Text
+              value={draft.welcome}
+              placeholder="まず安心してもらう言葉"
+            />
+          </h1>
+
+          <div className="mt-5 text-base leading-8 text-[#654b40]">
+            <Text
+              value={draft.audience}
+              placeholder="こんな人へ"
+            />
+          </div>
+        </div>
+
+        <div className="mt-7 rounded-3xl bg-white p-6">
+          <div className="text-[10px] font-black tracking-widest text-neutral-400">
+            WHAT
+          </div>
+
+          <div className="mt-3 text-sm leading-8">
+            <Text
+              value={draft.activity}
+              placeholder="ここでは何をするのか"
+            />
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-3xl bg-white p-6">
+          <div className="text-[10px] font-black tracking-widest text-neutral-400">
+            PERSON
+          </div>
+
+          <div className="mt-3 text-lg font-black">
+            <Text
+              value={draft.name}
+              placeholder="迎える人"
+            />
+          </div>
+
+          <div className="mt-3 text-sm leading-8 text-neutral-600">
+            <Text
+              value={draft.about}
+              placeholder="どんな人なのか"
+            />
+          </div>
+        </div>
+
+        <div className="mt-7 inline-flex rounded-full bg-[#5d4032] px-6 py-3 text-sm font-black text-white">
+          <Text
+            value={draft.action}
+            placeholder="次の一歩"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PublicPageModelLab({
+  initialPattern,
+  onBack,
+}: {
+  initialPattern: PublicPagePattern;
+  onBack: () => void;
+}) {
+  const [pattern, setPattern] =
+    useState<PublicPagePattern>(initialPattern);
+
+  const [draft, setDraft] =
+    useState<Draft>(EMPTY_DRAFT);
+
+  const setField = (
+    key: keyof Draft,
+    value: string,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-[32px] bg-neutral-950 p-6 text-white sm:p-8">
+        <div className="text-[10px] font-black tracking-[0.22em] text-neutral-500">
+          MODEL LAB
+        </div>
+
+        <h2 className="mt-3 text-2xl font-black sm:text-3xl">
+          まず、4つの完成形を見てみます。
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-400">
+          まだ何も書かなくて構いません。
+          空欄のままでも、ページの構成と印象は確認できます。
+        </p>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300"
+        >
+          ← PAGE STRATEGYへ
+        </button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {PATTERNS.map((item) => {
+          const selected =
+            item.id === pattern;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() =>
+                setPattern(item.id)
+              }
+              className={[
+                "overflow-hidden rounded-[28px] border text-left transition",
+                selected
+                  ? "border-neutral-950 ring-2 ring-neutral-950"
+                  : "border-neutral-200 hover:border-neutral-500",
+              ].join(" ")}
+            >
+              <MiniModel pattern={item.id} />
+
+              <div className="bg-white p-4">
+                <div className="text-[9px] font-black tracking-[0.16em] text-neutral-400">
+                  {item.code}
+                </div>
+
+                <div className="mt-2 text-sm font-black text-neutral-950">
+                  {item.title}
+                </div>
+
+                <div className="mt-1 text-xs leading-5 text-neutral-500">
+                  {item.description}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+        <aside className="space-y-4 rounded-[32px] border border-neutral-200 bg-neutral-50 p-5">
+          <div>
+            <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+              TEST CONTENT
+            </div>
+
+            <div className="mt-2 text-lg font-black">
+              空欄を試しに埋める
+            </div>
+
+            <p className="mt-1 text-xs leading-6 text-neutral-500">
+              ここは保存しません。
+              モデルを考えるための実験用です。
+            </p>
+          </div>
+
+          <Field
+            label="NAME"
+            value={draft.name}
+            placeholder="名前"
+            rows={1}
+            onChange={(value) =>
+              setField("name", value)
+            }
+          />
+
+          <Field
+            label="HEADLINE"
+            value={draft.headline}
+            placeholder="最初のひとこと"
+            onChange={(value) =>
+              setField("headline", value)
+            }
+          />
+
+          <Field
+            label="INTRO"
+            value={draft.intro}
+            placeholder="短い紹介"
+            onChange={(value) =>
+              setField("intro", value)
+            }
+          />
+
+          <Field
+            label="ABOUT"
+            value={draft.about}
+            placeholder="あなたについて"
+            rows={4}
+            onChange={(value) =>
+              setField("about", value)
+            }
+          />
+
+          <Field
+            label="ORIGIN"
+            value={draft.origin}
+            placeholder="始めたきっかけ"
+            rows={3}
+            onChange={(value) =>
+              setField("origin", value)
+            }
+          />
+
+          <Field
+            label="VALUE"
+            value={draft.value}
+            placeholder="大切にしていること"
+            onChange={(value) =>
+              setField("value", value)
+            }
+          />
+
+          <Field
+            label="ACTIVITY"
+            value={draft.activity}
+            placeholder="今している活動"
+            rows={3}
+            onChange={(value) =>
+              setField("activity", value)
+            }
+          />
+
+          <Field
+            label="AUDIENCE"
+            value={draft.audience}
+            placeholder="誰に届けたいか"
+            onChange={(value) =>
+              setField("audience", value)
+            }
+          />
+
+          <Field
+            label="WELCOME"
+            value={draft.welcome}
+            placeholder="初めての人への言葉"
+            onChange={(value) =>
+              setField("welcome", value)
+            }
+          />
+
+          <Field
+            label="ACTION"
+            value={draft.action}
+            placeholder="次の一歩"
+            onChange={(value) =>
+              setField("action", value)
+            }
+          />
+
+          <button
+            type="button"
+            onClick={() =>
+              setDraft(EMPTY_DRAFT)
+            }
+            className="text-xs font-bold text-neutral-400 hover:text-neutral-700"
+          >
+            入力を全部消す
+          </button>
+        </aside>
+
+        <div>
+          <div className="mb-3 text-[10px] font-black tracking-[0.18em] text-neutral-400">
+            LIVE MODEL / {
+              PATTERNS.find(
+                (item) => item.id === pattern,
+              )?.code
+            }
+          </div>
+
+          <FullModel
+            pattern={pattern}
+            draft={draft}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

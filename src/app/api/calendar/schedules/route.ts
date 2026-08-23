@@ -1,18 +1,30 @@
 // src/app/api/calendar/schedules/route.ts
-// 2026-08-20 JST
+// 2026-08-22 JST
 //
-// PARARI CALENDAR v1
+// PARARI CALENDAR
 //
-// GET
-// - 自分のSCHEDULE一覧
-// - calendarItemId指定時は、そのITEMだけ
+// calendar_item     = WHAT
+// calendar_schedule = WHEN rule
 //
-// POST
-// - calendar_item に新しいSCHEDULEを追加
+// start_date / end_date
+//   = 開催期間
 //
-// calendar_items     = WHAT
-// calendar_schedules = WHEN
-// calendar_occurrences = 実際の開催回（次STEP）
+// recurrence_rule
+//   = その期間中の「いつ開催するか」
+//
+// weekly:
+//   { freq:"weekly", interval:1, byWeekday:[5] }
+//
+// biweekly:
+//   {
+//     freq:"weekly",
+//     interval:2,
+//     byWeekday:[5],
+//     anchorDate:"2026-08-07"
+//   }
+//
+// monthly:
+//   { freq:"monthly", interval:1, byMonthDay:[15] }
 
 import {
   NextRequest,
@@ -38,6 +50,10 @@ type CreateScheduleBody = {
   startTime?: unknown;
   endDate?: unknown;
   timezone?: unknown;
+
+  weekday?: unknown;
+  monthDay?: unknown;
+  anchorDate?: unknown;
 };
 
 
@@ -45,14 +61,19 @@ function getBearerToken(
   request: NextRequest,
 ): string | null {
   const authorization =
-    request.headers.get("authorization") ?? "";
+    request.headers.get(
+      "authorization",
+    ) ?? "";
 
   const match =
     authorization.match(
       /^Bearer\s+(.+)$/i,
     );
 
-  return match?.[1]?.trim() || null;
+  return (
+    match?.[1]?.trim() ||
+    null
+  );
 }
 
 
@@ -60,7 +81,9 @@ async function getAuthenticatedUser(
   request: NextRequest,
 ) {
   const token =
-    getBearerToken(request);
+    getBearerToken(
+      request,
+    );
 
   if (!token) {
     return {
@@ -71,13 +94,18 @@ async function getAuthenticatedUser(
     };
   }
 
+
   const {
-    data: { user },
+    data: {
+      user,
+    },
     error,
   } =
-    await supabaseAdmin.auth.getUser(
-      token,
-    );
+    await supabaseAdmin.auth
+      .getUser(
+        token,
+      );
+
 
   if (
     error ||
@@ -90,6 +118,7 @@ async function getAuthenticatedUser(
         "ログイン情報を確認できませんでした。",
     };
   }
+
 
   return {
     ok: true as const,
@@ -106,7 +135,9 @@ function isRecurrenceType(
     "weekly",
     "biweekly",
     "monthly",
-  ].includes(value);
+  ].includes(
+    value,
+  );
 }
 
 
@@ -121,12 +152,14 @@ function isValidDate(
     return false;
   }
 
+
   const [
     yearText,
     monthText,
     dayText,
   ] =
     value.split("-");
+
 
   const year =
     Number(yearText);
@@ -137,6 +170,7 @@ function isValidDate(
   const day =
     Number(dayText);
 
+
   const date =
     new Date(
       Date.UTC(
@@ -145,6 +179,7 @@ function isValidDate(
         day,
       ),
     );
+
 
   return (
     date.getUTCFullYear() ===
@@ -173,7 +208,8 @@ function isValidTimezone(
     new Intl.DateTimeFormat(
       "en-US",
       {
-        timeZone: value,
+        timeZone:
+          value,
       },
     );
 
@@ -181,6 +217,35 @@ function isValidTimezone(
   } catch {
     return false;
   }
+}
+
+
+function normalizeInteger(
+  value: unknown,
+): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+
+  const number =
+    Number(value);
+
+
+  if (
+    !Number.isInteger(
+      number,
+    )
+  ) {
+    return null;
+  }
+
+
+  return number;
 }
 
 
@@ -196,6 +261,7 @@ function getIsoWeekday(
       .split("-")
       .map(Number);
 
+
   const date =
     new Date(
       Date.UTC(
@@ -205,66 +271,77 @@ function getIsoWeekday(
       ),
     );
 
+
   const jsDay =
     date.getUTCDay();
 
-  // ISO
-  // Mon=1 ... Sun=7
-  return jsDay === 0
-    ? 7
-    : jsDay;
-}
 
-
-function getMonthDay(
-  dateText: string,
-): number {
-  return Number(
-    dateText.split("-")[2],
+  return (
+    jsDay === 0
+      ? 7
+      : jsDay
   );
 }
 
 
 function buildRecurrenceRule(
-  recurrenceType: RecurrenceType,
-  startDate: string,
+  recurrenceType:
+    RecurrenceType,
+  options: {
+    weekday:
+      number | null;
+    monthDay:
+      number | null;
+    anchorDate:
+      string;
+  },
 ) {
-  switch (recurrenceType) {
+  switch (
+    recurrenceType
+  ) {
     case "once":
       return {
-        freq: "once",
+        freq:
+          "once",
       };
+
 
     case "weekly":
       return {
-        freq: "weekly",
-        interval: 1,
+        freq:
+          "weekly",
+        interval:
+          1,
         byWeekday: [
-          getIsoWeekday(
-            startDate,
-          ),
+          options.weekday,
         ],
       };
+
 
     case "biweekly":
       return {
-        freq: "weekly",
-        interval: 2,
+        freq:
+          "weekly",
+        interval:
+          2,
         byWeekday: [
           getIsoWeekday(
-            startDate,
+            options.anchorDate,
           ),
         ],
+        anchorDate:
+          options.anchorDate,
       };
+
 
     case "monthly":
       return {
-        freq: "monthly",
-        interval: 1,
+        freq:
+          "monthly",
+        interval:
+          1,
         byMonthDay: [
-          getMonthDay(
-            startDate,
-          ),
+          options.monthDay,
         ],
       };
   }
@@ -283,36 +360,51 @@ export async function GET(
       request,
     );
 
-  if (auth.ok === false) {
+
+  if (
+    auth.ok === false
+  ) {
     return NextResponse.json(
       {
         ok: false,
-        message: auth.message,
+        message:
+          auth.message,
       },
       {
-        status: auth.status,
+        status:
+          auth.status,
       },
     );
   }
 
 
   const calendarItemId =
-    request.nextUrl.searchParams
-      .get("calendarItemId")
+    request.nextUrl
+      .searchParams
+      .get(
+        "calendarItemId",
+      )
       ?.trim() ?? "";
 
 
-  let itemIds: string[] = [];
+  let itemIds:
+    string[] = [];
 
 
-  if (calendarItemId) {
+  if (
+    calendarItemId
+  ) {
     const {
       data: item,
-      error: itemError,
+      error,
     } =
       await supabaseAdmin
-        .from("calendar_items")
-        .select("id")
+        .from(
+          "calendar_items",
+        )
+        .select(
+          "id",
+        )
         .eq(
           "id",
           calendarItemId,
@@ -325,7 +417,7 @@ export async function GET(
 
 
     if (
-      itemError ||
+      error ||
       !item
     ) {
       return NextResponse.json(
@@ -335,7 +427,8 @@ export async function GET(
             "指定されたクラス・イベントが見つかりません。",
         },
         {
-          status: 404,
+          status:
+            404,
         },
       );
     }
@@ -346,22 +439,26 @@ export async function GET(
     ];
   } else {
     const {
-      data: items,
-      error: itemsError,
+      data,
+      error,
     } =
       await supabaseAdmin
-        .from("calendar_items")
-        .select("id")
+        .from(
+          "calendar_items",
+        )
+        .select(
+          "id",
+        )
         .eq(
           "owner_user_id",
           auth.user.id,
         );
 
 
-    if (itemsError) {
+    if (error) {
       console.error(
         "[calendar/schedules GET] items failed:",
-        itemsError,
+        error,
       );
 
       return NextResponse.json(
@@ -371,22 +468,28 @@ export async function GET(
             "スケジュールを取得できませんでした。",
         },
         {
-          status: 500,
+          status:
+            500,
         },
       );
     }
 
 
     itemIds =
-      (items ?? []).map(
-        (item) =>
-          String(item.id),
+      (data ?? []).map(
+        (
+          item,
+        ) =>
+          String(
+            item.id,
+          ),
       );
   }
 
 
   if (
-    itemIds.length === 0
+    itemIds.length ===
+    0
   ) {
     return NextResponse.json({
       ok: true,
@@ -403,34 +506,27 @@ export async function GET(
       .from(
         "calendar_schedules",
       )
-      .select(
-        `
-          id,
-          calendar_item_id,
-          timezone,
-          start_date,
-          start_time,
-          end_date,
-          recurrence_rule,
-          status,
-          created_at,
-          updated_at
-        `,
-      )
+      .select(`
+        id,
+        calendar_item_id,
+        timezone,
+        start_date,
+        start_time,
+        end_date,
+        recurrence_rule,
+        status,
+        created_at,
+        updated_at
+      `)
       .in(
         "calendar_item_id",
         itemIds,
       )
       .order(
-        "start_date",
+        "created_at",
         {
-          ascending: true,
-        },
-      )
-      .order(
-        "start_time",
-        {
-          ascending: true,
+          ascending:
+            true,
         },
       );
 
@@ -448,7 +544,8 @@ export async function GET(
           "スケジュールを取得できませんでした。",
       },
       {
-        status: 500,
+        status:
+          500,
       },
     );
   }
@@ -474,14 +571,19 @@ export async function POST(
       request,
     );
 
-  if (auth.ok === false) {
+
+  if (
+    auth.ok === false
+  ) {
     return NextResponse.json(
       {
         ok: false,
-        message: auth.message,
+        message:
+          auth.message,
       },
       {
-        status: auth.status,
+        status:
+          auth.status,
       },
     );
   }
@@ -490,57 +592,100 @@ export async function POST(
   const body =
     (await request
       .json()
-      .catch(() => null)) as
-      | CreateScheduleBody
-      | null;
+      .catch(
+        () => null,
+      )) as
+      CreateScheduleBody |
+      null;
 
 
   const calendarItemId =
-    String(
-      body?.calendarItemId ??
-        "",
-    ).trim();
+    typeof body
+      ?.calendarItemId ===
+      "string"
+      ? body.calendarItemId
+          .trim()
+      : "";
+
 
   const recurrenceType =
-    String(
-      body?.recurrenceType ??
-        "",
-    ).trim();
+    typeof body
+      ?.recurrenceType ===
+      "string"
+      ? body.recurrenceType
+          .trim()
+      : "";
+
 
   const startDate =
-    String(
-      body?.startDate ??
-        "",
-    ).trim();
+    typeof body
+      ?.startDate ===
+      "string"
+      ? body.startDate
+          .trim()
+      : "";
+
 
   const startTime =
-    String(
-      body?.startTime ??
-        "",
-    ).trim();
+    typeof body
+      ?.startTime ===
+      "string"
+      ? body.startTime
+          .trim()
+      : "";
 
-  const endDateRaw =
-    String(
-      body?.endDate ??
-        "",
-    ).trim();
+
+  const endDate =
+    typeof body
+      ?.endDate ===
+      "string"
+      ? body.endDate
+          .trim()
+      : "";
+
 
   const timezone =
-    String(
-      body?.timezone ??
-        "Asia/Tokyo",
-    ).trim();
+    typeof body
+      ?.timezone ===
+      "string"
+      ? body.timezone
+          .trim()
+      : "";
 
 
-  if (!calendarItemId) {
+  const weekday =
+    normalizeInteger(
+      body?.weekday,
+    );
+
+
+  const monthDay =
+    normalizeInteger(
+      body?.monthDay,
+    );
+
+
+  const anchorDate =
+    typeof body
+      ?.anchorDate ===
+      "string"
+      ? body.anchorDate
+          .trim()
+      : "";
+
+
+  if (
+    !calendarItemId
+  ) {
     return NextResponse.json(
       {
         ok: false,
         message:
-          "クラス・イベントが指定されていません。",
+          "クラス・イベントを指定してください。",
       },
       {
-        status: 400,
+        status:
+          400,
       },
     );
   }
@@ -555,10 +700,11 @@ export async function POST(
       {
         ok: false,
         message:
-          "開催方法が正しくありません。",
+          "開催方法を確認してください。",
       },
       {
-        status: 400,
+        status:
+          400,
       },
     );
   }
@@ -573,10 +719,14 @@ export async function POST(
       {
         ok: false,
         message:
-          "開始日を入力してください。",
+          recurrenceType ===
+          "once"
+            ? "開催日を確認してください。"
+            : "開催期間の開始日を確認してください。",
       },
       {
-        status: 400,
+        status:
+          400,
       },
     );
   }
@@ -591,16 +741,18 @@ export async function POST(
       {
         ok: false,
         message:
-          "開始時刻を入力してください。",
+          "開始時刻を確認してください。",
       },
       {
-        status: 400,
+        status:
+          400,
       },
     );
   }
 
 
   if (
+    !timezone ||
     !isValidTimezone(
       timezone,
     )
@@ -609,81 +761,179 @@ export async function POST(
       {
         ok: false,
         message:
-          "タイムゾーンが正しくありません。",
+          "タイムゾーンを確認してください。",
       },
       {
-        status: 400,
+        status:
+          400,
       },
     );
   }
 
 
-  let endDate:
-    | string
-    | null =
-      null;
+  if (
+    recurrenceType !==
+      "once" &&
+    endDate &&
+    !isValidDate(
+      endDate,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催期間の終了日を確認してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    recurrenceType !==
+      "once" &&
+    endDate &&
+    endDate <
+      startDate
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "終了日は開始日以降にしてください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
 
 
   if (
     recurrenceType ===
-    "once"
+      "weekly" &&
+    (
+      weekday ===
+        null ||
+      weekday < 1 ||
+      weekday > 7
+    )
   ) {
-    endDate =
-      startDate;
-  } else if (
-    endDateRaw
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催曜日を選んでください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    recurrenceType ===
+    "monthly" &&
+    (
+      monthDay ===
+        null ||
+      monthDay < 1 ||
+      monthDay > 31
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "毎月の開催日を1日から31日の間で指定してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    recurrenceType ===
+    "biweekly"
   ) {
     if (
       !isValidDate(
-        endDateRaw,
+        anchorDate,
       )
     ) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "終了日が正しくありません。",
+            "最初の開催日を指定してください。",
         },
         {
-          status: 400,
+          status:
+            400,
         },
       );
     }
 
 
     if (
-      endDateRaw <
+      anchorDate <
       startDate
     ) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "終了日は開始日以降にしてください。",
+            "最初の開催日は開催期間内にしてください。",
         },
         {
-          status: 400,
+          status:
+            400,
         },
       );
     }
 
 
-    endDate =
-      endDateRaw;
+    if (
+      endDate &&
+      anchorDate >
+      endDate
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "最初の開催日は開催期間内にしてください。",
+        },
+        {
+          status:
+            400,
+        },
+      );
+    }
   }
 
-
-  /*
-   * 所有権確認
-   */
 
   const {
     data: item,
     error: itemError,
   } =
     await supabaseAdmin
-      .from("calendar_items")
-      .select("id,status")
+      .from(
+        "calendar_items",
+      )
+      .select(
+        "id",
+      )
       .eq(
         "id",
         calendarItemId,
@@ -703,27 +953,11 @@ export async function POST(
       {
         ok: false,
         message:
-          "指定されたクラス・イベントを使用できません。",
+          "指定されたクラス・イベントが見つかりません。",
       },
       {
-        status: 404,
-      },
-    );
-  }
-
-
-  if (
-    item.status !==
-    "active"
-  ) {
-    return NextResponse.json(
-      {
-        ok: false,
-        message:
-          "このクラス・イベントは現在使用できません。",
-      },
-      {
-        status: 400,
+        status:
+          404,
       },
     );
   }
@@ -732,12 +966,16 @@ export async function POST(
   const recurrenceRule =
     buildRecurrenceRule(
       recurrenceType,
-      startDate,
+      {
+        weekday,
+        monthDay,
+        anchorDate,
+      },
     );
 
 
   const {
-    data,
+    data: schedule,
     error,
   } =
     await supabaseAdmin
@@ -757,7 +995,13 @@ export async function POST(
           startTime,
 
         end_date:
-          endDate,
+          recurrenceType ===
+          "once"
+            ? null
+            : (
+                endDate ||
+                null
+              ),
 
         recurrence_rule:
           recurrenceRule,
@@ -765,26 +1009,24 @@ export async function POST(
         status:
           "active",
       })
-      .select(
-        `
-          id,
-          calendar_item_id,
-          timezone,
-          start_date,
-          start_time,
-          end_date,
-          recurrence_rule,
-          status,
-          created_at,
-          updated_at
-        `,
-      )
+      .select(`
+        id,
+        calendar_item_id,
+        timezone,
+        start_date,
+        start_time,
+        end_date,
+        recurrence_rule,
+        status,
+        created_at,
+        updated_at
+      `)
       .single();
 
 
   if (
     error ||
-    !data
+    !schedule
   ) {
     console.error(
       "[calendar/schedules POST] failed:",
@@ -798,7 +1040,8 @@ export async function POST(
           "日時を設定できませんでした。",
       },
       {
-        status: 500,
+        status:
+          500,
       },
     );
   }
@@ -806,6 +1049,6 @@ export async function POST(
 
   return NextResponse.json({
     ok: true,
-    schedule: data,
+    schedule,
   });
 }

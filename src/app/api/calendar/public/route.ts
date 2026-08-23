@@ -218,7 +218,8 @@ export async function GET(
         `
           id,
           status,
-          acceptance_mode
+          acceptance_mode,
+          definition
         `,
       )
       .eq(
@@ -358,6 +359,103 @@ export async function GET(
 
 
   // =========================================================
+  // 予約締切
+  //
+  // APPLICATIONには
+  // 「開催何分前まで受付するか」だけを保存する。
+  //
+  // 実際の締切日時は各OCCURRENCEの
+  // starts_atから計算する。
+  // =========================================================
+
+  const rawDefinition =
+    bookingApplication
+      ?.definition;
+
+
+  const definition =
+    rawDefinition &&
+    typeof rawDefinition ===
+      "object" &&
+    !Array.isArray(
+      rawDefinition,
+    )
+      ? rawDefinition as
+          Record<string, unknown>
+      : null;
+
+
+  const rawCalendarBooking =
+    definition
+      ?.calendarBooking;
+
+
+  const calendarBooking =
+    rawCalendarBooking &&
+    typeof rawCalendarBooking ===
+      "object" &&
+    !Array.isArray(
+      rawCalendarBooking,
+    )
+      ? rawCalendarBooking as
+          Record<string, unknown>
+      : null;
+
+
+  const rawDeadlineMinutes =
+    Number(
+      calendarBooking
+        ?.deadlineMinutesBefore ??
+        0,
+    );
+
+
+  const deadlineMinutesBefore =
+    Number.isFinite(
+      rawDeadlineMinutes,
+    ) &&
+    rawDeadlineMinutes >= 0
+      ? Math.floor(
+          rawDeadlineMinutes,
+        )
+      : 0;
+
+
+  const bookingDeadlineTime =
+    startsAtTime -
+    deadlineMinutesBefore *
+      60_000;
+
+
+  const bookingDeadlinePassed =
+    Boolean(
+      bookingApplication,
+    ) &&
+    Number.isFinite(
+      bookingDeadlineTime,
+    ) &&
+    bookingDeadlineTime <=
+      Date.now();
+
+
+  const bookingDeadlineAt =
+    bookingApplication &&
+    Number.isFinite(
+      bookingDeadlineTime,
+    )
+      ? new Date(
+          bookingDeadlineTime,
+        ).toISOString()
+      : null;
+
+
+  const recurringBookingEnabled =
+    calendarBooking
+      ?.recurringBookingEnabled ===
+    true;
+
+
+  // =========================================================
   // 閲覧中ユーザー
   // =========================================================
 
@@ -400,6 +498,24 @@ export async function GET(
   let isBooked =
     false;
 
+  let bookedAt:
+    | string
+    | null =
+      null;
+
+  let occurrenceHistory:
+    Array<{
+      id: string;
+      event_type: string;
+      before_data:
+        Record<string, unknown>
+        | null;
+      after_data:
+        Record<string, unknown>
+        | null;
+      created_at: string;
+    }> = [];
+
 
   if (
     viewerUserId &&
@@ -418,7 +534,8 @@ export async function GET(
         .select(
           `
             id,
-            status
+            status,
+            created_at
           `,
         )
         .eq(
@@ -453,6 +570,92 @@ export async function GET(
         Boolean(
           viewerEntry,
         );
+
+      bookedAt =
+        viewerEntry
+          ?.created_at ??
+        null;
+    }
+  }
+
+
+  /*
+   * 詳細な変更履歴は
+   * 主催者本人または予約者本人だけに返す。
+   */
+  if (
+    viewerUserId &&
+    (
+      isOwner ||
+      isBooked
+    )
+  ) {
+    let historyQuery =
+      supabaseAdmin
+        .from(
+          "calendar_occurrence_events",
+        )
+        .select(
+          `
+            id,
+            event_type,
+            before_data,
+            after_data,
+            created_at
+          `,
+        )
+        .eq(
+          "calendar_occurrence_id",
+          occurrence.id,
+        );
+
+
+    /*
+     * 主催者：
+     *   開催回の全履歴を見る。
+     *
+     * 予約者：
+     *   自分が予約した後に起きた変更だけを見る。
+     *
+     * 予約前の変更履歴は、その人とは
+     * 関係のない過去なので表示しない。
+     */
+    if (
+      !isOwner &&
+      bookedAt
+    ) {
+      historyQuery =
+        historyQuery.gt(
+          "created_at",
+          bookedAt,
+        );
+    }
+
+
+    const {
+      data:
+        historyData,
+      error:
+        historyError,
+    } =
+      await historyQuery
+        .order(
+          "created_at",
+          {
+            ascending:
+              true,
+          },
+        );
+
+
+    if (historyError) {
+      console.error(
+        "[calendar/public] history load failed:",
+        historyError,
+      );
+    } else {
+      occurrenceHistory =
+        historyData ?? [];
     }
   }
 
@@ -465,6 +668,7 @@ export async function GET(
     bookingApplication
       ?.status ===
       "open" &&
+    !bookingDeadlinePassed &&
     !isPast &&
     !soldOut;
 
@@ -534,6 +738,18 @@ export async function GET(
       open:
         bookingOpen,
 
+      deadline_minutes_before:
+        deadlineMinutesBefore,
+
+      deadline_at:
+        bookingDeadlineAt,
+
+      deadline_passed:
+        bookingDeadlinePassed,
+
+      recurring_booking_enabled:
+        recurringBookingEnabled,
+
       reserved_count:
         reservedCount,
 
@@ -550,6 +766,12 @@ export async function GET(
 
       is_owner:
         isOwner,
+
+      booked_at:
+        bookedAt,
+
+      history:
+        occurrenceHistory,
     },
   });
 }

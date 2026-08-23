@@ -1,0 +1,1690 @@
+// src/components/parari/manage/CalendarManagerPanel.tsx
+// 2026-08-20 JST
+//
+// PARARI CALENDAR v1
+//
+// 作者側「運営」用。
+//
+// WHAT
+// calendar_items
+//
+// WHEN
+// calendar_schedules
+//
+// 実際の開催回 calendar_occurrences は次STEP。
+
+"use client";
+
+import * as React from "react";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+import CalendarSchedulePeriodManager from "@/components/parari/manage/CalendarSchedulePeriodManager";
+import CalendarMonthView from "@/components/parari/manage/CalendarMonthView";
+import CalendarBookingControl from "@/components/parari/manage/CalendarBookingControl";
+
+
+type CalendarItem = {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  location: string | null;
+  capacity: number | null;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
+  description_work_id: string | null;
+  status: "active" | "archived";
+  created_at: string;
+  updated_at: string;
+};
+
+
+type RecurrenceRule = {
+  freq?: string;
+  interval?: number;
+  byWeekday?: number[];
+  byMonthDay?: number[];
+};
+
+
+type CalendarSchedule = {
+  id: string;
+  calendar_item_id: string;
+  timezone: string;
+  start_date: string;
+  start_time: string;
+  end_date: string | null;
+  recurrence_rule: RecurrenceRule;
+  status:
+    | "active"
+    | "paused"
+    | "ended";
+  created_at: string;
+  updated_at: string;
+};
+
+
+type CreateDraft = {
+  title: string;
+  durationMinutes: string;
+  location: string;
+  capacity: string;
+  minimumCapacity: string;
+  feeAmount: string;
+};
+
+
+type RecurrenceType =
+  | "once"
+  | "weekly"
+  | "biweekly"
+  | "monthly";
+
+
+type ScheduleDraft = {
+  recurrenceType:
+    RecurrenceType;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  timezone: string;
+};
+
+
+const INITIAL_DRAFT:
+  CreateDraft = {
+    title: "",
+    durationMinutes: "60",
+    location: "",
+    capacity: "",
+    minimumCapacity: "",
+    feeAmount: "",
+  };
+
+
+function getTodayInputValue() {
+  const now =
+    new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    String(
+      now.getMonth() + 1,
+    ).padStart(
+      2,
+      "0",
+    );
+
+  const day =
+    String(
+      now.getDate(),
+    ).padStart(
+      2,
+      "0",
+    );
+
+  return `${year}-${month}-${day}`;
+}
+
+
+function createInitialScheduleDraft():
+  ScheduleDraft {
+  return {
+    recurrenceType:
+      "once",
+
+    startDate:
+      getTodayInputValue(),
+
+    startTime:
+      "10:00",
+
+    endDate:
+      "",
+
+    timezone:
+      "Asia/Tokyo",
+  };
+}
+
+
+function getScheduleLabel(
+  schedule: CalendarSchedule,
+): string {
+  const rule =
+    schedule.recurrence_rule ??
+    {};
+
+  if (
+    rule.freq ===
+    "once"
+  ) {
+    return "1回だけ";
+  }
+
+  if (
+    rule.freq ===
+      "weekly" &&
+    rule.interval === 2
+  ) {
+    return "隔週";
+  }
+
+  if (
+    rule.freq ===
+    "weekly"
+  ) {
+    return "毎週";
+  }
+
+  if (
+    rule.freq ===
+    "monthly"
+  ) {
+    return "毎月";
+  }
+
+  return "定期";
+}
+
+
+function formatStartTime(
+  value: string,
+) {
+  return value.slice(
+    0,
+    5,
+  );
+}
+
+
+export default function CalendarManagerPanel() {
+  const [
+    items,
+    setItems,
+  ] =
+    React.useState<
+      CalendarItem[]
+    >([]);
+
+
+  const [
+    schedules,
+    setSchedules,
+  ] =
+    React.useState<
+      CalendarSchedule[]
+    >([]);
+
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+
+  const [
+    creating,
+    setCreating,
+  ] =
+    React.useState(false);
+
+
+  const [
+    saving,
+    setSaving,
+  ] =
+    React.useState(false);
+
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  const [
+    draft,
+    setDraft,
+  ] =
+    React.useState<CreateDraft>(
+      INITIAL_DRAFT,
+    );
+
+
+  const [
+    scheduleItemId,
+    setScheduleItemId,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    scheduleDraft,
+    setScheduleDraft,
+  ] =
+    React.useState<ScheduleDraft>(
+      createInitialScheduleDraft(),
+    );
+
+
+  const [
+    scheduleSaving,
+    setScheduleSaving,
+  ] =
+    React.useState(false);
+
+
+  const [
+    generatingOccurrences,
+    setGeneratingOccurrences,
+  ] =
+    React.useState(false);
+
+
+  const [
+    occurrenceRefreshKey,
+    setOccurrenceRefreshKey,
+  ] =
+    React.useState(0);
+
+
+  async function getAccessToken() {
+    const {
+      data: { session },
+    } =
+      await supabase.auth
+        .getSession();
+
+    return (
+      session?.access_token ??
+      null
+    );
+  }
+
+
+  async function loadData() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+      if (!accessToken) {
+        setItems([]);
+        setSchedules([]);
+
+        setMessage(
+          "カレンダーを利用するにはログインしてください。",
+        );
+
+        return;
+      }
+
+
+      const headers = {
+        Authorization:
+          `Bearer ${accessToken}`,
+      };
+
+
+      const [
+        itemsResponse,
+        schedulesResponse,
+      ] =
+        await Promise.all([
+          fetch(
+            "/api/calendar/items",
+            {
+              method: "GET",
+              headers,
+              cache:
+                "no-store",
+            },
+          ),
+
+          fetch(
+            "/api/calendar/schedules",
+            {
+              method: "GET",
+              headers,
+              cache:
+                "no-store",
+            },
+          ),
+        ]);
+
+
+      const [
+        itemsResult,
+        schedulesResult,
+      ] =
+        await Promise.all([
+          itemsResponse
+            .json()
+            .catch(
+              () => null,
+            ),
+
+          schedulesResponse
+            .json()
+            .catch(
+              () => null,
+            ),
+        ]);
+
+
+      if (
+        !itemsResponse.ok ||
+        !itemsResult?.ok
+      ) {
+        setItems([]);
+        setSchedules([]);
+
+        setMessage(
+          itemsResult?.message ??
+            "クラス・イベント一覧を取得できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setItems(
+        Array.isArray(
+          itemsResult.items,
+        )
+          ? itemsResult.items
+          : [],
+      );
+
+
+      if (
+        schedulesResponse.ok &&
+        schedulesResult?.ok &&
+        Array.isArray(
+          schedulesResult
+            .schedules,
+        )
+      ) {
+        setSchedules(
+          schedulesResult.schedules,
+        );
+      } else {
+        setSchedules([]);
+      }
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] load failed:",
+        error,
+      );
+
+      setItems([]);
+      setSchedules([]);
+
+      setMessage(
+        "カレンダー情報を取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  React.useEffect(() => {
+    void loadData();
+  }, []);
+
+
+  function updateDraft(
+    key: keyof CreateDraft,
+    value: string,
+  ) {
+    setDraft(
+      (current) => ({
+        ...current,
+        [key]:
+          value,
+      }),
+    );
+  }
+
+
+  function updateScheduleDraft(
+    key: keyof ScheduleDraft,
+    value: string,
+  ) {
+    setScheduleDraft(
+      (current) => ({
+        ...current,
+        [key]:
+          value,
+      }),
+    );
+  }
+
+
+  async function createItem() {
+    if (saving) return;
+
+    setMessage("");
+
+    const title =
+      draft.title.trim();
+
+    if (!title) {
+      setMessage(
+        "クラス・イベント名を入力してください。",
+      );
+
+      return;
+    }
+
+
+    const duration =
+      Number(
+        draft.durationMinutes,
+      );
+
+    if (
+      !Number.isFinite(
+        duration,
+      ) ||
+      duration <= 0
+    ) {
+      setMessage(
+        "時間を1分以上で入力してください。",
+      );
+
+      return;
+    }
+
+
+    setSaving(true);
+
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+      if (!accessToken) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/items",
+          {
+            method: "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                title:
+                  draft.title,
+
+                durationMinutes:
+                  draft.durationMinutes,
+
+                location:
+                  draft.location,
+
+                capacity:
+                  draft.capacity,
+
+                minimumCapacity:
+                  draft.minimumCapacity,
+
+                feeAmount:
+                  draft.feeAmount,
+
+                feeCurrency:
+                  "JPY",
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.item
+      ) {
+        setMessage(
+          result?.message ??
+            "クラス・イベントを作成できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setItems(
+        (current) => [
+          result.item,
+          ...current,
+        ],
+      );
+
+
+      setDraft(
+        INITIAL_DRAFT,
+      );
+
+      setCreating(false);
+
+      setMessage(
+        "クラス・イベントを作成しました。",
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] create failed:",
+        error,
+      );
+
+      setMessage(
+        "クラス・イベントを作成できませんでした。",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
+  function openSchedule(
+    itemId: string,
+  ) {
+    setScheduleItemId(
+      itemId,
+    );
+
+    setScheduleDraft(
+      createInitialScheduleDraft(),
+    );
+
+    setMessage("");
+  }
+
+
+  function closeSchedule() {
+    setScheduleItemId(
+      null,
+    );
+
+    setScheduleDraft(
+      createInitialScheduleDraft(),
+    );
+  }
+
+
+  async function saveSchedule() {
+    if (
+      !scheduleItemId ||
+      scheduleSaving
+    ) {
+      return;
+    }
+
+
+    setMessage("");
+
+
+    if (
+      !scheduleDraft
+        .startDate
+    ) {
+      setMessage(
+        "開始日を入力してください。",
+      );
+
+      return;
+    }
+
+
+    if (
+      !scheduleDraft
+        .startTime
+    ) {
+      setMessage(
+        "開始時刻を入力してください。",
+      );
+
+      return;
+    }
+
+
+    setScheduleSaving(
+      true,
+    );
+
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+      if (!accessToken) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/schedules",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                calendarItemId:
+                  scheduleItemId,
+
+                recurrenceType:
+                  scheduleDraft
+                    .recurrenceType,
+
+                startDate:
+                  scheduleDraft
+                    .startDate,
+
+                startTime:
+                  scheduleDraft
+                    .startTime,
+
+                endDate:
+                  scheduleDraft
+                    .endDate,
+
+                timezone:
+                  scheduleDraft
+                    .timezone,
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.schedule
+      ) {
+        setMessage(
+          result?.message ??
+            "日時を設定できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setSchedules(
+        (current) => [
+          ...current,
+          result.schedule,
+        ],
+      );
+
+
+      /*
+       * SCHEDULE保存後、
+       * 実際の開催回を自動生成する。
+       */
+      const occurrenceResponse =
+        await fetch(
+          "/api/calendar/occurrences",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                scheduleId:
+                  result.schedule.id,
+              }),
+          },
+        );
+
+
+      const occurrenceResult =
+        await occurrenceResponse
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      closeSchedule();
+
+
+      if (
+        !occurrenceResponse.ok ||
+        !occurrenceResult?.ok
+      ) {
+        setMessage(
+          "日時設定は保存しましたが、開催予定の生成に失敗しました。",
+        );
+
+        return;
+      }
+
+
+      setOccurrenceRefreshKey(
+        (current) =>
+          current + 1,
+      );
+
+
+      setMessage(
+        `${occurrenceResult.occurrenceCount ?? 0}件の開催予定を設定しました。`,
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] schedule create failed:",
+        error,
+      );
+
+      setMessage(
+        "日時を設定できませんでした。",
+      );
+    } finally {
+      setScheduleSaving(
+        false,
+      );
+    }
+  }
+
+
+  async function generateAllOccurrences() {
+    if (
+      generatingOccurrences
+    ) {
+      return;
+    }
+
+
+    const activeSchedules =
+      schedules.filter(
+        (schedule) =>
+          schedule.status ===
+          "active",
+      );
+
+
+    if (
+      activeSchedules.length ===
+      0
+    ) {
+      setMessage(
+        "開催日時がまだ設定されていません。",
+      );
+
+      return;
+    }
+
+
+    setGeneratingOccurrences(
+      true,
+    );
+
+    setMessage("");
+
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+
+      if (!accessToken) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const results =
+        await Promise.all(
+          activeSchedules.map(
+            async (
+              schedule,
+            ) => {
+              const response =
+                await fetch(
+                  "/api/calendar/occurrences",
+                  {
+                    method:
+                      "POST",
+
+                    headers: {
+                      Authorization:
+                        `Bearer ${accessToken}`,
+
+                      "Content-Type":
+                        "application/json",
+                    },
+
+                    body:
+                      JSON.stringify({
+                        scheduleId:
+                          schedule.id,
+                      }),
+                  },
+                );
+
+
+              const result =
+                await response
+                  .json()
+                  .catch(
+                    () => null,
+                  );
+
+
+              return {
+                ok:
+                  response.ok &&
+                  result?.ok,
+              };
+            },
+          ),
+        );
+
+
+      const failedCount =
+        results.filter(
+          (result) =>
+            !result.ok,
+        ).length;
+
+
+      setOccurrenceRefreshKey(
+        (current) =>
+          current + 1,
+      );
+
+
+      if (
+        failedCount >
+        0
+      ) {
+        setMessage(
+          `${activeSchedules.length - failedCount}件の開催設定を生成しました。${failedCount}件は生成できませんでした。`,
+        );
+
+        return;
+      }
+
+
+      setMessage(
+        `${activeSchedules.length}件の開催設定から開催予定を生成しました。`,
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] occurrence generation failed:",
+        error,
+      );
+
+      setMessage(
+        "開催予定を生成できませんでした。",
+      );
+    } finally {
+      setGeneratingOccurrences(
+        false,
+      );
+    }
+  }
+
+
+  return (
+    <section>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+            CALENDAR
+          </div>
+
+          <h2 className="mt-2 text-xl font-bold text-neutral-950">
+            クラス・イベント
+          </h2>
+
+          <p className="mt-2 text-sm leading-7 text-neutral-500">
+            クラスやイベントを登録し、
+            開催日時を設定します。
+          </p>
+        </div>
+
+
+        <div className="flex flex-wrap gap-2">
+          {schedules.length > 0 ? (
+            <button
+              type="button"
+              disabled={
+                generatingOccurrences
+              }
+              onClick={() => {
+                void generateAllOccurrences();
+              }}
+              className="shrink-0 rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:border-neutral-500 disabled:opacity-50"
+            >
+              {generatingOccurrences
+                ? "生成しています..."
+                : "開催予定を生成"}
+            </button>
+          ) : null}
+
+
+          {!creating ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreating(
+                  true,
+                );
+
+                setMessage("");
+              }}
+              className="shrink-0 rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-800"
+            >
+              ＋ 新しく作る
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+
+      {message ? (
+        <div className="mt-5 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 text-neutral-700">
+          {message}
+        </div>
+      ) : null}
+
+
+      {creating ? (
+        <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-neutral-950">
+                クラス・イベントを作る
+              </h3>
+
+              <p className="mt-1 text-sm text-neutral-500">
+                まず「何をするか」を登録します。
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCreating(
+                  false,
+                );
+
+                setDraft(
+                  INITIAL_DRAFT,
+                );
+
+                setMessage("");
+              }}
+              className="text-sm font-bold text-neutral-400 hover:text-neutral-700"
+            >
+              閉じる
+            </button>
+          </div>
+
+
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <label className="sm:col-span-2">
+              <span className="text-sm font-bold text-neutral-700">
+                クラス・イベント名
+              </span>
+
+              <input
+                value={
+                  draft.title
+                }
+                onChange={(
+                  event,
+                ) =>
+                  updateDraft(
+                    "title",
+                    event.target
+                      .value,
+                  )
+                }
+                placeholder="例：ZUMBA 60"
+                className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+              />
+            </label>
+
+
+            <label>
+              <span className="text-sm font-bold text-neutral-700">
+                時間
+              </span>
+
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={
+                    draft
+                      .durationMinutes
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    updateDraft(
+                      "durationMinutes",
+                      event.target
+                        .value,
+                    )
+                  }
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                />
+
+                <span className="text-sm text-neutral-500">
+                  分
+                </span>
+              </div>
+            </label>
+
+
+            <label>
+              <span className="text-sm font-bold text-neutral-700">
+                会場
+              </span>
+
+              <input
+                value={
+                  draft.location
+                }
+                onChange={(
+                  event,
+                ) =>
+                  updateDraft(
+                    "location",
+                    event.target
+                      .value,
+                  )
+                }
+                placeholder="例：○○スタジオ"
+                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+              />
+            </label>
+
+
+            <label>
+              <span className="text-sm font-bold text-neutral-700">
+                定員
+              </span>
+
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={
+                    draft.capacity
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    updateDraft(
+                      "capacity",
+                      event.target
+                        .value,
+                    )
+                  }
+                  placeholder="任意"
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                />
+
+                <span className="text-sm text-neutral-500">
+                  人
+                </span>
+              </div>
+            </label>
+
+
+            <label>
+              <span className="text-sm font-bold text-neutral-700">
+                最低開催人数
+              </span>
+
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={
+                    draft
+                      .minimumCapacity
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    updateDraft(
+                      "minimumCapacity",
+                      event.target
+                        .value,
+                    )
+                  }
+                  placeholder="任意"
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                />
+
+                <span className="text-sm text-neutral-500">
+                  人
+                </span>
+              </div>
+            </label>
+
+
+            <label>
+              <span className="text-sm font-bold text-neutral-700">
+                料金
+              </span>
+
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={
+                    draft
+                      .feeAmount
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    updateDraft(
+                      "feeAmount",
+                      event.target
+                        .value,
+                    )
+                  }
+                  placeholder="任意"
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                />
+
+                <span className="text-sm text-neutral-500">
+                  円
+                </span>
+              </div>
+            </label>
+          </div>
+
+
+          <div className="mt-7 flex justify-end">
+            <button
+              type="button"
+              disabled={
+                saving
+              }
+              onClick={() => {
+                void createItem();
+              }}
+              className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {saving
+                ? "保存しています..."
+                : "保存"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+
+      <div className="mt-8">
+        {loading ? (
+          <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+            読み込んでいます...
+          </div>
+        ) : items.length ===
+          0 ? (
+          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-10 text-center">
+            <div className="font-bold text-neutral-800">
+              まだクラス・イベントがありません
+            </div>
+
+            <p className="mt-2 text-sm text-neutral-500">
+              最初のクラスやイベントを作ってみましょう。
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {items.map(
+              (item) => {
+                const itemSchedules =
+                  schedules.filter(
+                    (
+                      schedule,
+                    ) =>
+                      schedule
+                        .calendar_item_id ===
+                      item.id,
+                  );
+
+
+                const isEditingSchedule =
+                  scheduleItemId ===
+                  item.id;
+
+
+                return (
+                  <article
+                    key={
+                      item.id
+                    }
+                    className="rounded-3xl border border-neutral-200 bg-white p-5 sm:p-6"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-neutral-950">
+                          {
+                            item.title
+                          }
+                        </h3>
+
+                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-neutral-600">
+                          <span>
+                            {
+                              item.duration_minutes
+                            }
+                            分
+                          </span>
+
+                          {item.location ? (
+                            <span>
+                              {
+                                item.location
+                              }
+                            </span>
+                          ) : null}
+
+                          {item.capacity ? (
+                            <span>
+                              定員{" "}
+                              {
+                                item.capacity
+                              }
+                              名
+                            </span>
+                          ) : null}
+
+                          {item.minimum_capacity ? (
+                            <span>
+                              最低{" "}
+                              {
+                                item.minimum_capacity
+                              }
+                              名
+                            </span>
+                          ) : null}
+
+                          {item.fee_amount !==
+                          null ? (
+                            <span>
+                              {Number(
+                                item.fee_amount,
+                              ).toLocaleString(
+                                "ja-JP",
+                              )}
+                              円
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+
+                      <div className="flex flex-wrap items-start gap-2">
+                        <CalendarBookingControl
+                          calendarItemId={
+                            item.id
+                          }
+                          disabled={
+                            itemSchedules.length ===
+                            0
+                          }
+                        />
+
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              isEditingSchedule
+                            ) {
+                              closeSchedule();
+                            } else {
+                              openSchedule(
+                                item.id,
+                              );
+                            }
+                          }}
+                          className="shrink-0 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-950"
+                        >
+                          {isEditingSchedule
+                            ? "閉じる"
+                            : "＋ 日時を設定"}
+                        </button>
+                      </div>
+                    </div>
+
+
+                    {itemSchedules.length >
+                    0 ? (
+                      <div className="mt-5 border-t border-neutral-100 pt-4">
+                        <div className="text-xs font-bold tracking-wide text-neutral-400">
+                          開催設定
+                        </div>
+
+                        <div className="mt-3 grid gap-2">
+                          {itemSchedules.map(
+                            (
+                              schedule,
+                            ) => (
+                              <div
+                                key={
+                                  schedule.id
+                                }
+                                className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700"
+                              >
+                                <span className="font-bold text-neutral-900">
+                                  {getScheduleLabel(
+                                    schedule,
+                                  )}
+                                </span>
+
+                                <span className="mx-2 text-neutral-300">
+                                  |
+                                </span>
+
+                                {
+                                  schedule.start_date
+                                }
+
+                                <span className="mx-2">
+                                  {
+                                    formatStartTime(
+                                      schedule.start_time,
+                                    )
+                                  }
+                                </span>
+
+                                {schedule.end_date &&
+                                schedule.recurrence_rule
+                                  ?.freq !==
+                                  "once" ? (
+                                  <span className="text-neutral-500">
+                                    ～{" "}
+                                    {
+                                      schedule.end_date
+                                    }
+                                  </span>
+                                ) : null}
+
+                                <span className="ml-3 text-xs text-neutral-400">
+                                  {
+                                    schedule.timezone
+                                  }
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
+
+                    {isEditingSchedule ? (
+                      <div className="mt-5 border-t border-neutral-100 pt-5">
+                        <h4 className="font-bold text-neutral-950">
+                          日時を設定
+                        </h4>
+
+
+                        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+
+                          <label className="sm:col-span-2">
+                            <span className="text-sm font-bold text-neutral-700">
+                              開催方法
+                            </span>
+
+                            <select
+                              value={
+                                scheduleDraft
+                                  .recurrenceType
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateScheduleDraft(
+                                  "recurrenceType",
+                                  event.target
+                                    .value,
+                                )
+                              }
+                              className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                            >
+                              <option value="once">
+                                1回だけ
+                              </option>
+
+                              <option value="weekly">
+                                毎週
+                              </option>
+
+                              <option value="biweekly">
+                                隔週
+                              </option>
+
+                              <option value="monthly">
+                                毎月
+                              </option>
+                            </select>
+                          </label>
+
+
+                          <label>
+                            <span className="text-sm font-bold text-neutral-700">
+                              開始日
+                            </span>
+
+                            <input
+                              type="date"
+                              value={
+                                scheduleDraft
+                                  .startDate
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateScheduleDraft(
+                                  "startDate",
+                                  event.target
+                                    .value,
+                                )
+                              }
+                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                            />
+                          </label>
+
+
+                          <label>
+                            <span className="text-sm font-bold text-neutral-700">
+                              開始時刻
+                            </span>
+
+                            <input
+                              type="time"
+                              value={
+                                scheduleDraft
+                                  .startTime
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateScheduleDraft(
+                                  "startTime",
+                                  event.target
+                                    .value,
+                                )
+                              }
+                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                            />
+                          </label>
+
+
+                          {scheduleDraft
+                            .recurrenceType !==
+                          "once" ? (
+                            <label>
+                              <span className="text-sm font-bold text-neutral-700">
+                                終了日
+                              </span>
+
+                              <input
+                                type="date"
+                                value={
+                                  scheduleDraft
+                                    .endDate
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  updateScheduleDraft(
+                                    "endDate",
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                              />
+
+                              <span className="mt-1 block text-xs text-neutral-400">
+                                未入力なら終了日を決めません
+                              </span>
+                            </label>
+                          ) : null}
+
+
+                          <label>
+                            <span className="text-sm font-bold text-neutral-700">
+                              タイムゾーン
+                            </span>
+
+                            <input
+                              value={
+                                scheduleDraft
+                                  .timezone
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateScheduleDraft(
+                                  "timezone",
+                                  event.target
+                                    .value,
+                                )
+                              }
+                              placeholder="Asia/Tokyo"
+                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                            />
+                          </label>
+                        </div>
+
+
+                        <div className="mt-6 flex justify-end">
+                          <button
+                            type="button"
+                            disabled={
+                              scheduleSaving
+                            }
+                            onClick={() => {
+                              void saveSchedule();
+                            }}
+                            className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+                          >
+                            {scheduleSaving
+                              ? "設定しています..."
+                              : "日時を設定"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              },
+            )}
+          </div>
+        )}
+      </div>
+
+
+      <CalendarSchedulePeriodManager />
+
+      <CalendarMonthView
+        refreshKey={
+          occurrenceRefreshKey
+        }
+      />
+    </section>
+  );
+}

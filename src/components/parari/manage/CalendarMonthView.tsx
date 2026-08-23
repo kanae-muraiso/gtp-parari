@@ -6,14 +6,15 @@
 // 作者側の月間開催予定表示。
 // calendar_occurrences を表示する。
 //
-// 各開催回は、そのSCHEDULEで設定された
-// timezoneの「現地日付・現地時刻」で配置する。
+// 各開催回は、作者が選択した表示timezoneで
+// 同じ時間軸上に配置する。
+// SCHEDULE自身のtimezoneは開催基準時間帯として保持する。
 
 "use client";
 
 import * as React from "react";
 
-import Link from "next/link";
+import EventClassManagementPanel from "@/components/parari/manage/EventClassManagementPanel";
 
 import {
   supabase,
@@ -30,6 +31,7 @@ type CalendarOccurrence = {
   title: string;
   location: string | null;
   capacity: number | null;
+  reservation_count?: number;
   minimum_capacity: number | null;
   fee_amount: number | null;
   fee_currency: string;
@@ -77,16 +79,115 @@ function pad2(
 }
 
 
+const AUTHOR_CALENDAR_TIMEZONES = [
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Singapore",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Pacific/Honolulu",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Australia/Sydney",
+  "UTC",
+] as const;
+
+
+function getDeviceTimezone() {
+  try {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Tokyo"
+    );
+  } catch {
+    return "Asia/Tokyo";
+  }
+}
+
+
+function getDateKeyForInstant(
+  value: Date,
+  timezone: string,
+) {
+  try {
+    const parts =
+      new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone:
+            timezone,
+
+          year:
+            "numeric",
+
+          month:
+            "2-digit",
+
+          day:
+            "2-digit",
+        },
+      ).formatToParts(
+        value,
+      );
+
+
+    const values =
+      new Map<
+        string,
+        string
+      >();
+
+
+    for (
+      const part of parts
+    ) {
+      if (
+        part.type !==
+        "literal"
+      ) {
+        values.set(
+          part.type,
+          part.value,
+        );
+      }
+    }
+
+
+    return [
+      values.get(
+        "year",
+      ) ?? "",
+      values.get(
+        "month",
+      ) ?? "",
+      values.get(
+        "day",
+      ) ?? "",
+    ].join("-");
+  } catch {
+    return "";
+  }
+}
+
+
 function getLocalParts(
   occurrence:
     CalendarOccurrence,
+  timezone?: string,
 ): LocalParts {
   const formatter =
     new Intl.DateTimeFormat(
       "en-US",
       {
         timeZone:
-          occurrence.timezone,
+          timezone ||
+          occurrence.timezone ||
+          "Asia/Tokyo",
 
         year:
           "numeric",
@@ -172,10 +273,12 @@ function getLocalParts(
 function getOccurrenceDateKey(
   occurrence:
     CalendarOccurrence,
+  timezone?: string,
 ) {
   const parts =
     getLocalParts(
       occurrence,
+      timezone,
     );
 
   return [
@@ -193,10 +296,12 @@ function getOccurrenceDateKey(
 function getOccurrenceTimeLabel(
   occurrence:
     CalendarOccurrence,
+  timezone?: string,
 ) {
   const parts =
     getLocalParts(
       occurrence,
+      timezone,
     );
 
   return `${pad2(
@@ -248,6 +353,52 @@ export default function CalendarMonthView({
     setMessage,
   ] =
     React.useState("");
+
+
+  const [
+    deviceTimezone,
+    setDeviceTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  const [
+    displayTimezone,
+    setDisplayTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  React.useEffect(
+    () => {
+      const detected =
+        getDeviceTimezone();
+
+
+      setDeviceTimezone(
+        detected,
+      );
+
+
+      setDisplayTimezone(
+        detected,
+      );
+    },
+    [],
+  );
+
+
+  const [
+    selectedOccurrence,
+    setSelectedOccurrence,
+  ] =
+    React.useState<
+      CalendarOccurrence | null
+    >(null);
 
 
   const [
@@ -370,6 +521,32 @@ export default function CalendarMonthView({
   ]);
 
 
+  /*
+   * SCHEDULE期間延長など、
+   * 外部のCALENDAR管理UIから
+   * OCCURRENCEが変更された場合にも再読込する。
+   */
+  React.useEffect(() => {
+    function handleOccurrencesChanged() {
+      void loadOccurrences();
+    }
+
+
+    window.addEventListener(
+      "parari:calendar-occurrences-changed",
+      handleOccurrencesChanged,
+    );
+
+
+    return () => {
+      window.removeEventListener(
+        "parari:calendar-occurrences-changed",
+        handleOccurrencesChanged,
+      );
+    };
+  }, []);
+
+
   function moveMonth(
     offset: number,
   ) {
@@ -409,6 +586,41 @@ export default function CalendarMonthView({
   }
 
 
+  const timezoneOptions =
+    React.useMemo(
+      () => {
+        const values =
+          new Set<string>([
+            deviceTimezone,
+            ...AUTHOR_CALENDAR_TIMEZONES,
+          ]);
+
+
+        for (
+          const occurrence of
+          occurrences
+        ) {
+          if (
+            occurrence.timezone
+          ) {
+            values.add(
+              occurrence.timezone,
+            );
+          }
+        }
+
+
+        return Array.from(
+          values,
+        );
+      },
+      [
+        occurrences,
+        deviceTimezone,
+      ],
+    );
+
+
   const occurrenceMap =
     React.useMemo(
       () => {
@@ -426,6 +638,7 @@ export default function CalendarMonthView({
           const key =
             getOccurrenceDateKey(
               occurrence,
+              displayTimezone,
             );
 
 
@@ -460,11 +673,13 @@ export default function CalendarMonthView({
               const aParts =
                 getLocalParts(
                   a,
+                  displayTimezone,
                 );
 
               const bParts =
                 getLocalParts(
                   b,
+                  displayTimezone,
                 );
 
               return (
@@ -489,6 +704,7 @@ export default function CalendarMonthView({
       },
       [
         occurrences,
+        displayTimezone,
       ],
     );
 
@@ -546,10 +762,9 @@ export default function CalendarMonthView({
 
 
   const todayKey =
-    makeDateKey(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
+    getDateKeyForInstant(
+      now,
+      displayTimezone,
     );
 
 
@@ -605,6 +820,92 @@ export default function CalendarMonthView({
       </div>
 
 
+      <div className="mt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+          <div>
+            <div className="text-xs font-bold text-neutral-400">
+              カレンダー表示時間帯
+            </div>
+
+            <div className="mt-1 text-sm font-bold text-neutral-950">
+              {displayTimezone}
+            </div>
+          </div>
+
+
+          <select
+            value={
+              displayTimezone
+            }
+            onChange={(
+              event,
+            ) =>
+              setDisplayTimezone(
+                event.target.value,
+              )
+            }
+            className="max-w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-700 outline-none"
+          >
+            {timezoneOptions.map(
+              (
+                timezone,
+              ) => (
+                <option
+                  key={
+                    timezone
+                  }
+                  value={
+                    timezone
+                  }
+                >
+                  {timezone}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
+
+
+        {displayTimezone !==
+        deviceTimezone ? (
+          <div className="mt-3 rounded-2xl border border-red-300 bg-red-50 p-4">
+            <div className="text-sm font-bold text-red-800">
+              ⚠ 現地時間ではありません
+            </div>
+
+            <p className="mt-1 text-xs leading-6 text-red-700">
+              作者カレンダーを
+              {" "}
+              <strong>
+                {displayTimezone}
+              </strong>
+              {" "}
+              の時間で表示しています。
+              端末の時間帯は
+              {" "}
+              <strong>
+                {deviceTimezone}
+              </strong>
+              {" "}
+              です。
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDisplayTimezone(
+                  deviceTimezone,
+                )
+              }
+              className="mt-3 rounded-full bg-red-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-800"
+            >
+              現地時間に戻す
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+
       <div className="mt-5 text-lg font-bold text-neutral-950">
         {
           visibleMonth.year
@@ -616,6 +917,69 @@ export default function CalendarMonthView({
         }
         月
       </div>
+
+
+      {selectedOccurrence ? (
+        <div className="mt-5">
+          <EventClassManagementPanel
+            key={
+              selectedOccurrence.id
+            }
+            calendarItemId={
+              selectedOccurrence.calendar_item_id
+            }
+            title={
+              selectedOccurrence.title
+            }
+            location={
+              selectedOccurrence.location
+            }
+            initialOccurrence={
+              selectedOccurrence
+            }
+            exitOccurrenceLabel="← カレンダーに戻る"
+            onExitOccurrence={() => {
+              setSelectedOccurrence(
+                null,
+              );
+            }}
+            onOccurrenceChanged={(
+              updated,
+            ) => {
+              setOccurrences(
+                (
+                  current,
+                ) =>
+                  current.map(
+                    (
+                      occurrence,
+                    ) =>
+                      occurrence.id ===
+                      updated.id
+                        ? {
+                            ...occurrence,
+                            ...updated,
+                          }
+                        : occurrence,
+                  ),
+              );
+
+              setSelectedOccurrence(
+                (
+                  current,
+                ) =>
+                  current?.id ===
+                  updated.id
+                    ? {
+                        ...current,
+                        ...updated,
+                      }
+                    : current,
+              );
+            }}
+          />
+        </div>
+      ) : null}
 
 
       {message ? (
@@ -717,37 +1081,86 @@ export default function CalendarMonthView({
                           (
                             occurrence,
                           ) => (
-                            <Link
+                            <div
                               key={
                                 occurrence.id
                               }
-                              href={`/calendar/${occurrence.id}`}
-                              className="block rounded-xl bg-neutral-100 px-2 py-2 transition hover:bg-neutral-200"
+                              className={
+                                occurrence.status ===
+                                "cancelled"
+                                  ? "rounded-xl border border-neutral-300 bg-neutral-50 px-2 py-2 opacity-60"
+                                  : "rounded-xl bg-neutral-100 px-2 py-2"
+                              }
                             >
-                              <div className="text-[11px] font-bold text-neutral-950">
-                                {getOccurrenceTimeLabel(
-                                  occurrence,
-                                )}
-                                {" "}
-                                {
-                                  occurrence.title
-                                }
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedOccurrence(
+                                    occurrence,
+                                  );
+                                }}
+                                className="block w-full text-left transition hover:opacity-70"
+                              >
+                                {occurrence.status ===
+                                "cancelled" ? (
+                                  <div className="mb-1 text-[9px] font-bold tracking-[0.12em] text-neutral-500">
+                                    休講
+                                  </div>
+                                ) : null}
 
-                              {occurrence.location ? (
-                                <div className="mt-0.5 truncate text-[10px] text-neutral-500">
+                                <div
+                                  className={
+                                    occurrence.status ===
+                                    "cancelled"
+                                      ? "text-[11px] font-bold text-neutral-500 line-through"
+                                      : "text-[11px] font-bold text-neutral-950"
+                                  }
+                                >
+                                  {getOccurrenceTimeLabel(
+                                    occurrence,
+                                    displayTimezone,
+                                  )}
+                                  {" "}
                                   {
-                                    occurrence.location
+                                    occurrence.title
                                   }
                                 </div>
-                              ) : null}
 
-                              <div className="mt-0.5 truncate text-[9px] text-neutral-400">
-                                {
-                                  occurrence.timezone
-                                }
-                              </div>
-                            </Link>
+                                {occurrence.location ? (
+                                  <div className="mt-0.5 truncate text-[10px] text-neutral-500">
+                                    {
+                                      occurrence.location
+                                    }
+                                  </div>
+                                ) : null}
+
+                                <div className="mt-0.5 text-[9px] leading-4 text-neutral-400">
+                                  {occurrence.timezone ===
+                                  displayTimezone ? (
+                                    <>
+                                      開催基準：
+                                      {
+                                        occurrence.timezone
+                                      }
+                                    </>
+                                  ) : (
+                                    <>
+                                      開催基準：
+                                      {getOccurrenceTimeLabel(
+                                        occurrence,
+                                        occurrence.timezone,
+                                      )}
+                                      {" "}
+                                      {
+                                        occurrence.timezone
+                                      }
+                                    </>
+                                  )}
+                                </div>
+                              </button>
+
+
+                            </div>
                           ),
                         )}
                       </div>

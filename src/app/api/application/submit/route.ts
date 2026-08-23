@@ -41,12 +41,25 @@ type ApplicationDefinition = {
 
   agreement?: string;
   actionLabel?: string;
+
+  calendarBooking?: {
+    deadlineMinutesBefore?: number;
+    recurringBookingEnabled?: boolean;
+  };
 };
 
 
 type ApplicationRow = {
   id: string;
   owner_user_id: string;
+
+  origin:
+    | "manual"
+    | "calendar";
+
+  calendar_item_id:
+    | string
+    | null;
 
   application_type: string;
 
@@ -307,6 +320,7 @@ export async function POST(
         | {
             applicationId?: unknown;
             formSubmissionId?: unknown;
+            occurrenceId?: unknown;
           }
         | null;
 
@@ -320,6 +334,12 @@ export async function POST(
       typeof body?.formSubmissionId ===
       "string"
         ? body.formSubmissionId.trim()
+        : "";
+
+    const occurrenceId =
+      typeof body?.occurrenceId ===
+      "string"
+        ? body.occurrenceId.trim()
         : "";
 
     if (
@@ -354,6 +374,8 @@ export async function POST(
           `
             id,
             owner_user_id,
+            origin,
+            calendar_item_id,
             application_type,
             title,
             description,
@@ -441,6 +463,8 @@ export async function POST(
     }
 
     if (
+      application.origin !==
+        "calendar" &&
       deadlineHasPassed(
         application.definition,
       )
@@ -459,14 +483,222 @@ export async function POST(
 
 
     // ======================================================
-    // 二重申込防止
+    // CALENDAR開催回
     // ======================================================
 
-    const {
-      data: existingEntry,
-      error: existingError,
-    } =
-      await supabaseAdmin
+    let calendarOccurrence:
+      | {
+          id: string;
+          calendar_item_id: string;
+          starts_at: string;
+          ends_at: string;
+          timezone: string;
+          title: string;
+          location: string | null;
+          capacity: number | null;
+          minimum_capacity: number | null;
+          fee_amount: number | null;
+          fee_currency: string;
+          status: string;
+        }
+      | null =
+        null;
+
+
+    if (
+      application.origin ===
+      "calendar"
+    ) {
+      if (
+        !application.calendar_item_id ||
+        !UUID_RE.test(
+          occurrenceId,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約する開催回が指定されていません。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const {
+        data: occurrenceData,
+        error: occurrenceError,
+      } =
+        await supabaseAdmin
+          .from(
+            "calendar_occurrences",
+          )
+          .select(
+            `
+              id,
+              calendar_item_id,
+              starts_at,
+              ends_at,
+              timezone,
+              title,
+              location,
+              capacity,
+              minimum_capacity,
+              fee_amount,
+              fee_currency,
+              status
+            `,
+          )
+          .eq(
+            "id",
+            occurrenceId,
+          )
+          .eq(
+            "calendar_item_id",
+            application.calendar_item_id,
+          )
+          .maybeSingle();
+
+
+      if (
+        occurrenceError ||
+        !occurrenceData
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約する開催回を確認できませんでした。",
+          },
+          {
+            status:
+              occurrenceError
+                ? 500
+                : 404,
+          },
+        );
+      }
+
+
+      if (
+        occurrenceData.status !==
+        "scheduled"
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "この開催回は現在予約できません。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const startsAtTime =
+        new Date(
+          occurrenceData.starts_at,
+        ).getTime();
+
+
+      if (
+        !Number.isFinite(
+          startsAtTime,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "開催日時を確認できませんでした。",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+
+      if (
+        startsAtTime <=
+        Date.now()
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "この開催回はすでに終了しています。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const rawDeadlineMinutes =
+        Number(
+          application
+            .definition
+            ?.calendarBooking
+            ?.deadlineMinutesBefore ??
+            0,
+        );
+
+
+      const deadlineMinutesBefore =
+        Number.isFinite(
+          rawDeadlineMinutes,
+        ) &&
+        rawDeadlineMinutes >= 0
+          ? Math.floor(
+              rawDeadlineMinutes,
+            )
+          : 0;
+
+
+      const deadlineTime =
+        startsAtTime -
+        deadlineMinutesBefore *
+          60_000;
+
+
+      if (
+        Date.now() >=
+        deadlineTime
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約締切を過ぎています。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      calendarOccurrence =
+        occurrenceData;
+    }
+
+
+    // ======================================================
+    // 二重申込防止
+    //
+    // 通常APPLICATIONはAPPLICATION単位。
+    // CALENDAR予約は開催回単位。
+    // ======================================================
+
+    let duplicateQuery =
+      supabaseAdmin
         .from(
           "application_entries",
         )
@@ -481,16 +713,41 @@ export async function POST(
           "user_id",
           user.id,
         )
-      .in(
-        "status",
-        [
-          "submitted",
-          "confirmed",
-          "rejected",
-        ],
-      )
+        .in(
+          "status",
+          [
+            "submitted",
+            "confirmed",
+            "rejected",
+          ],
+        );
+
+
+    if (
+      calendarOccurrence
+    ) {
+      duplicateQuery =
+        duplicateQuery.eq(
+          "calendar_occurrence_id",
+          calendarOccurrence.id,
+        );
+    } else {
+      duplicateQuery =
+        duplicateQuery.is(
+          "calendar_occurrence_id",
+          null,
+        );
+    }
+
+
+    const {
+      data: existingEntry,
+      error: existingError,
+    } =
+      await duplicateQuery
         .limit(1)
         .maybeSingle();
+
 
     if (existingError) {
       console.error(
@@ -510,12 +767,15 @@ export async function POST(
       );
     }
 
+
     if (existingEntry) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "すでにお申し込み済みです。",
+            calendarOccurrence
+              ? "この開催回はすでに予約済みです。"
+              : "すでにお申し込み済みです。",
         },
         {
           status: 409,
@@ -628,42 +888,62 @@ export async function POST(
 
     // ======================================================
     // 定員・プラン上限
+    //
+    // CALENDAR予約は開催回の定員。
+    // 通常APPLICATIONは従来どおり。
     // ======================================================
 
-    const ownerBilling =
-      await getUserBillingByUserId(
-        application.owner_user_id,
-      );
+    let effectiveLimit:
+      number | null =
+        null;
 
-    const effectivePlan =
-      getEffectivePlan(
-        ownerBilling,
-      );
 
-    const planLimits =
-      getPlanLimits(
-        effectivePlan,
-      );
+    if (
+      calendarOccurrence
+    ) {
+      effectiveLimit =
+        calendarOccurrence
+          .capacity === null
+          ? null
+          : Number(
+              calendarOccurrence
+                .capacity,
+            );
+    } else {
+      const ownerBilling =
+        await getUserBillingByUserId(
+          application.owner_user_id,
+        );
 
-    const planParticipantLimit =
-      planLimits.applicationParticipantLimit;
+      const effectivePlan =
+        getEffectivePlan(
+          ownerBilling,
+        );
 
-    const capacityLimit =
-      getCapacity(
-        application.definition,
-      );
+      const planLimits =
+        getPlanLimits(
+          effectivePlan,
+        );
 
-    const effectiveLimit =
-      resolveEffectiveLimit(
-        capacityLimit,
-        planParticipantLimit,
-      );
+      const planParticipantLimit =
+        planLimits
+          .applicationParticipantLimit;
 
-    const {
-      count,
-      error: countError,
-    } =
-      await supabaseAdmin
+      const capacityLimit =
+        getCapacity(
+          application.definition,
+        );
+
+      effectiveLimit =
+        resolveEffectiveLimit(
+          capacityLimit,
+          planParticipantLimit,
+        );
+    }
+
+
+    let countQuery =
+      supabaseAdmin
         .from(
           "application_entries",
         )
@@ -680,12 +960,37 @@ export async function POST(
         )
         .in(
           "status",
-            [
-              "submitted",
-              "confirmed",
-              "rejected",
-            ],
+          [
+            "submitted",
+            "confirmed",
+            "rejected",
+          ],
         );
+
+
+    if (
+      calendarOccurrence
+    ) {
+      countQuery =
+        countQuery.eq(
+          "calendar_occurrence_id",
+          calendarOccurrence.id,
+        );
+    } else {
+      countQuery =
+        countQuery.is(
+          "calendar_occurrence_id",
+          null,
+        );
+    }
+
+
+    const {
+      count,
+      error: countError,
+    } =
+      await countQuery;
+
 
     if (countError) {
       console.error(
@@ -704,6 +1009,7 @@ export async function POST(
         },
       );
     }
+
 
     if (
       isAtOrOverLimit(
@@ -770,6 +1076,32 @@ export async function POST(
 
       version:
         application.version,
+
+      calendar_occurrence:
+        calendarOccurrence
+          ? {
+              id:
+                calendarOccurrence.id,
+              starts_at:
+                calendarOccurrence.starts_at,
+              ends_at:
+                calendarOccurrence.ends_at,
+              timezone:
+                calendarOccurrence.timezone,
+              title:
+                calendarOccurrence.title,
+              location:
+                calendarOccurrence.location,
+              capacity:
+                calendarOccurrence.capacity,
+              minimum_capacity:
+                calendarOccurrence.minimum_capacity,
+              fee_amount:
+                calendarOccurrence.fee_amount,
+              fee_currency:
+                calendarOccurrence.fee_currency,
+            }
+          : null,
     };
 
 
@@ -822,6 +1154,11 @@ export async function POST(
           user_id:
             user.id,
 
+          calendar_occurrence_id:
+            calendarOccurrence
+              ?.id ??
+            null,
+
           form_submission_id:
             validatedFormSubmissionId,
 
@@ -841,6 +1178,7 @@ export async function POST(
       .select(
         `
           id,
+          calendar_occurrence_id,
           status,
           qualification_status,
           payment_status,

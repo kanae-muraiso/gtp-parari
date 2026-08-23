@@ -1,0 +1,2190 @@
+// src/app/my/profile/public/page.tsx
+// 2026-08-12 JST
+// PART: Public profile settings
+//
+// 公開プロフィール /{username}/profile の管理画面。
+// - username / display_name は /my/profile 側で管理
+// - bio / avatar / cover / brand logo を編集
+// - プロフィール画像の表示形式・配置を編集
+// - 3タブの名前と内容を編集
+// - profile_links を編集
+// - show_in_profile_works / profile_works_order で代表作品を編集
+// - Free は代表作品3件まで（monitor は制限なし）
+// - HTMLは扱わず bio はプレーンテキスト
+
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import { getEffectivePlan } from "@/lib/billing/plan";
+import SettingsTabs from "@/components/parari/settings/SettingsTabs";
+import PublicPageStrategyWizard, {
+  PUBLIC_PAGE_PATTERN_LABELS,
+  type PublicPagePattern,
+} from "@/components/parari/public-page/PublicPageStrategyWizard";
+
+type ProfileImageStyle = "circle" | "logo" | "none";
+type ProfileAlign = "left" | "center" | "right";
+type ProfilePageType = "profile" | "links" | "works";
+type EffectivePlan = "free" | "plus" | "pro";
+
+type PublicProfileEditorSection =
+  | "brand"
+  | "content"
+  | "links"
+  | "works";
+
+type ProfileRow = {
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  bio: string | null;
+  profile_body: string | null;
+  avatar_url: string | null;
+  cover_image_url: string | null;
+  homepage_header_logo_url: string | null;
+  homepage_profile_image_style: string | null;
+  homepage_profile_align: string | null;
+  homepage_show_username: boolean | null;
+  tab_label_profile: string | null;
+  tab_label_links: string | null;
+  tab_label_works: string | null;
+  homepage_tab1_type: string | null;
+  homepage_tab2_type: string | null;
+  homepage_tab3_type: string | null;
+  firstlook_tag_key: string | null;
+  is_monitor: boolean | null;
+  public_page_pattern: string | null;
+};
+
+type ProfileLinkRow = {
+  id: string;
+  user_id: string;
+  label: string;
+  url: string;
+  icon: string | null;
+  sort_order: number | null;
+  is_enabled: boolean | null;
+};
+
+type PublicWorkRow = {
+  id: string;
+  title: string | null;
+  content: string | null;
+  visibility: string | null;
+  is_public: boolean | null;
+  stable_slug: string | null;
+  custom_slug: string | null;
+  slug: string | null;
+  show_in_profile_works: boolean | null;
+  profile_works_order: number | null;
+  is_deleted: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type BillingRow = {
+  plan: string | null;
+  billing_status: string | null;
+};
+
+const LINK_PRESETS = [
+  { label: "ホームページ", icon: "🌐" },
+  { label: "Instagram", icon: "📷" },
+  { label: "Threads", icon: "🧵" },
+  { label: "X", icon: "𝕏" },
+  { label: "YouTube", icon: "▶️" },
+  { label: "TikTok", icon: "🎵" },
+  { label: "Facebook", icon: "📘" },
+  { label: "LinkedIn", icon: "💼" },
+  { label: "LINE公式", icon: "💬" },
+  { label: "note", icon: "📝" },
+];
+
+const DEFAULT_TAB_LABEL_1 = "プロフィール";
+const DEFAULT_TAB_LABEL_2 = "リンク";
+const DEFAULT_TAB_LABEL_3 = "代表作品";
+
+function normalizePageType(
+  value: string | null | undefined,
+  fallback: ProfilePageType,
+): ProfilePageType {
+  if (value === "profile" || value === "links" || value === "works") {
+    return value;
+  }
+
+  return fallback;
+}
+
+function normalizeProfileImageStyle(
+  value: string | null | undefined,
+): ProfileImageStyle {
+  if (value === "circle" || value === "logo" || value === "none") {
+    return value;
+  }
+
+  return "circle";
+}
+
+function normalizeProfileAlign(
+  value: string | null | undefined,
+): ProfileAlign {
+  if (value === "left" || value === "center" || value === "right") {
+    return value;
+  }
+
+  return "left";
+}
+
+
+function normalizePublicPagePattern(
+  value: string | null | undefined,
+): PublicPagePattern | null {
+  if (
+    value === "person-first" ||
+    value === "offer-first" ||
+    value === "story-first" ||
+    value === "welcome-first"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+export default function MyPublicProfileSettingsPage() {
+  const supabase = useMemo(() => sharedSupabase, []);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [linkSaving, setLinkSaving] = useState(false);
+  const [workSavingId, setWorkSavingId] = useState<string | null>(null);
+  const [movingWorkId, setMovingWorkId] = useState<string | null>(null);
+
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileBody, setProfileBody] = useState("");
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [brandLogoUrl, setBrandLogoUrl] = useState<string | null>(null);
+
+  const [profileImageStyle, setProfileImageStyle] =
+    useState<ProfileImageStyle>("circle");
+  const [profileAlign, setProfileAlign] =
+    useState<ProfileAlign>("left");
+  const [showUsername, setShowUsername] = useState(true);
+
+  const [tab1Label, setTab1Label] = useState(DEFAULT_TAB_LABEL_1);
+  const [tab2Label, setTab2Label] = useState(DEFAULT_TAB_LABEL_2);
+  const [tab3Label, setTab3Label] = useState(DEFAULT_TAB_LABEL_3);
+
+  const [tab1Type, setTab1Type] = useState<ProfilePageType>("profile");
+  const [tab2Type, setTab2Type] = useState<ProfilePageType>("links");
+  const [tab3Type, setTab3Type] = useState<ProfilePageType>("works");
+
+  // firstlook_tag_key は歴史的なDB名だが、
+  // 現在は「最初に開くタブ位置」として使う。
+  // profile = タブ1 / links = タブ2 / works = タブ3
+  const [firstTab, setFirstTab] = useState<ProfilePageType>("profile");
+
+  const [links, setLinks] = useState<ProfileLinkRow[]>([]);
+  const [works, setWorks] = useState<PublicWorkRow[]>([]);
+
+  const [editorSection, setEditorSection] =
+    useState<PublicProfileEditorSection>("brand");
+
+  const [showEditor, setShowEditor] = useState(false);
+  const [selectedPagePattern, setSelectedPagePattern] =
+    useState<PublicPagePattern | null>(null);
+
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const [newIcon, setNewIcon] = useState("");
+
+  const [effectivePlan, setEffectivePlan] =
+    useState<EffectivePlan>("free");
+  const [isMonitor, setIsMonitor] = useState(false);
+
+  const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
+
+  const publicProfileUrl = username
+    ? `/${encodeURIComponent(username)}/profile`
+    : null;
+
+  const representativeWorkLimit =
+    isMonitor || effectivePlan !== "free" ? null : 3;
+
+  const selectedWorks = useMemo(() => {
+    return works
+      .filter((work) => work.show_in_profile_works)
+      .sort((a, b) => {
+        const ao = a.profile_works_order ?? 999999;
+        const bo = b.profile_works_order ?? 999999;
+
+        if (ao !== bo) {
+          return ao - bo;
+        }
+
+        return String(b.updated_at ?? "").localeCompare(
+          String(a.updated_at ?? ""),
+        );
+      });
+  }, [works]);
+
+  const displayWorks = useMemo(() => {
+    const selectedIds = new Set(selectedWorks.map((work) => work.id));
+
+    const unselected = works
+      .filter((work) => !selectedIds.has(work.id))
+      .sort((a, b) =>
+        String(b.updated_at ?? b.created_at ?? "").localeCompare(
+          String(a.updated_at ?? a.created_at ?? ""),
+        ),
+      );
+
+    return [...selectedWorks, ...unselected];
+  }, [selectedWorks, works]);
+
+  const loadLinks = useCallback(
+    async (uid: string) => {
+      if (!supabase) return false;
+
+      const { data, error } = await supabase
+        .from("profile_links")
+        .select(
+          "id, user_id, label, url, icon, sort_order, is_enabled",
+        )
+        .eq("user_id", uid)
+        .eq("is_enabled", true)
+        .order("sort_order", {
+          ascending: true,
+        });
+
+      if (error) {
+        setMessage(`リンクの読込に失敗しました: ${error.message}`);
+        setMessageIsError(true);
+        return false;
+      }
+
+      setLinks((data ?? []) as ProfileLinkRow[]);
+      return true;
+    },
+    [supabase],
+  );
+
+  const loadWorks = useCallback(
+    async (uid: string) => {
+      if (!supabase) return false;
+
+      const { data, error } = await supabase
+        .from("parari_books")
+        .select(
+          "id,title,content,visibility,is_public,stable_slug,custom_slug,slug,show_in_profile_works,profile_works_order,is_deleted,created_at,updated_at",
+        )
+        .eq("owner", uid)
+        .or("is_public.eq.true,visibility.eq.public")
+        .order("updated_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        setMessage(`作品一覧の読込に失敗しました: ${error.message}`);
+        setMessageIsError(true);
+        return false;
+      }
+
+      const visibleWorks: PublicWorkRow[] = (data ?? []).filter(
+        (work) => work.is_deleted !== true,
+      );
+
+      setWorks(visibleWorks);
+      return true;
+    },
+    [supabase],
+  );
+
+  const loadBilling = useCallback(
+    async (uid: string) => {
+      if (!supabase) return;
+
+      const { data, error } = await supabase
+        .from("user_billing")
+        .select("plan, billing_status")
+        .eq("user_id", uid)
+        .maybeSingle<BillingRow>();
+
+      if (error) {
+        console.warn(
+          "[profile/public] failed to load billing:",
+          error,
+        );
+        setEffectivePlan("free");
+        return;
+      }
+
+      setEffectivePlan(
+        getEffectivePlan(data ?? null) as EffectivePlan,
+      );
+    },
+    [supabase],
+  );
+
+  const loadProfile = useCallback(async () => {
+    if (!supabase) {
+      setMessage("Supabase環境変数がありません。");
+      setMessageIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    setMessageIsError(false);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setMessage("公開ページをつくるにはログインが必要です。");
+      setMessageIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    setUserId(user.id);
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select(
+        [
+          "user_id",
+          "username",
+          "display_name",
+          "bio",
+          "profile_body",
+          "avatar_url",
+          "cover_image_url",
+          "homepage_header_logo_url",
+          "homepage_profile_image_style",
+          "homepage_profile_align",
+          "homepage_show_username",
+          "tab_label_profile",
+          "tab_label_links",
+          "tab_label_works",
+          "homepage_tab1_type",
+          "homepage_tab2_type",
+          "homepage_tab3_type",
+          "firstlook_tag_key",
+          "is_monitor",
+          "public_page_pattern",
+        ].join(","),
+      )
+      .eq("user_id", user.id)
+      .maybeSingle<ProfileRow>();
+
+    if (profileError) {
+      setMessage(
+        `プロフィールの読込に失敗しました: ${profileError.message}`,
+      );
+      setMessageIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    if (!profile) {
+      setMessage(
+        "プロフィールがまだありません。先にプロフィール設定を行ってください。",
+      );
+      setMessageIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    setUsername(profile.username ?? "");
+
+    const loadedPagePattern =
+      normalizePublicPagePattern(
+        profile.public_page_pattern,
+      );
+
+    setSelectedPagePattern(
+      loadedPagePattern,
+    );
+
+    if (loadedPagePattern) {
+      setEditorSection(
+        loadedPagePattern === "offer-first"
+          ? "works"
+          : loadedPagePattern === "story-first" ||
+              loadedPagePattern === "welcome-first"
+            ? "content"
+            : "brand",
+      );
+    }
+
+    setShowEditor(
+      Boolean(loadedPagePattern),
+    );
+    setDisplayName(profile.display_name ?? "");
+    setBio(profile.bio ?? "");
+    setProfileBody(profile.profile_body ?? "");
+    setAvatarUrl(profile.avatar_url ?? null);
+    setCoverImageUrl(profile.cover_image_url ?? null);
+    setBrandLogoUrl(profile.homepage_header_logo_url ?? null);
+
+    setProfileImageStyle(
+      normalizeProfileImageStyle(
+        profile.homepage_profile_image_style,
+      ),
+    );
+    setProfileAlign(
+      normalizeProfileAlign(profile.homepage_profile_align),
+    );
+    setShowUsername(profile.homepage_show_username !== false);
+
+    setTab1Label(
+      profile.tab_label_profile?.trim() || DEFAULT_TAB_LABEL_1,
+    );
+    setTab2Label(
+      profile.tab_label_links?.trim() || DEFAULT_TAB_LABEL_2,
+    );
+    setTab3Label(
+      profile.tab_label_works?.trim() || DEFAULT_TAB_LABEL_3,
+    );
+
+    setTab1Type(
+      normalizePageType(profile.homepage_tab1_type, "profile"),
+    );
+    setTab2Type(
+      normalizePageType(profile.homepage_tab2_type, "links"),
+    );
+    setTab3Type(
+      normalizePageType(profile.homepage_tab3_type, "works"),
+    );
+
+    setFirstTab(
+      normalizePageType(profile.firstlook_tag_key, "profile"),
+    );
+
+    setIsMonitor(profile.is_monitor === true);
+
+    await Promise.all([
+      loadLinks(user.id),
+      loadWorks(user.id),
+      loadBilling(user.id),
+    ]);
+
+    setLoading(false);
+  }, [
+    loadBilling,
+    loadLinks,
+    loadWorks,
+    supabase,
+  ]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const uploadProfileImage = async (
+    file: File,
+    type: "avatar" | "cover" | "logo",
+  ): Promise<string | null> => {
+    if (!supabase || !userId) {
+      setMessage("ログインユーザーを確認できませんでした。");
+      setMessageIsError(true);
+      return null;
+    }
+
+    const rawExt = file.name.split(".").pop() || "jpg";
+    const ext = rawExt.toLowerCase();
+    const fileName = `${type}-${Date.now()}.${ext}`;
+    const path = `${userId}/${fileName}`;
+
+    setMessage("画像をアップロードしています...");
+    setMessageIsError(false);
+
+    const { error } = await supabase.storage
+      .from("parari-images")
+      .upload(path, file, {
+        upsert: true,
+      });
+
+    if (error) {
+      setMessage(`画像のアップロードに失敗しました: ${error.message}`);
+      setMessageIsError(true);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from("parari-images")
+      .getPublicUrl(path);
+
+    setMessage(
+      "画像をアップロードしました。最後に「ページに反映する」を押してください。",
+    );
+    setMessageIsError(false);
+
+    return data.publicUrl;
+  };
+
+  const handleSave = async () => {
+    if (!supabase || !userId) {
+      setMessage("ログインユーザーを確認できませんでした。");
+      setMessageIsError(true);
+      return;
+    }
+
+    const nextTab1Label =
+      tab1Label.trim() || DEFAULT_TAB_LABEL_1;
+    const nextTab2Label =
+      tab2Label.trim() || DEFAULT_TAB_LABEL_2;
+    const nextTab3Label =
+      tab3Label.trim() || DEFAULT_TAB_LABEL_3;
+
+    setSaving(true);
+    setMessage("");
+    setMessageIsError(false);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({
+        bio: bio.trim() || null,
+        profile_body: profileBody.trim() || null,
+        avatar_url: avatarUrl,
+        cover_image_url: coverImageUrl,
+        homepage_header_logo_url: brandLogoUrl,
+        homepage_profile_image_style: profileImageStyle,
+        homepage_profile_align: profileAlign,
+        homepage_show_username: showUsername,
+
+        public_page_pattern:
+          selectedPagePattern,
+
+
+        tab_label_profile: nextTab1Label,
+        tab_label_links: nextTab2Label,
+        tab_label_works: nextTab3Label,
+
+        homepage_tab1_type: tab1Type,
+        homepage_tab2_type: tab2Type,
+        homepage_tab3_type: tab3Type,
+        firstlook_tag_key: firstTab,
+
+        // 今回のプロフィールページは3タブ構成に固定する。
+        homepage_menu_count: 3,
+      })
+      .eq("user_id", userId)
+      .select("user_id");
+
+    if (error) {
+      setMessage(`プロフィールの保存に失敗しました: ${error.message}`);
+      setMessageIsError(true);
+      setSaving(false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setMessage(
+        "プロフィールが見つかりません。先にプロフィール設定を行ってください。",
+      );
+      setMessageIsError(true);
+      setSaving(false);
+      return;
+    }
+
+    setTab1Label(nextTab1Label);
+    setTab2Label(nextTab2Label);
+    setTab3Label(nextTab3Label);
+
+    setMessage("公開ページをつくるを保存しました。");
+    setMessageIsError(false);
+    setSaving(false);
+  };
+
+  const applyPreset = (preset: {
+    label: string;
+    icon: string;
+  }) => {
+    setNewLabel(preset.label);
+    setNewIcon(preset.icon);
+  };
+
+  const handleAddLink = async () => {
+    if (!supabase || !userId) {
+      setMessage("ログインユーザーを確認できませんでした。");
+      setMessageIsError(true);
+      return;
+    }
+
+    if (links.length >= 10) {
+      setMessage("リンクは最大10件までです。");
+      setMessageIsError(true);
+      return;
+    }
+
+    const label = newLabel.trim();
+    const url = newUrl.trim();
+    const icon = newIcon.trim();
+
+    if (!label) {
+      setMessage("リンクの表示名を入力してください。");
+      setMessageIsError(true);
+      return;
+    }
+
+    if (!url) {
+      setMessage("リンクのURLを入力してください。");
+      setMessageIsError(true);
+      return;
+    }
+
+    if (!isAllowedLinkUrl(url)) {
+      setMessage(
+        "URLを確認してください。https:// などから始まるURLを入力してください。",
+      );
+      setMessageIsError(true);
+      return;
+    }
+
+    setLinkSaving(true);
+    setMessage("");
+    setMessageIsError(false);
+
+    const maxOrder = links.reduce(
+      (max, link) => Math.max(max, link.sort_order ?? 0),
+      0,
+    );
+
+    const { error } = await supabase
+      .from("profile_links")
+      .insert({
+        user_id: userId,
+        label,
+        url,
+        icon: icon || null,
+        sort_order: maxOrder + 1,
+        is_enabled: true,
+      });
+
+    if (error) {
+      setMessage(`リンクの追加に失敗しました: ${error.message}`);
+      setMessageIsError(true);
+      setLinkSaving(false);
+      return;
+    }
+
+    const loaded = await loadLinks(userId);
+
+    if (loaded) {
+      setNewLabel("");
+      setNewUrl("");
+      setNewIcon("");
+      setMessage("リンクを追加しました。");
+      setMessageIsError(false);
+    }
+
+    setLinkSaving(false);
+  };
+
+  const handleDeleteLink = async (linkId: string) => {
+    if (!supabase || !userId) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profile_links")
+      .update({
+        is_enabled: false,
+      })
+      .eq("id", linkId)
+      .eq("user_id", userId);
+
+    if (error) {
+      setMessage(`リンクの削除に失敗しました: ${error.message}`);
+      setMessageIsError(true);
+      return;
+    }
+
+    setLinks((current) =>
+      current.filter((link) => link.id !== linkId),
+    );
+
+    setMessage("リンクを削除しました。");
+    setMessageIsError(false);
+  };
+
+  const handleToggleRepresentativeWork = async (
+    work: PublicWorkRow,
+  ) => {
+    if (!supabase || !userId) return;
+
+    const nextShow = !Boolean(work.show_in_profile_works);
+
+    if (
+      nextShow &&
+      representativeWorkLimit !== null &&
+      selectedWorks.length >= representativeWorkLimit
+    ) {
+      setMessage(
+        `Freeプランでは代表作品を${representativeWorkLimit}作品まで掲載できます。`,
+      );
+      setMessageIsError(true);
+      return;
+    }
+
+    const nextOrder = nextShow
+      ? Math.max(
+          0,
+          ...selectedWorks.map(
+            (item) => item.profile_works_order ?? 0,
+          ),
+        ) + 1
+      : null;
+
+    setWorkSavingId(work.id);
+    setMessage("");
+    setMessageIsError(false);
+
+    const { error } = await supabase
+      .from("parari_books")
+      .update({
+        show_in_profile_works: nextShow,
+        profile_works_order: nextOrder,
+      })
+      .eq("id", work.id)
+      .eq("owner", userId);
+
+    if (error) {
+      setMessage(`代表作品の更新に失敗しました: ${error.message}`);
+      setMessageIsError(true);
+      setWorkSavingId(null);
+      return;
+    }
+
+    setWorks((current) =>
+      current.map((item) =>
+        item.id === work.id
+          ? {
+              ...item,
+              show_in_profile_works: nextShow,
+              profile_works_order: nextOrder,
+            }
+          : item,
+      ),
+    );
+
+    setMessage(
+      nextShow
+        ? "代表作品に追加しました。"
+        : "代表作品から外しました。",
+    );
+    setMessageIsError(false);
+    setWorkSavingId(null);
+  };
+
+  const handleMoveRepresentativeWork = async (
+    workId: string,
+    direction: "up" | "down",
+  ) => {
+    if (!supabase || !userId) return;
+
+    const ordered = [...selectedWorks];
+    const currentIndex = ordered.findIndex(
+      (work) => work.id === workId,
+    );
+
+    if (currentIndex < 0) return;
+
+    const targetIndex =
+      direction === "up"
+        ? currentIndex - 1
+        : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= ordered.length) {
+      return;
+    }
+
+    const currentWork = ordered[currentIndex];
+    const targetWork = ordered[targetIndex];
+
+    const currentOrder =
+      currentWork.profile_works_order ?? currentIndex + 1;
+    const targetOrder =
+      targetWork.profile_works_order ?? targetIndex + 1;
+
+    setMovingWorkId(workId);
+    setMessage("");
+    setMessageIsError(false);
+
+    const { error: firstError } = await supabase
+      .from("parari_books")
+      .update({
+        profile_works_order: targetOrder,
+      })
+      .eq("id", currentWork.id)
+      .eq("owner", userId);
+
+    if (firstError) {
+      setMessage(`表示順の更新に失敗しました: ${firstError.message}`);
+      setMessageIsError(true);
+      setMovingWorkId(null);
+      return;
+    }
+
+    const { error: secondError } = await supabase
+      .from("parari_books")
+      .update({
+        profile_works_order: currentOrder,
+      })
+      .eq("id", targetWork.id)
+      .eq("owner", userId);
+
+    if (secondError) {
+      await loadWorks(userId);
+      setMessage(
+        `表示順の更新が途中で失敗しました: ${secondError.message}`,
+      );
+      setMessageIsError(true);
+      setMovingWorkId(null);
+      return;
+    }
+
+    setWorks((current) =>
+      current.map((item) => {
+        if (item.id === currentWork.id) {
+          return {
+            ...item,
+            profile_works_order: targetOrder,
+          };
+        }
+
+        if (item.id === targetWork.id) {
+          return {
+            ...item,
+            profile_works_order: currentOrder,
+          };
+        }
+
+        return item;
+      }),
+    );
+
+    setMessage("代表作品の表示順を変更しました。");
+    setMessageIsError(false);
+    setMovingWorkId(null);
+  };
+
+  return (
+    <main className="min-h-screen bg-neutral-100">
+      <div className="border-b border-neutral-200 bg-white px-4 py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold text-neutral-400">
+              /my/profile/public
+            </div>
+
+            <h1 className="text-lg font-semibold text-neutral-900">
+              公開ページをつくる
+            </h1>
+
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
+              人に届けるための公開ページをつくります。
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {publicProfileUrl ? (
+              <a
+                href={publicProfileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-800 transition hover:bg-neutral-50"
+              >
+                公開ページを見る
+              </a>
+            ) : null}
+
+            <a
+              href="/my/profile"
+              className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-200"
+            >
+              戻る
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+        <SettingsTabs active="public" />
+
+        {loading ? (
+          <section className="rounded-3xl border border-neutral-200 bg-white p-5 text-sm text-neutral-500 shadow-sm">
+            プロフィールを読み込んでいます...
+          </section>
+        ) : (
+          <>
+            {!username ? (
+              <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                <div className="text-sm font-bold text-amber-900">
+                  ユーザーネームが設定されていません
+                </div>
+
+                <p className="mt-2 text-xs leading-5 text-amber-800">
+                  公開ページを使うには、先に基本設定でユーザーネームを設定してください。
+                </p>
+
+                <a
+                  href="/my/profile"
+                  className="mt-4 inline-flex rounded-full bg-amber-900 px-4 py-2 text-xs font-semibold text-white"
+                >
+                  プロフィール設定へ
+                </a>
+              </section>
+            ) : null}
+
+            {!showEditor ? (
+              <PublicPageStrategyWizard
+                displayName={displayName}
+                bio={bio}
+                avatarUrl={avatarUrl}
+                coverImageUrl={coverImageUrl}
+                onStartEditing={(pattern) => {
+                  setSelectedPagePattern(pattern);
+
+                  setEditorSection(
+                    pattern === "offer-first"
+                      ? "works"
+                      : pattern === "story-first" ||
+                          pattern === "welcome-first"
+                        ? "content"
+                        : "brand",
+                  );
+
+                  setShowEditor(true);
+                }}
+              />
+            ) : (
+              <>
+                <section className="overflow-hidden rounded-[32px] bg-neutral-950 text-white shadow-lg">
+                  <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
+                    <div>
+                      <div className="text-[10px] font-black tracking-[0.22em] text-neutral-500">
+                        PAGE MATERIALS
+                      </div>
+
+                      <div className="mt-3 inline-flex rounded-full border border-neutral-700 px-3 py-1.5 text-[10px] font-black tracking-[0.14em] text-neutral-300">
+                        {selectedPagePattern
+                          ? PUBLIC_PAGE_PATTERN_LABELS[
+                              selectedPagePattern
+                            ]
+                          : "PAGE STRATEGY"}
+                      </div>
+
+                      <h2 className="mt-5 max-w-2xl text-2xl font-black leading-tight sm:text-3xl">
+                        素材を集めて、
+                        <br className="sm:hidden" />
+                        あなたのページにします。
+                      </h2>
+
+                      <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-400">
+                        {selectedPagePattern === "person-first"
+                          ? "まず、あなた自身が伝わる写真やことばから整えていきましょう。"
+                          : selectedPagePattern === "offer-first"
+                            ? "まず、見せたい活動や作品を中心に素材を整えていきましょう。"
+                            : selectedPagePattern === "story-first"
+                              ? "まず、あなたの考え方や背景が伝わることばから整えていきましょう。"
+                              : selectedPagePattern === "welcome-first"
+                                ? "まず、初めての人が安心できることばや印象から整えていきましょう。"
+                                : "写真やことば、作品、リンクを集めて公開ページにしていきます。"}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowEditor(false)}
+                      className="w-fit rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300 transition hover:border-neutral-500 hover:bg-neutral-900 hover:text-white"
+                    >
+                      戦略を選び直す
+                    </button>
+                  </div>
+                </section>
+
+                <section className="rounded-[32px] border border-neutral-200 bg-[#f7f7f5] p-4 shadow-sm sm:p-6">
+                  <div className="pb-5">
+                    <div className="text-[10px] font-black tracking-[0.2em] text-neutral-400">
+                      BUILD YOUR PAGE
+                    </div>
+
+                    <h3 className="mt-2 text-2xl font-black leading-tight text-neutral-950">
+                      4つの質問に答えると、
+                      <br className="sm:hidden" />
+                      ページができていきます。
+                    </h3>
+
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-500">
+                      選んだ伝え方に合わせて、PARARIが聞く順番も変えています。
+                      上から順番でも、気になる質問からでも構いません。
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const flow =
+                      selectedPagePattern === "offer-first"
+                        ? ([
+                            {
+                              id: "works",
+                              eyebrow: "OFFER",
+                              question: "まず、何を見てもらいますか？",
+                              description:
+                                "作品や活動など、最初に届けたいものを選びます。",
+                            },
+                            {
+                              id: "brand",
+                              eyebrow: "PERSON",
+                              question:
+                                "それを届けているのは、どんな人ですか？",
+                              description:
+                                "写真や名前、第一印象になる情報を整えます。",
+                            },
+                            {
+                              id: "content",
+                              eyebrow: "WHY",
+                              question:
+                                "なぜ、それをしているのですか？",
+                              description:
+                                "背景や考え方を、あなたのことばで伝えます。",
+                            },
+                            {
+                              id: "links",
+                              eyebrow: "NEXT",
+                              question:
+                                "興味を持った人に、次に何をしてほしいですか？",
+                              description:
+                                "SNSや外部サイトなど、次の行動につなげます。",
+                            },
+                          ] as const)
+                        : selectedPagePattern === "story-first"
+                          ? ([
+                              {
+                                id: "content",
+                                eyebrow: "STORY",
+                                question:
+                                  "まず、どんな話から始めますか？",
+                                description:
+                                  "考え方、原点、続けている理由を書いてみます。",
+                              },
+                              {
+                                id: "brand",
+                                eyebrow: "PERSON",
+                                question:
+                                  "その話をしているのは、どんなあなたですか？",
+                                description:
+                                  "写真や名前で、ことばの向こうにいる人を見せます。",
+                              },
+                              {
+                                id: "works",
+                                eyebrow: "ACTIVITY",
+                                question:
+                                  "その考えが形になったものは何ですか？",
+                                description:
+                                  "作品や活動から、あなたの世界を見せます。",
+                              },
+                              {
+                                id: "links",
+                                eyebrow: "CONNECT",
+                                question:
+                                  "共感した人と、どうつながりますか？",
+                                description:
+                                  "その先で出会える場所を案内します。",
+                              },
+                            ] as const)
+                          : selectedPagePattern === "welcome-first"
+                            ? ([
+                                {
+                                  id: "content",
+                                  eyebrow: "WELCOME",
+                                  question:
+                                    "初めての人に、まず何と声をかけますか？",
+                                  description:
+                                    "安心して一歩進めることばを考えます。",
+                                },
+                                {
+                                  id: "brand",
+                                  eyebrow: "PERSON",
+                                  question:
+                                    "安心してもらうために、どんなあなたを見せますか？",
+                                  description:
+                                    "写真や名前で、人柄が伝わる入口をつくります。",
+                                },
+                                {
+                                  id: "works",
+                                  eyebrow: "START",
+                                  question:
+                                    "最初の一歩として、何を見てもらいますか？",
+                                  description:
+                                    "作品や活動から、入りやすい入口を選びます。",
+                                },
+                                {
+                                  id: "links",
+                                  eyebrow: "NEXT",
+                                  question:
+                                    "次の一歩を、どこへ案内しますか？",
+                                  description:
+                                    "もっと知りたい人の行き先を用意します。",
+                                },
+                              ] as const)
+                            : ([
+                                {
+                                  id: "brand",
+                                  eyebrow: "PERSON",
+                                  question:
+                                    "最初に、どんなあなたを見せますか？",
+                                  description:
+                                    "写真、名前、短い紹介で第一印象をつくります。",
+                                },
+                                {
+                                  id: "content",
+                                  eyebrow: "STORY",
+                                  question:
+                                    "もう少し知りたい人に、何を話しますか？",
+                                  description:
+                                    "活動や考え方を、あなたのことばで伝えます。",
+                                },
+                                {
+                                  id: "works",
+                                  eyebrow: "ACTIVITY",
+                                  question:
+                                    "あなたの何を見てもらいますか？",
+                                  description:
+                                    "代表する作品や活動を選びます。",
+                                },
+                                {
+                                  id: "links",
+                                  eyebrow: "NEXT",
+                                  question:
+                                    "興味を持った人を、どこへつなぎますか？",
+                                  description:
+                                    "SNSや外部サイトなど、次の行動を用意します。",
+                                },
+                              ] as const);
+
+                    return (
+                      <div className="space-y-3">
+                        {flow.map((section, index) => {
+                          const active =
+                            editorSection === section.id;
+
+                          return (
+                            <button
+                              key={section.id}
+                              type="button"
+                              onClick={() =>
+                                setEditorSection(section.id)
+                              }
+                              className={[
+                                "group grid w-full gap-4 rounded-3xl border p-4 text-left transition sm:grid-cols-[64px_1fr_auto] sm:items-center sm:p-5",
+                                active
+                                  ? "border-neutral-950 bg-neutral-950 text-white shadow-md"
+                                  : "border-neutral-200 bg-white text-neutral-950 hover:-translate-y-0.5 hover:border-neutral-400 hover:shadow-sm",
+                              ].join(" ")}
+                            >
+                              <div>
+                                <div
+                                  className={[
+                                    "text-[9px] font-black tracking-[0.18em]",
+                                    active
+                                      ? "text-neutral-500"
+                                      : "text-neutral-400",
+                                  ].join(" ")}
+                                >
+                                  STEP
+                                </div>
+
+                                <div className="mt-1 text-2xl font-black">
+                                  {String(index + 1).padStart(2, "0")}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div
+                                  className={[
+                                    "text-[9px] font-black tracking-[0.18em]",
+                                    active
+                                      ? "text-neutral-400"
+                                      : "text-neutral-400",
+                                  ].join(" ")}
+                                >
+                                  {section.eyebrow}
+                                </div>
+
+                                <div className="mt-1 text-base font-black sm:text-lg">
+                                  {section.question}
+                                </div>
+
+                                <div
+                                  className={[
+                                    "mt-1 text-xs leading-6",
+                                    active
+                                      ? "text-neutral-400"
+                                      : "text-neutral-500",
+                                  ].join(" ")}
+                                >
+                                  {section.description}
+                                </div>
+                              </div>
+
+                              <div
+                                className={[
+                                  "text-xl transition group-hover:translate-x-1",
+                                  active
+                                    ? "text-white"
+                                    : "text-neutral-300",
+                                ].join(" ")}
+                              >
+                                →
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </section>
+              </>
+            )}
+
+            {showEditor && editorSection === "brand" ? (
+            <SectionCard
+              number={
+                selectedPagePattern === "person-first"
+                  ? "1"
+                  : "2"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "それを届けているのは、どんな人ですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "その話をしているのは、どんなあなたですか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "安心してもらうために、どんなあなたを見せますか？"
+                      : "最初に、どんなあなたを見せますか？"
+              }
+              description="写真・名前・短い紹介など、ページの中であなた自身を伝える素材を整えます。"
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <ReadOnlyField
+                  label="表示名"
+                  value={displayName || "未設定"}
+                />
+
+                <ReadOnlyField
+                  label="ユーザーネーム"
+                  value={username ? `@${username}` : "未設定"}
+                />
+              </div>
+
+              {publicProfileUrl ? (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="text-xs font-bold text-neutral-500">
+                    公開URL
+                  </div>
+
+                  <div className="mt-2 break-all font-mono text-xs text-neutral-700">
+                    {publicProfileUrl}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-neutral-900">
+                  自己紹介
+                </label>
+
+                <textarea
+                  value={bio}
+                  onChange={(event) =>
+                    setBio(event.target.value)
+                  }
+                  rows={6}
+                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
+                  placeholder="あなた自身や活動について書いてください。"
+                />
+
+                <p className="text-xs leading-5 text-neutral-500">
+                  プレーンテキストで保存します。HTMLは使用しません。
+                </p>
+              </div>
+
+              <ImageSettingCard
+                title="プロフィール画像"
+                description="顔写真、個人アイコン、ロゴなどを設定できます。"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-200 file:px-3 file:py-1.5 file:text-sm file:text-neutral-700"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+
+                    if (!file) return;
+
+                    const url =
+                      await uploadProfileImage(
+                        file,
+                        "avatar",
+                      );
+
+                    if (url) {
+                      setAvatarUrl(url);
+                    }
+                  }}
+                />
+
+                {avatarUrl ? (
+                  <div className="space-y-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={avatarUrl}
+                      alt="プロフィール画像"
+                      className={[
+                        "h-24 w-24 object-cover ring-1 ring-neutral-200",
+                        profileImageStyle === "circle"
+                          ? "rounded-full"
+                          : "rounded-xl",
+                      ].join(" ")}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl(null)}
+                      className="text-xs font-semibold text-red-600 hover:underline"
+                    >
+                      プロフィール画像を削除
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-neutral-700">
+                    表示方法
+                  </div>
+
+                  <div className="grid gap-2">
+                    <ChoiceButton
+                      active={profileImageStyle === "circle"}
+                      title="○ 丸型で表示"
+                      body="顔写真や個人アイコン向きです。"
+                      onClick={() =>
+                        setProfileImageStyle("circle")
+                      }
+                    />
+
+                    <ChoiceButton
+                      active={profileImageStyle === "logo"}
+                      title="□ 四角型で表示"
+                      body="ロゴやブランド画像向きです。丸く切り抜きません。"
+                      onClick={() =>
+                        setProfileImageStyle("logo")
+                      }
+                    />
+
+                    <ChoiceButton
+                      active={profileImageStyle === "none"}
+                      title="表示しない"
+                      body="画像を使わず、名前と文章だけを表示します。"
+                      onClick={() =>
+                        setProfileImageStyle("none")
+                      }
+                    />
+                  </div>
+                </div>
+              </ImageSettingCard>
+
+              <ImageSettingCard
+                title="プロフィール表紙画像"
+                description="プロフィールページ上部に表示する横長のカバー画像です。"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-200 file:px-3 file:py-1.5 file:text-sm file:text-neutral-700"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+
+                    if (!file) return;
+
+                    const url =
+                      await uploadProfileImage(
+                        file,
+                        "cover",
+                      );
+
+                    if (url) {
+                      setCoverImageUrl(url);
+                    }
+                  }}
+                />
+
+                {coverImageUrl ? (
+                  <div className="space-y-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={coverImageUrl}
+                      alt="プロフィール表紙画像"
+                      className="h-40 w-full rounded-2xl object-cover ring-1 ring-neutral-200"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCoverImageUrl(null)
+                      }
+                      className="text-xs font-semibold text-red-600 hover:underline"
+                    >
+                      表紙画像を削除
+                    </button>
+                  </div>
+                ) : null}
+              </ImageSettingCard>
+
+              <ImageSettingCard
+                title="ブランドロゴ"
+                description="あなた・教室・会社・ブランドを代表する画像です。作品自身にOGP画像がない場合の代表画像として優先して使用されます。"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-200 file:px-3 file:py-1.5 file:text-sm file:text-neutral-700"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+
+                    if (!file) return;
+
+                    const url =
+                      await uploadProfileImage(
+                        file,
+                        "logo",
+                      );
+
+                    if (url) {
+                      setBrandLogoUrl(url);
+                    }
+                  }}
+                />
+
+                {brandLogoUrl ? (
+                  <div className="space-y-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={brandLogoUrl}
+                      alt="ブランドロゴ"
+                      className="max-h-24 max-w-full rounded-xl object-contain ring-1 ring-neutral-200"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBrandLogoUrl(null)
+                      }
+                      className="text-xs font-semibold text-red-600 hover:underline"
+                    >
+                      ブランドロゴを削除
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="rounded-xl bg-white px-3 py-3 text-xs leading-6 text-neutral-500">
+                  OGP画像の優先順位：
+                  作品画像 → ブランドロゴ → プロフィール画像 → プロフィール表紙画像 → PARARI標準画像
+                </div>
+              </ImageSettingCard>
+
+              <div className="space-y-3 rounded-2xl bg-neutral-50 p-4">
+                <div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    プロフィール表示
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    名前・ユーザーネーム・プロフィール画像・自己紹介の位置を設定します。
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-neutral-700">
+                    全体の位置
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["left", "左"],
+                        ["center", "中央"],
+                        ["right", "右"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setProfileAlign(value)
+                        }
+                        className={[
+                          "rounded-full border px-4 py-2 text-xs font-semibold",
+                          profileAlign === value
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-neutral-300 bg-white text-neutral-700",
+                        ].join(" ")}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 text-sm text-neutral-700">
+                  <input
+                    type="checkbox"
+                    checked={showUsername}
+                    onChange={(event) =>
+                      setShowUsername(event.target.checked)
+                    }
+                    className="h-4 w-4"
+                  />
+                  ユーザーネーム（@{username || "your-name"}）を表示する
+                </label>
+              </div>
+            </SectionCard>
+            ) : null}
+
+            {showEditor && editorSection === "content" ? (
+            <SectionCard
+              number={
+                selectedPagePattern === "person-first"
+                  ? "2"
+                  : selectedPagePattern === "offer-first"
+                    ? "3"
+                    : "1"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "なぜ、それをしているのですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "まず、どんな話から始めますか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "初めての人に、まず何と声をかけますか？"
+                      : "もう少し知りたい人に、何を話しますか？"
+              }
+              description="設定のための文章ではなく、ページを見ている人に直接話しかけるつもりで書いてみてください。"
+            >
+              <div className="overflow-hidden rounded-3xl bg-neutral-950 p-5 text-white sm:p-6">
+                <div className="text-[9px] font-black tracking-[0.2em] text-neutral-500">
+                  YOUR WORDS
+                </div>
+
+                <div className="mt-3 max-w-xl text-xl font-black leading-tight">
+                  ここは「説明欄」ではなく、
+                  <br />
+                  あなたが話す場所です。
+                </div>
+
+                <p className="mt-3 max-w-xl text-xs leading-6 text-neutral-400">
+                  経歴を全部並べなくても構いません。
+                  なぜ始めたのか、何を大切にしているのか、
+                  誰に届けたいのか。あなたらしい順番で書けます。
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
+                <div>
+                  <div className="text-[9px] font-black tracking-[0.18em] text-neutral-400">
+                    STORY / ABOUT
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-neutral-900">
+                    {selectedPagePattern === "offer-first"
+                      ? "この活動や作品を始めた理由を聞かせてください。"
+                      : selectedPagePattern === "story-first"
+                        ? "あなたの物語を聞かせてください。"
+                        : selectedPagePattern === "welcome-first"
+                          ? "初めて来る人に、伝えておきたいことはありますか？"
+                          : "もう少し知りたい人に、何を伝えたいですか？"}
+                  </div>
+
+                  <p className="mt-1 text-xs leading-6 text-neutral-500">
+                    改行もそのまま公開ページに反映されます。
+                  </p>
+                </div>
+
+                <textarea
+                  value={profileBody}
+                  onChange={(event) =>
+                    setProfileBody(event.target.value)
+                  }
+                  rows={12}
+                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-7 outline-none transition focus:border-neutral-600"
+                  placeholder={
+                    selectedPagePattern === "story-first"
+                      ? "例）最初は、自分のために始めました。\n\nでも続けているうちに……"
+                      : selectedPagePattern === "welcome-first"
+                        ? "例）初めての方がほとんどです。\n一人でも気軽に来てください。"
+                        : selectedPagePattern === "offer-first"
+                          ? "例）この活動を始めたのは……\nいちばん届けたいのは……"
+                          : "例）普段どんなことをしているのか、\nなぜ続けているのかを書いてみてください。"
+                  }
+                />
+
+                <div className="flex items-start gap-3 rounded-2xl bg-white p-4 text-xs leading-6 text-neutral-500">
+                  <div className="mt-0.5 text-base">
+                    “
+                  </div>
+
+                  <div>
+                    上手な文章でなくても大丈夫です。
+                    このページでは、あなた自身のことばであることを大切にします。
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+            ) : null}
+
+            {showEditor && editorSection === "links" ? (
+            <SectionCard
+              number="4"
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "興味を持った人に、次に何をしてほしいですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "共感した人と、どうつながりますか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "次の一歩を、どこへ案内しますか？"
+                      : "興味を持った人を、どこへつなぎますか？"
+              }
+              description="SNSやホームページなど、このページの先にある場所を登録します。最大10件まで追加できます。"
+            >
+              <div className="flex flex-wrap gap-2">
+                {LINK_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50"
+                  >
+                    {preset.icon} {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-4 rounded-2xl bg-neutral-50 p-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-neutral-900">
+                    表示名
+                  </label>
+
+                  <input
+                    value={newLabel}
+                    onChange={(event) =>
+                      setNewLabel(event.target.value)
+                    }
+                    className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm"
+                    placeholder="例）Instagram"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-neutral-900">
+                    URL
+                  </label>
+
+                  <input
+                    value={newUrl}
+                    onChange={(event) =>
+                      setNewUrl(event.target.value)
+                    }
+                    className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm"
+                    placeholder="https://..."
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-neutral-900">
+                    アイコン（任意）
+                  </label>
+
+                  <input
+                    value={newIcon}
+                    onChange={(event) =>
+                      setNewIcon(event.target.value)
+                    }
+                    className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm"
+                    placeholder="例）📷"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddLink}
+                  disabled={
+                    linkSaving || links.length >= 10
+                  }
+                  className="w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                >
+                  {linkSaving
+                    ? "追加中..."
+                    : links.length >= 10
+                      ? "最大10件です"
+                      : "リンクを追加"}
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {links.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-sm text-neutral-400">
+                    まだリンクがありません。
+                  </div>
+                ) : (
+                  links.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-neutral-900">
+                          <span className="mr-2">
+                            {link.icon || "🔗"}
+                          </span>
+                          {link.label}
+                        </div>
+
+                        <div className="mt-1 truncate text-xs text-neutral-500">
+                          {link.url}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDeleteLink(link.id)
+                        }
+                        className="shrink-0 text-xs font-semibold text-red-600 hover:underline"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </SectionCard>
+            ) : null}
+
+            {showEditor && editorSection === "works" ? (
+            <SectionCard
+              number={
+                selectedPagePattern === "offer-first"
+                  ? "1"
+                  : "3"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "まず、何を見てもらいますか？"
+                  : selectedPagePattern === "story-first"
+                    ? "その考えが形になったものは何ですか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "最初の一歩として、何を見てもらいますか？"
+                      : "あなたの何を見てもらいますか？"
+              }
+              description="公開している作品から、このページで特に見てほしいものを選びます。"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-50 p-4">
+                <div>
+                  <div className="text-sm font-semibold text-neutral-900">
+                    選択中 {selectedWorks.length}作品
+                  </div>
+
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    {representativeWorkLimit === null
+                      ? "現在のプランでは代表作品数を制限していません。"
+                      : `Freeプランでは最大${representativeWorkLimit}作品まで掲載できます。`}
+                  </p>
+                </div>
+
+                <div className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 ring-1 ring-neutral-200">
+                  {isMonitor
+                    ? "Monitor"
+                    : effectivePlan.toUpperCase()}
+                </div>
+              </div>
+
+              {displayWorks.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-sm text-neutral-400">
+                  プロフィールに掲載できる公開作品がまだありません。
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {displayWorks.map((work) => {
+                    const checked =
+                      Boolean(work.show_in_profile_works);
+                    const selectedIndex =
+                      selectedWorks.findIndex(
+                        (item) => item.id === work.id,
+                      );
+
+                    return (
+                      <div
+                        key={work.id}
+                        className={[
+                          "rounded-2xl border p-4",
+                          checked
+                            ? "border-neutral-400 bg-neutral-50"
+                            : "border-neutral-200 bg-white",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={
+                              workSavingId === work.id
+                            }
+                            onChange={() =>
+                              handleToggleRepresentativeWork(
+                                work,
+                              )
+                            }
+                            className="mt-1 h-4 w-4 shrink-0"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-neutral-900">
+                              {work.title?.trim() ||
+                                "無題の作品"}
+                            </div>
+
+                            <div className="mt-1 text-xs text-neutral-500">
+                              {checked
+                                ? `表示順 ${
+                                    work.profile_works_order ??
+                                    selectedIndex + 1
+                                  }`
+                                : "代表作品には掲載していません"}
+                            </div>
+                          </div>
+
+                          {checked ? (
+                            <div className="flex shrink-0 gap-1">
+                              <button
+                                type="button"
+                                disabled={
+                                  selectedIndex <= 0 ||
+                                  movingWorkId !== null
+                                }
+                                onClick={() =>
+                                  handleMoveRepresentativeWork(
+                                    work.id,
+                                    "up",
+                                  )
+                                }
+                                className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-700 disabled:opacity-30"
+                              >
+                                ↑
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  selectedIndex < 0 ||
+                                  selectedIndex >=
+                                    selectedWorks.length - 1 ||
+                                  movingWorkId !== null
+                                }
+                                onClick={() =>
+                                  handleMoveRepresentativeWork(
+                                    work.id,
+                                    "down",
+                                  )
+                                }
+                                className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-700 disabled:opacity-30"
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs leading-5 text-neutral-500">
+                非公開作品はここには表示しません。
+                表示形式やカラム数は将来この設定に追加できます。
+              </p>
+            </SectionCard>
+            ) : null}
+
+            {message ? (
+              <div
+                className={[
+                  "rounded-2xl border px-4 py-3 text-sm leading-6",
+                  messageIsError
+                    ? "border-rose-200 bg-rose-50 text-rose-700"
+                    : "border-neutral-200 bg-white text-neutral-700",
+                ].join(" ")}
+              >
+                {message}
+              </div>
+            ) : null}
+
+            <div
+              className={
+                showEditor
+                  ? "sticky bottom-3 rounded-3xl border border-neutral-200 bg-white/95 p-3 shadow-lg backdrop-blur"
+                  : "hidden"
+              }
+            >
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                >
+                  {saving
+                    ? "保存中..."
+                    : "ページに反映する"}
+                </button>
+
+                {publicProfileUrl ? (
+                  <a
+                    href={publicProfileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                  >
+                    公開ページを見る
+                  </a>
+                ) : null}
+
+                <a
+                  href="/my/profile"
+                  className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                >
+                  戻る
+                </a>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function SectionCard({
+  number,
+  title,
+  description,
+  children,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
+          {number}
+        </div>
+
+        <div>
+          <div className="text-sm font-bold text-neutral-900">
+            {title}
+          </div>
+
+          <p className="mt-1 text-xs leading-5 text-neutral-500">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-5">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function ReadOnlyField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="text-sm font-semibold text-neutral-900">
+        {label}
+      </div>
+
+      <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-800">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ImageSettingCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-4 rounded-2xl bg-neutral-50 p-4">
+      <div>
+        <div className="text-sm font-semibold text-neutral-900">
+          {title}
+        </div>
+
+        <p className="mt-1 text-xs leading-5 text-neutral-500">
+          {description}
+        </p>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+function ChoiceButton({
+  active,
+  title,
+  body,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  body: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-xl border p-3 text-left transition",
+        active
+          ? "border-neutral-900 bg-white"
+          : "border-neutral-200 bg-white/70 hover:bg-white",
+      ].join(" ")}
+    >
+      <div className="text-sm font-semibold text-neutral-900">
+        {title}
+      </div>
+
+      <div className="mt-1 text-xs leading-5 text-neutral-500">
+        {body}
+      </div>
+    </button>
+  );
+}
+
+function TabSetting({
+  number,
+  label,
+  setLabel,
+  pageType,
+  setPageType,
+}: {
+  number: number;
+  label: string;
+  setLabel: (value: string) => void;
+  pageType: ProfilePageType;
+  setPageType: (value: ProfilePageType) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+      <div className="text-sm font-bold text-neutral-900">
+        タブ{number}
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-neutral-900">
+          タブ名
+        </label>
+
+        <input
+          value={label}
+          onChange={(event) =>
+            setLabel(event.target.value)
+          }
+          className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm"
+          placeholder={`タブ${number}の名前`}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-neutral-900">
+          表示する内容
+        </label>
+
+        <select
+          value={pageType}
+          onChange={(event) =>
+            setPageType(
+              event.target.value as ProfilePageType,
+            )
+          }
+          className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm"
+        >
+          <option value="profile">
+            プロフィール
+          </option>
+          <option value="links">
+            リンク
+          </option>
+          <option value="works">
+            代表作品
+          </option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function isAllowedLinkUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" ||
+      url.protocol === "http:" ||
+      url.protocol === "mailto:" ||
+      url.protocol === "tel:"
+    );
+  } catch {
+    return false;
+  }
+}

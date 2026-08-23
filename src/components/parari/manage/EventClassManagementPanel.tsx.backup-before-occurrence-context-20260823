@@ -1,0 +1,204 @@
+// src/components/parari/manage/EventClassManagementPanel.tsx
+// 2026-08-23 JST
+//
+// 主催者から見た「イベント・クラス」1件。
+// CALENDAR / APPLICATION の双方で同じUIを使用する。
+
+"use client";
+
+import * as React from "react";
+
+import EventClassOccurrencesPanel from "@/components/parari/manage/EventClassOccurrencesPanel";
+import EventClassParticipantsPanel from "@/components/parari/manage/EventClassParticipantsPanel";
+
+
+export type EventClassSection =
+  | "basic"
+  | "schedule"
+  | "participants"
+  | "publish";
+
+
+type Props = {
+  calendarItemId: string;
+  title: string;
+  location?: string | null;
+  summary?: React.ReactNode;
+  basicContent?: React.ReactNode;
+  defaultSection?: EventClassSection | null;
+};
+
+
+const SECTIONS: Array<{
+  id: EventClassSection;
+  label: string;
+}> = [
+  {
+    id:
+      "basic",
+    label:
+      "基本設定",
+  },
+  {
+    id:
+      "schedule",
+    label:
+      "開催予定",
+  },
+  {
+    id:
+      "participants",
+    label:
+      "参加者",
+  },
+  {
+    id:
+      "publish",
+    label:
+      "公開・募集",
+  },
+];
+
+
+export default function EventClassManagementPanel({
+  calendarItemId,
+  title,
+  location,
+  summary,
+  basicContent,
+  defaultSection = null,
+}: Props) {
+  const [
+    openSection,
+    setOpenSection,
+  ] =
+    React.useState<
+      EventClassSection | null
+    >(
+      defaultSection,
+    );
+
+
+  return (
+    <article className="rounded-3xl border border-neutral-200 bg-white p-5 sm:p-6">
+      <div>
+        <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+          EVENT / CLASS
+        </div>
+
+        <h3 className="mt-1 text-lg font-bold text-neutral-950">
+          {
+            title
+          }
+        </h3>
+
+        {location ? (
+          <div className="mt-1 text-sm text-neutral-500">
+            {
+              location
+            }
+          </div>
+        ) : null}
+
+        {summary ? (
+          <div className="mt-2">
+            {
+              summary
+            }
+          </div>
+        ) : null}
+      </div>
+
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {SECTIONS.map(
+          (
+            section,
+          ) => {
+            const active =
+              openSection ===
+              section.id;
+
+
+            return (
+              <button
+                key={
+                  section.id
+                }
+                type="button"
+                onClick={() => {
+                  setOpenSection(
+                    active
+                      ? null
+                      : section.id,
+                  );
+                }}
+                className={
+                  active
+                    ? "rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white"
+                    : "rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
+                }
+              >
+                {
+                  section.label
+                }
+              </button>
+            );
+          },
+        )}
+      </div>
+
+
+      {openSection ? (
+        <div className="mt-5 border-t border-neutral-100 pt-5">
+          {openSection ===
+          "basic" ? (
+            basicContent ?? (
+              <div className="text-sm text-neutral-500">
+                基本設定はまだありません。
+              </div>
+            )
+          ) : null}
+
+
+          {openSection ===
+          "schedule" ? (
+            <EventClassOccurrencesPanel
+              calendarItemId={
+                calendarItemId
+              }
+            />
+          ) : null}
+
+
+          {openSection ===
+          "participants" ? (
+            <EventClassParticipantsPanel
+              calendarItemId={
+                calendarItemId
+              }
+              title={
+                title
+              }
+            />
+          ) : null}
+
+
+          {openSection ===
+          "publish" ? (
+            <div className="rounded-2xl bg-neutral-50 px-4 py-5">
+              <div className="text-sm font-bold text-neutral-900">
+                公開・募集
+              </div>
+
+              <p className="mt-1 text-xs leading-6 text-neutral-500">
+                公開ページ、リンク、QRコードなどをここにまとめます。
+                恒久的なイベント・クラス公開ページと接続する予定です。
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}

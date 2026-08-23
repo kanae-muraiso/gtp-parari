@@ -151,6 +151,7 @@ export async function GET(
           title,
           status,
           acceptance_mode,
+          definition,
           created_at,
           updated_at
         `,
@@ -677,5 +678,466 @@ export async function POST(
     enabled: true,
     booking:
       data,
+  });
+}
+
+
+
+type CalendarBookingSettingsBody = {
+  calendarItemId?: unknown;
+  enabled?: unknown;
+  acceptanceMode?: unknown;
+  deadlineMinutesBefore?: unknown;
+  recurringBookingEnabled?: unknown;
+};
+
+
+function asRecord(
+  value: unknown,
+): Record<string, unknown> {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    return {
+      ...(value as Record<string, unknown>),
+    };
+  }
+
+  return {};
+}
+
+
+export async function PATCH(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (auth.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
+    );
+  }
+
+  const body =
+    (await request
+      .json()
+      .catch(() => null)) as
+      | CalendarBookingSettingsBody
+      | null;
+
+  const calendarItemId =
+    String(
+      body?.calendarItemId ??
+        "",
+    ).trim();
+
+  const enabled =
+    body?.enabled === true;
+
+  const acceptanceMode =
+    body?.acceptanceMode ===
+    "approval"
+      ? "approval"
+      : body?.acceptanceMode ===
+          "instant"
+        ? "instant"
+        : null;
+
+  const rawDeadline =
+    Number(
+      body
+        ?.deadlineMinutesBefore,
+    );
+
+  const recurringBookingEnabled =
+    body
+      ?.recurringBookingEnabled ===
+    true;
+
+  if (!calendarItemId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントが指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (!acceptanceMode) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "受付方法を確認してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (
+    !Number.isFinite(
+      rawDeadline,
+    ) ||
+    rawDeadline < 0 ||
+    !Number.isInteger(
+      rawDeadline,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約締切を確認してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const deadlineMinutesBefore =
+    Math.min(
+      rawDeadline,
+      525600,
+    );
+
+  const {
+    data: item,
+    error: itemError,
+  } =
+    await supabaseAdmin
+      .from("calendar_items")
+      .select(
+        `
+          id,
+          title,
+          status
+        `,
+      )
+      .eq(
+        "id",
+        calendarItemId,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .maybeSingle();
+
+  if (
+    itemError ||
+    !item
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "指定されたクラス・イベントを使用できません。",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+  if (
+    item.status !==
+    "active"
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "このクラス・イベントは現在使用できません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const {
+    data:
+      existingApplication,
+    error:
+      existingError,
+  } =
+    await supabaseAdmin
+      .from("applications")
+      .select(
+        `
+          id,
+          definition,
+          version
+        `,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .eq(
+        "origin",
+        "calendar",
+      )
+      .eq(
+        "calendar_item_id",
+        calendarItemId,
+      )
+      .maybeSingle();
+
+  if (existingError) {
+    console.error(
+      "[calendar/bookings PATCH] lookup failed:",
+      existingError,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約設定を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  const definition =
+    asRecord(
+      existingApplication
+        ?.definition,
+    );
+
+  const fields =
+    Array.isArray(
+      definition.fields,
+    )
+      ? definition.fields
+      : [];
+
+  const actionLabel =
+    typeof definition
+      .actionLabel ===
+    "string"
+      ? definition.actionLabel
+      : "予約する";
+
+  const nextDefinition = {
+    ...definition,
+
+    fields,
+
+    actionLabel,
+
+    calendarBooking: {
+      deadlineMinutesBefore,
+      recurringBookingEnabled,
+    },
+  };
+
+  const nextStatus =
+    enabled
+      ? "open"
+      : "closed";
+
+  if (existingApplication) {
+    const oldVersion =
+      Number(
+        existingApplication
+          .version ??
+          1,
+      );
+
+    const nextVersion =
+      Number.isFinite(
+        oldVersion,
+      )
+        ? Math.max(
+            1,
+            Math.floor(
+              oldVersion,
+            ) + 1,
+          )
+        : 2;
+
+    const {
+      data,
+      error,
+    } =
+      await supabaseAdmin
+        .from("applications")
+        .update({
+          title:
+            `${item.title} 予約`,
+
+          status:
+            nextStatus,
+
+          acceptance_mode:
+            acceptanceMode,
+
+          definition:
+            nextDefinition,
+
+          version:
+            nextVersion,
+
+          updated_at:
+            new Date()
+              .toISOString(),
+        })
+        .eq(
+          "id",
+          existingApplication.id,
+        )
+        .eq(
+          "owner_user_id",
+          auth.user.id,
+        )
+        .eq(
+          "origin",
+          "calendar",
+        )
+        .select(
+          `
+            id,
+            calendar_item_id,
+            title,
+            status,
+            acceptance_mode,
+            definition,
+            version
+          `,
+        )
+        .single();
+
+    if (
+      error ||
+      !data
+    ) {
+      console.error(
+        "[calendar/bookings PATCH] update failed:",
+        error,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "予約設定を保存できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      booking: data,
+    });
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin
+      .from("applications")
+      .insert({
+        owner_user_id:
+          auth.user.id,
+
+        application_type:
+          "EVENT",
+
+        title:
+          `${item.title} 予約`,
+
+        description:
+          null,
+
+        definition:
+          nextDefinition,
+
+        form_id:
+          null,
+
+        acceptance_mode:
+          acceptanceMode,
+
+        status:
+          nextStatus,
+
+        origin:
+          "calendar",
+
+        calendar_item_id:
+          item.id,
+
+        payment_method:
+          "none",
+
+        payment_amount:
+          null,
+
+        payment_confirmation_required:
+          false,
+      })
+      .select(
+        `
+          id,
+          calendar_item_id,
+          title,
+          status,
+          acceptance_mode,
+          definition,
+          version
+        `,
+      )
+      .single();
+
+  if (
+    error ||
+    !data
+  ) {
+    console.error(
+      "[calendar/bookings PATCH] create failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約設定を保存できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    booking: data,
   });
 }

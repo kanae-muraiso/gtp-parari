@@ -22,7 +22,9 @@ import {
 } from "@/lib/supabaseClient";
 
 import CalendarMonthView from "@/components/parari/manage/CalendarMonthView";
-import CalendarBookingControl from "@/components/parari/manage/CalendarBookingControl";
+import EventClassManagementPanel from "@/components/parari/manage/EventClassManagementPanel";
+import CalendarBookingSettingsEditor from "@/components/parari/manage/CalendarBookingSettingsEditor";
+import CalendarItemBrandSettingsEditor from "@/components/parari/manage/CalendarItemBrandSettingsEditor";
 
 
 type CalendarItem = {
@@ -35,6 +37,8 @@ type CalendarItem = {
   fee_amount: number | null;
   fee_currency: string;
   description_work_id: string | null;
+  summary: string | null;
+  show_in_profile: boolean;
   status: "active" | "archived";
   created_at: string;
   updated_at: string;
@@ -46,6 +50,7 @@ type RecurrenceRule = {
   interval?: number;
   byWeekday?: number[];
   byMonthDay?: number[];
+  anchorDate?: string;
 };
 
 
@@ -63,6 +68,22 @@ type CalendarSchedule = {
     | "ended";
   created_at: string;
   updated_at: string;
+};
+
+
+type CalendarOccurrenceSummary = {
+  id: string;
+  calendar_item_id: string;
+  calendar_schedule_id:
+    | string
+    | null;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  status:
+    | "scheduled"
+    | "cancelled"
+    | "completed";
 };
 
 
@@ -86,10 +107,23 @@ type RecurrenceType =
 type ScheduleDraft = {
   recurrenceType:
     RecurrenceType;
+
   startDate: string;
   startTime: string;
   endDate: string;
   timezone: string;
+
+  /*
+   * 開催期間とは別の開催ルール
+   */
+  weekday: string;
+  monthDay: string;
+
+  /*
+   * 隔週だけは周期の基準となる
+   * 最初の開催日が必要。
+   */
+  anchorDate: string;
 };
 
 
@@ -131,14 +165,62 @@ function getTodayInputValue() {
 }
 
 
-function createInitialScheduleDraft():
-  ScheduleDraft {
+const WEEKDAY_LABELS: Record<
+  number,
+  string
+> = {
+  1: "月曜日",
+  2: "火曜日",
+  3: "水曜日",
+  4: "木曜日",
+  5: "金曜日",
+  6: "土曜日",
+  7: "日曜日",
+};
+
+
+function getIsoWeekdayFromDateText(
+  dateText: string,
+): number {
+  const [
+    year,
+    month,
+    day,
+  ] =
+    dateText
+      .split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day,
+      ),
+    );
+
+  const jsDay =
+    date.getUTCDay();
+
+  return jsDay === 0
+    ? 7
+    : jsDay;
+}
+
+
+function createInitialScheduleDraft(
+  timezone = "Asia/Tokyo",
+): ScheduleDraft {
+  const today =
+    getTodayInputValue();
+
   return {
     recurrenceType:
       "once",
 
     startDate:
-      getTodayInputValue(),
+      today,
 
     startTime:
       "10:00",
@@ -147,13 +229,33 @@ function createInitialScheduleDraft():
       "",
 
     timezone:
-      "Asia/Tokyo",
+      timezone,
+
+    weekday:
+      String(
+        getIsoWeekdayFromDateText(
+          today,
+        ),
+      ),
+
+    monthDay:
+      String(
+        Number(
+          today.slice(
+            8,
+            10,
+          ),
+        ),
+      ),
+
+    anchorDate:
+      today,
   };
 }
 
-
 function getScheduleLabel(
-  schedule: CalendarSchedule,
+  schedule:
+    CalendarSchedule,
 ): string {
   const rule =
     schedule.recurrence_rule ??
@@ -166,31 +268,69 @@ function getScheduleLabel(
     return "1回だけ";
   }
 
+
   if (
     rule.freq ===
       "weekly" &&
-    rule.interval === 2
+    rule.interval ===
+      2
   ) {
-    return "隔週";
+    const weekday =
+      rule.byWeekday?.[0];
+
+    const label =
+      typeof weekday ===
+        "number"
+        ? WEEKDAY_LABELS[
+            weekday
+          ] ?? ""
+        : "";
+
+    return label
+      ? `隔週 ${label}`
+      : "隔週";
   }
+
 
   if (
     rule.freq ===
     "weekly"
   ) {
-    return "毎週";
+    const weekday =
+      rule.byWeekday?.[0];
+
+    const label =
+      typeof weekday ===
+        "number"
+        ? WEEKDAY_LABELS[
+            weekday
+          ] ?? ""
+        : "";
+
+    return label
+      ? `毎週 ${label}`
+      : "毎週";
   }
+
 
   if (
     rule.freq ===
     "monthly"
   ) {
-    return "毎月";
+    const monthDay =
+      rule.byMonthDay?.[0];
+
+    return (
+      typeof monthDay ===
+        "number"
+        ? `毎月 ${monthDay}日`
+        : "毎月"
+    );
   }
 
-  return "定期";
-}
 
+  return "開催日時";
+}
 
 function formatStartTime(
   value: string,
@@ -202,7 +342,616 @@ function formatStartTime(
 }
 
 
+type OccurrenceDateTimeParts = {
+  year: string;
+  month: string;
+  day: string;
+  weekday: string;
+  hour: string;
+  minute: string;
+};
+
+
+function getOccurrenceDateTimeParts(
+  value: string,
+  timezone: string,
+): OccurrenceDateTimeParts {
+  const formatter =
+    new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          timezone ||
+          "Asia/Tokyo",
+
+        year:
+          "numeric",
+
+        month:
+          "numeric",
+
+        day:
+          "numeric",
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    );
+
+
+  const values =
+    new Map<
+      string,
+      string
+    >();
+
+
+  for (
+    const part of
+    formatter.formatToParts(
+      new Date(
+        value,
+      ),
+    )
+  ) {
+    if (
+      part.type !==
+      "literal"
+    ) {
+      values.set(
+        part.type,
+        part.value,
+      );
+    }
+  }
+
+
+  return {
+    year:
+      values.get(
+        "year",
+      ) ?? "",
+
+    month:
+      values.get(
+        "month",
+      ) ?? "",
+
+    day:
+      values.get(
+        "day",
+      ) ?? "",
+
+    weekday:
+      values.get(
+        "weekday",
+      ) ?? "",
+
+    hour:
+      values.get(
+        "hour",
+      ) ?? "",
+
+    minute:
+      values.get(
+        "minute",
+      ) ?? "",
+  };
+}
+
+
+function formatNextOccurrenceLabel(
+  occurrence:
+    CalendarOccurrenceSummary,
+): string {
+  const timezone =
+    occurrence.timezone ||
+    "Asia/Tokyo";
+
+
+  const start =
+    getOccurrenceDateTimeParts(
+      occurrence.starts_at,
+      timezone,
+    );
+
+
+  const end =
+    getOccurrenceDateTimeParts(
+      occurrence.ends_at,
+      timezone,
+    );
+
+
+  const startDateKey =
+    [
+      start.year,
+      start.month,
+      start.day,
+    ].join("-");
+
+
+  const endDateKey =
+    [
+      end.year,
+      end.month,
+      end.day,
+    ].join("-");
+
+
+  const startLabel =
+    `${start.month}/${start.day}（${start.weekday}）${start.hour}:${start.minute}`;
+
+
+  /*
+   * 普通のクラスは同日終了なので、
+   * 終了側は時刻だけ表示。
+   *
+   * 日付をまたぐイベントだけ
+   * 終了日も表示する。
+   */
+  if (
+    startDateKey ===
+    endDateKey
+  ) {
+    return (
+      `${startLabel}〜${end.hour}:${end.minute}`
+    );
+  }
+
+
+  return (
+    `${startLabel}〜` +
+    `${end.month}/${end.day}（${end.weekday}）` +
+    `${end.hour}:${end.minute}`
+  );
+}
+
+
+const COMMON_EVENT_TIMEZONES = [
+  {
+    value:
+      "Asia/Tokyo",
+    label:
+      "Tokyo / Japan",
+  },
+  {
+    value:
+      "Asia/Seoul",
+    label:
+      "Seoul / Korea",
+  },
+  {
+    value:
+      "Asia/Singapore",
+    label:
+      "Singapore",
+  },
+  {
+    value:
+      "America/New_York",
+    label:
+      "Miami / New York",
+  },
+  {
+    value:
+      "America/Chicago",
+    label:
+      "Chicago",
+  },
+  {
+    value:
+      "America/Denver",
+    label:
+      "Denver",
+  },
+  {
+    value:
+      "America/Los_Angeles",
+    label:
+      "Los Angeles",
+  },
+  {
+    value:
+      "Pacific/Honolulu",
+    label:
+      "Honolulu",
+  },
+  {
+    value:
+      "Europe/London",
+    label:
+      "London",
+  },
+  {
+    value:
+      "Europe/Paris",
+    label:
+      "Paris",
+  },
+  {
+    value:
+      "Europe/Berlin",
+    label:
+      "Berlin",
+  },
+  {
+    value:
+      "Australia/Sydney",
+    label:
+      "Sydney",
+  },
+  {
+    value:
+      "UTC",
+    label:
+      "UTC",
+  },
+] as const;
+
+
+function getDeviceTimezone():
+  string {
+  try {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Tokyo"
+    );
+  } catch {
+    return "Asia/Tokyo";
+  }
+}
+
+
+function isValidClientTimezone(
+  value: string,
+): boolean {
+  if (!value.trim()) {
+    return false;
+  }
+
+
+  try {
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone:
+          value,
+      },
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
+function getPartsInTimezone(
+  instant: Date,
+  timezone: string,
+) {
+  const formatter =
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone:
+          timezone,
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    );
+
+
+  const values =
+    new Map<
+      string,
+      string
+    >();
+
+
+  for (
+    const part of
+    formatter.formatToParts(
+      instant,
+    )
+  ) {
+    if (
+      part.type !==
+      "literal"
+    ) {
+      values.set(
+        part.type,
+        part.value,
+      );
+    }
+  }
+
+
+  return {
+    year:
+      Number(
+        values.get(
+          "year",
+        ),
+      ),
+
+    month:
+      Number(
+        values.get(
+          "month",
+        ),
+      ),
+
+    day:
+      Number(
+        values.get(
+          "day",
+        ),
+      ),
+
+    hour:
+      Number(
+        values.get(
+          "hour",
+        ),
+      ),
+
+    minute:
+      Number(
+        values.get(
+          "minute",
+        ),
+      ),
+  };
+}
+
+
+/*
+ * 入力された
+ *
+ *   2026-09-15
+ *   19:00
+ *   America/New_York
+ *
+ * を「New Yorkの19:00」という意味の
+ * 絶対時刻へ変換する。
+ *
+ * 表示確認用。
+ * 保存時のSSOT変換はサーバー側に任せる。
+ */
+function localDateTimeInTimezoneToDate(
+  dateText: string,
+  timeText: string,
+  timezone: string,
+): Date | null {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      dateText,
+    ) ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+      timeText,
+    ) ||
+    !isValidClientTimezone(
+      timezone,
+    )
+  ) {
+    return null;
+  }
+
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    dateText
+      .split("-")
+      .map(Number);
+
+
+  const [
+    hour,
+    minute,
+  ] =
+    timeText
+      .split(":")
+      .map(Number);
+
+
+  const targetAsUtc =
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+    );
+
+
+  let candidate =
+    targetAsUtc;
+
+
+  /*
+   * timezone offsetを直接持たず、
+   * Intlで現地表示との差を補正する。
+   * DSTにも追従する。
+   */
+  for (
+    let index = 0;
+    index < 4;
+    index += 1
+  ) {
+    const shown =
+      getPartsInTimezone(
+        new Date(
+          candidate,
+        ),
+        timezone,
+      );
+
+
+    const shownAsUtc =
+      Date.UTC(
+        shown.year,
+        shown.month - 1,
+        shown.day,
+        shown.hour,
+        shown.minute,
+      );
+
+
+    const difference =
+      targetAsUtc -
+      shownAsUtc;
+
+
+    if (
+      difference === 0
+    ) {
+      break;
+    }
+
+
+    candidate +=
+      difference;
+  }
+
+
+  const result =
+    new Date(
+      candidate,
+    );
+
+
+  const confirmed =
+    getPartsInTimezone(
+      result,
+      timezone,
+    );
+
+
+  if (
+    confirmed.year !==
+      year ||
+    confirmed.month !==
+      month ||
+    confirmed.day !==
+      day ||
+    confirmed.hour !==
+      hour ||
+    confirmed.minute !==
+      minute
+  ) {
+    return null;
+  }
+
+
+  return result;
+}
+
+
+function formatEventTimeForTimezone(
+  dateText: string,
+  timeText: string,
+  eventTimezone: string,
+  targetTimezone: string,
+): string {
+  const instant =
+    localDateTimeInTimezoneToDate(
+      dateText,
+      timeText,
+      eventTimezone,
+    );
+
+
+  if (!instant) {
+    return "";
+  }
+
+
+  try {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          targetTimezone,
+
+        month:
+          "numeric",
+
+        day:
+          "numeric",
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    ).format(
+      instant,
+    );
+  } catch {
+    return "";
+  }
+}
+
+
 export default function CalendarManagerPanel() {
+  const [
+    deviceTimezone,
+    setDeviceTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  React.useEffect(
+    () => {
+      setDeviceTimezone(
+        getDeviceTimezone(),
+      );
+    },
+    [],
+  );
+
+
   const [
     items,
     setItems,
@@ -284,17 +1033,48 @@ export default function CalendarManagerPanel() {
 
 
   const [
-    generatingOccurrences,
-    setGeneratingOccurrences,
+    editingExistingScheduleId,
+    setEditingExistingScheduleId,
   ] =
-    React.useState(false);
+    React.useState<
+      string | null
+    >(null);
 
 
   const [
+    editingExistingEndDate,
+    setEditingExistingEndDate,
+  ] =
+    React.useState("");
+
+
+  const [
+    existingScheduleSaving,
+    setExistingScheduleSaving,
+  ] =
+    React.useState(false);
+
+const [
     occurrenceRefreshKey,
     setOccurrenceRefreshKey,
   ] =
     React.useState(0);
+
+
+  const [
+    occurrenceSummaries,
+    setOccurrenceSummaries,
+  ] =
+    React.useState<
+      CalendarOccurrenceSummary[]
+    >([]);
+
+
+  const [
+    showEndedItems,
+    setShowEndedItems,
+  ] =
+    React.useState(false);
 
 
   async function getAccessToken() {
@@ -308,6 +1088,79 @@ export default function CalendarManagerPanel() {
       session?.access_token ??
       null
     );
+  }
+
+
+  async function loadOccurrenceSummaries() {
+    try {
+      const accessToken =
+        await getAccessToken();
+
+
+      if (!accessToken) {
+        setOccurrenceSummaries(
+          [],
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/occurrences",
+          {
+            method:
+              "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            cache:
+              "no-store",
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setOccurrenceSummaries(
+          [],
+        );
+
+        return;
+      }
+
+
+      setOccurrenceSummaries(
+        Array.isArray(
+          result.occurrences,
+        )
+          ? result.occurrences
+          : [],
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] occurrence summary load failed:",
+        error,
+      );
+
+      setOccurrenceSummaries(
+        [],
+      );
+    }
   }
 
 
@@ -443,6 +1296,13 @@ export default function CalendarManagerPanel() {
   React.useEffect(() => {
     void loadData();
   }, []);
+
+
+  React.useEffect(() => {
+    void loadOccurrenceSummaries();
+  }, [
+    occurrenceRefreshKey,
+  ]);
 
 
   function updateDraft(
@@ -623,12 +1483,23 @@ export default function CalendarManagerPanel() {
   function openSchedule(
     itemId: string,
   ) {
+    setEditingExistingScheduleId(
+      null,
+    );
+
+    setEditingExistingEndDate(
+      "",
+    );
+
+
     setScheduleItemId(
       itemId,
     );
 
     setScheduleDraft(
-      createInitialScheduleDraft(),
+      createInitialScheduleDraft(
+        deviceTimezone,
+      ),
     );
 
     setMessage("");
@@ -641,7 +1512,9 @@ export default function CalendarManagerPanel() {
     );
 
     setScheduleDraft(
-      createInitialScheduleDraft(),
+      createInitialScheduleDraft(
+        deviceTimezone,
+      ),
     );
   }
 
@@ -739,6 +1612,18 @@ export default function CalendarManagerPanel() {
                 timezone:
                   scheduleDraft
                     .timezone,
+
+                weekday:
+                  scheduleDraft
+                    .weekday,
+
+                monthDay:
+                  scheduleDraft
+                    .monthDay,
+
+                anchorDate:
+                  scheduleDraft
+                    .anchorDate,
               }),
           },
         );
@@ -851,39 +1736,95 @@ export default function CalendarManagerPanel() {
   }
 
 
-  async function generateAllOccurrences() {
-    if (
-      generatingOccurrences
-    ) {
-      return;
-    }
+  function openExistingSchedulePeriodEdit(
+    schedule:
+      CalendarSchedule,
+  ) {
+    /*
+     * 新規日時設定フォームが開いていたら閉じる。
+     */
+    closeSchedule();
 
 
-    const activeSchedules =
-      schedules.filter(
-        (schedule) =>
-          schedule.status ===
-          "active",
-      );
+    setEditingExistingScheduleId(
+      schedule.id,
+    );
 
-
-    if (
-      activeSchedules.length ===
-      0
-    ) {
-      setMessage(
-        "開催日時がまだ設定されていません。",
-      );
-
-      return;
-    }
-
-
-    setGeneratingOccurrences(
-      true,
+    setEditingExistingEndDate(
+      schedule.end_date ??
+        "",
     );
 
     setMessage("");
+  }
+
+
+  function closeExistingSchedulePeriodEdit() {
+    setEditingExistingScheduleId(
+      null,
+    );
+
+    setEditingExistingEndDate(
+      "",
+    );
+  }
+
+
+  async function saveExistingSchedulePeriod(
+    schedule:
+      CalendarSchedule,
+  ) {
+    if (
+      existingScheduleSaving
+    ) {
+      return;
+    }
+
+
+    setMessage("");
+
+
+    if (
+      !schedule.end_date
+    ) {
+      setMessage(
+        "この開催設定には終了日がありません。",
+      );
+
+      return;
+    }
+
+
+    if (
+      !editingExistingEndDate
+    ) {
+      setMessage(
+        "新しい終了日を入力してください。",
+      );
+
+      return;
+    }
+
+
+    /*
+     * 現段階では「延長」のみ。
+     * 短縮は予約者への影響処理と一緒に後で実装する。
+     */
+    if (
+      editingExistingEndDate <=
+      schedule.end_date
+    ) {
+      setMessage(
+        `現在の終了日 ${schedule.end_date} より後の日付を指定してください。`,
+      );
+
+      return;
+    }
+
+
+    setExistingScheduleSaving(
+      true,
+    );
 
 
     try {
@@ -900,73 +1841,140 @@ export default function CalendarManagerPanel() {
       }
 
 
-      const results =
-        await Promise.all(
-          activeSchedules.map(
-            async (
-              schedule,
-            ) => {
-              const response =
-                await fetch(
-                  "/api/calendar/occurrences",
-                  {
-                    method:
-                      "POST",
+      /*
+       * 1. SCHEDULEの終了日を延長
+       */
+      const response =
+        await fetch(
+          "/api/calendar/schedules/extend",
+          {
+            method:
+              "PATCH",
 
-                    headers: {
-                      Authorization:
-                        `Bearer ${accessToken}`,
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
 
-                      "Content-Type":
-                        "application/json",
-                    },
-
-                    body:
-                      JSON.stringify({
-                        scheduleId:
-                          schedule.id,
-                      }),
-                  },
-                );
-
-
-              const result =
-                await response
-                  .json()
-                  .catch(
-                    () => null,
-                  );
-
-
-              return {
-                ok:
-                  response.ok &&
-                  result?.ok,
-              };
+              "Content-Type":
+                "application/json",
             },
-          ),
+
+            body:
+              JSON.stringify({
+                scheduleId:
+                  schedule.id,
+
+                newEndDate:
+                  editingExistingEndDate,
+              }),
+          },
         );
 
 
-      const failedCount =
-        results.filter(
-          (result) =>
-            !result.ok,
-        ).length;
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
 
 
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.schedule
+      ) {
+        setMessage(
+          result?.message ??
+            "開催期間を変更できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const updatedSchedule =
+        result.schedule as
+          CalendarSchedule;
+
+
+      /*
+       * 画面上のSCHEDULEも即更新。
+       */
+      setSchedules(
+        (current) =>
+          current.map(
+            (
+              currentSchedule,
+            ) =>
+              currentSchedule.id ===
+              schedule.id
+                ? updatedSchedule
+                : currentSchedule,
+          ),
+      );
+
+
+      /*
+       * 2. 延長された期間の開催回を生成。
+       *
+       * 既存の開催回はそのまま残し、
+       * 新しく必要になった回だけ追加する。
+       */
+      const occurrenceResponse =
+        await fetch(
+          "/api/calendar/occurrences",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                scheduleId:
+                  schedule.id,
+              }),
+          },
+        );
+
+
+      const occurrenceResult =
+        await occurrenceResponse
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      /*
+       * カレンダーは必ず再読込。
+       */
       setOccurrenceRefreshKey(
         (current) =>
           current + 1,
       );
 
 
+      const completedEndDate =
+        editingExistingEndDate;
+
+
+      closeExistingSchedulePeriodEdit();
+
+
       if (
-        failedCount >
-        0
+        !occurrenceResponse.ok ||
+        !occurrenceResult?.ok
       ) {
         setMessage(
-          `${activeSchedules.length - failedCount}件の開催設定を生成しました。${failedCount}件は生成できませんでした。`,
+          `開催期間は ${completedEndDate} まで変更しましたが、開催予定の自動追加に失敗しました。「開催予定を生成」を押してください。`,
         );
 
         return;
@@ -974,23 +1982,469 @@ export default function CalendarManagerPanel() {
 
 
       setMessage(
-        `${activeSchedules.length}件の開催設定から開催予定を生成しました。`,
+        `開催期間を ${completedEndDate} まで延長しました。`,
       );
     } catch (error) {
       console.error(
-        "[CalendarManagerPanel] occurrence generation failed:",
+        "[CalendarManagerPanel] schedule period update failed:",
         error,
       );
 
       setMessage(
-        "開催予定を生成できませんでした。",
+        "開催期間を変更できませんでした。",
       );
     } finally {
-      setGeneratingOccurrences(
+      setExistingScheduleSaving(
         false,
       );
     }
   }
+
+
+  /*
+   * ==========================================================
+   * クラス・イベントの表示分類
+   *
+   * 通常：
+   * - 次回開催がある
+   * - または今後開催可能な設定がある
+   * - またはまだ日時未設定
+   *
+   * 終了：
+   * - 開催履歴はあるが今後の開催がない
+   * - 終了した単発イベント
+   * - 終了日を過ぎた定期開催
+   *
+   * 通常一覧は次回開催日時順。
+   * 終了一覧は最近終了した順。
+   * ==========================================================
+   */
+
+  const nowMs =
+    Date.now();
+
+  const today =
+    getTodayInputValue();
+
+
+  /*
+   * ITEMごとの次回開催。
+   */
+  const nextOccurrenceByItem =
+    new Map<
+      string,
+      CalendarOccurrenceSummary
+    >();
+
+
+  /*
+   * ITEMごとの最後の開催日時。
+   * 終了一覧の並び順に使う。
+   */
+  const lastOccurrenceTimeByItem =
+    new Map<
+      string,
+      number
+    >();
+
+
+  for (
+    const occurrence of
+    occurrenceSummaries
+  ) {
+    const startsAtMs =
+      new Date(
+        occurrence.starts_at,
+      ).getTime();
+
+    const endsAtMs =
+      new Date(
+        occurrence.ends_at,
+      ).getTime();
+
+
+    if (
+      Number.isFinite(
+        startsAtMs,
+      )
+    ) {
+      const previous =
+        lastOccurrenceTimeByItem.get(
+          occurrence.calendar_item_id,
+        );
+
+
+      if (
+        previous === undefined ||
+        startsAtMs > previous
+      ) {
+        lastOccurrenceTimeByItem.set(
+          occurrence.calendar_item_id,
+          startsAtMs,
+        );
+      }
+    }
+
+
+    /*
+     * 次回開催として扱うのは、
+     * scheduled かつまだ終了していない回。
+     */
+    if (
+      occurrence.status !==
+        "scheduled" ||
+      !Number.isFinite(
+        endsAtMs,
+      ) ||
+      endsAtMs <=
+        nowMs
+    ) {
+      continue;
+    }
+
+
+    const current =
+      nextOccurrenceByItem.get(
+        occurrence.calendar_item_id,
+      );
+
+
+    if (!current) {
+      nextOccurrenceByItem.set(
+        occurrence.calendar_item_id,
+        occurrence,
+      );
+
+      continue;
+    }
+
+
+    const currentStartsAtMs =
+      new Date(
+        current.starts_at,
+      ).getTime();
+
+
+    if (
+      startsAtMs <
+      currentStartsAtMs
+    ) {
+      nextOccurrenceByItem.set(
+        occurrence.calendar_item_id,
+        occurrence,
+      );
+    }
+  }
+
+
+  function scheduleIsStillCurrent(
+    schedule:
+      CalendarSchedule,
+  ): boolean {
+    /*
+     * paused は終了とは扱わない。
+     * 再開可能なクラスとして通常側に残す。
+     */
+    if (
+      schedule.status ===
+      "paused"
+    ) {
+      return true;
+    }
+
+
+    if (
+      schedule.status !==
+      "active"
+    ) {
+      return false;
+    }
+
+
+    const freq =
+      schedule
+        .recurrence_rule
+        ?.freq;
+
+
+    /*
+     * 単発イベント。
+     */
+    if (
+      freq === "once"
+    ) {
+      const scheduleOccurrences =
+        occurrenceSummaries.filter(
+          (
+            occurrence,
+          ) =>
+            occurrence
+              .calendar_schedule_id ===
+            schedule.id,
+        );
+
+
+      /*
+       * OCCURRENCEがすでにある場合は、
+       * 実際の開催状態を優先する。
+       */
+      if (
+        scheduleOccurrences.length >
+        0
+      ) {
+        return scheduleOccurrences.some(
+          (
+            occurrence,
+          ) => {
+            if (
+              occurrence.status !==
+              "scheduled"
+            ) {
+              return false;
+            }
+
+
+            const endsAtMs =
+              new Date(
+                occurrence.ends_at,
+              ).getTime();
+
+
+            return (
+              Number.isFinite(
+                endsAtMs,
+              ) &&
+              endsAtMs > nowMs
+            );
+          },
+        );
+      }
+
+
+      /*
+       * まだOCCURRENCEがない場合だけ
+       * SCHEDULEの日付を見る。
+       */
+      return (
+        schedule.start_date >=
+        today
+      );
+    }
+
+
+    /*
+     * 定期開催。
+     *
+     * 終了日なし、または今日以降なら
+     * まだ現役。
+     */
+    return (
+      !schedule.end_date ||
+      schedule.end_date >=
+        today
+    );
+  }
+
+
+  function itemHasFuturePotential(
+    item:
+      CalendarItem,
+  ): boolean {
+    if (
+      item.status !==
+      "active"
+    ) {
+      return false;
+    }
+
+
+    const itemSchedules =
+      schedules.filter(
+        (
+          schedule,
+        ) =>
+          schedule
+            .calendar_item_id ===
+          item.id,
+      );
+
+
+    /*
+     * 作ったばかりで日時未設定。
+     * これは終了ではない。
+     */
+    if (
+      itemSchedules.length ===
+      0
+    ) {
+      return true;
+    }
+
+
+    return itemSchedules.some(
+      (
+        schedule,
+      ) =>
+        scheduleIsStillCurrent(
+          schedule,
+        ),
+    );
+  }
+
+
+  const currentItems =
+    items
+      .filter(
+        (
+          item,
+        ) => {
+          if (
+            item.status !==
+            "active"
+          ) {
+            return false;
+          }
+
+
+          if (
+            nextOccurrenceByItem.has(
+              item.id,
+            )
+          ) {
+            return true;
+          }
+
+
+          return itemHasFuturePotential(
+            item,
+          );
+        },
+      )
+      .sort(
+        (
+          a,
+          b,
+        ) => {
+          const aOccurrence =
+            nextOccurrenceByItem.get(
+              a.id,
+            );
+
+          const bOccurrence =
+            nextOccurrenceByItem.get(
+              b.id,
+            );
+
+
+          /*
+           * 次回開催があるものを先頭へ。
+           */
+          if (
+            aOccurrence &&
+            !bOccurrence
+          ) {
+            return -1;
+          }
+
+
+          if (
+            !aOccurrence &&
+            bOccurrence
+          ) {
+            return 1;
+          }
+
+
+          /*
+           * 両方に次回開催があるなら
+           * 開催日時の早い順。
+           */
+          if (
+            aOccurrence &&
+            bOccurrence
+          ) {
+            return (
+              new Date(
+                aOccurrence.starts_at,
+              ).getTime() -
+              new Date(
+                bOccurrence.starts_at,
+              ).getTime()
+            );
+          }
+
+
+          /*
+           * 日時未設定などは
+           * 最近作ったものを先に。
+           */
+          return (
+            new Date(
+              b.created_at,
+            ).getTime() -
+            new Date(
+              a.created_at,
+            ).getTime()
+          );
+        },
+      );
+
+
+  const currentItemIds =
+    new Set(
+      currentItems.map(
+        (
+          item,
+        ) =>
+          item.id,
+      ),
+    );
+
+
+  const endedItems =
+    items
+      .filter(
+        (
+          item,
+        ) =>
+          !currentItemIds.has(
+            item.id,
+          ),
+      )
+      .sort(
+        (
+          a,
+          b,
+        ) => {
+          const aTime =
+            lastOccurrenceTimeByItem.get(
+              a.id,
+            ) ??
+            0;
+
+          const bTime =
+            lastOccurrenceTimeByItem.get(
+              b.id,
+            ) ??
+            0;
+
+
+          /*
+           * 終了したものは
+           * 最近のものから。
+           */
+          return (
+            bTime -
+            aTime
+          );
+        },
+      );
+
+
+  const displayItems =
+    showEndedItems
+      ? endedItems
+      : currentItems;
 
 
   return (
@@ -1013,23 +2467,39 @@ export default function CalendarManagerPanel() {
 
 
         <div className="flex flex-wrap gap-2">
-          {schedules.length > 0 ? (
+          {endedItems.length >
+            0 ||
+          showEndedItems ? (
             <button
               type="button"
-              disabled={
-                generatingOccurrences
-              }
               onClick={() => {
-                void generateAllOccurrences();
+                setShowEndedItems(
+                  (current) =>
+                    !current,
+                );
+
+                setMessage(
+                  "",
+                );
+
+                closeSchedule();
+
+                if (
+                  typeof closeExistingSchedulePeriodEdit ===
+                  "function"
+                ) {
+                  closeExistingSchedulePeriodEdit();
+                }
               }}
-              className="shrink-0 rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:border-neutral-500 disabled:opacity-50"
+              className="shrink-0 rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-950"
             >
-              {generatingOccurrences
-                ? "生成しています..."
-                : "開催予定を生成"}
+              {showEndedItems
+                ? "開催予定を表示"
+                : `終了したイベントを表示 (${endedItems.length})`}
             </button>
           ) : null}
 
+          
 
           {!creating ? (
             <button
@@ -1295,20 +2765,24 @@ export default function CalendarManagerPanel() {
           <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
             読み込んでいます...
           </div>
-        ) : items.length ===
+        ) : displayItems.length ===
           0 ? (
           <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-10 text-center">
             <div className="font-bold text-neutral-800">
-              まだクラス・イベントがありません
+              {showEndedItems
+                ? "終了したイベントはありません"
+                : "まだクラス・イベントがありません"}
             </div>
 
             <p className="mt-2 text-sm text-neutral-500">
-              最初のクラスやイベントを作ってみましょう。
+              {showEndedItems
+                ? "終了したクラス・イベントはここに表示されます。"
+                : "最初のクラスやイベントを作ってみましょう。"}
             </p>
           </div>
         ) : (
           <div className="grid gap-4">
-            {items.map(
+            {displayItems.map(
               (item) => {
                 const itemSchedules =
                   schedules.filter(
@@ -1326,20 +2800,46 @@ export default function CalendarManagerPanel() {
                   item.id;
 
 
+                const nextOccurrence =
+                  nextOccurrenceByItem.get(
+                    item.id,
+                  );
+
+
                 return (
-                  <article
+                  <EventClassManagementPanel
                     key={
                       item.id
                     }
-                    className="rounded-3xl border border-neutral-200 bg-white p-5 sm:p-6"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-neutral-950">
-                          {
-                            item.title
-                          }
-                        </h3>
+                    calendarItemId={
+                      item.id
+                    }
+                    title={
+                      item.title
+                    }
+                    location={
+                      item.location
+                    }
+                    summary={
+                      <>
+                        {nextOccurrence ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[11px] font-bold text-white">
+                              次回
+                            </span>
+
+                            <span className="text-sm font-bold text-neutral-800">
+                              {formatNextOccurrenceLabel(
+                                nextOccurrence,
+                              )}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-neutral-400">
+                            次回開催はまだありません
+                          </div>
+                        )}
+
 
                         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-neutral-600">
                           <span>
@@ -1348,14 +2848,6 @@ export default function CalendarManagerPanel() {
                             }
                             分
                           </span>
-
-                          {item.location ? (
-                            <span>
-                              {
-                                item.location
-                              }
-                            </span>
-                          ) : null}
 
                           {item.capacity ? (
                             <span>
@@ -1389,42 +2881,83 @@ export default function CalendarManagerPanel() {
                             </span>
                           ) : null}
                         </div>
-                      </div>
-
-
-                      <div className="flex flex-wrap items-start gap-2">
-                        <CalendarBookingControl
-                          calendarItemId={
-                            item.id
-                          }
-                          disabled={
-                            itemSchedules.length ===
-                            0
-                          }
+                      </>
+                    }
+                    basicContent={
+                      <>
+                        <CalendarItemBrandSettingsEditor
+                          item={item}
+                          onSaved={(updated) => {
+                            setItems(
+                              (current) =>
+                                current.map(
+                                  (
+                                    currentItem,
+                                  ) =>
+                                    currentItem.id ===
+                                    updated.id
+                                      ? {
+                                          ...currentItem,
+                                          ...updated,
+                                        }
+                                      : currentItem,
+                                ),
+                            );
+                          }}
                         />
 
+                        <div className="mt-7 border-t border-neutral-100 pt-5">
+                          <div className="text-sm font-bold text-neutral-950">
+                            予約設定
+                          </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (
-                              isEditingSchedule
-                            ) {
-                              closeSchedule();
-                            } else {
-                              openSchedule(
-                                item.id,
-                              );
-                            }
-                          }}
-                          className="shrink-0 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-950"
-                        >
-                          {isEditingSchedule
-                            ? "閉じる"
-                            : "＋ 日時を設定"}
-                        </button>
-                      </div>
-                    </div>
+                          <p className="mt-1 text-xs leading-5 text-neutral-500">
+                            このイベント・クラス全体の予約方法を設定します。
+                          </p>
+
+                          <div className="mt-4">
+                            <CalendarBookingSettingsEditor
+                              calendarItemId={
+                                item.id
+                              }
+                            />
+                          </div>
+                        </div>
+
+
+                        <div className="mt-7 border-t border-neutral-100 pt-5">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-bold text-neutral-950">
+                                日時設定
+                              </div>
+
+                              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                                定期開催や単発開催の日時を設定します。
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  isEditingSchedule
+                                ) {
+                                  closeSchedule();
+                                } else {
+                                  openSchedule(
+                                    item.id,
+                                  );
+                                }
+                              }}
+                              className="shrink-0 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-950"
+                            >
+                              {isEditingSchedule
+                                ? "閉じる"
+                                : "＋ 日時を設定"}
+                            </button>
+                          </div>
+                        </div>
 
 
                     {itemSchedules.length >
@@ -1484,6 +3017,124 @@ export default function CalendarManagerPanel() {
                                     schedule.timezone
                                   }
                                 </span>
+
+
+                                {schedule.status ===
+                                  "active" &&
+                                schedule.end_date &&
+                                schedule.recurrence_rule
+                                  ?.freq !==
+                                  "once" ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        existingScheduleSaving
+                                      }
+                                      onClick={() => {
+                                        if (
+                                          editingExistingScheduleId ===
+                                          schedule.id
+                                        ) {
+                                          closeExistingSchedulePeriodEdit();
+                                        } else {
+                                          openExistingSchedulePeriodEdit(
+                                            schedule,
+                                          );
+                                        }
+                                      }}
+                                      className="ml-3 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-950 disabled:opacity-50"
+                                    >
+                                      {editingExistingScheduleId ===
+                                      schedule.id
+                                        ? "閉じる"
+                                        : "期間を変更"}
+                                    </button>
+
+
+                                    {editingExistingScheduleId ===
+                                    schedule.id ? (
+                                      <div className="mt-4 rounded-xl border border-neutral-200 bg-white p-4">
+                                        <div className="text-xs font-bold text-neutral-700">
+                                          開催期間を変更
+                                        </div>
+
+                                        <div className="mt-2 text-xs leading-5 text-neutral-500">
+                                          現在の終了日：
+                                          {
+                                            schedule.end_date
+                                          }
+                                        </div>
+
+
+                                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+                                          <label className="block">
+                                            <span className="text-xs font-bold text-neutral-600">
+                                              新しい終了日
+                                            </span>
+
+                                            <input
+                                              type="date"
+                                              value={
+                                                editingExistingEndDate
+                                              }
+                                              min={
+                                                schedule.end_date
+                                              }
+                                              onChange={(
+                                                event,
+                                              ) => {
+                                                setEditingExistingEndDate(
+                                                  event.target
+                                                    .value,
+                                                );
+                                              }}
+                                              className="mt-1 block rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                                            />
+                                          </label>
+
+
+                                          <div className="flex flex-wrap gap-2">
+                                            <button
+                                              type="button"
+                                              disabled={
+                                                existingScheduleSaving
+                                              }
+                                              onClick={() => {
+                                                void saveExistingSchedulePeriod(
+                                                  schedule,
+                                                );
+                                              }}
+                                              className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+                                            >
+                                              {existingScheduleSaving
+                                                ? "保存しています..."
+                                                : "保存"}
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              disabled={
+                                                existingScheduleSaving
+                                              }
+                                              onClick={() => {
+                                                closeExistingSchedulePeriodEdit();
+                                              }}
+                                              className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-600"
+                                            >
+                                              やめる
+                                            </button>
+                                          </div>
+                                        </div>
+
+
+                                        <div className="mt-3 text-xs leading-5 text-neutral-400">
+                                          現在は期間の延長だけ変更できます。すでに個別変更・休講した開催回には影響しません。
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </>
+                                ) : null}
                               </div>
                             ),
                           )}
@@ -1541,9 +3192,141 @@ export default function CalendarManagerPanel() {
                           </label>
 
 
+                          {scheduleDraft
+                            .recurrenceType ===
+                          "weekly" ? (
+                            <label>
+                              <span className="text-sm font-bold text-neutral-700">
+                                開催曜日
+                              </span>
+
+                              <select
+                                value={
+                                  scheduleDraft
+                                    .weekday
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  updateScheduleDraft(
+                                    "weekday",
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                              >
+                                <option value="1">
+                                  月曜日
+                                </option>
+                                <option value="2">
+                                  火曜日
+                                </option>
+                                <option value="3">
+                                  水曜日
+                                </option>
+                                <option value="4">
+                                  木曜日
+                                </option>
+                                <option value="5">
+                                  金曜日
+                                </option>
+                                <option value="6">
+                                  土曜日
+                                </option>
+                                <option value="7">
+                                  日曜日
+                                </option>
+                              </select>
+                            </label>
+                          ) : null}
+
+
+                          {scheduleDraft
+                            .recurrenceType ===
+                          "monthly" ? (
+                            <label>
+                              <span className="text-sm font-bold text-neutral-700">
+                                毎月の開催日
+                              </span>
+
+                              <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                value={
+                                  scheduleDraft
+                                    .monthDay
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  updateScheduleDraft(
+                                    "monthDay",
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                              />
+
+                              <span className="mt-1 block text-xs text-neutral-400">
+                                例：15 → 毎月15日
+                              </span>
+                            </label>
+                          ) : null}
+
+
+                          {scheduleDraft
+                            .recurrenceType ===
+                          "biweekly" ? (
+                            <label>
+                              <span className="text-sm font-bold text-neutral-700">
+                                最初の開催日
+                              </span>
+
+                              <input
+                                type="date"
+                                value={
+                                  scheduleDraft
+                                    .anchorDate
+                                }
+                                min={
+                                  scheduleDraft
+                                    .startDate ||
+                                  undefined
+                                }
+                                max={
+                                  scheduleDraft
+                                    .endDate ||
+                                  undefined
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  updateScheduleDraft(
+                                    "anchorDate",
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                              />
+
+                              <span className="mt-1 block text-xs text-neutral-400">
+                                この日から2週間ごとに開催します
+                              </span>
+                            </label>
+                          ) : null}
+
+
                           <label>
                             <span className="text-sm font-bold text-neutral-700">
-                              開始日
+                              {scheduleDraft
+                                .recurrenceType ===
+                              "once"
+                                ? "開催日"
+                                : "開催期間の開始日"}
                             </span>
 
                             <input
@@ -1596,7 +3379,7 @@ export default function CalendarManagerPanel() {
                           "once" ? (
                             <label>
                               <span className="text-sm font-bold text-neutral-700">
-                                終了日
+                                開催期間の終了日
                               </span>
 
                               <input
@@ -1624,12 +3407,29 @@ export default function CalendarManagerPanel() {
                           ) : null}
 
 
-                          <label>
-                            <span className="text-sm font-bold text-neutral-700">
-                              タイムゾーン
-                            </span>
+                          <div>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-sm font-bold text-neutral-700">
+                                イベント基準時間帯
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateScheduleDraft(
+                                    "timezone",
+                                    deviceTimezone,
+                                  )
+                                }
+                                className="text-xs font-bold text-neutral-500 underline decoration-neutral-300 underline-offset-4 hover:text-neutral-900"
+                              >
+                                現在地を使う
+                              </button>
+                            </div>
+
 
                             <input
+                              list="parari-calendar-event-timezones"
                               value={
                                 scheduleDraft
                                   .timezone
@@ -1643,11 +3443,124 @@ export default function CalendarManagerPanel() {
                                     .value,
                                 )
                               }
-                              placeholder="Asia/Tokyo"
+                              placeholder="例：America/New_York"
                               className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
                             />
-                          </label>
+
+
+                            <datalist id="parari-calendar-event-timezones">
+                              {COMMON_EVENT_TIMEZONES.map(
+                                (
+                                  item,
+                                ) => (
+                                  <option
+                                    key={
+                                      item.value
+                                    }
+                                    value={
+                                      item.value
+                                    }
+                                  >
+                                    {
+                                      item.label
+                                    }
+                                  </option>
+                                ),
+                              )}
+                            </datalist>
+
+
+                            <p className="mt-2 text-xs leading-5 text-neutral-400">
+                              対面イベントは開催地、オンラインイベントはその予定の基準となる時間帯を指定します。
+                              Miami / New York は America/New_York です。
+                            </p>
+                          </div>
                         </div>
+
+
+                        {!isValidClientTimezone(
+                          scheduleDraft
+                            .timezone,
+                        ) ? (
+                          <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4">
+                            <div className="text-sm font-bold text-red-800">
+                              ⚠ 有効な時間帯を入力してください
+                            </div>
+
+                            <p className="mt-1 text-xs leading-6 text-red-700">
+                              Asia/Tokyo や America/New_York のような
+                              IANAタイムゾーンを指定してください。
+                            </p>
+                          </div>
+                        ) : scheduleDraft
+                            .timezone !==
+                          deviceTimezone ? (
+                          <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+                            <div className="text-sm font-bold text-amber-900">
+                              ⚠ 現在地とは異なる時間帯で設定しています
+                            </div>
+
+                            <div className="mt-3 space-y-2 text-xs leading-6 text-amber-900">
+                              <div>
+                                <span className="font-bold">
+                                  イベント基準時間：
+                                </span>
+                                {scheduleDraft.startDate}
+                                {" "}
+                                {scheduleDraft.startTime}
+                                {" "}
+                                {
+                                  scheduleDraft
+                                    .timezone
+                                }
+                              </div>
+
+                              {formatEventTimeForTimezone(
+                                scheduleDraft
+                                  .startDate,
+                                scheduleDraft
+                                  .startTime,
+                                scheduleDraft
+                                  .timezone,
+                                deviceTimezone,
+                              ) ? (
+                                <div>
+                                  <span className="font-bold">
+                                    あなたの端末時間：
+                                  </span>
+                                  {formatEventTimeForTimezone(
+                                    scheduleDraft
+                                      .startDate,
+                                    scheduleDraft
+                                      .startTime,
+                                    scheduleDraft
+                                      .timezone,
+                                    deviceTimezone,
+                                  )}
+                                  {" "}
+                                  （
+                                  {
+                                    deviceTimezone
+                                  }
+                                  ）
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-3 text-xs leading-6 text-neutral-500">
+                            この予定は
+                            {" "}
+                            <strong className="text-neutral-700">
+                              {
+                                scheduleDraft
+                                  .timezone
+                              }
+                            </strong>
+                            {" "}
+                            を基準に登録されます。
+                          </div>
+                        )}
 
 
                         <div className="mt-6 flex justify-end">
@@ -1668,7 +3581,10 @@ export default function CalendarManagerPanel() {
                         </div>
                       </div>
                     ) : null}
-                  </article>
+
+                      </>
+                    }
+                  />
                 );
               },
             )}

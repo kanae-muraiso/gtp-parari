@@ -1,0 +1,1684 @@
+// src/app/api/calendar/recurring-bookings/route.ts
+// 2026-08-22 JST
+//
+// PARARI CALENDAR
+//
+// GET
+//   この開催回のSCHEDULEについて
+//   閲覧中ユーザーが継続予約中か確認。
+//
+// POST
+//   この開催回から継続予約を開始。
+//   現在生成済みの将来OCCURRENCEへ予約を作る。
+//
+// DELETE
+//   継続予約を停止。
+//   表示中の開催回は残し、それより後の
+//   自動生成予約だけ cancelled にする。
+//
+// SSOT:
+//   calendar_recurring_bookings
+//     = 継続して参加する意思
+//
+//   application_entries
+//     = 各開催回について実際に成立した予約
+
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  supabaseAdmin,
+} from "@/lib/billing/supabaseAdmin";
+
+
+const UUID_RE =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+
+const ACTIVE_ENTRY_STATUSES = [
+  "submitted",
+  "confirmed",
+  "rejected",
+];
+
+
+type CalendarBookingSettings = {
+  deadlineMinutesBefore: number;
+  recurringBookingEnabled: boolean;
+};
+
+
+function getBearerToken(
+  request: NextRequest,
+): string | null {
+  const authorization =
+    request.headers.get(
+      "authorization",
+    ) ?? "";
+
+  const match =
+    authorization.match(
+      /^Bearer\s+(.+)$/i,
+    );
+
+  return (
+    match?.[1]?.trim() ||
+    null
+  );
+}
+
+
+async function getAuthenticatedUser(
+  request: NextRequest,
+) {
+  const token =
+    getBearerToken(
+      request,
+    );
+
+  if (!token) {
+    return {
+      ok: false as const,
+      status: 401,
+      message:
+        "ログインしてください。",
+    };
+  }
+
+  const {
+    data: {
+      user,
+    },
+    error,
+  } =
+    await supabaseAdmin.auth
+      .getUser(
+        token,
+      );
+
+  if (
+    error ||
+    !user
+  ) {
+    return {
+      ok: false as const,
+      status: 401,
+      message:
+        "ログイン情報を確認できませんでした。",
+    };
+  }
+
+  return {
+    ok: true as const,
+    user,
+  };
+}
+
+
+function asRecord(
+  value: unknown,
+): Record<string, unknown> | null {
+  if (
+    value &&
+    typeof value ===
+      "object" &&
+    !Array.isArray(
+      value,
+    )
+  ) {
+    return value as
+      Record<string, unknown>;
+  }
+
+  return null;
+}
+
+
+function getCalendarBookingSettings(
+  definition: unknown,
+): CalendarBookingSettings {
+  const definitionRecord =
+    asRecord(
+      definition,
+    );
+
+  const calendarBooking =
+    asRecord(
+      definitionRecord
+        ?.calendarBooking,
+    );
+
+  const rawDeadline =
+    Number(
+      calendarBooking
+        ?.deadlineMinutesBefore ??
+        0,
+    );
+
+  return {
+    deadlineMinutesBefore:
+      Number.isFinite(
+        rawDeadline,
+      ) &&
+      rawDeadline >= 0
+        ? Math.floor(
+            rawDeadline,
+          )
+        : 0,
+
+    recurringBookingEnabled:
+      calendarBooking
+        ?.recurringBookingEnabled ===
+      true,
+  };
+}
+
+
+async function loadOccurrence(
+  occurrenceId: string,
+) {
+  return supabaseAdmin
+    .from(
+      "calendar_occurrences",
+    )
+    .select(
+      `
+        id,
+        calendar_item_id,
+        calendar_schedule_id,
+        source_starts_at,
+        starts_at,
+        ends_at,
+        timezone,
+        title,
+        location,
+        capacity,
+        minimum_capacity,
+        fee_amount,
+        fee_currency,
+        status
+      `,
+    )
+    .eq(
+      "id",
+      occurrenceId,
+    )
+    .maybeSingle();
+}
+
+
+async function loadBookingApplication(
+  calendarItemId: string,
+) {
+  return supabaseAdmin
+    .from(
+      "applications",
+    )
+    .select(
+      `
+        id,
+        owner_user_id,
+        application_type,
+        title,
+        description,
+        definition,
+        form_id,
+        acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
+        status,
+        version,
+        calendar_item_id
+      `,
+    )
+    .eq(
+      "origin",
+      "calendar",
+    )
+    .eq(
+      "calendar_item_id",
+      calendarItemId,
+    )
+    .maybeSingle();
+}
+
+
+// ============================================================
+// GET
+// 継続予約中か確認
+// ============================================================
+
+export async function GET(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (
+    auth.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+
+  const occurrenceId =
+    request.nextUrl
+      .searchParams
+      .get(
+        "occurrenceId",
+      )
+      ?.trim() ?? "";
+
+
+  if (
+    !UUID_RE.test(
+      occurrenceId,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const {
+    data: occurrence,
+    error:
+      occurrenceError,
+  } =
+    await loadOccurrence(
+      occurrenceId,
+    );
+
+
+  if (
+    occurrenceError ||
+    !occurrence
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回を確認できませんでした。",
+      },
+      {
+        status:
+          occurrenceError
+            ? 500
+            : 404,
+      },
+    );
+  }
+
+
+  const {
+    data: application,
+    error:
+      applicationError,
+  } =
+    await loadBookingApplication(
+      occurrence
+        .calendar_item_id,
+    );
+
+
+  if (
+    applicationError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約情報を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  if (
+    !application
+  ) {
+    return NextResponse.json({
+      ok: true,
+      active: false,
+      recurringBookingEnabled:
+        false,
+    });
+  }
+
+
+  const settings =
+    getCalendarBookingSettings(
+      application.definition,
+    );
+
+
+  const {
+    data:
+      recurringBooking,
+    error:
+      recurringError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_recurring_bookings",
+      )
+      .select(
+        `
+          id,
+          status,
+          started_at
+        `,
+      )
+      .eq(
+        "application_id",
+        application.id,
+      )
+      .eq(
+        "calendar_schedule_id",
+        occurrence
+          .calendar_schedule_id,
+      )
+      .eq(
+        "user_id",
+        auth.user.id,
+      )
+      .eq(
+        "status",
+        "active",
+      )
+      .maybeSingle();
+
+
+  if (
+    recurringError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "継続予約情報を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  return NextResponse.json({
+    ok: true,
+
+    active:
+      Boolean(
+        recurringBooking,
+      ),
+
+    recurringBookingEnabled:
+      settings
+        .recurringBookingEnabled,
+
+    recurringBooking:
+      recurringBooking ??
+      null,
+  });
+}
+
+
+// ============================================================
+// POST
+// この開催回から継続予約を開始
+// ============================================================
+
+export async function POST(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (
+    auth.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+
+  const body =
+    (await request
+      .json()
+      .catch(
+        () => null,
+      )) as
+      | {
+          occurrenceId?: unknown;
+        }
+      | null;
+
+
+  const occurrenceId =
+    typeof body
+      ?.occurrenceId ===
+    "string"
+      ? body
+          .occurrenceId
+          .trim()
+      : "";
+
+
+  if (
+    !UUID_RE.test(
+      occurrenceId,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const {
+    data:
+      startOccurrence,
+    error:
+      occurrenceError,
+  } =
+    await loadOccurrence(
+      occurrenceId,
+    );
+
+
+  if (
+    occurrenceError ||
+    !startOccurrence
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回を確認できませんでした。",
+      },
+      {
+        status:
+          occurrenceError
+            ? 500
+            : 404,
+      },
+    );
+  }
+
+
+  if (
+    startOccurrence.status !==
+    "scheduled"
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "この開催回から継続予約を開始できません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const startTime =
+    new Date(
+      startOccurrence
+        .starts_at,
+    ).getTime();
+
+
+  if (
+    !Number.isFinite(
+      startTime,
+    ) ||
+    startTime <=
+      Date.now()
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "この開催回はすでに終了しています。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const {
+    data: application,
+    error:
+      applicationError,
+  } =
+    await loadBookingApplication(
+      startOccurrence
+        .calendar_item_id,
+    );
+
+
+  if (
+    applicationError ||
+    !application
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約受付情報を確認できませんでした。",
+      },
+      {
+        status:
+          applicationError
+            ? 500
+            : 404,
+      },
+    );
+  }
+
+
+  if (
+    application.status !==
+    "open"
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "現在、予約受付を行っていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  if (
+    application
+      .owner_user_id ===
+    auth.user.id
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "主催者本人は予約できません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const settings =
+    getCalendarBookingSettings(
+      application.definition,
+    );
+
+
+  if (
+    !settings
+      .recurringBookingEnabled
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "このクラス・イベントでは継続予約を受け付けていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const firstDeadlineTime =
+    startTime -
+    settings
+      .deadlineMinutesBefore *
+      60_000;
+
+
+  if (
+    Date.now() >=
+    firstDeadlineTime
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "この開催回の予約締切を過ぎています。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  // ----------------------------------------------------------
+  // 既存のACTIVE継続予約
+  // ----------------------------------------------------------
+
+  let {
+    data:
+      recurringBooking,
+    error:
+      recurringLookupError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_recurring_bookings",
+      )
+      .select(
+        `
+          id,
+          application_id,
+          calendar_schedule_id,
+          user_id,
+          status,
+          start_source_starts_at,
+          started_at
+        `,
+      )
+      .eq(
+        "application_id",
+        application.id,
+      )
+      .eq(
+        "calendar_schedule_id",
+        startOccurrence
+          .calendar_schedule_id,
+      )
+      .eq(
+        "user_id",
+        auth.user.id,
+      )
+      .eq(
+        "status",
+        "active",
+      )
+      .maybeSingle();
+
+
+  if (
+    recurringLookupError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "継続予約情報を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  // ----------------------------------------------------------
+  // 新規継続予約
+  // ----------------------------------------------------------
+
+  if (
+    !recurringBooking
+  ) {
+    const {
+      data:
+        createdRecurring,
+      error:
+        createRecurringError,
+    } =
+      await supabaseAdmin
+        .from(
+          "calendar_recurring_bookings",
+        )
+        .insert({
+          application_id:
+            application.id,
+
+          calendar_schedule_id:
+            startOccurrence
+              .calendar_schedule_id,
+
+          user_id:
+            auth.user.id,
+
+          start_occurrence_id:
+            startOccurrence.id,
+
+          start_source_starts_at:
+            startOccurrence
+              .source_starts_at,
+
+          status:
+            "active",
+        })
+        .select(
+          `
+            id,
+            application_id,
+            calendar_schedule_id,
+            user_id,
+            status,
+            start_source_starts_at,
+            started_at
+          `,
+        )
+        .single();
+
+
+    if (
+      createRecurringError ||
+      !createdRecurring
+    ) {
+      console.error(
+        "[calendar recurring POST] create failed:",
+        createRecurringError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "継続予約を開始できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    recurringBooking =
+      createdRecurring;
+  }
+
+
+  // ----------------------------------------------------------
+  // 現在生成済みの、この回以降のOCCURRENCE
+  //
+  // starts_atではなくsource_starts_atで
+  // recurrence上の順序を決める。
+  // ----------------------------------------------------------
+
+  const {
+    data:
+      occurrences,
+    error:
+      occurrencesError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_occurrences",
+      )
+      .select(
+        `
+          id,
+          source_starts_at,
+          starts_at,
+          ends_at,
+          timezone,
+          title,
+          location,
+          capacity,
+          minimum_capacity,
+          fee_amount,
+          fee_currency,
+          status
+        `,
+      )
+      .eq(
+        "calendar_schedule_id",
+        startOccurrence
+          .calendar_schedule_id,
+      )
+      .gte(
+        "source_starts_at",
+        startOccurrence
+          .source_starts_at,
+      )
+      .eq(
+        "status",
+        "scheduled",
+      )
+      .order(
+        "source_starts_at",
+        {
+          ascending:
+            true,
+        },
+      );
+
+
+  if (
+    occurrencesError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "今後の開催予定を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  let createdCount =
+    0;
+
+  let alreadyBookedCount =
+    0;
+
+  let fullCount =
+    0;
+
+  let deadlineCount =
+    0;
+
+
+  for (
+    const occurrence of
+      occurrences ?? []
+  ) {
+    const occurrenceStart =
+      new Date(
+        occurrence.starts_at,
+      ).getTime();
+
+
+    if (
+      !Number.isFinite(
+        occurrenceStart,
+      )
+    ) {
+      continue;
+    }
+
+
+    const deadlineTime =
+      occurrenceStart -
+      settings
+        .deadlineMinutesBefore *
+        60_000;
+
+
+    if (
+      Date.now() >=
+      deadlineTime
+    ) {
+      deadlineCount += 1;
+      continue;
+    }
+
+
+    // すでに本人の有効な予約がある場合は
+    // 単発予約であってもそのまま尊重する。
+    const {
+      data:
+        existingEntry,
+      error:
+        existingEntryError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .select(
+          "id",
+        )
+        .eq(
+          "application_id",
+          application.id,
+        )
+        .eq(
+          "calendar_occurrence_id",
+          occurrence.id,
+        )
+        .eq(
+          "user_id",
+          auth.user.id,
+        )
+        .in(
+          "status",
+          ACTIVE_ENTRY_STATUSES,
+        )
+        .limit(1)
+        .maybeSingle();
+
+
+    if (
+      existingEntryError
+    ) {
+      console.error(
+        "[calendar recurring POST] existing entry check failed:",
+        existingEntryError,
+      );
+
+      continue;
+    }
+
+
+    if (
+      existingEntry
+    ) {
+      alreadyBookedCount +=
+        1;
+
+      continue;
+    }
+
+
+    const capacity =
+      occurrence.capacity ===
+      null
+        ? null
+        : Number(
+            occurrence.capacity,
+          );
+
+
+    if (
+      capacity !== null &&
+      Number.isFinite(
+        capacity,
+      )
+    ) {
+      const {
+        count,
+        error:
+          countError,
+      } =
+        await supabaseAdmin
+          .from(
+            "application_entries",
+          )
+          .select(
+            "id",
+            {
+              count:
+                "exact",
+              head:
+                true,
+            },
+          )
+          .eq(
+            "application_id",
+            application.id,
+          )
+          .eq(
+            "calendar_occurrence_id",
+            occurrence.id,
+          )
+          .in(
+            "status",
+            ACTIVE_ENTRY_STATUSES,
+          );
+
+
+      if (
+        countError
+      ) {
+        console.error(
+          "[calendar recurring POST] capacity check failed:",
+          countError,
+        );
+
+        continue;
+      }
+
+
+      if (
+        (count ?? 0) >=
+        capacity
+      ) {
+        fullCount += 1;
+        continue;
+      }
+    }
+
+
+    const qualificationStatus =
+      application
+        .acceptance_mode ===
+      "approval"
+        ? "pending"
+        : "not_required";
+
+
+    const paymentStatus =
+      application
+        .payment_method ===
+      "none"
+        ? "not_required"
+        : "unpaid";
+
+
+    const qualificationSatisfied =
+      qualificationStatus ===
+      "not_required";
+
+
+    const paymentSatisfied =
+      application
+        .payment_confirmation_required !==
+      true;
+
+
+    const entryStatus =
+      qualificationSatisfied &&
+      paymentSatisfied
+        ? "confirmed"
+        : "submitted";
+
+
+    const applicationSnapshot = {
+      id:
+        application.id,
+
+      application_type:
+        application
+          .application_type,
+
+      title:
+        application.title,
+
+      description:
+        application.description,
+
+      definition:
+        application.definition,
+
+      form_id:
+        application.form_id,
+
+      acceptance_mode:
+        application
+          .acceptance_mode,
+
+      payment_method:
+        application
+          .payment_method,
+
+      payment_amount:
+        application
+          .payment_amount,
+
+      payment_currency:
+        application
+          .payment_currency,
+
+      payment_url:
+        application
+          .payment_url,
+
+      payment_instructions:
+        application
+          .payment_instructions,
+
+      payment_confirmation_required:
+        application
+          .payment_confirmation_required,
+
+      version:
+        application.version,
+
+      calendar_occurrence: {
+        id:
+          occurrence.id,
+
+        starts_at:
+          occurrence.starts_at,
+
+        ends_at:
+          occurrence.ends_at,
+
+        timezone:
+          occurrence.timezone,
+
+        title:
+          occurrence.title,
+
+        location:
+          occurrence.location,
+
+        capacity:
+          occurrence.capacity,
+
+        minimum_capacity:
+          occurrence
+            .minimum_capacity,
+
+        fee_amount:
+          occurrence.fee_amount,
+
+        fee_currency:
+          occurrence
+            .fee_currency,
+      },
+    };
+
+
+    const {
+      error:
+        insertError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .insert({
+          application_id:
+            application.id,
+
+          application_version:
+            application.version,
+
+          user_id:
+            auth.user.id,
+
+          calendar_occurrence_id:
+            occurrence.id,
+
+          calendar_recurring_booking_id:
+            recurringBooking.id,
+
+          form_submission_id:
+            null,
+
+          status:
+            entryStatus,
+
+          qualification_status:
+            qualificationStatus,
+
+          payment_status:
+            paymentStatus,
+
+          application_snapshot:
+            applicationSnapshot,
+        });
+
+
+    if (
+      insertError
+    ) {
+      if (
+        insertError.code ===
+        "23505"
+      ) {
+        alreadyBookedCount +=
+          1;
+
+        continue;
+      }
+
+
+      console.error(
+        "[calendar recurring POST] entry insert failed:",
+        insertError,
+      );
+
+      continue;
+    }
+
+
+    createdCount += 1;
+  }
+
+
+  return NextResponse.json({
+    ok: true,
+
+    active: true,
+
+    recurringBookingId:
+      recurringBooking.id,
+
+    createdCount,
+    alreadyBookedCount,
+    fullCount,
+    deadlineCount,
+  });
+}
+
+
+// ============================================================
+// DELETE
+// 継続予約を停止
+//
+// 表示中の開催回そのものは残す。
+// それより後の自動予約のみcancelled。
+// ============================================================
+
+export async function DELETE(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (
+    auth.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+
+  const body =
+    (await request
+      .json()
+      .catch(
+        () => null,
+      )) as
+      | {
+          occurrenceId?: unknown;
+        }
+      | null;
+
+
+  const occurrenceId =
+    typeof body
+      ?.occurrenceId ===
+    "string"
+      ? body
+          .occurrenceId
+          .trim()
+      : "";
+
+
+  if (
+    !UUID_RE.test(
+      occurrenceId,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+
+  const {
+    data: occurrence,
+    error:
+      occurrenceError,
+  } =
+    await loadOccurrence(
+      occurrenceId,
+    );
+
+
+  if (
+    occurrenceError ||
+    !occurrence
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催回を確認できませんでした。",
+      },
+      {
+        status:
+          occurrenceError
+            ? 500
+            : 404,
+      },
+    );
+  }
+
+
+  const {
+    data: application,
+    error:
+      applicationError,
+  } =
+    await loadBookingApplication(
+      occurrence
+        .calendar_item_id,
+    );
+
+
+  if (
+    applicationError ||
+    !application
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予約情報を確認できませんでした。",
+      },
+      {
+        status:
+          applicationError
+            ? 500
+            : 404,
+      },
+    );
+  }
+
+
+  const {
+    data:
+      recurringBooking,
+    error:
+      recurringError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_recurring_bookings",
+      )
+      .select(
+        `
+          id,
+          status
+        `,
+      )
+      .eq(
+        "application_id",
+        application.id,
+      )
+      .eq(
+        "calendar_schedule_id",
+        occurrence
+          .calendar_schedule_id,
+      )
+      .eq(
+        "user_id",
+        auth.user.id,
+      )
+      .eq(
+        "status",
+        "active",
+      )
+      .maybeSingle();
+
+
+  if (
+    recurringError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "継続予約情報を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  if (
+    !recurringBooking
+  ) {
+    return NextResponse.json({
+      ok: true,
+      active: false,
+      cancelledCount:
+        0,
+    });
+  }
+
+
+  const now =
+    new Date()
+      .toISOString();
+
+
+  const {
+    error:
+      stopError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_recurring_bookings",
+      )
+      .update({
+        status:
+          "stopped",
+
+        stopped_at:
+          now,
+
+        updated_at:
+          now,
+      })
+      .eq(
+        "id",
+        recurringBooking.id,
+      )
+      .eq(
+        "user_id",
+        auth.user.id,
+      )
+      .eq(
+        "status",
+        "active",
+      );
+
+
+  if (
+    stopError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "継続予約を停止できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  // 表示中の回より後だけを対象にする。
+  const {
+    data:
+      futureOccurrences,
+    error:
+      futureError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_occurrences",
+      )
+      .select(
+        "id",
+      )
+      .eq(
+        "calendar_schedule_id",
+        occurrence
+          .calendar_schedule_id,
+      )
+      .gt(
+        "source_starts_at",
+        occurrence
+          .source_starts_at,
+      );
+
+
+  if (
+    futureError
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "今後の開催予定を確認できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+
+  const futureIds =
+    (
+      futureOccurrences ??
+      []
+    ).map(
+      (item) =>
+        item.id,
+    );
+
+
+  let cancelledCount =
+    0;
+
+
+  if (
+    futureIds.length >
+    0
+  ) {
+    const {
+      data:
+        cancelledEntries,
+      error:
+        cancelError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .update({
+          status:
+            "cancelled",
+        })
+        .eq(
+          "calendar_recurring_booking_id",
+          recurringBooking.id,
+        )
+        .eq(
+          "user_id",
+          auth.user.id,
+        )
+        .in(
+          "calendar_occurrence_id",
+          futureIds,
+        )
+        .in(
+          "status",
+          ACTIVE_ENTRY_STATUSES,
+        )
+        .select(
+          "id",
+        );
+
+
+    if (
+      cancelError
+    ) {
+      console.error(
+        "[calendar recurring DELETE] cancel future entries failed:",
+        cancelError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "継続予約は停止しましたが、今後の予約の取消処理を完了できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    cancelledCount =
+      cancelledEntries
+        ?.length ??
+      0;
+  }
+
+
+  return NextResponse.json({
+    ok: true,
+    active: false,
+    cancelledCount,
+  });
+}

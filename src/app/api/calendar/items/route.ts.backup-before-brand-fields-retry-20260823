@@ -1,0 +1,440 @@
+// src/app/api/calendar/items/route.ts
+// 2026-08-20 JST
+//
+// PARARI CALENDAR v1
+//
+// GET  : 自分のcalendar item一覧
+// POST : calendar itemを新規作成
+//
+// calendar_items = 「何をするか」のSSOT
+// 日時はここでは持たない。
+// 日時はcalendar_schedules / calendar_occurrencesが担当する。
+
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  supabaseAdmin,
+} from "@/lib/billing/supabaseAdmin";
+
+
+type CreateCalendarItemBody = {
+  title?: unknown;
+  durationMinutes?: unknown;
+  location?: unknown;
+  capacity?: unknown;
+  minimumCapacity?: unknown;
+  feeAmount?: unknown;
+  feeCurrency?: unknown;
+  descriptionWorkId?: unknown;
+};
+
+
+function getBearerToken(
+  request: NextRequest,
+): string | null {
+  const authorization =
+    request.headers.get("authorization") ?? "";
+
+  const match =
+    authorization.match(/^Bearer\s+(.+)$/i);
+
+  return match?.[1]?.trim() || null;
+}
+
+
+async function getAuthenticatedUser(
+  request: NextRequest,
+) {
+  const token =
+    getBearerToken(request);
+
+  if (!token) {
+    return {
+      ok: false as const,
+      status: 401,
+      message: "ログインしてください。",
+    };
+  }
+
+  const {
+    data: { user },
+    error,
+  } =
+    await supabaseAdmin.auth.getUser(
+      token,
+    );
+
+  if (
+    error ||
+    !user
+  ) {
+    return {
+      ok: false as const,
+      status: 401,
+      message:
+        "ログイン情報を確認できませんでした。",
+    };
+  }
+
+  return {
+    ok: true as const,
+    user,
+  };
+}
+
+
+function normalizeNullableText(
+  value: unknown,
+): string | null {
+  const text =
+    String(value ?? "").trim();
+
+  return text || null;
+}
+
+
+function normalizePositiveInteger(
+  value: unknown,
+): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const numberValue =
+    Number(value);
+
+  if (
+    !Number.isFinite(numberValue) ||
+    numberValue <= 0
+  ) {
+    return null;
+  }
+
+  return Math.floor(numberValue);
+}
+
+
+function normalizeNonNegativeNumber(
+  value: unknown,
+): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const numberValue =
+    Number(value);
+
+  if (
+    !Number.isFinite(numberValue) ||
+    numberValue < 0
+  ) {
+    return null;
+  }
+
+  return numberValue;
+}
+
+
+// ============================================================
+// GET
+// 自分のcalendar item一覧
+// ============================================================
+
+export async function GET(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(request);
+
+  if (auth.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
+    );
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin
+      .from("calendar_items")
+      .select(
+        `
+          id,
+          title,
+          duration_minutes,
+          location,
+          capacity,
+          minimum_capacity,
+          fee_amount,
+          fee_currency,
+          description_work_id,
+          status,
+          created_at,
+          updated_at
+        `,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false,
+        },
+      );
+
+  if (error) {
+    console.error(
+      "[calendar/items GET] failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベント一覧を取得できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    items: data ?? [],
+  });
+}
+
+
+// ============================================================
+// POST
+// calendar item新規作成
+// ============================================================
+
+export async function POST(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(request);
+
+  if (auth.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
+    );
+  }
+
+  const body =
+    (await request
+      .json()
+      .catch(() => null)) as
+      | CreateCalendarItemBody
+      | null;
+
+  const title =
+    String(
+      body?.title ?? "",
+    ).trim();
+
+  if (!title) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベント名を入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (title.length > 120) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベント名は120文字以内で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const durationMinutes =
+    normalizePositiveInteger(
+      body?.durationMinutes,
+    );
+
+  if (!durationMinutes) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "時間を1分以上で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const capacity =
+    normalizePositiveInteger(
+      body?.capacity,
+    );
+
+  const minimumCapacity =
+    normalizePositiveInteger(
+      body?.minimumCapacity,
+    );
+
+  if (
+    capacity !== null &&
+    minimumCapacity !== null &&
+    minimumCapacity > capacity
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "最低開催人数は定員以下にしてください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const feeAmount =
+    normalizeNonNegativeNumber(
+      body?.feeAmount,
+    );
+
+  const requestedCurrency =
+    String(
+      body?.feeCurrency ?? "JPY",
+    )
+      .trim()
+      .toUpperCase();
+
+  const feeCurrency =
+    /^[A-Z]{3}$/.test(
+      requestedCurrency,
+    )
+      ? requestedCurrency
+      : "JPY";
+
+  const descriptionWorkId =
+    normalizeNullableText(
+      body?.descriptionWorkId,
+    );
+
+  const {
+    data,
+    error,
+  } =
+    await supabaseAdmin
+      .from("calendar_items")
+      .insert({
+        owner_user_id:
+          auth.user.id,
+
+        title,
+
+        duration_minutes:
+          durationMinutes,
+
+        location:
+          normalizeNullableText(
+            body?.location,
+          ),
+
+        capacity,
+
+        minimum_capacity:
+          minimumCapacity,
+
+        fee_amount:
+          feeAmount,
+
+        fee_currency:
+          feeCurrency,
+
+        description_work_id:
+          descriptionWorkId,
+
+        status:
+          "active",
+      })
+      .select(
+        `
+          id,
+          title,
+          duration_minutes,
+          location,
+          capacity,
+          minimum_capacity,
+          fee_amount,
+          fee_currency,
+          description_work_id,
+          status,
+          created_at,
+          updated_at
+        `,
+      )
+      .single();
+
+  if (
+    error ||
+    !data
+  ) {
+    console.error(
+      "[calendar/items POST] failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントを作成できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    item: data,
+  });
+}

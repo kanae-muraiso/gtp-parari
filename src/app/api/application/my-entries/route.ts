@@ -215,10 +215,109 @@ export async function GET(
       );
     }
 
-    const submissionIds =
+    /*
+     * /my/applications は
+     * 「通常のAPPLICATION申込」だけを表示する。
+     *
+     * CALENDAR由来の予約は
+     * /my/calendar 側で扱う。
+     */
+    const applicationIds =
       Array.from(
         new Set(
           (entries ?? [])
+            .map(
+              (entry) =>
+                entry.application_id,
+            )
+            .filter(
+              (
+                id,
+              ): id is string =>
+                typeof id ===
+                  "string" &&
+                Boolean(id),
+            ),
+        ),
+      );
+
+
+    const calendarApplicationIds =
+      new Set<string>();
+
+
+    if (
+      applicationIds.length > 0
+    ) {
+      const {
+        data: applications,
+        error:
+          applicationsError,
+      } =
+        await supabaseAdmin
+          .from(
+            "applications",
+          )
+          .select(
+            `
+              id,
+              origin
+            `,
+          )
+          .in(
+            "id",
+            applicationIds,
+          );
+
+
+      if (applicationsError) {
+        console.error(
+          "load application origins failed:",
+          applicationsError,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "申し込み履歴を取得できませんでした。",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+
+      for (
+        const application of
+        applications ?? []
+      ) {
+        if (
+          application.origin ===
+          "calendar"
+        ) {
+          calendarApplicationIds.add(
+            application.id,
+          );
+        }
+      }
+    }
+
+
+    const visibleEntries =
+      (entries ?? []).filter(
+        (entry) =>
+          !calendarApplicationIds.has(
+            entry.application_id,
+          ),
+      );
+
+
+    const submissionIds =
+      Array.from(
+        new Set(
+          visibleEntries
             .map(
               (entry) =>
                 entry.form_submission_id,
@@ -302,7 +401,7 @@ export async function GET(
     }
 
     const result =
-      (entries ?? []).map(
+      visibleEntries.map(
         (entry) => {
           const snapshot =
             asRecord(

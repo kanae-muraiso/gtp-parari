@@ -1,0 +1,1396 @@
+"use client";
+
+import {
+  useState,
+  type ReactNode,
+} from "react";
+
+import type { PublicPagePattern } from "@/components/parari/public-page/PublicPageStrategyWizard";
+
+type PublicPageDesign =
+  | "clean"
+  | "photo"
+  | "pop"
+  | "neon"
+  | "soft"
+  | "editorial";
+
+type Draft = {
+  name: string;
+  headline: string;
+  intro: string;
+  about: string;
+  origin: string;
+  value: string;
+  activity: string;
+  audience: string;
+  outcome: string;
+  welcome: string;
+  action: string;
+};
+
+const EMPTY_DRAFT: Draft = {
+  name: "",
+  headline: "",
+  intro: "",
+  about: "",
+  origin: "",
+  value: "",
+  activity: "",
+  audience: "",
+  outcome: "",
+  welcome: "",
+  action: "",
+};
+
+const PATTERNS: Array<{
+  id: PublicPagePattern;
+  code: string;
+  title: string;
+  description: string;
+}> = [
+  {
+    id: "person-first",
+    code: "PERSON FIRST",
+    title: "人から始まる",
+    description:
+      "まず「誰なのか」を見せて、活動へつなげる。",
+  },
+  {
+    id: "offer-first",
+    code: "OFFER FIRST",
+    title: "やっていることから始まる",
+    description:
+      "提供しているものを先に見せ、人や理由へつなげる。",
+  },
+  {
+    id: "story-first",
+    code: "STORY FIRST",
+    title: "物語から始まる",
+    description:
+      "始めた理由や考え方から、現在の活動へつなげる。",
+  },
+  {
+    id: "welcome-first",
+    code: "WELCOME FIRST",
+    title: "安心から始まる",
+    description:
+      "初めての人への声かけから、活動と人を伝える。",
+  },
+];
+
+const DESIGNS: Array<{
+  id: PublicPageDesign;
+  code: string;
+  title: string;
+  description: string;
+  swatch: string;
+}> = [
+  {
+    id: "clean",
+    code: "CLEAN",
+    title: "すっきり",
+    description: "白と余白を中心にした端正なデザイン。",
+    swatch:
+      "bg-gradient-to-br from-white via-neutral-100 to-neutral-300",
+  },
+  {
+    id: "photo",
+    code: "PHOTO",
+    title: "写真を主役に",
+    description: "大きな写真と落ち着いた文字で見せる。",
+    swatch:
+      "bg-gradient-to-br from-[#63705d] via-[#d4b99d] to-[#3b4438]",
+  },
+  {
+    id: "pop",
+    code: "POP",
+    title: "明るく元気に",
+    description: "強い色と大きな文字で楽しく見せる。",
+    swatch:
+      "bg-gradient-to-br from-[#ff4fa3] via-[#ff8a3d] to-[#ffe13b]",
+  },
+  {
+    id: "neon",
+    code: "NEON",
+    title: "夜と音楽",
+    description: "暗い背景に強い色。ダンスや音楽向き。",
+    swatch:
+      "bg-gradient-to-br from-[#ff26c2] via-[#5644ff] to-[#00e7ff]",
+  },
+  {
+    id: "soft",
+    code: "SOFT",
+    title: "やさしく",
+    description: "淡い色と丸みで親しみやすく。",
+    swatch:
+      "bg-gradient-to-br from-[#f8d8dc] via-[#efe2ff] to-[#d9f0e7]",
+  },
+  {
+    id: "editorial",
+    code: "EDITORIAL",
+    title: "雑誌のように",
+    description: "文章と写真を静かに読ませるデザイン。",
+    swatch:
+      "bg-gradient-to-br from-[#171717] via-[#aaa49a] to-[#f3efe5]",
+  },
+];
+
+type Theme = {
+  page: string;
+  panel: string;
+  muted: string;
+  eyebrow: string;
+  button: string;
+  radius: string;
+  headline: string;
+  divider: string;
+};
+
+const THEMES: Record<
+  PublicPageDesign,
+  Theme
+> = {
+  clean: {
+    page: "bg-white text-neutral-950",
+    panel:
+      "border border-neutral-200 bg-white",
+    muted: "text-neutral-600",
+    eyebrow: "text-neutral-400",
+    button:
+      "bg-neutral-950 text-white",
+    radius: "rounded-[28px]",
+    headline:
+      "font-sans tracking-[-0.03em]",
+    divider: "bg-neutral-200",
+  },
+
+  photo: {
+    page:
+      "bg-[#f4f0e9] text-neutral-950",
+    panel:
+      "border border-white/70 bg-white/90 shadow-sm",
+    muted: "text-neutral-600",
+    eyebrow: "text-[#806b57]",
+    button:
+      "bg-[#4b4036] text-white",
+    radius: "rounded-[32px]",
+    headline:
+      "font-serif tracking-[-0.02em]",
+    divider: "bg-[#d2c7ba]",
+  },
+
+  pop: {
+    page:
+      "bg-[#fff5d6] text-[#1d1d1f]",
+    panel:
+      "border-[3px] border-[#1d1d1f] bg-white shadow-[5px_5px_0_0_#1d1d1f]",
+    muted: "text-[#5a4d45]",
+    eyebrow: "text-[#e53286]",
+    button:
+      "bg-[#2450ff] text-white border-[3px] border-[#1d1d1f] shadow-[4px_4px_0_0_#1d1d1f]",
+    radius: "rounded-[34px]",
+    headline:
+      "font-sans tracking-[-0.05em]",
+    divider: "bg-[#1d1d1f]",
+  },
+
+  neon: {
+    page:
+      "bg-[#090812] text-white",
+    panel:
+      "border border-[#ff3ac8]/40 bg-white/[0.06] shadow-[0_0_30px_rgba(255,58,200,0.10)]",
+    muted: "text-white/60",
+    eyebrow: "text-[#59f7ff]",
+    button:
+      "bg-[#c8ff2e] text-black shadow-[0_0_24px_rgba(200,255,46,0.22)]",
+    radius: "rounded-[20px]",
+    headline:
+      "font-sans tracking-[-0.04em]",
+    divider: "bg-white/20",
+  },
+
+  soft: {
+    page:
+      "bg-[#fff9f7] text-[#3f3637]",
+    panel:
+      "border border-[#eadfe2] bg-white/90 shadow-sm",
+    muted: "text-[#776a6c]",
+    eyebrow: "text-[#aa7f8c]",
+    button:
+      "bg-[#765d75] text-white",
+    radius: "rounded-[40px]",
+    headline:
+      "font-sans tracking-[-0.03em]",
+    divider: "bg-[#eadfe2]",
+  },
+
+  editorial: {
+    page:
+      "bg-[#f2efe7] text-[#151515]",
+    panel:
+      "border-y border-[#151515] bg-transparent",
+    muted: "text-neutral-600",
+    eyebrow: "text-neutral-700",
+    button:
+      "border border-[#151515] bg-transparent text-[#151515]",
+    radius: "rounded-none",
+    headline:
+      "font-serif tracking-[-0.03em]",
+    divider: "bg-[#151515]",
+  },
+};
+
+function Text({
+  value,
+  placeholder,
+  placeholderClassName = "opacity-35",
+}: {
+  value: string;
+  placeholder: string;
+  placeholderClassName?: string;
+}) {
+  return value.trim() ? (
+    <>{value}</>
+  ) : (
+    <span className={placeholderClassName}>
+      {placeholder}
+    </span>
+  );
+}
+
+function Visual({
+  design,
+  compact = false,
+}: {
+  design: PublicPageDesign;
+  compact?: boolean;
+}) {
+  const height = compact
+    ? "h-24"
+    : "h-64 sm:h-80";
+
+  if (design === "pop") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#ffda34]`}
+      >
+        <div className="absolute -left-7 -top-8 h-28 w-28 rounded-full bg-[#ff4fa3]" />
+        <div className="absolute right-0 top-4 h-24 w-24 rotate-12 bg-[#4a63ff]" />
+        <div className="absolute bottom-[-30px] left-[35%] h-32 w-32 rounded-full bg-[#47e3c1]" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rotate-[-5deg] border-[3px] border-black bg-white px-4 py-2 text-[9px] font-black tracking-[0.18em] text-black shadow-[5px_5px_0_0_#000]">
+            PHOTO / VISUAL
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "neon") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#090812]`}
+      >
+        <div className="absolute -left-12 top-6 h-40 w-40 rounded-full bg-[#ff25bd] blur-3xl opacity-60" />
+        <div className="absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#00e8ff] blur-3xl opacity-55" />
+        <div className="absolute inset-5 border border-white/10" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="border border-[#59f7ff] px-4 py-2 text-[9px] font-black tracking-[0.2em] text-[#59f7ff]">
+            NIGHT / VISUAL
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "soft") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#f7e7e7]`}
+      >
+        <div className="absolute -left-8 -top-12 h-36 w-36 rounded-full bg-[#e7d4ff]" />
+        <div className="absolute -right-8 top-10 h-32 w-32 rounded-full bg-[#d5eee5]" />
+        <div className="absolute bottom-[-45px] left-[30%] h-40 w-40 rounded-full bg-[#ffdccc]" />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-full bg-white/80 px-4 py-2 text-[9px] font-black tracking-[0.16em] text-[#7c6870]">
+            PHOTO
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "editorial") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-[#cbc5ba]`}
+      >
+        <div className="absolute left-[15%] top-0 h-full w-[55%] bg-gradient-to-b from-[#89857e] to-[#ddd7cd]" />
+        <div className="absolute bottom-3 right-3 text-[8px] font-black tracking-[0.2em] text-black/50">
+          IMAGE 01
+        </div>
+      </div>
+    );
+  }
+
+  if (design === "photo") {
+    return (
+      <div
+        className={`relative overflow-hidden ${height} bg-gradient-to-br from-[#687461] via-[#d1b99f] to-[#404a3e]`}
+      >
+        <div className="absolute inset-0 bg-black/10" />
+
+        <div className="absolute bottom-4 left-4 rounded-full bg-white/85 px-3 py-1.5 text-[8px] font-black tracking-[0.18em] text-neutral-700">
+          YOUR PHOTO
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${height} bg-gradient-to-br from-neutral-300 via-white to-neutral-100`}
+    />
+  );
+}
+
+function Section({
+  design,
+  code,
+  children,
+}: {
+  design: PublicPageDesign;
+  code: string;
+  children: ReactNode;
+}) {
+  const theme = THEMES[design];
+
+  return (
+    <section
+      className={[
+        theme.panel,
+        theme.radius,
+        "p-5 sm:p-6",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "text-[9px] font-black tracking-[0.2em]",
+          theme.eyebrow,
+        ].join(" ")}
+      >
+        {code}
+      </div>
+
+      <div className="mt-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Action({
+  design,
+  value,
+}: {
+  design: PublicPageDesign;
+  value: string;
+}) {
+  const theme = THEMES[design];
+
+  return (
+    <div
+      className={[
+        "inline-flex px-6 py-3 text-sm font-black",
+        theme.button,
+        design === "editorial"
+          ? "rounded-none"
+          : "rounded-full",
+      ].join(" ")}
+    >
+      <Text
+        value={value}
+        placeholder="次の一歩"
+      />
+    </div>
+  );
+}
+
+function MiniModel({
+  pattern,
+  design,
+}: {
+  pattern: PublicPagePattern;
+  design: PublicPageDesign;
+}) {
+  const theme = THEMES[design];
+
+  const blocks =
+    pattern === "person-first"
+      ? ["PERSON", "ABOUT", "ACTIVITY"]
+      : pattern === "offer-first"
+        ? ["OFFER", "FOR YOU", "PERSON"]
+        : pattern === "story-first"
+          ? ["STORY", "WHY", "NOW"]
+          : ["WELCOME", "FOR YOU", "PERSON"];
+
+  return (
+    <div
+      className={[
+        "h-[330px] overflow-hidden",
+        theme.page,
+      ].join(" ")}
+    >
+      {pattern === "person-first" ? (
+        <Visual
+          design={design}
+          compact
+        />
+      ) : (
+        <div className="p-4">
+          <div
+            className={[
+              "text-[8px] font-black tracking-[0.2em]",
+              theme.eyebrow,
+            ].join(" ")}
+          >
+            {blocks[0]}
+          </div>
+
+          <div
+            className={[
+              "mt-3 text-xl font-black leading-tight",
+              theme.headline,
+            ].join(" ")}
+          >
+            {pattern === "offer-first"
+              ? "何を届ける？"
+              : pattern === "story-first"
+                ? "なぜ始めた？"
+                : "まず安心を。"}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2 p-4">
+        {blocks.map((block, index) => (
+          <div
+            key={block}
+            className={[
+              theme.panel,
+              theme.radius,
+              "p-3",
+              index === 0 &&
+              pattern === "person-first"
+                ? "-mt-8 relative"
+                : "",
+            ].join(" ")}
+          >
+            <div
+              className={[
+                "text-[8px] font-black tracking-[0.16em]",
+                theme.eyebrow,
+              ].join(" ")}
+            >
+              {block}
+            </div>
+
+            <div
+              className={[
+                "mt-2 h-2 rounded-full opacity-30",
+                design === "neon"
+                  ? "bg-white"
+                  : "bg-neutral-500",
+              ].join(" ")}
+            />
+          </div>
+        ))}
+
+        <div
+          className={[
+            "mt-3 px-3 py-2 text-center text-[9px] font-black",
+            theme.button,
+            design === "editorial"
+              ? "rounded-none"
+              : "rounded-full",
+          ].join(" ")}
+        >
+          ACTION
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  placeholder,
+  rows = 2,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  rows?: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 text-[9px] font-black tracking-[0.16em] text-neutral-400">
+        {label}
+      </div>
+
+      <textarea
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full resize-none rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
+      />
+    </label>
+  );
+}
+
+function FullModel({
+  pattern,
+  design,
+  draft,
+}: {
+  pattern: PublicPagePattern;
+  design: PublicPageDesign;
+  draft: Draft;
+}) {
+  const theme = THEMES[design];
+
+  const shellClass = [
+    "overflow-hidden shadow-xl transition-all duration-300",
+    theme.page,
+    design === "editorial"
+      ? "rounded-none"
+      : theme.radius,
+  ].join(" ");
+
+  if (pattern === "person-first") {
+    return (
+      <div className={shellClass}>
+        <Visual design={design} />
+
+        <div className="mx-auto max-w-3xl px-6 pb-12">
+          <div
+            className={[
+              "-mt-10 relative flex h-20 w-20 items-center justify-center border-4 text-xs font-black",
+              design === "pop"
+                ? "rotate-[-5deg] rounded-2xl border-black bg-[#4a63ff] text-white"
+                : design === "editorial"
+                  ? "rounded-none border-[#f2efe7] bg-black text-white"
+                  : design === "neon"
+                    ? "rounded-full border-[#090812] bg-[#ff25bd] text-white"
+                    : "rounded-full border-white bg-neutral-950 text-white",
+            ].join(" ")}
+          >
+            YOU
+          </div>
+
+          <div className="mt-5 text-3xl font-black">
+            <Text
+              value={draft.name}
+              placeholder="あなたの名前"
+            />
+          </div>
+
+          <h1
+            className={[
+              "mt-5 text-4xl font-black leading-tight sm:text-5xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.headline}
+              placeholder="最初に伝えるひとこと"
+            />
+          </h1>
+
+          <div
+            className={[
+              "mt-5 max-w-2xl whitespace-pre-wrap text-base leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.intro}
+              placeholder="短い紹介"
+            />
+          </div>
+
+          <div className="mt-10 space-y-5">
+            <Section
+              design={design}
+              code="ABOUT"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.about}
+                  placeholder="あなたについて"
+                />
+              </div>
+            </Section>
+
+            <Section
+              design={design}
+              code="WHY"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.origin}
+                  placeholder="なぜ、この活動をしているのか"
+                />
+              </div>
+            </Section>
+
+            <Section
+              design={design}
+              code="ACTIVITY"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.activity}
+                  placeholder="今している活動"
+                />
+              </div>
+            </Section>
+
+            <Section
+              design={design}
+              code="FOR YOU"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.audience}
+                  placeholder="誰に届けたいのか"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="mt-8">
+            <Action
+              design={design}
+              value={draft.action}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "offer-first") {
+    return (
+      <div className={shellClass}>
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <div
+            className={[
+              "text-[10px] font-black tracking-[0.22em]",
+              theme.eyebrow,
+            ].join(" ")}
+          >
+            OFFER FIRST
+          </div>
+
+          <h1
+            className={[
+              "mt-5 text-4xl font-black leading-tight sm:text-6xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.headline}
+              placeholder="何を提供しているのか"
+            />
+          </h1>
+
+          <div
+            className={[
+              "mt-6 max-w-2xl text-base leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.audience}
+              placeholder="誰のためのものか"
+            />
+          </div>
+
+          <div className="mt-8">
+            <Section
+              design={design}
+              code="WHAT YOU GET"
+            >
+              <div className="text-xl font-black leading-8">
+                <Text
+                  value={draft.outcome}
+                  placeholder="どんな時間・価値を届けるのか"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="mt-5">
+            <Section
+              design={design}
+              code="OFFER"
+            >
+              <div className="whitespace-pre-wrap text-base font-bold leading-8">
+                <Text
+                  value={draft.activity}
+                  placeholder="具体的な活動・サービス・内容"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="my-9">
+            <Visual design={design} />
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Section
+              design={design}
+              code="PERSON"
+            >
+              <div className="text-xl font-black">
+                <Text
+                  value={draft.name}
+                  placeholder="それをしている人"
+                />
+              </div>
+
+              <div
+                className={[
+                  "mt-3 whitespace-pre-wrap text-sm leading-7",
+                  theme.muted,
+                ].join(" ")}
+              >
+                <Text
+                  value={draft.about}
+                  placeholder="その人について"
+                />
+              </div>
+            </Section>
+
+            <Section
+              design={design}
+              code="WHY"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.origin}
+                  placeholder="なぜ、それをしているのか"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="mt-8">
+            <Action
+              design={design}
+              value={draft.action}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pattern === "story-first") {
+    return (
+      <div className={shellClass}>
+        <div className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
+          <div
+            className={[
+              "text-[10px] font-black tracking-[0.22em]",
+              theme.eyebrow,
+            ].join(" ")}
+          >
+            STORY FIRST
+          </div>
+
+          <h1
+            className={[
+              "mt-6 text-4xl font-black leading-tight sm:text-6xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.headline}
+              placeholder="物語の入口"
+            />
+          </h1>
+
+          <div
+            className={[
+              "my-8 h-px w-16",
+              theme.divider,
+            ].join(" ")}
+          />
+
+          <div className="whitespace-pre-wrap text-lg leading-9">
+            <Text
+              value={draft.origin}
+              placeholder="始めたきっかけ"
+            />
+          </div>
+
+          <div
+            className={[
+              "mt-8 whitespace-pre-wrap text-sm leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.value}
+              placeholder="続けている理由・大切にしていること"
+            />
+          </div>
+
+          <div className="my-10">
+            <Visual design={design} />
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Section
+              design={design}
+              code="PERSON"
+            >
+              <div className="text-xl font-black">
+                <Text
+                  value={draft.name}
+                  placeholder="この物語の人"
+                />
+              </div>
+
+              <div
+                className={[
+                  "mt-3 text-sm leading-7",
+                  theme.muted,
+                ].join(" ")}
+              >
+                <Text
+                  value={draft.about}
+                  placeholder="その人について"
+                />
+              </div>
+            </Section>
+
+            <Section
+              design={design}
+              code="NOW"
+            >
+              <div className="whitespace-pre-wrap text-sm leading-8">
+                <Text
+                  value={draft.activity}
+                  placeholder="その結果、今していること"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="mt-5">
+            <Section
+              design={design}
+              code="FOR YOU"
+            >
+              <div className="text-sm leading-8">
+                <Text
+                  value={draft.audience}
+                  placeholder="誰に届けたいのか"
+                />
+              </div>
+            </Section>
+          </div>
+
+          <div className="mt-8">
+            <Action
+              design={design}
+              value={draft.action}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={shellClass}>
+      <div className="mx-auto max-w-3xl px-6 py-10 sm:py-14">
+        <Section
+          design={design}
+          code="WELCOME"
+        >
+          <h1
+            className={[
+              "text-4xl font-black leading-tight sm:text-5xl",
+              theme.headline,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.welcome}
+              placeholder="まず安心してもらう言葉"
+            />
+          </h1>
+
+          <div
+            className={[
+              "mt-5 text-base leading-8",
+              theme.muted,
+            ].join(" ")}
+          >
+            <Text
+              value={draft.audience}
+              placeholder="こんな人へ"
+            />
+          </div>
+        </Section>
+
+        <div className="my-7">
+          <Visual design={design} />
+        </div>
+
+        <div className="space-y-5">
+          <Section
+            design={design}
+            code="WHAT"
+          >
+            <div className="text-base leading-8">
+              <Text
+                value={draft.activity}
+                placeholder="ここでは何をするのか"
+              />
+            </div>
+          </Section>
+
+          <Section
+            design={design}
+            code="FIRST STEP"
+          >
+            <div className="text-sm leading-8">
+              <Text
+                value={draft.outcome}
+                placeholder="初めてなら、どんな一歩から始めるのか"
+              />
+            </div>
+          </Section>
+
+          <Section
+            design={design}
+            code="PERSON"
+          >
+            <div className="text-xl font-black">
+              <Text
+                value={draft.name}
+                placeholder="迎える人"
+              />
+            </div>
+
+            <div
+              className={[
+                "mt-3 text-sm leading-8",
+                theme.muted,
+              ].join(" ")}
+            >
+              <Text
+                value={draft.about}
+                placeholder="どんな人なのか"
+              />
+            </div>
+          </Section>
+
+          <Section
+            design={design}
+            code="VALUE"
+          >
+            <div className="text-sm leading-8">
+              <Text
+                value={draft.value}
+                placeholder="大切にしていること"
+              />
+            </div>
+          </Section>
+        </div>
+
+        <div className="mt-8">
+          <Action
+            design={design}
+            value={draft.action}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PublicPageModelLab({
+  initialPattern,
+  onBack,
+}: {
+  initialPattern: PublicPagePattern;
+  onBack: () => void;
+}) {
+  const [pattern, setPattern] =
+    useState<PublicPagePattern>(
+      initialPattern,
+    );
+
+  const [design, setDesign] =
+    useState<PublicPageDesign>("clean");
+
+  const [draft, setDraft] =
+    useState<Draft>(EMPTY_DRAFT);
+
+  const setField = (
+    key: keyof Draft,
+    value: string,
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-[32px] bg-neutral-950 p-6 text-white sm:p-8">
+        <div className="text-[10px] font-black tracking-[0.22em] text-neutral-500">
+          MODEL LAB
+        </div>
+
+        <h2 className="mt-3 text-2xl font-black sm:text-3xl">
+          MODELとDESIGNを、
+          別々に選びます。
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-400">
+          入力した内容はそのまま。
+          MODELやDESIGNを切り替えて、
+          同じ文章がどう見えるか試せます。
+        </p>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300"
+        >
+          ← PAGE STRATEGYへ
+        </button>
+      </div>
+
+      <section className="rounded-[32px] border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+          DESIGN
+        </div>
+
+        <div className="mt-2 text-xl font-black text-neutral-950">
+          世界観を選ぶ
+        </div>
+
+        <p className="mt-1 text-xs leading-6 text-neutral-500">
+          途中で何度変えても、
+          入力した文章は消えません。
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {DESIGNS.map((item) => {
+            const selected =
+              item.id === design;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  setDesign(item.id)
+                }
+                className={[
+                  "overflow-hidden rounded-2xl border text-left transition",
+                  selected
+                    ? "border-neutral-950 ring-2 ring-neutral-950"
+                    : "border-neutral-200 hover:border-neutral-500",
+                ].join(" ")}
+              >
+                <div
+                  className={[
+                    "h-16",
+                    item.swatch,
+                  ].join(" ")}
+                />
+
+                <div className="p-3">
+                  <div className="text-[9px] font-black tracking-[0.16em] text-neutral-400">
+                    {item.code}
+                  </div>
+
+                  <div className="mt-1 text-xs font-black text-neutral-950">
+                    {item.title}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 rounded-2xl bg-neutral-50 px-4 py-3 text-xs leading-6 text-neutral-500">
+          {
+            DESIGNS.find(
+              (item) =>
+                item.id === design,
+            )?.description
+          }
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+            MODEL
+          </div>
+
+          <div className="mt-1 text-lg font-black text-neutral-950">
+            伝える順番を比べる
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {PATTERNS.map((item) => {
+            const selected =
+              item.id === pattern;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  setPattern(item.id)
+                }
+                className={[
+                  "overflow-hidden rounded-[28px] border text-left transition",
+                  selected
+                    ? "border-neutral-950 ring-2 ring-neutral-950"
+                    : "border-neutral-200 hover:border-neutral-500",
+                ].join(" ")}
+              >
+                <MiniModel
+                  pattern={item.id}
+                  design={design}
+                />
+
+                <div className="bg-white p-4">
+                  <div className="text-[9px] font-black tracking-[0.16em] text-neutral-400">
+                    {item.code}
+                  </div>
+
+                  <div className="mt-2 text-sm font-black text-neutral-950">
+                    {item.title}
+                  </div>
+
+                  <div className="mt-1 text-xs leading-5 text-neutral-500">
+                    {item.description}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+        <aside className="space-y-4 rounded-[32px] border border-neutral-200 bg-neutral-50 p-5">
+          <div>
+            <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+              TEST CONTENT
+            </div>
+
+            <div className="mt-2 text-lg font-black">
+              入力しながら試す
+            </div>
+
+            <p className="mt-1 text-xs leading-6 text-neutral-500">
+              MODELもDESIGNも、
+              入力途中で自由に変えられます。
+              ここではまだ保存しません。
+            </p>
+          </div>
+
+          <Field
+            label="NAME"
+            value={draft.name}
+            placeholder="名前"
+            rows={1}
+            onChange={(value) =>
+              setField("name", value)
+            }
+          />
+
+          <Field
+            label="HEADLINE"
+            value={draft.headline}
+            placeholder="最初のひとこと"
+            onChange={(value) =>
+              setField(
+                "headline",
+                value,
+              )
+            }
+          />
+
+          <Field
+            label="INTRO"
+            value={draft.intro}
+            placeholder="短い紹介"
+            onChange={(value) =>
+              setField("intro", value)
+            }
+          />
+
+          <Field
+            label="ABOUT"
+            value={draft.about}
+            placeholder="あなたについて"
+            rows={4}
+            onChange={(value) =>
+              setField("about", value)
+            }
+          />
+
+          <Field
+            label="ORIGIN"
+            value={draft.origin}
+            placeholder="始めたきっかけ"
+            rows={3}
+            onChange={(value) =>
+              setField("origin", value)
+            }
+          />
+
+          <Field
+            label="VALUE"
+            value={draft.value}
+            placeholder="大切にしていること"
+            onChange={(value) =>
+              setField("value", value)
+            }
+          />
+
+          <Field
+            label="ACTIVITY"
+            value={draft.activity}
+            placeholder="今している活動"
+            rows={3}
+            onChange={(value) =>
+              setField(
+                "activity",
+                value,
+              )
+            }
+          />
+
+          <Field
+            label="AUDIENCE"
+            value={draft.audience}
+            placeholder="誰に届けたいか"
+            onChange={(value) =>
+              setField(
+                "audience",
+                value,
+              )
+            }
+          />
+
+          <Field
+            label="OUTCOME"
+            value={draft.outcome}
+            placeholder="どんな時間・価値・最初の一歩か"
+            onChange={(value) =>
+              setField(
+                "outcome",
+                value,
+              )
+            }
+          />
+
+          <Field
+            label="WELCOME"
+            value={draft.welcome}
+            placeholder="初めての人への言葉"
+            onChange={(value) =>
+              setField(
+                "welcome",
+                value,
+              )
+            }
+          />
+
+          <Field
+            label="ACTION"
+            value={draft.action}
+            placeholder="次の一歩"
+            onChange={(value) =>
+              setField("action", value)
+            }
+          />
+
+          <button
+            type="button"
+            onClick={() =>
+              setDraft(EMPTY_DRAFT)
+            }
+            className="text-xs font-bold text-neutral-400 hover:text-neutral-700"
+          >
+            入力を全部消す
+          </button>
+        </aside>
+
+        <div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
+              LIVE MODEL
+            </div>
+
+            <div className="flex gap-2">
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-[9px] font-black text-neutral-500">
+                {
+                  PATTERNS.find(
+                    (item) =>
+                      item.id ===
+                      pattern,
+                  )?.code
+                }
+              </span>
+
+              <span className="rounded-full bg-neutral-950 px-3 py-1 text-[9px] font-black text-white">
+                {
+                  DESIGNS.find(
+                    (item) =>
+                      item.id ===
+                      design,
+                  )?.code
+                }
+              </span>
+            </div>
+          </div>
+
+          <FullModel
+            pattern={pattern}
+            design={design}
+            draft={draft}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

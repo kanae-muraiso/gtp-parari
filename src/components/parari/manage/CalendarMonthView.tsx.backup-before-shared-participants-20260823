@@ -1,0 +1,1373 @@
+// src/components/parari/manage/CalendarMonthView.tsx
+// 2026-08-20 JST
+//
+// PARARI CALENDAR v1
+//
+// 作者側の月間開催予定表示。
+// calendar_occurrences を表示する。
+//
+// 各開催回は、作者が選択した表示timezoneで
+// 同じ時間軸上に配置する。
+// SCHEDULE自身のtimezoneは開催基準時間帯として保持する。
+
+"use client";
+
+import * as React from "react";
+
+import Link from "next/link";
+
+import CalendarOccurrenceEditor from "@/components/parari/manage/CalendarOccurrenceEditor";
+import CalendarOccurrenceParticipants from "@/components/parari/manage/CalendarOccurrenceParticipants";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+
+type CalendarOccurrence = {
+  id: string;
+  calendar_item_id: string;
+  calendar_schedule_id: string | null;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  title: string;
+  location: string | null;
+  capacity: number | null;
+  reservation_count?: number;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
+  status:
+    | "scheduled"
+    | "cancelled"
+    | "completed";
+};
+
+
+type Props = {
+  refreshKey?: number;
+};
+
+
+type LocalParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+};
+
+
+const WEEKDAYS = [
+  "日",
+  "月",
+  "火",
+  "水",
+  "木",
+  "金",
+  "土",
+];
+
+
+function pad2(
+  value: number,
+) {
+  return String(
+    value,
+  ).padStart(
+    2,
+    "0",
+  );
+}
+
+
+const AUTHOR_CALENDAR_TIMEZONES = [
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Singapore",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Pacific/Honolulu",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Australia/Sydney",
+  "UTC",
+] as const;
+
+
+function getDeviceTimezone() {
+  try {
+    return (
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone ||
+      "Asia/Tokyo"
+    );
+  } catch {
+    return "Asia/Tokyo";
+  }
+}
+
+
+function getDateKeyForInstant(
+  value: Date,
+  timezone: string,
+) {
+  try {
+    const parts =
+      new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone:
+            timezone,
+
+          year:
+            "numeric",
+
+          month:
+            "2-digit",
+
+          day:
+            "2-digit",
+        },
+      ).formatToParts(
+        value,
+      );
+
+
+    const values =
+      new Map<
+        string,
+        string
+      >();
+
+
+    for (
+      const part of parts
+    ) {
+      if (
+        part.type !==
+        "literal"
+      ) {
+        values.set(
+          part.type,
+          part.value,
+        );
+      }
+    }
+
+
+    return [
+      values.get(
+        "year",
+      ) ?? "",
+      values.get(
+        "month",
+      ) ?? "",
+      values.get(
+        "day",
+      ) ?? "",
+    ].join("-");
+  } catch {
+    return "";
+  }
+}
+
+
+function getLocalParts(
+  occurrence:
+    CalendarOccurrence,
+  timezone?: string,
+): LocalParts {
+  const formatter =
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone:
+          timezone ||
+          occurrence.timezone ||
+          "Asia/Tokyo",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        hourCycle:
+          "h23",
+      },
+    );
+
+
+  const parts =
+    formatter
+      .formatToParts(
+        new Date(
+          occurrence.starts_at,
+        ),
+      );
+
+
+  const values =
+    new Map<
+      string,
+      string
+    >();
+
+
+  for (
+    const part of parts
+  ) {
+    if (
+      part.type !==
+      "literal"
+    ) {
+      values.set(
+        part.type,
+        part.value,
+      );
+    }
+  }
+
+
+  return {
+    year:
+      Number(
+        values.get("year"),
+      ),
+
+    month:
+      Number(
+        values.get("month"),
+      ),
+
+    day:
+      Number(
+        values.get("day"),
+      ),
+
+    hour:
+      Number(
+        values.get("hour"),
+      ),
+
+    minute:
+      Number(
+        values.get("minute"),
+      ),
+  };
+}
+
+
+function getOccurrenceDateKey(
+  occurrence:
+    CalendarOccurrence,
+  timezone?: string,
+) {
+  const parts =
+    getLocalParts(
+      occurrence,
+      timezone,
+    );
+
+  return [
+    parts.year,
+    pad2(
+      parts.month,
+    ),
+    pad2(
+      parts.day,
+    ),
+  ].join("-");
+}
+
+
+function getOccurrenceTimeLabel(
+  occurrence:
+    CalendarOccurrence,
+  timezone?: string,
+) {
+  const parts =
+    getLocalParts(
+      occurrence,
+      timezone,
+    );
+
+  return `${pad2(
+    parts.hour,
+  )}:${pad2(
+    parts.minute,
+  )}`;
+}
+
+
+function makeDateKey(
+  year: number,
+  monthIndex: number,
+  day: number,
+) {
+  return [
+    year,
+    pad2(
+      monthIndex + 1,
+    ),
+    pad2(
+      day,
+    ),
+  ].join("-");
+}
+
+
+export default function CalendarMonthView({
+  refreshKey = 0,
+}: Props) {
+  const [
+    occurrences,
+    setOccurrences,
+  ] =
+    React.useState<
+      CalendarOccurrence[]
+    >([]);
+
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    React.useState(true);
+
+
+  const [
+    message,
+    setMessage,
+  ] =
+    React.useState("");
+
+
+  const [
+    deviceTimezone,
+    setDeviceTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  const [
+    displayTimezone,
+    setDisplayTimezone,
+  ] =
+    React.useState(
+      "Asia/Tokyo",
+    );
+
+
+  React.useEffect(
+    () => {
+      const detected =
+        getDeviceTimezone();
+
+
+      setDeviceTimezone(
+        detected,
+      );
+
+
+      setDisplayTimezone(
+        detected,
+      );
+    },
+    [],
+  );
+
+
+  const [
+    selectedOccurrence,
+    setSelectedOccurrence,
+  ] =
+    React.useState<
+      CalendarOccurrence | null
+    >(null);
+
+
+  const [
+    participantsOccurrenceId,
+    setParticipantsOccurrenceId,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+
+  const [
+    visibleMonth,
+    setVisibleMonth,
+  ] =
+    React.useState(() => {
+      const now =
+        new Date();
+
+      return {
+        year:
+          now.getFullYear(),
+
+        monthIndex:
+          now.getMonth(),
+      };
+    });
+
+
+  async function loadOccurrences() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth
+          .getSession();
+
+
+      const accessToken =
+        session?.access_token ??
+        null;
+
+
+      if (!accessToken) {
+        setOccurrences([]);
+
+        setMessage(
+          "開催予定を表示するにはログインしてください。",
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/occurrences",
+          {
+            method:
+              "GET",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            cache:
+              "no-store",
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setOccurrences([]);
+
+        setMessage(
+          result?.message ??
+            "開催予定を取得できませんでした。",
+        );
+
+        return;
+      }
+
+
+      setOccurrences(
+        Array.isArray(
+          result.occurrences,
+        )
+          ? result.occurrences
+          : [],
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarMonthView] load failed:",
+        error,
+      );
+
+      setOccurrences([]);
+
+      setMessage(
+        "開催予定を取得できませんでした。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  React.useEffect(() => {
+    void loadOccurrences();
+  }, [
+    refreshKey,
+  ]);
+
+
+  /*
+   * SCHEDULE期間延長など、
+   * 外部のCALENDAR管理UIから
+   * OCCURRENCEが変更された場合にも再読込する。
+   */
+  React.useEffect(() => {
+    function handleOccurrencesChanged() {
+      void loadOccurrences();
+    }
+
+
+    window.addEventListener(
+      "parari:calendar-occurrences-changed",
+      handleOccurrencesChanged,
+    );
+
+
+    return () => {
+      window.removeEventListener(
+        "parari:calendar-occurrences-changed",
+        handleOccurrencesChanged,
+      );
+    };
+  }, []);
+
+
+  function moveMonth(
+    offset: number,
+  ) {
+    setVisibleMonth(
+      (current) => {
+        const date =
+          new Date(
+            current.year,
+            current.monthIndex +
+              offset,
+            1,
+          );
+
+        return {
+          year:
+            date.getFullYear(),
+
+          monthIndex:
+            date.getMonth(),
+        };
+      },
+    );
+  }
+
+
+  async function resumeOccurrence(
+    occurrence: CalendarOccurrence,
+  ) {
+    const confirmed =
+      window.confirm(
+        "この開催回を再び開催予定に戻しますか？",
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    try {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth
+          .getSession();
+
+
+      if (
+        !session?.access_token
+      ) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+
+        return;
+      }
+
+
+      const response =
+        await fetch(
+          "/api/calendar/occurrences/resume",
+          {
+            method:
+              "PATCH",
+
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                occurrenceId:
+                  occurrence.id,
+              }),
+          },
+        );
+
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.occurrence
+      ) {
+        setMessage(
+          result?.message ??
+            "開催予定に戻せませんでした。",
+        );
+
+        return;
+      }
+
+
+      setOccurrences(
+        (current) =>
+          current.map(
+            (currentOccurrence) =>
+              currentOccurrence.id ===
+              result.occurrence.id
+                ? {
+                    ...currentOccurrence,
+                    ...result.occurrence,
+                  }
+                : currentOccurrence,
+          ),
+      );
+
+
+      setMessage(
+        "この回を開催予定に戻しました。",
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarMonthView] resume failed:",
+        error,
+      );
+
+      setMessage(
+        "開催予定に戻せませんでした。",
+      );
+    }
+  }
+
+
+  function moveToCurrentMonth() {
+    const now =
+      new Date();
+
+    setVisibleMonth({
+      year:
+        now.getFullYear(),
+
+      monthIndex:
+        now.getMonth(),
+    });
+  }
+
+
+  const timezoneOptions =
+    React.useMemo(
+      () => {
+        const values =
+          new Set<string>([
+            deviceTimezone,
+            ...AUTHOR_CALENDAR_TIMEZONES,
+          ]);
+
+
+        for (
+          const occurrence of
+          occurrences
+        ) {
+          if (
+            occurrence.timezone
+          ) {
+            values.add(
+              occurrence.timezone,
+            );
+          }
+        }
+
+
+        return Array.from(
+          values,
+        );
+      },
+      [
+        occurrences,
+        deviceTimezone,
+      ],
+    );
+
+
+  const occurrenceMap =
+    React.useMemo(
+      () => {
+        const map =
+          new Map<
+            string,
+            CalendarOccurrence[]
+          >();
+
+
+        for (
+          const occurrence of
+            occurrences
+        ) {
+          const key =
+            getOccurrenceDateKey(
+              occurrence,
+              displayTimezone,
+            );
+
+
+          const current =
+            map.get(
+              key,
+            ) ?? [];
+
+
+          current.push(
+            occurrence,
+          );
+
+          map.set(
+            key,
+            current,
+          );
+        }
+
+
+        for (
+          const [
+            key,
+            values,
+          ] of map
+        ) {
+          values.sort(
+            (
+              a,
+              b,
+            ) => {
+              const aParts =
+                getLocalParts(
+                  a,
+                  displayTimezone,
+                );
+
+              const bParts =
+                getLocalParts(
+                  b,
+                  displayTimezone,
+                );
+
+              return (
+                aParts.hour *
+                  60 +
+                aParts.minute -
+                (bParts.hour *
+                  60 +
+                  bParts.minute)
+              );
+            },
+          );
+
+          map.set(
+            key,
+            values,
+          );
+        }
+
+
+        return map;
+      },
+      [
+        occurrences,
+        displayTimezone,
+      ],
+    );
+
+
+  const firstDay =
+    new Date(
+      Date.UTC(
+        visibleMonth.year,
+        visibleMonth.monthIndex,
+        1,
+      ),
+    ).getUTCDay();
+
+
+  const daysInMonth =
+    new Date(
+      Date.UTC(
+        visibleMonth.year,
+        visibleMonth.monthIndex +
+          1,
+        0,
+      ),
+    ).getUTCDate();
+
+
+  const cells =
+    Array.from(
+      {
+        length: 42,
+      },
+      (
+        _,
+        index,
+      ) => {
+        const day =
+          index -
+          firstDay +
+          1;
+
+        if (
+          day < 1 ||
+          day >
+            daysInMonth
+        ) {
+          return null;
+        }
+
+        return day;
+      },
+    );
+
+
+  const now =
+    new Date();
+
+
+  const todayKey =
+    getDateKeyForInstant(
+      now,
+      displayTimezone,
+    );
+
+
+  return (
+    <section className="mt-10">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+            SCHEDULE
+          </div>
+
+          <h2 className="mt-2 text-xl font-bold text-neutral-950">
+            開催カレンダー
+          </h2>
+        </div>
+
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              moveMonth(
+                -1,
+              )
+            }
+            className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-600 hover:border-neutral-400"
+          >
+            ←
+          </button>
+
+          <button
+            type="button"
+            onClick={
+              moveToCurrentMonth
+            }
+            className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-600 hover:border-neutral-400"
+          >
+            今月
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              moveMonth(
+                1,
+              )
+            }
+            className="rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-600 hover:border-neutral-400"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+
+      <div className="mt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+          <div>
+            <div className="text-xs font-bold text-neutral-400">
+              カレンダー表示時間帯
+            </div>
+
+            <div className="mt-1 text-sm font-bold text-neutral-950">
+              {displayTimezone}
+            </div>
+          </div>
+
+
+          <select
+            value={
+              displayTimezone
+            }
+            onChange={(
+              event,
+            ) =>
+              setDisplayTimezone(
+                event.target.value,
+              )
+            }
+            className="max-w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-700 outline-none"
+          >
+            {timezoneOptions.map(
+              (
+                timezone,
+              ) => (
+                <option
+                  key={
+                    timezone
+                  }
+                  value={
+                    timezone
+                  }
+                >
+                  {timezone}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
+
+
+        {displayTimezone !==
+        deviceTimezone ? (
+          <div className="mt-3 rounded-2xl border border-red-300 bg-red-50 p-4">
+            <div className="text-sm font-bold text-red-800">
+              ⚠ 現地時間ではありません
+            </div>
+
+            <p className="mt-1 text-xs leading-6 text-red-700">
+              作者カレンダーを
+              {" "}
+              <strong>
+                {displayTimezone}
+              </strong>
+              {" "}
+              の時間で表示しています。
+              端末の時間帯は
+              {" "}
+              <strong>
+                {deviceTimezone}
+              </strong>
+              {" "}
+              です。
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDisplayTimezone(
+                  deviceTimezone,
+                )
+              }
+              className="mt-3 rounded-full bg-red-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-800"
+            >
+              現地時間に戻す
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+
+      <div className="mt-5 text-lg font-bold text-neutral-950">
+        {
+          visibleMonth.year
+        }
+        年
+        {
+          visibleMonth.monthIndex +
+          1
+        }
+        月
+      </div>
+
+
+      {participantsOccurrenceId ? (
+        <CalendarOccurrenceParticipants
+          occurrenceId={
+            participantsOccurrenceId
+          }
+          onClose={() => {
+            setParticipantsOccurrenceId(
+              null,
+            );
+          }}
+        />
+      ) : null}
+
+
+      {selectedOccurrence ? (
+        <CalendarOccurrenceEditor
+          occurrence={
+            selectedOccurrence
+          }
+          onClose={() => {
+            setSelectedOccurrence(
+              null,
+            );
+          }}
+          onSaved={(
+            updated,
+          ) => {
+            setOccurrences(
+              (current) =>
+                current.map(
+                  (occurrence) =>
+                    occurrence.id ===
+                    updated.id
+                      ? {
+                          ...occurrence,
+                          ...updated,
+                        }
+                      : occurrence,
+                ),
+            );
+
+            setSelectedOccurrence(
+              null,
+            );
+
+            setMessage(
+              "この回だけ変更しました。",
+            );
+          }}
+          onCancelled={(
+            updated,
+          ) => {
+            setOccurrences(
+              (current) =>
+                current.map(
+                  (occurrence) =>
+                    occurrence.id ===
+                    updated.id
+                      ? {
+                          ...occurrence,
+                          ...updated,
+                        }
+                      : occurrence,
+                ),
+            );
+
+            setSelectedOccurrence(
+              null,
+            );
+
+            setMessage(
+              "この回を休講にしました。",
+            );
+          }}
+        />
+      ) : null}
+
+
+      {message ? (
+        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+          {message}
+        </div>
+      ) : null}
+
+
+      {loading ? (
+        <div className="mt-4 rounded-3xl border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+          開催予定を読み込んでいます...
+        </div>
+      ) : (
+        <div className="mt-4 overflow-x-auto">
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-7 overflow-hidden rounded-t-2xl border border-neutral-200 bg-neutral-50">
+              {WEEKDAYS.map(
+                (
+                  weekday,
+                ) => (
+                  <div
+                    key={
+                      weekday
+                    }
+                    className="border-r border-neutral-200 px-2 py-2 text-center text-xs font-bold text-neutral-500 last:border-r-0"
+                  >
+                    {
+                      weekday
+                    }
+                  </div>
+                ),
+              )}
+            </div>
+
+
+            <div className="grid grid-cols-7 overflow-hidden rounded-b-2xl border-x border-b border-neutral-200 bg-white">
+              {cells.map(
+                (
+                  day,
+                  index,
+                ) => {
+                  if (
+                    day ===
+                    null
+                  ) {
+                    return (
+                      <div
+                        key={
+                          index
+                        }
+                        className="min-h-[120px] border-b border-r border-neutral-100 bg-neutral-50/60"
+                      />
+                    );
+                  }
+
+
+                  const key =
+                    makeDateKey(
+                      visibleMonth.year,
+                      visibleMonth.monthIndex,
+                      day,
+                    );
+
+
+                  const dayOccurrences =
+                    occurrenceMap.get(
+                      key,
+                    ) ?? [];
+
+
+                  const isToday =
+                    key ===
+                    todayKey;
+
+
+                  return (
+                    <div
+                      key={
+                        key
+                      }
+                      className="min-h-[120px] border-b border-r border-neutral-100 p-2"
+                    >
+                      <div
+                        className={
+                          isToday
+                            ? "flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950 text-xs font-bold text-white"
+                            : "flex h-7 w-7 items-center justify-center text-xs font-bold text-neutral-600"
+                        }
+                      >
+                        {
+                          day
+                        }
+                      </div>
+
+
+                      <div className="mt-1 space-y-1.5">
+                        {dayOccurrences.map(
+                          (
+                            occurrence,
+                          ) => (
+                            <div
+                              key={
+                                occurrence.id
+                              }
+                              className={
+                                occurrence.status ===
+                                "cancelled"
+                                  ? "rounded-xl border border-neutral-300 bg-neutral-50 px-2 py-2 opacity-60"
+                                  : "rounded-xl bg-neutral-100 px-2 py-2"
+                              }
+                            >
+                              <Link
+                                href={`/calendar/${occurrence.id}`}
+                                className="block transition hover:opacity-70"
+                              >
+                                {occurrence.status ===
+                                "cancelled" ? (
+                                  <div className="mb-1 text-[9px] font-bold tracking-[0.12em] text-neutral-500">
+                                    休講
+                                  </div>
+                                ) : null}
+
+                                <div
+                                  className={
+                                    occurrence.status ===
+                                    "cancelled"
+                                      ? "text-[11px] font-bold text-neutral-500 line-through"
+                                      : "text-[11px] font-bold text-neutral-950"
+                                  }
+                                >
+                                  {getOccurrenceTimeLabel(
+                                    occurrence,
+                                    displayTimezone,
+                                  )}
+                                  {" "}
+                                  {
+                                    occurrence.title
+                                  }
+                                </div>
+
+                                {occurrence.location ? (
+                                  <div className="mt-0.5 truncate text-[10px] text-neutral-500">
+                                    {
+                                      occurrence.location
+                                    }
+                                  </div>
+                                ) : null}
+
+                                {occurrence.status ===
+                                "scheduled" ? (
+                                  <div className="mt-1 text-[10px] font-bold text-neutral-700">
+                                    予約{" "}
+                                    {
+                                      occurrence.reservation_count ??
+                                      0
+                                    }
+                                    {occurrence.capacity !==
+                                    null ? (
+                                      <>
+                                        {" "}
+                                        /{" "}
+                                        {
+                                          occurrence.capacity
+                                        }
+                                      </>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+
+                                <div className="mt-0.5 text-[9px] leading-4 text-neutral-400">
+                                  {occurrence.timezone ===
+                                  displayTimezone ? (
+                                    <>
+                                      開催基準：
+                                      {
+                                        occurrence.timezone
+                                      }
+                                    </>
+                                  ) : (
+                                    <>
+                                      開催基準：
+                                      {getOccurrenceTimeLabel(
+                                        occurrence,
+                                        occurrence.timezone,
+                                      )}
+                                      {" "}
+                                      {
+                                        occurrence.timezone
+                                      }
+                                    </>
+                                  )}
+                                </div>
+                              </Link>
+
+
+                              {occurrence.status ===
+                              "scheduled" ? (
+                                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setParticipantsOccurrenceId(
+                                        occurrence.id,
+                                      );
+                                    }}
+                                    className="text-[9px] font-bold text-neutral-700 underline underline-offset-2"
+                                  >
+                                    参加者を見る
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedOccurrence(
+                                        occurrence,
+                                      );
+                                    }}
+                                    className="text-[9px] font-bold text-neutral-500 underline underline-offset-2"
+                                  >
+                                    この回だけ変更
+                                  </button>
+                                </div>
+                              ) : occurrence.status ===
+                                "cancelled" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void resumeOccurrence(
+                                      occurrence,
+                                    );
+                                  }}
+                                  className="mt-1 text-[9px] font-bold text-neutral-600 underline underline-offset-2"
+                                >
+                                  開催に戻す
+                                </button>
+                              ) : null}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

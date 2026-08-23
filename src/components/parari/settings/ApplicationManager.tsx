@@ -5,7 +5,11 @@
 "use client";
 
 import * as React from "react";
+
+import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
 import { supabase } from "@/lib/supabaseClient";
+import CalendarApplicationList from "@/components/parari/settings/CalendarApplicationList";
+
 
 import type {
   ApplicationAcceptanceMode,
@@ -491,11 +495,40 @@ function downloadApplicationEntriesCsv(
 
 
 
+function getManagedApplicationOrigin(
+  application: ManagedApplication,
+): "manual" | "calendar" {
+  const origin =
+    (
+      application as ManagedApplication & {
+        origin?: unknown;
+      }
+    ).origin;
+
+  return origin === "calendar"
+    ? "calendar"
+    : "manual";
+}
+
+
 export default function ApplicationManager() {
   const [
     applications,
     setApplications,
   ] = React.useState<ManagedApplication[]>([]);
+
+
+  const manualApplications =
+    applications.filter(
+      (application) =>
+        getManagedApplicationOrigin(
+          application,
+        ) === "manual",
+    );
+
+  const orderedApplications = [
+    ...manualApplications,
+  ];
 
   const [
     applicationAccess,
@@ -2652,15 +2685,15 @@ export default function ApplicationManager() {
               <p className="text-sm text-neutral-500">
                 APPLICATIONを読み込んでいます...
               </p>
-            ) : applications.length ===
+            ) : orderedApplications.length ===
               0 ? (
               <div className="py-8 text-center">
                 <div className="text-xl font-bold text-neutral-950">
-                  まだAPPLICATIONがありません
+                  まだ募集・申込みがありません
                 </div>
 
                 <p className="mt-3 text-sm leading-7 text-neutral-500">
-                  最初の募集を作ってみましょう。
+                  最初の募集・申込みを作ってみましょう。
                 </p>
 
                 <button
@@ -2677,23 +2710,78 @@ export default function ApplicationManager() {
               </div>
             ) : (
               <div className="space-y-3">
-                {applications.map(
-                  (application) => (
-                    <div
-                      key={
-                        application.id
-                      }
-                      className="rounded-2xl border border-neutral-200 p-5"
-                    >
+                {orderedApplications.map(
+                  (
+                    application,
+                    applicationIndex,
+                  ) => {
+                    const applicationOrigin =
+                      getManagedApplicationOrigin(
+                        application,
+                      );
+
+                    const previousOrigin =
+                      applicationIndex > 0
+                        ? getManagedApplicationOrigin(
+                            orderedApplications[
+                              applicationIndex - 1
+                            ],
+                          )
+                        : null;
+
+                    const showGroupHeading =
+                      applicationIndex === 0 ||
+                      previousOrigin !==
+                        applicationOrigin;
+
+                    return (
+                      <React.Fragment
+                        key={application.id}
+                      >
+                        {showGroupHeading ? (
+                          <div
+                            className={
+                              applicationIndex === 0
+                                ? "mb-3"
+                                : "mb-3 mt-10"
+                            }
+                          >
+                            <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">
+                              {applicationOrigin ===
+                              "calendar"
+                                ? "CALENDAR × APPLICATION"
+                                : "APPLICATION"}
+                            </div>
+
+                            <div className="mt-1 text-base font-bold text-neutral-950">
+                              {applicationOrigin ===
+                              "calendar"
+                                ? "クラス・イベント予約"
+                                : "募集・申込み"}
+                            </div>
+
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">
+                              {applicationOrigin ===
+                              "calendar"
+                                ? "CALENDARで作成したクラス・イベントの予約受付です。"
+                                : "日時に依存しない募集・応募・申込みです。"}
+                            </p>
+                          </div>
+                        ) : null}
+
+                        <div
+                          className="rounded-2xl border border-neutral-200 p-5"
+                        >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <div className="text-xs font-bold text-neutral-400">
-                            {
-                              APPLICATION_TYPE_LABELS[
-                                application
-                                  .application_type
-                              ]
-                            }
+                            {applicationOrigin ===
+                            "calendar"
+                              ? "CALENDAR予約"
+                              : APPLICATION_TYPE_LABELS[
+                                  application
+                                    .application_type
+                                ]}
                           </div>
 
                           <div className="mt-1 text-lg font-bold text-neutral-950">
@@ -2715,11 +2803,20 @@ export default function ApplicationManager() {
                                       <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-500">
                                         {application.status ===
                                         "draft"
-                                          ? "下書き"
+                                          ? applicationOrigin ===
+                                            "calendar"
+                                            ? "予約未設定"
+                                            : "下書き"
                                           : application.status ===
                                               "open"
-                                            ? "募集中"
-                                            : "募集終了"}
+                                            ? applicationOrigin ===
+                                              "calendar"
+                                              ? "予約受付中"
+                                              : "募集中"
+                                            : applicationOrigin ===
+                                              "calendar"
+                                              ? "予約受付終了"
+                                              : "募集終了"}
                                       </span>
 
                                       <button
@@ -2765,42 +2862,72 @@ export default function ApplicationManager() {
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          if (
+                                            applicationOrigin ===
+                                            "calendar"
+                                          ) {
+                                            setOpenEntriesApplicationId(
+                                              (
+                                                current,
+                                              ) =>
+                                                current ===
+                                                application.id
+                                                  ? null
+                                                  : application.id,
+                                            );
+
+                                            setEntriesMessage(
+                                              "",
+                                            );
+
+                                            return;
+                                          }
+
                                           void toggleApplicationEntries(
                                             application.id,
                                           );
                                         }}
                                         className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
                                       >
-                                        {openEntriesApplicationId ===
-                                        application.id
-                                          ? "申込者を閉じる"
-                                          : entriesByApplicationId[
-                                                application.id
-                                              ]
-                                            ? `申込者 ${
-                                                entriesByApplicationId[
+                                        {applicationOrigin ===
+                                        "calendar"
+                                          ? openEntriesApplicationId ===
+                                            application.id
+                                            ? "参加者を閉じる"
+                                            : "参加者を見る"
+                                          : openEntriesApplicationId ===
+                                              application.id
+                                            ? "申込者を閉じる"
+                                            : entriesByApplicationId[
                                                   application.id
-                                                ].length
-                                              }名`
-                                            : "申込者を見る"}
+                                                ]
+                                              ? `申込者 ${
+                                                  entriesByApplicationId[
+                                                    application.id
+                                                  ].length
+                                                }名`
+                                              : "申込者を見る"}
                                       </button>
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        duplicateApplication(
-                                          application,
-                                        )
-                                      }
-                                      disabled={
-                                        applicationAccess
-                                          ?.canCreateApplication ===
-                                        false
-                                      }
-                                      className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-300"
-                                    >
-                                      複製して新規作成
-                                    </button>
+                                    {applicationOrigin ===
+                                    "manual" ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          duplicateApplication(
+                                            application,
+                                          )
+                                        }
+                                        disabled={
+                                          applicationAccess
+                                            ?.canCreateApplication ===
+                                          false
+                                        }
+                                        className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-300"
+                                      >
+                                        複製して新規作成
+                                      </button>
+                                    ) : null}
 
                                       <button
                                         type="button"
@@ -2816,8 +2943,29 @@ export default function ApplicationManager() {
                                     </div>
                       </div>
 
-                      {openEntriesApplicationId ===
-                      application.id
+                      {applicationOrigin ===
+                        "calendar" &&
+                      openEntriesApplicationId ===
+                        application.id ? (
+                        <ParticipantsPanel
+                          applicationId={
+                            application.id
+                          }
+                          title={
+                            application.title
+                          }
+                          onClose={() => {
+                            setOpenEntriesApplicationId(
+                              null,
+                            );
+                          }}
+                        />
+                      ) : null}
+
+                      {applicationOrigin ===
+                        "manual" &&
+                      openEntriesApplicationId ===
+                        application.id
                         ? (() => {
                             const applicationEntries =
                               entriesByApplicationId[
@@ -3244,10 +3392,14 @@ export default function ApplicationManager() {
                           })()
                         : null}
                     </div>
-                  ),
+                      </React.Fragment>
+                    );
+                  },
                 )}
               </div>
             )}
+
+            <CalendarApplicationList />
 
            {applicationAccess &&
            applicationAccess.applicationLimit !==
