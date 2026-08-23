@@ -205,8 +205,6 @@ export default function MyPublicProfileSettingsPage() {
   const [showEditor, setShowEditor] = useState(false);
   const [selectedPagePattern, setSelectedPagePattern] =
     useState<PublicPagePattern | null>(null);
-  const [legacyMode, setLegacyMode] =
-    useState(false);
 
   const [newLabel, setNewLabel] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -573,9 +571,7 @@ export default function MyPublicProfileSettingsPage() {
         homepage_show_username: showUsername,
 
         public_page_pattern:
-          legacyMode
-            ? null
-            : selectedPagePattern,
+          selectedPagePattern,
 
 
         tab_label_profile: nextTab1Label,
@@ -960,181 +956,40 @@ export default function MyPublicProfileSettingsPage() {
             ) : null}
 
             {!showEditor ? (
-              <>
-                <section className="rounded-[28px] border border-neutral-200 bg-white p-5 shadow-sm">
-                  <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
-                    SIMPLE PROFILE
-                  </div>
-
-                  <div className="mt-2 text-lg font-black text-neutral-950">
-                    シンプルなプロフィールページ
-                  </div>
-
-                  <p className="mt-2 max-w-2xl text-xs leading-6 text-neutral-500">
-                    自己紹介・リンク・代表作品をまとめる、
-                    従来のプロフィールページも引き続き使えます。
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLegacyMode(true);
-                      setSelectedPagePattern(null);
-                      setEditorSection("brand");
-                      setShowEditor(true);
-                    }}
-                    className="mt-4 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-black text-neutral-700 transition hover:border-neutral-500 hover:bg-neutral-50"
-                  >
-                    シンプルプロフィールを編集
-                  </button>
-                </section>
-
-                <PublicPageStrategyWizard
-                  displayName={displayName}
-                  bio={bio}
-                  avatarUrl={avatarUrl}
-                  coverImageUrl={coverImageUrl}
-                  onStartEditing={(pattern) => {
-                    setLegacyMode(false);
-                    setSelectedPagePattern(pattern);
-                    setShowEditor(true);
-                  }}
-                />
-              </>
-            ) : legacyMode ? (
-              <section className="flex flex-wrap items-center justify-between gap-4 rounded-[28px] bg-neutral-950 p-5 text-white shadow-sm">
-                <div>
-                  <div className="text-[10px] font-black tracking-[0.18em] text-neutral-500">
-                    SIMPLE PROFILE
-                  </div>
-
-                  <div className="mt-1 text-lg font-black">
-                    シンプルなプロフィールページ
-                  </div>
-
-                  <p className="mt-1 text-xs leading-6 text-neutral-400">
-                    従来の自己紹介・リンク・代表作品型の公開ページです。
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLegacyMode(false);
-                    setShowEditor(false);
-                  }}
-                  className="rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300 transition hover:bg-neutral-900"
-                >
-                  新しい公開ページ作成へ
-                </button>
-              </section>
+              <PublicPageStrategyWizard
+                displayName={displayName}
+                bio={bio}
+                avatarUrl={avatarUrl}
+                coverImageUrl={coverImageUrl}
+                onStartEditing={(pattern) => {
+                  setSelectedPagePattern(pattern);
+                  setShowEditor(true);
+                }}
+              />
             ) : selectedPagePattern ? (
-              <>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLegacyMode(true);
-                      setSelectedPagePattern(null);
-                      setEditorSection("brand");
-                    }}
-                    className="text-xs font-bold text-neutral-400 transition hover:text-neutral-800"
-                  >
-                    シンプルプロフィールを編集
-                  </button>
-                </div>
-
-                <PublicPageModelLab
-                  initialPattern={selectedPagePattern}
-                  onBack={() => setShowEditor(false)}
-                />
-              </>
+              <PublicPageModelLab
+                initialPattern={selectedPagePattern}
+                onBack={() => setShowEditor(false)}
+              />
             ) : null}
 
-            <section
-              className={
-                legacyMode && showEditor
-                  ? "rounded-3xl border border-neutral-200 bg-white p-3 shadow-sm"
-                  : "hidden"
-              }
-            >
-              <div className="px-2 pb-3 pt-1">
-                <div className="text-sm font-bold text-neutral-900">
-                  編集する項目
-                </div>
-
-                <p className="mt-1 text-xs leading-5 text-neutral-500">
-                  編集したい内容を選んでください。
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {(
-                  [
-                    {
-                      id: "brand",
-                      label: "ブランド",
-                      description: "写真・紹介・表示",
-                    },
-                    {
-                      id: "content",
-                      label: "ページ内容",
-                      description: "本文・タブ",
-                    },
-                    {
-                      id: "links",
-                      label: "リンク",
-                      description: "SNS・外部サイト",
-                    },
-                    {
-                      id: "works",
-                      label: "代表作品",
-                      description: "掲載作品",
-                    },
-                  ] as const
-                ).map((section) => {
-                  const active =
-                    editorSection === section.id;
-
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() =>
-                        setEditorSection(section.id)
-                      }
-                      className={[
-                        "rounded-2xl border px-4 py-3 text-left transition",
-                        active
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
-                      ].join(" ")}
-                    >
-                      <div className="text-sm font-bold">
-                        {section.label}
-                      </div>
-
-                      <div
-                        className={[
-                          "mt-1 text-xs",
-                          active
-                            ? "text-neutral-300"
-                            : "text-neutral-400",
-                        ].join(" ")}
-                      >
-                        {section.description}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {legacyMode && showEditor && editorSection === "brand" ? (
+            {false && showEditor && editorSection === "brand" ? (
             <SectionCard
-              number="1"
-              title="基本情報"
-              description="プロフィールページ上部に表示する情報を設定します。表示名とユーザーネームはプロフィール設定で変更します。"
+              number={
+                selectedPagePattern === "person-first"
+                  ? "1"
+                  : "2"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "それを届けているのは、どんな人ですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "その話をしているのは、どんなあなたですか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "安心してもらうために、どんなあなたを見せますか？"
+                      : "最初に、どんなあなたを見せますか？"
+              }
+              description="写真・名前・短い紹介など、ページの中であなた自身を伝える素材を整えます。"
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField
@@ -1421,79 +1276,62 @@ export default function MyPublicProfileSettingsPage() {
             </SectionCard>
             ) : null}
 
-            {legacyMode && showEditor && editorSection === "content" ? (
+            {false && showEditor && editorSection === "content" ? (
             <SectionCard
-              number="2"
-              title="タブ設定"
-              description="プロフィールページの3つのタブ名と、各タブに表示する内容を設定します。"
+              number={
+                selectedPagePattern === "person-first"
+                  ? "2"
+                  : selectedPagePattern === "offer-first"
+                    ? "3"
+                    : "1"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "なぜ、それをしているのですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "まず、どんな話から始めますか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "初めての人に、まず何と声をかけますか？"
+                      : "もう少し知りたい人に、何を話しますか？"
+              }
+              description="設定のための文章ではなく、ページを見ている人に直接話しかけるつもりで書いてみてください。"
             >
-              <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                <div>
-                  <div className="text-sm font-bold text-neutral-900">
-                    最初に開くタブ
-                  </div>
-                  <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    プロフィールページを開いたとき、最初に表示するタブを選びます。
-                  </p>
+              <div className="overflow-hidden rounded-3xl bg-neutral-950 p-5 text-white sm:p-6">
+                <div className="text-[9px] font-black tracking-[0.2em] text-neutral-500">
+                  YOUR WORDS
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {(
-                    [
-                      ["profile", `タブ1：${tab1Label || DEFAULT_TAB_LABEL_1}`],
-                      ["links", `タブ2：${tab2Label || DEFAULT_TAB_LABEL_2}`],
-                      ["works", `タブ3：${tab3Label || DEFAULT_TAB_LABEL_3}`],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setFirstTab(value)}
-                      className={[
-                        "rounded-xl border px-3 py-3 text-left text-sm font-semibold transition",
-                        firstTab === value
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
-                      ].join(" ")}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                <div className="mt-3 max-w-xl text-xl font-black leading-tight">
+                  ここは「説明欄」ではなく、
+                  <br />
+                  あなたが話す場所です。
                 </div>
+
+                <p className="mt-3 max-w-xl text-xs leading-6 text-neutral-400">
+                  経歴を全部並べなくても構いません。
+                  なぜ始めたのか、何を大切にしているのか、
+                  誰に届けたいのか。あなたらしい順番で書けます。
+                </p>
               </div>
 
-              <TabSetting
-                number={1}
-                label={tab1Label}
-                setLabel={setTab1Label}
-                pageType={tab1Type}
-                setPageType={setTab1Type}
-              />
-
-              <TabSetting
-                number={2}
-                label={tab2Label}
-                setLabel={setTab2Label}
-                pageType={tab2Type}
-                setPageType={setTab2Type}
-              />
-
-              <TabSetting
-                number={3}
-                label={tab3Label}
-                setLabel={setTab3Label}
-                pageType={tab3Type}
-                setPageType={setTab3Type}
-              />
-
-              <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4">
+              <div className="space-y-3 rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
                 <div>
-                  <div className="text-sm font-bold text-neutral-900">
-                    「プロフィール」に表示する本文
+                  <div className="text-[9px] font-black tracking-[0.18em] text-neutral-400">
+                    STORY / ABOUT
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    各タブの「表示する内容」で「プロフィール」を選んだときに表示する文章です。
-                    上部の短い自己紹介とは別に、経歴・活動内容・考え方などを自由に書けます。
+
+                  <div className="mt-2 text-sm font-bold text-neutral-900">
+                    {selectedPagePattern === "offer-first"
+                      ? "この活動や作品を始めた理由を聞かせてください。"
+                      : selectedPagePattern === "story-first"
+                        ? "あなたの物語を聞かせてください。"
+                        : selectedPagePattern === "welcome-first"
+                          ? "初めて来る人に、伝えておきたいことはありますか？"
+                          : "もう少し知りたい人に、何を伝えたいですか？"}
+                  </div>
+
+                  <p className="mt-1 text-xs leading-6 text-neutral-500">
+                    改行もそのまま公開ページに反映されます。
                   </p>
                 </div>
 
@@ -1502,28 +1340,46 @@ export default function MyPublicProfileSettingsPage() {
                   onChange={(event) =>
                     setProfileBody(event.target.value)
                   }
-                  rows={10}
-                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
-                  placeholder={"例）\n活動について\n\nこれまでの経歴や、現在取り組んでいることなどを書いてください。"}
+                  rows={12}
+                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-7 outline-none transition focus:border-neutral-600"
+                  placeholder={
+                    selectedPagePattern === "story-first"
+                      ? "例）最初は、自分のために始めました。\n\nでも続けているうちに……"
+                      : selectedPagePattern === "welcome-first"
+                        ? "例）初めての方がほとんどです。\n一人でも気軽に来てください。"
+                        : selectedPagePattern === "offer-first"
+                          ? "例）この活動を始めたのは……\nいちばん届けたいのは……"
+                          : "例）普段どんなことをしているのか、\nなぜ続けているのかを書いてみてください。"
+                  }
                 />
 
-                <p className="text-xs leading-5 text-neutral-500">
-                  HTMLは使用しません。改行を保ったプレーンテキストとして表示します。
-                </p>
-              </div>
+                <div className="flex items-start gap-3 rounded-2xl bg-white p-4 text-xs leading-6 text-neutral-500">
+                  <div className="mt-0.5 text-base">
+                    “
+                  </div>
 
-              <p className="text-xs leading-5 text-neutral-500">
-                同じ内容を複数のタブに設定することもできます。
-                初期構成は「プロフィール／リンク／代表作品」です。
-              </p>
+                  <div>
+                    上手な文章でなくても大丈夫です。
+                    このページでは、あなた自身のことばであることを大切にします。
+                  </div>
+                </div>
+              </div>
             </SectionCard>
             ) : null}
 
-            {legacyMode && showEditor && editorSection === "links" ? (
+            {false && showEditor && editorSection === "links" ? (
             <SectionCard
-              number="3"
-              title="リンク"
-              description="SNSやホームページなどへのリンクを最大10件まで登録できます。追加・削除はその場で反映されます。"
+              number="4"
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "興味を持った人に、次に何をしてほしいですか？"
+                  : selectedPagePattern === "story-first"
+                    ? "共感した人と、どうつながりますか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "次の一歩を、どこへ案内しますか？"
+                      : "興味を持った人を、どこへつなぎますか？"
+              }
+              description="SNSやホームページなど、このページの先にある場所を登録します。最大10件まで追加できます。"
             >
               <div className="flex flex-wrap gap-2">
                 {LINK_PRESETS.map((preset) => (
@@ -1643,11 +1499,23 @@ export default function MyPublicProfileSettingsPage() {
             </SectionCard>
             ) : null}
 
-            {legacyMode && showEditor && editorSection === "works" ? (
+            {false && showEditor && editorSection === "works" ? (
             <SectionCard
-              number="4"
-              title="代表作品"
-              description="あなたの公開作品から、プロフィールページに掲載する代表作品を選びます。"
+              number={
+                selectedPagePattern === "offer-first"
+                  ? "1"
+                  : "3"
+              }
+              title={
+                selectedPagePattern === "offer-first"
+                  ? "まず、何を見てもらいますか？"
+                  : selectedPagePattern === "story-first"
+                    ? "その考えが形になったものは何ですか？"
+                    : selectedPagePattern === "welcome-first"
+                      ? "最初の一歩として、何を見てもらいますか？"
+                      : "あなたの何を見てもらいますか？"
+              }
+              description="公開している作品から、このページで特に見てほしいものを選びます。"
             >
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-50 p-4">
                 <div>
@@ -1792,9 +1660,7 @@ export default function MyPublicProfileSettingsPage() {
 
             <div
               className={
-                legacyMode && showEditor
-                  ? "sticky bottom-3 rounded-3xl border border-neutral-200 bg-white/95 p-3 shadow-lg backdrop-blur"
-                  : "hidden"
+                "hidden"
               }
             >
               <div className="flex flex-wrap gap-2">
@@ -1806,7 +1672,7 @@ export default function MyPublicProfileSettingsPage() {
                 >
                   {saving
                     ? "保存中..."
-                    : "プロフィール設定を保存"}
+                    : "ページに反映する"}
                 </button>
 
                 {publicProfileUrl ? (
