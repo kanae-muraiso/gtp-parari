@@ -40,9 +40,6 @@ type ApplicationStatus =
 type ManagedApplication = {
   id: string;
 
-  origin:
-    string | null;
-
   application_type:
     ApplicationType;
 
@@ -209,14 +206,8 @@ export default function ApplicationPanelEditor({
 
         if (!cancelled) {
           setApplications(
-            (
-              result.applications ??
-              []
-            ).filter(
-              (application) =>
-                application.origin !==
-                "calendar",
-            ),
+            result.applications ??
+              [],
           );
         }
       } catch (error) {

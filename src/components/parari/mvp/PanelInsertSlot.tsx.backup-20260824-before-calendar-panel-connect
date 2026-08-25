@@ -30,7 +30,6 @@ export type PanelInsertTag =
   | "CAROUSEL"
   | "FORM"
   | "APPLICATION"
-  | "CALENDAR"
   | "MEMBERSHIP"
   | "GATEWAY";
 
@@ -73,7 +72,6 @@ const PANEL_TAGS: PanelInsertTag[] = [
 const OPERATION_TAGS: PanelInsertTag[] = [
   "FORM",
   "APPLICATION",
-  "CALENDAR",
   "MEMBERSHIP",
   "GATEWAY",
 ];

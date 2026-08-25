@@ -37,6 +37,17 @@ const TAIL_VALUE_PANEL_TAGS = new Set([
   "INSTAGRAM",
 ]);
 
+const EXPLICIT_CONTAINER_PANEL_TAGS = new Set([
+  "CAROUSEL",
+]);
+
+type ProtectedContainerRange = {
+  startIndex: number;
+  endIndex: number;
+  tagInfo: TagInfo;
+};
+
+
 type SsotLine = {
   raw: string;
   text: string;
@@ -68,11 +79,34 @@ export function parseBlocks(
   );
 
   const lines = splitLinesWithOffsets(ssot);
+  const protectedContainers =
+    findProtectedContainerRanges(lines);
+
+  const protectedLineIndexes = new Set<number>();
+
+  for (const range of protectedContainers.values()) {
+    for (
+      let index = range.startIndex;
+      index <= range.endIndex;
+      index += 1
+    ) {
+      protectedLineIndexes.add(index);
+    }
+  }
     
-    const usesExplicitTextPanels = lines.some((line) => {
+    const usesExplicitTextPanels = lines.some(
+    (line, index) => {
+      if (protectedLineIndexes.has(index)) {
+        return false;
+      }
+
       const tagInfo = parseAnyTagLine(line.text);
-      return tagInfo ? normalizeTag(tagInfo.tag) === "T" : false;
-    });
+
+      return tagInfo
+        ? normalizeTag(tagInfo.tag) === "T"
+        : false;
+    },
+  );
     
   const blocks: SsotBlock[] = [];
 
@@ -137,7 +171,56 @@ export function parseBlocks(
     explicit: true,
   });
 
-  for (const line of lines) {
+  for (
+    let lineIndex = 0;
+    lineIndex < lines.length;
+    lineIndex += 1
+  ) {
+    const line = lines[lineIndex];
+    const protectedContainer =
+      protectedContainers.get(lineIndex);
+
+    if (protectedContainer) {
+      if (openBlock) {
+        if (openBlock.kind === "text") {
+          flushTextBlock(
+            openBlock.start,
+            line.start,
+            openBlock.explicit,
+          );
+        } else {
+          flushPanelBlock(
+            openBlock.start,
+            line.start,
+            openBlock.tagInfo,
+          );
+        }
+      }
+
+      const endLine =
+        lines[protectedContainer.endIndex];
+
+      flushPanelBlock(
+        line.start,
+        endLine.end,
+        protectedContainer.tagInfo,
+      );
+
+      openBlock = null;
+      lineIndex = protectedContainer.endIndex;
+
+      // 明示Container終了直後の区切り用空行は、
+      // 独立した空TextBlockとして扱わない。
+      while (
+        lineIndex + 1 < lines.length &&
+        lines[lineIndex + 1].text.trim().length === 0
+      ) {
+        lineIndex += 1;
+      }
+
+      continue;
+    }
+
     const anyTagInfo = parseAnyTagLine(line.text);
     const isTextPanelTag = anyTagInfo
       ? normalizeTag(anyTagInfo.tag) === "T"
@@ -354,6 +437,81 @@ export function parseBlocks(
 // コメント:
 // - title: / mainImage: / visibility: のようなPAGEINFOメタ行を判定する
 // - 普通の本文行はmetaではないので、PAGEINFOの外へ出す
+
+function findProtectedContainerRanges(
+  lines: SsotLine[],
+): Map<number, ProtectedContainerRange> {
+  const ranges =
+    new Map<number, ProtectedContainerRange>();
+
+  let open:
+    | {
+        startIndex: number;
+        tagInfo: TagInfo;
+      }
+    | null = null;
+
+  for (
+    let index = 0;
+    index < lines.length;
+    index += 1
+  ) {
+    const line = lines[index];
+
+    if (!open) {
+      const tagInfo = parseAnyTagLine(line.text);
+
+      if (
+        !tagInfo ||
+        tagInfo.bracket !== "square" ||
+        !EXPLICIT_CONTAINER_PANEL_TAGS.has(
+          normalizeTag(tagInfo.tag),
+        )
+      ) {
+        continue;
+      }
+
+      open = {
+        startIndex: index,
+        tagInfo,
+      };
+
+      continue;
+    }
+
+    const closingTag =
+      parseClosingTagLine(line.text);
+
+    if (
+      closingTag !==
+      normalizeTag(open.tagInfo.tag)
+    ) {
+      continue;
+    }
+
+    ranges.set(open.startIndex, {
+      startIndex: open.startIndex,
+      endIndex: index,
+      tagInfo: open.tagInfo,
+    });
+
+    open = null;
+  }
+
+  return ranges;
+}
+
+function parseClosingTagLine(
+  lineText: string,
+): string | null {
+  const matched = lineText.match(
+    /^\s*\[\/([A-Za-z][A-Za-z0-9_]*)\]\s*$/,
+  );
+
+  return matched
+    ? normalizeTag(matched[1])
+    : null;
+}
 
 function isColonMetaLine(lineText: string): boolean {
   return /^\s*[A-Za-z][A-Za-z0-9_]*\s*:/.test(lineText);

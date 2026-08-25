@@ -35,10 +35,6 @@ import EventClassBrandPanel, {
 import PublicPagePatternRenderer, {
     type PublicPagePattern,
 } from "@/components/parari/public-page/PublicPagePatternRenderer";
-import {
-    PublicPage3QRenderer,
-    isPublicPageSavedDraft,
-} from "@/components/parari/public-page/PublicPageModelLab";
 
 type ProfileRow = {
   user_id: string;
@@ -83,7 +79,6 @@ type ProfileRow = {
     homepage_profile_align?: HomepageProfileAlign | null;
 
     public_page_pattern?: string | null;
-    public_page_published?: unknown | null;
 };
 
 type BookRow = {
@@ -314,7 +309,7 @@ export default function UserProfilePage() {
             } = await supabase
             .from("profiles")
             .select(
-              "user_id, username, display_name, bio, profile_body, is_monitor, tab_label_profile, tab_label_links, tab_label_works, avatar_url, cover_image_url, cta_enabled, cta_label, cta_href, profile_body, homepage_mode, homepage_book_id, homepage_tag_key, firstlook_tag_key, firstlook_layout, homepage_menu_count, homepage_header_logo_url, homepage_header_logo_align, homepage_show_username, homepage_profile_image_style, homepage_profile_align, homepage_tab1_layout, homepage_tab2_layout, homepage_tab3_layout, homepage_tab1_type, homepage_tab2_type, homepage_tab3_type, public_page_pattern, public_page_published"
+              "user_id, username, display_name, bio, profile_body, is_monitor, tab_label_profile, tab_label_links, tab_label_works, avatar_url, cover_image_url, cta_enabled, cta_label, cta_href, profile_body, homepage_mode, homepage_book_id, homepage_tag_key, firstlook_tag_key, firstlook_layout, homepage_menu_count, homepage_header_logo_url, homepage_header_logo_align, homepage_show_username, homepage_profile_image_style, homepage_profile_align, homepage_tab1_layout, homepage_tab2_layout, homepage_tab3_layout, homepage_tab1_type, homepage_tab2_type, homepage_tab3_type, public_page_pattern"
             )
             .eq("username", username)
             .maybeSingle();
@@ -493,28 +488,6 @@ export default function UserProfilePage() {
           ))}
         </div>
       ) : null;
-
-    const published3Q =
-      isPublicPageSavedDraft(
-        profile.public_page_published,
-      )
-        ? profile.public_page_published
-        : null;
-
-    if (
-      publicPagePattern &&
-      published3Q
-    ) {
-      return (
-        <PublicPage3QRenderer
-          pattern={published3Q.pattern}
-          design={published3Q.design}
-          draft={published3Q.content}
-          actions={published3Q.actions}
-          images={published3Q.images}
-        />
-      );
-    }
 
     if (publicPagePattern) {
       return (

@@ -830,12 +830,7 @@ export default function MyPublicProfileSettingsPage() {
 
   const uploadProfileImage = async (
     file: File,
-    type:
-      | "avatar"
-      | "cover"
-      | "logo"
-      | "3q-profile"
-      | "3q-main",
+    type: "avatar" | "cover" | "logo",
   ): Promise<string | null> => {
     if (!supabase || !userId) {
       setMessage("ログインユーザーを確認できませんでした。");
@@ -868,10 +863,7 @@ export default function MyPublicProfileSettingsPage() {
       .getPublicUrl(path);
 
     setMessage(
-      type === "3q-profile" ||
-      type === "3q-main"
-        ? "画像をアップロードしました。ページ案を保存すると、この案に保存されます。"
-        : "画像をアップロードしました。最後に「ページに反映する」を押してください。",
+      "画像をアップロードしました。最後に「ページに反映する」を押してください。",
     );
     setMessageIsError(false);
 
@@ -2331,23 +2323,6 @@ export default function MyPublicProfileSettingsPage() {
                   }
                   onSaveDraft={handleSavePublicPageIdea}
                   onPublish={handlePublishPublicPage}
-                  onUploadImage={(
-                    file,
-                    type,
-                  ) =>
-                    uploadProfileImage(
-                      file,
-                      type === "profile"
-                        ? "3q-profile"
-                        : "3q-main",
-                    )
-                  }
-                  simpleProfileImageUrl={
-                    avatarUrl
-                  }
-                  simpleMainImageUrl={
-                    coverImageUrl
-                  }
                   onBack={() => setShowEditor(false)}
                 />
               </>

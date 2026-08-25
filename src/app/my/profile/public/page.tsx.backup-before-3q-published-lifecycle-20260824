@@ -26,10 +26,7 @@ import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import PublicPageStrategyWizard, {
   type PublicPagePattern,
 } from "@/components/parari/public-page/PublicPageStrategyWizard";
-import PublicPageModelLab, {
-  type PublicPageSavedDraft,
-  isPublicPageSavedDraft,
-} from "@/components/parari/public-page/PublicPageModelLab";
+import PublicPageModelLab from "@/components/parari/public-page/PublicPageModelLab";
 
 type ProfileImageStyle = "circle" | "logo" | "none";
 type ProfileAlign = "left" | "center" | "right";
@@ -37,65 +34,6 @@ type ProfilePageType = "profile" | "links" | "works";
 type EffectivePlan = "free" | "plus" | "pro";
 type UserTopMode = "web" | "profile" | "works";
 type ProfileBuilderMode = "simple" | "strategy";
-
-type PublicPageIdea = {
-  id: string;
-  title: string;
-  page: PublicPageSavedDraft;
-  updatedAt: string;
-};
-
-function normalizePublicPageIdeas(
-  value: unknown,
-): PublicPageIdea[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const normalized: PublicPageIdea[] = [];
-
-  for (const raw of value) {
-    if (
-      !raw ||
-      typeof raw !== "object"
-    ) {
-      continue;
-    }
-
-    const candidate =
-      raw as Record<string, unknown>;
-
-    if (
-      typeof candidate.id !== "string" ||
-      !candidate.id ||
-      !isPublicPageSavedDraft(
-        candidate.page,
-      )
-    ) {
-      continue;
-    }
-
-    normalized.push({
-      id: candidate.id,
-      title:
-        typeof candidate.title === "string" &&
-        candidate.title.trim()
-          ? candidate.title.trim()
-          : `ページ案 ${normalized.length + 1}`,
-      page: candidate.page,
-      updatedAt:
-        typeof candidate.updatedAt === "string"
-          ? candidate.updatedAt
-          : "",
-    });
-
-    if (normalized.length >= 3) {
-      break;
-    }
-  }
-
-  return normalized;
-}
 
 type PublicProfileEditorSection =
   | "brand"
@@ -127,10 +65,6 @@ type ProfileRow = {
   is_monitor: boolean | null;
   public_page_pattern: string | null;
   public_page_draft: unknown | null;
-  public_page_published: unknown | null;
-  public_page_published_at: string | null;
-  public_page_ideas: unknown | null;
-  public_page_active_idea_id: string | null;
 };
 
 type WebWorkRow = {
@@ -270,41 +204,6 @@ export default function MyPublicProfileSettingsPage() {
 
   const [publicPageDraft, setPublicPageDraft] =
     useState<unknown | null>(null);
-
-  const [
-    publicPagePublished,
-    setPublicPagePublished,
-  ] = useState<unknown | null>(null);
-
-  const [
-    publicPageIdeas,
-    setPublicPageIdeas,
-  ] = useState<PublicPageIdea[]>([]);
-
-  const [
-    publicPageActiveIdeaId,
-    setPublicPageActiveIdeaId,
-  ] = useState<string | null>(null);
-
-  const [
-    selectedIdeaId,
-    setSelectedIdeaId,
-  ] = useState<string | null>(null);
-
-  const [
-    profileTopSelection,
-    setProfileTopSelection,
-  ] = useState("simple");
-
-  const [
-    savedProfileTopSelection,
-    setSavedProfileTopSelection,
-  ] = useState("simple");
-
-  const [
-    ideaPublishingId,
-    setIdeaPublishingId,
-  ] = useState<string | null>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
@@ -535,10 +434,6 @@ export default function MyPublicProfileSettingsPage() {
           "is_monitor",
           "public_page_pattern",
           "public_page_draft",
-          "public_page_published",
-          "public_page_published_at",
-          "public_page_ideas",
-          "public_page_active_idea_id",
         ].join(","),
       )
       .eq("user_id", user.id)
@@ -645,106 +540,6 @@ export default function MyPublicProfileSettingsPage() {
       profile.public_page_draft ?? null,
     );
 
-    setPublicPagePublished(
-      profile.public_page_published ?? null,
-    );
-
-    let loadedIdeas =
-      normalizePublicPageIdeas(
-        profile.public_page_ideas,
-      );
-
-    /*
-     * 旧 Draft / Published 方式からの安全な移行。
-     * DBへはまだ強制保存せず、
-     * 次にページ案を保存・公開した時点で
-     * public_page_ideas に確定保存する。
-     */
-    if (loadedIdeas.length === 0) {
-      const legacyPublished =
-        isPublicPageSavedDraft(
-          profile.public_page_published,
-        )
-          ? profile.public_page_published
-          : null;
-
-      const legacyDraft =
-        isPublicPageSavedDraft(
-          profile.public_page_draft,
-        )
-          ? profile.public_page_draft
-          : null;
-
-      if (legacyPublished) {
-        loadedIdeas.push({
-          id: "idea-1",
-          title: "ページ案 1",
-          page: legacyPublished,
-          updatedAt:
-            profile.public_page_published_at ??
-            "",
-        });
-      }
-
-      if (
-        legacyDraft &&
-        loadedIdeas.length < 3 &&
-        (
-          !legacyPublished ||
-          JSON.stringify(legacyDraft) !==
-            JSON.stringify(legacyPublished)
-        )
-      ) {
-        loadedIdeas.push({
-          id: `idea-${loadedIdeas.length + 1}`,
-          title:
-            `ページ案 ${loadedIdeas.length + 1}`,
-          page: legacyDraft,
-          updatedAt: "",
-        });
-      }
-    }
-
-    setPublicPageIdeas(
-      loadedIdeas,
-    );
-
-    const loadedActiveIdeaId =
-      profile.public_page_active_idea_id &&
-      loadedIdeas.some(
-        (idea) =>
-          idea.id ===
-          profile.public_page_active_idea_id,
-      )
-        ? profile.public_page_active_idea_id
-        : (
-            loadedPagePattern &&
-            isPublicPageSavedDraft(
-              profile.public_page_published,
-            ) &&
-            loadedIdeas.length > 0
-          )
-          ? loadedIdeas[0].id
-          : null;
-
-    setPublicPageActiveIdeaId(
-      loadedActiveIdeaId,
-    );
-
-    const loadedProfileTopSelection =
-      loadedPagePattern &&
-      loadedActiveIdeaId
-        ? loadedActiveIdeaId
-        : "simple";
-
-    setProfileTopSelection(
-      loadedProfileTopSelection,
-    );
-
-    setSavedProfileTopSelection(
-      loadedProfileTopSelection,
-    );
-
     setProfileBuilderMode(
       loadedPagePattern
         ? "strategy"
@@ -830,12 +625,7 @@ export default function MyPublicProfileSettingsPage() {
 
   const uploadProfileImage = async (
     file: File,
-    type:
-      | "avatar"
-      | "cover"
-      | "logo"
-      | "3q-profile"
-      | "3q-main",
+    type: "avatar" | "cover" | "logo",
   ): Promise<string | null> => {
     if (!supabase || !userId) {
       setMessage("ログインユーザーを確認できませんでした。");
@@ -868,288 +658,69 @@ export default function MyPublicProfileSettingsPage() {
       .getPublicUrl(path);
 
     setMessage(
-      type === "3q-profile" ||
-      type === "3q-main"
-        ? "画像をアップロードしました。ページ案を保存すると、この案に保存されます。"
-        : "画像をアップロードしました。最後に「ページに反映する」を押してください。",
+      "画像をアップロードしました。最後に「ページに反映する」を押してください。",
     );
     setMessageIsError(false);
 
     return data.publicUrl;
   };
 
-  const buildNextIdeas = (
-    ideaId: string,
-    page: PublicPageSavedDraft,
-  ) => {
-    const existing =
-      publicPageIdeas.find(
-        (idea) => idea.id === ideaId,
-      );
+  const draft3QPattern = useMemo(() => {
+    if (
+      !publicPageDraft ||
+      typeof publicPageDraft !== "object"
+    ) {
+      return null;
+    }
+
+    const candidate =
+      publicPageDraft as {
+        method?: unknown;
+        pattern?: unknown;
+      };
 
     if (
-      !existing &&
-      publicPageIdeas.length >= 3
+      candidate.method !== "3q" ||
+      typeof candidate.pattern !== "string"
     ) {
-      throw new Error(
-        "3Q METHODのページ案は3つまでです。",
-      );
+      return null;
     }
 
-    const nextIdea: PublicPageIdea = {
-      id: ideaId,
-      title:
-        existing?.title ??
-        `ページ案 ${publicPageIdeas.length + 1}`,
-      page,
-      updatedAt:
-        new Date().toISOString(),
-    };
-
-    return existing
-      ? publicPageIdeas.map((idea) =>
-          idea.id === ideaId
-            ? nextIdea
-            : idea,
-        )
-      : [
-          ...publicPageIdeas,
-          nextIdea,
-        ];
-  };
-
-
-  const startNew3QIdea = () => {
-    if (publicPageIdeas.length >= 3) {
-      setMessage(
-        "3Q METHODのページ案は3つまで作成できます。",
-      );
-      setMessageIsError(true);
-      return;
-    }
-
-    setMessage("");
-    setMessageIsError(false);
-
-    setProfileBuilderMode("strategy");
-    setSelectedIdeaId(
-      `idea-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`,
+    return normalizePublicPagePattern(
+      candidate.pattern,
     );
-    setSelectedPagePattern(null);
-    setLegacyMode(false);
-    setShowEditor(false);
-    setShowStrategy(true);
-  };
+  }, [publicPageDraft]);
 
 
-  const open3QIdea = (
-    idea: PublicPageIdea,
-  ) => {
-    setProfileBuilderMode("strategy");
-    setSelectedIdeaId(idea.id);
-    setSelectedPagePattern(
-      idea.page.pattern,
-    );
-    setLegacyMode(false);
-    setShowStrategy(false);
-    setShowEditor(true);
-  };
-
-
-  const handleSavePublicPageIdea =
-    async (
-      nextPage: PublicPageSavedDraft,
-    ) => {
-      if (
-        !supabase ||
-        !userId ||
-        !selectedIdeaId
-      ) {
-        throw new Error(
-          "保存するページ案を確認できませんでした。",
-        );
-      }
-
-      const nextIdeas =
-        buildNextIdeas(
-          selectedIdeaId,
-          nextPage,
-        );
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          public_page_ideas: nextIdeas,
-          public_page_draft: null,
-        })
-        .eq("user_id", userId);
-
-      if (error) {
-        setMessage(
-          `ページ案の保存に失敗しました: ${error.message}`,
-        );
-        setMessageIsError(true);
-        throw error;
-      }
-
-      setPublicPageIdeas(nextIdeas);
-      setPublicPageDraft(null);
-
-      setMessage(
-        "ページ案を保存しました。現在公開中のプロフィールページは変わりません。",
-      );
-      setMessageIsError(false);
-    };
-
-
-  const handlePublishPublicPage =
-    async (
-      nextPublished: PublicPageSavedDraft,
-    ) => {
-      if (
-        !supabase ||
-        !userId ||
-        !selectedIdeaId
-      ) {
-        throw new Error(
-          "公開するページ案を確認できませんでした。",
-        );
-      }
-
-      const nextIdeas =
-        buildNextIdeas(
-          selectedIdeaId,
-          nextPublished,
-        );
-
-      const publishedAt =
-        new Date().toISOString();
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          public_page_ideas: nextIdeas,
-          public_page_active_idea_id:
-            selectedIdeaId,
-          public_page_published:
-            nextPublished,
-          public_page_published_at:
-            publishedAt,
-          public_page_pattern:
-            nextPublished.pattern,
-          public_page_draft: null,
-        })
-        .eq("user_id", userId);
-
-      if (error) {
-        setMessage(
-          `ページ案の公開に失敗しました: ${error.message}`,
-        );
-        setMessageIsError(true);
-        throw error;
-      }
-
-      setPublicPageIdeas(nextIdeas);
-      setPublicPageActiveIdeaId(
-        selectedIdeaId,
-      );
-      setPublicPagePublished(
-        nextPublished,
-      );
-      setPublicPageDraft(null);
-
-      setProfileTopSelection(
-        selectedIdeaId,
-      );
-      setSavedProfileTopSelection(
-        selectedIdeaId,
-      );
-
-      setSelectedPagePattern(
-        nextPublished.pattern,
-      );
-      setProfileBuilderMode(
-        "strategy",
-      );
-
-      setMessage(
-        "このページ案を公開しました。",
-      );
-      setMessageIsError(false);
-    };
-
-
-  const handlePublishStoredIdea =
-    async (
-      idea: PublicPageIdea,
-    ) => {
+  const handleSavePublicPageDraft =
+    async (nextDraft: unknown) => {
       if (!supabase || !userId) {
-        setMessage(
+        throw new Error(
           "ログインユーザーを確認できませんでした。",
         );
-        setMessageIsError(true);
-        return;
       }
-
-      setIdeaPublishingId(idea.id);
-      setMessage("");
-      setMessageIsError(false);
-
-      const publishedAt =
-        new Date().toISOString();
 
       const { error } = await supabase
         .from("profiles")
         .update({
-          public_page_ideas:
-            publicPageIdeas,
-          public_page_active_idea_id:
-            idea.id,
-          public_page_published:
-            idea.page,
-          public_page_published_at:
-            publishedAt,
-          public_page_pattern:
-            idea.page.pattern,
-          public_page_draft: null,
+          public_page_draft: nextDraft,
         })
         .eq("user_id", userId);
 
       if (error) {
         setMessage(
-          `ページ案の公開に失敗しました: ${error.message}`,
+          `3Qの下書き保存に失敗しました: ${error.message}`,
         );
         setMessageIsError(true);
-        setIdeaPublishingId(null);
-        return;
+        throw error;
       }
 
-      setPublicPageActiveIdeaId(
-        idea.id,
-      );
-      setPublicPagePublished(
-        idea.page,
-      );
-      setPublicPageDraft(null);
-
-      setProfileTopSelection(
-        idea.id,
-      );
-      setSavedProfileTopSelection(
-        idea.id,
-      );
-
-      setSelectedPagePattern(
-        idea.page.pattern,
-      );
+      setPublicPageDraft(nextDraft);
 
       setMessage(
-        `${idea.title}を公開しました。`,
+        "3Qの下書きを保存しました。公開中のページには影響しません。",
       );
       setMessageIsError(false);
-      setIdeaPublishingId(null);
     };
 
 
@@ -1173,27 +744,6 @@ export default function MyPublicProfileSettingsPage() {
       return;
     }
 
-    const selectedProfileIdea =
-      profileTopSelection === "simple"
-        ? null
-        : publicPageIdeas.find(
-            (idea) =>
-              idea.id ===
-              profileTopSelection,
-          ) ?? null;
-
-    if (
-      userTopMode === "profile" &&
-      profileTopSelection !== "simple" &&
-      !selectedProfileIdea
-    ) {
-      setMessage(
-        "表示する3Qページ案を選択してください。",
-      );
-      setMessageIsError(true);
-      return;
-    }
-
     setTopPageSaving(true);
     setMessage("");
     setMessageIsError(false);
@@ -1208,43 +758,12 @@ export default function MyPublicProfileSettingsPage() {
         ? homepageBookId
         : null;
 
-    const profileSelectionUpdate =
-      userTopMode !== "profile"
-        ? {}
-        : profileTopSelection ===
-            "simple"
-          ? {
-              public_page_pattern: null,
-              public_page_active_idea_id:
-                null,
-              public_page_ideas:
-                publicPageIdeas,
-              public_page_draft: null,
-            }
-          : selectedProfileIdea
-            ? {
-                public_page_pattern:
-                  selectedProfileIdea.page
-                    .pattern,
-                public_page_active_idea_id:
-                  selectedProfileIdea.id,
-                public_page_published:
-                  selectedProfileIdea.page,
-                public_page_published_at:
-                  new Date().toISOString(),
-                public_page_ideas:
-                  publicPageIdeas,
-                public_page_draft: null,
-              }
-            : {};
-
     const { data, error } = await supabase
       .from("profiles")
       .update({
         homepage_mode: homepageMode,
         homepage_book_id:
           nextHomepageBookId,
-        ...profileSelectionUpdate,
       })
       .eq("user_id", userId)
       .select("user_id");
@@ -1273,38 +792,6 @@ export default function MyPublicProfileSettingsPage() {
     setSavedHomepageBookId(
       nextHomepageBookId ?? "",
     );
-
-    if (userTopMode === "profile") {
-      setSavedProfileTopSelection(
-        profileTopSelection,
-      );
-
-      if (
-        profileTopSelection ===
-        "simple"
-      ) {
-        setPublicPageActiveIdeaId(
-          null,
-        );
-        setSelectedPagePattern(
-          null,
-        );
-      } else if (
-        selectedProfileIdea
-      ) {
-        setPublicPageActiveIdeaId(
-          selectedProfileIdea.id,
-        );
-        setPublicPagePublished(
-          selectedProfileIdea.page,
-        );
-        setSelectedPagePattern(
-          selectedProfileIdea.page.pattern,
-        );
-      }
-
-      setPublicPageDraft(null);
-    }
 
     setMessage(
       "トップページ設定を保存しました。",
@@ -1342,6 +829,12 @@ export default function MyPublicProfileSettingsPage() {
         homepage_profile_image_style: profileImageStyle,
         homepage_profile_align: profileAlign,
         homepage_show_username: showUsername,
+
+        public_page_pattern:
+          legacyMode
+            ? null
+            : selectedPagePattern,
+
 
         tab_label_profile: nextTab1Label,
         tab_label_links: nextTab2Label,
@@ -1802,43 +1295,6 @@ export default function MyPublicProfileSettingsPage() {
                         <p className="mt-3 text-[11px] leading-5 text-neutral-400">
                           プロフィールページの内容は、下の「プロフィールページ」でいつでも編集できます。
                         </p>
-
-                        {userTopMode === "profile" ? (
-                          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
-                            <div className="text-[10px] font-black tracking-[0.14em] text-neutral-400">
-                              表示するプロフィール
-                            </div>
-
-                            <select
-                              value={profileTopSelection}
-                              onChange={(event) =>
-                                setProfileTopSelection(
-                                  event.target.value,
-                                )
-                              }
-                              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                            >
-                              <option value="simple">
-                                SIMPLE
-                              </option>
-
-                              {publicPageIdeas.map(
-                                (idea, index) => (
-                                  <option
-                                    key={idea.id}
-                                    value={idea.id}
-                                  >
-                                    {`3Q ページ案 ${index + 1} — ${idea.page.pattern.replace(/-/g, " ").toUpperCase()} / ${idea.page.design.toUpperCase()}`}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-
-                            <p className="mt-2 text-[11px] leading-5 text-neutral-400">
-                              3Q METHODで作ったページ案も、ここから選んでトップページにできます。
-                            </p>
-                          </div>
-                        ) : null}
                       </div>
                     </label>
 
@@ -1980,15 +1436,6 @@ export default function MyPublicProfileSettingsPage() {
                         (
                           userTopMode === "web" &&
                           !homepageBookId
-                        ) ||
-                        (
-                          userTopMode === "profile" &&
-                          profileTopSelection !== "simple" &&
-                          !publicPageIdeas.some(
-                            (idea) =>
-                              idea.id ===
-                              profileTopSelection,
-                          )
                         )
                       }
                       className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -2002,11 +1449,6 @@ export default function MyPublicProfileSettingsPage() {
                     (
                       userTopMode !== "web" ||
                       savedHomepageBookId === homepageBookId
-                    ) &&
-                    (
-                      userTopMode !== "profile" ||
-                      savedProfileTopSelection ===
-                        profileTopSelection
                     ) ? (
                       <span className="text-xs font-bold text-neutral-400">
                         保存済み
@@ -2079,7 +1521,6 @@ export default function MyPublicProfileSettingsPage() {
 
                       <p className="mt-2 text-xs leading-6 text-neutral-500">
                         写真・自己紹介・リンク・代表作品など、決まった項目を埋めて作ります。
-                        SIMPLEは保存すると、現在のプロフィールページにそのまま反映されます。
                       </p>
 
                       <button
@@ -2099,139 +1540,51 @@ export default function MyPublicProfileSettingsPage() {
                     </div>
 
                     <div className="rounded-[24px] border border-neutral-200 bg-neutral-50 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <div className="text-[10px] font-black tracking-[0.16em] text-neutral-400">
-                            3Q METHOD
-                          </div>
-
-                          <h3 className="mt-2 text-base font-black text-neutral-950">
-                            3つの質問から作る
-                          </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="text-[10px] font-black tracking-[0.16em] text-neutral-400">
+                          3Q METHOD
                         </div>
 
-                        <span className="rounded-full bg-white px-3 py-1 text-[9px] font-black text-neutral-600 ring-1 ring-neutral-200">
-                          {publicPageIdeas.length} / 3
-                        </span>
+                        {draft3QPattern ? (
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[9px] font-black text-neutral-600 ring-1 ring-neutral-200">
+                            下書きあり
+                          </span>
+                        ) : null}
                       </div>
 
+                      <h3 className="mt-2 text-base font-black text-neutral-950">
+                        3つの質問から作る
+                      </h3>
+
                       <p className="mt-2 text-xs leading-6 text-neutral-500">
-                        3つまでページ案を作って、MODELやDESIGNを比較できます。
-                        編集・保存しただけでは公開ページは変わりません。
-                        気に入った1つだけを公開できます。
+                        3つの質問に答えて、あなたに合ったMODELとDESIGNを決めて作ります。
+                        下書きは公開中のページに影響しません。
                       </p>
 
-                      {publicPageIdeas.length > 0 ? (
-                        <div className="mt-4 space-y-3">
-                          {publicPageIdeas.map(
-                            (idea, index) => {
-                              const active =
-                                publicPageActiveIdeaId ===
-                                idea.id;
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileBuilderMode("strategy");
 
-                              const publishedSame =
-                                active &&
-                                isPublicPageSavedDraft(
-                                  publicPagePublished,
-                                ) &&
-                                JSON.stringify(
-                                  publicPagePublished,
-                                ) ===
-                                  JSON.stringify(
-                                    idea.page,
-                                  );
+                          if (draft3QPattern) {
+                            setLegacyMode(false);
+                            setSelectedPagePattern(
+                              draft3QPattern,
+                            );
+                            setShowStrategy(false);
+                            setShowEditor(true);
+                            return;
+                          }
 
-                              return (
-                                <div
-                                  key={idea.id}
-                                  className="rounded-2xl border border-neutral-200 bg-white p-4"
-                                >
-                                  <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <div className="text-sm font-black text-neutral-950">
-                                          {`ページ案 ${index + 1}`}
-                                        </div>
-
-                                        {active ? (
-                                          <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[9px] font-black text-white">
-                                            {publishedSame
-                                              ? "現在公開中"
-                                              : "公開中・更新あり"}
-                                          </span>
-                                        ) : null}
-                                      </div>
-
-                                      <div className="mt-1 text-[10px] font-bold tracking-[0.08em] text-neutral-400">
-                                        {idea.page.pattern
-                                          .replace(/-/g, " ")
-                                          .toUpperCase()}
-                                        {" / "}
-                                        {idea.page.design.toUpperCase()}
-                                      </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          open3QIdea(
-                                            idea,
-                                          )
-                                        }
-                                        className="rounded-full border border-neutral-300 bg-white px-3 py-2 text-[10px] font-black text-neutral-700"
-                                      >
-                                        編集
-                                      </button>
-
-                                      {!publishedSame ? (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            void handlePublishStoredIdea(
-                                              idea,
-                                            )
-                                          }
-                                          disabled={
-                                            ideaPublishingId ===
-                                            idea.id
-                                          }
-                                          className="rounded-full bg-neutral-950 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50"
-                                        >
-                                          {ideaPublishingId ===
-                                          idea.id
-                                            ? "公開中..."
-                                            : active
-                                              ? "公開を更新"
-                                              : "この案を公開"}
-                                        </button>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            },
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-white p-4 text-xs leading-6 text-neutral-500">
-                          まだ3Qページ案はありません。
-                        </div>
-                      )}
-
-                      {publicPageIdeas.length < 3 ? (
-                        <button
-                          type="button"
-                          onClick={startNew3QIdea}
-                          className="mt-4 rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-black text-white"
-                        >
-                          ＋ 新しいページ案を作る
-                        </button>
-                      ) : (
-                        <p className="mt-4 text-[11px] leading-5 text-neutral-400">
-                          3つのページ案を作成済みです。
-                        </p>
-                      )}
+                          setLegacyMode(false);
+                          setShowStrategy(true);
+                        }}
+                        className="mt-5 rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-black text-white"
+                      >
+                        {draft3QPattern
+                          ? "3Qの下書きを続ける"
+                          : "3Qを始める"}
+                      </button>
                     </div>
                   </div>
                 </section>
@@ -2255,14 +1608,6 @@ export default function MyPublicProfileSettingsPage() {
                       avatarUrl={avatarUrl}
                       coverImageUrl={coverImageUrl}
                       onStartEditing={(pattern) => {
-                        if (!selectedIdeaId) {
-                          setSelectedIdeaId(
-                            `idea-${Date.now()}-${Math.random()
-                              .toString(36)
-                              .slice(2, 8)}`,
-                          );
-                        }
-
                         setLegacyMode(false);
                         setSelectedPagePattern(pattern);
                         setShowStrategy(false);
@@ -2317,37 +1662,9 @@ export default function MyPublicProfileSettingsPage() {
                 </div>
 
                 <PublicPageModelLab
-                  key={
-                    selectedIdeaId ??
-                    "3q-new"
-                  }
                   initialPattern={selectedPagePattern}
-                  initialSavedDraft={
-                    publicPageIdeas.find(
-                      (idea) =>
-                        idea.id ===
-                        selectedIdeaId,
-                    )?.page
-                  }
-                  onSaveDraft={handleSavePublicPageIdea}
-                  onPublish={handlePublishPublicPage}
-                  onUploadImage={(
-                    file,
-                    type,
-                  ) =>
-                    uploadProfileImage(
-                      file,
-                      type === "profile"
-                        ? "3q-profile"
-                        : "3q-main",
-                    )
-                  }
-                  simpleProfileImageUrl={
-                    avatarUrl
-                  }
-                  simpleMainImageUrl={
-                    coverImageUrl
-                  }
+                  initialSavedDraft={publicPageDraft}
+                  onSaveDraft={handleSavePublicPageDraft}
                   onBack={() => setShowEditor(false)}
                 />
               </>

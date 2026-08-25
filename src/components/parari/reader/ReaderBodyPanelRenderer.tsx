@@ -102,7 +102,13 @@ function BlockView({
     );
   }
 
-  return <PanelBlockView block={block} tocEntries={tocEntries} />;
+  return (
+    <PanelBlockView
+      block={block}
+      tocEntries={tocEntries}
+      renderTextBlock={renderTextBlock}
+    />
+  );
 }
 
 function TextBlockView({
@@ -137,9 +143,11 @@ function TextBlockView({
 function PanelBlockView({
   block,
   tocEntries,
+  renderTextBlock,
 }: {
   block: PanelBlock;
   tocEntries: PageTocEntry[];
+  renderTextBlock: ReaderTextBlockRenderer;
 }) {
   const gap = resolvePanelGap(block);
   const width = panelFrameWidthForBlock(block);
@@ -173,7 +181,17 @@ function PanelBlockView({
 
   return (
     <PanelFrame gap={gap} width={width}>
-      <Renderer block={block} data={data} />
+      <Renderer
+        block={block}
+        data={data}
+        renderNestedPanelViewer={(nestedSsot) => (
+          <ReaderBodyPanelRenderer
+            bodySsot={nestedSsot}
+            renderTextBlock={renderTextBlock}
+            emptyFallback={null}
+          />
+        )}
+      />
     </PanelFrame>
   );
 }
@@ -181,7 +199,7 @@ function PanelBlockView({
 function panelFrameWidthForBlock(block: PanelBlock): "default" | "full" {
   const tag = String(block.tag ?? "").trim().toUpperCase();
 
-  if (tag === "IMAGE") {
+  if (tag === "IMAGE" || tag === "CAROUSEL") {
     return "full";
   }
 

@@ -5,7 +5,6 @@
 import type { PanelDefinition } from "./panelDefinitionTypes";
 import { accordionDefinition } from "./accordion/accordionDefinition";
 import { applicationDefinition } from "./application/applicationDefinition";
-import { calendarDefinition } from "./calendar/calendarDefinition";
 import { membershipDefinition } from "./membership/membershipDefinition";
 import { audioDefinition } from "./audio/audioDefinition";
 import { bookInfoDefinition } from "./bookinfo/bookInfoDefinition";
@@ -47,7 +46,6 @@ const panelDefinitions: Record<string, PanelDefinition<any>> = {
   INSTAGRAM: instagramDefinition,
   FORM: formDefinition,
   APPLICATION: applicationDefinition,
-  CALENDAR: calendarDefinition,
   MEMBERSHIP: membershipDefinition,
   CAROUSEL: carouselDefinition,
     

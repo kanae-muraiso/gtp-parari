@@ -489,27 +489,17 @@ export default function PublicPageStrategyWizard({
     <section className="overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm">
       <div className="bg-neutral-950 px-5 py-7 text-white sm:px-8 sm:py-9">
         <div className="text-[10px] font-black tracking-[0.22em] text-neutral-400">
-          3Q METHOD
+          PARARI PAGE STRATEGY
         </div>
 
-        <div className="mt-4 text-[10px] font-black tracking-[0.18em] text-neutral-500">
-          {step === 1
-            ? "Q1 — GOAL"
-            : step === 2
-              ? "Q2 — AUDIENCE"
-              : step === 3
-                ? "Q3 — IMPACT"
-                : "MODEL"}
-        </div>
-
-        <h2 className="mt-2 max-w-2xl text-2xl font-black leading-tight sm:text-3xl">
+        <h2 className="mt-3 max-w-2xl text-2xl font-black leading-tight sm:text-3xl">
           {step === 1
             ? "このページで、何を起こしたいですか？"
             : step === 2
               ? "誰に届けたいですか？"
               : step === 3
                 ? "最初に、何を感じてほしいですか？"
-                : "あなたには、このMODELが合いそうです。"}
+                : "あなたには、この伝え方が合いそうです。"}
         </h2>
 
         <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-300">
@@ -519,12 +509,12 @@ export default function PublicPageStrategyWizard({
               ? "同じ内容でも、誰に届けるかで伝える順番は変わります。"
               : step === 3
                 ? "ファーストビューで何を感じてもらうかが、ページの設計を決めます。"
-                : "3Qの回答から、まず伝える順番＝MODELを提案します。世界観は次に選びます。"}
+                : "回答から伝える順序を考えました。デザインではなく、まず伝え方を選びます。"}
         </p>
       </div>
 
       <div className="p-4 sm:p-6">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-6 flex items-center gap-2">
           {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
@@ -536,20 +526,6 @@ export default function PublicPageStrategyWizard({
               ].join(" ")}
             />
           ))}
-        </div>
-
-        <div className="mb-6 flex flex-wrap items-center gap-2 text-[9px] font-black tracking-[0.14em] text-neutral-400">
-          <span className={step <= 3 ? "text-neutral-950" : ""}>
-            3Q
-          </span>
-          <span>→</span>
-          <span className={step === 4 ? "text-neutral-950" : ""}>
-            MODEL
-          </span>
-          <span>→</span>
-          <span>DESIGN</span>
-          <span>→</span>
-          <span>EDIT</span>
         </div>
 
         {step === 1 ? (
@@ -653,7 +629,7 @@ export default function PublicPageStrategyWizard({
             <div className="mb-5 flex flex-wrap gap-2">
               {purpose ? (
                 <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600">
-                  GOAL ✓
+                  PURPOSE ✓
                 </span>
               ) : null}
 
@@ -665,7 +641,7 @@ export default function PublicPageStrategyWizard({
 
               {impact ? (
                 <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600">
-                  IMPACT ✓
+                  FIRST IMPACT ✓
                 </span>
               ) : null}
             </div>

@@ -62,7 +62,6 @@ export const DEFAULT_IMPLEMENTED_PANEL_TAGS = [
   "QA_BANK",
   "INSTAGRAM",
   "APPLICATION",
-  "CALENDAR",
   "MEMBERSHIP",
 ] as const;
 
@@ -120,7 +119,6 @@ export const RESERVED_CHILD_TAGS = new Set([
 export const SINGLE_LINE_PANEL_TAGS = new Set([
   "BUTTON",
   "APPLICATION",
-  "CALENDAR",
   "MEMBERSHIP",
 ]);
 

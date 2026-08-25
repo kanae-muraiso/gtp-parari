@@ -1,7 +1,7 @@
 // apps/tools/parari/src/components/parari/panels/panelDefinitionTypes.ts
 // 2026-06-22 14:55 JST - PanelDefinition共通型
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { PanelBlock } from "@/lib/parari/ssot-v2/panelTypes";
 
 export type WebPageOption = {
@@ -10,12 +10,22 @@ export type WebPageOption = {
   isHome: boolean;
 };
 
+export type NestedPanelEditorRenderer = (args: {
+  value: string;
+  onChange: (nextValue: string) => void;
+}) => ReactNode;
+
+export type NestedPanelViewerRenderer = (
+  bodySsot: string,
+) => ReactNode;
+
 export type PanelEditorProps<TData = unknown> = {
   block: PanelBlock;
   data: TData;
   onChangeRaw?: (nextRaw: string) => void;
   onInsertAfter?: (raw: string) => void;
   publicBasePath?: string;
+  renderNestedPanelEditor?: NestedPanelEditorRenderer;
 
   /**
    * WEB作品のサイト識別情報。
@@ -36,6 +46,7 @@ export type PanelRendererProps<TData = unknown> = {
   block: PanelBlock;
   data: TData;
   onInsertAfter?: (raw: string) => void;
+  renderNestedPanelViewer?: NestedPanelViewerRenderer;
 };
 
 export type PanelDefinition<TData = unknown> = {

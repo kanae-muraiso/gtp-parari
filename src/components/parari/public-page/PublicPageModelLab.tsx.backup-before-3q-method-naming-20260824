@@ -7,7 +7,7 @@ import {
 
 import type { PublicPagePattern } from "@/components/parari/public-page/PublicPageStrategyWizard";
 
-export type PublicPageDesign =
+type PublicPageDesign =
   | "clean"
   | "photo"
   | "pop"
@@ -15,7 +15,7 @@ export type PublicPageDesign =
   | "soft"
   | "editorial";
 
-export type Draft = {
+type Draft = {
   name: string;
   headline: string;
   intro: string;
@@ -41,20 +41,10 @@ type ActionType =
   | "sns"
   | "external";
 
-export type ActionDraft = {
+type ActionDraft = {
   id: string;
   type: ActionType | "";
   label: string;
-};
-
-export type PublicPageImages = {
-  profileImageUrl: string | null;
-  mainImageUrl: string | null;
-};
-
-const EMPTY_IMAGES: PublicPageImages = {
-  profileImageUrl: null,
-  mainImageUrl: null,
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -423,55 +413,13 @@ function Text({
 function Visual({
   design,
   compact = false,
-  mainImageUrl,
-  profileImageUrl,
 }: {
   design: PublicPageDesign;
   compact?: boolean;
-  mainImageUrl?: string | null;
-  profileImageUrl?: string | null;
 }) {
   const height = compact
     ? "h-24"
     : "h-64 sm:h-80";
-
-  if (
-    !compact &&
-    (
-      mainImageUrl ||
-      profileImageUrl
-    )
-  ) {
-    return (
-      <div
-        className={`relative overflow-hidden ${height} bg-neutral-200`}
-      >
-        {mainImageUrl ? (
-          <img
-            src={mainImageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 via-white to-neutral-100" />
-        )}
-
-        {mainImageUrl ? (
-          <div className="absolute inset-0 bg-black/5" />
-        ) : null}
-
-        {profileImageUrl ? (
-          <div className="absolute bottom-5 left-5">
-            <img
-              src={profileImageUrl}
-              alt=""
-              className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-lg sm:h-28 sm:w-28"
-            />
-          </div>
-        ) : null}
-      </div>
-    );
-  }
 
   if (design === "pop") {
     return (
@@ -771,18 +719,16 @@ function MiniModel({
   );
 }
 
-export function PublicPage3QRenderer({
+function FullModel({
   pattern,
   design,
   draft,
   actions,
-  images,
 }: {
   pattern: PublicPagePattern;
   design: PublicPageDesign;
   draft: Draft;
   actions: ActionDraft[];
-  images?: PublicPageImages;
 }) {
   const theme = THEMES[design];
 
@@ -797,15 +743,7 @@ export function PublicPage3QRenderer({
   if (pattern === "person-first") {
     return (
       <div className={shellClass}>
-        <Visual
-          design={design}
-          mainImageUrl={
-            images?.mainImageUrl
-          }
-          profileImageUrl={
-            images?.profileImageUrl
-          }
-        />
+        <Visual design={design} />
 
         <div className="mx-auto max-w-3xl px-6 pb-14">
           <div className="pt-8">
@@ -968,15 +906,7 @@ export function PublicPage3QRenderer({
             </div>
           </PageSection>
 
-          <Visual
-          design={design}
-          mainImageUrl={
-            images?.mainImageUrl
-          }
-          profileImageUrl={
-            images?.profileImageUrl
-          }
-        />
+          <Visual design={design} />
 
           <PageSection
             design={design}
@@ -1086,15 +1016,7 @@ export function PublicPage3QRenderer({
             </div>
           </PageSection>
 
-          <Visual
-          design={design}
-          mainImageUrl={
-            images?.mainImageUrl
-          }
-          profileImageUrl={
-            images?.profileImageUrl
-          }
-        />
+          <Visual design={design} />
 
           <PageSection
             design={design}
@@ -1189,15 +1111,7 @@ export function PublicPage3QRenderer({
           />
         </div>
 
-        <Visual
-          design={design}
-          mainImageUrl={
-            images?.mainImageUrl
-          }
-          profileImageUrl={
-            images?.profileImageUrl
-          }
-        />
+        <Visual design={design} />
 
         <PageSection
           design={design}
@@ -1516,312 +1430,37 @@ function ActionsEditor({
   );
 }
 
-export type PublicPageSavedDraft = {
-  version: 1;
-  method: "3q";
-  pattern: PublicPagePattern;
-  design: PublicPageDesign;
-  content: Draft;
-  actions: ActionDraft[];
-  images?: PublicPageImages;
-};
-
-
-export function isPublicPageSavedDraft(
-  value: unknown,
-): value is PublicPageSavedDraft {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate =
-    value as Partial<PublicPageSavedDraft>;
-
-  if (
-    candidate.version !== 1 ||
-    candidate.method !== "3q" ||
-    !PATTERNS.some(
-      (item) => item.id === candidate.pattern,
-    ) ||
-    !DESIGNS.some(
-      (item) => item.id === candidate.design,
-    ) ||
-    !candidate.content ||
-    typeof candidate.content !== "object" ||
-    !Array.isArray(candidate.actions)
-  ) {
-    return false;
-  }
-
-  const content =
-    candidate.content as Record<string, unknown>;
-
-  if (
-    !Object.keys(EMPTY_DRAFT).every(
-      (key) => typeof content[key] === "string",
-    )
-  ) {
-    return false;
-  }
-
-  if (candidate.images !== undefined) {
-    if (
-      !candidate.images ||
-      typeof candidate.images !== "object"
-    ) {
-      return false;
-    }
-
-    const images =
-      candidate.images as Partial<PublicPageImages>;
-
-    if (
-      !(
-        images.profileImageUrl === null ||
-        images.profileImageUrl === undefined ||
-        typeof images.profileImageUrl === "string"
-      ) ||
-      !(
-        images.mainImageUrl === null ||
-        images.mainImageUrl === undefined ||
-        typeof images.mainImageUrl === "string"
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return candidate.actions.every((item) => {
-    if (!item || typeof item !== "object") {
-      return false;
-    }
-
-    const action =
-      item as Partial<ActionDraft>;
-
-    return (
-      typeof action.id === "string" &&
-      typeof action.label === "string" &&
-      (
-        action.type === "" ||
-        ACTION_OPTIONS.some(
-          (option) =>
-            option.value === action.type,
-        )
-      )
-    );
-  });
-}
-
-
 export default function PublicPageModelLab({
   initialPattern,
-  initialSavedDraft,
-  onSaveDraft,
-  onPublish,
-  onUploadImage,
-  simpleProfileImageUrl,
-  simpleMainImageUrl,
   onBack,
 }: {
   initialPattern: PublicPagePattern;
-  initialSavedDraft?: unknown;
-  onSaveDraft: (
-    draft: PublicPageSavedDraft,
-  ) => Promise<void>;
-  onPublish: (
-    draft: PublicPageSavedDraft,
-  ) => Promise<void>;
-  onUploadImage: (
-    file: File,
-    type: "profile" | "main",
-  ) => Promise<string | null>;
-  simpleProfileImageUrl?: string | null;
-  simpleMainImageUrl?: string | null;
   onBack: () => void;
 }) {
-  const savedDraft =
-    initialSavedDraft &&
-    typeof initialSavedDraft === "object"
-      ? (
-          initialSavedDraft as
-            Partial<PublicPageSavedDraft>
-        )
-      : null;
-
-  const savedPattern =
-    savedDraft?.method === "3q" &&
-    PATTERNS.some(
-      (item) =>
-        item.id === savedDraft.pattern,
-    )
-      ? savedDraft.pattern as PublicPagePattern
-      : initialPattern;
-
-  const savedDesign =
-    savedDraft?.method === "3q" &&
-    DESIGNS.some(
-      (item) =>
-        item.id === savedDraft.design,
-    )
-      ? savedDraft.design as PublicPageDesign
-      : "clean";
-
-  const savedContent =
-    savedDraft?.method === "3q" &&
-    savedDraft.content &&
-    typeof savedDraft.content === "object"
-      ? {
-          ...EMPTY_DRAFT,
-          ...savedDraft.content,
-        }
-      : {
-          ...EMPTY_DRAFT,
-        };
-
-  const savedImages: PublicPageImages =
-    savedDraft?.method === "3q" &&
-    savedDraft.images &&
-    typeof savedDraft.images === "object"
-      ? {
-          profileImageUrl:
-            typeof savedDraft.images
-              .profileImageUrl === "string"
-              ? savedDraft.images
-                  .profileImageUrl
-              : null,
-          mainImageUrl:
-            typeof savedDraft.images
-              .mainImageUrl === "string"
-              ? savedDraft.images
-                  .mainImageUrl
-              : null,
-        }
-      : {
-          ...EMPTY_IMAGES,
-        };
-
-  const savedActions: ActionDraft[] =
-    savedDraft?.method === "3q" &&
-    Array.isArray(savedDraft.actions) &&
-    savedDraft.actions.length > 0
-      ? savedDraft.actions
-      : [
-          {
-            id: "action-1",
-            type: "",
-            label: "",
-          },
-        ];
-
   const [stage, setStage] =
     useState<"design" | "edit">(
-      savedDraft?.method === "3q"
-        ? "edit"
-        : "design",
+      "design",
     );
 
   const [pattern, setPattern] =
     useState<PublicPagePattern>(
-      savedPattern,
+      initialPattern,
     );
 
   const [design, setDesign] =
-    useState<PublicPageDesign>(
-      savedDesign,
-    );
+    useState<PublicPageDesign>("clean");
 
   const [draft, setDraft] =
-    useState<Draft>(
-      savedContent,
-    );
+    useState<Draft>(EMPTY_DRAFT);
 
   const [actions, setActions] =
-    useState<ActionDraft[]>(
-      savedActions,
-    );
-
-  const [images, setImages] =
-    useState<PublicPageImages>(
-      savedImages,
-    );
-
-  const [
-    imageUploading,
-    setImageUploading,
-  ] = useState<
-    "profile" | "main" | null
-  >(null);
-
-  const uploadImage = async (
-    file: File,
-    type: "profile" | "main",
-  ) => {
-    setImageUploading(type);
-
-    try {
-      const url =
-        await onUploadImage(
-          file,
-          type,
-        );
-
-      if (!url) {
-        return;
-      }
-
-      setImages((current) => ({
-        ...current,
-        [type === "profile"
-          ? "profileImageUrl"
-          : "mainImageUrl"]:
-          url,
-      }));
-    } finally {
-      setImageUploading(null);
-    }
-  };
-
-  const [draftSaving, setDraftSaving] =
-    useState(false);
-
-  const [publishSaving, setPublishSaving] =
-    useState(false);
-
-  const currentPayload =
-    (): PublicPageSavedDraft => ({
-      version: 1,
-      method: "3q",
-      pattern,
-      design,
-      content: draft,
-      actions,
-      images,
-    });
-
-  const saveDraft = async () => {
-    setDraftSaving(true);
-
-    try {
-      await onSaveDraft(
-        currentPayload(),
-      );
-    } finally {
-      setDraftSaving(false);
-    }
-  };
-
-  const publishDraft = async () => {
-    setPublishSaving(true);
-
-    try {
-      await onPublish(
-        currentPayload(),
-      );
-    } finally {
-      setPublishSaving(false);
-    }
-  };
+    useState<ActionDraft[]>([
+      {
+        id: "action-1",
+        type: "",
+        label: "",
+      },
+    ]);
 
   const setField = (
     key: DraftKey,
@@ -1838,7 +1477,7 @@ export default function PublicPageModelLab({
       <section className="space-y-6">
         <div className="rounded-[32px] bg-neutral-950 p-6 text-white sm:p-8">
           <div className="text-[10px] font-black tracking-[0.22em] text-neutral-500">
-            3Q METHOD · DESIGN
+            PAGE STRATEGY
           </div>
 
           <div className="mt-2 text-sm font-black text-neutral-300">
@@ -1848,16 +1487,6 @@ export default function PublicPageModelLab({
                   item.id === pattern,
               )?.code
             }
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[9px] font-black tracking-[0.14em] text-neutral-600">
-            <span>3Q ✓</span>
-            <span>→</span>
-            <span>MODEL ✓</span>
-            <span>→</span>
-            <span className="text-white">DESIGN</span>
-            <span>→</span>
-            <span>EDIT</span>
           </div>
 
           <h2 className="mt-5 text-2xl font-black sm:text-3xl">
@@ -1874,7 +1503,7 @@ export default function PublicPageModelLab({
             onClick={onBack}
             className="mt-5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold text-neutral-300"
           >
-            ← 3Q METHODへ
+            ← PAGE STRATEGYへ
           </button>
         </div>
 
@@ -1920,18 +1549,7 @@ export default function PublicPageModelLab({
           })}
         </div>
 
-        <div className="flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => void saveDraft()}
-            disabled={draftSaving}
-            className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-black text-neutral-700 disabled:opacity-50"
-          >
-            {draftSaving
-              ? "保存中..."
-              : "ページ案を保存"}
-          </button>
-
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={() =>
@@ -1955,17 +1573,7 @@ export default function PublicPageModelLab({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-[10px] font-black tracking-[0.2em] text-neutral-500">
-              3Q METHOD · EDIT
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-black tracking-[0.14em] text-neutral-600">
-              <span>3Q ✓</span>
-              <span>→</span>
-              <span>MODEL ✓</span>
-              <span>→</span>
-              <span>DESIGN ✓</span>
-              <span>→</span>
-              <span className="text-white">EDIT</span>
+              PAGE EDITOR
             </div>
 
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1994,7 +1602,7 @@ export default function PublicPageModelLab({
             onClick={onBack}
             className="text-xs font-bold text-neutral-400 hover:text-white"
           >
-            3Q METHODへ戻る
+            PAGE STRATEGYへ戻る
           </button>
         </div>
       </div>
@@ -2053,187 +1661,6 @@ export default function PublicPageModelLab({
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="text-[9px] font-black tracking-[0.18em] text-neutral-400">
-          IMAGES
-        </div>
-
-        <div className="mt-2 text-lg font-black text-neutral-950">
-          ページで使う画像
-        </div>
-
-        <p className="mt-2 text-xs leading-6 text-neutral-500">
-          画像はこのページ案だけに保存されます。
-          SIMPLEの画像を使っても、あとでSIMPLE側を変更してこの案の画像が変わることはありません。
-        </p>
-
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-            <div className="text-xs font-black text-neutral-900">
-              プロフィール画像
-            </div>
-
-            <div className="mt-3 flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-white">
-              {images.profileImageUrl ? (
-                <img
-                  src={images.profileImageUrl}
-                  alt=""
-                  className="h-28 w-28 rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-xs text-neutral-400">
-                  画像なし
-                </span>
-              )}
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <label className="cursor-pointer rounded-full bg-neutral-950 px-4 py-2 text-[10px] font-black text-white">
-                {imageUploading === "profile"
-                  ? "アップロード中..."
-                  : "画像をアップロード"}
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={
-                    imageUploading !== null
-                  }
-                  onChange={(event) => {
-                    const file =
-                      event.target.files?.[0];
-
-                    if (file) {
-                      void uploadImage(
-                        file,
-                        "profile",
-                      );
-                    }
-
-                    event.currentTarget.value =
-                      "";
-                  }}
-                />
-              </label>
-
-              {simpleProfileImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((current) => ({
-                      ...current,
-                      profileImageUrl:
-                        simpleProfileImageUrl,
-                    }))
-                  }
-                  className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-[10px] font-black text-neutral-700"
-                >
-                  SIMPLEの画像を使う
-                </button>
-              ) : null}
-
-              {images.profileImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((current) => ({
-                      ...current,
-                      profileImageUrl: null,
-                    }))
-                  }
-                  className="rounded-full px-3 py-2 text-[10px] font-black text-neutral-400"
-                >
-                  外す
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-            <div className="text-xs font-black text-neutral-900">
-              メイン画像
-            </div>
-
-            <div className="mt-3 h-36 overflow-hidden rounded-2xl bg-white">
-              {images.mainImageUrl ? (
-                <img
-                  src={images.mainImageUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-xs text-neutral-400">
-                  画像なし
-                </div>
-              )}
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <label className="cursor-pointer rounded-full bg-neutral-950 px-4 py-2 text-[10px] font-black text-white">
-                {imageUploading === "main"
-                  ? "アップロード中..."
-                  : "画像をアップロード"}
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={
-                    imageUploading !== null
-                  }
-                  onChange={(event) => {
-                    const file =
-                      event.target.files?.[0];
-
-                    if (file) {
-                      void uploadImage(
-                        file,
-                        "main",
-                      );
-                    }
-
-                    event.currentTarget.value =
-                      "";
-                  }}
-                />
-              </label>
-
-              {simpleMainImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((current) => ({
-                      ...current,
-                      mainImageUrl:
-                        simpleMainImageUrl,
-                    }))
-                  }
-                  className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-[10px] font-black text-neutral-700"
-                >
-                  SIMPLEの画像を使う
-                </button>
-              ) : null}
-
-              {images.mainImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImages((current) => ({
-                      ...current,
-                      mainImageUrl: null,
-                    }))
-                  }
-                  className="rounded-full px-3 py-2 text-[10px] font-black text-neutral-400"
-                >
-                  外す
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="rounded-[32px] bg-neutral-50 p-5">
           <div className="mb-6">
@@ -2280,49 +1707,13 @@ export default function PublicPageModelLab({
               LIVE PAGE
             </div>
 
-            <PublicPage3QRenderer
+            <FullModel
               pattern={pattern}
               design={design}
               draft={draft}
               actions={actions}
-              images={images}
             />
           </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-neutral-200 pt-5">
-          <span className="mr-auto max-w-xl text-xs leading-5 text-neutral-400">
-            「ページ案を保存」では公開中のプロフィールページは変わりません。
-            「この案を公開」を押したときだけ公開版が切り替わります。
-          </span>
-
-          <button
-            type="button"
-            onClick={() => void saveDraft()}
-            disabled={
-              draftSaving ||
-              publishSaving
-            }
-            className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-black text-neutral-700 disabled:opacity-50"
-          >
-            {draftSaving
-              ? "保存中..."
-              : "ページ案を保存"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void publishDraft()}
-            disabled={
-              draftSaving ||
-              publishSaving
-            }
-            className="rounded-full bg-neutral-950 px-7 py-3 text-sm font-black text-white disabled:opacity-50"
-          >
-            {publishSaving
-              ? "公開中..."
-              : "この案を公開"}
-          </button>
         </div>
       </div>
     </section>

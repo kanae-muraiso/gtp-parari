@@ -511,7 +511,6 @@ export default function UserProfilePage() {
           design={published3Q.design}
           draft={published3Q.content}
           actions={published3Q.actions}
-          images={published3Q.images}
         />
       );
     }

@@ -57,7 +57,6 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
 
   { tag: "FORM", label: "FORM" },
   { tag: "APPLICATION", label: "APPLICATION" },
-  { tag: "CALENDAR", label: "CALENDAR" },
   { tag: "MEMBERSHIP", label: "MEMBERSHIP" },
   { tag: "GATEWAY", label: "GATEWAY" },
 ];
@@ -504,9 +503,6 @@ export function PagePanelComposer({
 
           case "APPLICATION":
             return "[APPLICATION]";
-
-          case "CALENDAR":
-            return "[CALENDAR]";
                         
           case "MEMBERSHIP":
             return "[MEMBERSHIP]";

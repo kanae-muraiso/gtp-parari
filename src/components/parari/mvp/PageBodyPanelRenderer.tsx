@@ -74,10 +74,14 @@ function PanelBlockView({ block }: { block: PanelBlock }) {
   const definition = getPanelDefinition(block.tag);
   const Renderer = definition.Renderer;
   const gap = resolvePanelGap(block);
+  const width =
+    String(block.tag ?? "").trim().toUpperCase() === "CAROUSEL"
+      ? "full"
+      : "default";
 
   if (!Renderer) {
     return (
-      <PanelFrame gap={gap}>
+      <PanelFrame gap={gap} width={width}>
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
           [{block.tag}] は表示用Rendererがまだありません。
         </div>
@@ -88,8 +92,14 @@ function PanelBlockView({ block }: { block: PanelBlock }) {
   const data = definition.parse(block.raw, block);
 
   return (
-    <PanelFrame gap={gap}>
-      <Renderer block={block} data={data} />
+    <PanelFrame gap={gap} width={width}>
+      <Renderer
+        block={block}
+        data={data}
+        renderNestedPanelViewer={(nestedSsot) => (
+          <PageBodyPanelRenderer bodySsot={nestedSsot} />
+        )}
+      />
     </PanelFrame>
   );
 }

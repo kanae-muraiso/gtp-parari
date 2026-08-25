@@ -14,6 +14,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { PanelBlock } from "@/lib/parari/ssot-v2/panelTypes";
+import type {
+  NestedPanelEditorRenderer,
+  NestedPanelViewerRenderer,
+} from "../panels/panelDefinitionTypes";
 import { getPanelDefinition, hasPanelDefinition } from "../panels/registry";
 
 type PanelCardMode = "summary" | "view" | "edit";
@@ -32,6 +36,8 @@ type PanelBlockCardProps = {
     slug: string;
     isHome: boolean;
   }>;
+  renderNestedPanelEditor?: NestedPanelEditorRenderer;
+  renderNestedPanelViewer?: NestedPanelViewerRenderer;
 };
 
 export function PanelBlockCard({
@@ -44,6 +50,8 @@ export function PanelBlockCard({
   siteSlug,
   onSiteSlugChange,
   webPages,
+  renderNestedPanelEditor,
+  renderNestedPanelViewer,
 }: PanelBlockCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
     const [mode, setMode] = useState<PanelCardMode>("view");
@@ -157,6 +165,7 @@ export function PanelBlockCard({
                   block={block}
                   data={data as never}
                   onInsertAfter={onInsertAfter}
+                  renderNestedPanelViewer={renderNestedPanelViewer}
                 />
               ) : (
                    <PanelRawPreview />
@@ -260,6 +269,7 @@ export function PanelBlockCard({
                                 siteSlug={siteSlug}
                                 onSiteSlugChange={onSiteSlugChange}
                                 webPages={webPages}
+                                renderNestedPanelEditor={renderNestedPanelEditor}
                               />
               </div>
             </div>
