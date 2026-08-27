@@ -23,6 +23,19 @@ import FormPanelRenderer, {
   type FormSubmissionResult,
 } from "../form/FormPanelRenderer";
 
+import type {
+  FormDefinitionData,
+  FormField,
+} from "../form/formTypes";
+
+import {
+  CalendarResourceView,
+} from "../calendar/CalendarPanelRenderer";
+
+import EventClassBrandPanel, {
+  type EventClassBrandItem,
+} from "../../EventClassBrandPanel";
+
 import type { ApplicationPanelData } from "./applicationTypes";
 
 
@@ -36,11 +49,460 @@ type ApplicationField = {
 };
 
 
+type ApplicationInputField = {
+  id: string;
+  kind?: string | null;
+  label: string;
+  required?: boolean;
+};
+
 type ApplicationDefinition = {
+  mode?: "lite" | "builder";
   fields?: ApplicationField[];
+
+  inputFields?: ApplicationInputField[];
+
+  blocks?: Array<{
+    id?: string;
+    type?: string;
+    fieldId?: string;
+    fieldIds?: string[];
+    calendarItemId?: string;
+    membershipId?: string;
+  }>;
+
   agreement?: string;
   actionLabel?: string;
 };
+
+
+type ApplicationForm = {
+  id: string;
+  name: string;
+  description: string | null;
+  definition: FormDefinitionData;
+  version: number;
+};
+
+
+type ApplicationFormAnswer =
+  | string
+  | boolean;
+
+
+type ApplicationFormAnswers =
+  Record<
+    string,
+    ApplicationFormAnswer
+  >;
+
+
+function resolveFormBlockFields(
+  form: ApplicationForm,
+  fieldIds: string[],
+): FormField[] {
+  const byId =
+    new Map(
+      (form.definition?.fields ?? [])
+        .map(
+          (field) => [
+            field.id,
+            field,
+          ] as const,
+        ),
+    );
+
+  return fieldIds
+    .map(
+      (fieldId) =>
+        byId.get(fieldId),
+    )
+    .filter(
+      (
+        field,
+      ): field is FormField =>
+        Boolean(field),
+    );
+}
+
+
+function ApplicationInputFieldRenderer({
+  field,
+  value,
+  onChange,
+}: {
+  field: ApplicationInputField;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const kind =
+    typeof field.kind === "string"
+      ? field.kind
+      : "text";
+
+  const required =
+    field.required === true;
+
+  if (
+    kind === "radio" ||
+    kind === "select" ||
+    kind === "checkbox"
+  ) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="text-sm font-bold text-neutral-900">
+          {field.label}
+          {required ? (
+            <span className="ml-2 text-xs font-bold text-red-500">
+              必須
+            </span>
+          ) : null}
+        </div>
+
+        <p className="mt-2 text-xs leading-5 text-amber-800">
+          この選択FIELDの設定は次の実装で有効になります。
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "textarea") {
+    return (
+      <label className="block rounded-xl border border-neutral-200 bg-white p-4">
+        <span className="block text-sm font-bold text-neutral-900">
+          {field.label}
+          {required ? (
+            <span className="ml-2 text-xs font-bold text-red-500">
+              必須
+            </span>
+          ) : null}
+        </span>
+
+        <textarea
+          value={value}
+          required={required}
+          rows={4}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
+          className="mt-2 w-full resize-y rounded-xl border border-neutral-300 px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
+        />
+      </label>
+    );
+  }
+
+  const inputType =
+    kind === "email"
+      ? "email"
+      : kind === "tel"
+        ? "tel"
+        : kind === "date"
+          ? "date"
+          : kind === "datetime"
+            ? "datetime-local"
+            : "text";
+
+  return (
+    <label className="block rounded-xl border border-neutral-200 bg-white p-4">
+      <span className="block text-sm font-bold text-neutral-900">
+        {field.label}
+        {required ? (
+          <span className="ml-2 text-xs font-bold text-red-500">
+            必須
+          </span>
+        ) : null}
+      </span>
+
+      <input
+        type={inputType}
+        value={value}
+        required={required}
+        inputMode={
+          kind === "postalCode"
+            ? "numeric"
+            : undefined
+        }
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+      />
+    </label>
+  );
+}
+
+
+function ApplicationFormFieldRenderer({
+  field,
+  value,
+  onChange,
+}: {
+  field: FormField;
+  value: ApplicationFormAnswer;
+  onChange: (
+    value: ApplicationFormAnswer,
+  ) => void;
+}) {
+  const wrapperClass =
+    field.width === "half"
+      ? ""
+      : "sm:col-span-2";
+
+  if (
+    field.type === "checkbox"
+  ) {
+    return (
+      <label
+        className={`${wrapperClass} flex items-start gap-3 rounded-xl border border-neutral-200 p-4`}
+      >
+        <input
+          type="checkbox"
+          checked={
+            value === true
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.checked,
+            )
+          }
+          className="mt-1"
+        />
+
+        <span className="text-sm leading-6 text-neutral-800">
+          {field.label}
+
+          {field.required ? (
+            <span className="ml-1 text-red-500">
+              *
+            </span>
+          ) : null}
+        </span>
+      </label>
+    );
+  }
+
+  return (
+    <label
+      className={`block ${wrapperClass}`}
+    >
+      <span className="block text-sm font-bold text-neutral-900">
+        {field.label}
+
+        {field.required ? (
+          <span className="ml-1 text-red-500">
+            *
+          </span>
+        ) : null}
+      </span>
+
+      {field.type ===
+      "textarea" ? (
+        <textarea
+          value={
+            typeof value ===
+            "string"
+              ? value
+              : ""
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value,
+            )
+          }
+          placeholder={
+            field.placeholder ?? ""
+          }
+          rows={
+            field.rows ?? 4
+          }
+          className="mt-2 w-full resize-y rounded-xl border border-neutral-300 px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
+        />
+      ) : field.type ===
+        "select" ? (
+        <select
+          value={
+            typeof value ===
+            "string"
+              ? value
+              : ""
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+        >
+          <option value="">
+            選択してください
+          </option>
+
+          {(field.options ?? [])
+            .map(
+              (option) =>
+                option.trim(),
+            )
+            .filter(Boolean)
+            .map((option) => (
+              <option
+                key={option}
+                value={option}
+              >
+                {option}
+              </option>
+            ))}
+        </select>
+      ) : (
+        <input
+          type="text"
+          value={
+            typeof value ===
+            "string"
+              ? value
+              : ""
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value,
+            )
+          }
+          placeholder={
+            field.placeholder ?? ""
+          }
+          className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+        />
+      )}
+    </label>
+  );
+}
+
+
+type ApplicationMembership = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+
+type ApplicationMembershipResponse = {
+  ok?: boolean;
+  membership?: ApplicationMembership;
+  message?: string;
+};
+
+
+type ApplicationCalendarItem =
+  Omit<
+    EventClassBrandItem,
+    "next_occurrence"
+  >;
+
+
+type ApplicationCalendarOccurrence = {
+  id: string;
+  calendar_item_id: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  title: string | null;
+  location: string | null;
+  status: string;
+  viewer_booking_status:
+    | "submitted"
+    | "confirmed"
+    | "rejected"
+    | null;
+};
+
+
+type ApplicationCalendarResponse = {
+  ok?: boolean;
+  item?: ApplicationCalendarItem;
+  occurrences?: ApplicationCalendarOccurrence[];
+  message?: string;
+};
+
+
+function getMembershipBlockId(
+  definition:
+    | ApplicationDefinition
+    | null
+    | undefined,
+): string {
+  const blocks =
+    Array.isArray(
+      definition?.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  const membershipBlock =
+    blocks.find(
+      (block) =>
+        block?.type ===
+        "membership",
+    );
+
+  return typeof membershipBlock
+    ?.membershipId ===
+    "string"
+    ? membershipBlock.membershipId.trim()
+    : "";
+}
+
+
+function getCalendarBlockItemId(
+  definition:
+    | ApplicationDefinition
+    | null
+    | undefined,
+): string {
+  const blocks =
+    Array.isArray(
+      definition?.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  const calendarBlock =
+    blocks.find(
+      (block) =>
+        block?.type ===
+        "calendar",
+    );
+
+  return typeof calendarBlock
+    ?.calendarItemId ===
+    "string"
+    ? calendarBlock.calendarItemId.trim()
+    : "";
+}
+
+
+function formatCalendarOccurrence(
+  occurrence: ApplicationCalendarOccurrence,
+): string {
+  try {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          occurrence.timezone,
+        month: "numeric",
+        day: "numeric",
+        weekday: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    ).format(
+      new Date(
+        occurrence.starts_at,
+      ),
+    );
+  } catch {
+    return occurrence.starts_at;
+  }
+}
 
 
 type PublicApplication = {
@@ -68,6 +530,18 @@ type PublicApplication = {
   acceptance_mode:
     | "instant"
     | "approval";
+
+  payment_method:
+    | "none"
+    | "on_site"
+    | "bank_transfer"
+    | "payment_link";
+
+  payment_amount:
+    | number
+    | null;
+
+  payment_currency: string;
 
   status:
     | "draft"
@@ -231,6 +705,78 @@ export default function ApplicationPanelRenderer({
       type: "idle",
     });
 
+  const calendarItemId =
+    loadState.type === "success"
+      ? getCalendarBlockItemId(
+          loadState.application
+            .definition,
+        )
+      : "";
+
+  const membershipId =
+    loadState.type === "success"
+      ? getMembershipBlockId(
+          loadState.application
+            .definition,
+        )
+      : "";
+
+  const [
+    membership,
+    setMembership,
+  ] =
+    React.useState<
+      ApplicationMembership | null
+    >(null);
+
+  const [
+    membershipLoading,
+    setMembershipLoading,
+  ] =
+    React.useState(false);
+
+  const [
+    membershipMessage,
+    setMembershipMessage,
+  ] =
+    React.useState("");
+
+
+  const [
+    calendarItem,
+    setCalendarItem,
+  ] =
+    React.useState<
+      ApplicationCalendarItem | null
+    >(null);
+
+  const [
+    calendarOccurrences,
+    setCalendarOccurrences,
+  ] =
+    React.useState<
+      ApplicationCalendarOccurrence[]
+    >([]);
+
+  const [
+    calendarLoading,
+    setCalendarLoading,
+  ] =
+    React.useState(false);
+
+  const [
+    calendarMessage,
+    setCalendarMessage,
+  ] =
+    React.useState("");
+
+  const [
+    selectedOccurrenceId,
+    setSelectedOccurrenceId,
+  ] =
+    React.useState("");
+
+
   const [
     authChecked,
     setAuthChecked,
@@ -256,6 +802,43 @@ export default function ApplicationPanelRenderer({
       React.useState<string | null>(
         null,
       );
+
+    const [
+      applicationForm,
+      setApplicationForm,
+    ] =
+      React.useState<
+        ApplicationForm | null
+      >(null);
+
+    const [
+      applicationFormAnswers,
+      setApplicationFormAnswers,
+    ] =
+      React.useState<
+        ApplicationFormAnswers
+      >({});
+
+    const [
+      applicationInputAnswers,
+      setApplicationInputAnswers,
+    ] =
+      React.useState<
+        Record<string, string>
+      >({});
+
+    const [
+      applicationFormLoading,
+      setApplicationFormLoading,
+    ] =
+      React.useState(false);
+
+    const [
+      applicationFormMessage,
+      setApplicationFormMessage,
+    ] =
+      React.useState("");
+
 
     const [
       isSubmittingApplication,
@@ -325,6 +908,372 @@ export default function ApplicationPanelRenderer({
     ] =
       React.useState("");
     
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (!calendarItemId) {
+      setCalendarItem(null);
+      setCalendarOccurrences([]);
+      setCalendarMessage("");
+      setCalendarLoading(false);
+      setSelectedOccurrenceId("");
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadCalendar() {
+      setCalendarLoading(true);
+      setCalendarMessage("");
+      setSelectedOccurrenceId("");
+
+      try {
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth
+            .getSession();
+
+        const response =
+          await fetch(
+            `/api/calendar/panel?calendarItemId=${encodeURIComponent(
+              calendarItemId,
+            )}`,
+            {
+              headers:
+                session?.access_token
+                  ? {
+                      Authorization:
+                        `Bearer ${session.access_token}`,
+                    }
+                  : undefined,
+
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | ApplicationCalendarResponse
+            | null;
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.item
+        ) {
+          setCalendarItem(null);
+          setCalendarOccurrences([]);
+          setCalendarMessage(
+            result?.message ??
+              "開催情報を表示できません。",
+          );
+
+          return;
+        }
+
+        setCalendarItem(
+          result.item,
+        );
+
+        setCalendarOccurrences(
+          result.occurrences ??
+            [],
+        );
+      } catch (error) {
+        console.error(
+          "[APPLICATION CALENDAR] load failed:",
+          error,
+        );
+
+        if (!cancelled) {
+          setCalendarItem(null);
+          setCalendarOccurrences([]);
+          setCalendarMessage(
+            "開催情報を表示できません。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setCalendarLoading(false);
+        }
+      }
+    }
+
+    void loadCalendar();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    calendarItemId,
+  ]);
+
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const currentApplication =
+      loadState.type === "success"
+        ? loadState.application
+        : null;
+
+    const currentBlocks =
+      Array.isArray(
+        currentApplication
+          ?.definition
+          ?.blocks,
+      )
+        ? currentApplication
+            ?.definition
+            ?.blocks ?? []
+        : [];
+
+    const hasFormBlock =
+      currentBlocks.some(
+        (item) =>
+          item?.type === "form",
+      );
+
+    const currentFormId =
+      String(
+        currentApplication
+          ?.form_id ?? "",
+      ).trim();
+
+    if (
+      !currentFormId ||
+      !hasFormBlock
+    ) {
+      setApplicationForm(null);
+      setApplicationFormAnswers({});
+      setApplicationFormMessage("");
+      setApplicationFormLoading(
+        false,
+      );
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadApplicationForm() {
+      setApplicationFormLoading(
+        true,
+      );
+
+      setApplicationFormMessage(
+        "",
+      );
+
+      setFormSubmissionId(null);
+
+      try {
+        const response =
+          await fetch(
+            `/api/form/public?formId=${encodeURIComponent(
+              currentFormId,
+            )}`,
+            {
+              method: "GET",
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                form?: ApplicationForm;
+                message?: string;
+              }
+            | null;
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.form
+        ) {
+          setApplicationForm(
+            null,
+          );
+
+          setApplicationFormAnswers(
+            {},
+          );
+
+          setApplicationFormMessage(
+            result?.message ??
+              "FORMを取得できませんでした。",
+          );
+
+          return;
+        }
+
+        setApplicationForm(
+          result.form,
+        );
+
+        const initialAnswers:
+          ApplicationFormAnswers =
+            {};
+
+        for (
+          const field of
+          result.form.definition
+            ?.fields ?? []
+        ) {
+          initialAnswers[
+            field.id
+          ] =
+            field.type ===
+            "checkbox"
+              ? false
+              : "";
+        }
+
+        setApplicationFormAnswers(
+          initialAnswers,
+        );
+      } catch (error) {
+        console.error(
+          "[APPLICATION FORM] load failed:",
+          error,
+        );
+
+        if (!cancelled) {
+          setApplicationForm(
+            null,
+          );
+
+          setApplicationFormAnswers(
+            {},
+          );
+
+          setApplicationFormMessage(
+            "FORMを取得できませんでした。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setApplicationFormLoading(
+            false,
+          );
+        }
+      }
+    }
+
+    void loadApplicationForm();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadState,
+  ]);
+
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (!membershipId) {
+      setMembership(null);
+      setMembershipMessage("");
+      setMembershipLoading(false);
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function loadMembership() {
+      setMembershipLoading(true);
+      setMembershipMessage("");
+
+      try {
+        const response =
+          await fetch(
+            `/api/membership/public?membershipId=${encodeURIComponent(
+              membershipId,
+            )}`,
+            {
+              method: "GET",
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | ApplicationMembershipResponse
+            | null;
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.membership
+        ) {
+          setMembership(null);
+          setMembershipMessage(
+            result?.message ??
+              "Membership情報を表示できません。",
+          );
+
+          return;
+        }
+
+        setMembership(
+          result.membership,
+        );
+      } catch (error) {
+        console.error(
+          "[APPLICATION MEMBERSHIP] load failed:",
+          error,
+        );
+
+        if (!cancelled) {
+          setMembership(null);
+          setMembershipMessage(
+            "Membership情報を表示できません。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setMembershipLoading(false);
+        }
+      }
+    }
+
+    void loadMembership();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    membershipId,
+  ]);
+
+
   // ========================================================
   // Auth状態
   // ========================================================
@@ -760,6 +1709,43 @@ export default function ApplicationPanelRenderer({
     );
   }
 
+    function setApplicationInputAnswer(
+      fieldId: string,
+      value: string,
+    ) {
+      setApplicationInputAnswers(
+        (current) => ({
+          ...current,
+          [fieldId]: value,
+        }),
+      );
+
+      setApplicationSubmitMessage("");
+    }
+
+
+    function setApplicationFormAnswer(
+      fieldId: string,
+      value:
+        ApplicationFormAnswer,
+    ) {
+      setApplicationFormAnswers(
+        (current) => ({
+          ...current,
+          [fieldId]: value,
+        }),
+      );
+
+      // 回答を変更したら、
+      // 以前のFORM submissionは再利用しない。
+      setFormSubmissionId(null);
+
+      setApplicationSubmitMessage(
+        "",
+      );
+    }
+
+
     async function submitApplication() {
       if (
         !applicationId ||
@@ -778,12 +1764,47 @@ export default function ApplicationPanelRenderer({
       const currentApplication =
         loadState.application;
 
+      const currentBlocks =
+        Array.isArray(
+          currentApplication
+            .definition
+            ?.blocks,
+        )
+          ? currentApplication
+              .definition
+              ?.blocks ?? []
+          : [];
+
+      const usesStructuredForm =
+        currentBlocks.some(
+          (item) =>
+            item?.type === "form",
+        );
+
       if (
         currentApplication.form_id &&
+        !usesStructuredForm &&
         !formSubmissionId
       ) {
         setApplicationSubmitMessage(
           "先に申込FORMを送信してください。",
+        );
+
+        return;
+      }
+
+      if (
+        currentApplication.form_id &&
+        usesStructuredForm &&
+        (
+          !applicationForm ||
+          applicationForm.id !==
+            currentApplication.form_id
+        )
+      ) {
+        setApplicationSubmitMessage(
+          applicationFormMessage ||
+            "FORMを確認できませんでした。",
         );
 
         return;
@@ -819,6 +1840,90 @@ export default function ApplicationPanelRenderer({
           return;
         }
 
+        let submissionIdForApplication =
+          currentApplication.form_id
+            ? formSubmissionId
+            : null;
+
+        if (
+          currentApplication.form_id &&
+          usesStructuredForm &&
+          !submissionIdForApplication
+        ) {
+          const formResponse =
+            await fetch(
+              "/api/form/submit",
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+
+                body: JSON.stringify({
+                  formId:
+                    currentApplication
+                      .form_id,
+
+                  answers:
+                    applicationFormAnswers,
+                }),
+              },
+            );
+
+          const formResult =
+            (await formResponse
+              .json()
+              .catch(() => null)) as
+              | {
+                  ok?: boolean;
+                  message?: string;
+                  submission?: {
+                    id?: string;
+                  };
+                }
+              | null;
+
+          if (
+            !formResponse.ok ||
+            !formResult?.ok
+          ) {
+            setApplicationSubmitMessage(
+              formResult?.message ??
+                "FORMを送信できませんでした。",
+            );
+
+            return;
+          }
+
+          const newSubmissionId =
+            String(
+              formResult
+                .submission
+                ?.id ?? "",
+            ).trim();
+
+          if (!newSubmissionId) {
+            setApplicationSubmitMessage(
+              "FORM送信結果を確認できませんでした。",
+            );
+
+            return;
+          }
+
+          submissionIdForApplication =
+            newSubmissionId;
+
+          setFormSubmissionId(
+            newSubmissionId,
+          );
+        }
+
+
         const response =
           await fetch(
             "/api/application/submit",
@@ -836,10 +1941,14 @@ export default function ApplicationPanelRenderer({
               body: JSON.stringify({
                 applicationId,
 
+                answers:
+                  applicationInputAnswers,
+
                 formSubmissionId:
                   currentApplication.form_id
-                    ? formSubmissionId
+                    ? submissionIdForApplication
                     : null,
+
               }),
             },
           );
@@ -1209,6 +2318,29 @@ export default function ApplicationPanelRenderer({
       ? definition.fields
       : [];
 
+  const applicationInputFields =
+    Array.isArray(
+      definition.inputFields,
+    )
+      ? definition.inputFields
+      : [];
+
+  const applicationBlocks =
+    Array.isArray(
+      definition.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  const hasStructuredBlocks =
+    applicationBlocks.length > 0;
+
+  const firstFormBlockIndex =
+    applicationBlocks.findIndex(
+      (item) =>
+        item?.type === "form",
+    );
+
   const actionLabel =
     normalizeText(
       definition.actionLabel,
@@ -1221,6 +2353,31 @@ export default function ApplicationPanelRenderer({
     normalizeText(
       definition.agreement,
     );
+
+  const isLiteApplication =
+    definition.mode === "lite";
+
+  const litePaymentLabel =
+    application.payment_method === "on_site"
+      ? "当日払い"
+      : application.payment_method === "bank_transfer"
+        ? "銀行振込"
+        : application.payment_method === "payment_link"
+          ? "オンライン支払"
+          : "";
+
+  const litePaymentAmount =
+    typeof application.payment_amount === "number" &&
+    Number.isFinite(application.payment_amount)
+      ? application.payment_amount
+      : null;
+
+  const litePaymentAmountLabel =
+    litePaymentAmount === null
+      ? ""
+      : application.payment_currency === "JPY"
+        ? `${litePaymentAmount.toLocaleString("ja-JP")}円`
+        : `${litePaymentAmount.toLocaleString("ja-JP")} ${application.payment_currency}`;
 
   const closed =
     application.status !==
@@ -1341,7 +2498,8 @@ export default function ApplicationPanelRenderer({
           </span>
         ) : null}
 
-        {application.acceptance_mode ===
+        {!isLiteApplication &&
+        application.acceptance_mode ===
         "approval" ? (
           <span className="rounded-full bg-blue-50 px-3 py-1.5 font-semibold text-blue-700">
             申込後に主催者確認
@@ -1350,7 +2508,61 @@ export default function ApplicationPanelRenderer({
       </div>
 
 
-          {isApplying &&
+          {isLiteApplication &&
+          !completedEntry ? (
+            <div className="mt-6 space-y-3">
+              {application.payment_method !==
+              "none" ? (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="text-sm font-bold text-neutral-950">
+                    支払
+                  </div>
+                  <div className="mt-2 text-sm leading-7 text-neutral-700">
+                    {litePaymentLabel}
+                    {litePaymentAmountLabel
+                      ? `　${litePaymentAmountLabel}`
+                      : ""}
+                  </div>
+                </div>
+              ) : null}
+
+              {agreement ? (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="text-sm font-bold text-neutral-950">
+                    確認・同意事項
+                  </div>
+                  <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+                    {agreement}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-neutral-500">
+                    「{actionLabel}」を押すことで、
+                    上記の内容を確認し、同意したものとします。
+                  </p>
+                </div>
+              ) : null}
+
+              {application.acceptance_mode ===
+              "approval" ? (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="text-sm font-bold text-neutral-950">
+                    資格・申込内容の確認
+                  </div>
+                  <p className="mt-2 text-sm leading-7 text-neutral-700">
+                    お申し込み後、主催者が内容を確認します。
+                  </p>
+                </div>
+              ) : null}
+
+              {applicationSubmitMessage ? (
+                <p className="text-sm text-red-600">
+                  {applicationSubmitMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {!isLiteApplication &&
+          isApplying &&
           !closed &&
           !completedEntry ? (
             <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
@@ -1358,7 +2570,379 @@ export default function ApplicationPanelRenderer({
                 申込手続き
               </div>
 
-              {application.form_id &&
+              {hasStructuredBlocks ? (
+                <div className="mt-4 space-y-4">
+                  {applicationBlocks.map(
+                    (
+                      applicationBlock,
+                      blockIndex,
+                    ) => {
+                      const blockKey =
+                        applicationBlock.id ??
+                        `${applicationBlock.type ?? "block"}-${blockIndex}`;
+
+                      if (
+                        applicationBlock.type ===
+                        "field"
+                      ) {
+                        const fieldId =
+                          typeof applicationBlock.fieldId ===
+                          "string"
+                            ? applicationBlock.fieldId.trim()
+                            : "";
+
+                        const inputField =
+                          applicationInputFields.find(
+                            (field) =>
+                              field.id === fieldId,
+                          );
+
+                        if (!inputField) {
+                          return (
+                            <div
+                              key={blockKey}
+                              className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+                            >
+                              FIELDを表示できません。
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <ApplicationInputFieldRenderer
+                            key={blockKey}
+                            field={inputField}
+                            value={
+                              applicationInputAnswers[
+                                inputField.id
+                              ] ?? ""
+                            }
+                            onChange={(value) =>
+                              setApplicationInputAnswer(
+                                inputField.id,
+                                value,
+                              )
+                            }
+                          />
+                        );
+                      }
+
+
+                      if (
+                        applicationBlock.type ===
+                        "form"
+                      ) {
+                        const fieldIds =
+                          Array.isArray(
+                            applicationBlock.fieldIds,
+                          )
+                            ? applicationBlock.fieldIds
+                                .map(
+                                  (fieldId) =>
+                                    String(
+                                      fieldId,
+                                    ).trim(),
+                                )
+                                .filter(Boolean)
+                            : [];
+
+                        if (
+                          applicationFormLoading
+                        ) {
+                          return (
+                            <div
+                              key={blockKey}
+                              className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-500"
+                            >
+                              FORMを読み込んでいます...
+                            </div>
+                          );
+                        }
+
+                        if (
+                          !applicationForm
+                        ) {
+                          return (
+                            <div
+                              key={blockKey}
+                              className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+                            >
+                              {applicationFormMessage ||
+                                "FORMを表示できません。"}
+                            </div>
+                          );
+                        }
+
+                        const blockFields =
+                          resolveFormBlockFields(
+                            applicationForm,
+                            fieldIds,
+                          );
+
+                        return (
+                          <div
+                            key={blockKey}
+                            className="rounded-2xl border border-neutral-200 bg-white p-5"
+                          >
+                            {blockIndex ===
+                            firstFormBlockIndex ? (
+                              <>
+                                <div className="text-lg font-bold text-neutral-950">
+                                  {
+                                    applicationForm.name
+                                  }
+                                </div>
+
+                                {applicationForm.description ? (
+                                  <p className="mt-2 text-sm leading-7 text-neutral-600">
+                                    {
+                                      applicationForm.description
+                                    }
+                                  </p>
+                                ) : null}
+                              </>
+                            ) : null}
+
+                            {blockFields.length >
+                            0 ? (
+                              <div
+                                className={`grid gap-5 sm:grid-cols-2 ${
+                                  blockIndex ===
+                                  firstFormBlockIndex
+                                    ? "mt-5"
+                                    : ""
+                                }`}
+                              >
+                                {blockFields.map(
+                                  (field) => (
+                                    <ApplicationFormFieldRenderer
+                                      key={
+                                        field.id
+                                      }
+                                      field={
+                                        field
+                                      }
+                                      value={
+                                        applicationFormAnswers[
+                                          field.id
+                                        ] ??
+                                        (field.type ===
+                                        "checkbox"
+                                          ? false
+                                          : "")
+                                      }
+                                      onChange={(
+                                        value,
+                                      ) =>
+                                        setApplicationFormAnswer(
+                                          field.id,
+                                          value,
+                                        )
+                                      }
+                                    />
+                                  ),
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-neutral-500">
+                                この位置に表示する質問がありません。
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (
+                        applicationBlock.type ===
+                        "calendar"
+                      ) {
+                        const blockCalendarItemId =
+                          typeof applicationBlock
+                            .calendarItemId ===
+                          "string"
+                            ? applicationBlock
+                                .calendarItemId
+                                .trim()
+                            : "";
+
+                        return (
+                          <div
+                            key={blockKey}
+                          >
+                            <CalendarResourceView
+                              calendarItemId={
+                                blockCalendarItemId
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (
+                        applicationBlock.type ===
+                        "membership"
+                      ) {
+                        return (
+                          <div
+                            key={blockKey}
+                            className="rounded-2xl border border-neutral-200 bg-white p-5"
+                          >
+                            {membershipLoading ? (
+                              <div className="text-sm text-neutral-500">
+                                Membership情報を読み込んでいます...
+                              </div>
+                            ) : membership ? (
+                              <>
+                                <div className="text-xs font-bold tracking-wide text-neutral-400">
+                                  MEMBERSHIP
+                                </div>
+
+                                <div className="mt-2 text-lg font-bold text-neutral-950">
+                                  {
+                                    membership.name
+                                  }
+                                </div>
+
+                                {membership.description ? (
+                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-neutral-600">
+                                    {
+                                      membership.description
+                                    }
+                                  </p>
+                                ) : null}
+
+                              </>
+                            ) : (
+                              <div className="text-sm text-rose-700">
+                                {membershipMessage ||
+                                  "Membership情報を表示できません。"}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    },
+                  )}
+                </div>
+              ) : null}
+
+
+              {!hasStructuredBlocks &&
+              calendarItemId ? (
+                <div className="mt-4">
+                  {calendarLoading ? (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+                      開催情報を読み込んでいます...
+                    </div>
+                  ) : calendarItem ? (
+                    <div className="space-y-4">
+                      <EventClassBrandPanel
+                        item={{
+                          ...calendarItem,
+
+                          next_occurrence:
+                            calendarOccurrences[0]
+                              ? {
+                                  id:
+                                    calendarOccurrences[0]
+                                      .id,
+
+                                  starts_at:
+                                    calendarOccurrences[0]
+                                      .starts_at,
+
+                                  ends_at:
+                                    calendarOccurrences[0]
+                                      .ends_at,
+
+                                  timezone:
+                                    calendarOccurrences[0]
+                                      .timezone,
+                                }
+                              : null,
+                        }}
+                      />
+
+                      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                        <div className="text-sm font-bold text-neutral-950">
+                          参加する開催回
+                        </div>
+
+                        {calendarOccurrences.length >
+                        0 ? (
+                          <div className="mt-3 divide-y divide-neutral-100">
+                            {calendarOccurrences.map(
+                              (
+                                occurrence,
+                              ) => (
+                                <label
+                                  key={
+                                    occurrence.id
+                                  }
+                                  className="flex cursor-pointer items-start gap-3 py-3 first:pt-0 last:pb-0"
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`application-${applicationId}-occurrence`}
+                                    value={
+                                      occurrence.id
+                                    }
+                                    checked={
+                                      selectedOccurrenceId ===
+                                      occurrence.id
+                                    }
+                                    onChange={() => {
+                                      setSelectedOccurrenceId(
+                                        occurrence.id,
+                                      );
+
+                                      setApplicationSubmitMessage(
+                                        "",
+                                      );
+                                    }}
+                                    className="mt-1"
+                                  />
+
+                                  <span className="min-w-0">
+                                    <span className="block text-sm font-bold text-neutral-900">
+                                      {formatCalendarOccurrence(
+                                        occurrence,
+                                      )}
+                                    </span>
+
+                                    {occurrence.location ? (
+                                      <span className="mt-1 block text-xs text-neutral-500">
+                                        {
+                                          occurrence.location
+                                        }
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </label>
+                              ),
+                            )}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-neutral-500">
+                            現在選択できる開催回はありません。
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                      {calendarMessage ||
+                        "開催情報を表示できません。"}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+
+              {!hasStructuredBlocks &&
+              application.form_id &&
               !formSubmissionId ? (
                 <div className="mt-4">
                   <FormPanelRenderer
@@ -1374,7 +2958,7 @@ export default function ApplicationPanelRenderer({
                 </div>
               ) : (
                 <>
-                  {application.form_id ? (
+                  {application.form_id && !hasStructuredBlocks ? (
                     <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-neutral-700">
                       FORMの回答を受け付けました。
                     </div>
@@ -1386,12 +2970,18 @@ export default function ApplicationPanelRenderer({
 
                   {agreement ? (
                     <>
-                      <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm leading-7 text-neutral-700">
-                        {agreement}
-                      </div>
+                      <details className="mt-4 rounded-xl border border-neutral-200 bg-white">
+                        <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-neutral-800">
+                          必ずお読みください
+                        </summary>
+
+                        <div className="border-t border-neutral-100 px-4 py-4 whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+                          {agreement}
+                        </div>
+                      </details>
 
                       <p className="mt-2 text-xs leading-5 text-neutral-500">
-                        下のボタンを押すことで、上記内容を確認したうえで申し込みます。
+                        「{actionLabel}」を押すことで、上記の確認・同意事項を確認し、同意したものとします。
                       </p>
                     </>
                   ) : null}
@@ -1556,7 +3146,8 @@ export default function ApplicationPanelRenderer({
             </div>
           ) : null}
           
-          {!isApplying &&
+          {(isLiteApplication ||
+          !isApplying) &&
           !completedEntry &&
           !existingEntryLoading ? (
           
@@ -1565,23 +3156,35 @@ export default function ApplicationPanelRenderer({
           type="button"
           disabled={
             closed ||
-            !authChecked
+            !authChecked ||
+            isSubmittingApplication
           }
-          onClick={
-            startApplication
-          }
+          onClick={() => {
+            if (!isLiteApplication) {
+              startApplication();
+              return;
+            }
+
+            if (!isLoggedIn) {
+              startApplication();
+              return;
+            }
+
+            void submitApplication();
+          }}
           className={[
             "w-full rounded-full px-5 py-3 text-sm font-bold transition",
             closed ||
-            !authChecked
+            !authChecked ||
+            isSubmittingApplication
               ? "cursor-not-allowed bg-neutral-100 text-neutral-400"
               : "bg-neutral-950 text-white hover:bg-neutral-700",
           ].join(" ")}
         >
           {closed
             ? "現在受付できません"
-            : isApplying
-              ? actionLabel
+            : isSubmittingApplication
+              ? "申し込んでいます..."
               : actionLabel}
         </button>
 

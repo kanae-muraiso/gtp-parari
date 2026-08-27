@@ -11,7 +11,8 @@ export type MyPrimaryTab =
   | "home"
   | "bookshelf"
   | "applications"
-  | "calendar";
+  | "calendar"
+  | "messages";
 
 type MyPrimaryTabsProps = {
   active: MyPrimaryTab;
@@ -37,6 +38,11 @@ const ITEMS = [
     key: "calendar",
     label: "カレンダー",
     href: "/my/calendar",
+  },
+  {
+    key: "messages",
+    label: "メッセージ",
+    href: "/my/messages",
   },
 ] satisfies Array<{
   key: MyPrimaryTab;

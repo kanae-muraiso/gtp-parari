@@ -15,6 +15,10 @@ type JsonRecord =
   Record<string, unknown>;
 
 
+const UUID_RE =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+
 function getBearerToken(
   request: NextRequest,
 ): string | null {
@@ -49,6 +53,80 @@ function asRecord(
   }
 
   return value as JsonRecord;
+}
+
+
+function resolveApplicationAnswers(
+  applicationSnapshot: unknown,
+  answers: unknown,
+) {
+  const snapshot =
+    asRecord(applicationSnapshot);
+
+  const definition =
+    asRecord(
+      snapshot?.definition,
+    );
+
+  const fields =
+    Array.isArray(
+      definition?.inputFields,
+    )
+      ? definition.inputFields
+      : [];
+
+  const answerRecord =
+    asRecord(answers) ?? {};
+
+  return fields
+    .map((field) => {
+      const row =
+        asRecord(field);
+
+      if (!row) {
+        return null;
+      }
+
+      const id =
+        typeof row.id === "string"
+          ? row.id
+          : "";
+
+      if (
+        !id ||
+        !Object.prototype.hasOwnProperty.call(
+          answerRecord,
+          id,
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        field_id: id,
+
+        label:
+          typeof row.label === "string"
+            ? row.label
+            : "",
+
+        type:
+          typeof row.kind === "string"
+            ? row.kind
+            : "text",
+
+        value:
+          answerRecord[id] ??
+          null,
+      };
+    })
+    .filter(
+      (
+        item,
+      ): item is NonNullable<
+        typeof item
+      > => item !== null,
+    );
 }
 
 
@@ -122,6 +200,151 @@ function resolveFormAnswers(
 }
 
 
+function normalizeApplicationAnswerUpdate(
+  applicationSnapshot: unknown,
+  rawAnswers: unknown,
+):
+  | {
+      ok: true;
+      answers: Record<string, string>;
+    }
+  | {
+      ok: false;
+      message: string;
+    } {
+  const snapshot =
+    asRecord(applicationSnapshot);
+
+  const definition =
+    asRecord(
+      snapshot?.definition,
+    );
+
+  const inputFields =
+    Array.isArray(
+      definition?.inputFields,
+    )
+      ? definition.inputFields
+      : [];
+
+  const blocks =
+    Array.isArray(
+      definition?.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  const activeFieldIds =
+    new Set(
+      blocks
+        .map((block) => {
+          const row =
+            asRecord(block);
+
+          if (
+            !row ||
+            row.type !== "field"
+          ) {
+            return "";
+          }
+
+          return typeof row.fieldId ===
+            "string"
+            ? row.fieldId.trim()
+            : "";
+        })
+        .filter(Boolean),
+    );
+
+  if (
+    activeFieldIds.size === 0
+  ) {
+    return {
+      ok: true,
+      answers: {},
+    };
+  }
+
+  const answerRecord =
+    asRecord(rawAnswers) ?? {};
+
+  const normalized:
+    Record<string, string> = {};
+
+  for (
+    const rawField of inputFields
+  ) {
+    const field =
+      asRecord(rawField);
+
+    if (!field) {
+      continue;
+    }
+
+    const id =
+      typeof field.id === "string"
+        ? field.id.trim()
+        : "";
+
+    if (
+      !id ||
+      !activeFieldIds.has(id)
+    ) {
+      continue;
+    }
+
+    const label =
+      typeof field.label === "string" &&
+      field.label.trim()
+        ? field.label.trim()
+        : "項目";
+
+    const kind =
+      typeof field.kind === "string"
+        ? field.kind.trim()
+        : "";
+
+    if (
+      kind === "radio" ||
+      kind === "select" ||
+      kind === "checkbox"
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」は現在編集できないFIELDです。`,
+      };
+    }
+
+    const rawValue =
+      answerRecord[id];
+
+    const value =
+      typeof rawValue === "string"
+        ? rawValue.trim()
+        : "";
+
+    if (
+      field.required === true &&
+      !value
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」を入力してください。`,
+      };
+    }
+
+    normalized[id] = value;
+  }
+
+  return {
+    ok: true,
+    answers: normalized,
+  };
+}
+
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -181,6 +404,7 @@ export async function GET(
           form_submission_id,
           status,
           application_snapshot,
+          answers,
           agreed_at,
           created_at,
           updated_at
@@ -475,6 +699,12 @@ export async function GET(
                   : entry.application_version,
             },
 
+            answers:
+              resolveApplicationAnswers(
+                entry.application_snapshot,
+                entry.answers,
+              ),
+
             form_submission:
               submission
                 ? {
@@ -520,3 +750,258 @@ export async function GET(
     );
   }
 }
+
+
+export async function PATCH(
+  request: NextRequest,
+) {
+  try {
+    const token =
+      getBearerToken(request);
+
+    if (!token) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "ログインが必要です。",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } =
+      await supabaseAdmin.auth.getUser(
+        token,
+      );
+
+    if (
+      userError ||
+      !user
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "ログイン情報を確認できませんでした。",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const body =
+      (await request
+        .json()
+        .catch(() => null)) as
+        | {
+            entryId?: unknown;
+            answers?: unknown;
+          }
+        | null;
+
+    const entryId =
+      typeof body?.entryId ===
+      "string"
+        ? body.entryId.trim()
+        : "";
+
+    if (
+      !UUID_RE.test(entryId)
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込情報が指定されていません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const {
+      data: entry,
+      error: entryError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .select(
+          `
+            id,
+            user_id,
+            status,
+            application_snapshot
+          `,
+        )
+        .eq(
+          "id",
+          entryId,
+        )
+        .eq(
+          "user_id",
+          user.id,
+        )
+        .maybeSingle();
+
+    if (entryError) {
+      console.error(
+        "[APPLICATION my-entries PATCH] entry load failed",
+        entryError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込情報を確認できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    if (!entry) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込情報が見つかりません。",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    if (
+      entry.status !==
+        "submitted" &&
+      entry.status !==
+        "confirmed"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "この申込内容は現在変更できません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const normalized =
+      normalizeApplicationAnswerUpdate(
+        entry.application_snapshot,
+        body?.answers,
+      );
+
+    if (
+      normalized.ok === false
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            normalized.message,
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const {
+      data: updated,
+      error: updateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .update({
+          answers:
+            normalized.answers,
+
+          updated_at:
+            new Date()
+              .toISOString(),
+        })
+        .eq(
+          "id",
+          entry.id,
+        )
+        .eq(
+          "user_id",
+          user.id,
+        )
+        .select(
+          `
+            id,
+            answers,
+            application_snapshot
+          `,
+        )
+        .single();
+
+    if (
+      updateError ||
+      !updated
+    ) {
+      console.error(
+        "[APPLICATION my-entries PATCH] update failed",
+        updateError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込内容を変更できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+
+      answers:
+        resolveApplicationAnswers(
+          updated.application_snapshot,
+          updated.answers,
+        ),
+    });
+  } catch (error) {
+    console.error(
+      "PATCH /api/application/my-entries failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込内容を変更できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+

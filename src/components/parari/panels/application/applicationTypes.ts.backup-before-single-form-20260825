@@ -1,0 +1,88 @@
+// apps/tools/parari/src/components/parari/panels/application/applicationTypes.ts
+// src/components/parari/panels/application/applicationTypes.ts
+// 2026-08-15 JST
+//
+// APPLICATION v2 共通型
+
+export type ApplicationType =
+  | "EVENT"
+  | "RECRUITMENT"
+  | "SCHOOL"
+  | "CONTEST"
+  | "VOLUNTEER"
+  | "OTHER";
+
+export type ApplicationAcceptanceMode =
+  | "instant"
+  | "approval";
+
+export type ApplicationFieldType =
+  | "text"
+  | "textarea"
+  | "date"
+  | "datetime"
+  | "number"
+  | "money"
+  | "url";
+
+export type ApplicationField = {
+  id: string;
+
+  // PARARIが意味を理解できる標準項目なら固定keyを持つ。
+  // 作者独自項目なら null。
+  key: string | null;
+
+  label: string;
+
+  type: ApplicationFieldType;
+
+  value: string;
+
+  required: boolean;
+};
+
+export type ApplicationFormBlock = {
+  id: string;
+  type: "form";
+  formId: string;
+  fieldIds: string[];
+};
+
+export type ApplicationCalendarBlock = {
+  id: string;
+  type: "calendar";
+  calendarItemId: string;
+};
+
+export type ApplicationMembershipBlock = {
+  id: string;
+  type: "membership";
+  membershipId: string;
+};
+
+export type ApplicationBlock =
+  | ApplicationFormBlock
+  | ApplicationCalendarBlock
+  | ApplicationMembershipBlock;
+
+export type ApplicationDefinitionData = {
+  // 新APPLICATION:
+  // FORM / CALENDAR / MEMBERSHIPなどの約束要素を、
+  // APPLICATION内で表示・実行する順番に並べる。
+  blocks?: ApplicationBlock[];
+
+  // 旧APPLICATION互換。
+  // manual APPLICATIONの新規作成では使用しない。
+  // calendar-origin等の現役経路を移行するまで残す。
+  fields: ApplicationField[];
+
+  // 応募・参加ボタンを押す前に提示する確認・同意事項
+  agreement?: string;
+
+  // 「参加する」「応募する」など
+  actionLabel?: string;
+};
+
+export type ApplicationPanelData = {
+  applicationId: string | null;
+};

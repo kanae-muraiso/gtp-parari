@@ -31,6 +31,7 @@ type ApplicationField = {
 
 
 type ApplicationDefinition = {
+  mode?: "lite" | "builder";
   fields?: ApplicationField[];
   agreement?: string;
   actionLabel?: string;
@@ -61,6 +62,18 @@ type ApplicationRow = {
   acceptance_mode:
     | "instant"
     | "approval";
+
+  payment_method:
+    | "none"
+    | "on_site"
+    | "bank_transfer"
+    | "payment_link";
+
+  payment_amount:
+    | number
+    | null;
+
+  payment_currency: string;
 
   status:
     | "draft"
@@ -248,6 +261,9 @@ export async function GET(
           definition,
           form_id,
           acceptance_mode,
+          payment_method,
+          payment_amount,
+          payment_currency,
           status,
           version,
           created_at,
@@ -433,6 +449,15 @@ export async function GET(
 
         acceptance_mode:
           application.acceptance_mode,
+
+        payment_method:
+          application.payment_method,
+
+        payment_amount:
+          application.payment_amount,
+
+        payment_currency:
+          application.payment_currency,
 
         status:
           application.status,

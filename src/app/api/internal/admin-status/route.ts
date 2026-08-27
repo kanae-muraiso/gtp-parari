@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
       ok: true,
       isAdmin: true,
       userId: auth.userId,
-      email: auth.email,
     },
     {
       headers: {

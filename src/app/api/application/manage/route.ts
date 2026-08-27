@@ -252,6 +252,481 @@ async function validateFormOwnership(
 // 自分のAPPLICATION一覧
 // ============================================================
 
+async function validateApplicationBlocks(
+  definition: unknown,
+  userId: string,
+  applicationFormId: string | null,
+): Promise<
+  | {
+      ok: true;
+    }
+  | {
+      ok: false;
+      message: string;
+    }
+> {
+  if (
+    !definition ||
+    typeof definition !== "object" ||
+    Array.isArray(definition)
+  ) {
+    return {
+      ok: false,
+      message:
+        "APPLICATIONの構成が正しくありません。",
+    };
+  }
+
+  const rawBlocks =
+    (
+      definition as {
+        blocks?: unknown;
+      }
+    ).blocks;
+
+  // 旧APPLICATION / calendar-origin は
+  // blocksを持たなくても有効。
+  if (rawBlocks === undefined) {
+    return {
+      ok: true,
+    };
+  }
+
+  if (!Array.isArray(rawBlocks)) {
+    return {
+      ok: false,
+      message:
+        "APPLICATIONの構成が正しくありません。",
+    };
+  }
+
+  const rawInputFields =
+    (
+      definition as {
+        inputFields?: unknown;
+      }
+    ).inputFields;
+
+  const inputFieldIds =
+    new Set<string>();
+
+  if (
+    rawInputFields !== undefined
+  ) {
+    if (
+      !Array.isArray(
+        rawInputFields,
+      )
+    ) {
+      return {
+        ok: false,
+        message:
+          "APPLICATIONの入力項目が正しくありません。",
+      };
+    }
+
+    const allowedKinds =
+      new Set([
+        "name",
+        "email",
+        "tel",
+        "postalCode",
+        "address",
+        "text",
+        "textarea",
+        "checkbox",
+        "radio",
+        "select",
+        "date",
+        "datetime",
+      ]);
+
+    for (
+      const rawField of
+      rawInputFields
+    ) {
+      if (
+        !rawField ||
+        typeof rawField !==
+          "object" ||
+        Array.isArray(
+          rawField,
+        )
+      ) {
+        return {
+          ok: false,
+          message:
+            "APPLICATIONの入力項目が正しくありません。",
+        };
+      }
+
+      const field =
+        rawField as {
+          id?: unknown;
+          kind?: unknown;
+          label?: unknown;
+        };
+
+      const id =
+        typeof field.id ===
+          "string"
+          ? field.id.trim()
+          : "";
+
+      const kind =
+        typeof field.kind ===
+          "string"
+          ? field.kind.trim()
+          : "";
+
+      const label =
+        typeof field.label ===
+          "string"
+          ? field.label.trim()
+          : "";
+
+      if (
+        !id ||
+        !allowedKinds.has(
+          kind,
+        ) ||
+        !label
+      ) {
+        return {
+          ok: false,
+          message:
+            "FIELDの種類を選択してください。",
+        };
+      }
+
+      if (
+        inputFieldIds.has(id)
+      ) {
+        return {
+          ok: false,
+          message:
+            "同じFIELDが重複しています。",
+        };
+      }
+
+      inputFieldIds.add(id);
+    }
+  }
+
+
+  const blockIds =
+    new Set<string>();
+  for (const rawBlock of rawBlocks) {
+    if (
+      !rawBlock ||
+      typeof rawBlock !== "object" ||
+      Array.isArray(rawBlock)
+    ) {
+      return {
+        ok: false,
+        message:
+          "APPLICATIONの構成要素が正しくありません。",
+      };
+    }
+
+    const block =
+      rawBlock as Record<
+        string,
+        unknown
+      >;
+
+    const blockId =
+      typeof block.id === "string"
+        ? block.id.trim()
+        : "";
+
+    const blockType =
+      typeof block.type === "string"
+        ? block.type.trim()
+        : "";
+
+    if (
+      !blockId ||
+      blockIds.has(blockId)
+    ) {
+      return {
+        ok: false,
+        message:
+          "APPLICATIONの構成要素IDが正しくありません。",
+      };
+    }
+
+    blockIds.add(blockId);
+
+    if (blockType === "field") {
+      const fieldId =
+        typeof block.fieldId ===
+          "string"
+          ? block.fieldId.trim()
+          : "";
+
+      if (
+        !fieldId ||
+        !inputFieldIds.has(
+          fieldId,
+        )
+      ) {
+        return {
+          ok: false,
+          message:
+            "FIELDを確認してください。",
+        };
+      }
+
+      continue;
+    }
+
+
+    if (blockType === "form") {
+      const formId =
+        applicationFormId ?? "";
+
+      const rawFieldIds =
+        block.fieldIds;
+
+      if (
+        !Array.isArray(
+          rawFieldIds,
+        )
+      ) {
+        return {
+          ok: false,
+          message:
+            "FORMで使用する項目が正しくありません。",
+        };
+      }
+
+      const fieldIds =
+        rawFieldIds
+          .map((value) =>
+            typeof value === "string"
+              ? value.trim()
+              : "",
+          )
+          .filter(Boolean);
+
+      if (
+        fieldIds.length === 0 ||
+        fieldIds.length !==
+          rawFieldIds.length
+      ) {
+        return {
+          ok: false,
+          message:
+            "FORMで使用する項目を1つ以上選択してください。",
+        };
+      }
+
+      if (
+        new Set(fieldIds).size !==
+        fieldIds.length
+      ) {
+        return {
+          ok: false,
+          message:
+            "同じFORM項目が重複しています。",
+        };
+      }
+
+      const {
+        data: form,
+        error,
+      } = await supabaseAdmin
+        .from("forms")
+        .select("id,definition")
+        .eq("id", formId)
+        .eq(
+          "owner_user_id",
+          userId,
+        )
+        .maybeSingle();
+
+      if (
+        error ||
+        !form
+      ) {
+        return {
+          ok: false,
+          message:
+            "指定されたFORMを使用できません。",
+        };
+      }
+
+      const formDefinition =
+        form.definition &&
+        typeof form.definition ===
+          "object" &&
+        !Array.isArray(
+          form.definition,
+        )
+          ? (
+              form.definition as {
+                fields?: unknown;
+              }
+            )
+          : null;
+
+      const formFields =
+        Array.isArray(
+          formDefinition?.fields,
+        )
+          ? formDefinition.fields
+          : [];
+
+      const availableFieldIds =
+        new Set(
+          formFields
+            .map((field) => {
+              if (
+                !field ||
+                typeof field !== "object" ||
+                Array.isArray(field)
+              ) {
+                return "";
+              }
+
+              const id =
+                (
+                  field as {
+                    id?: unknown;
+                  }
+                ).id;
+
+              return typeof id === "string"
+                ? id.trim()
+                : "";
+            })
+            .filter(Boolean),
+        );
+
+      if (
+        fieldIds.some(
+          (fieldId) =>
+            !availableFieldIds.has(
+              fieldId,
+            ),
+        )
+      ) {
+        return {
+          ok: false,
+          message:
+            "FORMに存在しない項目が指定されています。",
+        };
+      }
+
+      continue;
+    }
+
+    if (blockType === "calendar") {
+const calendarItemId =
+        typeof block.calendarItemId ===
+          "string"
+          ? block.calendarItemId.trim()
+          : "";
+
+      if (!calendarItemId) {
+        return {
+          ok: false,
+          message:
+            "CALENDARを選択してください。",
+        };
+      }
+
+      const {
+        data: calendarItem,
+        error,
+      } = await supabaseAdmin
+        .from("calendar_items")
+        .select("id")
+        .eq(
+          "id",
+          calendarItemId,
+        )
+        .eq(
+          "owner_user_id",
+          userId,
+        )
+        .maybeSingle();
+
+      if (
+        error ||
+        !calendarItem
+      ) {
+        return {
+          ok: false,
+          message:
+            "指定されたCALENDARを使用できません。",
+        };
+      }
+
+      continue;
+    }
+
+    if (
+      blockType === "membership"
+    ) {
+const membershipId =
+        typeof block.membershipId ===
+          "string"
+          ? block.membershipId.trim()
+          : "";
+
+      if (!membershipId) {
+        return {
+          ok: false,
+          message:
+            "MEMBERSHIPを選択してください。",
+        };
+      }
+
+      const {
+        data: membership,
+        error,
+      } = await supabaseAdmin
+        .from("memberships")
+        .select("id")
+        .eq(
+          "id",
+          membershipId,
+        )
+        .eq(
+          "owner_user_id",
+          userId,
+        )
+        .maybeSingle();
+
+      if (
+        error ||
+        !membership
+      ) {
+        return {
+          ok: false,
+          message:
+            "指定されたMEMBERSHIPを使用できません。",
+        };
+      }
+
+      continue;
+    }
+
+    return {
+      ok: false,
+      message:
+        "未対応のAPPLICATION構成要素があります。",
+    };
+  }
+
+  return {
+    ok: true,
+  };
+}
+
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -498,6 +973,38 @@ export async function POST(
       }
     | null;
     
+  const isFreePlan =
+    access.isMonitor !== true &&
+    access.effectivePlan === "free";
+
+  const rawDefinition =
+    body?.definition &&
+    typeof body.definition === "object" &&
+    !Array.isArray(body.definition)
+      ? body.definition
+      : {
+          fields: [],
+        };
+
+  const requestedMode =
+    (
+      rawDefinition as
+        Record<string, unknown>
+    ).mode;
+
+  // FREEは常にLite。
+  // Plus / Pro / Monitorは保存されたmodeを使う。
+  // mode未設定の旧APPLICATIONはBuilderとして扱う。
+  const applicationMode =
+    isFreePlan
+      ? "lite"
+      : requestedMode === "lite"
+        ? "lite"
+        : "builder";
+
+  const isLiteApplication =
+    applicationMode === "lite";
+
   const applicationType =
     typeof body?.applicationType ===
       "string"
@@ -516,10 +1023,12 @@ export async function POST(
       : "";
 
   const formId =
-    typeof body?.formId === "string" &&
-    body.formId.trim()
-      ? body.formId.trim()
-      : null;
+    isLiteApplication
+      ? null
+      : typeof body?.formId === "string" &&
+          body.formId.trim()
+        ? body.formId.trim()
+        : null;
 
   const acceptanceMode =
     typeof body?.acceptanceMode ===
@@ -541,9 +1050,11 @@ export async function POST(
           : null;
 
     const paymentUrl =
-      typeof body?.paymentUrl === "string"
-        ? body.paymentUrl.trim()
-        : "";
+      isFreePlan
+        ? ""
+        : typeof body?.paymentUrl === "string"
+          ? body.paymentUrl.trim()
+          : "";
 
     const paymentInstructions =
       typeof body?.paymentInstructions === "string"
@@ -656,6 +1167,22 @@ export async function POST(
     }
 
     if (
+      isFreePlan &&
+      paymentMethod === "payment_link"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEプランでは支払リンクを利用できません。",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    if (
       paymentMethod !== "none" &&
       (
         paymentAmount === null ||
@@ -678,15 +1205,23 @@ export async function POST(
     }
 
   const definition =
-    body?.definition &&
-    typeof body.definition ===
-      "object" &&
-    !Array.isArray(
-      body.definition,
-    )
-      ? body.definition
-      : {
+    isLiteApplication
+      ? {
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
+          mode: "lite",
           fields: [],
+          inputFields: [],
+          blocks: [],
+        }
+      : {
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
+          mode: "builder",
         };
 
   const formCheck =
@@ -703,6 +1238,28 @@ export async function POST(
         ok: false,
         message:
           formCheck.message,
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const blockCheck =
+    await validateApplicationBlocks(
+      definition,
+      auth.user.id,
+      formId,
+    );
+
+  if (
+    blockCheck.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          blockCheck.message,
       },
       {
         status: 400,
@@ -857,6 +1414,55 @@ export async function PATCH(
       }
     | null;
     
+  const patchAccess =
+    await getApplicationAccess(
+      auth.user.id,
+    );
+
+  if (patchAccess.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          patchAccess.message,
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  const isFreePlan =
+    patchAccess.isMonitor !== true &&
+    patchAccess.effectivePlan === "free";
+
+  const rawDefinition =
+    body?.definition &&
+    typeof body.definition === "object" &&
+    !Array.isArray(body.definition)
+      ? body.definition
+      : {
+          fields: [],
+        };
+
+  const requestedMode =
+    (
+      rawDefinition as
+        Record<string, unknown>
+    ).mode;
+
+  // FREEは常にLite。
+  // mode未設定の旧APPLICATIONはBuilderとして扱う。
+  const applicationMode =
+    isFreePlan
+      ? "lite"
+      : requestedMode === "lite"
+        ? "lite"
+        : "builder";
+
+  const isLiteApplication =
+    applicationMode === "lite";
+
   const applicationId =
     typeof body?.applicationId ===
       "string"
@@ -881,10 +1487,12 @@ export async function PATCH(
       : "";
 
   const formId =
-    typeof body?.formId === "string" &&
-    body.formId.trim()
-      ? body.formId.trim()
-      : null;
+    isLiteApplication
+      ? null
+      : typeof body?.formId === "string" &&
+          body.formId.trim()
+        ? body.formId.trim()
+        : null;
 
   const acceptanceMode =
     typeof body?.acceptanceMode ===
@@ -906,9 +1514,11 @@ export async function PATCH(
           : null;
 
     const paymentUrl =
-      typeof body?.paymentUrl === "string"
-        ? body.paymentUrl.trim()
-        : "";
+      isFreePlan
+        ? ""
+        : typeof body?.paymentUrl === "string"
+          ? body.paymentUrl.trim()
+          : "";
 
     const paymentInstructions =
       typeof body?.paymentInstructions === "string"
@@ -1004,6 +1614,22 @@ export async function PATCH(
     }
 
     if (
+      isFreePlan &&
+      paymentMethod === "payment_link"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEプランでは支払リンクを利用できません。",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    if (
       paymentMethod !== "none" &&
       (
         paymentAmount === null ||
@@ -1026,15 +1652,23 @@ export async function PATCH(
     }
 
   const definition =
-    body?.definition &&
-    typeof body.definition ===
-      "object" &&
-    !Array.isArray(
-      body.definition,
-    )
-      ? body.definition
-      : {
+    isLiteApplication
+      ? {
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
+          mode: "lite",
           fields: [],
+          inputFields: [],
+          blocks: [],
+        }
+      : {
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
+          mode: "builder",
         };
 
   const formCheck =
@@ -1051,6 +1685,28 @@ export async function PATCH(
         ok: false,
         message:
           formCheck.message,
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const blockCheck =
+    await validateApplicationBlocks(
+      definition,
+      auth.user.id,
+      formId,
+    );
+
+  if (
+    blockCheck.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          blockCheck.message,
       },
       {
         status: 400,

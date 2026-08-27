@@ -18,7 +18,7 @@ import type {
   CalendarPanelData,
 } from "./calendarTypes";
 
-type CalendarOccurrence = {
+export type CalendarResourceOccurrence = {
   id: string;
   calendar_item_id: string;
   starts_at: string;
@@ -43,12 +43,20 @@ type CalendarItem =
 type CalendarPanelResponse = {
   ok?: boolean;
   item?: CalendarItem;
-  occurrences?: CalendarOccurrence[];
+  occurrences?: CalendarResourceOccurrence[];
   message?: string;
 };
 
+export type CalendarResourceViewProps = {
+  calendarItemId: string | null;
+
+  renderOccurrenceAction?: (
+    occurrence: CalendarResourceOccurrence,
+  ) => React.ReactNode;
+};
+
 function formatOccurrenceDate(
-  occurrence: CalendarOccurrence,
+  occurrence: CalendarResourceOccurrence,
 ): string {
   try {
     return new Intl.DateTimeFormat(
@@ -72,12 +80,13 @@ function formatOccurrenceDate(
   }
 }
 
-export default function CalendarPanelRenderer({
-  data,
-}: PanelRendererProps<CalendarPanelData>) {
+export function CalendarResourceView({
+  calendarItemId: rawCalendarItemId,
+  renderOccurrenceAction,
+}: CalendarResourceViewProps) {
   const calendarItemId =
     String(
-      data.calendarItemId ?? "",
+      rawCalendarItemId ?? "",
     ).trim();
 
   const [
@@ -93,7 +102,7 @@ export default function CalendarPanelRenderer({
     setOccurrences,
   ] =
     React.useState<
-      CalendarOccurrence[]
+      CalendarResourceOccurrence[]
     >([]);
 
   const [
@@ -341,16 +350,22 @@ export default function CalendarPanelRenderer({
                       </span>
                     ) : null}
 
-                    <a
-                      href={
-                        `/calendar/${occurrence.id}`
-                      }
-                      className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
-                    >
-                      {bookingStatus
-                        ? "詳細"
-                        : "詳細・予約"}
-                    </a>
+                    {renderOccurrenceAction ? (
+                      renderOccurrenceAction(
+                        occurrence,
+                      )
+                    ) : (
+                      <a
+                        href={
+                          `/calendar/${occurrence.id}`
+                        }
+                        className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
+                      >
+                        {bookingStatus
+                          ? "詳細"
+                          : "詳細・予約"}
+                      </a>
+                    )}
                   </div>
                 </div>
                 );
@@ -360,5 +375,18 @@ export default function CalendarPanelRenderer({
         </div>
       ) : null}
     </section>
+  );
+}
+
+
+export default function CalendarPanelRenderer({
+  data,
+}: PanelRendererProps<CalendarPanelData>) {
+  return (
+    <CalendarResourceView
+      calendarItemId={
+        data.calendarItemId
+      }
+    />
   );
 }

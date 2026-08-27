@@ -1,0 +1,565 @@
+// src/app/api/application/messages/route.ts
+// 2026-08-27 JST
+//
+// APPLICATION entry 単位の簡易メッセージ
+//
+// - APPLICATION作者 ↔ その申込者 の1対1のみ
+// - 任意ユーザー検索なし
+// - recipient_user_id は保存しない
+// - CALENDAR由来APPLICATIONは対象外
+
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  supabaseAdmin,
+} from "@/lib/billing/supabaseAdmin";
+
+
+const UUID_RE =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+
+function getBearerToken(
+  request: NextRequest,
+): string | null {
+  const authorization =
+    request.headers.get(
+      "authorization",
+    ) ?? "";
+
+  const match =
+    authorization.match(
+      /^Bearer\s+(.+)$/i,
+    );
+
+  return (
+    match?.[1]?.trim() ||
+    null
+  );
+}
+
+
+async function getAuthenticatedUser(
+  request: NextRequest,
+) {
+  const token =
+    getBearerToken(request);
+
+  if (!token) {
+    return {
+      ok: false as const,
+      status: 401,
+      message:
+        "ログインが必要です。",
+    };
+  }
+
+  const {
+    data: { user },
+    error,
+  } =
+    await supabaseAdmin.auth.getUser(
+      token,
+    );
+
+  if (
+    error ||
+    !user
+  ) {
+    return {
+      ok: false as const,
+      status: 401,
+      message:
+        "ログイン状態を確認できませんでした。",
+    };
+  }
+
+  return {
+    ok: true as const,
+    user,
+  };
+}
+
+
+async function getMessageAccess(
+  entryId: string,
+  userId: string,
+) {
+  const {
+    data: entry,
+    error: entryError,
+  } =
+    await supabaseAdmin
+      .from(
+        "application_entries",
+      )
+      .select(
+        `
+          id,
+          application_id,
+          user_id
+        `,
+      )
+      .eq(
+        "id",
+        entryId,
+      )
+      .maybeSingle();
+
+  if (entryError) {
+    console.error(
+      "[APPLICATION messages] entry load failed:",
+      entryError,
+    );
+
+    return {
+      ok: false as const,
+      status: 500,
+      message:
+        "申込情報を確認できませんでした。",
+    };
+  }
+
+  if (!entry) {
+    return {
+      ok: false as const,
+      status: 404,
+      message:
+        "申込情報が見つかりません。",
+    };
+  }
+
+  if (!entry.user_id) {
+    return {
+      ok: false as const,
+      status: 400,
+      message:
+        "この申込ではメッセージを利用できません。",
+    };
+  }
+
+  const {
+    data: application,
+    error: applicationError,
+  } =
+    await supabaseAdmin
+      .from(
+        "applications",
+      )
+      .select(
+        `
+          id,
+          owner_user_id,
+          origin
+        `,
+      )
+      .eq(
+        "id",
+        entry.application_id,
+      )
+      .maybeSingle();
+
+  if (applicationError) {
+    console.error(
+      "[APPLICATION messages] application load failed:",
+      applicationError,
+    );
+
+    return {
+      ok: false as const,
+      status: 500,
+      message:
+        "APPLICATIONを確認できませんでした。",
+    };
+  }
+
+  if (!application) {
+    return {
+      ok: false as const,
+      status: 404,
+      message:
+        "APPLICATIONが見つかりません。",
+    };
+  }
+
+  if (
+    application.origin !==
+    "manual"
+  ) {
+    return {
+      ok: false as const,
+      status: 400,
+      message:
+        "このAPPLICATIONではメッセージを利用できません。",
+    };
+  }
+
+  const isOwner =
+    application.owner_user_id ===
+    userId;
+
+  const isApplicant =
+    entry.user_id ===
+    userId;
+
+  if (
+    !isOwner &&
+    !isApplicant
+  ) {
+    return {
+      ok: false as const,
+      status: 403,
+      message:
+        "このメッセージを見る権限がありません。",
+    };
+  }
+
+  return {
+    ok: true as const,
+    entryId: entry.id,
+    ownerUserId:
+      application.owner_user_id,
+    applicantUserId:
+      entry.user_id,
+    currentUserRole:
+      isOwner
+        ? "owner" as const
+        : "applicant" as const,
+  };
+}
+
+
+// ============================================================
+// GET
+// スレッド取得
+// ============================================================
+
+export async function GET(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (!auth.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+  const entryId =
+    request.nextUrl.searchParams
+      .get("entryId")
+      ?.trim() ?? "";
+
+  if (
+    !UUID_RE.test(
+      entryId,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const access =
+    await getMessageAccess(
+      entryId,
+      auth.user.id,
+    );
+
+  if (!access.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          access.message,
+      },
+      {
+        status:
+          access.status,
+      },
+    );
+  }
+
+  const {
+    data: messages,
+    error,
+  } =
+    await supabaseAdmin
+      .from(
+        "application_messages",
+      )
+      .select(
+        `
+          id,
+          sender_user_id,
+          body,
+          created_at
+        `,
+      )
+      .eq(
+        "entry_id",
+        entryId,
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true,
+        },
+      )
+      .order(
+        "id",
+        {
+          ascending: true,
+        },
+      );
+
+  if (error) {
+    console.error(
+      "[APPLICATION messages] load failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "メッセージを取得できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+
+    thread: {
+      entryId:
+        access.entryId,
+
+      currentUserRole:
+        access.currentUserRole,
+    },
+
+    messages:
+      (messages ?? []).map(
+        (message) => ({
+          id:
+            message.id,
+
+          body:
+            message.body,
+
+          created_at:
+            message.created_at,
+
+          sender:
+            message.sender_user_id ===
+            access.ownerUserId
+              ? "owner"
+              : "applicant",
+
+          is_mine:
+            message.sender_user_id ===
+            auth.user.id,
+        }),
+      ),
+  });
+}
+
+
+// ============================================================
+// POST
+// メッセージ送信
+// ============================================================
+
+export async function POST(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (!auth.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+  const body =
+    (await request
+      .json()
+      .catch(() => null)) as
+      | {
+          entryId?: unknown;
+          message?: unknown;
+        }
+      | null;
+
+  const entryId =
+    typeof body?.entryId ===
+    "string"
+      ? body.entryId.trim()
+      : "";
+
+  const messageBody =
+    typeof body?.message ===
+    "string"
+      ? body.message.trim()
+      : "";
+
+  if (
+    !UUID_RE.test(
+      entryId,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込が指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (
+    !messageBody ||
+    messageBody.length >
+      2000
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "メッセージは1〜2000文字で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const access =
+    await getMessageAccess(
+      entryId,
+      auth.user.id,
+    );
+
+  if (!access.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          access.message,
+      },
+      {
+        status:
+          access.status,
+      },
+    );
+  }
+
+  const {
+    data: created,
+    error,
+  } =
+    await supabaseAdmin
+      .from(
+        "application_messages",
+      )
+      .insert({
+        entry_id:
+          entryId,
+
+        sender_user_id:
+          auth.user.id,
+
+        body:
+          messageBody,
+      })
+      .select(
+        `
+          id,
+          sender_user_id,
+          body,
+          created_at
+        `,
+      )
+      .single();
+
+  if (
+    error ||
+    !created
+  ) {
+    console.error(
+      "[APPLICATION messages] insert failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "メッセージを送信できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+
+    message: {
+      id:
+        created.id,
+
+      body:
+        created.body,
+
+      created_at:
+        created.created_at,
+
+      sender:
+        access.currentUserRole,
+
+      is_mine:
+        true,
+    },
+  });
+}

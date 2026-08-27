@@ -253,10 +253,6 @@ export async function GET(
             `,
           )
           .eq(
-            "application_id",
-            bookingApplication.id,
-          )
-          .eq(
             "user_id",
             viewerUserId,
           )

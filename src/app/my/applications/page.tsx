@@ -9,6 +9,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import ApplicationEntryMessagePanel from "@/components/parari/application/ApplicationEntryMessagePanel";
 
 type EntryStatus =
   | "submitted"
@@ -53,6 +54,8 @@ type MyApplicationEntry = {
       | null;
     version: number;
   };
+
+  answers: Answer[];
 
   form_submission: {
     id: string;
@@ -352,6 +355,160 @@ function getApplicationFields(
 }
 
 
+type EditableApplicationInputField = {
+  id: string;
+  kind: string;
+  label: string;
+  required: boolean;
+};
+
+
+function getApplicationInputFieldsForEntry(
+  definition: unknown,
+): EditableApplicationInputField[] {
+  if (
+    !definition ||
+    typeof definition !==
+      "object" ||
+    Array.isArray(definition)
+  ) {
+    return [];
+  }
+
+  const row =
+    definition as Record<
+      string,
+      unknown
+    >;
+
+  const rawInputFields =
+    Array.isArray(
+      row.inputFields,
+    )
+      ? row.inputFields
+      : [];
+
+  const fieldMap =
+    new Map<
+      string,
+      EditableApplicationInputField
+    >();
+
+  for (
+    const rawField of
+      rawInputFields
+  ) {
+    if (
+      !rawField ||
+      typeof rawField !==
+        "object" ||
+      Array.isArray(rawField)
+    ) {
+      continue;
+    }
+
+    const field =
+      rawField as Record<
+        string,
+        unknown
+      >;
+
+    const id =
+      typeof field.id ===
+      "string"
+        ? field.id.trim()
+        : "";
+
+    if (!id) {
+      continue;
+    }
+
+    fieldMap.set(
+      id,
+      {
+        id,
+
+        kind:
+          typeof field.kind ===
+          "string"
+            ? field.kind
+            : "text",
+
+        label:
+          typeof field.label ===
+          "string"
+            ? field.label
+            : "項目",
+
+        required:
+          field.required === true,
+      },
+    );
+  }
+
+  const rawBlocks =
+    Array.isArray(
+      row.blocks,
+    )
+      ? row.blocks
+      : [];
+
+  const ordered =
+    rawBlocks
+      .map((rawBlock) => {
+        if (
+          !rawBlock ||
+          typeof rawBlock !==
+            "object" ||
+          Array.isArray(rawBlock)
+        ) {
+          return null;
+        }
+
+        const block =
+          rawBlock as Record<
+            string,
+            unknown
+          >;
+
+        if (
+          block.type !==
+          "field"
+        ) {
+          return null;
+        }
+
+        const fieldId =
+          typeof block.fieldId ===
+          "string"
+            ? block.fieldId
+            : "";
+
+        return (
+          fieldMap.get(
+            fieldId,
+          ) ?? null
+        );
+      })
+      .filter(
+        (
+          field,
+        ): field is EditableApplicationInputField =>
+          Boolean(field),
+      );
+
+  if (
+    ordered.length > 0
+  ) {
+    return ordered;
+  }
+
+  return Array.from(
+    fieldMap.values(),
+  );
+}
+
+
 function getAgreement(
   definition: unknown,
 ) {
@@ -429,6 +586,218 @@ export default function MyApplicationsPage() {
   ] = React.useState<
     string | null
   >(null);
+
+  const [
+    openMessageEntryId,
+    setOpenMessageEntryId,
+  ] = React.useState<
+    string | null
+  >(null);
+
+
+  const [
+    editingEntryId,
+    setEditingEntryId,
+  ] = React.useState<
+    string | null
+  >(null);
+
+  const [
+    editAnswers,
+    setEditAnswers,
+  ] = React.useState<
+    Record<string, string>
+  >({});
+
+  const [
+    savingEdit,
+    setSavingEdit,
+  ] = React.useState(false);
+
+  const [
+    editMessage,
+    setEditMessage,
+  ] = React.useState("");
+
+
+  function startApplicationAnswerEdit(
+    entry: MyApplicationEntry,
+  ) {
+    const fields =
+      getApplicationInputFieldsForEntry(
+        entry.application
+          .definition,
+      );
+
+    const answerMap =
+      new Map(
+        entry.answers.map(
+          (answer) => [
+            answer.field_id,
+            answer.value,
+          ],
+        ),
+      );
+
+    const next:
+      Record<string, string> = {};
+
+    for (
+      const field of fields
+    ) {
+      const value =
+        answerMap.get(
+          field.id,
+        );
+
+      next[field.id] =
+        typeof value === "string"
+          ? value
+          : value === null ||
+              typeof value ===
+                "undefined"
+            ? ""
+            : String(value);
+    }
+
+    setEditAnswers(next);
+    setEditMessage("");
+    setEditingEntryId(
+      entry.id,
+    );
+  }
+
+
+  function cancelApplicationAnswerEdit() {
+    setEditingEntryId(null);
+    setEditAnswers({});
+    setEditMessage("");
+  }
+
+
+  function setApplicationEditAnswer(
+    fieldId: string,
+    value: string,
+  ) {
+    setEditAnswers(
+      (current) => ({
+        ...current,
+        [fieldId]: value,
+      }),
+    );
+
+    setEditMessage("");
+  }
+
+
+  async function saveApplicationAnswerEdit(
+    entry: MyApplicationEntry,
+  ) {
+    if (!supabase) {
+      setEditMessage(
+        "ログイン情報を確認できませんでした。",
+      );
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditMessage("");
+
+    try {
+      const {
+        data: { session },
+      } =
+        await supabase.auth
+          .getSession();
+
+      if (
+        !session?.access_token
+      ) {
+        setEditMessage(
+          "ログインが必要です。",
+        );
+        return;
+      }
+
+      const response =
+        await fetch(
+          "/api/application/my-entries",
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body:
+              JSON.stringify({
+                entryId:
+                  entry.id,
+
+                answers:
+                  editAnswers,
+              }),
+          },
+        );
+
+      const result =
+        (await response
+          .json()
+          .catch(() => null)) as
+          | {
+              ok?: boolean;
+              answers?: Answer[];
+              message?: string;
+            }
+          | null;
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        setEditMessage(
+          result?.message ||
+            "申込内容を変更できませんでした。",
+        );
+        return;
+      }
+
+      setEntries(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              entry.id
+                ? {
+                    ...item,
+                    answers:
+                      result.answers ??
+                      item.answers,
+                  }
+                : item,
+          ),
+      );
+
+      setEditingEntryId(null);
+      setEditAnswers({});
+      setEditMessage("");
+    } catch (error) {
+      console.error(
+        "application answer edit failed:",
+        error,
+      );
+
+      setEditMessage(
+        "申込内容を変更できませんでした。",
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
 
   React.useEffect(() => {
@@ -818,6 +1187,37 @@ export default function MyApplicationsPage() {
                       .definition,
                   );
 
+
+                const applicationInputFields =
+                  getApplicationInputFieldsForEntry(
+                    entry.application
+                      .definition,
+                  );
+
+                const applicationAnswerMap =
+                  new Map(
+                    entry.answers.map(
+                      (answer) => [
+                        answer.field_id,
+                        answer,
+                      ],
+                    ),
+                  );
+
+                const isEditingAnswers =
+                  editingEntryId ===
+                  entry.id;
+
+                const canEditAnswers =
+                  applicationInputFields.length >
+                    0 &&
+                  (
+                    entry.status ===
+                      "submitted" ||
+                    entry.status ===
+                      "confirmed"
+                  );
+
                 return (
                   <section
                     key={
@@ -852,22 +1252,69 @@ export default function MyApplicationsPage() {
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenEntryId(
-                            isOpen
-                              ? null
-                              : entry.id,
-                          )
-                        }
-                        className="mt-5 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700"
-                      >
-                        {isOpen
-                          ? "閉じる"
-                          : "申込内容を見る"}
-                      </button>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMessageEntryId(
+                              null,
+                            );
+
+                            setOpenEntryId(
+                              isOpen
+                                ? null
+                                : entry.id,
+                            );
+                          }}
+                          className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700"
+                        >
+                          {isOpen
+                            ? "閉じる"
+                            : "申込内容を見る"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              openMessageEntryId ===
+                              entry.id
+                            ) {
+                              setOpenMessageEntryId(
+                                null,
+                              );
+                              return;
+                            }
+
+                            setOpenEntryId(
+                              null,
+                            );
+
+                            setOpenMessageEntryId(
+                              entry.id,
+                            );
+                          }}
+                          className="rounded-full bg-neutral-100 px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200"
+                        >
+                          {openMessageEntryId ===
+                          entry.id
+                            ? "メッセージを閉じる"
+                            : "主催者とのメッセージ"}
+                        </button>
+                      </div>
                     </div>
+
+                    {openMessageEntryId ===
+                    entry.id ? (
+                      <div className="border-t border-neutral-100 bg-neutral-50 px-6 pb-6">
+                        <ApplicationEntryMessagePanel
+                          entryId={
+                            entry.id
+                          }
+                          counterpartLabel="主催者"
+                        />
+                      </div>
+                    ) : null}
 
                     {isOpen ? (
                       <div className="border-t border-neutral-100 bg-neutral-50 px-6 py-6">
@@ -915,6 +1362,290 @@ export default function MyApplicationsPage() {
                                     <div className="mt-1 text-sm text-neutral-900">
                                       {formatValue(
                                         field.value,
+                                      )}
+                                    </div>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {applicationInputFields.length >
+                        0 ? (
+                          <div className="mt-7 border-t border-neutral-200 pt-6">
+                            <div className="text-xs font-bold text-neutral-400">
+                              {isEditingAnswers
+                                ? "APPLICATION回答を変更"
+                                : "あなたのAPPLICATION回答"}
+                            </div>
+
+                            {isEditingAnswers ? (
+                              <div className="mt-4 space-y-4">
+                                {applicationInputFields.map(
+                                  (
+                                    field,
+                                  ) => {
+                                    const value =
+                                      editAnswers[
+                                        field.id
+                                      ] ?? "";
+
+                                    if (
+                                      field.kind ===
+                                        "radio" ||
+                                      field.kind ===
+                                        "select" ||
+                                      field.kind ===
+                                        "checkbox"
+                                    ) {
+                                      return (
+                                        <div
+                                          key={
+                                            field.id
+                                          }
+                                          className="rounded-xl border border-amber-200 bg-amber-50 p-4"
+                                        >
+                                          <div className="text-sm font-bold text-neutral-900">
+                                            {
+                                              field.label
+                                            }
+                                          </div>
+
+                                          <p className="mt-2 text-xs text-amber-800">
+                                            このFIELDは現在編集できません。
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+
+                                    if (
+                                      field.kind ===
+                                      "textarea"
+                                    ) {
+                                      return (
+                                        <label
+                                          key={
+                                            field.id
+                                          }
+                                          className="block"
+                                        >
+                                          <span className="text-xs font-bold text-neutral-500">
+                                            {
+                                              field.label
+                                            }
+
+                                            {field.required ? (
+                                              <span className="ml-2 text-red-500">
+                                                必須
+                                              </span>
+                                            ) : null}
+                                          </span>
+
+                                          <textarea
+                                            rows={4}
+                                            value={
+                                              value
+                                            }
+                                            onChange={(
+                                              event,
+                                            ) =>
+                                              setApplicationEditAnswer(
+                                                field.id,
+                                                event
+                                                  .target
+                                                  .value,
+                                              )
+                                            }
+                                            className="mt-2 w-full resize-y rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
+                                          />
+                                        </label>
+                                      );
+                                    }
+
+                                    const inputType =
+                                      field.kind ===
+                                      "email"
+                                        ? "email"
+                                        : field.kind ===
+                                            "tel"
+                                          ? "tel"
+                                          : field.kind ===
+                                              "date"
+                                            ? "date"
+                                            : field.kind ===
+                                                "datetime"
+                                              ? "datetime-local"
+                                              : "text";
+
+                                    return (
+                                      <label
+                                        key={
+                                          field.id
+                                        }
+                                        className="block"
+                                      >
+                                        <span className="text-xs font-bold text-neutral-500">
+                                          {
+                                            field.label
+                                          }
+
+                                          {field.required ? (
+                                            <span className="ml-2 text-red-500">
+                                              必須
+                                            </span>
+                                          ) : null}
+                                        </span>
+
+                                        <input
+                                          type={
+                                            inputType
+                                          }
+                                          value={
+                                            value
+                                          }
+                                          inputMode={
+                                            field.kind ===
+                                            "postalCode"
+                                              ? "numeric"
+                                              : undefined
+                                          }
+                                          onChange={(
+                                            event,
+                                          ) =>
+                                            setApplicationEditAnswer(
+                                              field.id,
+                                              event
+                                                .target
+                                                .value,
+                                            )
+                                          }
+                                          className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                        />
+                                      </label>
+                                    );
+                                  },
+                                )}
+
+                                {editMessage ? (
+                                  <p className="text-sm text-red-600">
+                                    {
+                                      editMessage
+                                    }
+                                  </p>
+                                ) : null}
+
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      savingEdit
+                                    }
+                                    onClick={() =>
+                                      saveApplicationAnswerEdit(
+                                        entry,
+                                      )
+                                    }
+                                    className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                                  >
+                                    {savingEdit
+                                      ? "保存中..."
+                                      : "変更を保存"}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      savingEdit
+                                    }
+                                    onClick={
+                                      cancelApplicationAnswerEdit
+                                    }
+                                    className="rounded-full bg-neutral-200 px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-300 disabled:opacity-40"
+                                  >
+                                    キャンセル
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="mt-3 space-y-4">
+                                  {applicationInputFields.map(
+                                    (
+                                      field,
+                                    ) => {
+                                      const answer =
+                                        applicationAnswerMap.get(
+                                          field.id,
+                                        );
+
+                                      return (
+                                        <div
+                                          key={
+                                            field.id
+                                          }
+                                        >
+                                          <div className="text-xs font-bold text-neutral-500">
+                                            {
+                                              field.label
+                                            }
+                                          </div>
+
+                                          <div className="mt-1 text-sm text-neutral-950">
+                                            {formatValue(
+                                              answer
+                                                ?.value ??
+                                                null,
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    },
+                                  )}
+                                </div>
+
+                                {canEditAnswers ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      startApplicationAnswerEdit(
+                                        entry,
+                                      )
+                                    }
+                                    className="mt-5 rounded-full bg-neutral-100 px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200"
+                                  >
+                                    申込内容を変更
+                                  </button>
+                                ) : null}
+                              </>
+                            )}
+                          </div>
+                        ) : entry.answers.length >
+                          0 ? (
+                          <div className="mt-7 border-t border-neutral-200 pt-6">
+                            <div className="text-xs font-bold text-neutral-400">
+                              あなたのAPPLICATION回答
+                            </div>
+
+                            <div className="mt-3 space-y-4">
+                              {entry.answers.map(
+                                (
+                                  answer,
+                                ) => (
+                                  <div
+                                    key={
+                                      answer.field_id
+                                    }
+                                  >
+                                    <div className="text-xs font-bold text-neutral-500">
+                                      {
+                                        answer.label
+                                      }
+                                    </div>
+
+                                    <div className="mt-1 text-sm text-neutral-950">
+                                      {formatValue(
+                                        answer.value,
                                       )}
                                     </div>
                                   </div>

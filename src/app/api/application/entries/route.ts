@@ -124,6 +124,96 @@ function resolveFormAnswers(
 }
 
 
+function resolveApplicationAnswers(
+  applicationSnapshot: unknown,
+  answers: unknown,
+) {
+  if (
+    !applicationSnapshot ||
+    typeof applicationSnapshot !== "object" ||
+    Array.isArray(applicationSnapshot)
+  ) {
+    return [];
+  }
+
+  if (
+    !answers ||
+    typeof answers !== "object" ||
+    Array.isArray(answers)
+  ) {
+    return [];
+  }
+
+  const snapshot =
+    applicationSnapshot as {
+      definition?: {
+        inputFields?: unknown;
+      };
+    };
+
+  const fields =
+    Array.isArray(
+      snapshot.definition?.inputFields,
+    )
+      ? snapshot.definition
+          ?.inputFields as Array<{
+            id?: unknown;
+            kind?: unknown;
+            label?: unknown;
+          }>
+      : [];
+
+  const answerMap =
+    answers as Record<
+      string,
+      unknown
+    >;
+
+  return fields
+    .map((field) => {
+      const id =
+        typeof field.id === "string"
+          ? field.id.trim()
+          : "";
+
+      if (
+        !id ||
+        !Object.prototype.hasOwnProperty.call(
+          answerMap,
+          id,
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        field_id: id,
+
+        label:
+          typeof field.label === "string"
+            ? field.label
+            : "項目",
+
+        type:
+          typeof field.kind === "string"
+            ? field.kind
+            : "text",
+
+        value:
+          answerMap[id] ??
+          null,
+      };
+    })
+    .filter(
+      (
+        item,
+      ): item is NonNullable<
+        typeof item
+      > => item !== null,
+    );
+}
+
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -263,6 +353,8 @@ export async function GET(
     );
   }
 
+
+
   const {
     data: entries,
     error: entriesError,
@@ -278,6 +370,8 @@ export async function GET(
           application_version,
           user_id,
           form_submission_id,
+          answers,
+          application_snapshot,
           status,
         qualification_status,
         payment_status,
@@ -421,50 +515,6 @@ export async function GET(
   }
 
 
-  const emailMap =
-    new Map<
-      string,
-      string | null
-    >();
-
-  await Promise.all(
-    userIds.map(
-      async (userId) => {
-        const {
-          data,
-          error,
-        } =
-          await supabaseAdmin
-            .auth.admin
-            .getUserById(
-              userId,
-            );
-
-        if (error) {
-          console.error(
-            "[APPLICATION entries] auth user load failed",
-            {
-              userId,
-              error,
-            },
-          );
-
-          emailMap.set(
-            userId,
-            null,
-          );
-
-          return;
-        }
-
-        emailMap.set(
-          userId,
-          data.user?.email ??
-            null,
-        );
-      },
-    ),
-  );
 
 
   const submissionMap =
@@ -577,16 +627,6 @@ export async function GET(
           user_id:
             entry.user_id,
 
-          email:
-            entry.user_id
-              ? (
-                  emailMap.get(
-                    entry.user_id,
-                  ) ??
-                  null
-                )
-              : null,
-
           username:
             profile?.username ??
             null,
@@ -596,6 +636,12 @@ export async function GET(
               ?.display_name ??
             null,
         },
+
+        answers:
+          resolveApplicationAnswers(
+            entry.application_snapshot,
+            entry.answers,
+          ),
 
         form_submission:
           submission
@@ -776,9 +822,11 @@ export async function PATCH(
         `
           id,
           application_id,
+          user_id,
           status,
           qualification_status,
-          payment_status
+          payment_status,
+          application_snapshot
         `,
       )
       .eq(

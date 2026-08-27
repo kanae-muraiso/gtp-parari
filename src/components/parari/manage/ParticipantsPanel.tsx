@@ -32,7 +32,6 @@ type EntryStatus =
 type ParticipantRow = {
   id: string;
   name: string;
-  email: string | null;
   username: string | null;
   status: EntryStatus;
   autoBooking: boolean;
@@ -321,9 +320,6 @@ export default function ParticipantsPanel({
                             "参加者",
                         ),
 
-                      email:
-                        null,
-
                       username:
                         participant
                           .username ??
@@ -435,15 +431,8 @@ export default function ParticipantsPanel({
                               .display_name ||
                               applicant
                                 .username ||
-                              applicant
-                                .email ||
                               "参加者",
                           ),
-
-                        email:
-                          applicant
-                            .email ??
-                          null,
 
                         username:
                           applicant
@@ -655,13 +644,7 @@ export default function ParticipantsPanel({
                     }
                   </div>
 
-                  {participant.email ? (
-                    <div className="mt-0.5 truncate text-xs text-neutral-400">
-                      {
-                        participant.email
-                      }
-                    </div>
-                  ) : participant.username ? (
+                  {participant.username ? (
                     <div className="mt-0.5 truncate text-xs text-neutral-400">
                       @
                       {

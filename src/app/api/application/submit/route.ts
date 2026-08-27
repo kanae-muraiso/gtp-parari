@@ -46,6 +46,19 @@ type ApplicationDefinition = {
     deadlineMinutesBefore?: number;
     recurringBookingEnabled?: boolean;
   };
+
+  inputFields?: Array<{
+    id?: unknown;
+    kind?: unknown;
+    label?: unknown;
+    required?: unknown;
+  }>;
+
+  blocks?: Array<{
+    type?: unknown;
+    fieldId?: unknown;
+    calendarItemId?: unknown;
+  }>;
 };
 
 
@@ -110,6 +123,125 @@ status:
 };
 
 
+function normalizeApplicationAnswers(
+  definition: ApplicationDefinition | null,
+  rawAnswers: unknown,
+):
+  | {
+      ok: true;
+      answers: Record<string, string>;
+    }
+  | {
+      ok: false;
+      message: string;
+    } {
+  const inputFields =
+    Array.isArray(definition?.inputFields)
+      ? definition.inputFields
+      : [];
+
+  const blocks =
+    Array.isArray(definition?.blocks)
+      ? definition.blocks
+      : [];
+
+  const activeFieldIds =
+    new Set(
+      blocks
+        .filter(
+          (block) =>
+            block?.type === "field",
+        )
+        .map((block) =>
+          typeof block?.fieldId === "string"
+            ? block.fieldId.trim()
+            : "",
+        )
+        .filter(Boolean),
+    );
+
+  if (activeFieldIds.size === 0) {
+    return {
+      ok: true,
+      answers: {},
+    };
+  }
+
+  const answerRecord =
+    rawAnswers &&
+    typeof rawAnswers === "object" &&
+    !Array.isArray(rawAnswers)
+      ? rawAnswers as Record<string, unknown>
+      : {};
+
+  const normalized:
+    Record<string, string> = {};
+
+  for (const field of inputFields) {
+    const id =
+      typeof field?.id === "string"
+        ? field.id.trim()
+        : "";
+
+    if (
+      !id ||
+      !activeFieldIds.has(id)
+    ) {
+      continue;
+    }
+
+    const label =
+      typeof field?.label === "string" &&
+      field.label.trim()
+        ? field.label.trim()
+        : "項目";
+
+    const kind =
+      typeof field?.kind === "string"
+        ? field.kind.trim()
+        : "";
+
+    if (
+      kind === "radio" ||
+      kind === "select" ||
+      kind === "checkbox"
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」は現在設定中のFIELDです。`,
+      };
+    }
+
+    const rawValue =
+      answerRecord[id];
+
+    const value =
+      typeof rawValue === "string"
+        ? rawValue.trim()
+        : "";
+
+    if (
+      field?.required === true &&
+      !value
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」を入力してください。`,
+      };
+    }
+
+    normalized[id] = value;
+  }
+
+  return {
+    ok: true,
+    answers: normalized,
+  };
+}
+
+
 function getBearerToken(
   request: NextRequest,
 ): string | null {
@@ -127,6 +259,34 @@ function getBearerToken(
     match?.[1]?.trim() ||
     null
   );
+}
+
+
+function getCalendarBlockItemIds(
+  definition:
+    | ApplicationDefinition
+    | null,
+): string[] {
+  const blocks =
+    Array.isArray(
+      definition?.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  return blocks
+    .filter(
+      (block) =>
+        block &&
+        typeof block === "object" &&
+        block.type === "calendar",
+    )
+    .map((block) =>
+      typeof block.calendarItemId ===
+      "string"
+        ? block.calendarItemId.trim()
+        : "",
+    );
 }
 
 
@@ -321,6 +481,7 @@ export async function POST(
             applicationId?: unknown;
             formSubmissionId?: unknown;
             occurrenceId?: unknown;
+            answers?: unknown;
           }
         | null;
 
@@ -425,6 +586,30 @@ export async function POST(
     const application =
       applicationData as ApplicationRow;
 
+    const applicationAnswersResult =
+      normalizeApplicationAnswers(
+        application.definition,
+        body?.answers,
+      );
+
+    if (
+      applicationAnswersResult.ok === false
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            applicationAnswersResult.message,
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const applicationAnswers =
+      applicationAnswersResult.answers;
+
 
     // ======================================================
     // 受付状態
@@ -505,12 +690,47 @@ export async function POST(
         null;
 
 
+    const calendarItemIdForEntry =
+      application.origin === "calendar"
+        ? application.calendar_item_id
+        : null;
+
     if (
-      application.origin ===
-      "calendar"
+      calendarItemIdForEntry &&
+      !UUID_RE.test(
+        calendarItemIdForEntry,
+      )
     ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "APPLICATIONのCALENDAR設定を確認できませんでした。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      !calendarItemIdForEntry &&
+      occurrenceId
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは開催回を指定できません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (calendarItemIdForEntry) {
       if (
-        !application.calendar_item_id ||
         !UUID_RE.test(
           occurrenceId,
         )
@@ -558,7 +778,7 @@ export async function POST(
           )
           .eq(
             "calendar_item_id",
-            application.calendar_item_id,
+            calendarItemIdForEntry,
           )
           .maybeSingle();
 
@@ -706,10 +926,6 @@ export async function POST(
           "id, status",
         )
         .eq(
-          "application_id",
-          application.id,
-        )
-        .eq(
           "user_id",
           user.id,
         )
@@ -733,10 +949,15 @@ export async function POST(
         );
     } else {
       duplicateQuery =
-        duplicateQuery.is(
-          "calendar_occurrence_id",
-          null,
-        );
+        duplicateQuery
+          .eq(
+            "application_id",
+            application.id,
+          )
+          .is(
+            "calendar_occurrence_id",
+            null,
+          );
     }
 
 
@@ -954,10 +1175,6 @@ export async function POST(
             head: true,
           },
         )
-        .eq(
-          "application_id",
-          application.id,
-        )
         .in(
           "status",
           [
@@ -978,10 +1195,15 @@ export async function POST(
         );
     } else {
       countQuery =
-        countQuery.is(
-          "calendar_occurrence_id",
-          null,
-        );
+        countQuery
+          .eq(
+            "application_id",
+            application.id,
+          )
+          .is(
+            "calendar_occurrence_id",
+            null,
+          );
     }
 
 
@@ -1161,6 +1383,9 @@ export async function POST(
 
           form_submission_id:
             validatedFormSubmissionId,
+
+          answers:
+            applicationAnswers,
 
           status:
             entryStatus,

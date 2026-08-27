@@ -4,6 +4,8 @@
 
 "use client";
 
+import ApplicationEntryMessagePanel from "@/components/parari/application/ApplicationEntryMessagePanel";
+
 import * as React from "react";
 
 import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
@@ -13,9 +15,13 @@ import CalendarApplicationList from "@/components/parari/settings/CalendarApplic
 
 import type {
   ApplicationAcceptanceMode,
+  ApplicationBlock,
   ApplicationDefinitionData,
   ApplicationField,
   ApplicationFieldType,
+  ApplicationInputField,
+  ApplicationInputFieldKind,
+  ApplicationMode,
   ApplicationType,
 } from "@/components/parari/panels/application/applicationTypes";
 
@@ -24,6 +30,10 @@ import {
   APPLICATION_TYPE_LABELS,
   createApplicationTemplate,
 } from "@/components/parari/panels/application/templates";
+
+import {
+  FORM_INPUT_BLOCK_CATALOG,
+} from "@/components/parari/panels/form/formInputBlockCatalog";
 
 
 const APPLICATION_TYPES: ApplicationType[] = [
@@ -46,13 +56,47 @@ const ACTION_LABEL_OPTIONS = [
   "見学を申し込む",
 ] as const;
 
+type ManagedFormField = {
+  id: string;
+  label: string;
+};
+
 type ManagedForm = {
   id: string;
   name: string;
   version: number;
   definition?: {
-    fields?: unknown[];
+    fields?: ManagedFormField[];
   };
+};
+
+
+type ManagedCalendarItem = {
+  id: string;
+  title: string;
+};
+
+type ManagedMembership = {
+  id: string;
+  name: string;
+  description?: string | null;
+};
+
+
+export type ApplicationManagerCreatedApplication = {
+  id: string;
+  application_type: ApplicationType;
+  title: string;
+  acceptance_mode: ApplicationAcceptanceMode;
+  status: "draft" | "open" | "closed";
+};
+
+type ApplicationManagerProps = {
+  createOnly?: boolean;
+  onCreated?: (
+    application: ApplicationManagerCreatedApplication,
+  ) => void;
+  onCancel?: () => void;
 };
 
 
@@ -139,10 +183,11 @@ type ManagedApplicationEntry = {
 
   applicant: {
     user_id: string | null;
-    email: string | null;
     username: string | null;
     display_name: string | null;
   };
+
+  answers: ApplicationEntryAnswer[];
 
   form_submission: {
     id: string;
@@ -312,8 +357,10 @@ function getApplicationEntryAnswerColumns(
   const seen = new Set<string>();
 
   for (const entry of entries) {
-    for (const answer of
-      entry.form_submission?.answers ?? []) {
+    for (const answer of [
+      ...entry.answers,
+      ...(entry.form_submission?.answers ?? []),
+    ]) {
       const key =
         getApplicationEntryAnswerKey(answer);
 
@@ -370,7 +417,10 @@ function getApplicationEntryAnswerValue(
   columnKey: string,
 ): string {
   const answer =
-    entry.form_submission?.answers.find(
+    [
+      ...entry.answers,
+      ...(entry.form_submission?.answers ?? []),
+    ].find(
       (item) =>
         getApplicationEntryAnswerKey(item) ===
         columnKey,
@@ -390,7 +440,6 @@ function getApplicationEntryApplicantName(
   return (
     entry.applicant.display_name ||
     entry.applicant.username ||
-    entry.applicant.email ||
     "申込者"
   );
 }
@@ -432,7 +481,6 @@ function downloadApplicationEntriesCsv(
     "申込ID",
     "申込日時",
     "氏名",
-    "メール",
     "ユーザー名",
     "状態",
     "APPLICATION version",
@@ -448,7 +496,6 @@ function downloadApplicationEntriesCsv(
       entry.created_at,
     ),
     getApplicationEntryApplicantName(entry),
-    entry.applicant.email ?? "",
     entry.applicant.username ?? "",
     getApplicationEntryStatusLabel(
       entry.status,
@@ -511,7 +558,11 @@ function getManagedApplicationOrigin(
 }
 
 
-export default function ApplicationManager() {
+export default function ApplicationManager({
+  createOnly = false,
+  onCreated,
+  onCancel,
+}: ApplicationManagerProps) {
   const [
     applications,
     setApplications,
@@ -538,15 +589,35 @@ export default function ApplicationManager() {
       null,
     );
 
+  const canUseExtendedApplication =
+    applicationAccess?.isMonitor === true ||
+    applicationAccess?.effectivePlan === "plus" ||
+    applicationAccess?.effectivePlan === "pro";
+
   const [
     forms,
     setForms,
   ] = React.useState<ManagedForm[]>([]);
 
   const [
+    calendarItems,
+    setCalendarItems,
+  ] = React.useState<ManagedCalendarItem[]>([]);
+
+  const [
+    memberships,
+    setMemberships,
+  ] = React.useState<ManagedMembership[]>([]);
+
+  const [
     isLoading,
     setIsLoading,
   ] = React.useState(true);
+
+  const [
+    showModeChooser,
+    setShowModeChooser,
+  ] = React.useState(createOnly);
 
   const [
     showTypeChooser,
@@ -569,6 +640,11 @@ export default function ApplicationManager() {
   ] = React.useState<ApplicationType>("EVENT");
 
   const [
+    applicationMode,
+    setApplicationMode,
+  ] = React.useState<ApplicationMode>("lite");
+
+  const [
     title,
     setTitle,
   ] = React.useState("");
@@ -582,6 +658,16 @@ export default function ApplicationManager() {
     fields,
     setFields,
   ] = React.useState<ApplicationField[]>([]);
+
+  const [
+    inputFields,
+    setInputFields,
+  ] = React.useState<ApplicationInputField[]>([]);
+
+  const [
+    blocks,
+    setBlocks,
+  ] = React.useState<ApplicationBlock[]>([]);
 
   const [
     formId,
@@ -623,11 +709,75 @@ export default function ApplicationManager() {
       paymentConfirmationRequired,
       setPaymentConfirmationRequired,
     ] = React.useState(false);
+
+  React.useEffect(() => {
+    if (
+      !showBuilder ||
+      applicationMode !== "lite"
+    ) {
+      return;
+    }
+
+    // Lite APPLICATIONは
+    // 「OKする」という意思表示を基本とし、
+    // FIELD / CALENDAR / MEMBERSHIP /
+    // 外部FORMを持たない。
+    setFields([]);
+    setInputFields([]);
+    setBlocks([]);
+    setFormId("");
+
+  }, [
+    showBuilder,
+    applicationMode,
+    canUseExtendedApplication,
+  ]);
     
+  const AGREEMENT_TEMPLATES = {
+    EVENT: `本APPLICATIONに記載された内容を確認したうえでお申し込みください。
+
+参加できなくなった場合は、できるだけ早く主催者へご連絡ください。
+
+参加費が設定されている場合は、記載された方法・期限に従ってお支払いください。
+
+入力された情報は、本イベントの受付・運営および必要な連絡のために利用します。`,
+
+    APPLICATION: `入力内容が正確であることを確認してお申し込みください。
+
+応募・申込によって、採用・参加・契約等が保証されるものではありません。
+
+応募・申込内容について、運営者から連絡する場合があります。
+
+入力された情報は、受付・確認・選考および必要な連絡のために利用します。`,
+
+    CONTACT: `お問い合わせに必要な情報を入力してください。
+
+内容によっては回答できない場合や、回答まで時間を要する場合があります。
+
+入力された情報および連絡先は、このお問い合わせへの回答および必要な連絡のために利用します。`,
+
+    MEMBERSHIP: `登録内容を確認したうえでお申し込みください。
+
+Membershipに設定された参加条件・利用条件をご確認ください。
+
+会費等が設定されている場合は、記載された条件に従ってお支払いください。
+
+登録情報は、Membershipの運営および必要な連絡のために利用します。`,
+  } as const;
+
   const [
     agreement,
     setAgreement,
   ] = React.useState("");
+
+  const agreementPreset =
+    Object.entries(
+      AGREEMENT_TEMPLATES,
+    ).find(
+      ([, text]) =>
+        text === agreement,
+    )?.[0] ??
+    (agreement ? "CUSTOM" : "NONE");
 
   const [
     actionLabel,
@@ -696,6 +846,18 @@ export default function ApplicationManager() {
       "list",
     );
 
+  const [
+    openMessageEntryId,
+    setOpenMessageEntryId,
+  ] = React.useState<string | null>(
+    null,
+  );
+
+  const [
+    openMessageApplicantName,
+    setOpenMessageApplicantName,
+  ] = React.useState("");
+
 
   React.useEffect(() => {
     let cancelled = false;
@@ -727,6 +889,8 @@ export default function ApplicationManager() {
         const [
           applicationResponse,
           formResponse,
+          calendarResponse,
+          membershipResponse,
         ] = await Promise.all([
           fetch(
             "/api/application/manage",
@@ -739,6 +903,22 @@ export default function ApplicationManager() {
 
           fetch(
             "/api/form/manage",
+            {
+              method: "GET",
+              headers,
+              cache: "no-store",
+            },
+          ),
+          fetch(
+            "/api/calendar/items",
+            {
+              method: "GET",
+              headers,
+              cache: "no-store",
+            },
+          ),
+          fetch(
+            "/api/membership/manage",
             {
               method: "GET",
               headers,
@@ -775,6 +955,28 @@ export default function ApplicationManager() {
               }
             | null;
 
+        const calendarResult =
+          (await calendarResponse
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                items?: ManagedCalendarItem[];
+                message?: string;
+              }
+            | null;
+
+        const membershipResult =
+          (await membershipResponse
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                memberships?: ManagedMembership[];
+                message?: string;
+              }
+            | null;
+
         if (cancelled) {
           return;
         }
@@ -803,6 +1005,28 @@ export default function ApplicationManager() {
           return;
         }
 
+        if (
+          !calendarResponse.ok ||
+          !calendarResult?.ok
+        ) {
+          setStatusMessage(
+            calendarResult?.message ||
+              "CALENDAR一覧を取得できませんでした。",
+          );
+          return;
+        }
+
+        if (
+          !membershipResponse.ok ||
+          !membershipResult?.ok
+        ) {
+          setStatusMessage(
+            membershipResult?.message ||
+              "MEMBERSHIP一覧を取得できませんでした。",
+          );
+          return;
+        }
+
         setApplications(
           applicationResult.applications ?? [],
         );
@@ -814,6 +1038,14 @@ export default function ApplicationManager() {
 
         setForms(
           formResult.forms ?? [],
+        );
+
+        setCalendarItems(
+          calendarResult.items ?? [],
+        );
+
+        setMemberships(
+          membershipResult.memberships ?? [],
         );
       } catch (error) {
         console.error(
@@ -851,9 +1083,11 @@ export default function ApplicationManager() {
     setTitle("");
     setDescription("");
 
-    setFields(
-      createApplicationTemplate(type),
-    );
+    setFields([]);
+
+    setInputFields([]);
+
+    setBlocks([]);
 
     setFormId("");
 
@@ -881,6 +1115,7 @@ export default function ApplicationManager() {
       );
 
     setStatusMessage("");
+    setShowModeChooser(false);
     setShowTypeChooser(false);
     setShowBuilder(true);
   }
@@ -895,6 +1130,14 @@ export default function ApplicationManager() {
 
     setApplicationType(
       application.application_type,
+    );
+
+    setApplicationMode(
+      !canUseExtendedApplication
+        ? "lite"
+        : application.definition?.mode === "lite"
+          ? "lite"
+          : "builder",
     );
 
     setTitle(
@@ -931,6 +1174,19 @@ export default function ApplicationManager() {
         required:
           field.required === true,
       })),
+    );
+
+    setInputFields(
+      (
+        application.definition?.inputFields ??
+        []
+      ).map((field) => ({
+        ...field,
+      })),
+    );
+
+    setBlocks(
+      application.definition?.blocks ?? [],
     );
 
     setFormId(
@@ -995,6 +1251,7 @@ export default function ApplicationManager() {
       );
 
     setStatusMessage("");
+    setShowModeChooser(false);
     setShowTypeChooser(false);
     setShowBuilder(true);
   }
@@ -1006,6 +1263,14 @@ export default function ApplicationManager() {
 
       setApplicationType(
         application.application_type,
+      );
+
+      setApplicationMode(
+        !canUseExtendedApplication
+          ? "lite"
+          : application.definition?.mode === "lite"
+            ? "lite"
+            : "builder",
       );
 
       setTitle(
@@ -1042,6 +1307,24 @@ export default function ApplicationManager() {
           required:
             field.required === true,
         })),
+      );
+
+      setInputFields(
+        (
+          application.definition?.inputFields ??
+          []
+        ).map((field) => ({
+          ...field,
+        })),
+      );
+
+      setBlocks(
+        (application.definition?.blocks ?? []).map(
+          (block) => ({
+            ...block,
+            id: crypto.randomUUID(),
+          }),
+        ),
       );
 
       setFormId(
@@ -1108,6 +1391,229 @@ export default function ApplicationManager() {
       setShowTypeChooser(false);
       setShowBuilder(true);
     }
+
+  function insertApplicationInputField(
+    insertIndex: number,
+  ) {
+    const fieldId =
+      crypto.randomUUID();
+
+    const blockId =
+      crypto.randomUUID();
+
+    setInputFields((current) => [
+      ...current,
+      {
+        id: fieldId,
+        kind: null,
+        label: "",
+        required: false,
+      },
+    ]);
+
+    setBlocks((current) => {
+      const next = [...current];
+
+      next.splice(
+        insertIndex,
+        0,
+        {
+          id: blockId,
+          type: "field",
+          fieldId,
+        },
+      );
+
+      return next;
+    });
+  }
+
+
+  function insertApplicationResourceBlock(
+    type:
+      | "calendar"
+      | "membership",
+    insertIndex: number,
+  ) {
+    const id =
+      crypto.randomUUID();
+
+    setBlocks((current) => {
+      const next = [...current];
+
+      if (type === "calendar") {
+        next.splice(
+          insertIndex,
+          0,
+          {
+            id,
+            type: "calendar",
+            calendarItemId: "",
+          },
+        );
+      } else {
+        next.splice(
+          insertIndex,
+          0,
+          {
+            id,
+            type: "membership",
+            membershipId: "",
+          },
+        );
+      }
+
+      return next;
+    });
+  }
+
+
+  function changeApplicationInputFieldKind(
+    fieldId: string,
+    rawKind: string,
+  ) {
+    const kind =
+      rawKind
+        ? rawKind as ApplicationInputFieldKind
+        : null;
+
+    const option =
+      FORM_INPUT_BLOCK_CATALOG.find(
+        (item) =>
+          item.kind === kind,
+      );
+
+    setInputFields((current) =>
+      current.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              kind,
+              label:
+                option?.label ?? "",
+            }
+          : field,
+      ),
+    );
+  }
+
+
+  function setApplicationInputFieldRequired(
+    fieldId: string,
+    required: boolean,
+  ) {
+    setInputFields((current) =>
+      current.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              required,
+            }
+          : field,
+      ),
+    );
+  }
+
+
+  function removeApplicationBlock(
+    blockId: string,
+  ) {
+    const target =
+      blocks.find(
+        (block) =>
+          block.id === blockId,
+      );
+
+    if (
+      target?.type === "field"
+    ) {
+      setInputFields((current) =>
+        current.filter(
+          (field) =>
+            field.id !==
+            target.fieldId,
+        ),
+      );
+    }
+
+    setBlocks((current) =>
+      current.filter(
+        (block) => block.id !== blockId,
+      ),
+    );
+  }
+
+  function moveApplicationBlock(
+    blockId: string,
+    direction: -1 | 1,
+  ) {
+    setBlocks((current) => {
+      const index = current.findIndex(
+        (block) => block.id === blockId,
+      );
+
+      if (index < 0) {
+        return current;
+      }
+
+      const nextIndex =
+        index + direction;
+
+      if (
+        nextIndex < 0 ||
+        nextIndex >= current.length
+      ) {
+        return current;
+      }
+
+      const next = [...current];
+
+      [
+        next[index],
+        next[nextIndex],
+      ] = [
+        next[nextIndex],
+        next[index],
+      ];
+
+      return next;
+    });
+  }
+
+  function selectCalendarForBlock(
+    blockId: string,
+    calendarItemId: string,
+  ) {
+    setBlocks((current) =>
+      current.map((block) =>
+        block.id === blockId &&
+        block.type === "calendar"
+          ? {
+              ...block,
+              calendarItemId,
+            }
+          : block,
+      ),
+    );
+  }
+
+  function selectMembershipForBlock(
+    blockId: string,
+    membershipId: string,
+  ) {
+    setBlocks((current) =>
+      current.map((block) =>
+        block.id === blockId &&
+        block.type === "membership"
+          ? {
+              ...block,
+              membershipId,
+            }
+          : block,
+      ),
+    );
+  }
+
 
   function updateField(
     fieldId: string,
@@ -1231,6 +1737,13 @@ export default function ApplicationManager() {
 
     setEntriesViewMode("list");
     setEntriesMessage("");
+
+    setOpenMessageEntryId(
+      null,
+    );
+    setOpenMessageApplicantName(
+      "",
+    );
 
     if (
       entriesByApplicationId[
@@ -1683,20 +2196,41 @@ export default function ApplicationManager() {
 
       const definition:
         ApplicationDefinitionData = {
+          mode:
+            applicationMode,
+
+          blocks:
+            applicationMode === "builder"
+              ? blocks
+              : [],
+
+          inputFields:
+            applicationMode === "builder"
+              ? inputFields.map(
+                  (field) => ({
+                    ...field,
+                    label:
+                      field.label.trim(),
+                  }),
+                )
+              : [],
+
           fields:
-            fields.map(
-              (field) => ({
-                ...field,
+            applicationMode === "builder"
+              ? fields.map(
+                  (field) => ({
+                    ...field,
 
-                label:
-                  field.label.trim(),
+                    label:
+                      field.label.trim(),
 
-                value:
-                  String(
-                    field.value ?? "",
-                  ).trim(),
-              }),
-            ),
+                    value:
+                      String(
+                        field.value ?? "",
+                      ).trim(),
+                  }),
+                )
+              : [],
 
           agreement:
             agreement.trim(),
@@ -1824,6 +2358,23 @@ export default function ApplicationManager() {
         editingApplicationId !==
         null;
 
+      if (
+        !wasEditing &&
+        createOnly
+      ) {
+        onCreated?.({
+          id: result.application.id,
+          application_type:
+            result.application.application_type,
+          title:
+            result.application.title,
+          acceptance_mode:
+            result.application.acceptance_mode,
+          status:
+            result.application.status,
+        });
+      }
+
       setShowBuilder(false);
       setEditingApplicationId(null);
 
@@ -1844,6 +2395,79 @@ export default function ApplicationManager() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+
+  function renderApplicationInsertMenu(
+    insertIndex: number,
+  ) {
+    return (
+      <div className="flex justify-center py-2">
+        <details className="relative">
+          <summary className="flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full border border-neutral-300 bg-white text-lg leading-none text-neutral-500 transition hover:border-neutral-500 hover:text-neutral-900">
+            +
+          </summary>
+
+          <div className="absolute left-1/2 z-20 mt-2 w-44 -translate-x-1/2 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
+            <button
+              type="button"
+              onClick={(event) => {
+                insertApplicationInputField(
+                  insertIndex,
+                );
+
+                event.currentTarget
+                  .closest("details")
+                  ?.removeAttribute(
+                    "open",
+                  );
+              }}
+              className="block w-full px-4 py-2 text-left text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              FIELD
+            </button>
+
+            <button
+              type="button"
+              onClick={(event) => {
+                insertApplicationResourceBlock(
+                  "calendar",
+                  insertIndex,
+                );
+
+                event.currentTarget
+                  .closest("details")
+                  ?.removeAttribute(
+                    "open",
+                  );
+              }}
+              className="block w-full px-4 py-2 text-left text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              CALENDAR
+            </button>
+
+            <button
+              type="button"
+              onClick={(event) => {
+                insertApplicationResourceBlock(
+                  "membership",
+                  insertIndex,
+                );
+
+                event.currentTarget
+                  .closest("details")
+                  ?.removeAttribute(
+                    "open",
+                  );
+              }}
+              className="block w-full px-4 py-2 text-left text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              MEMBERSHIP
+            </button>
+          </div>
+        </details>
+      </div>
+    );
   }
 
 
@@ -1919,11 +2543,14 @@ export default function ApplicationManager() {
           </div>
 
           <div className="mt-1 text-sm font-bold text-neutral-900">
-            募集を作成・管理する
+            {createOnly
+              ? "新しいAPPLICATIONを作る"
+              : "募集を作成・管理する"}
           </div>
         </div>
 
-        {!showBuilder ? (
+        {!createOnly &&
+        !showBuilder ? (
                          <button
                            type="button"
                            disabled={
@@ -1940,7 +2567,7 @@ export default function ApplicationManager() {
                                return;
                              }
 
-                             setShowTypeChooser(true);
+                             setShowModeChooser(true);
                              setStatusMessage("");
                            }}
                            className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -2027,247 +2654,304 @@ export default function ApplicationManager() {
             </div>
 
 
-            <div className="mt-10">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-bold text-neutral-950">
-                    募集情報
-                  </div>
-
-                  <p className="mt-1 text-xs text-neutral-500">
-                    応募者に提示する情報です。
-                  </p>
+            {canUseExtendedApplication &&
+            applicationMode === "builder" ? (
+              <div className="mt-10">
+                <div className="text-sm font-bold text-neutral-950">
+                  APPLICATIONの内容
                 </div>
 
-                <button
-                  type="button"
-                  onClick={
-                    addCustomField
-                  }
-                  className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
-                >
-                  ＋ 項目を追加
-                </button>
-              </div>
-
-
-              <div className="mt-5 space-y-4">
-                {fields.map(
-                  (
-                    field,
-                    index,
-                  ) => (
-                    <div
-                      key={field.id}
-                      className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-neutral-900">
-                            項目{" "}
-                            {index + 1}
-                          </span>
-
-                          {field.key ? (
-                            <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-400">
-                              標準項目
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-400">
-                              カスタム
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              moveField(
-                                field.id,
-                                -1,
-                              )
-                            }
-                            disabled={
-                              index === 0
-                            }
-                            className="text-xs font-bold text-neutral-400 disabled:opacity-30"
-                          >
-                            ↑
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              moveField(
-                                field.id,
-                                1,
-                              )
-                            }
-                            disabled={
-                              index ===
-                              fields.length -
-                                1
-                            }
-                            className="text-xs font-bold text-neutral-400 disabled:opacity-30"
-                          >
-                            ↓
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeField(
-                                field.id,
-                              )
-                            }
-                            className="text-xs font-bold text-neutral-400 transition hover:text-neutral-700"
-                          >
-                            削除
-                          </button>
-                        </div>
-                      </div>
-
-
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-xs font-bold text-neutral-600">
-                            項目名
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              field.label
-                            }
-                            onChange={(event) =>
-                              updateField(
-                                field.id,
-                                {
-                                  label:
-                                    event
-                                      .target
-                                      .value,
-                                },
-                              )
-                            }
-                            className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                          />
-                        </div>
-
-
-                        <div>
-                          <label className="block text-xs font-bold text-neutral-600">
-                            種類
-                          </label>
-
-                          <select
-                            value={
-                              field.type
-                            }
-                            disabled={
-                              Boolean(
-                                field.key,
-                              )
-                            }
-                            onChange={(event) =>
-                              updateField(
-                                field.id,
-                                {
-                                  type:
-                                    event
-                                      .target
-                                      .value as ApplicationFieldType,
-                                },
-                              )
-                            }
-                            className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-neutral-100 disabled:text-neutral-400"
-                          >
-                            <option value="text">
-                              1行
-                            </option>
-
-                            <option value="textarea">
-                              複数行
-                            </option>
-
-                            <option value="date">
-                              日付
-                            </option>
-
-                            <option value="datetime">
-                              日時
-                            </option>
-
-                            <option value="number">
-                              数値
-                            </option>
-
-                            <option value="money">
-                              金額
-                            </option>
-
-                            <option value="url">
-                              URL
-                            </option>
-                          </select>
-                        </div>
-
-
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-bold text-neutral-600">
-                            内容
-                          </label>
-
-                          {renderValueInput(
-                            field,
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
-
-
-            <div className="mt-10 rounded-2xl border border-neutral-200 p-5">
-              <div className="text-sm font-bold text-neutral-950">
-                応募者に記入してもらうFORM
-              </div>
-
               <p className="mt-1 text-xs leading-5 text-neutral-500">
-                必要がなければFORMなしでも構いません。
+                ＋を押した位置に、APPLICATIONの部品を追加できます。
               </p>
 
-              <select
-                value={formId}
-                onChange={(event) =>
-                  setFormId(
-                    event.target.value,
-                  )
-                }
-                className="mt-4 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-              >
-                <option value="">
-                  FORMを使用しない
-                </option>
-
-                {forms.map(
-                  (form) => (
-                    <option
-                      key={form.id}
-                      value={form.id}
-                    >
-                      {form.name}
-                    </option>
-                  ),
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                {renderApplicationInsertMenu(
+                  0,
                 )}
-              </select>
-            </div>
+
+                {blocks.map(
+                  (
+                    block,
+                    index,
+                  ) => {
+                    const inputField =
+                      block.type ===
+                      "field"
+                        ? inputFields.find(
+                            (field) =>
+                              field.id ===
+                              block.fieldId,
+                          )
+                        : null;
+
+                    const legacyForm =
+                      block.type ===
+                      "form"
+                        ? forms.find(
+                            (form) =>
+                              form.id ===
+                              formId,
+                          )
+                        : null;
+
+                    return (
+                      <React.Fragment
+                        key={block.id}
+                      >
+                        <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
+                          <div className="w-28 shrink-0 text-xs font-bold tracking-wide text-neutral-500">
+                            {block.type ===
+                            "field"
+                              ? "FIELD"
+                              : block.type ===
+                                  "calendar"
+                                ? "CALENDAR"
+                                : block.type ===
+                                    "membership"
+                                  ? "MEMBERSHIP"
+                                  : "FIELD"}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            {block.type ===
+                            "field" ? (
+                              <div className="space-y-3">
+                                <select
+                                  value={
+                                    inputField
+                                      ?.kind ??
+                                    ""
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) => {
+                                    if (
+                                      inputField
+                                    ) {
+                                      changeApplicationInputFieldKind(
+                                        inputField.id,
+                                        event.target
+                                          .value,
+                                      );
+                                    }
+                                  }}
+                                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-500"
+                                >
+                                  <option value="">
+                                    選択してください
+                                  </option>
+
+                                  {FORM_INPUT_BLOCK_CATALOG.map(
+                                    (
+                                      option,
+                                    ) => (
+                                      <option
+                                        key={
+                                          option.kind
+                                        }
+                                        value={
+                                          option.kind
+                                        }
+                                      >
+                                        {
+                                          option.label
+                                        }
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+
+                                {inputField?.kind ? (
+                                  <label className="flex items-center gap-2 text-sm text-neutral-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={
+                                        inputField.required ===
+                                        true
+                                      }
+                                      onChange={(
+                                        event,
+                                      ) =>
+                                        setApplicationInputFieldRequired(
+                                          inputField.id,
+                                          event.target
+                                            .checked,
+                                        )
+                                      }
+                                    />
+
+                                    必須項目にする
+                                  </label>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {block.type ===
+                            "calendar" ? (
+                              <select
+                                value={
+                                  block.calendarItemId
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  selectCalendarForBlock(
+                                    block.id,
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-500"
+                              >
+                                <option value="">
+                                  CALENDARを選択
+                                </option>
+
+                                {calendarItems.map(
+                                  (item) => (
+                                    <option
+                                      key={
+                                        item.id
+                                      }
+                                      value={
+                                        item.id
+                                      }
+                                    >
+                                      {
+                                        item.title
+                                      }
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            ) : null}
+
+                            {block.type ===
+                            "membership" ? (
+                              <select
+                                value={
+                                  block.membershipId
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  selectMembershipForBlock(
+                                    block.id,
+                                    event.target
+                                      .value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-500"
+                              >
+                                <option value="">
+                                  MEMBERSHIPを選択
+                                </option>
+
+                                {memberships.map(
+                                  (
+                                    membership,
+                                  ) => (
+                                    <option
+                                      key={
+                                        membership.id
+                                      }
+                                      value={
+                                        membership.id
+                                      }
+                                    >
+                                      {
+                                        membership.name
+                                      }
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            ) : null}
+
+                            {block.type ===
+                            "form" ? (
+                              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500">
+                                {legacyForm
+                                  ? legacyForm.name
+                                  : "旧FORM"}
+                                <span className="ml-2 text-xs text-neutral-400">
+                                  （旧形式）
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={
+                                index === 0
+                              }
+                              onClick={() =>
+                                moveApplicationBlock(
+                                  block.id,
+                                  -1,
+                                )
+                              }
+                              className="text-xs font-bold text-neutral-400 disabled:opacity-20"
+                            >
+                              ↑
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                index ===
+                                blocks.length -
+                                  1
+                              }
+                              onClick={() =>
+                                moveApplicationBlock(
+                                  block.id,
+                                  1,
+                                )
+                              }
+                              className="text-xs font-bold text-neutral-400 disabled:opacity-20"
+                            >
+                              ↓
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeApplicationBlock(
+                                  block.id,
+                                )
+                              }
+                              className="px-1 text-lg leading-none text-neutral-300 transition hover:text-neutral-700"
+                              aria-label="削除"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+
+                        {renderApplicationInsertMenu(
+                          index + 1,
+                        )}
+                      </React.Fragment>
+                    );
+                  },
+                )}
+
+                {blocks.length ===
+                0 ? (
+                  <div className="pb-3 text-center text-xs text-neutral-400">
+                    ＋から最初の部品を追加してください。
+                  </div>
+                ) : null}
+              </div>
+              </div>
+            ) : null}
 
 
-                      <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
+            <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
                         <div className="text-sm font-bold text-neutral-950">
                           支払
                         </div>
@@ -2297,7 +2981,9 @@ export default function ApplicationManager() {
                             className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
                           >
                             <option value="none">
-                              支払不要
+                              {canUseExtendedApplication
+                                ? "支払不要"
+                                : "支払リンクなし"}
                             </option>
 
                             <option value="on_site">
@@ -2305,12 +2991,14 @@ export default function ApplicationManager() {
                             </option>
 
                             <option value="bank_transfer">
-                              銀行振込（事前支払）
+                              銀行振込
                             </option>
 
+                            {canUseExtendedApplication ? (
                             <option value="payment_link">
                               支払リンク
                             </option>
+                          ) : null}
                           </select>
                         </div>
 
@@ -2450,17 +3138,72 @@ export default function ApplicationManager() {
                 確認・同意事項
               </div>
 
-              <textarea
-                value={agreement}
-                onChange={(event) =>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                テンプレートを使ってすぐに作成できます。必要な部分だけ書き換えてください。
+              </p>
+
+              <select
+                value={agreementPreset}
+                onChange={(event) => {
+                  const value =
+                    event.target.value;
+
+                  if (value === "NONE") {
+                    setAgreement("");
+                    return;
+                  }
+
+                  if (value === "CUSTOM") {
+                    setAgreement("");
+                    return;
+                  }
+
                   setAgreement(
-                    event.target.value,
-                  )
-                }
-                rows={4}
-                placeholder="例）上記の募集条件を確認し、内容に同意したうえで申し込みます。"
-                className="mt-3 w-full resize-y rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
-              />
+                    AGREEMENT_TEMPLATES[
+                      value as keyof typeof AGREEMENT_TEMPLATES
+                    ],
+                  );
+                }}
+                className="mt-3 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+              >
+                <option value="NONE">
+                  設定しない
+                </option>
+
+                <optgroup label="テンプレートから選ぶ">
+                  <option value="EVENT">
+                    イベント・参加
+                  </option>
+                  <option value="APPLICATION">
+                    応募・選考
+                  </option>
+                  <option value="CONTACT">
+                    問い合わせ・相談
+                  </option>
+                  <option value="MEMBERSHIP">
+                    Membership・登録
+                  </option>
+                </optgroup>
+
+                <option value="CUSTOM">
+                  自分で作る
+                </option>
+              </select>
+
+              {agreementPreset !==
+              "NONE" ? (
+                <textarea
+                  value={agreement}
+                  onChange={(event) =>
+                    setAgreement(
+                      event.target.value,
+                    )
+                  }
+                  rows={7}
+                  placeholder="確認・同意事項を入力してください。"
+                  className="mt-3 w-full resize-y rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
+                />
+              ) : null}
             </div>
 
 
@@ -2601,7 +3344,9 @@ export default function ApplicationManager() {
                   ? "保存しています..."
                   : editingApplicationId
                     ? "変更を保存"
-                    : "APPLICATIONを保存"}
+                    : createOnly
+                      ? "保存してこの作品に設置"
+                      : "APPLICATIONを保存"}
               </button>
 
               <button
@@ -2618,6 +3363,12 @@ export default function ApplicationManager() {
                   setStatusMessage(
                     "",
                   );
+
+                  if (createOnly) {
+                    setShowTypeChooser(
+                      true,
+                    );
+                  }
                 }}
                 disabled={isSaving}
                 className="rounded-full bg-neutral-100 px-6 py-3 text-sm font-bold text-neutral-600 transition hover:bg-neutral-200"
@@ -2625,6 +3376,125 @@ export default function ApplicationManager() {
                 戻る
               </button>
             </div>
+          </div>
+        </div>
+      ) : showModeChooser ? (
+        <div className="px-6 py-8 sm:px-10">
+          <div className="mx-auto max-w-2xl">
+            <h3 className="text-xl font-bold text-neutral-950">
+              APPLICATIONの作り方を選んでください
+            </h3>
+
+            <p className="mt-2 text-sm leading-7 text-neutral-500">
+              Liteはボタンだけのシンプルな受付、
+              Builderは入力項目や他のパネルを組み合わせるAPPLICATIONです。
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                disabled={
+                  isLoading ||
+                  applicationAccess
+                    ?.canCreateApplication ===
+                    false
+                }
+                onClick={() => {
+                  if (
+                    isLoading ||
+                    applicationAccess
+                      ?.canCreateApplication ===
+                      false
+                  ) {
+                    return;
+                  }
+
+                  setApplicationMode("lite");
+                  setShowModeChooser(false);
+                  setShowTypeChooser(true);
+                }}
+                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50"
+              >
+                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
+                  APPLICATION LITE
+                </div>
+
+                <div className="mt-2 text-base font-bold text-neutral-950">
+                  Lite
+                </div>
+
+                <p className="mt-2 text-xs leading-6 text-neutral-500">
+                  「参加する」「応募する」など、
+                  OKボタンだけでシンプルに受付します。
+                </p>
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  isLoading ||
+                  applicationAccess
+                    ?.canCreateApplication ===
+                    false ||
+                  !canUseExtendedApplication
+                }
+                onClick={() => {
+                  if (
+                    isLoading ||
+                    applicationAccess
+                      ?.canCreateApplication ===
+                      false ||
+                    !canUseExtendedApplication
+                  ) {
+                    return;
+                  }
+
+                  setApplicationMode(
+                    "builder",
+                  );
+                  setShowModeChooser(false);
+                  setShowTypeChooser(true);
+                }}
+                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-50 disabled:text-neutral-300"
+              >
+                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
+                  APPLICATION BUILDER
+                </div>
+
+                <div className="mt-2 text-base font-bold text-neutral-950">
+                  Builder
+                </div>
+
+                <p className="mt-2 text-xs leading-6 text-neutral-500">
+                  FIELD / CALENDAR /
+                  MEMBERSHIPを＋ボタンで
+                  組み合わせて作ります。
+                </p>
+
+                {!canUseExtendedApplication ? (
+                  <div className="mt-3 text-xs font-bold text-neutral-400">
+                    Plus以上で利用できます
+                  </div>
+                ) : null}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (createOnly) {
+                  onCancel?.();
+                  return;
+                }
+
+                setShowModeChooser(
+                  false,
+                );
+              }}
+              className="mt-6 text-sm font-bold text-neutral-500"
+            >
+              戻る
+            </button>
           </div>
         </div>
       ) : showTypeChooser ? (
@@ -2667,11 +3537,10 @@ export default function ApplicationManager() {
 
             <button
               type="button"
-              onClick={() =>
-                setShowTypeChooser(
-                  false,
-                )
-              }
+              onClick={() => {
+                setShowTypeChooser(false);
+                setShowModeChooser(true);
+              }}
               className="mt-6 text-sm font-bold text-neutral-500"
             >
               戻る
@@ -2699,7 +3568,7 @@ export default function ApplicationManager() {
                 <button
                   type="button"
                   onClick={() =>
-                    setShowTypeChooser(
+                    setShowModeChooser(
                       true,
                     )
                   }
@@ -2979,6 +3848,7 @@ export default function ApplicationManager() {
 
                             return (
                               <div className="mt-5 border-t border-neutral-100 pt-5">
+                                {!openMessageEntryId ? (
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                   <div className="flex items-center gap-3">
                                     <div className="text-sm font-bold text-neutral-950">
@@ -3051,20 +3921,25 @@ export default function ApplicationManager() {
                                   </div>
                                 </div>
 
-                                {entriesLoadingApplicationId ===
+                                ) : null}
+
+                                {!openMessageEntryId &&
+                                entriesLoadingApplicationId ===
                                 application.id ? (
                                   <p className="mt-4 text-sm text-neutral-500">
                                     申込者を読み込んでいます...
                                   </p>
                                 ) : null}
 
-                                {entriesMessage ? (
+                                {!openMessageEntryId &&
+                                entriesMessage ? (
                                   <p className="mt-4 text-sm text-neutral-600">
                                     {entriesMessage}
                                   </p>
                                 ) : null}
 
-                                {entriesByApplicationId[
+                                {!openMessageEntryId &&
+                                entriesByApplicationId[
                                   application.id
                                 ] &&
                                 applicationEntries.length ===
@@ -3074,7 +3949,8 @@ export default function ApplicationManager() {
                                   </p>
                                 ) : null}
 
-                                {entriesViewMode ===
+                                {!openMessageEntryId &&
+                                entriesViewMode ===
                                   "list" &&
                                 applicationEntries.length >
                                   0 ? (
@@ -3089,10 +3965,11 @@ export default function ApplicationManager() {
                                             氏名
                                           </th>
                                           <th className="whitespace-nowrap border-b border-neutral-200 px-3 py-3 font-bold">
-                                            メール
-                                          </th>
-                                          <th className="whitespace-nowrap border-b border-neutral-200 px-3 py-3 font-bold">
                                             状態
+                                          </th>
+
+                                          <th className="whitespace-nowrap border-b border-neutral-200 px-3 py-3 font-bold">
+                                            連絡
                                           </th>
 
                                           {answerColumns.map(
@@ -3133,17 +4010,47 @@ export default function ApplicationManager() {
                                                 )}
                                               </td>
 
-                                              <td className="whitespace-nowrap border-b border-neutral-100 px-3 py-3 text-neutral-600">
-                                                {entry
-                                                  .applicant
-                                                  .email ??
-                                                  "—"}
-                                              </td>
 
                                               <td className="whitespace-nowrap border-b border-neutral-100 px-3 py-3 text-neutral-600">
                                                 {getApplicationEntryStatusLabel(
                                                   entry.status,
                                                 )}
+                                              </td>
+
+                                              <td className="whitespace-nowrap border-b border-neutral-100 px-3 py-3">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    if (
+                                                      openMessageEntryId ===
+                                                      entry.id
+                                                    ) {
+                                                      setOpenMessageEntryId(
+                                                        null,
+                                                      );
+                                                      setOpenMessageApplicantName(
+                                                        "",
+                                                      );
+                                                      return;
+                                                    }
+
+                                                    setOpenMessageEntryId(
+                                                      entry.id,
+                                                    );
+
+                                                    setOpenMessageApplicantName(
+                                                      getApplicationEntryApplicantName(
+                                                        entry,
+                                                      ),
+                                                    );
+                                                  }}
+                                                  className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
+                                                >
+                                                  {openMessageEntryId ===
+                                                  entry.id
+                                                    ? "閉じる"
+                                                    : "メッセージ"}
+                                                </button>
                                               </td>
 
                                               {answerColumns.map(
@@ -3171,7 +4078,37 @@ export default function ApplicationManager() {
                                   </div>
                                 ) : null}
 
-                                {entriesViewMode ===
+                                {openMessageEntryId ? (
+                                  <div className="mt-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenMessageEntryId(
+                                          null,
+                                        );
+                                        setOpenMessageApplicantName(
+                                          "",
+                                        );
+                                      }}
+                                      className="mb-3 text-xs font-bold text-neutral-600 transition hover:text-neutral-950"
+                                    >
+                                      ← 申込者一覧へ戻る
+                                    </button>
+
+                                    <ApplicationEntryMessagePanel
+                                      entryId={
+                                        openMessageEntryId
+                                      }
+                                      counterpartLabel={
+                                        openMessageApplicantName ||
+                                        "申込者"
+                                      }
+                                    />
+                                  </div>
+                                ) : null}
+
+                                {!openMessageEntryId &&
+                                entriesViewMode ===
                                   "detail" &&
                                 applicationEntries.length >
                                   0 ? (
@@ -3190,17 +4127,6 @@ export default function ApplicationManager() {
                                                 )}
                                               </div>
 
-                                              {entry
-                                                .applicant
-                                                .email ? (
-                                                <div className="mt-1 text-xs text-neutral-500">
-                                                  {
-                                                    entry
-                                                      .applicant
-                                                      .email
-                                                  }
-                                                </div>
-                                              ) : null}
                                             </div>
 
                                                   <div className="flex flex-col items-end gap-3">
@@ -3342,6 +4268,40 @@ export default function ApplicationManager() {
                                               {formatApplicationDateTime(
                                                 entry.agreed_at,
                                               )}
+                                            </div>
+                                          ) : null}
+
+                                          {entry.answers.length > 0 ? (
+                                            <div className="mt-5 border-t border-neutral-200 pt-4">
+                                              <div className="text-xs font-bold text-neutral-500">
+                                                APPLICATION回答
+                                              </div>
+
+                                              <div className="mt-3 space-y-3">
+                                                {entry.answers.map(
+                                                  (
+                                                    answer,
+                                                  ) => (
+                                                    <div
+                                                      key={
+                                                        answer.field_id
+                                                      }
+                                                    >
+                                                      <div className="text-xs font-bold text-neutral-500">
+                                                        {
+                                                          answer.label
+                                                        }
+                                                      </div>
+
+                                                      <div className="mt-1 text-sm text-neutral-900">
+                                                        {formatApplicationAnswerValue(
+                                                          answer.value,
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  ),
+                                                )}
+                                              </div>
                                             </div>
                                           ) : null}
 

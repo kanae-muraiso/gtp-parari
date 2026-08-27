@@ -14,6 +14,8 @@ import * as React from "react";
 
 import { supabase } from "@/lib/supabaseClient";
 
+import ApplicationManager from "@/components/parari/settings/ApplicationManager";
+
 import type { PanelEditorProps } from "../panelDefinitionTypes";
 
 import type {
@@ -118,6 +120,21 @@ export default function ApplicationPanelEditor({
   const [
     message,
     setMessage,
+  ] = React.useState("");
+
+  const [
+    creatingApplication,
+    setCreatingApplication,
+  ] = React.useState(false);
+
+  const [
+    statusUpdatingApplicationId,
+    setStatusUpdatingApplicationId,
+  ] = React.useState<string | null>(null);
+
+  const [
+    statusMessage,
+    setStatusMessage,
   ] = React.useState("");
 
 
@@ -272,6 +289,164 @@ export default function ApplicationPanelEditor({
   }
 
 
+  async function updateApplicationStatus(
+    targetApplicationId: string,
+    nextStatus: "open" | "closed",
+  ) {
+    setStatusUpdatingApplicationId(
+      targetApplicationId,
+    );
+    setStatusMessage("");
+
+    try {
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setStatusMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+        return;
+      }
+
+      const response =
+        await fetch(
+          "/api/application/status",
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              applicationId:
+                targetApplicationId,
+              status:
+                nextStatus,
+            }),
+          },
+        );
+
+      const result =
+        (await response
+          .json()
+          .catch(() => null)) as
+          | {
+              ok?: boolean;
+              application?: {
+                id: string;
+                status:
+                  | "draft"
+                  | "open"
+                  | "closed";
+              };
+              message?: string;
+            }
+          | null;
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.application
+      ) {
+        setStatusMessage(
+          result?.message ||
+            "受付状態を変更できませんでした。",
+        );
+        return;
+      }
+
+      const updatedStatus =
+        result.application.status;
+
+      setApplications(
+        (current) =>
+          current.map(
+            (application) =>
+              application.id ===
+              targetApplicationId
+                ? {
+                    ...application,
+                    status:
+                      updatedStatus,
+                  }
+                : application,
+          ),
+      );
+
+      setStatusMessage(
+        updatedStatus === "open"
+          ? "受付を開始しました。"
+          : "受付を終了しました。",
+      );
+    } catch (error) {
+      console.error(
+        "[APPLICATION Panel editor] status update failed:",
+        error,
+      );
+
+      setStatusMessage(
+        "受付状態を変更できませんでした。",
+      );
+    } finally {
+      setStatusUpdatingApplicationId(
+        null,
+      );
+    }
+  }
+
+
+  if (creatingApplication) {
+    return (
+      <ApplicationManager
+        createOnly
+        onCreated={(application) => {
+          setApplications(
+            (current) => [
+              {
+                id: application.id,
+                origin: "manual",
+                application_type:
+                  application.application_type,
+                title:
+                  application.title,
+                acceptance_mode:
+                  application.acceptance_mode,
+                status:
+                  application.status,
+              },
+              ...current.filter(
+                (item) =>
+                  item.id !==
+                  application.id,
+              ),
+            ],
+          );
+
+          commit(
+            application.id,
+          );
+
+          setCreatingApplication(
+            false,
+          );
+
+          setMessage("");
+        }}
+        onCancel={() => {
+          setCreatingApplication(
+            false,
+          );
+        }}
+      />
+    );
+  }
+
+
   const selectedApplication =
     applications.find(
       (application) =>
@@ -340,6 +515,22 @@ export default function ApplicationPanelEditor({
           </div>
         )}
 
+        {!applicationId ? (
+          <button
+            type="button"
+            onClick={() => {
+              setCreatingApplication(
+                true,
+              );
+              setMessage("");
+              setStatusMessage("");
+            }}
+            className="mt-3 w-full rounded-xl border border-amber-300 bg-white px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100"
+          >
+            ＋ 新しいAPPLICATIONを作る
+          </button>
+        ) : null}
+
         {message ? (
           <p className="mt-2 text-xs leading-6 text-red-600">
             {message}
@@ -378,6 +569,41 @@ export default function ApplicationPanelEditor({
                 )}
               </span>
             </div>
+
+            <button
+              type="button"
+              disabled={
+                statusUpdatingApplicationId ===
+                selectedApplication.id
+              }
+              onClick={() => {
+                void updateApplicationStatus(
+                  selectedApplication.id,
+                  selectedApplication.status ===
+                    "open"
+                    ? "closed"
+                    : "open",
+                );
+              }}
+              className="mt-3 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {statusUpdatingApplicationId ===
+              selectedApplication.id
+                ? "変更中..."
+                : selectedApplication.status ===
+                    "draft"
+                  ? "受付を開始する"
+                  : selectedApplication.status ===
+                      "open"
+                    ? "受付を終了する"
+                    : "受付を再開する"}
+            </button>
+
+            {statusMessage ? (
+              <p className="mt-2 text-xs leading-6 text-neutral-600">
+                {statusMessage}
+              </p>
+            ) : null}
           </div>
         ) : applicationId &&
           !loading ? (

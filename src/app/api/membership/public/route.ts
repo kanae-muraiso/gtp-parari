@@ -23,48 +23,102 @@ export async function GET(request: NextRequest) {
       url.searchParams.get("recruitmentId") ?? "",
     ).trim();
 
-    if (!recruitmentId || !UUID_RE.test(recruitmentId)) {
+    const membershipId = String(
+      url.searchParams.get("membershipId") ?? "",
+    ).trim();
+
+    if (
+      !membershipId &&
+      !recruitmentId
+    ) {
       return NextResponse.json(
         {
           ok: false,
-          message: "recruitmentId が正しくありません。",
+          message:
+            "Membershipが指定されていません。",
         },
         { status: 400 },
       );
     }
 
-    const {
-      data: recruitment,
-      error: recruitmentError,
-    } = await supabaseAdmin
-      .from("membership_recruitments")
-      .select("id,membership_id")
-      .eq("id", recruitmentId)
-      .maybeSingle();
-
-    if (recruitmentError) {
-      console.error(
-        "load membership recruitment failed:",
-        recruitmentError,
-      );
-
+    if (
+      membershipId &&
+      !UUID_RE.test(membershipId)
+    ) {
       return NextResponse.json(
         {
           ok: false,
-          message: "会員登録情報を取得できませんでした。",
+          message:
+            "membershipId が正しくありません。",
         },
-        { status: 500 },
+        { status: 400 },
       );
     }
 
-    if (!recruitment) {
+    if (
+      recruitmentId &&
+      !UUID_RE.test(recruitmentId)
+    ) {
       return NextResponse.json(
         {
           ok: false,
-          message: "会員登録情報が見つかりません。",
+          message:
+            "recruitmentId が正しくありません。",
         },
-        { status: 404 },
+        { status: 400 },
       );
+    }
+
+    let recruitment:
+      | {
+          id: string;
+          membership_id: string;
+        }
+      | null = null;
+
+    let resolvedMembershipId =
+      membershipId;
+
+    if (!resolvedMembershipId) {
+      const {
+        data,
+        error: recruitmentError,
+      } = await supabaseAdmin
+        .from("membership_recruitments")
+        .select("id,membership_id")
+        .eq("id", recruitmentId)
+        .maybeSingle();
+
+      if (recruitmentError) {
+        console.error(
+          "load membership recruitment failed:",
+          recruitmentError,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "会員登録情報を取得できませんでした。",
+          },
+          { status: 500 },
+        );
+      }
+
+      if (!data) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "会員登録情報が見つかりません。",
+          },
+          { status: 404 },
+        );
+      }
+
+      recruitment = data;
+      resolvedMembershipId =
+        data.membership_id;
     }
 
     const {
@@ -73,7 +127,7 @@ export async function GET(request: NextRequest) {
     } = await supabaseAdmin
       .from("memberships")
       .select("id,name,description")
-      .eq("id", recruitment.membership_id)
+      .eq("id", resolvedMembershipId)
       .maybeSingle();
 
     if (membershipError) {
@@ -103,12 +157,30 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      recruitment: {
-        id: recruitment.id,
-        membership_id: membership.id,
-        membership_name: membership.name,
-        membership_description: membership.description,
+
+      membership: {
+        id: membership.id,
+        name: membership.name,
+        description:
+          membership.description,
       },
+
+      recruitment:
+        recruitment
+          ? {
+              id:
+                recruitment.id,
+
+              membership_id:
+                membership.id,
+
+              membership_name:
+                membership.name,
+
+              membership_description:
+                membership.description,
+            }
+          : null,
     });
   } catch (error) {
     console.error(

@@ -282,10 +282,6 @@ export async function GET(
           },
         )
         .eq(
-          "application_id",
-          bookingApplication.id,
-        )
-        .eq(
           "calendar_occurrence_id",
           occurrence.id,
         )
@@ -537,10 +533,6 @@ export async function GET(
             status,
             created_at
           `,
-        )
-        .eq(
-          "application_id",
-          bookingApplication.id,
         )
         .eq(
           "calendar_occurrence_id",

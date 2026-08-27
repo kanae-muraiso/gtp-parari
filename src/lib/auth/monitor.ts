@@ -16,7 +16,6 @@ export type MonitorAuthResult =
   | {
       ok: true;
       userId: string;
-      email: string | null;
     }
   | {
       ok: false;
@@ -98,6 +97,5 @@ export async function authenticateMonitor(
   return {
     ok: true,
     userId: user.id,
-    email: user.email ?? null,
   };
 }

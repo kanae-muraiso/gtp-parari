@@ -171,21 +171,15 @@ export function PagePanelComposer({
       setIsMutating(false);
     }
   };
-  const [deletedBlockIds, setDeletedBlockIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-
     const blocks = parseBlocks(value);
     const meaningfulBlocks = sanitizeBlocks(blocks);
     const serialized = serializeBlocks(meaningfulBlocks);
     const isSerializedSame = serialized === value;
 
-    const visibleBlocks = meaningfulBlocks.filter(
-      (block) => !deletedBlockIds.has(block.id),
-    );
-
     const renderBlocks: SsotBlock[] =
-      visibleBlocks.length > 0 ? visibleBlocks : [createEmptyTextBlock()];
+      meaningfulBlocks.length > 0
+        ? meaningfulBlocks
+        : [createEmptyTextBlock()];
     
     const replaceBlockRaw = (blockId: string, nextRaw: string) => {
         if (blockId === EMPTY_TEXT_BLOCK_ID) {
@@ -242,12 +236,6 @@ export function PagePanelComposer({
       setStructureVersion((current) => current + 1);
       return;
     }
-
-    setDeletedBlockIds((current) => {
-      const next = new Set(current);
-      next.add(blockId);
-      return next;
-    });
 
     const targetBlock = renderBlocks.find((block) => block.id === blockId);
 

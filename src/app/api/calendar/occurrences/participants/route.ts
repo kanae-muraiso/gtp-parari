@@ -335,10 +335,6 @@ export async function GET(
         `,
       )
       .eq(
-        "application_id",
-        application.id,
-      )
-      .eq(
         "calendar_occurrence_id",
         occurrence.id,
       )
