@@ -1,0 +1,1459 @@
+// src/app/api/application/submit/route.ts
+// 2026-08-15 JST
+//
+// APPLICATION v2 submit API
+//
+// - APPLICATIONへの申込を application_entries に保存する
+// - APPLICATION応募者はPARARIログイン必須
+// - FORMありの場合は form_submission_id を検証する
+// - FORM回答そのものはAPPLICATIONへコピーしない
+// - instant  -> confirmed
+// - approval -> submitted
+// - APPLICATION条件をsnapshotとして保存する
+
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+
+import {
+  getEffectivePlan,
+  getPlanLimits,
+  isAtOrOverLimit,
+} from "@/lib/billing/plan";
+
+import {
+  getUserBillingByUserId,
+} from "@/lib/billing/supabaseBilling";
+
+
+const UUID_RE =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+
+type ApplicationDefinition = {
+  fields?: Array<{
+    key?: string | null;
+    value?: unknown;
+  }>;
+
+  agreement?: string;
+  actionLabel?: string;
+
+  calendarBooking?: {
+    deadlineMinutesBefore?: number;
+    recurringBookingEnabled?: boolean;
+  };
+
+  inputFields?: Array<{
+    id?: unknown;
+    kind?: unknown;
+    label?: unknown;
+    required?: unknown;
+  }>;
+
+  blocks?: Array<{
+    type?: unknown;
+    fieldId?: unknown;
+    calendarItemId?: unknown;
+  }>;
+};
+
+
+type ApplicationRow = {
+  id: string;
+  owner_user_id: string;
+
+  origin:
+    | "manual"
+    | "calendar";
+
+  calendar_item_id:
+    | string
+    | null;
+
+  application_type: string;
+
+  title: string;
+  description: string | null;
+
+  definition:
+    | ApplicationDefinition
+    | null;
+
+  form_id:
+    | string
+    | null;
+
+acceptance_mode:
+  | "instant"
+  | "approval";
+
+payment_method:
+  | "none"
+  | "on_site"
+  | "bank_transfer"
+  | "payment_link";
+
+payment_amount:
+  | number
+  | null;
+
+payment_currency: string;
+
+payment_url:
+  | string
+  | null;
+
+payment_instructions:
+  | string
+  | null;
+
+payment_confirmation_required:
+  boolean;
+
+status:
+  | "draft"
+  | "open"
+  | "closed";
+    
+  version: number;
+};
+
+
+function normalizeApplicationAnswers(
+  definition: ApplicationDefinition | null,
+  rawAnswers: unknown,
+):
+  | {
+      ok: true;
+      answers: Record<string, string>;
+    }
+  | {
+      ok: false;
+      message: string;
+    } {
+  const inputFields =
+    Array.isArray(definition?.inputFields)
+      ? definition.inputFields
+      : [];
+
+  const blocks =
+    Array.isArray(definition?.blocks)
+      ? definition.blocks
+      : [];
+
+  const activeFieldIds =
+    new Set(
+      blocks
+        .filter(
+          (block) =>
+            block?.type === "field",
+        )
+        .map((block) =>
+          typeof block?.fieldId === "string"
+            ? block.fieldId.trim()
+            : "",
+        )
+        .filter(Boolean),
+    );
+
+  if (activeFieldIds.size === 0) {
+    return {
+      ok: true,
+      answers: {},
+    };
+  }
+
+  const answerRecord =
+    rawAnswers &&
+    typeof rawAnswers === "object" &&
+    !Array.isArray(rawAnswers)
+      ? rawAnswers as Record<string, unknown>
+      : {};
+
+  const normalized:
+    Record<string, string> = {};
+
+  for (const field of inputFields) {
+    const id =
+      typeof field?.id === "string"
+        ? field.id.trim()
+        : "";
+
+    if (
+      !id ||
+      !activeFieldIds.has(id)
+    ) {
+      continue;
+    }
+
+    const label =
+      typeof field?.label === "string" &&
+      field.label.trim()
+        ? field.label.trim()
+        : "項目";
+
+    const kind =
+      typeof field?.kind === "string"
+        ? field.kind.trim()
+        : "";
+
+    if (
+      kind === "radio" ||
+      kind === "select" ||
+      kind === "checkbox"
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」は現在設定中のFIELDです。`,
+      };
+    }
+
+    const rawValue =
+      answerRecord[id];
+
+    const value =
+      typeof rawValue === "string"
+        ? rawValue.trim()
+        : "";
+
+    if (
+      field?.required === true &&
+      !value
+    ) {
+      return {
+        ok: false,
+        message:
+          `「${label}」を入力してください。`,
+      };
+    }
+
+    normalized[id] = value;
+  }
+
+  return {
+    ok: true,
+    answers: normalized,
+  };
+}
+
+
+function getBearerToken(
+  request: NextRequest,
+): string | null {
+  const authorization =
+    request.headers.get(
+      "authorization",
+    ) ?? "";
+
+  const match =
+    authorization.match(
+      /^Bearer\s+(.+)$/i,
+    );
+
+  return (
+    match?.[1]?.trim() ||
+    null
+  );
+}
+
+
+function getCalendarBlockItemIds(
+  definition:
+    | ApplicationDefinition
+    | null,
+): string[] {
+  const blocks =
+    Array.isArray(
+      definition?.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  return blocks
+    .filter(
+      (block) =>
+        block &&
+        typeof block === "object" &&
+        block.type === "calendar",
+    )
+    .map((block) =>
+      typeof block.calendarItemId ===
+      "string"
+        ? block.calendarItemId.trim()
+        : "",
+    );
+}
+
+
+function getSemanticValue(
+  definition:
+    | ApplicationDefinition
+    | null,
+  key: string,
+): string | null {
+  const fields =
+    Array.isArray(
+      definition?.fields,
+    )
+      ? definition.fields
+      : [];
+
+  const field =
+    fields.find(
+      (item) =>
+        item.key === key,
+    );
+
+  if (!field) {
+    return null;
+  }
+
+  const value =
+    String(
+      field.value ?? "",
+    ).trim();
+
+  return value || null;
+}
+
+
+function getCapacity(
+  definition:
+    | ApplicationDefinition
+    | null,
+): number | null {
+  const value =
+    getSemanticValue(
+      definition,
+      "capacity",
+    );
+
+  if (!value) {
+    return null;
+  }
+
+  const numberValue =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      numberValue,
+    ) ||
+    numberValue <= 0
+  ) {
+    return null;
+  }
+
+  return Math.floor(
+    numberValue,
+  );
+}
+
+
+function resolveEffectiveLimit(
+  capacityLimit: number | null,
+  planLimit: number | null,
+): number | null {
+  if (
+    capacityLimit === null &&
+    planLimit === null
+  ) {
+    return null;
+  }
+
+  if (
+    capacityLimit === null
+  ) {
+    return planLimit;
+  }
+
+  if (
+    planLimit === null
+  ) {
+    return capacityLimit;
+  }
+
+  return Math.min(
+    capacityLimit,
+    planLimit,
+  );
+}
+
+
+function deadlineHasPassed(
+  definition:
+    | ApplicationDefinition
+    | null,
+): boolean {
+  const deadline =
+    getSemanticValue(
+      definition,
+      "deadline",
+    );
+
+  if (!deadline) {
+    return false;
+  }
+
+  const timestamp =
+    new Date(
+      deadline,
+    ).getTime();
+
+  if (
+    Number.isNaN(timestamp)
+  ) {
+    return false;
+  }
+
+  return (
+    timestamp <
+    Date.now()
+  );
+}
+
+
+export async function POST(
+  request: NextRequest,
+) {
+  try {
+    // ======================================================
+    // 認証
+    // ======================================================
+
+    const token =
+      getBearerToken(
+        request,
+      );
+
+    if (!token) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "お申し込みにはログインが必要です。",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } =
+      await supabaseAdmin.auth.getUser(
+        token,
+      );
+
+    if (
+      userError ||
+      !user
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "ログイン情報を確認できませんでした。",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+
+    // ======================================================
+    // Request
+    // ======================================================
+
+    const body =
+      (await request
+        .json()
+        .catch(() => null)) as
+        | {
+            applicationId?: unknown;
+            formSubmissionId?: unknown;
+            occurrenceId?: unknown;
+            answers?: unknown;
+          }
+        | null;
+
+    const applicationId =
+      typeof body?.applicationId ===
+      "string"
+        ? body.applicationId.trim()
+        : "";
+
+    const formSubmissionId =
+      typeof body?.formSubmissionId ===
+      "string"
+        ? body.formSubmissionId.trim()
+        : "";
+
+    const occurrenceId =
+      typeof body?.occurrenceId ===
+      "string"
+        ? body.occurrenceId.trim()
+        : "";
+
+    if (
+      !UUID_RE.test(
+        applicationId,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "APPLICATIONが指定されていません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    // ======================================================
+    // APPLICATION本体
+    // ======================================================
+
+    const {
+      data: applicationData,
+      error: applicationError,
+    } =
+      await supabaseAdmin
+        .from("applications")
+        .select(
+          `
+            id,
+            owner_user_id,
+            origin,
+            calendar_item_id,
+            application_type,
+            title,
+            description,
+            definition,
+            form_id,
+            acceptance_mode,
+            payment_method,
+            payment_amount,
+            payment_currency,
+            payment_url,
+            payment_instructions,
+            payment_confirmation_required,
+            status,
+            version
+          `,
+        )
+        .eq(
+          "id",
+          applicationId,
+        )
+        .maybeSingle();
+
+    if (
+      applicationError ||
+      !applicationData
+    ) {
+      console.error(
+        "application submit load failed:",
+        applicationError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "募集情報を確認できませんでした。",
+        },
+        {
+          status:
+            applicationError
+              ? 500
+              : 404,
+        },
+      );
+    }
+
+    const application =
+      applicationData as ApplicationRow;
+
+    const applicationAnswersResult =
+      normalizeApplicationAnswers(
+        application.definition,
+        body?.answers,
+      );
+
+    if (
+      applicationAnswersResult.ok === false
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            applicationAnswersResult.message,
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const applicationAnswers =
+      applicationAnswersResult.answers;
+
+
+    // ======================================================
+    // 受付状態
+    // ======================================================
+
+    if (
+      application.status !==
+      "open"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "現在、この募集は受付していません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      application.owner_user_id ===
+      user.id
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "主催者本人は申し込めません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      application.origin !==
+        "calendar" &&
+      deadlineHasPassed(
+        application.definition,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込期限を過ぎています。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+
+    // ======================================================
+    // CALENDAR開催回
+    // ======================================================
+
+    let calendarOccurrence:
+      | {
+          id: string;
+          calendar_item_id: string;
+          starts_at: string;
+          ends_at: string;
+          timezone: string;
+          title: string;
+          location: string | null;
+          capacity: number | null;
+          minimum_capacity: number | null;
+          fee_amount: number | null;
+          fee_currency: string;
+          status: string;
+        }
+      | null =
+        null;
+
+
+    const calendarItemIdForEntry =
+      application.origin === "calendar"
+        ? application.calendar_item_id
+        : null;
+
+    if (
+      calendarItemIdForEntry &&
+      !UUID_RE.test(
+        calendarItemIdForEntry,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "APPLICATIONのCALENDAR設定を確認できませんでした。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      !calendarItemIdForEntry &&
+      occurrenceId
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは開催回を指定できません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (calendarItemIdForEntry) {
+      if (
+        !UUID_RE.test(
+          occurrenceId,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約する開催回が指定されていません。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const {
+        data: occurrenceData,
+        error: occurrenceError,
+      } =
+        await supabaseAdmin
+          .from(
+            "calendar_occurrences",
+          )
+          .select(
+            `
+              id,
+              calendar_item_id,
+              starts_at,
+              ends_at,
+              timezone,
+              title,
+              location,
+              capacity,
+              minimum_capacity,
+              fee_amount,
+              fee_currency,
+              status
+            `,
+          )
+          .eq(
+            "id",
+            occurrenceId,
+          )
+          .eq(
+            "calendar_item_id",
+            calendarItemIdForEntry,
+          )
+          .maybeSingle();
+
+
+      if (
+        occurrenceError ||
+        !occurrenceData
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約する開催回を確認できませんでした。",
+          },
+          {
+            status:
+              occurrenceError
+                ? 500
+                : 404,
+          },
+        );
+      }
+
+
+      if (
+        occurrenceData.status !==
+        "scheduled"
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "この開催回は現在予約できません。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const startsAtTime =
+        new Date(
+          occurrenceData.starts_at,
+        ).getTime();
+
+
+      if (
+        !Number.isFinite(
+          startsAtTime,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "開催日時を確認できませんでした。",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+
+      if (
+        startsAtTime <=
+        Date.now()
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "この開催回はすでに終了しています。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      const rawDeadlineMinutes =
+        Number(
+          application
+            .definition
+            ?.calendarBooking
+            ?.deadlineMinutesBefore ??
+            0,
+        );
+
+
+      const deadlineMinutesBefore =
+        Number.isFinite(
+          rawDeadlineMinutes,
+        ) &&
+        rawDeadlineMinutes >= 0
+          ? Math.floor(
+              rawDeadlineMinutes,
+            )
+          : 0;
+
+
+      const deadlineTime =
+        startsAtTime -
+        deadlineMinutesBefore *
+          60_000;
+
+
+      if (
+        Date.now() >=
+        deadlineTime
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "予約締切を過ぎています。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+
+      calendarOccurrence =
+        occurrenceData;
+    }
+
+
+    // ======================================================
+    // 二重申込防止
+    //
+    // 通常APPLICATIONはAPPLICATION単位。
+    // CALENDAR予約は開催回単位。
+    // ======================================================
+
+    let duplicateQuery =
+      supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .select(
+          "id, status",
+        )
+        .eq(
+          "user_id",
+          user.id,
+        )
+        .in(
+          "status",
+          [
+            "submitted",
+            "confirmed",
+            "rejected",
+          ],
+        );
+
+
+    if (
+      calendarOccurrence
+    ) {
+      duplicateQuery =
+        duplicateQuery.eq(
+          "calendar_occurrence_id",
+          calendarOccurrence.id,
+        );
+    } else {
+      duplicateQuery =
+        duplicateQuery
+          .eq(
+            "application_id",
+            application.id,
+          )
+          .is(
+            "calendar_occurrence_id",
+            null,
+          );
+    }
+
+
+    const {
+      data: existingEntry,
+      error: existingError,
+    } =
+      await duplicateQuery
+        .limit(1)
+        .maybeSingle();
+
+
+    if (existingError) {
+      console.error(
+        "application duplicate check failed:",
+        existingError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "申込状況を確認できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    if (existingEntry) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            calendarOccurrence
+              ? "この開催回はすでに予約済みです。"
+              : "すでにお申し込み済みです。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    // ======================================================
+    // FORM確認
+    // ======================================================
+
+    let validatedFormSubmissionId:
+      string | null = null;
+
+    if (
+      application.form_id
+    ) {
+      if (
+        !UUID_RE.test(
+          formSubmissionId,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "申込FORMへの回答が必要です。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+      const {
+        data: formSubmission,
+        error:
+          formSubmissionError,
+      } =
+        await supabaseAdmin
+          .from(
+            "form_submissions",
+          )
+          .select(
+            `
+              id,
+              form_id,
+              user_id
+            `,
+          )
+          .eq(
+            "id",
+            formSubmissionId,
+          )
+          .maybeSingle();
+
+      if (
+        formSubmissionError ||
+        !formSubmission
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "申込FORMの回答を確認できませんでした。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+      if (
+        formSubmission.form_id !==
+        application.form_id
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "このAPPLICATIONのFORM回答ではありません。",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+      if (
+        formSubmission.user_id !==
+        user.id
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "FORM回答のユーザー情報が一致しません。",
+          },
+          {
+            status: 403,
+          },
+        );
+      }
+
+      validatedFormSubmissionId =
+        formSubmission.id;
+    }
+
+
+    // ======================================================
+    // 定員・プラン上限
+    //
+    // CALENDAR予約は開催回の定員。
+    // 通常APPLICATIONは従来どおり。
+    // ======================================================
+
+    let effectiveLimit:
+      number | null =
+        null;
+
+
+    if (
+      calendarOccurrence
+    ) {
+      effectiveLimit =
+        calendarOccurrence
+          .capacity === null
+          ? null
+          : Number(
+              calendarOccurrence
+                .capacity,
+            );
+    } else {
+      const ownerBilling =
+        await getUserBillingByUserId(
+          application.owner_user_id,
+        );
+
+      const effectivePlan =
+        getEffectivePlan(
+          ownerBilling,
+        );
+
+      const planLimits =
+        getPlanLimits(
+          effectivePlan,
+        );
+
+      const planParticipantLimit =
+        planLimits
+          .applicationParticipantLimit;
+
+      const capacityLimit =
+        getCapacity(
+          application.definition,
+        );
+
+      effectiveLimit =
+        resolveEffectiveLimit(
+          capacityLimit,
+          planParticipantLimit,
+        );
+    }
+
+
+    let countQuery =
+      supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .select(
+          "id",
+          {
+            count: "exact",
+            head: true,
+          },
+        )
+        .in(
+          "status",
+          [
+            "submitted",
+            "confirmed",
+            "rejected",
+          ],
+        );
+
+
+    if (
+      calendarOccurrence
+    ) {
+      countQuery =
+        countQuery.eq(
+          "calendar_occurrence_id",
+          calendarOccurrence.id,
+        );
+    } else {
+      countQuery =
+        countQuery
+          .eq(
+            "application_id",
+            application.id,
+          )
+          .is(
+            "calendar_occurrence_id",
+            null,
+          );
+    }
+
+
+    const {
+      count,
+      error: countError,
+    } =
+      await countQuery;
+
+
+    if (countError) {
+      console.error(
+        "application entry count failed:",
+        countError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "現在の申込数を確認できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    if (
+      isAtOrOverLimit(
+        count ?? 0,
+        effectiveLimit,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "受付可能人数に達しています。",
+        },
+        {
+          status: 409,
+        },
+      );
+    }
+
+
+    // ======================================================
+    // Snapshot
+    // ======================================================
+
+    const applicationSnapshot = {
+      id:
+        application.id,
+
+      application_type:
+        application.application_type,
+
+      title:
+        application.title,
+
+      description:
+        application.description,
+
+      definition:
+        application.definition,
+
+      form_id:
+        application.form_id,
+
+      acceptance_mode:
+        application.acceptance_mode,
+        
+    payment_method:
+      application.payment_method,
+
+    payment_amount:
+      application.payment_amount,
+
+    payment_currency:
+      application.payment_currency,
+
+    payment_url:
+      application.payment_url,
+
+    payment_instructions:
+      application.payment_instructions,
+
+    payment_confirmation_required:
+      application.payment_confirmation_required,
+
+      version:
+        application.version,
+
+      calendar_occurrence:
+        calendarOccurrence
+          ? {
+              id:
+                calendarOccurrence.id,
+              starts_at:
+                calendarOccurrence.starts_at,
+              ends_at:
+                calendarOccurrence.ends_at,
+              timezone:
+                calendarOccurrence.timezone,
+              title:
+                calendarOccurrence.title,
+              location:
+                calendarOccurrence.location,
+              capacity:
+                calendarOccurrence.capacity,
+              minimum_capacity:
+                calendarOccurrence.minimum_capacity,
+              fee_amount:
+                calendarOccurrence.fee_amount,
+              fee_currency:
+                calendarOccurrence.fee_currency,
+            }
+          : null,
+    };
+
+
+    // ======================================================
+    // Entry作成
+    // ======================================================
+
+      const qualificationStatus =
+        application.acceptance_mode ===
+        "approval"
+          ? "pending"
+          : "not_required";
+
+      const paymentStatus =
+        application.payment_method ===
+        "none"
+          ? "not_required"
+          : "unpaid";
+
+      const qualificationSatisfied =
+        qualificationStatus ===
+          "not_required";
+
+      const paymentSatisfied =
+        application
+          .payment_confirmation_required !==
+          true;
+
+      const entryStatus =
+        qualificationSatisfied &&
+        paymentSatisfied
+          ? "confirmed"
+          : "submitted";
+
+    const {
+      data: entry,
+      error: insertError,
+    } =
+      await supabaseAdmin
+        .from(
+          "application_entries",
+        )
+        .insert({
+          application_id:
+            application.id,
+
+          application_version:
+            application.version,
+
+          user_id:
+            user.id,
+
+          calendar_occurrence_id:
+            calendarOccurrence
+              ?.id ??
+            null,
+
+          form_submission_id:
+            validatedFormSubmissionId,
+
+          answers:
+            applicationAnswers,
+
+          status:
+            entryStatus,
+
+        qualification_status:
+          qualificationStatus,
+
+        payment_status:
+          paymentStatus,
+            
+          application_snapshot:
+            applicationSnapshot,
+            
+        })
+      .select(
+        `
+          id,
+          calendar_occurrence_id,
+          status,
+          qualification_status,
+          payment_status,
+          payment_reported_at,
+          payment_confirmed_at,
+          application_snapshot,
+          agreed_at,
+          created_at
+        `,
+      )
+        .single();
+
+    if (insertError) {
+      console.error(
+        "application entry insert failed:",
+        insertError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "お申し込みを登録できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+
+    return NextResponse.json({
+      ok: true,
+      entry,
+    });
+  } catch (error) {
+    console.error(
+      "POST /api/application/submit failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "お申し込みを完了できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
