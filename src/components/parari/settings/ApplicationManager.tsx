@@ -10,7 +10,6 @@ import * as React from "react";
 
 import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
 import { supabase } from "@/lib/supabaseClient";
-import CalendarApplicationList from "@/components/parari/settings/CalendarApplicationList";
 
 
 import type {
@@ -1408,6 +1407,7 @@ Membershipに設定された参加条件・利用条件をご確認ください�
         kind: null,
         label: "",
         required: false,
+        options: [],
       },
     ]);
 
@@ -1489,8 +1489,50 @@ Membershipに設定された参加条件・利用条件をご確認ください�
           ? {
               ...field,
               kind,
+
               label:
                 option?.label ?? "",
+
+              options:
+                kind === "radio" ||
+                kind === "select"
+                  ? field.options ?? []
+                  : undefined,
+            }
+          : field,
+      ),
+    );
+  }
+
+
+  function setApplicationInputFieldLabel(
+    fieldId: string,
+    label: string,
+  ) {
+    setInputFields((current) =>
+      current.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              label,
+            }
+          : field,
+      ),
+    );
+  }
+
+
+  function setApplicationInputFieldOptionsText(
+    fieldId: string,
+    rawOptions: string,
+  ) {
+    setInputFields((current) =>
+      current.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              options:
+                rawOptions.split("\n"),
             }
           : field,
       ),
@@ -2209,8 +2251,23 @@ Membershipに設定された参加条件・利用条件をご確認ください�
               ? inputFields.map(
                   (field) => ({
                     ...field,
+
                     label:
                       field.label.trim(),
+
+                    options:
+                      field.kind === "radio" ||
+                      field.kind === "select"
+                        ? (
+                            field.options ??
+                            []
+                          )
+                            .map(
+                              (option) =>
+                                option.trim(),
+                            )
+                            .filter(Boolean)
+                        : undefined,
                   }),
                 )
               : [],
@@ -2761,6 +2818,71 @@ Membershipに設定された参加条件・利用条件をご確認ください�
                                     ),
                                   )}
                                 </select>
+
+                                {inputField?.kind ? (
+                                  <label className="block">
+                                    <span className="block text-xs font-bold text-neutral-600">
+                                      質問・項目名
+                                    </span>
+
+                                    <input
+                                      type="text"
+                                      value={
+                                        inputField.label
+                                      }
+                                      onChange={(
+                                        event,
+                                      ) =>
+                                        setApplicationInputFieldLabel(
+                                          inputField.id,
+                                          event.target
+                                            .value,
+                                        )
+                                      }
+                                      placeholder="例）参加希望コース"
+                                      className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-500"
+                                    />
+                                  </label>
+                                ) : null}
+
+                                {inputField &&
+                                (
+                                  inputField.kind ===
+                                    "radio" ||
+                                  inputField.kind ===
+                                    "select"
+                                ) ? (
+                                  <label className="block">
+                                    <span className="block text-xs font-bold text-neutral-600">
+                                      選択肢
+                                    </span>
+
+                                    <textarea
+                                      value={
+                                        (
+                                          inputField.options ??
+                                          []
+                                        ).join("\n")
+                                      }
+                                      onChange={(
+                                        event,
+                                      ) =>
+                                        setApplicationInputFieldOptionsText(
+                                          inputField.id,
+                                          event.target
+                                            .value,
+                                        )
+                                      }
+                                      rows={4}
+                                      placeholder={"1行に1つ入力\n例）午前クラス\n午後クラス"}
+                                      className="mt-2 w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-neutral-500"
+                                    />
+
+                                    <span className="mt-1 block text-xs leading-5 text-neutral-400">
+                                      1行に1つずつ選択肢を入力します。
+                                    </span>
+                                  </label>
+                                ) : null}
 
                                 {inputField?.kind ? (
                                   <label className="flex items-center gap-2 text-sm text-neutral-700">
@@ -4359,7 +4481,6 @@ Membershipに設定された参加条件・利用条件をご確認ください�
               </div>
             )}
 
-            <CalendarApplicationList />
 
            {applicationAccess &&
            applicationAccess.applicationLimit !==

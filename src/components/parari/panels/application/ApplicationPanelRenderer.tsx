@@ -54,7 +54,13 @@ type ApplicationInputField = {
   kind?: string | null;
   label: string;
   required?: boolean;
+  options?: string[];
 };
+
+type ApplicationInputAnswer =
+  | string
+  | boolean;
+
 
 type ApplicationDefinition = {
   mode?: "lite" | "builder";
@@ -126,14 +132,200 @@ function resolveFormBlockFields(
 }
 
 
+function getCompletedEntryInputFields(
+  snapshot: unknown,
+): ApplicationInputField[] {
+  if (
+    !snapshot ||
+    typeof snapshot !==
+      "object" ||
+    Array.isArray(snapshot)
+  ) {
+    return [];
+  }
+
+  const snapshotRecord =
+    snapshot as Record<
+      string,
+      unknown
+    >;
+
+  const rawDefinition =
+    snapshotRecord.definition;
+
+  if (
+    !rawDefinition ||
+    typeof rawDefinition !==
+      "object" ||
+    Array.isArray(rawDefinition)
+  ) {
+    return [];
+  }
+
+  const definition =
+    rawDefinition as Record<
+      string,
+      unknown
+    >;
+
+  const rawInputFields =
+    Array.isArray(
+      definition.inputFields,
+    )
+      ? definition.inputFields
+      : [];
+
+  const fieldMap =
+    new Map<
+      string,
+      ApplicationInputField
+    >();
+
+  for (
+    const rawField of
+      rawInputFields
+  ) {
+    if (
+      !rawField ||
+      typeof rawField !==
+        "object" ||
+      Array.isArray(rawField)
+    ) {
+      continue;
+    }
+
+    const row =
+      rawField as Record<
+        string,
+        unknown
+      >;
+
+    const id =
+      typeof row.id === "string"
+        ? row.id.trim()
+        : "";
+
+    if (!id) {
+      continue;
+    }
+
+    const kind =
+      typeof row.kind ===
+      "string"
+        ? row.kind
+        : null;
+
+    fieldMap.set(
+      id,
+      {
+        id,
+
+        kind:
+          kind as ApplicationInputField["kind"],
+
+        label:
+          typeof row.label ===
+          "string"
+            ? row.label
+            : "項目",
+
+        required:
+          row.required === true,
+
+        options:
+          Array.isArray(
+            row.options,
+          )
+            ? row.options
+                .filter(
+                  (
+                    option,
+                  ): option is string =>
+                    typeof option ===
+                    "string",
+                )
+                .map((option) =>
+                  option.trim(),
+                )
+                .filter(Boolean)
+            : [],
+      },
+    );
+  }
+
+  const rawBlocks =
+    Array.isArray(
+      definition.blocks,
+    )
+      ? definition.blocks
+      : [];
+
+  const ordered =
+    rawBlocks
+      .map((rawBlock) => {
+        if (
+          !rawBlock ||
+          typeof rawBlock !==
+            "object" ||
+          Array.isArray(rawBlock)
+        ) {
+          return null;
+        }
+
+        const block =
+          rawBlock as Record<
+            string,
+            unknown
+          >;
+
+        if (
+          block.type !==
+          "field"
+        ) {
+          return null;
+        }
+
+        const fieldId =
+          typeof block.fieldId ===
+          "string"
+            ? block.fieldId
+            : "";
+
+        return (
+          fieldMap.get(
+            fieldId,
+          ) ?? null
+        );
+      })
+      .filter(
+        (
+          field,
+        ): field is ApplicationInputField =>
+          Boolean(field),
+      );
+
+  if (
+    ordered.length > 0
+  ) {
+    return ordered;
+  }
+
+  return Array.from(
+    fieldMap.values(),
+  );
+}
+
+
 function ApplicationInputFieldRenderer({
   field,
   value,
   onChange,
 }: {
   field: ApplicationInputField;
-  value: string;
-  onChange: (value: string) => void;
+  value: ApplicationInputAnswer;
+  onChange: (
+    value: ApplicationInputAnswer,
+  ) => void;
 }) {
   const kind =
     typeof field.kind === "string"
@@ -143,28 +335,151 @@ function ApplicationInputFieldRenderer({
   const required =
     field.required === true;
 
-  if (
-    kind === "radio" ||
-    kind === "select" ||
-    kind === "checkbox"
-  ) {
+  const stringValue =
+    typeof value === "string"
+      ? value
+      : "";
+
+  const options =
+    Array.isArray(field.options)
+      ? field.options
+          .map((option) =>
+            option.trim(),
+          )
+          .filter(Boolean)
+      : [];
+
+
+  if (kind === "radio") {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <div className="text-sm font-bold text-neutral-900">
+      <fieldset className="rounded-xl border border-neutral-200 bg-white p-4">
+        <legend className="px-1 text-sm font-bold text-neutral-900">
           {field.label}
+
           {required ? (
             <span className="ml-2 text-xs font-bold text-red-500">
               必須
             </span>
           ) : null}
-        </div>
+        </legend>
 
-        <p className="mt-2 text-xs leading-5 text-amber-800">
-          この選択FIELDの設定は次の実装で有効になります。
-        </p>
-      </div>
+        {options.length > 0 ? (
+          <div className="mt-3 space-y-2">
+            {options.map(
+              (option) => (
+                <label
+                  key={option}
+                  className="flex cursor-pointer items-center gap-3 text-sm text-neutral-800"
+                >
+                  <input
+                    type="radio"
+                    name={`application-field-${field.id}`}
+                    value={option}
+                    checked={
+                      stringValue === option
+                    }
+                    required={required}
+                    onChange={() =>
+                      onChange(option)
+                    }
+                  />
+
+                  <span>
+                    {option}
+                  </span>
+                </label>
+              ),
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-red-600">
+            選択肢が設定されていません。
+          </p>
+        )}
+      </fieldset>
     );
   }
+
+
+  if (kind === "select") {
+    return (
+      <label className="block rounded-xl border border-neutral-200 bg-white p-4">
+        <span className="block text-sm font-bold text-neutral-900">
+          {field.label}
+
+          {required ? (
+            <span className="ml-2 text-xs font-bold text-red-500">
+              必須
+            </span>
+          ) : null}
+        </span>
+
+        <select
+          value={stringValue}
+          required={required}
+          onChange={(event) =>
+            onChange(
+              event.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+        >
+          <option value="">
+            選択してください
+          </option>
+
+          {options.map(
+            (option) => (
+              <option
+                key={option}
+                value={option}
+              >
+                {option}
+              </option>
+            ),
+          )}
+        </select>
+
+        {options.length === 0 ? (
+          <p className="mt-2 text-xs text-red-600">
+            選択肢が設定されていません。
+          </p>
+        ) : null}
+      </label>
+    );
+  }
+
+
+  if (kind === "checkbox") {
+    return (
+      <label className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4">
+        <input
+          type="checkbox"
+          checked={
+            value === true
+          }
+          required={required}
+          onChange={(event) =>
+            onChange(
+              event.target.checked,
+            )
+          }
+          className="mt-1"
+        />
+
+        <span className="text-sm leading-6 text-neutral-800">
+          {field.label}
+
+          {required ? (
+            <span className="ml-2 text-xs font-bold text-red-500">
+              必須
+            </span>
+          ) : null}
+        </span>
+      </label>
+    );
+  }
+
 
   if (kind === "textarea") {
     return (
@@ -179,7 +494,7 @@ function ApplicationInputFieldRenderer({
         </span>
 
         <textarea
-          value={value}
+          value={stringValue}
           required={required}
           rows={4}
           onChange={(event) =>
@@ -215,7 +530,7 @@ function ApplicationInputFieldRenderer({
 
       <input
         type={inputType}
-        value={value}
+        value={stringValue}
         required={required}
         inputMode={
           kind === "postalCode"
@@ -824,7 +1139,10 @@ export default function ApplicationPanelRenderer({
       setApplicationInputAnswers,
     ] =
       React.useState<
-        Record<string, string>
+        Record<
+          string,
+          ApplicationInputAnswer
+        >
       >({});
 
     const [
@@ -886,9 +1204,43 @@ export default function ApplicationPanelRenderer({
 
         application_snapshot:
           unknown;
+
+        answers?:
+          Record<string, unknown>;
       } | null>(
         null,
       );
+
+
+    const [
+      isEditingCompletedEntryAnswers,
+      setIsEditingCompletedEntryAnswers,
+    ] =
+      React.useState(false);
+
+    const [
+      completedEntryEditAnswers,
+      setCompletedEntryEditAnswers,
+    ] =
+      React.useState<
+        Record<
+          string,
+          ApplicationInputAnswer
+        >
+      >({});
+
+    const [
+      isSavingCompletedEntryAnswers,
+      setIsSavingCompletedEntryAnswers,
+    ] =
+      React.useState(false);
+
+    const [
+      completedEntryEditMessage,
+      setCompletedEntryEditMessage,
+    ] =
+      React.useState("");
+
 
     const [
       existingEntryLoading,
@@ -1462,6 +1814,9 @@ export default function ApplicationPanelRenderer({
 
                         application_snapshot:
                           unknown;
+
+                        answers?:
+                          unknown;
                       }
                     | null;
 
@@ -1522,6 +1877,22 @@ export default function ApplicationPanelRenderer({
 
                 application_snapshot:
                   entry.application_snapshot,
+
+                answers:
+                  entry.answers &&
+                  typeof entry.answers ===
+                    "object" &&
+                  !Array.isArray(
+                    entry.answers,
+                  )
+                    ? (
+                        entry.answers as
+                          Record<
+                            string,
+                            unknown
+                          >
+                      )
+                    : {},
               });
           } else {
             setCompletedEntry(
@@ -1711,7 +2082,7 @@ export default function ApplicationPanelRenderer({
 
     function setApplicationInputAnswer(
       fieldId: string,
-      value: string,
+      value: ApplicationInputAnswer,
     ) {
       setApplicationInputAnswers(
         (current) => ({
@@ -2091,6 +2462,259 @@ export default function ApplicationPanelRenderer({
       }
     }
 
+    function startCompletedEntryAnswerEdit() {
+      if (!completedEntry) {
+        return;
+      }
+
+      const fields =
+        getCompletedEntryInputFields(
+          completedEntry
+            .application_snapshot,
+        );
+
+      const source =
+        completedEntry.answers ??
+        applicationInputAnswers;
+
+      const next:
+        Record<
+          string,
+          ApplicationInputAnswer
+        > = {};
+
+      for (
+        const field of fields
+      ) {
+        const value =
+          source[field.id];
+
+        next[field.id] =
+          typeof value === "boolean"
+            ? value
+            : typeof value === "string"
+              ? value
+              : value === null ||
+                  typeof value ===
+                    "undefined"
+                ? ""
+                : String(value);
+      }
+
+      setCompletedEntryEditAnswers(
+        next,
+      );
+
+      setCompletedEntryEditMessage(
+        "",
+      );
+
+      setIsEditingCompletedEntryAnswers(
+        true,
+      );
+    }
+
+
+    function cancelCompletedEntryAnswerEdit() {
+      setIsEditingCompletedEntryAnswers(
+        false,
+      );
+
+      setCompletedEntryEditAnswers(
+        {},
+      );
+
+      setCompletedEntryEditMessage(
+        "",
+      );
+    }
+
+
+    function setCompletedEntryEditAnswer(
+      fieldId: string,
+      value: ApplicationInputAnswer,
+    ) {
+      setCompletedEntryEditAnswers(
+        (current) => ({
+          ...current,
+          [fieldId]: value,
+        }),
+      );
+
+      setCompletedEntryEditMessage(
+        "",
+      );
+    }
+
+
+    async function saveCompletedEntryAnswerEdit() {
+      if (
+        !completedEntry ||
+        isSavingCompletedEntryAnswers
+      ) {
+        return;
+      }
+
+      setIsSavingCompletedEntryAnswers(
+        true,
+      );
+
+      setCompletedEntryEditMessage(
+        "",
+      );
+
+      try {
+        const {
+          data: { session },
+        } =
+          await supabase.auth
+            .getSession();
+
+        if (
+          !session?.access_token
+        ) {
+          setCompletedEntryEditMessage(
+            "ログイン状態を確認できませんでした。",
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/application/my-entries",
+            {
+              method: "PATCH",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  entryId:
+                    completedEntry.id,
+
+                  answers:
+                    completedEntryEditAnswers,
+                }),
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+
+                answers?: Array<{
+                  field_id?: unknown;
+                  value?: unknown;
+                }>;
+
+                message?: string;
+              }
+            | null;
+
+        if (
+          !response.ok ||
+          !result?.ok
+        ) {
+          setCompletedEntryEditMessage(
+            result?.message ||
+              "申込内容を変更できませんでした。",
+          );
+
+          return;
+        }
+
+        const nextAnswers:
+          Record<string, unknown> =
+            {};
+
+        for (
+          const answer of
+            result.answers ?? []
+        ) {
+          const fieldId =
+            typeof answer.field_id ===
+            "string"
+              ? answer.field_id
+              : "";
+
+          if (!fieldId) {
+            continue;
+          }
+
+          nextAnswers[fieldId] =
+            answer.value ?? "";
+        }
+
+        setCompletedEntry(
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  answers:
+                    nextAnswers,
+                }
+              : current,
+        );
+
+        setApplicationInputAnswers(
+          Object.fromEntries(
+            Object.entries(
+              nextAnswers,
+            ).map(
+              ([key, value]) => [
+                key,
+                typeof value ===
+                  "boolean"
+                  ? value
+                  : typeof value ===
+                      "string"
+                    ? value
+                    : String(
+                        value ?? "",
+                      ),
+              ],
+            ),
+          ),
+        );
+
+        setCompletedEntryEditAnswers(
+          {},
+        );
+
+        setIsEditingCompletedEntryAnswers(
+          false,
+        );
+
+        setCompletedEntryEditMessage(
+          "申込内容を変更しました。",
+        );
+      } catch (error) {
+        console.error(
+          "[APPLICATION] answer edit failed:",
+          error,
+        );
+
+        setCompletedEntryEditMessage(
+          "申込内容を変更できませんでした。",
+        );
+      } finally {
+        setIsSavingCompletedEntryAnswers(
+          false,
+        );
+      }
+    }
+
+
     async function reportPayment() {
       if (
         !applicationId ||
@@ -2203,7 +2827,13 @@ export default function ApplicationPanelRenderer({
         }
 
         setCompletedEntry(
-          result.entry,
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  ...result.entry,
+                }
+              : result.entry,
         );
 
         setPaymentMessage(
@@ -2384,6 +3014,33 @@ export default function ApplicationPanelRenderer({
       "open" ||
     application.remaining_slots ===
       0;
+
+    const completedEntryInputFields =
+      completedEntry
+        ? getCompletedEntryInputFields(
+            completedEntry
+              .application_snapshot,
+          )
+        : [];
+
+    const completedEntryAnswerValues:
+      Record<string, unknown> =
+        completedEntry?.answers ??
+        applicationInputAnswers;
+
+    const canEditCompletedEntryAnswers =
+      Boolean(
+        completedEntry &&
+        (
+          completedEntry.status ===
+            "submitted" ||
+          completedEntry.status ===
+            "confirmed"
+        ) &&
+        completedEntryInputFields.length >
+          0,
+      );
+
 
     const entryPayment =
       completedEntry
@@ -2773,6 +3430,34 @@ export default function ApplicationPanelRenderer({
                               calendarItemId={
                                 blockCalendarItemId
                               }
+                              renderOccurrenceAction={(
+                                occurrence,
+                              ) => {
+                                const selected =
+                                  selectedOccurrenceId ===
+                                  occurrence.id;
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedOccurrenceId(
+                                        occurrence.id,
+                                      );
+                                    }}
+                                    className={[
+                                      "inline-flex items-center rounded-full px-4 py-2 text-sm font-bold transition",
+                                      selected
+                                        ? "bg-neutral-950 text-white"
+                                        : "border border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500",
+                                    ].join(" ")}
+                                  >
+                                    {selected
+                                      ? "選択中"
+                                      : "この回を選ぶ"}
+                                  </button>
+                                );
+                              }}
                             />
                           </div>
                         );
@@ -3146,6 +3831,215 @@ export default function ApplicationPanelRenderer({
             </div>
           ) : null}
           
+          {completedEntry &&
+          completedEntryInputFields.length >
+            0 ? (
+            <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+              <div className="text-sm font-bold text-neutral-950">
+                申込内容
+              </div>
+
+              {isEditingCompletedEntryAnswers ? (
+                <div className="mt-4 space-y-4">
+                  {completedEntryInputFields.map(
+                    (field) => (
+                      <ApplicationInputFieldRenderer
+                        key={
+                          field.id
+                        }
+                        field={
+                          field
+                        }
+                        value={
+                          completedEntryEditAnswers[
+                            field.id
+                          ] ?? ""
+                        }
+                        onChange={(
+                          value,
+                        ) =>
+                          setCompletedEntryEditAnswer(
+                            field.id,
+                            value,
+                          )
+                        }
+                      />
+                    ),
+                  )}
+
+                  {completedEntryEditMessage ? (
+                    <p className="text-sm text-red-600">
+                      {
+                        completedEntryEditMessage
+                      }
+                    </p>
+                  ) : null}
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={
+                        isSavingCompletedEntryAnswers
+                      }
+                      onClick={() => {
+                        void saveCompletedEntryAnswerEdit();
+                      }}
+                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                    >
+                      {isSavingCompletedEntryAnswers
+                        ? "保存中..."
+                        : "変更を保存"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={
+                        isSavingCompletedEntryAnswers
+                      }
+                      onClick={
+                        cancelCompletedEntryAnswerEdit
+                      }
+                      className="rounded-full bg-neutral-200 px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-300 disabled:opacity-40"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-4 space-y-4">
+                    {completedEntryInputFields.map(
+                      (field) => {
+                        const value =
+                          completedEntryAnswerValues[
+                            field.id
+                          ];
+
+                        const displayValue =
+                          value === true
+                            ? "はい"
+                            : value === false
+                              ? "いいえ"
+                              : typeof value ===
+                          "string"
+                            ? (
+                                value.trim() ||
+                                "—"
+                              )
+                            : value === null ||
+                                typeof value ===
+                                  "undefined"
+                              ? "—"
+                              : String(
+                                  value,
+                                );
+
+                        return (
+                          <div
+                            key={
+                              field.id
+                            }
+                          >
+                            <div className="text-xs font-bold text-neutral-500">
+                              {
+                                field.label
+                              }
+                            </div>
+
+                            <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-neutral-950">
+                              {
+                                displayValue
+                              }
+                            </div>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+
+                  {canEditCompletedEntryAnswers ? (
+                    <button
+                      type="button"
+                      onClick={
+                        startCompletedEntryAnswerEdit
+                      }
+                      className="mt-5 rounded-full bg-neutral-100 px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-200"
+                    >
+                      申込内容を変更
+                    </button>
+                  ) : null}
+
+                  {completedEntryEditMessage ? (
+                    <p className="mt-3 text-sm text-emerald-700">
+                      {
+                        completedEntryEditMessage
+                      }
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+
+
+          {completedEntry &&
+          applicationBlocks.some(
+            (block) =>
+              block?.type ===
+              "calendar",
+          ) ? (
+            <div className="mt-6 space-y-4">
+              {applicationBlocks.map(
+                (
+                  applicationBlock,
+                  blockIndex,
+                ) => {
+                  if (
+                    applicationBlock
+                      ?.type !==
+                    "calendar"
+                  ) {
+                    return null;
+                  }
+
+                  const blockKey =
+                    applicationBlock.id ??
+                    `calendar-${blockIndex}`;
+
+                  const blockCalendarItemId =
+                    typeof applicationBlock
+                      .calendarItemId ===
+                    "string"
+                      ? applicationBlock
+                          .calendarItemId
+                          .trim()
+                      : "";
+
+                  if (
+                    !blockCalendarItemId
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={
+                        blockKey
+                      }
+                    >
+                      <CalendarResourceView
+                        calendarItemId={
+                          blockCalendarItemId
+                        }
+                      />
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          ) : null}
+
+
           {(isLiteApplication ||
           !isApplying) &&
           !completedEntry &&

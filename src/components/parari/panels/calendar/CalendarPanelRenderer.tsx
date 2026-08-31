@@ -361,9 +361,7 @@ export function CalendarResourceView({
                         }
                         className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
                       >
-                        {bookingStatus
-                          ? "詳細"
-                          : "詳細・予約"}
+                        詳細
                       </a>
                     )}
                   </div>

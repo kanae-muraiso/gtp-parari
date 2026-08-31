@@ -186,6 +186,7 @@ export async function GET(
           payment_reported_at,
           payment_confirmed_at,
           application_snapshot,
+          answers,
           created_at,
           agreed_at
         `,

@@ -57,6 +57,11 @@ export type ApplicationInputField = {
   kind: ApplicationInputFieldKind | null;
   label: string;
   required: boolean;
+
+  // radio / select の選択肢。
+  // FORMの商品カタログではなく、
+  // APPLICATION内のFIELDインスタンス設定。
+  options?: string[];
 };
 
 export type ApplicationFieldBlock = {

@@ -7,11 +7,8 @@
 // /calendar/{occurrenceId}
 //
 // ログイン不要で閲覧可能。
-// 予約時のみPARARIログインが必要。
 
 "use client";
-
-import CalendarScheduleBookingPanel from "@/components/parari/calendar/CalendarScheduleBookingPanel";
 
 import * as React from "react";
 
@@ -1927,13 +1924,6 @@ export default function CalendarOccurrencePage() {
 
           </div>
         
-          <CalendarScheduleBookingPanel
-            occurrenceId={
-              occurrence.id
-            }
-          />
-
-
           {false &&
           bookingInfo
             .recurring_booking_enabled &&

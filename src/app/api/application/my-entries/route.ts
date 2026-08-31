@@ -206,7 +206,10 @@ function normalizeApplicationAnswerUpdate(
 ):
   | {
       ok: true;
-      answers: Record<string, string>;
+      answers: Record<
+        string,
+        string | boolean
+      >;
     }
   | {
       ok: false;
@@ -269,7 +272,10 @@ function normalizeApplicationAnswerUpdate(
     asRecord(rawAnswers) ?? {};
 
   const normalized:
-    Record<string, string> = {};
+    Record<
+      string,
+      string | boolean
+    > = {};
 
   for (
     const rawField of inputFields
@@ -304,25 +310,78 @@ function normalizeApplicationAnswerUpdate(
         ? field.kind.trim()
         : "";
 
-    if (
-      kind === "radio" ||
-      kind === "select" ||
-      kind === "checkbox"
-    ) {
-      return {
-        ok: false,
-        message:
-          `「${label}」は現在編集できないFIELDです。`,
-      };
-    }
-
     const rawValue =
       answerRecord[id];
+
+    if (
+      kind === "checkbox"
+    ) {
+      const checked =
+        rawValue === true;
+
+      if (
+        field.required === true &&
+        !checked
+      ) {
+        return {
+          ok: false,
+          message:
+            `「${label}」にチェックしてください。`,
+        };
+      }
+
+      normalized[id] =
+        checked;
+
+      continue;
+    }
 
     const value =
       typeof rawValue === "string"
         ? rawValue.trim()
         : "";
+
+    if (
+      kind === "radio" ||
+      kind === "select"
+    ) {
+      const options =
+        Array.isArray(
+          field.options,
+        )
+          ? field.options
+              .filter(
+                (
+                  option,
+                ): option is string =>
+                  typeof option ===
+                  "string",
+              )
+              .map((option) =>
+                option.trim(),
+              )
+              .filter(Boolean)
+          : [];
+
+      if (options.length === 0) {
+        return {
+          ok: false,
+          message:
+            `「${label}」の選択肢が設定されていません。`,
+        };
+      }
+
+      if (
+        value &&
+        !options.includes(value)
+      ) {
+        return {
+          ok: false,
+          message:
+            `「${label}」の選択肢を確認してください。`,
+        };
+      }
+    }
 
     if (
       field.required === true &&

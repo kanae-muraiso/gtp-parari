@@ -225,6 +225,21 @@ export async function GET(
 export async function POST(
   request: NextRequest,
 ) {
+  const standaloneCalendarBookingDisabled = true;
+
+  if (standaloneCalendarBookingDisabled) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "CALENDAR単独の予約受付は終了しました。APPLICATIONにCALENDARを追加して受付を作成してください。",
+      },
+      {
+        status: 410,
+      },
+    );
+  }
+
   const auth =
     await getAuthenticatedUser(
       request,
@@ -712,6 +727,21 @@ function asRecord(
 export async function PATCH(
   request: NextRequest,
 ) {
+  const standaloneCalendarBookingDisabled = true;
+
+  if (standaloneCalendarBookingDisabled) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "CALENDAR単独の予約設定は終了しました。APPLICATION側でCALENDARを利用してください。",
+      },
+      {
+        status: 410,
+      },
+    );
+  }
+
   const auth =
     await getAuthenticatedUser(
       request,

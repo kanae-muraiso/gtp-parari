@@ -23,7 +23,6 @@ import {
 
 import CalendarMonthView from "@/components/parari/manage/CalendarMonthView";
 import EventClassManagementPanel from "@/components/parari/manage/EventClassManagementPanel";
-import CalendarBookingSettingsEditor from "@/components/parari/manage/CalendarBookingSettingsEditor";
 import CalendarItemBrandSettingsEditor from "@/components/parari/manage/CalendarItemBrandSettingsEditor";
 
 
@@ -2905,25 +2904,6 @@ const [
                             );
                           }}
                         />
-
-                        <div className="mt-7 border-t border-neutral-100 pt-5">
-                          <div className="text-sm font-bold text-neutral-950">
-                            予約設定
-                          </div>
-
-                          <p className="mt-1 text-xs leading-5 text-neutral-500">
-                            このイベント・クラス全体の予約方法を設定します。
-                          </p>
-
-                          <div className="mt-4">
-                            <CalendarBookingSettingsEditor
-                              calendarItemId={
-                                item.id
-                              }
-                            />
-                          </div>
-                        </div>
-
 
                         <div className="mt-7 border-t border-neutral-100 pt-5">
                           <div className="flex flex-wrap items-center justify-between gap-3">

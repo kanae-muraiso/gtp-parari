@@ -355,11 +355,17 @@ function getApplicationFields(
 }
 
 
+type ApplicationEditAnswer =
+  | string
+  | boolean;
+
+
 type EditableApplicationInputField = {
   id: string;
   kind: string;
   label: string;
   required: boolean;
+  options: string[];
 };
 
 
@@ -442,6 +448,24 @@ function getApplicationInputFieldsForEntry(
 
         required:
           field.required === true,
+
+        options:
+          Array.isArray(
+            field.options,
+          )
+            ? field.options
+                .filter(
+                  (
+                    option,
+                  ): option is string =>
+                    typeof option ===
+                    "string",
+                )
+                .map((option) =>
+                  option.trim(),
+                )
+                .filter(Boolean)
+            : [],
       },
     );
   }
@@ -606,7 +630,10 @@ export default function MyApplicationsPage() {
     editAnswers,
     setEditAnswers,
   ] = React.useState<
-    Record<string, string>
+    Record<
+      string,
+      ApplicationEditAnswer
+    >
   >({});
 
   const [
@@ -640,7 +667,10 @@ export default function MyApplicationsPage() {
       );
 
     const next:
-      Record<string, string> = {};
+      Record<
+        string,
+        ApplicationEditAnswer
+      > = {};
 
     for (
       const field of fields
@@ -651,13 +681,15 @@ export default function MyApplicationsPage() {
         );
 
       next[field.id] =
-        typeof value === "string"
+        typeof value === "boolean"
           ? value
-          : value === null ||
-              typeof value ===
-                "undefined"
-            ? ""
-            : String(value);
+          : typeof value === "string"
+            ? value
+            : value === null ||
+                typeof value ===
+                  "undefined"
+              ? ""
+              : String(value);
     }
 
     setEditAnswers(next);
@@ -677,7 +709,7 @@ export default function MyApplicationsPage() {
 
   function setApplicationEditAnswer(
     fieldId: string,
-    value: string,
+    value: ApplicationEditAnswer,
   ) {
     setEditAnswers(
       (current) => ({
@@ -1386,38 +1418,204 @@ export default function MyApplicationsPage() {
                                   (
                                     field,
                                   ) => {
-                                    const value =
+                                    const rawValue =
                                       editAnswers[
                                         field.id
                                       ] ?? "";
 
+                                    const value =
+                                      typeof rawValue ===
+                                      "string"
+                                        ? rawValue
+                                        : "";
+
                                     if (
                                       field.kind ===
-                                        "radio" ||
-                                      field.kind ===
-                                        "select" ||
-                                      field.kind ===
-                                        "checkbox"
+                                      "checkbox"
                                     ) {
                                       return (
-                                        <div
+                                        <label
                                           key={
                                             field.id
                                           }
-                                          className="rounded-xl border border-amber-200 bg-amber-50 p-4"
+                                          className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4"
                                         >
-                                          <div className="text-sm font-bold text-neutral-900">
+                                          <input
+                                            type="checkbox"
+                                            checked={
+                                              rawValue ===
+                                              true
+                                            }
+                                            required={
+                                              field.required
+                                            }
+                                            onChange={(
+                                              event,
+                                            ) =>
+                                              setApplicationEditAnswer(
+                                                field.id,
+                                                event
+                                                  .target
+                                                  .checked,
+                                              )
+                                            }
+                                            className="mt-1"
+                                          />
+
+                                          <span className="text-sm leading-6 text-neutral-800">
                                             {
                                               field.label
                                             }
-                                          </div>
 
-                                          <p className="mt-2 text-xs text-amber-800">
-                                            このFIELDは現在編集できません。
-                                          </p>
-                                        </div>
+                                            {field.required ? (
+                                              <span className="ml-2 text-xs font-bold text-red-500">
+                                                必須
+                                              </span>
+                                            ) : null}
+                                          </span>
+                                        </label>
                                       );
                                     }
+
+
+                                    if (
+                                      field.kind ===
+                                      "radio"
+                                    ) {
+                                      return (
+                                        <fieldset
+                                          key={
+                                            field.id
+                                          }
+                                          className="rounded-xl border border-neutral-200 bg-white p-4"
+                                        >
+                                          <legend className="px-1 text-xs font-bold text-neutral-500">
+                                            {
+                                              field.label
+                                            }
+
+                                            {field.required ? (
+                                              <span className="ml-2 text-red-500">
+                                                必須
+                                              </span>
+                                            ) : null}
+                                          </legend>
+
+                                          <div className="mt-3 space-y-2">
+                                            {field.options.map(
+                                              (
+                                                option,
+                                              ) => (
+                                                <label
+                                                  key={
+                                                    option
+                                                  }
+                                                  className="flex cursor-pointer items-center gap-3 text-sm text-neutral-800"
+                                                >
+                                                  <input
+                                                    type="radio"
+                                                    name={`application-edit-${entry.id}-${field.id}`}
+                                                    value={
+                                                      option
+                                                    }
+                                                    checked={
+                                                      value ===
+                                                      option
+                                                    }
+                                                    required={
+                                                      field.required
+                                                    }
+                                                    onChange={() =>
+                                                      setApplicationEditAnswer(
+                                                        field.id,
+                                                        option,
+                                                      )
+                                                    }
+                                                  />
+
+                                                  <span>
+                                                    {
+                                                      option
+                                                    }
+                                                  </span>
+                                                </label>
+                                              ),
+                                            )}
+                                          </div>
+                                        </fieldset>
+                                      );
+                                    }
+
+
+                                    if (
+                                      field.kind ===
+                                      "select"
+                                    ) {
+                                      return (
+                                        <label
+                                          key={
+                                            field.id
+                                          }
+                                          className="block"
+                                        >
+                                          <span className="text-xs font-bold text-neutral-500">
+                                            {
+                                              field.label
+                                            }
+
+                                            {field.required ? (
+                                              <span className="ml-2 text-red-500">
+                                                必須
+                                              </span>
+                                            ) : null}
+                                          </span>
+
+                                          <select
+                                            value={
+                                              value
+                                            }
+                                            required={
+                                              field.required
+                                            }
+                                            onChange={(
+                                              event,
+                                            ) =>
+                                              setApplicationEditAnswer(
+                                                field.id,
+                                                event
+                                                  .target
+                                                  .value,
+                                              )
+                                            }
+                                            className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                          >
+                                            <option value="">
+                                              選択してください
+                                            </option>
+
+                                            {field.options.map(
+                                              (
+                                                option,
+                                              ) => (
+                                                <option
+                                                  key={
+                                                    option
+                                                  }
+                                                  value={
+                                                    option
+                                                  }
+                                                >
+                                                  {
+                                                    option
+                                                  }
+                                                </option>
+                                              ),
+                                            )}
+                                          </select>
+                                        </label>
+                                      );
+                                    }
+
 
                                     if (
                                       field.kind ===
