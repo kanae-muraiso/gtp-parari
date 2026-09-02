@@ -51,6 +51,14 @@ type CreateScheduleBody = {
   endDate?: unknown;
   timezone?: unknown;
 
+  name?: unknown;
+  occurrenceHorizonDays?: unknown;
+  applicationOpenDaysBefore?: unknown;
+  applicationCloseMinutesBefore?: unknown;
+
+  location?: unknown;
+  durationMinutes?: unknown;
+
   weekday?: unknown;
   monthDay?: unknown;
   anchorDate?: unknown;
@@ -513,6 +521,12 @@ export async function GET(
         start_date,
         start_time,
         end_date,
+        name,
+        location,
+        duration_minutes,
+        occurrence_horizon_days,
+        application_open_days_before,
+        application_close_minutes_before,
         recurrence_rule,
         status,
         created_at,
@@ -653,6 +667,56 @@ export async function POST(
       : "";
 
 
+  const name =
+    typeof body?.name ===
+      "string"
+      ? body.name.trim()
+      : "";
+
+
+  const location =
+    typeof body?.location ===
+      "string"
+      ? body.location.trim()
+      : "";
+
+
+  const durationMinutes =
+    normalizeInteger(
+      typeof body?.durationMinutes ===
+        "string"
+        ? body.durationMinutes.trim()
+        : body?.durationMinutes,
+    );
+
+
+  const occurrenceHorizonDays =
+    body?.occurrenceHorizonDays ===
+      undefined
+      ? 30
+      : normalizeInteger(
+          body?.occurrenceHorizonDays,
+        );
+
+
+  const applicationOpenDaysBefore =
+    body?.applicationOpenDaysBefore ===
+      undefined
+      ? 30
+      : normalizeInteger(
+          body?.applicationOpenDaysBefore,
+        );
+
+
+  const applicationCloseMinutesBefore =
+    body?.applicationCloseMinutesBefore ===
+      undefined
+      ? 180
+      : normalizeInteger(
+          body?.applicationCloseMinutesBefore,
+        );
+
+
   const weekday =
     normalizeInteger(
       body?.weekday,
@@ -762,6 +826,147 @@ export async function POST(
         ok: false,
         message:
           "タイムゾーンを確認してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    durationMinutes !==
+      null &&
+    durationMinutes <=
+      0
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催時間は1分以上で指定してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    name.length >
+    120
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "開催パターン名は120文字以内で入力してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    occurrenceHorizonDays ===
+      null ||
+    occurrenceHorizonDays <
+      1 ||
+    occurrenceHorizonDays >
+      730
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予定を作る範囲は1日から730日の間で指定してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    applicationOpenDaysBefore ===
+      null ||
+    applicationOpenDaysBefore <
+      0 ||
+    applicationOpenDaysBefore >
+      730
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込受付開始は0日から730日前の間で指定してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    applicationCloseMinutesBefore ===
+      null ||
+    applicationCloseMinutesBefore <
+      0 ||
+    applicationCloseMinutesBefore >
+      525600
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込受付終了の設定を確認してください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    occurrenceHorizonDays <
+    applicationOpenDaysBefore
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "予定を作る範囲は申込受付開始日以上にしてください。",
+      },
+      {
+        status:
+          400,
+      },
+    );
+  }
+
+
+  if (
+    applicationCloseMinutesBefore >
+    applicationOpenDaysBefore *
+      1440
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "申込受付終了は申込受付開始より後になるよう設定してください。",
       },
       {
         status:
@@ -988,6 +1193,26 @@ export async function POST(
 
         timezone,
 
+        name:
+          name ||
+          null,
+
+        location:
+          location ||
+          null,
+
+        duration_minutes:
+          durationMinutes,
+
+        occurrence_horizon_days:
+          occurrenceHorizonDays,
+
+        application_open_days_before:
+          applicationOpenDaysBefore,
+
+        application_close_minutes_before:
+          applicationCloseMinutesBefore,
+
         start_date:
           startDate,
 
@@ -1016,6 +1241,12 @@ export async function POST(
         start_date,
         start_time,
         end_date,
+        name,
+        location,
+        duration_minutes,
+        occurrence_horizon_days,
+        application_open_days_before,
+        application_close_minutes_before,
         recurrence_rule,
         status,
         created_at,
@@ -1050,5 +1281,212 @@ export async function POST(
   return NextResponse.json({
     ok: true,
     schedule,
+  });
+}
+
+export async function PATCH(
+  request: NextRequest,
+) {
+  const auth =
+    await getAuthenticatedUser(
+      request,
+    );
+
+  if (
+    auth.ok === false
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          auth.message,
+      },
+      {
+        status:
+          auth.status,
+      },
+    );
+  }
+
+  const body =
+    (await request
+      .json()
+      .catch(
+        () => null,
+      )) as
+      | {
+          scheduleId?: unknown;
+          name?: unknown;
+        }
+      | null;
+
+  const scheduleId =
+    typeof body?.scheduleId ===
+    "string"
+      ? body.scheduleId.trim()
+      : "";
+
+  const name =
+    typeof body?.name ===
+    "string"
+      ? body.name.trim()
+      : "";
+
+  if (!scheduleId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "変更するクラス・イベントが指定されていません。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (!name) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス名・イベント名を入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const {
+    data: schedule,
+    error: scheduleError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_schedules",
+      )
+      .select(
+        "id, calendar_item_id",
+      )
+      .eq(
+        "id",
+        scheduleId,
+      )
+      .maybeSingle();
+
+  if (
+    scheduleError ||
+    !schedule
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス・イベントが見つかりません。",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+  const {
+    data: item,
+    error: itemError,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_items",
+      )
+      .select(
+        "id",
+      )
+      .eq(
+        "id",
+        schedule.calendar_item_id,
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .maybeSingle();
+
+  if (
+    itemError ||
+    !item
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "このクラス・イベントを変更する権限がありません。",
+      },
+      {
+        status: 404,
+      },
+    );
+  }
+
+  const {
+    data: updated,
+    error,
+  } =
+    await supabaseAdmin
+      .from(
+        "calendar_schedules",
+      )
+      .update({
+        name,
+      })
+      .eq(
+        "id",
+        scheduleId,
+      )
+      .select(`
+        id,
+        calendar_item_id,
+        timezone,
+        start_date,
+        start_time,
+        end_date,
+        name,
+        location,
+        duration_minutes,
+        occurrence_horizon_days,
+        application_open_days_before,
+        application_close_minutes_before,
+        recurrence_rule,
+        status,
+        created_at,
+        updated_at
+      `)
+      .single();
+
+  if (
+    error ||
+    !updated
+  ) {
+    console.error(
+      "[calendar/schedules PATCH] failed:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "クラス名・イベント名を変更できませんでした。",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    schedule:
+      updated,
   });
 }

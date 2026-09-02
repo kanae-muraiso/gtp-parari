@@ -1,8 +1,10 @@
 // src/components/parari/manage/CalendarItemBrandSettingsEditor.tsx
 // 2026-08-23 JST
 //
-// calendar_item の公開プロフィール表示設定。
-// BrandPanel向けの短い紹介文と表示可否だけを担当する。
+// calendar_item の基本設定Editor。
+//
+// ブランドネーム、時間、会場、定員、最低開催人数、料金、
+// 紹介文、公開プロフィール表示をまとめて編集する。
 
 "use client";
 
@@ -14,6 +16,13 @@ import {
 
 export type CalendarItemBrandSettings = {
   id: string;
+  title: string;
+  duration_minutes: number;
+  location: string | null;
+  capacity: number | null;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
   summary: string | null;
   show_in_profile: boolean;
 };
@@ -29,6 +38,64 @@ export default function CalendarItemBrandSettingsEditor({
   item,
   onSaved,
 }: Props) {
+  const [
+    title,
+    setTitle,
+  ] = React.useState(
+    item.title ?? "",
+  );
+
+  const [
+    durationMinutes,
+    setDurationMinutes,
+  ] = React.useState(
+    String(
+      item.duration_minutes ??
+        "",
+    ),
+  );
+
+  const [
+    location,
+    setLocation,
+  ] = React.useState(
+    item.location ?? "",
+  );
+
+  const [
+    capacity,
+    setCapacity,
+  ] = React.useState(
+    item.capacity === null
+      ? ""
+      : String(
+          item.capacity,
+        ),
+  );
+
+  const [
+    minimumCapacity,
+    setMinimumCapacity,
+  ] = React.useState(
+    item.minimum_capacity ===
+      null
+      ? ""
+      : String(
+          item.minimum_capacity,
+        ),
+  );
+
+  const [
+    feeAmount,
+    setFeeAmount,
+  ] = React.useState(
+    item.fee_amount === null
+      ? ""
+      : String(
+          item.fee_amount,
+        ),
+  );
+
   const [
     summary,
     setSummary,
@@ -54,6 +121,46 @@ export default function CalendarItemBrandSettingsEditor({
   ] = React.useState("");
 
   React.useEffect(() => {
+    setTitle(
+      item.title ?? "",
+    );
+
+    setDurationMinutes(
+      String(
+        item.duration_minutes ??
+          "",
+      ),
+    );
+
+    setLocation(
+      item.location ?? "",
+    );
+
+    setCapacity(
+      item.capacity === null
+        ? ""
+        : String(
+            item.capacity,
+          ),
+    );
+
+    setMinimumCapacity(
+      item.minimum_capacity ===
+        null
+        ? ""
+        : String(
+            item.minimum_capacity,
+          ),
+    );
+
+    setFeeAmount(
+      item.fee_amount === null
+        ? ""
+        : String(
+            item.fee_amount,
+          ),
+    );
+
     setSummary(
       item.summary ?? "",
     );
@@ -65,6 +172,12 @@ export default function CalendarItemBrandSettingsEditor({
     setMessage("");
   }, [
     item.id,
+    item.title,
+    item.duration_minutes,
+    item.location,
+    item.capacity,
+    item.minimum_capacity,
+    item.fee_amount,
     item.summary,
     item.show_in_profile,
   ]);
@@ -107,6 +220,15 @@ export default function CalendarItemBrandSettingsEditor({
               JSON.stringify({
                 calendarItemId:
                   item.id,
+                title,
+                durationMinutes,
+                location,
+                capacity,
+                minimumCapacity,
+                feeAmount,
+                feeCurrency:
+                  item.fee_currency ||
+                  "JPY",
                 summary,
                 showInProfile,
               }),
@@ -127,10 +249,58 @@ export default function CalendarItemBrandSettingsEditor({
       ) {
         setMessage(
           result?.message ??
-            "公開プロフィール設定を保存できませんでした。",
+            "基本設定を保存できませんでした。",
         );
         return;
       }
+
+      setTitle(
+        result.item.title ?? "",
+      );
+
+      setDurationMinutes(
+        String(
+          result.item
+            .duration_minutes ??
+            "",
+        ),
+      );
+
+      setLocation(
+        result.item.location ??
+          "",
+      );
+
+      setCapacity(
+        result.item.capacity ===
+          null
+          ? ""
+          : String(
+              result.item
+                .capacity,
+            ),
+      );
+
+      setMinimumCapacity(
+        result.item
+          .minimum_capacity ===
+          null
+          ? ""
+          : String(
+              result.item
+                .minimum_capacity,
+            ),
+      );
+
+      setFeeAmount(
+        result.item.fee_amount ===
+          null
+          ? ""
+          : String(
+              result.item
+                .fee_amount,
+            ),
+      );
 
       setSummary(
         result.item.summary ?? "",
@@ -154,7 +324,7 @@ export default function CalendarItemBrandSettingsEditor({
       );
 
       setMessage(
-        "公開プロフィール設定を保存できませんでした。",
+        "基本設定を保存できませんでした。",
       );
     } finally {
       setSaving(false);
@@ -164,12 +334,155 @@ export default function CalendarItemBrandSettingsEditor({
   return (
     <div>
       <div className="text-sm font-bold text-neutral-950">
-        公開プロフィール
+        基本設定
       </div>
 
       <p className="mt-1 text-xs leading-5 text-neutral-500">
-        あなたの公開プロフィールに表示するクラス・イベント情報を設定します。
+        ブランドの基本情報はいつでも変更できます。
       </p>
+
+      <label className="mt-5 block">
+        <span className="text-sm font-bold text-neutral-700">
+          クラス・イベント名
+        </span>
+
+        <input
+          value={title}
+          onChange={(event) =>
+            setTitle(
+              event.target.value,
+            )
+          }
+          className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+        />
+      </label>
+
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <label>
+          <span className="text-sm font-bold text-neutral-700">
+            時間
+          </span>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              value={durationMinutes}
+              onChange={(event) =>
+                setDurationMinutes(
+                  event.target.value,
+                )
+              }
+              className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+            />
+            <span className="text-sm text-neutral-500">
+              分
+            </span>
+          </div>
+        </label>
+
+        <label>
+          <span className="text-sm font-bold text-neutral-700">
+            会場
+          </span>
+
+          <input
+            value={location}
+            onChange={(event) =>
+              setLocation(
+                event.target.value,
+              )
+            }
+            placeholder="例：○○スタジオ"
+            className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+          />
+        </label>
+
+        <label>
+          <span className="text-sm font-bold text-neutral-700">
+            定員
+          </span>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              value={capacity}
+              onChange={(event) =>
+                setCapacity(
+                  event.target.value,
+                )
+              }
+              placeholder="任意"
+              className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+            />
+            <span className="text-sm text-neutral-500">
+              人
+            </span>
+          </div>
+        </label>
+
+        <label>
+          <span className="text-sm font-bold text-neutral-700">
+            最低開催人数
+          </span>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              value={minimumCapacity}
+              onChange={(event) =>
+                setMinimumCapacity(
+                  event.target.value,
+                )
+              }
+              placeholder="任意"
+              className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+            />
+            <span className="text-sm text-neutral-500">
+              人
+            </span>
+          </div>
+        </label>
+
+        <label>
+          <span className="text-sm font-bold text-neutral-700">
+            料金
+          </span>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              value={feeAmount}
+              onChange={(event) =>
+                setFeeAmount(
+                  event.target.value,
+                )
+              }
+              placeholder="任意"
+              className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+            />
+            <span className="text-sm text-neutral-500">
+              {item.fee_currency ===
+              "JPY"
+                ? "円"
+                : item.fee_currency}
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <div className="mt-7 border-t border-neutral-100 pt-5">
+        <div className="text-sm font-bold text-neutral-950">
+          公開プロフィール
+        </div>
+
+        <p className="mt-1 text-xs leading-5 text-neutral-500">
+          公開プロフィールでの紹介文と表示設定です。
+        </p>
+      </div>
 
       <label className="mt-4 block">
         <span className="text-sm font-bold text-neutral-700">

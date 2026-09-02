@@ -29,9 +29,12 @@ import {
     isExpired
 } from "@/lib/parariExpiry";
 import HeroPanel from "@/components/parari/HeroPanel";
-import EventClassBrandPanel, {
-    type EventClassBrandItem,
+import type {
+    EventClassBrandItem,
 } from "@/components/parari/EventClassBrandPanel";
+import {
+    CalendarResourceView,
+} from "@/components/parari/panels/calendar/CalendarPanelRenderer";
 import PublicPagePatternRenderer, {
     type PublicPagePattern,
 } from "@/components/parari/public-page/PublicPagePatternRenderer";
@@ -453,9 +456,9 @@ export default function UserProfilePage() {
       eventClassItems.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {eventClassItems.map((item) => (
-            <EventClassBrandPanel
+            <CalendarResourceView
               key={item.id}
-              item={item}
+              calendarItemId={item.id}
             />
           ))}
         </div>
@@ -617,9 +620,9 @@ export default function UserProfilePage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   {eventClassItems.map(
                     (item) => (
-                      <EventClassBrandPanel
+                      <CalendarResourceView
                         key={item.id}
-                        item={item}
+                        calendarItemId={item.id}
                       />
                     ),
                   )}

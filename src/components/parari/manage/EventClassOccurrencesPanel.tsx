@@ -371,17 +371,7 @@ export default function EventClassOccurrencesPanel({
                       </span>
                     ) : null}
 
-                    <span>
-                      参加者{" "}
-                      {
-                        occurrence.reservation_count ??
-                        0
-                      }
-                      {occurrence.capacity !==
-                      null
-                        ? ` / ${occurrence.capacity}`
-                        : ""}
-                    </span>
+
 
                     {occurrence.status ===
                     "cancelled" ? (

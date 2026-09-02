@@ -23,10 +23,6 @@ import {
 } from "@/lib/billing/supabaseAdmin";
 
 
-import {
-  syncRecurringBookingsForGeneratedOccurrences,
-} from "@/lib/calendar/syncRecurringBookingsForGeneratedOccurrences";
-
 
 type GenerateOccurrencesBody = {
   scheduleId?: unknown;
@@ -494,6 +490,9 @@ function buildOccurrenceDates(
     end_date:
       | string
       | null;
+    occurrence_horizon_days:
+      | number
+      | null;
     recurrence_rule:
       | Record<
           string,
@@ -516,13 +515,9 @@ function buildOccurrenceDates(
     );
 
   /*
-   * 終了日未設定の定期開催は
-   * まず1年先まで具体化する。
-   */
-  /*
    * 終了日がない定期開催は、
-   * 常に現在または開始日の遅い方から
-   * 1年先まで具体化する。
+   * 現在または開始日の遅い方から
+   * SCHEDULEごとの生成範囲まで具体化する。
    *
    * 後日もう一度生成すれば、
    * 開催予定が先へ伸びていく。
@@ -540,11 +535,39 @@ function buildOccurrenceDates(
       ? today
       : startDate;
 
-  const horizon =
-    schedule.end_date ??
-    addOneYear(
-      rollingBase,
+  const rawHorizonDays =
+    Number(
+      schedule
+        .occurrence_horizon_days ??
+        30,
     );
+
+
+  const horizonDays =
+    Number.isInteger(
+      rawHorizonDays,
+    ) &&
+    rawHorizonDays >=
+      1 &&
+    rawHorizonDays <=
+      730
+      ? rawHorizonDays
+      : 30;
+
+
+  const rollingHorizon =
+    addDays(
+      rollingBase,
+      horizonDays,
+    );
+
+
+  const horizon =
+    schedule.end_date &&
+    schedule.end_date <
+      rollingHorizon
+      ? schedule.end_date
+      : rollingHorizon;
 
 
   if (
@@ -1164,219 +1187,12 @@ export async function GET(
     data ?? [];
 
 
-  /*
-   * 各開催回の現在予約数をまとめて取得する。
-   *
-   * calendar_occurrences
-   *   ↓ calendar_item_id
-   * calendar-origin applications
-   *   ↓ application_id
-   * application_entries
-   *
-   * withdrawn / cancelled は現在予約数に含めない。
-   */
-  const calendarItemIds =
-    Array.from(
-      new Set(
-        occurrenceRows
-          .map(
-            (occurrence) =>
-              String(
-                occurrence
-                  .calendar_item_id ??
-                  "",
-              ),
-          )
-          .filter(Boolean),
-      ),
-    );
-
-
-  const occurrenceIds =
-    occurrenceRows.map(
-      (occurrence) =>
-        String(
-          occurrence.id,
-        ),
-    );
-
-
-  const applicationIdByItemId =
-    new Map<
-      string,
-      string
-    >();
-
-
-  if (
-    calendarItemIds.length >
-    0
-  ) {
-    const {
-      data: bookingApplications,
-      error:
-        bookingApplicationsError,
-    } =
-      await supabaseAdmin
-        .from(
-          "applications",
-        )
-        .select(
-          `
-            id,
-            calendar_item_id
-          `,
-        )
-        .eq(
-          "origin",
-          "calendar",
-        )
-        .in(
-          "calendar_item_id",
-          calendarItemIds,
-        );
-
-
-    if (
-      bookingApplicationsError
-    ) {
-      console.error(
-        "[calendar/occurrences GET] booking applications load failed:",
-        bookingApplicationsError,
-      );
-    } else {
-      for (
-        const application of
-        bookingApplications ?? []
-      ) {
-        if (
-          application
-            .calendar_item_id
-        ) {
-          applicationIdByItemId.set(
-            String(
-              application
-                .calendar_item_id,
-            ),
-            String(
-              application.id,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-
-  const reservationCountByOccurrenceId =
-    new Map<
-      string,
-      number
-    >();
-
-
-  const applicationIds =
-    Array.from(
-      new Set(
-        applicationIdByItemId
-          .values(),
-      ),
-    );
-
-
-  if (
-    applicationIds.length >
-      0 &&
-    occurrenceIds.length >
-      0
-  ) {
-    const {
-      data: bookingEntries,
-      error:
-        bookingEntriesError,
-    } =
-      await supabaseAdmin
-        .from(
-          "application_entries",
-        )
-        .select(
-          `
-            calendar_occurrence_id
-          `,
-        )
-        .in(
-          "application_id",
-          applicationIds,
-        )
-        .in(
-          "calendar_occurrence_id",
-          occurrenceIds,
-        )
-        .in(
-          "status",
-          [
-            "submitted",
-            "confirmed",
-            "rejected",
-          ],
-        );
-
-
-    if (
-      bookingEntriesError
-    ) {
-      console.error(
-        "[calendar/occurrences GET] reservation counts load failed:",
-        bookingEntriesError,
-      );
-    } else {
-      for (
-        const entry of
-        bookingEntries ?? []
-      ) {
-        const occurrenceId =
-          String(
-            entry
-              .calendar_occurrence_id ??
-              "",
-          );
-
-
-        if (!occurrenceId) {
-          continue;
-        }
-
-
-        reservationCountByOccurrenceId.set(
-          occurrenceId,
-          (
-            reservationCountByOccurrenceId.get(
-              occurrenceId,
-            ) ?? 0
-          ) + 1,
-        );
-      }
-    }
-  }
-
-
   return NextResponse.json({
     ok: true,
-
     occurrences:
-      occurrenceRows.map(
-        (occurrence) => ({
-          ...occurrence,
-
-          reservation_count:
-            reservationCountByOccurrenceId.get(
-              String(
-                occurrence.id,
-              ),
-            ) ?? 0,
-        }),
-      ),
+      occurrenceRows,
   });
+
 }
 
 
@@ -1459,6 +1275,9 @@ export async function POST(
           start_date,
           start_time,
           end_date,
+          location,
+          duration_minutes,
+          occurrence_horizon_days,
           recurrence_rule,
           status
         `,
@@ -1604,11 +1423,16 @@ export async function POST(
     }
 
 
+    const effectiveDurationMinutes =
+      schedule.duration_minutes ??
+      item.duration_minutes;
+
+
     const endsAt =
       new Date(
         startsAt.getTime() +
           Number(
-            item.duration_minutes,
+            effectiveDurationMinutes,
           ) *
             60 *
             1000,
@@ -1644,6 +1468,7 @@ export async function POST(
         item.title,
 
       location:
+        schedule.location ??
         item.location,
 
       capacity:
@@ -1715,54 +1540,6 @@ export async function POST(
   }
 
 
-  let recurringSync;
-
-
-  try {
-    recurringSync =
-      await syncRecurringBookingsForGeneratedOccurrences({
-        calendarScheduleId:
-          String(
-            schedule.id,
-          ),
-
-        sourceStartsAt:
-          rows.map(
-            (row) =>
-              String(
-                row
-                  .source_starts_at,
-              ),
-          ),
-      });
-  } catch (syncError) {
-    console.error(
-      "[calendar/occurrences POST] recurring booking sync failed:",
-      syncError,
-    );
-
-
-    /*
-     * OCCURRENCE自体は既に作成済み。
-     *
-     * このAPIを再実行しても
-     * OCCURRENCEはignoreDuplicates、
-     * APPLICATION ENTRYも重複防止されるため
-     * 安全に再同期できる。
-     */
-    return NextResponse.json(
-      {
-        ok: false,
-        message:
-          "開催予定は作成されましたが、自動予約を反映できませんでした。もう一度実行してください。",
-      },
-      {
-        status: 500,
-      },
-    );
-  }
-
-
   return NextResponse.json({
     ok: true,
 
@@ -1773,6 +1550,5 @@ export async function POST(
     occurrenceCount:
       rows.length,
 
-    recurringSync,
   });
 }

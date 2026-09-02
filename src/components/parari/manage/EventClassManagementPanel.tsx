@@ -17,12 +17,10 @@
 import * as React from "react";
 
 import CalendarOccurrenceEditor from "@/components/parari/manage/CalendarOccurrenceEditor";
-import EventClassOccurrencesPanel, {
+import {
   type EventClassOccurrence,
   formatEventClassOccurrenceDateTime,
 } from "@/components/parari/manage/EventClassOccurrencesPanel";
-import EventClassParticipantsPanel from "@/components/parari/manage/EventClassParticipantsPanel";
-import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
 
 import {
   supabase,
@@ -32,7 +30,6 @@ import {
 export type EventClassSection =
   | "basic"
   | "schedule"
-  | "participants"
   | "publish";
 
 
@@ -42,6 +39,14 @@ type Props = {
   location?: string | null;
   summary?: React.ReactNode;
   basicContent?: React.ReactNode;
+  scheduleContent?: React.ReactNode;
+  resourceDisplay?:
+    | React.ReactNode
+    | ((
+        onSelectOccurrence: (
+          occurrence: EventClassOccurrence,
+        ) => void,
+      ) => React.ReactNode);
   defaultSection?: EventClassSection | null;
 
   /*
@@ -85,15 +90,9 @@ const SECTIONS: Array<{
   },
   {
     id:
-      "participants",
-    label:
-      "参加者",
-  },
-  {
-    id:
       "publish",
     label:
-      "公開・募集",
+      "公開",
   },
 ];
 
@@ -104,6 +103,8 @@ export default function EventClassManagementPanel({
   location,
   summary,
   basicContent,
+  scheduleContent,
+  resourceDisplay,
   defaultSection = null,
   initialOccurrence = null,
   onExitOccurrence,
@@ -371,92 +372,101 @@ export default function EventClassManagementPanel({
     null;
 
 
+  const resolvedResourceDisplay =
+    typeof resourceDisplay ===
+    "function"
+      ? resourceDisplay(
+          selectOccurrence,
+        )
+      : resourceDisplay;
+
   return (
-    <article className="rounded-3xl border border-neutral-200 bg-white p-5 sm:p-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
-            EVENT / CLASS
+    <section className="rounded-[2rem] border-2 border-neutral-200 bg-white p-4 sm:p-5">
+      <div className="flex flex-col gap-4">
+        {!selectedOccurrence &&
+        resolvedResourceDisplay ? (
+          resolvedResourceDisplay
+        ) : null}
+
+        <article className="order-2 px-1 py-1 sm:px-2">
+      {!selectedOccurrence &&
+      resolvedResourceDisplay ? null : (
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+              EVENT / CLASS
+            </div>
+
+            {isOccurrenceContext ? (
+              <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[10px] font-bold text-white">
+                この開催回
+              </span>
+            ) : null}
           </div>
 
-          {isOccurrenceContext ? (
-            <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[10px] font-bold text-white">
-              この開催回
-            </span>
+
+          <h3 className="mt-1 text-lg font-bold text-neutral-950">
+            {
+              title
+            }
+          </h3>
+
+
+          {selectedOccurrence ? (
+            <div className="mt-2 text-sm font-bold text-neutral-800">
+              {formatEventClassOccurrenceDateTime(
+                selectedOccurrence,
+              )}
+            </div>
+          ) : null}
+
+
+          {headerLocation ? (
+            <div className="mt-1 text-sm text-neutral-500">
+              {
+                headerLocation
+              }
+            </div>
+          ) : null}
+
+
+          {!selectedOccurrence &&
+          summary ? (
+            <div className="mt-2">
+              {
+                summary
+              }
+            </div>
+          ) : null}
+
+
+          {selectedOccurrence ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
+
+
+              {selectedOccurrence.status ===
+              "cancelled" ? (
+                <span className="font-bold text-red-600">
+                  休講
+                </span>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={
+                  returnToEventClass
+                }
+                className="inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 font-bold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:text-neutral-950"
+              >
+                {exitOccurrenceLabel ??
+                  "← 全体の管理画面に戻る"}
+              </button>
+            </div>
           ) : null}
         </div>
 
 
-        <h3 className="mt-1 text-lg font-bold text-neutral-950">
-          {
-            title
-          }
-        </h3>
-
-
-        {selectedOccurrence ? (
-          <div className="mt-2 text-sm font-bold text-neutral-800">
-            {formatEventClassOccurrenceDateTime(
-              selectedOccurrence,
-            )}
-          </div>
-        ) : null}
-
-
-        {headerLocation ? (
-          <div className="mt-1 text-sm text-neutral-500">
-            {
-              headerLocation
-            }
-          </div>
-        ) : null}
-
-
-        {!selectedOccurrence &&
-        summary ? (
-          <div className="mt-2">
-            {
-              summary
-            }
-          </div>
-        ) : null}
-
-
-        {selectedOccurrence ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
-            <span>
-              参加者{" "}
-              {
-                selectedOccurrence.reservation_count ??
-                0
-              }
-              {selectedOccurrence.capacity !==
-              null
-                ? ` / ${selectedOccurrence.capacity}`
-                : ""}
-            </span>
-
-            {selectedOccurrence.status ===
-            "cancelled" ? (
-              <span className="font-bold text-red-600">
-                休講
-              </span>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={
-                returnToEventClass
-              }
-              className="font-bold text-neutral-500 underline decoration-neutral-300 underline-offset-4 transition hover:text-neutral-950"
-            >
-              {exitOccurrenceLabel ??
-                "← 全体に戻る"}
-            </button>
-          </div>
-        ) : null}
-      </div>
-
+      )}
 
       <div className="mt-5 flex flex-wrap gap-2">
         {SECTIONS.map(
@@ -591,45 +601,10 @@ export default function EventClassManagementPanel({
 
           {openSection ===
           "schedule" ? (
-            <EventClassOccurrencesPanel
-              calendarItemId={
-                calendarItemId
-              }
-              selectedOccurrenceId={
-                selectedOccurrence
-                  ?.id ??
-                null
-              }
-              onSelectOccurrence={
-                selectOccurrence
-              }
-              refreshKey={
-                occurrenceRefreshKey
-              }
-            />
-          ) : null}
-
-
-          {openSection ===
-          "participants" ? (
-            selectedOccurrence ? (
-              <ParticipantsPanel
-                occurrenceId={
-                  selectedOccurrence.id
-                }
-                title={`${title} ${formatEventClassOccurrenceDateTime(
-                  selectedOccurrence,
-                )}`}
-              />
-            ) : (
-              <EventClassParticipantsPanel
-                calendarItemId={
-                  calendarItemId
-                }
-                title={
-                  title
-                }
-              />
+            scheduleContent ?? (
+              <div className="text-sm text-neutral-500">
+                開催パターンはまだありません。
+              </div>
             )
           ) : null}
 
@@ -639,7 +614,7 @@ export default function EventClassManagementPanel({
             selectedOccurrence ? (
               <div className="rounded-2xl bg-neutral-50 px-4 py-5">
                 <div className="text-sm font-bold text-neutral-900">
-                  この開催回の公開・募集
+                  この開催回の公開
                 </div>
 
                 <p className="mt-1 text-xs leading-6 text-neutral-500">
@@ -650,7 +625,7 @@ export default function EventClassManagementPanel({
             ) : (
               <div className="rounded-2xl bg-neutral-50 px-4 py-5">
                 <div className="text-sm font-bold text-neutral-900">
-                  公開・募集
+                  公開
                 </div>
 
                 <p className="mt-1 text-xs leading-6 text-neutral-500">
@@ -662,6 +637,8 @@ export default function EventClassManagementPanel({
           ) : null}
         </div>
       ) : null}
-    </article>
+        </article>
+      </div>
+    </section>
   );
 }

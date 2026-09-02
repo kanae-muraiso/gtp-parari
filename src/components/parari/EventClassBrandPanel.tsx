@@ -31,6 +31,7 @@ export type EventClassBrandItem = {
 
 type Props = {
   item: EventClassBrandItem;
+  variant?: "card" | "plain";
 };
 
 
@@ -108,6 +109,7 @@ function formatFee(
 
 export default function EventClassBrandPanel({
   item,
+  variant = "card",
 }: Props) {
   const nextOccurrence =
     formatNextOccurrence(
@@ -121,7 +123,13 @@ export default function EventClassBrandPanel({
     );
 
   return (
-    <article className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <article
+      className={
+        variant === "plain"
+          ? "order-1 px-1 py-1 sm:px-2"
+          : "rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+      }
+    >
       <div className="text-lg font-bold leading-7 text-neutral-950">
         {item.title}
       </div>

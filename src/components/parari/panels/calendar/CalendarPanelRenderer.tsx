@@ -25,16 +25,12 @@ export type CalendarResourceOccurrence = {
   ends_at: string;
   timezone: string;
   title: string | null;
+  schedule_name?: string | null;
   location: string | null;
   status: string;
-  viewer_booking_status:
-    | "submitted"
-    | "confirmed"
-    | "rejected"
-    | null;
 };
 
-type CalendarItem =
+export type CalendarResourceItem =
   Omit<
     EventClassBrandItem,
     "next_occurrence"
@@ -42,7 +38,7 @@ type CalendarItem =
 
 type CalendarPanelResponse = {
   ok?: boolean;
-  item?: CalendarItem;
+  item?: CalendarResourceItem;
   occurrences?: CalendarResourceOccurrence[];
   message?: string;
 };
@@ -80,6 +76,151 @@ function formatOccurrenceDate(
   }
 }
 
+export type CalendarResourceDisplayProps = {
+  item: CalendarResourceItem;
+  occurrences: CalendarResourceOccurrence[];
+  renderOccurrenceAction?: (
+    occurrence: CalendarResourceOccurrence,
+  ) => React.ReactNode;
+  renderOccurrenceDetail?: (
+    occurrence: CalendarResourceOccurrence,
+  ) => React.ReactNode;
+  variant?: "public" | "management";
+};
+
+export function CalendarResourceDisplay({
+  item,
+  occurrences,
+  renderOccurrenceAction,
+  renderOccurrenceDetail,
+  variant = "public",
+}: CalendarResourceDisplayProps) {
+  const firstOccurrence =
+    occurrences[0] ?? null;
+
+  const brandItem:
+    EventClassBrandItem = {
+      ...item,
+      next_occurrence:
+        firstOccurrence
+          ? {
+              id:
+                firstOccurrence.id,
+              starts_at:
+                firstOccurrence.starts_at,
+              ends_at:
+                firstOccurrence.ends_at,
+              timezone:
+                firstOccurrence.timezone,
+            }
+          : null,
+    };
+
+  return (
+    <section
+      className={
+        variant === "management"
+          ? "contents"
+          : "space-y-4"
+      }
+    >
+      <EventClassBrandPanel
+        item={brandItem}
+        variant={
+          variant === "management"
+            ? "plain"
+            : "card"
+        }
+      />
+
+      {occurrences.length > 0 ? (
+        <div
+          className={
+            variant === "management"
+              ? "order-3 rounded-3xl border border-neutral-200 bg-neutral-50 p-5"
+              : "rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+          }
+        >
+          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            UPCOMING
+          </div>
+
+          <h3 className="mt-1 text-lg font-bold text-neutral-950">
+            これからの開催
+          </h3>
+
+          <div className="mt-4 divide-y divide-neutral-100">
+            {occurrences.map(
+              (occurrence) => {
+                const detail =
+                  renderOccurrenceDetail
+                    ? renderOccurrenceDetail(
+                        occurrence,
+                      )
+                    : null;
+
+                return (
+                  <div
+                    key={
+                      occurrence.id
+                    }
+                    className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
+                  >
+                    <div>
+                      <div className="font-bold text-neutral-900">
+                        {formatOccurrenceDate(
+                          occurrence,
+                        )}
+                      </div>
+
+                      {occurrence.schedule_name?.trim() ? (
+                        <div className="mt-1 text-sm font-bold text-neutral-600">
+                          {
+                            occurrence.schedule_name
+                          }
+                        </div>
+                      ) : null}
+
+                      {occurrence.location?.trim() ? (
+                        <div className="mt-1 text-xs text-neutral-500">
+                          {occurrence.location}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {renderOccurrenceAction ? (
+                        renderOccurrenceAction(
+                          occurrence,
+                        )
+                      ) : (
+                        <a
+                          href={
+                            `/calendar/${occurrence.id}`
+                          }
+                          className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
+                        >
+                          詳細
+                        </a>
+                      )}
+                    </div>
+
+                    {detail ? (
+                      <div className="basis-full pt-3">
+                        {detail}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              },
+            )}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function CalendarResourceView({
   calendarItemId: rawCalendarItemId,
   renderOccurrenceAction,
@@ -94,7 +235,7 @@ export function CalendarResourceView({
     setItem,
   ] =
     React.useState<
-      CalendarItem | null
+      CalendarResourceItem | null
     >(null);
 
   const [
@@ -261,119 +402,16 @@ export function CalendarResourceView({
     );
   }
 
-  const firstOccurrence =
-    occurrences[0] ?? null;
-
-  const brandItem:
-    EventClassBrandItem = {
-      ...item,
-
-      next_occurrence:
-        firstOccurrence
-          ? {
-              id:
-                firstOccurrence.id,
-              starts_at:
-                firstOccurrence.starts_at,
-              ends_at:
-                firstOccurrence.ends_at,
-              timezone:
-                firstOccurrence.timezone,
-            }
-          : null,
-    };
-
   return (
-    <section className="space-y-4">
-      <EventClassBrandPanel
-        item={brandItem}
-      />
-
-      {occurrences.length > 0 ? (
-        <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-            UPCOMING
-          </div>
-
-          <h3 className="mt-1 text-lg font-bold text-neutral-950">
-            これからの開催
-          </h3>
-
-          <div className="mt-4 divide-y divide-neutral-100">
-            {occurrences.map(
-              (occurrence) => {
-                const bookingStatus =
-                  occurrence.viewer_booking_status;
-
-                const bookingLabel =
-                  bookingStatus === "confirmed"
-                    ? "予約済み"
-                    : bookingStatus === "submitted"
-                    ? "承認待ち"
-                    : bookingStatus === "rejected"
-                    ? "不承認"
-                    : null;
-
-                return (
-                <div
-                  key={
-                    occurrence.id
-                  }
-                  className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
-                >
-                  <div>
-                    <div className="font-bold text-neutral-900">
-                      {formatOccurrenceDate(
-                        occurrence,
-                      )}
-                    </div>
-
-                    {occurrence.title?.trim() &&
-                    occurrence.title.trim() !==
-                      item.title.trim() ? (
-                      <div className="mt-1 text-sm text-neutral-600">
-                        {occurrence.title}
-                      </div>
-                    ) : null}
-
-                    {occurrence.location?.trim() ? (
-                      <div className="mt-1 text-xs text-neutral-500">
-                        {occurrence.location}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {bookingLabel ? (
-                      <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-bold text-neutral-700">
-                        {bookingLabel}
-                      </span>
-                    ) : null}
-
-                    {renderOccurrenceAction ? (
-                      renderOccurrenceAction(
-                        occurrence,
-                      )
-                    ) : (
-                      <a
-                        href={
-                          `/calendar/${occurrence.id}`
-                        }
-                        className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
-                      >
-                        詳細
-                      </a>
-                    )}
-                  </div>
-                </div>
-                );
-              },
-            )}
-          </div>
-        </div>
-      ) : null}
-    </section>
+    <CalendarResourceDisplay
+      item={item}
+      occurrences={occurrences}
+      renderOccurrenceAction={
+        renderOccurrenceAction
+      }
+    />
   );
+
 }
 
 

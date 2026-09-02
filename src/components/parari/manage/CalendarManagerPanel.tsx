@@ -22,8 +22,13 @@ import {
 } from "@/lib/supabaseClient";
 
 import CalendarMonthView from "@/components/parari/manage/CalendarMonthView";
+import CalendarOccurrenceEditor from "@/components/parari/manage/CalendarOccurrenceEditor";
 import EventClassManagementPanel from "@/components/parari/manage/EventClassManagementPanel";
 import CalendarItemBrandSettingsEditor from "@/components/parari/manage/CalendarItemBrandSettingsEditor";
+import CalendarSchedulePatternManager from "@/components/parari/manage/CalendarSchedulePatternManager";
+import {
+  CalendarResourceDisplay,
+} from "@/components/parari/panels/calendar/CalendarPanelRenderer";
 
 
 type CalendarItem = {
@@ -60,6 +65,18 @@ type CalendarSchedule = {
   start_date: string;
   start_time: string;
   end_date: string | null;
+
+  name: string | null;
+
+  location: string | null;
+
+  duration_minutes: number | null;
+
+  occurrence_horizon_days: number;
+
+  application_open_days_before: number;
+
+  application_close_minutes_before: number;
   recurrence_rule: RecurrenceRule;
   status:
     | "active"
@@ -79,6 +96,12 @@ type CalendarOccurrenceSummary = {
   starts_at: string;
   ends_at: string;
   timezone: string;
+  title: string | null;
+  location: string | null;
+  capacity: number | null;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
   status:
     | "scheduled"
     | "cancelled"
@@ -111,6 +134,18 @@ type ScheduleDraft = {
   startTime: string;
   endDate: string;
   timezone: string;
+
+  name: string;
+
+  location: string;
+
+  durationMinutes: string;
+
+  occurrenceHorizonDays: string;
+
+  applicationOpenDaysBefore: string;
+
+  applicationCloseMinutesBefore: string;
 
   /*
    * 開催期間とは別の開催ルール
@@ -229,6 +264,24 @@ function createInitialScheduleDraft(
 
     timezone:
       timezone,
+
+    name:
+      "",
+
+    location:
+      "",
+
+    durationMinutes:
+      "",
+
+    occurrenceHorizonDays:
+      "30",
+
+    applicationOpenDaysBefore:
+      "30",
+
+    applicationCloseMinutesBefore:
+      "180",
 
     weekday:
       String(
@@ -1068,6 +1121,22 @@ const [
       CalendarOccurrenceSummary[]
     >([]);
 
+  const [
+    expandedOccurrenceId,
+    setExpandedOccurrenceId,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
+  const [
+    editingOccurrenceId,
+    setEditingOccurrenceId,
+  ] =
+    React.useState<
+      string | null
+    >(null);
+
 
   const [
     showEndedItems,
@@ -1332,6 +1401,99 @@ const [
   }
 
 
+  async function renameSchedule(
+    scheduleId: string,
+    nextName: string,
+  ) {
+    const name =
+      nextName.trim();
+
+    if (!name) {
+      setMessage(
+        "クラス名・イベント名を入力してください。",
+      );
+      return;
+    }
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+      if (!accessToken) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+        return;
+      }
+
+      const response =
+        await fetch(
+          "/api/calendar/schedules",
+          {
+            method:
+              "PATCH",
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                scheduleId,
+                name,
+              }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.schedule
+      ) {
+        setMessage(
+          result?.message ??
+            "クラス名・イベント名を変更できませんでした。",
+        );
+        return;
+      }
+
+      setSchedules(
+        (current) =>
+          current.map(
+            (schedule) =>
+              schedule.id ===
+              result.schedule.id
+                ? {
+                    ...schedule,
+                    ...result.schedule,
+                  }
+                : schedule,
+          ),
+      );
+
+      setMessage(
+        "クラス名・イベント名を変更しました。",
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarManagerPanel] schedule rename failed:",
+        error,
+      );
+
+      setMessage(
+        "クラス名・イベント名を変更できませんでした。",
+      );
+    }
+  }
+
   async function createItem() {
     if (saving) return;
 
@@ -1455,6 +1617,9 @@ const [
       );
 
 
+      setShowEndedItems(false);
+
+
       setDraft(
         INITIAL_DRAFT,
       );
@@ -1528,6 +1693,18 @@ const [
 
 
     setMessage("");
+
+
+    if (
+      !scheduleDraft
+        .name
+        .trim()
+    ) {
+      setMessage(
+        "クラス名・イベント名を入力してください。",
+      );
+      return;
+    }
 
 
     if (
@@ -1611,6 +1788,30 @@ const [
                 timezone:
                   scheduleDraft
                     .timezone,
+
+                name:
+                  scheduleDraft
+                    .name,
+
+                location:
+                  scheduleDraft
+                    .location,
+
+                durationMinutes:
+                  scheduleDraft
+                    .durationMinutes,
+
+                occurrenceHorizonDays:
+                  scheduleDraft
+                    .occurrenceHorizonDays,
+
+                applicationOpenDaysBefore:
+                  scheduleDraft
+                    .applicationOpenDaysBefore,
+
+                applicationCloseMinutesBefore:
+                  scheduleDraft
+                    .applicationCloseMinutesBefore,
 
                 weekday:
                   scheduleDraft
@@ -2559,7 +2760,7 @@ const [
           </div>
 
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <div className="mt-6">
             <label className="sm:col-span-2">
               <span className="text-sm font-bold text-neutral-700">
                 クラス・イベント名
@@ -2584,7 +2785,17 @@ const [
             </label>
 
 
-            <label>
+            <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-neutral-700">
+                基本設定（任意）
+              </summary>
+
+              <p className="mt-2 text-xs leading-5 text-neutral-500">
+                時間・会場・定員・最低開催人数・料金はあとから変更できます。
+              </p>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <label>
               <span className="text-sm font-bold text-neutral-700">
                 時間
               </span>
@@ -2736,6 +2947,8 @@ const [
                 </span>
               </div>
             </label>
+              </div>
+            </details>
           </div>
 
 
@@ -2803,6 +3016,60 @@ const [
                   nextOccurrenceByItem.get(
                     item.id,
                   );
+
+
+                const resourceOccurrences =
+                  occurrenceSummaries
+                    .filter(
+                      (occurrence) => {
+                        if (
+                          occurrence.calendar_item_id !==
+                            item.id ||
+                          occurrence.status !==
+                            "scheduled"
+                        ) {
+                          return false;
+                        }
+
+
+                        const endsAtMs =
+                          new Date(
+                            occurrence.ends_at,
+                          ).getTime();
+
+
+                        return (
+                          Number.isFinite(
+                            endsAtMs,
+                          ) &&
+                          endsAtMs >
+                            nowMs
+                        );
+                      },
+                    )
+                    .slice(
+                      0,
+                      12,
+                    )
+                    .map(
+                      (occurrence) => {
+                        const schedule =
+                          itemSchedules.find(
+                            (candidate) =>
+                              candidate.id ===
+                              occurrence.calendar_schedule_id,
+                          );
+
+                        return {
+                          ...occurrence,
+                          schedule_name:
+                            schedule
+                              ?.name
+                              ?.trim() ??
+                            null,
+                        };
+                      },
+                    );
 
 
                 return (
@@ -2882,8 +3149,327 @@ const [
                         </div>
                       </>
                     }
+                    resourceDisplay={() => (
+                      <CalendarResourceDisplay
+                        variant="management"
+                        item={
+                          item
+                        }
+                        occurrences={
+                          resourceOccurrences
+                        }
+                        renderOccurrenceAction={(occurrence) => {
+                          const managementOccurrence =
+                            occurrenceSummaries.find(
+                              (candidate) =>
+                                candidate.id ===
+                                occurrence.id,
+                            );
+
+                          if (!managementOccurrence) {
+                            return null;
+                          }
+
+                          const expanded =
+                            expandedOccurrenceId ===
+                            occurrence.id;
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandedOccurrenceId(
+                                  expanded
+                                    ? null
+                                    : occurrence.id,
+                                );
+                                setEditingOccurrenceId(
+                                  null,
+                                );
+                              }}
+                              className={
+                                expanded
+                                  ? "inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:border-neutral-500"
+                                  : "inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
+                              }
+                            >
+                              {expanded
+                                ? "閉じる"
+                                : "詳細"}
+                            </button>
+                          );
+                        }}
+                        renderOccurrenceDetail={(occurrence) => {
+                          if (
+                            expandedOccurrenceId !==
+                            occurrence.id
+                          ) {
+                            return null;
+                          }
+
+                          const managementOccurrence =
+                            occurrenceSummaries.find(
+                              (candidate) =>
+                                candidate.id ===
+                                occurrence.id,
+                            );
+
+                          if (!managementOccurrence) {
+                            return null;
+                          }
+
+                          const occurrenceSchedule =
+                            itemSchedules.find(
+                              (schedule) =>
+                                schedule.id ===
+                                managementOccurrence.calendar_schedule_id,
+                            );
+
+                          const occurrenceScheduleName =
+                            occurrenceSchedule
+                              ?.name
+                              ?.trim() ??
+                            "";
+
+                          const occurrenceBrandTitle =
+                            item.title;
+
+                          let occurrenceDateTime =
+                            managementOccurrence.starts_at;
+
+                          try {
+                            occurrenceDateTime =
+                              new Intl.DateTimeFormat(
+                                "ja-JP",
+                                {
+                                  timeZone:
+                                    managementOccurrence.timezone,
+                                  year:
+                                    "numeric",
+                                  month:
+                                    "long",
+                                  day:
+                                    "numeric",
+                                  weekday:
+                                    "short",
+                                  hour:
+                                    "2-digit",
+                                  minute:
+                                    "2-digit",
+                                },
+                              ).format(
+                                new Date(
+                                  managementOccurrence.starts_at,
+                                ),
+                              );
+                          } catch {
+                            occurrenceDateTime =
+                              managementOccurrence.starts_at;
+                          }
+
+                          if (
+                            editingOccurrenceId ===
+                            occurrence.id
+                          ) {
+                            return (
+                              <CalendarOccurrenceEditor
+                                occurrence={{
+                                  ...managementOccurrence,
+                                  title:
+                                    occurrenceScheduleName ||
+                                    occurrenceBrandTitle,
+                                }}
+                                onClose={() => {
+                                  setEditingOccurrenceId(
+                                    null,
+                                  );
+                                }}
+                                onSaved={(updated) => {
+                                  setOccurrenceSummaries(
+                                    (current) =>
+                                      current.map(
+                                        (
+                                          candidate,
+                                        ) =>
+                                          candidate.id ===
+                                          updated.id
+                                            ? {
+                                                ...candidate,
+                                                ...updated,
+                                              }
+                                            : candidate,
+                                      ),
+                                  );
+
+                                  setOccurrenceRefreshKey(
+                                    (current) =>
+                                      current + 1,
+                                  );
+
+                                  setEditingOccurrenceId(
+                                    null,
+                                  );
+                                }}
+                                onCancelled={(updated) => {
+                                  setOccurrenceSummaries(
+                                    (current) =>
+                                      current.map(
+                                        (
+                                          candidate,
+                                        ) =>
+                                          candidate.id ===
+                                          updated.id
+                                            ? {
+                                                ...candidate,
+                                                ...updated,
+                                              }
+                                            : candidate,
+                                      ),
+                                  );
+
+                                  setOccurrenceRefreshKey(
+                                    (current) =>
+                                      current + 1,
+                                  );
+
+                                  setEditingOccurrenceId(
+                                    null,
+                                  );
+                                }}
+                              />
+                            );
+                          }
+
+                          return (
+                            <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+                              <div className="flex flex-wrap items-start justify-between gap-5">
+                                <div>
+                                  <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                                    この開催回
+                                  </div>
+
+                                  <h4 className="mt-1 text-lg font-bold text-neutral-950">
+                                    {
+                                      occurrenceBrandTitle
+                                    }
+                                  </h4>
+
+                                  {occurrenceScheduleName ? (
+                                    <div className="mt-1 text-sm font-bold text-neutral-600">
+                                      {
+                                        occurrenceScheduleName
+                                      }
+                                    </div>
+                                  ) : null}
+
+                                  <div className="mt-2 text-sm font-bold text-neutral-800">
+                                    {
+                                      occurrenceDateTime
+                                    }
+                                  </div>
+
+                                  {managementOccurrence.location?.trim() ? (
+                                    <div className="mt-1 text-sm text-neutral-500">
+                                      {
+                                        managementOccurrence.location
+                                      }
+                                    </div>
+                                  ) : null}
+
+                                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-600">
+                                    <span>
+                                      {managementOccurrence.status ===
+                                      "cancelled"
+                                        ? "休講"
+                                        : managementOccurrence.status ===
+                                          "completed"
+                                        ? "終了"
+                                        : "開催予定"}
+                                    </span>
+
+                                    {managementOccurrence.capacity ? (
+                                      <span>
+                                        定員{" "}
+                                        {
+                                          managementOccurrence.capacity
+                                        }
+                                        名
+                                      </span>
+                                    ) : null}
+
+                                    {managementOccurrence.minimum_capacity ? (
+                                      <span>
+                                        最低{" "}
+                                        {
+                                          managementOccurrence.minimum_capacity
+                                        }
+                                        名
+                                      </span>
+                                    ) : null}
+
+                                    {managementOccurrence.fee_amount !==
+                                    null ? (
+                                      <span>
+                                        {Number(
+                                          managementOccurrence.fee_amount,
+                                        ).toLocaleString(
+                                          "ja-JP",
+                                        )}
+                                        円
+                                      </span>
+                                    ) : null}
+                                  </div>
+
+                                  <p className="mt-4 text-xs leading-6 text-neutral-500">
+                                    変更はこの開催回だけに適用されます。
+                                    他の開催回や開催パターンには影響しません。
+                                  </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingOccurrenceId(
+                                      occurrence.id,
+                                    );
+                                  }}
+                                  className="shrink-0 rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800"
+                                >
+                                  この回を変更
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                    )}
+                    onOccurrenceChanged={(
+                      updated,
+                    ) => {
+                      setOccurrenceSummaries(
+                        (current) =>
+                          current.map(
+                            (
+                              occurrence,
+                            ) =>
+                              occurrence.id ===
+                              updated.id
+                                ? {
+                                    ...occurrence,
+                                    ...updated,
+                                  }
+                                : occurrence,
+                          ),
+                      );
+                    }}
                     basicContent={
                       <>
+                        <details className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                          <summary className="cursor-pointer text-sm font-bold text-neutral-800">
+                            基本情報
+                          </summary>
+
+                          <div className="mt-5">
                         <CalendarItemBrandSettingsEditor
                           item={item}
                           onSaved={(updated) => {
@@ -2905,664 +3491,65 @@ const [
                           }}
                         />
 
-                        <div className="mt-7 border-t border-neutral-100 pt-5">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-bold text-neutral-950">
-                                日時設定
-                              </div>
-
-                              <p className="mt-1 text-xs leading-5 text-neutral-500">
-                                定期開催や単発開催の日時を設定します。
-                              </p>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (
-                                  isEditingSchedule
-                                ) {
-                                  closeSchedule();
-                                } else {
-                                  openSchedule(
-                                    item.id,
-                                  );
-                                }
-                              }}
-                              className="shrink-0 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-950"
-                            >
-                              {isEditingSchedule
-                                ? "閉じる"
-                                : "＋ 日時を設定"}
-                            </button>
                           </div>
-                        </div>
+                        </details>
 
-
-                    {itemSchedules.length >
-                    0 ? (
-                      <div className="mt-5 border-t border-neutral-100 pt-4">
-                        <div className="text-xs font-bold tracking-wide text-neutral-400">
-                          開催設定
-                        </div>
-
-                        <div className="mt-3 grid gap-2">
-                          {itemSchedules.map(
-                            (
-                              schedule,
-                            ) => (
-                              <div
-                                key={
-                                  schedule.id
-                                }
-                                className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700"
-                              >
-                                <span className="font-bold text-neutral-900">
-                                  {getScheduleLabel(
-                                    schedule,
-                                  )}
-                                </span>
-
-                                <span className="mx-2 text-neutral-300">
-                                  |
-                                </span>
-
-                                {
-                                  schedule.start_date
-                                }
-
-                                <span className="mx-2">
-                                  {
-                                    formatStartTime(
-                                      schedule.start_time,
-                                    )
-                                  }
-                                </span>
-
-                                {schedule.end_date &&
-                                schedule.recurrence_rule
-                                  ?.freq !==
-                                  "once" ? (
-                                  <span className="text-neutral-500">
-                                    ～{" "}
-                                    {
-                                      schedule.end_date
-                                    }
-                                  </span>
-                                ) : null}
-
-                                <span className="ml-3 text-xs text-neutral-400">
-                                  {
-                                    schedule.timezone
-                                  }
-                                </span>
-
-
-                                {schedule.status ===
-                                  "active" &&
-                                schedule.end_date &&
-                                schedule.recurrence_rule
-                                  ?.freq !==
-                                  "once" ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        existingScheduleSaving
-                                      }
-                                      onClick={() => {
-                                        if (
-                                          editingExistingScheduleId ===
-                                          schedule.id
-                                        ) {
-                                          closeExistingSchedulePeriodEdit();
-                                        } else {
-                                          openExistingSchedulePeriodEdit(
-                                            schedule,
-                                          );
-                                        }
-                                      }}
-                                      className="ml-3 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-950 disabled:opacity-50"
-                                    >
-                                      {editingExistingScheduleId ===
-                                      schedule.id
-                                        ? "閉じる"
-                                        : "期間を変更"}
-                                    </button>
-
-
-                                    {editingExistingScheduleId ===
-                                    schedule.id ? (
-                                      <div className="mt-4 rounded-xl border border-neutral-200 bg-white p-4">
-                                        <div className="text-xs font-bold text-neutral-700">
-                                          開催期間を変更
-                                        </div>
-
-                                        <div className="mt-2 text-xs leading-5 text-neutral-500">
-                                          現在の終了日：
-                                          {
-                                            schedule.end_date
-                                          }
-                                        </div>
-
-
-                                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-                                          <label className="block">
-                                            <span className="text-xs font-bold text-neutral-600">
-                                              新しい終了日
-                                            </span>
-
-                                            <input
-                                              type="date"
-                                              value={
-                                                editingExistingEndDate
-                                              }
-                                              min={
-                                                schedule.end_date
-                                              }
-                                              onChange={(
-                                                event,
-                                              ) => {
-                                                setEditingExistingEndDate(
-                                                  event.target
-                                                    .value,
-                                                );
-                                              }}
-                                              className="mt-1 block rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-                                            />
-                                          </label>
-
-
-                                          <div className="flex flex-wrap gap-2">
-                                            <button
-                                              type="button"
-                                              disabled={
-                                                existingScheduleSaving
-                                              }
-                                              onClick={() => {
-                                                void saveExistingSchedulePeriod(
-                                                  schedule,
-                                                );
-                                              }}
-                                              className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
-                                            >
-                                              {existingScheduleSaving
-                                                ? "保存しています..."
-                                                : "保存"}
-                                            </button>
-
-                                            <button
-                                              type="button"
-                                              disabled={
-                                                existingScheduleSaving
-                                              }
-                                              onClick={() => {
-                                                closeExistingSchedulePeriodEdit();
-                                              }}
-                                              className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-600"
-                                            >
-                                              やめる
-                                            </button>
-                                          </div>
-                                        </div>
-
-
-                                        <div className="mt-3 text-xs leading-5 text-neutral-400">
-                                          現在は期間の延長だけ変更できます。すでに個別変更・休講した開催回には影響しません。
-                                        </div>
-                                      </div>
-                                    ) : null}
-                                  </>
-                                ) : null}
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    ) : null}
-
-
-                    {isEditingSchedule ? (
-                      <div className="mt-5 border-t border-neutral-100 pt-5">
-                        <h4 className="font-bold text-neutral-950">
-                          日時を設定
-                        </h4>
-
-
-                        <div className="mt-5 grid gap-5 sm:grid-cols-2">
-
-                          <label className="sm:col-span-2">
-                            <span className="text-sm font-bold text-neutral-700">
-                              開催方法
-                            </span>
-
-                            <select
-                              value={
-                                scheduleDraft
-                                  .recurrenceType
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                updateScheduleDraft(
-                                  "recurrenceType",
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            >
-                              <option value="once">
-                                1回だけ
-                              </option>
-
-                              <option value="weekly">
-                                毎週
-                              </option>
-
-                              <option value="biweekly">
-                                隔週
-                              </option>
-
-                              <option value="monthly">
-                                毎月
-                              </option>
-                            </select>
-                          </label>
-
-
-                          {scheduleDraft
-                            .recurrenceType ===
-                          "weekly" ? (
-                            <label>
-                              <span className="text-sm font-bold text-neutral-700">
-                                開催曜日
-                              </span>
-
-                              <select
-                                value={
-                                  scheduleDraft
-                                    .weekday
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  updateScheduleDraft(
-                                    "weekday",
-                                    event.target
-                                      .value,
-                                  )
-                                }
-                                className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                              >
-                                <option value="1">
-                                  月曜日
-                                </option>
-                                <option value="2">
-                                  火曜日
-                                </option>
-                                <option value="3">
-                                  水曜日
-                                </option>
-                                <option value="4">
-                                  木曜日
-                                </option>
-                                <option value="5">
-                                  金曜日
-                                </option>
-                                <option value="6">
-                                  土曜日
-                                </option>
-                                <option value="7">
-                                  日曜日
-                                </option>
-                              </select>
-                            </label>
-                          ) : null}
-
-
-                          {scheduleDraft
-                            .recurrenceType ===
-                          "monthly" ? (
-                            <label>
-                              <span className="text-sm font-bold text-neutral-700">
-                                毎月の開催日
-                              </span>
-
-                              <input
-                                type="number"
-                                min="1"
-                                max="31"
-                                value={
-                                  scheduleDraft
-                                    .monthDay
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  updateScheduleDraft(
-                                    "monthDay",
-                                    event.target
-                                      .value,
-                                  )
-                                }
-                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                              />
-
-                              <span className="mt-1 block text-xs text-neutral-400">
-                                例：15 → 毎月15日
-                              </span>
-                            </label>
-                          ) : null}
-
-
-                          {scheduleDraft
-                            .recurrenceType ===
-                          "biweekly" ? (
-                            <label>
-                              <span className="text-sm font-bold text-neutral-700">
-                                最初の開催日
-                              </span>
-
-                              <input
-                                type="date"
-                                value={
-                                  scheduleDraft
-                                    .anchorDate
-                                }
-                                min={
-                                  scheduleDraft
-                                    .startDate ||
-                                  undefined
-                                }
-                                max={
-                                  scheduleDraft
-                                    .endDate ||
-                                  undefined
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  updateScheduleDraft(
-                                    "anchorDate",
-                                    event.target
-                                      .value,
-                                  )
-                                }
-                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                              />
-
-                              <span className="mt-1 block text-xs text-neutral-400">
-                                この日から2週間ごとに開催します
-                              </span>
-                            </label>
-                          ) : null}
-
-
-                          <label>
-                            <span className="text-sm font-bold text-neutral-700">
-                              {scheduleDraft
-                                .recurrenceType ===
-                              "once"
-                                ? "開催日"
-                                : "開催期間の開始日"}
-                            </span>
-
-                            <input
-                              type="date"
-                              value={
-                                scheduleDraft
-                                  .startDate
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                updateScheduleDraft(
-                                  "startDate",
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            />
-                          </label>
-
-
-                          <label>
-                            <span className="text-sm font-bold text-neutral-700">
-                              開始時刻
-                            </span>
-
-                            <input
-                              type="time"
-                              value={
-                                scheduleDraft
-                                  .startTime
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                updateScheduleDraft(
-                                  "startTime",
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            />
-                          </label>
-
-
-                          {scheduleDraft
-                            .recurrenceType !==
-                          "once" ? (
-                            <label>
-                              <span className="text-sm font-bold text-neutral-700">
-                                開催期間の終了日
-                              </span>
-
-                              <input
-                                type="date"
-                                value={
-                                  scheduleDraft
-                                    .endDate
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  updateScheduleDraft(
-                                    "endDate",
-                                    event.target
-                                      .value,
-                                  )
-                                }
-                                className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                              />
-
-                              <span className="mt-1 block text-xs text-neutral-400">
-                                未入力なら終了日を決めません
-                              </span>
-                            </label>
-                          ) : null}
-
-
-                          <div>
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="text-sm font-bold text-neutral-700">
-                                イベント基準時間帯
-                              </span>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateScheduleDraft(
-                                    "timezone",
-                                    deviceTimezone,
-                                  )
-                                }
-                                className="text-xs font-bold text-neutral-500 underline decoration-neutral-300 underline-offset-4 hover:text-neutral-900"
-                              >
-                                現在地を使う
-                              </button>
-                            </div>
-
-
-                            <input
-                              list="parari-calendar-event-timezones"
-                              value={
-                                scheduleDraft
-                                  .timezone
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                updateScheduleDraft(
-                                  "timezone",
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              placeholder="例：America/New_York"
-                              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            />
-
-
-                            <datalist id="parari-calendar-event-timezones">
-                              {COMMON_EVENT_TIMEZONES.map(
-                                (
-                                  item,
-                                ) => (
-                                  <option
-                                    key={
-                                      item.value
-                                    }
-                                    value={
-                                      item.value
-                                    }
-                                  >
-                                    {
-                                      item.label
-                                    }
-                                  </option>
-                                ),
-                              )}
-                            </datalist>
-
-
-                            <p className="mt-2 text-xs leading-5 text-neutral-400">
-                              対面イベントは開催地、オンラインイベントはその予定の基準となる時間帯を指定します。
-                              Miami / New York は America/New_York です。
-                            </p>
-                          </div>
-                        </div>
-
-
-                        {!isValidClientTimezone(
-                          scheduleDraft
-                            .timezone,
-                        ) ? (
-                          <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4">
-                            <div className="text-sm font-bold text-red-800">
-                              ⚠ 有効な時間帯を入力してください
-                            </div>
-
-                            <p className="mt-1 text-xs leading-6 text-red-700">
-                              Asia/Tokyo や America/New_York のような
-                              IANAタイムゾーンを指定してください。
-                            </p>
-                          </div>
-                        ) : scheduleDraft
-                            .timezone !==
-                          deviceTimezone ? (
-                          <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-                            <div className="text-sm font-bold text-amber-900">
-                              ⚠ 現在地とは異なる時間帯で設定しています
-                            </div>
-
-                            <div className="mt-3 space-y-2 text-xs leading-6 text-amber-900">
-                              <div>
-                                <span className="font-bold">
-                                  イベント基準時間：
-                                </span>
-                                {scheduleDraft.startDate}
-                                {" "}
-                                {scheduleDraft.startTime}
-                                {" "}
-                                {
-                                  scheduleDraft
-                                    .timezone
-                                }
-                              </div>
-
-                              {formatEventTimeForTimezone(
-                                scheduleDraft
-                                  .startDate,
-                                scheduleDraft
-                                  .startTime,
-                                scheduleDraft
-                                  .timezone,
-                                deviceTimezone,
-                              ) ? (
-                                <div>
-                                  <span className="font-bold">
-                                    あなたの端末時間：
-                                  </span>
-                                  {formatEventTimeForTimezone(
-                                    scheduleDraft
-                                      .startDate,
-                                    scheduleDraft
-                                      .startTime,
-                                    scheduleDraft
-                                      .timezone,
-                                    deviceTimezone,
-                                  )}
-                                  {" "}
-                                  （
-                                  {
-                                    deviceTimezone
-                                  }
-                                  ）
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-3 text-xs leading-6 text-neutral-500">
-                            この予定は
-                            {" "}
-                            <strong className="text-neutral-700">
-                              {
-                                scheduleDraft
-                                  .timezone
-                              }
-                            </strong>
-                            {" "}
-                            を基準に登録されます。
-                          </div>
-                        )}
-
-
-                        <div className="mt-6 flex justify-end">
-                          <button
-                            type="button"
-                            disabled={
-                              scheduleSaving
-                            }
-                            onClick={() => {
-                              void saveSchedule();
-                            }}
-                            className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
-                          >
-                            {scheduleSaving
-                              ? "設定しています..."
-                              : "日時を設定"}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
 
                       </>
+                    }
+                    scheduleContent={
+                      <CalendarSchedulePatternManager
+                        schedules={
+                          itemSchedules
+                        }
+                        itemLocation={
+                          item.location
+                        }
+                        itemDurationMinutes={
+                          item.duration_minutes
+                        }
+                        isCreating={
+                          isEditingSchedule
+                        }
+                        draft={
+                          scheduleDraft
+                        }
+                        saving={
+                          scheduleSaving
+                        }
+                        onAddPattern={() => {
+                          openSchedule(
+                            item.id,
+                          );
+                        }}
+                        onCancelCreate={
+                          closeSchedule
+                        }
+                        onDraftChange={(
+                          key,
+                          value,
+                        ) => {
+                          setScheduleDraft(
+                            (current) => ({
+                              ...current,
+                              [key]:
+                                value,
+                            }),
+                          );
+                        }}
+                        onSavePattern={() => {
+                          void saveSchedule();
+                        }}
+                        onRenamePattern={(
+                          scheduleId,
+                          name,
+                        ) => {
+                          void renameSchedule(
+                            scheduleId,
+                            name,
+                          );
+                        }}
+                      />
                     }
                   />
                 );
