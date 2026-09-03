@@ -151,6 +151,7 @@ export async function GET(
           id,
           owner_user_id,
           description_work_id,
+          visibility,
           status
         `,
       )
@@ -173,6 +174,66 @@ export async function GET(
       },
       {
         status: 500,
+      },
+    );
+  }
+
+
+  // =========================================================
+  // 閲覧中ユーザー
+  // =========================================================
+
+  let viewerUserId:
+    | string
+    | null =
+      null;
+
+
+  const token =
+    getBearerToken(
+      request,
+    );
+
+
+  if (token) {
+    const {
+      data: {
+        user,
+      },
+    } =
+      await supabaseAdmin.auth
+        .getUser(
+          token,
+        );
+
+
+    viewerUserId =
+      user?.id ??
+      null;
+  }
+
+
+  const isOwner =
+    viewerUserId !== null &&
+    viewerUserId ===
+      item.owner_user_id;
+
+
+  if (
+    item.status !== "active" ||
+    (
+      item.visibility !== "public" &&
+      !isOwner
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "公開中の開催情報が見つかりません。",
+      },
+      {
+        status: 404,
       },
     );
   }
@@ -449,46 +510,6 @@ export async function GET(
     calendarBooking
       ?.recurringBookingEnabled ===
     true;
-
-
-  // =========================================================
-  // 閲覧中ユーザー
-  // =========================================================
-
-  let viewerUserId:
-    | string
-    | null =
-      null;
-
-
-  const token =
-    getBearerToken(
-      request,
-    );
-
-
-  if (token) {
-    const {
-      data: {
-        user,
-      },
-    } =
-      await supabaseAdmin.auth
-        .getUser(
-          token,
-        );
-
-
-    viewerUserId =
-      user?.id ??
-      null;
-  }
-
-
-  const isOwner =
-    viewerUserId !== null &&
-    viewerUserId ===
-      item.owner_user_id;
 
 
   let isBooked =

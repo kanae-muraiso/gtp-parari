@@ -45,6 +45,7 @@ export async function GET(
           location,
           fee_amount,
           fee_currency,
+          visibility,
           status
         `,
       )
@@ -57,7 +58,8 @@ export async function GET(
   if (
     itemError ||
     !item ||
-    item.status !== "active"
+    item.status !== "active" ||
+    item.visibility !== "public"
   ) {
     return NextResponse.json(
       {

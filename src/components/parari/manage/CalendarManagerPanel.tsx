@@ -25,6 +25,7 @@ import CalendarMonthView from "@/components/parari/manage/CalendarMonthView";
 import CalendarOccurrenceEditor from "@/components/parari/manage/CalendarOccurrenceEditor";
 import EventClassManagementPanel from "@/components/parari/manage/EventClassManagementPanel";
 import CalendarItemBrandSettingsEditor from "@/components/parari/manage/CalendarItemBrandSettingsEditor";
+import CalendarPublishSettingsEditor from "@/components/parari/manage/CalendarPublishSettingsEditor";
 import CalendarSchedulePatternManager from "@/components/parari/manage/CalendarSchedulePatternManager";
 import {
   CalendarResourceDisplay,
@@ -43,6 +44,7 @@ type CalendarItem = {
   description_work_id: string | null;
   summary: string | null;
   show_in_profile: boolean;
+  visibility: "private" | "public";
   status: "active" | "archived";
   created_at: string;
   updated_at: string;
@@ -78,6 +80,8 @@ type CalendarSchedule = {
 
   application_close_minutes_before: number;
   recurrence_rule: RecurrenceRule;
+  visibility: "private" | "public";
+  show_in_profile: boolean;
   status:
     | "active"
     | "paused"
@@ -3496,6 +3500,28 @@ const [
 
 
                       </>
+                    }
+                    publishContent={
+                      <CalendarPublishSettingsEditor
+                        schedules={
+                          itemSchedules
+                        }
+                        onSaved={(updated) => {
+                          setSchedules(
+                            (current) =>
+                              current.map(
+                                (schedule) =>
+                                  schedule.id ===
+                                  updated.id
+                                    ? {
+                                        ...schedule,
+                                        ...updated,
+                                      }
+                                    : schedule,
+                              ),
+                          );
+                        }}
+                      />
                     }
                     scheduleContent={
                       <CalendarSchedulePatternManager

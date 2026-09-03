@@ -528,6 +528,8 @@ export async function GET(
         application_open_days_before,
         application_close_minutes_before,
         recurrence_rule,
+        visibility,
+        show_in_profile,
         status,
         created_at,
         updated_at
@@ -1248,6 +1250,8 @@ export async function POST(
         application_open_days_before,
         application_close_minutes_before,
         recurrence_rule,
+        visibility,
+        show_in_profile,
         status,
         created_at,
         updated_at
@@ -1457,6 +1461,8 @@ export async function PATCH(
         application_open_days_before,
         application_close_minutes_before,
         recurrence_rule,
+        visibility,
+        show_in_profile,
         status,
         created_at,
         updated_at

@@ -121,6 +121,10 @@ export async function GET(
         "active",
       )
       .eq(
+        "visibility",
+        "public",
+      )
+      .eq(
         "show_in_profile",
         true,
       )

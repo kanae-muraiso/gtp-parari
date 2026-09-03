@@ -32,6 +32,7 @@ type CreateCalendarItemBody = {
   descriptionWorkId?: unknown;
   summary?: unknown;
   showInProfile?: unknown;
+  visibility?: unknown;
 };
 
 
@@ -197,6 +198,7 @@ export async function GET(
           description_work_id,
           summary,
           show_in_profile,
+          visibility,
           status,
           created_at,
           updated_at
@@ -205,6 +207,10 @@ export async function GET(
       .eq(
         "owner_user_id",
         auth.user.id,
+      )
+      .eq(
+        "kind",
+        "managed",
       )
       .order(
         "created_at",
@@ -373,9 +379,6 @@ export async function POST(
       body?.summary,
     );
 
-  const showInProfile =
-    body?.showInProfile === true;
-
   const {
     data,
     error,
@@ -413,7 +416,10 @@ export async function POST(
         summary,
 
         show_in_profile:
-          showInProfile,
+          false,
+
+        visibility:
+          "private",
 
         status:
           "active",
@@ -431,6 +437,7 @@ export async function POST(
           description_work_id,
           summary,
           show_in_profile,
+          visibility,
           status,
           created_at,
           updated_at
@@ -532,6 +539,7 @@ export async function PATCH(
           description_work_id,
           summary,
           show_in_profile,
+          visibility,
           status
         `,
       )
@@ -706,10 +714,44 @@ export async function PATCH(
         )
       : currentItem.summary;
 
+  const requestedVisibility =
+    has("visibility")
+      ? String(
+          body?.visibility ?? "",
+        ).trim()
+      : String(
+          currentItem.visibility ??
+            "private",
+        ).trim();
+
+  if (
+    requestedVisibility !== "private" &&
+    requestedVisibility !== "public"
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "公開状態を確認してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const visibility:
+    | "private"
+    | "public" =
+    requestedVisibility;
+
   const showInProfile =
-    has("showInProfile")
-      ? body?.showInProfile === true
-      : currentItem.show_in_profile === true;
+    visibility === "public" &&
+    (
+      has("showInProfile")
+        ? body?.showInProfile === true
+        : currentItem.show_in_profile === true
+    );
 
   const {
     data,
@@ -734,6 +776,7 @@ export async function PATCH(
         summary,
         show_in_profile:
           showInProfile,
+        visibility,
         updated_at:
           new Date().toISOString(),
       })
@@ -758,6 +801,7 @@ export async function PATCH(
           description_work_id,
           summary,
           show_in_profile,
+          visibility,
           status,
           created_at,
           updated_at

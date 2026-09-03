@@ -40,6 +40,7 @@ type Props = {
   summary?: React.ReactNode;
   basicContent?: React.ReactNode;
   scheduleContent?: React.ReactNode;
+  publishContent?: React.ReactNode;
   resourceDisplay?:
     | React.ReactNode
     | ((
@@ -104,6 +105,7 @@ export default function EventClassManagementPanel({
   summary,
   basicContent,
   scheduleContent,
+  publishContent,
   resourceDisplay,
   defaultSection = null,
   initialOccurrence = null,
@@ -623,16 +625,11 @@ export default function EventClassManagementPanel({
                 </p>
               </div>
             ) : (
-              <div className="rounded-2xl bg-neutral-50 px-4 py-5">
-                <div className="text-sm font-bold text-neutral-900">
-                  公開
+              publishContent ?? (
+                <div className="rounded-2xl bg-neutral-50 px-4 py-5 text-sm text-neutral-500">
+                  公開設定はまだありません。
                 </div>
-
-                <p className="mt-1 text-xs leading-6 text-neutral-500">
-                  クラス・イベント全体の公開ページ、リンク、QRコードなどをここにまとめます。
-                  恒久的なイベント・クラス公開ページと接続する予定です。
-                </p>
-              </div>
+              )
             )
           ) : null}
         </div>

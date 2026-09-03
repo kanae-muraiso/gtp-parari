@@ -20,6 +20,7 @@ import {
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import PersonalCalendarEntryForm from "@/components/parari/calendar/PersonalCalendarEntryForm";
 
 
 type CalendarView =
@@ -28,10 +29,16 @@ type CalendarView =
 
 
 type UpcomingItem = {
-  entry_id: string;
-  application_id: string;
+  entry_id:
+    | string
+    | null;
+  application_id:
+    | string
+    | null;
   occurrence_id: string;
-  schedule_id: string;
+  schedule_id:
+    | string
+    | null;
   item_id: string;
 
   starts_at: string;
@@ -49,7 +56,16 @@ type UpcomingItem = {
     | null;
 
   occurrence_status: string;
-  booking_status: string;
+  booking_status:
+    | string
+    | null;
+  memo?:
+    | string
+    | null;
+  source:
+    | "host"
+    | "personal"
+    | "participant";
 };
 
 
@@ -387,7 +403,9 @@ function getCalendarDateParts(
 
 
 function bookingStatusLabel(
-  status: string,
+  status:
+    | string
+    | null,
 ) {
   if (
     status ===
@@ -731,6 +749,12 @@ export default function MyCalendarPage() {
           data?.events ?? []
         ) {
           if (
+            !event.application_id
+          ) {
+            continue;
+          }
+
+          if (
             !map.has(
               event.application_id,
             )
@@ -986,7 +1010,13 @@ export default function MyCalendarPage() {
           ) : view ===
             "upcoming" ? (
             <section className="mt-6">
-              <div className="mb-6">
+                <PersonalCalendarEntryForm
+                  timezone={
+                    deviceTimezone
+                  }
+                />
+
+                <div className="mb-6 mt-6">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
                   <div>
                     <div className="text-xs font-bold text-neutral-400">
@@ -1074,7 +1104,7 @@ export default function MyCalendarPage() {
                 </h2>
 
                 <p className="mt-1 text-xs leading-6 text-neutral-500">
-                  今日から14日間の予約・参加予定です。
+                  今日から14日間の自分・主催・参加予定です。
                 </p>
               </div>
 
@@ -1089,7 +1119,7 @@ export default function MyCalendarPage() {
                   </div>
 
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    予約したクラスやイベントがここに表示されます。
+                    自分の予定、主催するクラスやイベント、参加予定がここに表示されます。
                   </p>
                 </div>
               ) : (
@@ -1100,9 +1130,21 @@ export default function MyCalendarPage() {
                     ) => (
                       <Link
                         key={
-                          item.entry_id
+                          `${item.source}-${item.occurrence_id}`
                         }
-                        href={`/calendar/${item.occurrence_id}`}
+                        href={
+                          item.source ===
+                          "personal"
+                            ? "/my/calendar"
+                            : `/calendar/${item.occurrence_id}`
+                        }
+                        onClick={
+                          item.source ===
+                          "personal"
+                            ? (event) =>
+                                event.preventDefault()
+                            : undefined
+                        }
                         className="block rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-300 hover:shadow"
                       >
                         <div className="flex items-start gap-4">
@@ -1140,11 +1182,22 @@ export default function MyCalendarPage() {
                               </div>
                             ) : null}
 
+                              {item.source === "personal" &&
+                              item.memo ? (
+                                <div className="mt-2 text-sm leading-6 text-neutral-500">
+                                  {item.memo}
+                                </div>
+                              ) : null}
+
                             <div className="mt-2">
                               <span className="inline-flex rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
-                                {bookingStatusLabel(
-                                  item.booking_status,
-                                )}
+                                {item.source === "host"
+                                  ? "主催"
+                                  : item.source === "personal"
+                                    ? "自分"
+                                    : bookingStatusLabel(
+                                        item.booking_status,
+                                      )}
                               </span>
                             </div>
                           </div>
@@ -1169,7 +1222,7 @@ export default function MyCalendarPage() {
                     </h2>
 
                     <p className="mt-1 text-xs leading-6 text-neutral-500">
-                      予約・参加予定を月単位で確認できます。
+                      自分・主催・参加予定を月単位で確認できます。
                     </p>
                   </div>
 
@@ -1353,9 +1406,21 @@ export default function MyCalendarPage() {
                                         ) => (
                                           <Link
                                             key={
-                                              event.entry_id
+                                              `${event.source}-${event.occurrence_id}`
                                             }
-                                            href={`/calendar/${event.occurrence_id}`}
+                                            href={
+                                              event.source ===
+                                              "personal"
+                                                ? "/my/calendar"
+                                                : `/calendar/${event.occurrence_id}`
+                                            }
+                                            onClick={
+                                              event.source ===
+                                              "personal"
+                                                ? (mouseEvent) =>
+                                                    mouseEvent.preventDefault()
+                                                : undefined
+                                            }
                                             className="block truncate rounded-lg bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-700 transition hover:bg-neutral-200"
                                             title={
                                               event.title

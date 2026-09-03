@@ -476,11 +476,11 @@ export default function CalendarItemBrandSettingsEditor({
 
       <div className="mt-7 border-t border-neutral-100 pt-5">
         <div className="text-sm font-bold text-neutral-950">
-          公開プロフィール
+          紹介文
         </div>
 
         <p className="mt-1 text-xs leading-5 text-neutral-500">
-          公開プロフィールでの紹介文と表示設定です。
+          公開ページやプロフィールに表示する短い紹介文です。
         </p>
       </div>
 
@@ -504,32 +504,7 @@ export default function CalendarItemBrandSettingsEditor({
         />
       </label>
 
-      <label className="mt-4 flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          checked={
-            showInProfile
-          }
-          onChange={(
-            event,
-          ) =>
-            setShowInProfile(
-              event.target.checked,
-            )
-          }
-          className="mt-1 h-4 w-4"
-        />
 
-        <span>
-          <span className="block text-sm font-bold text-neutral-800">
-            公開プロフィールに表示する
-          </span>
-
-          <span className="mt-1 block text-xs leading-5 text-neutral-500">
-            オフの場合、このクラス・イベントはあなたのプロフィールには表示されません。
-          </span>
-        </span>
-      </label>
 
       <div className="mt-4 flex items-center gap-3">
         <button

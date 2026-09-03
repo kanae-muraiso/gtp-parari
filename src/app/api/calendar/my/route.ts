@@ -117,6 +117,164 @@ export async function GET(
       );
 
 
+    const {
+      data: ownedItems,
+      error: ownedItemsError,
+    } =
+      await supabaseAdmin
+          .from(
+            "calendar_items",
+          )
+          .select(
+            `
+              id,
+              kind,
+              summary
+            `,
+          )
+          .eq(
+            "owner_user_id",
+            user.id,
+          )
+          .eq(
+            "status",
+            "active",
+          );
+
+    if (ownedItemsError) {
+      console.error(
+        "[calendar/my] owned items failed:",
+        ownedItemsError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "主催予定を取得できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const ownedItemIds =
+      (ownedItems ?? [])
+        .map(
+          (item) =>
+            item.id,
+        )
+        .filter(
+          (
+            id,
+          ): id is string =>
+            typeof id ===
+              "string" &&
+            Boolean(id),
+        );
+
+    const ownedItemById =
+      new Map(
+        (ownedItems ?? []).map(
+          (item) => [
+            item.id,
+            item,
+          ],
+        ),
+      );
+
+    const ownedOccurrences:
+      Array<{
+        id: string;
+        calendar_item_id: string;
+        calendar_schedule_id:
+          | string
+          | null;
+        starts_at: string;
+        ends_at:
+          | string
+          | null;
+        timezone: string;
+        title: string;
+        location:
+          | string
+          | null;
+        status: string;
+      }> = [];
+
+    if (
+      ownedItemIds.length >
+      0
+    ) {
+      const {
+        data:
+          ownedOccurrenceRows,
+        error:
+          ownedOccurrencesError,
+      } =
+        await supabaseAdmin
+          .from(
+            "calendar_occurrences",
+          )
+          .select(
+            `
+              id,
+              calendar_item_id,
+              calendar_schedule_id,
+              starts_at,
+              ends_at,
+              timezone,
+              title,
+              location,
+              status
+            `,
+          )
+          .in(
+            "calendar_item_id",
+            ownedItemIds,
+          )
+          .neq(
+            "status",
+            "cancelled",
+          )
+          .order(
+            "starts_at",
+            {
+              ascending: true,
+            },
+          )
+          .limit(2000);
+
+      if (
+        ownedOccurrencesError
+      ) {
+        console.error(
+          "[calendar/my] owned occurrences failed:",
+          ownedOccurrencesError,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "主催する開催予定を取得できませんでした。",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+      ownedOccurrences.push(
+        ...(
+          ownedOccurrenceRows ??
+          []
+        ),
+      );
+    }
+
+
     // ========================================================
     // ACTIVE CALENDAR ENTRIES
     // ========================================================
@@ -488,6 +646,193 @@ export async function GET(
               b.starts_at,
             ).getTime(),
         );
+
+
+    const ownerUpcoming =
+      ownedOccurrences
+        .map(
+          (occurrence) => {
+            const startsAt =
+              new Date(
+                occurrence.starts_at,
+              );
+
+            if (
+              Number.isNaN(
+                startsAt.getTime(),
+              ) ||
+              startsAt < now ||
+              startsAt >=
+                twoWeeksLater ||
+              occurrence.status !==
+                "scheduled"
+            ) {
+              return null;
+            }
+
+            return {
+              entry_id:
+                null,
+              application_id:
+                null,
+              occurrence_id:
+                occurrence.id,
+              schedule_id:
+                occurrence
+                  .calendar_schedule_id,
+              item_id:
+                occurrence
+                  .calendar_item_id,
+              starts_at:
+                occurrence
+                  .starts_at,
+              ends_at:
+                occurrence
+                  .ends_at,
+              timezone:
+                occurrence
+                  .timezone,
+              title:
+                occurrence.title,
+              location:
+                occurrence
+                  .location,
+              occurrence_status:
+                occurrence.status,
+              booking_status:
+                null,
+              source:
+                ownedItemById.get(
+                  occurrence.calendar_item_id,
+                )?.kind === "personal"
+                  ? ("personal" as const)
+                  : ("host" as const),
+
+              memo:
+                ownedItemById.get(
+                  occurrence.calendar_item_id,
+                )?.summary ?? null,
+            };
+          },
+        )
+        .filter(
+          (
+            row,
+          ): row is NonNullable<
+            typeof row
+          > => Boolean(row),
+        );
+
+    const ownerCalendarEvents =
+      ownedOccurrences.map(
+        (occurrence) => ({
+          entry_id:
+            null,
+          application_id:
+            null,
+          occurrence_id:
+            occurrence.id,
+          schedule_id:
+            occurrence
+              .calendar_schedule_id,
+          item_id:
+            occurrence
+              .calendar_item_id,
+          starts_at:
+            occurrence
+              .starts_at,
+          ends_at:
+            occurrence
+              .ends_at,
+          timezone:
+            occurrence
+              .timezone,
+          title:
+            occurrence.title,
+          location:
+            occurrence
+              .location,
+          occurrence_status:
+            occurrence.status,
+          booking_status:
+            null,
+          source:
+            ownedItemById.get(
+              occurrence.calendar_item_id,
+            )?.kind === "personal"
+              ? ("personal" as const)
+              : ("host" as const),
+
+          memo:
+            ownedItemById.get(
+              occurrence.calendar_item_id,
+            )?.summary ?? null,
+        }),
+      );
+
+    const participantUpcoming =
+      upcoming.map(
+        (row) => ({
+          ...row,
+          source:
+            "participant" as const,
+        }),
+      );
+
+    const participantCalendarEvents =
+      calendarEvents.map(
+        (row) => ({
+          ...row,
+          source:
+            "participant" as const,
+        }),
+      );
+
+    const mergedUpcoming =
+      Array.from(
+        new Map(
+          [
+            ...participantUpcoming,
+            ...ownerUpcoming,
+          ].map(
+            (row) => [
+              row.occurrence_id,
+              row,
+            ] as const,
+          ),
+        ).values(),
+      ).sort(
+        (a, b) =>
+          new Date(
+            a.starts_at,
+          ).getTime() -
+          new Date(
+            b.starts_at,
+          ).getTime(),
+      );
+
+    const mergedCalendarEvents =
+      Array.from(
+        new Map(
+          [
+            ...participantCalendarEvents,
+            ...ownerCalendarEvents,
+          ].map(
+            (row) => [
+              row.occurrence_id,
+              row,
+            ] as const,
+          ),
+        ).values(),
+      ).sort(
+        (a, b) =>
+          new Date(
+            a.starts_at,
+          ).getTime() -
+          new Date(
+            b.starts_at,
+          ).getTime(),
+      );
 
 
     // ========================================================
@@ -994,10 +1339,11 @@ export async function GET(
         days: 14,
       },
 
-      upcoming,
+      upcoming:
+        mergedUpcoming,
 
       events:
-        calendarEvents,
+        mergedCalendarEvents,
 
       classes,
     });
