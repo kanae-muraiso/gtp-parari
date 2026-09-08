@@ -25,7 +25,6 @@ type PanelCardMode = "summary" | "view" | "edit";
 type PanelBlockCardProps = {
   block: PanelBlock;
   initialMode?: PanelCardMode;
-  onInitialEditConsumed?: () => void;
   onChangeRaw: (nextRaw: string, options?: { structural?: boolean }) => void;
   onDelete?: () => void;
   onInsertAfter?: (raw: string) => void;
@@ -45,7 +44,6 @@ type PanelBlockCardProps = {
 export function PanelBlockCard({
   block,
   initialMode = "view",
-  onInitialEditConsumed,
   onChangeRaw,
   onDelete,
   onInsertAfter,
@@ -62,12 +60,6 @@ export function PanelBlockCard({
 
   useEffect(() => {
     setHasMounted(true);
-
-    if (initialMode === "edit") {
-      onInitialEditConsumed?.();
-    }
-    // initialMode はマウント時だけ評価する。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const definition = getPanelDefinition(block.tag);

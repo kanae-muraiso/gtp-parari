@@ -151,7 +151,20 @@ export function PagePanelComposer({
   } | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
-const waitForNextPaint = () =>
+
+  useEffect(() => {
+    if (autoEditIndex === null) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      setAutoEditIndex(null);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [autoEditIndex]);
+
+  const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         window.setTimeout(resolve, 0);
