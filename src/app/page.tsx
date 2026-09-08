@@ -103,10 +103,10 @@ export default function HomePage() {
           </Link>
 
           <Link
-            href="/parari"
+            href="https://parari.cpp.co.jp/"
             className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-medium text-neutral-800"
           >
-            サンプルを見る
+            パラリとは？
           </Link>
         </div>
       </section>

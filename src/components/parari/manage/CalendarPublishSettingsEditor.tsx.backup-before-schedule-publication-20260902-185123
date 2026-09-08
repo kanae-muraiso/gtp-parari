@@ -1,0 +1,298 @@
+"use client";
+
+import * as React from "react";
+
+import {
+  supabase,
+} from "@/lib/supabaseClient";
+
+export type CalendarPublishSettingsItem = {
+  id: string;
+  visibility: "private" | "public";
+  show_in_profile: boolean;
+};
+
+type Props = {
+  item: CalendarPublishSettingsItem;
+  onSaved?: (
+    item: CalendarPublishSettingsItem,
+  ) => void;
+};
+
+export default function CalendarPublishSettingsEditor({
+  item,
+  onSaved,
+}: Props) {
+  const [
+    visibility,
+    setVisibility,
+  ] = React.useState<
+    "private" | "public"
+  >(
+    item.visibility === "public"
+      ? "public"
+      : "private",
+  );
+
+  const [
+    showInProfile,
+    setShowInProfile,
+  ] = React.useState(
+    item.visibility === "public" &&
+    item.show_in_profile === true,
+  );
+
+  const [saving, setSaving] =
+    React.useState(false);
+
+  const [message, setMessage] =
+    React.useState("");
+
+  React.useEffect(() => {
+    const nextVisibility =
+      item.visibility === "public"
+        ? "public"
+        : "private";
+
+    setVisibility(nextVisibility);
+
+    setShowInProfile(
+      nextVisibility === "public" &&
+      item.show_in_profile === true,
+    );
+
+    setMessage("");
+  }, [
+    item.id,
+    item.visibility,
+    item.show_in_profile,
+  ]);
+
+  async function save() {
+    if (saving) return;
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setMessage(
+          "ログイン情報を確認できませんでした。",
+        );
+        return;
+      }
+
+      const response =
+        await fetch(
+          "/api/calendar/items",
+          {
+            method: "PATCH",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              calendarItemId:
+                item.id,
+              visibility,
+              showInProfile:
+                visibility === "public"
+                  ? showInProfile
+                  : false,
+            }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(() => null);
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.item
+      ) {
+        setMessage(
+          result?.message ??
+            "公開設定を保存できませんでした。",
+        );
+        return;
+      }
+
+      const nextVisibility =
+        result.item.visibility ===
+        "public"
+          ? "public"
+          : "private";
+
+      setVisibility(
+        nextVisibility,
+      );
+
+      setShowInProfile(
+        nextVisibility === "public" &&
+        result.item.show_in_profile ===
+          true,
+      );
+
+      onSaved?.(result.item);
+
+      setMessage(
+        nextVisibility === "public"
+          ? "公開設定を保存しました。"
+          : "非公開にしました。",
+      );
+    } catch (error) {
+      console.error(
+        "[CalendarPublishSettingsEditor] save failed:",
+        error,
+      );
+
+      setMessage(
+        "公開設定を保存できませんでした。",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-neutral-50 px-4 py-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-neutral-950">
+            公開設定
+          </div>
+
+          <p className="mt-1 text-xs leading-6 text-neutral-500">
+            公開すると、このCALENDARを他の人が見ることができます。
+          </p>
+        </div>
+
+        <span
+          className={
+            visibility === "public"
+              ? "rounded-full bg-neutral-950 px-3 py-1 text-xs font-bold text-white"
+              : "rounded-full bg-neutral-200 px-3 py-1 text-xs font-bold text-neutral-600"
+          }
+        >
+          {visibility === "public"
+            ? "公開中"
+            : "非公開"}
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+          <input
+            type="radio"
+            name={`calendar-visibility-${item.id}`}
+            checked={
+              visibility === "private"
+            }
+            onChange={() => {
+              setVisibility("private");
+              setShowInProfile(false);
+            }}
+            className="mt-1 h-4 w-4"
+          />
+
+          <span>
+            <span className="block text-sm font-bold text-neutral-800">
+              非公開
+            </span>
+
+            <span className="mt-1 block text-xs leading-5 text-neutral-500">
+              管理画面だけで利用し、公開ページやプロフィールには表示しません。
+            </span>
+          </span>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+          <input
+            type="radio"
+            name={`calendar-visibility-${item.id}`}
+            checked={
+              visibility === "public"
+            }
+            onChange={() => {
+              setVisibility("public");
+            }}
+            className="mt-1 h-4 w-4"
+          />
+
+          <span>
+            <span className="block text-sm font-bold text-neutral-800">
+              公開
+            </span>
+
+            <span className="mt-1 block text-xs leading-5 text-neutral-500">
+              このCALENDARを他の人が見ることができます。
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <label
+        className={
+          visibility === "public"
+            ? "mt-5 flex cursor-pointer items-start gap-3"
+            : "mt-5 flex cursor-not-allowed items-start gap-3 opacity-40"
+        }
+      >
+        <input
+          type="checkbox"
+          checked={showInProfile}
+          disabled={
+            visibility !== "public"
+          }
+          onChange={(event) => {
+            setShowInProfile(
+              event.target.checked,
+            );
+          }}
+          className="mt-1 h-4 w-4"
+        />
+
+        <span>
+          <span className="block text-sm font-bold text-neutral-800">
+            公開プロフィールに表示する
+          </span>
+
+          <span className="mt-1 block text-xs leading-5 text-neutral-500">
+            オフでも、公開中なら直接の公開ページから見ることができます。
+          </span>
+        </span>
+      </label>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            void save();
+          }}
+          disabled={saving}
+          className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+        >
+          {saving
+            ? "保存中..."
+            : "公開設定を保存"}
+        </button>
+
+        {message ? (
+          <span className="text-xs text-neutral-500">
+            {message}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}

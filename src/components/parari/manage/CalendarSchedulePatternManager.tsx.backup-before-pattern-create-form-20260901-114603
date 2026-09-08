@@ -1,0 +1,421 @@
+"use client";
+
+type RecurrenceRule = {
+  freq?: string;
+  interval?: number;
+  byWeekday?: number[];
+  byMonthDay?: number[];
+  anchorDate?: string;
+};
+
+export type CalendarSchedulePattern = {
+  id: string;
+  calendar_item_id: string;
+  timezone: string;
+  start_date: string;
+  start_time: string;
+  end_date: string | null;
+  name: string | null;
+  location: string | null;
+  duration_minutes: number | null;
+  occurrence_horizon_days: number;
+  application_open_days_before: number;
+  application_close_minutes_before: number;
+  recurrence_rule: RecurrenceRule;
+  status:
+    | "active"
+    | "paused"
+    | "ended";
+};
+
+type Props = {
+  schedules: CalendarSchedulePattern[];
+  itemLocation: string | null;
+  itemDurationMinutes: number;
+  onAddPattern?: () => void;
+};
+
+const WEEKDAY_LABELS: Record<number, string> = {
+  1: "月曜日",
+  2: "火曜日",
+  3: "水曜日",
+  4: "木曜日",
+  5: "金曜日",
+  6: "土曜日",
+  7: "日曜日",
+};
+
+function getPatternRuleLabel(
+  schedule: CalendarSchedulePattern,
+): string {
+  const rule =
+    schedule.recurrence_rule ??
+    {};
+
+  if (rule.freq === "once") {
+    return "1回だけ";
+  }
+
+  if (
+    rule.freq === "weekly" &&
+    rule.interval === 2
+  ) {
+    const weekday =
+      rule.byWeekday?.[0];
+
+    const label =
+      typeof weekday === "number"
+        ? WEEKDAY_LABELS[weekday] ?? ""
+        : "";
+
+    return label
+      ? `隔週 ${label}`
+      : "隔週";
+  }
+
+  if (rule.freq === "weekly") {
+    const weekday =
+      rule.byWeekday?.[0];
+
+    const label =
+      typeof weekday === "number"
+        ? WEEKDAY_LABELS[weekday] ?? ""
+        : "";
+
+    return label
+      ? `毎週 ${label}`
+      : "毎週";
+  }
+
+  if (rule.freq === "monthly") {
+    const monthDay =
+      rule.byMonthDay?.[0];
+
+    return typeof monthDay === "number"
+      ? `毎月 ${monthDay}日`
+      : "毎月";
+  }
+
+  return "開催パターン";
+}
+
+function getPatternTitle(
+  schedule: CalendarSchedulePattern,
+): string {
+  const name =
+    schedule.name?.trim();
+
+  return name ||
+    getPatternRuleLabel(schedule);
+}
+
+function formatTime(
+  value: string,
+): string {
+  return value.slice(0, 5);
+}
+
+function getEndTime(
+  startTime: string,
+  durationMinutes: number,
+): string {
+  const match =
+    startTime.match(
+      /^(\d{1,2}):(\d{2})/,
+    );
+
+  if (!match) {
+    return "";
+  }
+
+  const hour =
+    Number(match[1]);
+
+  const minute =
+    Number(match[2]);
+
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(durationMinutes)
+  ) {
+    return "";
+  }
+
+  const total =
+    hour * 60 +
+    minute +
+    durationMinutes;
+
+  const normalized =
+    ((total % 1440) + 1440) %
+    1440;
+
+  const endHour =
+    Math.floor(
+      normalized / 60,
+    );
+
+  const endMinute =
+    normalized % 60;
+
+  return `${String(endHour).padStart(
+    2,
+    "0",
+  )}:${String(endMinute).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function formatCloseLead(
+  minutes: number,
+): string {
+  if (
+    minutes > 0 &&
+    minutes % 1440 === 0
+  ) {
+    return `${minutes / 1440}日前`;
+  }
+
+  if (
+    minutes > 0 &&
+    minutes % 60 === 0
+  ) {
+    return `${minutes / 60}時間前`;
+  }
+
+  return `${minutes}分前`;
+}
+
+function getStatusLabel(
+  status: CalendarSchedulePattern["status"],
+): string | null {
+  if (status === "paused") {
+    return "停止中";
+  }
+
+  if (status === "ended") {
+    return "終了";
+  }
+
+  return null;
+}
+
+export default function CalendarSchedulePatternManager({
+  schedules,
+  itemLocation,
+  itemDurationMinutes,
+  onAddPattern,
+}: Props) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-neutral-950">
+            開催パターン
+          </h4>
+
+          <p className="mt-1 text-xs leading-5 text-neutral-500">
+            曜日・時間・会場など、開催の基本となる型です。
+          </p>
+        </div>
+      </div>
+
+      {schedules.length === 0 ? (
+        <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-6 text-sm text-neutral-500">
+          開催パターンはまだありません。
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3">
+          {schedules.map(
+            (schedule) => {
+              const duration =
+                schedule.duration_minutes ??
+                itemDurationMinutes;
+
+              const location =
+                schedule.location?.trim() ||
+                itemLocation?.trim() ||
+                "";
+
+              const endTime =
+                getEndTime(
+                  schedule.start_time,
+                  duration,
+                );
+
+              const statusLabel =
+                getStatusLabel(
+                  schedule.status,
+                );
+
+              const isOnce =
+                schedule.recurrence_rule
+                  ?.freq === "once";
+
+              return (
+                <details
+                  key={schedule.id}
+                  className="rounded-2xl border border-neutral-200 bg-white"
+                >
+                  <summary className="cursor-pointer list-none px-4 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="font-bold text-neutral-950">
+                          {getPatternTitle(
+                            schedule,
+                          )}
+                        </div>
+
+                        <div className="mt-1 text-sm text-neutral-600">
+                          {getPatternRuleLabel(
+                            schedule,
+                          )}
+                          {" "}
+                          {formatTime(
+                            schedule.start_time,
+                          )}
+                          {endTime
+                            ? `–${endTime}`
+                            : ""}
+                        </div>
+
+                        {location ? (
+                          <div className="mt-1 text-xs text-neutral-500">
+                            {location}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {statusLabel ? (
+                          <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-bold text-neutral-500">
+                            {statusLabel}
+                          </span>
+                        ) : null}
+
+                        <span className="text-neutral-400">
+                          ▼
+                        </span>
+                      </div>
+                    </div>
+                  </summary>
+
+                  <div className="border-t border-neutral-100 px-4 py-4">
+                    <dl className="grid gap-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          開催パターン
+                        </dt>
+
+                        <dd className="mt-1 font-bold text-neutral-800">
+                          {getPatternRuleLabel(
+                            schedule,
+                          )}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          時間
+                        </dt>
+
+                        <dd className="mt-1 text-neutral-700">
+                          {formatTime(
+                            schedule.start_time,
+                          )}
+                          {endTime
+                            ? `–${endTime}`
+                            : ""}
+                          <span className="ml-2 text-xs text-neutral-400">
+                            {duration}分
+                          </span>
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          会場
+                        </dt>
+
+                        <dd className="mt-1 text-neutral-700">
+                          {location ||
+                            "未設定"}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          開催期間
+                        </dt>
+
+                        <dd className="mt-1 text-neutral-700">
+                          {schedule.start_date}
+                          {isOnce
+                            ? ""
+                            : ` ～ ${
+                                schedule.end_date ??
+                                "終了日なし"
+                              }`}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          予定を作る範囲
+                        </dt>
+
+                        <dd className="mt-1 text-neutral-700">
+                          {schedule.occurrence_horizon_days}
+                          日先まで
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-neutral-400">
+                          申込受付
+                        </dt>
+
+                        <dd className="mt-1 text-neutral-700">
+                          {
+                            schedule.application_open_days_before
+                          }
+                          日前 ～{" "}
+                          {formatCloseLead(
+                            schedule.application_close_minutes_before,
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-4 text-xs text-neutral-400">
+                      {schedule.location
+                        ? "この開催パターン専用の会場を使用"
+                        : "会場はブランド設定を使用"}
+                      {" ・ "}
+                      {schedule.duration_minutes !==
+                      null
+                        ? "この開催パターン専用の時間を使用"
+                        : "時間はブランド設定を使用"}
+                    </div>
+                  </div>
+                </details>
+              );
+            },
+          )}
+        </div>
+      )}
+
+      {onAddPattern ? (
+        <button
+          type="button"
+          onClick={onAddPattern}
+          className="mt-4 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-950"
+        >
+          ＋ 開催パターンを追加
+        </button>
+      ) : null}
+    </div>
+  );
+}
