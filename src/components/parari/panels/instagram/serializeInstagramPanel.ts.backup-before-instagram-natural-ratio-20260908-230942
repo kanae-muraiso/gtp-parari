@@ -15,7 +15,12 @@ export function serializeInstagramPanel(data: InstagramPanelData): string {
   if (data.thumbnail.trim().length > 0) {
     lines.push(`[THUMBNAIL] ${data.thumbnail.trim()}`);
   }
-if (data.instagramWidth.trim().length > 0) {
+
+  if (data.aspect.trim().length > 0) {
+    lines.push(`[ASPECT] ${data.aspect.trim()}`);
+  }
+
+  if (data.instagramWidth.trim().length > 0) {
     lines.push(`[INSTAGRAM_WIDTH] ${data.instagramWidth.trim()}`);
   }
 

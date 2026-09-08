@@ -87,12 +87,13 @@ export function InstagramEmbed({
 
       <div
         className="mx-auto max-w-full"
-        style={{ width }}
+        style={{
+          width,
+        }}
       >
         <blockquote
           key={normalizedUrl}
           className="instagram-media"
-          data-instgrm-captioned=""
           data-instgrm-permalink={normalizedUrl}
           data-instgrm-version="14"
           style={instagramBlockquoteStyle}
@@ -120,14 +121,14 @@ export function InstagramEmbed({
 const instagramBlockquoteStyle: CSSProperties = {
   background: "#fff",
   border: 0,
-  borderRadius: 3,
+  borderRadius: 12,
   boxShadow:
-    "0 0 1px rgba(0,0,0,0.5), 0 1px 10px rgba(0,0,0,0.15)",
-  margin: "1px auto",
+    "0 0 1px rgba(0,0,0,0.25), 0 1px 8px rgba(0,0,0,0.08)",
+  margin: "0 auto",
   maxWidth: 540,
-  minWidth: "min(326px, 100%)",
+  minWidth: 0,
   padding: 0,
-  width: "calc(100% - 2px)",
+  width: "100%",
 };
 
 function ensureInstagramEmbedScript(): Promise<void> {
