@@ -403,25 +403,6 @@ export function PageInfoPanelEditor({
                   placeholder="https://..."
                 />
               </label>
-
-              <label className="block">
-                <span className="text-[11px] font-bold text-neutral-500">
-                  PAGE画像の表示幅
-                </span>
-
-                <select
-                  value={mainImageWidth}
-                  onChange={(event) =>
-                    updateMeta("mainImageWidth", event.target.value)
-                  }
-                  className="mt-1 w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-sky-400"
-                >
-                  <option value="100">キャンバス100%</option>
-                  <option value="90">本文幅90%</option>
-                  <option value="normal">通常75%</option>
-                  <option value="full">全幅 最大720px</option>
-                </select>
-              </label>
             </div>
           </div>
 
