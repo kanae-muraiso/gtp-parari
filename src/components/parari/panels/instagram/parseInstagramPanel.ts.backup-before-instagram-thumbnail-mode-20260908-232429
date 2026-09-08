@@ -1,6 +1,5 @@
-// Instagram panel parser
-
-export type InstagramDisplayMode = "embed" | "thumbnail";
+// apps/tools/parari/src/components/parari/panels/instagram/parseInstagramPanel.ts
+// 2026-06-23 JST - Instagram panel parser
 
 export type InstagramPanelData = {
   url: string;
@@ -9,7 +8,6 @@ export type InstagramPanelData = {
   thumbnail: string;
   aspect: string;
   instagramWidth: string;
-  displayMode: InstagramDisplayMode;
   extraLines: string[];
 };
 
@@ -19,7 +17,6 @@ const KNOWN_CHILD_TAGS = new Set([
   "THUMBNAIL",
   "ASPECT",
   "INSTAGRAM_WIDTH",
-  "INSTAGRAM_MODE",
 ]);
 
 export function parseInstagramPanel(raw: string): InstagramPanelData {
@@ -36,8 +33,6 @@ export function parseInstagramPanel(raw: string): InstagramPanelData {
   let thumbnail = "";
   let aspect = "9:16";
   let instagramWidth = "100";
-  let displayMode: InstagramDisplayMode = "embed";
-
   const extraLines: string[] = [];
 
   let currentSection: "CAPTION" | null = null;
@@ -70,17 +65,9 @@ export function parseInstagramPanel(raw: string): InstagramPanelData {
             instagramWidth = value.trim() || "100";
             break;
 
-          case "INSTAGRAM_MODE":
-            displayMode =
-              value.trim().toLowerCase() === "thumbnail"
-                ? "thumbnail"
-                : "embed";
-            break;
-
           case "CAPTION":
             currentSection = "CAPTION";
-
-            if (value.trim()) {
+            if (value.trim().length > 0) {
               captionLines.push(value);
             }
             break;
@@ -95,7 +82,7 @@ export function parseInstagramPanel(raw: string): InstagramPanelData {
       continue;
     }
 
-    if (line.trim()) {
+    if (line.trim().length > 0) {
       extraLines.push(line);
     }
   }
@@ -109,7 +96,6 @@ export function parseInstagramPanel(raw: string): InstagramPanelData {
     thumbnail,
     aspect,
     instagramWidth,
-    displayMode,
     extraLines,
   };
 }

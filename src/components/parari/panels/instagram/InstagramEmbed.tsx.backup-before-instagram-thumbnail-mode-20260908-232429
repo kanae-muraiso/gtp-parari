@@ -28,59 +28,24 @@ export function InstagramEmbed({
   const normalizedUrl = normalizeInstagramUrl(rawUrl);
   const width = toCssWidth(data.instagramWidth);
 
-  if (!rawUrl) {
-    return (
-      <EmptyMessage>
-        {emptyMessage}
-      </EmptyMessage>
-    );
-  }
-
-  if (!normalizedUrl) {
-    return (
-      <EmptyMessage>
-        Instagram投稿のURLを確認してください。
-      </EmptyMessage>
-    );
-  }
-
-  if (data.displayMode === "thumbnail") {
-    return (
-      <InstagramThumbnail
-        data={data}
-        normalizedUrl={normalizedUrl}
-        width={width}
-      />
-    );
-  }
-
-  return (
-    <InstagramOfficialEmbed
-      data={data}
-      normalizedUrl={normalizedUrl}
-      width={width}
-    />
-  );
-}
-
-function InstagramOfficialEmbed({
-  data,
-  normalizedUrl,
-  width,
-}: {
-  data: InstagramPanelData;
-  normalizedUrl: string;
-  width: string;
-}) {
   useEffect(() => {
+    if (!normalizedUrl) {
+      return;
+    }
+
     let cancelled = false;
 
     void ensureInstagramEmbedScript()
       .then(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         requestAnimationFrame(() => {
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
+
           window.instgrm?.Embeds?.process();
         });
       })
@@ -95,6 +60,22 @@ function InstagramOfficialEmbed({
       cancelled = true;
     };
   }, [normalizedUrl]);
+
+  if (!rawUrl) {
+    return (
+      <div className="min-h-[72px] w-full rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  if (!normalizedUrl) {
+    return (
+      <div className="min-h-[72px] w-full rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
+        Instagram投稿のURLを確認してください。
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -132,85 +113,6 @@ function InstagramOfficialEmbed({
           {data.caption.trim()}
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function InstagramThumbnail({
-  data,
-  normalizedUrl,
-  width,
-}: {
-  data: InstagramPanelData;
-  normalizedUrl: string;
-  width: string;
-}) {
-  const thumbnail = data.thumbnail.trim();
-
-  return (
-    <div className="space-y-3">
-      {data.title.trim() ? (
-        <div className="text-sm font-bold text-neutral-900">
-          {data.title.trim()}
-        </div>
-      ) : null}
-
-      <div
-        className="mx-auto max-w-full"
-        style={{ width }}
-      >
-        {thumbnail ? (
-          <a
-            href={normalizedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="group relative block overflow-hidden rounded-xl bg-black"
-            title="Instagramで見る"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={thumbnail}
-              alt={data.title.trim() || "Instagram投稿"}
-              className="block h-auto w-full object-contain"
-            />
-
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-3xl text-white transition group-hover:bg-black/70">
-                ▶
-              </span>
-            </span>
-          </a>
-        ) : (
-          <a
-            href={normalizedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="block min-h-[140px] rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500"
-          >
-            サムネイルURLを入力してください。
-            <br />
-            Instagram投稿を開く
-          </a>
-        )}
-      </div>
-
-      {data.caption.trim() ? (
-        <div className="whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-          {data.caption.trim()}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function EmptyMessage({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-h-[72px] w-full rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
-      {children}
     </div>
   );
 }
@@ -293,10 +195,13 @@ function waitForInstagramApi(): Promise<void> {
 function normalizeInstagramUrl(value: string): string {
   const text = String(value ?? "").trim();
 
-  if (!text) return "";
+  if (!text) {
+    return "";
+  }
 
   try {
     const url = new URL(text);
+
     const hostname = url.hostname.toLowerCase();
 
     if (
@@ -310,7 +215,9 @@ function normalizeInstagramUrl(value: string): string {
       .split("/")
       .filter(Boolean);
 
-    if (parts.length < 2) return "";
+    if (parts.length < 2) {
+      return "";
+    }
 
     const kind = parts[0].toLowerCase();
 
@@ -324,7 +231,9 @@ function normalizeInstagramUrl(value: string): string {
 
     const shortcode = parts[1];
 
-    if (!shortcode) return "";
+    if (!shortcode) {
+      return "";
+    }
 
     return `https://www.instagram.com/${kind}/${shortcode}/`;
   } catch {

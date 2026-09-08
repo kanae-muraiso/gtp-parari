@@ -3,10 +3,7 @@
 "use client";
 
 import type { PanelEditorProps } from "../panelDefinitionTypes";
-import type {
-  InstagramDisplayMode,
-  InstagramPanelData,
-} from "./parseInstagramPanel";
+import type { InstagramPanelData } from "./parseInstagramPanel";
 import { serializeInstagramPanel } from "./serializeInstagramPanel";
 import { InstagramEmbed } from "./InstagramEmbed";
 
@@ -32,12 +29,6 @@ export function InstagramPanelEditor({
       ...data,
       [key]: value,
     });
-  };
-
-  const setDisplayMode = (
-    displayMode: InstagramDisplayMode,
-  ) => {
-    updateField("displayMode", displayMode);
   };
 
   return (
@@ -80,45 +71,6 @@ export function InstagramPanelEditor({
         </label>
       </div>
 
-      <div>
-        <div className="mb-1 text-[11px] font-bold text-neutral-500">
-          表示方法
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setDisplayMode("embed")}
-            className={[
-              "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
-              data.displayMode === "embed"
-                ? "bg-blue-50 text-blue-700 ring-blue-200"
-                : "bg-white text-neutral-500 ring-neutral-200 hover:bg-neutral-50",
-            ].join(" ")}
-          >
-            Instagram埋め込み
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDisplayMode("thumbnail")}
-            className={[
-              "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
-              data.displayMode === "thumbnail"
-                ? "bg-blue-50 text-blue-700 ring-blue-200"
-                : "bg-white text-neutral-500 ring-neutral-200 hover:bg-neutral-50",
-            ].join(" ")}
-          >
-            サムネイル表示
-          </button>
-        </div>
-
-        <p className="mt-1 text-[11px] leading-5 text-neutral-400">
-          Instagram埋め込みで表示が崩れる投稿は、
-          サムネイル表示を利用できます。
-        </p>
-      </div>
-
       <label className="block">
         <span className="mb-1 block text-[11px] font-bold text-neutral-500">
           タイトル 任意
@@ -137,25 +89,23 @@ export function InstagramPanelEditor({
         />
       </label>
 
-      {data.displayMode === "thumbnail" ? (
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-            サムネイル画像URL
-          </span>
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-bold text-neutral-500">
+          サムネイルURL 任意
+        </span>
 
-          <input
-            value={data.thumbnail}
-            onChange={(event) =>
-              updateField(
-                "thumbnail",
-                event.target.value,
-              )
-            }
-            placeholder="https://example.com/thumbnail.jpg"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-      ) : null}
+        <input
+          value={data.thumbnail}
+          onChange={(event) =>
+            updateField(
+              "thumbnail",
+              event.target.value,
+            )
+          }
+          placeholder="https://example.com/thumb.jpg"
+          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        />
+      </label>
 
       <label className="block">
         <span className="mb-1 block text-[11px] font-bold text-neutral-500">
