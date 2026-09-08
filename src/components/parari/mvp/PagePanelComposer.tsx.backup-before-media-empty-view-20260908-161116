@@ -145,6 +145,10 @@ export function PagePanelComposer({
   mode = "page",
 }: PagePanelComposerProps) {
   const [structureVersion, setStructureVersion] = useState(0);
+  const [autoEditTarget, setAutoEditTarget] = useState<{
+    index: number;
+    expectedCount: number;
+  } | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
 const waitForNextPaint = () =>
@@ -332,6 +336,10 @@ const waitForNextPaint = () =>
 
       const nextSsot = serializeBlocks(sanitizeBlocks(nextBlocks));
 
+      setAutoEditTarget({
+        index: safeIndex,
+        expectedCount: nextBlocks.length,
+      });
       setStructureVersion((value) => value + 1);
       onChange(normalizePageHeadersFromTitle(nextSsot));
     };
@@ -357,6 +365,11 @@ const waitForNextPaint = () =>
         return [block, ...insertedBlocks];
       });
 
+      setAutoEditTarget({
+        index: blockIndex + 1,
+        expectedCount: nextBlocks.length,
+      });
+      setStructureVersion((value) => value + 1);
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
     };
     
@@ -561,6 +574,16 @@ const waitForNextPaint = () =>
                                ) : (
                                     <PanelBlockCard
                                       block={block}
+                                      initialMode={
+                                        autoEditTarget !== null &&
+                                        autoEditTarget.index === index &&
+                                        autoEditTarget.expectedCount === renderBlocks.length
+                                          ? "edit"
+                                          : "view"
+                                      }
+                                      onInitialEditConsumed={() => {
+                                        setAutoEditTarget(null);
+                                      }}
                                       publicBasePath={publicBasePath}
                                       renderNestedPanelEditor={
                                         mode === "page"
