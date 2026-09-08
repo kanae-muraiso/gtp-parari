@@ -72,13 +72,31 @@ export function toInstagramEmbedUrl(value: string): string | null {
       return null;
     }
 
-    const cleanPath = url.pathname.replace(/\/+$/, "");
+    const parts = url.pathname
+      .split("/")
+      .filter(Boolean);
 
-    if (!cleanPath) {
+    if (parts.length < 2) {
       return null;
     }
 
-    return `https://www.instagram.com${cleanPath}/embed`;
+    const kind = parts[0].toLowerCase();
+
+    if (
+      kind !== "p" &&
+      kind !== "reel" &&
+      kind !== "tv"
+    ) {
+      return null;
+    }
+
+    const shortcode = parts[1];
+
+    if (!shortcode) {
+      return null;
+    }
+
+    return `https://www.instagram.com/${kind}/${shortcode}/embed`;
   } catch {
     return null;
   }
