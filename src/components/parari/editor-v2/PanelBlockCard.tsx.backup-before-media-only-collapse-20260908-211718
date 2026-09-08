@@ -82,7 +82,6 @@ export function PanelBlockCard({
     const widthClass = panelWidthClass(block.tag);
     const canEditPanelGap = canEditGapForPanel(block.tag);
     const isZeroPanelGap = canEditPanelGap ? hasZeroPanelGap(block.raw) : false;
-    const canCollapseToSummary = isCollapsibleMediaPanel(block.tag);
 
     // apps/tools/parari/src/components/parari/editor-v2/PanelBlockCard.tsx
     // 2026-06-29 20:20 JST
@@ -96,7 +95,7 @@ export function PanelBlockCard({
       setMode((current) => {
         if (current === "summary") return "view";
         if (current === "view") return "edit";
-        return canCollapseToSummary ? "summary" : "view";
+        return "summary";
       });
     };
 
@@ -112,7 +111,7 @@ export function PanelBlockCard({
 
       return (
         <div className={["transition-all", widthClass].join(" ")}>
-          {mode === "summary" && canCollapseToSummary ? (
+          {mode === "summary" ? (
             <button
               type="button"
               onClick={() => setMode(isInfoPanel(block.tag) ? "edit" : "view")}
@@ -216,15 +215,13 @@ export function PanelBlockCard({
                     完了
                   </button>
 
-                  {canCollapseToSummary ? (
-                    <button
-                      type="button"
-                      onClick={() => setMode("summary")}
-                      className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-400 ring-1 ring-yellow-100 transition hover:bg-yellow-50"
-                    >
-                      折りたたむ
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setMode("summary")}
+                    className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-400 ring-1 ring-yellow-100 transition hover:bg-yellow-50"
+                  >
+                    閉じる
+                  </button>
 
                               {canEditPanelGap ? (
                                 <button
@@ -545,16 +542,5 @@ function PanelRawPreview() {
     <div className="rounded-lg bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-500">
       このパネルは現在の表示形式に対応していません。
     </div>
-  );
-}
-
-function isCollapsibleMediaPanel(tag: string): boolean {
-  const normalizedTag = String(tag ?? "").trim().toUpperCase();
-
-  return (
-    normalizedTag === "AUDIO" ||
-    normalizedTag === "VIDEO" ||
-    normalizedTag === "YOUTUBE" ||
-    normalizedTag === "INSTAGRAM"
   );
 }
