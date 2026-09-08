@@ -24,7 +24,7 @@ export function PageInfoPanelRenderer({
   const mainImageWidth = getMetaValue(
     fields,
     ["mainImageWidth", "main_image_width"],
-    "100",
+    "full",
   );
   const mainImageOrder = getMetaValue(
     fields,

@@ -141,7 +141,7 @@ export function PageInfoPanelEditor({
 
   const mainImage = getMetaValue(fields, ["mainImage", "main_image"], "");
   const mainImageWidth = normalizeMainImageWidth(
-    getMetaValue(fields, ["mainImageWidth", "main_image_width"], "100"),
+    getMetaValue(fields, ["mainImageWidth", "main_image_width"], "full"),
   );
   const mainImageOrder = normalizeMainImageOrder(
     getMetaValue(fields, ["mainImageOrder", "main_image_order"], "textFirst"),
