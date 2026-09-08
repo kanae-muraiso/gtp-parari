@@ -24,7 +24,6 @@ type PanelCardMode = "summary" | "view" | "edit";
 
 type PanelBlockCardProps = {
   block: PanelBlock;
-  initialMode?: PanelCardMode;
   onChangeRaw: (nextRaw: string, options?: { structural?: boolean }) => void;
   onDelete?: () => void;
   onInsertAfter?: (raw: string) => void;
@@ -43,7 +42,6 @@ type PanelBlockCardProps = {
 
 export function PanelBlockCard({
   block,
-  initialMode = "view",
   onChangeRaw,
   onDelete,
   onInsertAfter,
@@ -56,7 +54,7 @@ export function PanelBlockCard({
   renderNestedPanelViewer,
 }: PanelBlockCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
-    const [mode, setMode] = useState<PanelCardMode>(initialMode);
+    const [mode, setMode] = useState<PanelCardMode>("view");
 
   useEffect(() => {
     setHasMounted(true);

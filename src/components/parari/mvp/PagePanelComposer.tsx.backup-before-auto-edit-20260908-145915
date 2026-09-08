@@ -4,7 +4,7 @@
 
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import { serializeBlocks } from "@/lib/parari/ssot-v2/serializeBlocks";
 import type {
@@ -145,21 +145,8 @@ export function PagePanelComposer({
   mode = "page",
 }: PagePanelComposerProps) {
   const [structureVersion, setStructureVersion] = useState(0);
-  const [autoEditIndex, setAutoEditIndex] = useState<number | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
-
-  useEffect(() => {
-    if (autoEditIndex === null) {
-      return;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      setAutoEditIndex(null);
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [autoEditIndex]);
 
   const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
@@ -346,7 +333,6 @@ export function PagePanelComposer({
 
       const nextSsot = serializeBlocks(sanitizeBlocks(nextBlocks));
 
-      setAutoEditIndex(safeIndex);
       setStructureVersion((value) => value + 1);
       onChange(normalizePageHeadersFromTitle(nextSsot));
     };
@@ -372,8 +358,6 @@ export function PagePanelComposer({
         return [block, ...insertedBlocks];
       });
 
-      setAutoEditIndex(blockIndex + 1);
-      setStructureVersion((value) => value + 1);
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
     };
     
@@ -578,7 +562,6 @@ export function PagePanelComposer({
                                ) : (
                                     <PanelBlockCard
                                       block={block}
-                                      initialMode={autoEditIndex === index ? "edit" : "view"}
                                       publicBasePath={publicBasePath}
                                       renderNestedPanelEditor={
                                         mode === "page"
