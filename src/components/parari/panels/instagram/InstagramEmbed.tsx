@@ -1,23 +1,78 @@
 "use client";
 
+import { useEffect, type CSSProperties } from "react";
 import type { InstagramPanelData } from "./parseInstagramPanel";
+
+declare global {
+  interface Window {
+    instgrm?: {
+      Embeds?: {
+        process: () => void;
+      };
+    };
+  }
+}
 
 type InstagramEmbedProps = {
   data: InstagramPanelData;
   emptyMessage?: string;
 };
 
+let instagramScriptPromise: Promise<void> | null = null;
+
 export function InstagramEmbed({
   data,
   emptyMessage = "Instagram URLを入力してください。",
 }: InstagramEmbedProps) {
-  const embedUrl = toInstagramEmbedUrl(data.url);
+  const rawUrl = String(data.url ?? "").trim();
+  const normalizedUrl = normalizeInstagramUrl(rawUrl);
   const width = toCssWidth(data.instagramWidth);
 
-  if (!embedUrl) {
+  useEffect(() => {
+    if (!normalizedUrl) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void ensureInstagramEmbedScript()
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+
+        requestAnimationFrame(() => {
+          if (cancelled) {
+            return;
+          }
+
+          window.instgrm?.Embeds?.process();
+        });
+      })
+      .catch((error) => {
+        console.warn(
+          "[PARARI] Instagram embed could not be initialized.",
+          error,
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedUrl]);
+
+  if (!rawUrl) {
     return (
       <div className="min-h-[72px] w-full rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
         {emptyMessage}
+      </div>
+    );
+  }
+
+  if (!normalizedUrl) {
+    return (
+      <div className="min-h-[72px] w-full rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">
+        Instagram投稿のURLを確認してください。
       </div>
     );
   }
@@ -31,17 +86,27 @@ export function InstagramEmbed({
       ) : null}
 
       <div
-        className="mx-auto w-full max-w-full overflow-hidden rounded-xl border border-neutral-200 bg-white"
-        style={{ width }}
+        className="mx-auto max-w-full"
+        style={{
+          width,
+        }}
       >
-        <iframe
-          src={embedUrl}
-          title={data.title.trim() || "Instagram"}
-          className="block min-h-[650px] w-full border-0"
-          scrolling="no"
-          allow="encrypted-media; picture-in-picture; web-share"
-          allowFullScreen
-        />
+        <blockquote
+          key={normalizedUrl}
+          className="instagram-media"
+          data-instgrm-permalink={normalizedUrl}
+          data-instgrm-version="14"
+          style={instagramBlockquoteStyle}
+        >
+          <a
+            href={normalizedUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block min-h-[120px] px-4 py-10 text-center text-sm text-neutral-500 no-underline"
+          >
+            Instagram投稿を読み込んでいます…
+          </a>
+        </blockquote>
       </div>
 
       {data.caption.trim() ? (
@@ -53,11 +118,86 @@ export function InstagramEmbed({
   );
 }
 
-export function toInstagramEmbedUrl(value: string): string | null {
+const instagramBlockquoteStyle: CSSProperties = {
+  background: "#fff",
+  border: 0,
+  borderRadius: 12,
+  boxShadow:
+    "0 0 1px rgba(0,0,0,0.25), 0 1px 8px rgba(0,0,0,0.08)",
+  margin: "0 auto",
+  maxWidth: 540,
+  minWidth: 0,
+  padding: 0,
+  width: "100%",
+};
+
+function ensureInstagramEmbedScript(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (window.instgrm?.Embeds?.process) {
+    return Promise.resolve();
+  }
+
+  if (instagramScriptPromise) {
+    return instagramScriptPromise;
+  }
+
+  let script = document.getElementById(
+    "instagram-embed-script",
+  ) as HTMLScriptElement | null;
+
+  if (!script) {
+    script = document.createElement("script");
+    script.id = "instagram-embed-script";
+    script.async = true;
+    script.src = "https://www.instagram.com/embed.js";
+    document.body.appendChild(script);
+  }
+
+  instagramScriptPromise = waitForInstagramApi().catch(
+    (error) => {
+      instagramScriptPromise = null;
+      throw error;
+    },
+  );
+
+  return instagramScriptPromise;
+}
+
+function waitForInstagramApi(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const timeoutMs = 10000;
+
+    const check = () => {
+      if (window.instgrm?.Embeds?.process) {
+        resolve();
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeoutMs) {
+        reject(
+          new Error(
+            "Instagram embed API did not become available.",
+          ),
+        );
+        return;
+      }
+
+      window.setTimeout(check, 50);
+    };
+
+    check();
+  });
+}
+
+function normalizeInstagramUrl(value: string): string {
   const text = String(value ?? "").trim();
 
   if (!text) {
-    return null;
+    return "";
   }
 
   try {
@@ -67,20 +207,38 @@ export function toInstagramEmbedUrl(value: string): string | null {
 
     if (
       hostname !== "instagram.com" &&
-      hostname !== "www.instagram.com"
+      !hostname.endsWith(".instagram.com")
     ) {
-      return null;
+      return "";
     }
 
-    const cleanPath = url.pathname.replace(/\/+$/, "");
+    const parts = url.pathname
+      .split("/")
+      .filter(Boolean);
 
-    if (!cleanPath) {
-      return null;
+    if (parts.length < 2) {
+      return "";
     }
 
-    return `https://www.instagram.com${cleanPath}/embed`;
+    const kind = parts[0].toLowerCase();
+
+    if (
+      kind !== "p" &&
+      kind !== "reel" &&
+      kind !== "tv"
+    ) {
+      return "";
+    }
+
+    const shortcode = parts[1];
+
+    if (!shortcode) {
+      return "";
+    }
+
+    return `https://www.instagram.com/${kind}/${shortcode}/`;
   } catch {
-    return null;
+    return "";
   }
 }
 
