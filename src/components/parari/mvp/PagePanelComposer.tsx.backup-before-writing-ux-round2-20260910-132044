@@ -458,7 +458,7 @@ const waitForNextPaint = () =>
               
         case "YOUTUBE":
           return [
-            "[YOUTUBE]",
+            "[YOUTUBE] https://www.youtube.com/watch?v=",
             "[TITLE] YouTube動画",
             "[YOUTUBE_WIDTH] 100",
           ].join("\n");

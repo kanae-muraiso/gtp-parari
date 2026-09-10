@@ -5,7 +5,6 @@ type OwnerBarProps = {
   leftHref?: string;
   leftLabel?: string;
   hideLeftButton?: boolean;
-  fixed?: boolean;
   actions?: ReactNode;
 };
 
@@ -14,21 +13,13 @@ export function ParariOwnerTopBar({
   leftHref = "/my/works",
   leftLabel = "作品リストへ",
   hideLeftButton = false,
-  fixed = false,
   actions,
 }: OwnerBarProps) {
   const shouldShowLeftButton =
     !hideLeftButton && Boolean(leftHref) && Boolean(leftLabel);
 
   return (
-    <div
-      className={[
-        fixed
-          ? "fixed inset-x-0 top-0 z-[9999]"
-          : "sticky top-0 z-[9999]",
-        "border-b border-black bg-black px-4 py-2 text-white shadow-sm",
-      ].join(" ")}
-    >
+    <div className="sticky top-0 z-[9999] border-b border-black bg-black px-4 py-2 text-white shadow-sm">
       <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3">
         {shouldShowLeftButton ? (
           <a

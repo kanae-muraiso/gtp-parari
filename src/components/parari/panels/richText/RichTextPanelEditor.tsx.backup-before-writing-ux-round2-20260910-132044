@@ -267,11 +267,7 @@ function createInitialInlinePanelSsot(tag: PanelizeTag): string {
       return "[AUDIO]\nhttps://example.com/audio.mp3";
 
     case "YOUTUBE":
-      return [
-        "[YOUTUBE]",
-        "[TITLE] YouTube動画",
-        "[YOUTUBE_WIDTH] 100",
-      ].join("\n");
+      return "[YOUTUBE]\nhttps://www.youtube.com/watch?v=";
 
     default:
       return "";

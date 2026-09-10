@@ -18,8 +18,6 @@ import {
 import { useParams } from "next/navigation";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
-import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
-import { serializeBlocks } from "@/lib/parari/ssot-v2/serializeBlocks";
 import { WebPageComposer } from "@/components/parari/mvp/WebPageComposer";
 import { parseMetaFields, getMetaValue } from "@/components/parari/panels/shared/metaFields";
 import {
@@ -147,24 +145,6 @@ type EditLockState =
   | "solo"
   | "blocked"
   | "lost";
-
-function removeEmptyTextPanelsBeforeSave(input: string): string {
-  const blocks = parseBlocks(String(input ?? ""));
-
-  const keptBlocks = blocks.filter((block) => {
-    if (block.kind !== "text") {
-      return true;
-    }
-
-    return block.raw
-      .replace(/\u200B/g, "")
-      .replace(/\uFEFF/g, "")
-      .trim()
-      .length > 0;
-  });
-
-  return serializeBlocks(keptBlocks);
-}
 
 export default function BookPanelSequenceEditorPage() {
   const params = useParams<{ id: string }>();
@@ -867,16 +847,7 @@ export default function BookPanelSequenceEditorPage() {
         window.requestAnimationFrame(() => resolve());
       });
 
-      const rawSaveSsot = latestSsotRef.current;
-
-      const saveSsot = isWebLikeSsot(rawSaveSsot)
-        ? rawSaveSsot
-        : removeEmptyTextPanelsBeforeSave(rawSaveSsot);
-
-      if (saveSsot !== rawSaveSsot) {
-        latestSsotRef.current = saveSsot;
-        setSsot(saveSsot);
-      }
+      const saveSsot = latestSsotRef.current;
       
     setLimitMessage("");
 
@@ -1053,8 +1024,7 @@ export default function BookPanelSequenceEditorPage() {
           
           <>
             <ParariOwnerTopBar
-              fixed
-  title="編集中"
+              title="編集中"
               leftHref="/my/works"
               leftLabel="作品リストへ"
               actions={
@@ -1103,7 +1073,7 @@ export default function BookPanelSequenceEditorPage() {
             />
 
           
-    <main className="min-h-screen bg-neutral-100 pt-11">
+    <main className="min-h-screen bg-neutral-100">
       {status.type === "error" ? (
         <div className="mx-auto max-w-6xl px-4 py-6">
           <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-rose-800">
