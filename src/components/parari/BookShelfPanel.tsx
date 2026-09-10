@@ -53,6 +53,19 @@ type ShelfResponse = {
   managed: ShelfRow[];
 };
 
+type WorkCategoryRow = {
+  id: string;
+  owner: string;
+  name: string;
+  sort_order: number | null;
+};
+
+type WorkCategoryLinkRow = {
+  work_id: string;
+  category_id: string;
+  owner: string;
+};
+
 type CustomShelfRow = {
   id: string;
   name: string;
@@ -191,10 +204,14 @@ function HorizontalShelf({
   items,
   emptyText,
   renderActions,
+  renderBeforeActions,
 }: {
   items: ShelfRow[];
   emptyText: string;
   renderActions?: (
+    row: ShelfRow
+  ) => React.ReactNode;
+  renderBeforeActions?: (
     row: ShelfRow
   ) => React.ReactNode;
 }) {
@@ -213,9 +230,16 @@ function HorizontalShelf({
           key={`${row.shelfType}-${row.id}-${row.shelfAddedAt ?? ""}`}
           row={row}
           actions={
-            renderActions
-              ? renderActions(row)
-              : undefined
+            renderBeforeActions || renderActions ? (
+              <div className="space-y-2">
+                {renderBeforeActions
+                  ? renderBeforeActions(row)
+                  : null}
+                {renderActions
+                  ? renderActions(row)
+                  : null}
+              </div>
+            ) : undefined
           }
         />
       ))}
@@ -242,6 +266,18 @@ export default function BookShelfPanel() {
 
   const [customShelfItems, setCustomShelfItems] =
     useState<CustomShelfItemRow[]>([]);
+
+  const [categories, setCategories] =
+    useState<WorkCategoryRow[]>([]);
+
+  const [categoryLinks, setCategoryLinks] =
+    useState<WorkCategoryLinkRow[]>([]);
+
+  const [activeCategoryId, setActiveCategoryId] =
+    useState<string>("all");
+
+  const [changingCategoryKey, setChangingCategoryKey] =
+    useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -277,6 +313,57 @@ export default function BookShelfPanel() {
       }
 
       setUserId(user.id);
+
+      const {
+        data: categoryData,
+        error: categoryError,
+      } = await supabase
+        .from("parari_work_categories")
+        .select("id,owner,name,sort_order")
+        .eq("owner", user.id)
+        .order("sort_order", {
+          ascending: true,
+        })
+        .order("name", {
+          ascending: true,
+        });
+
+      if (!mounted) return;
+
+      if (categoryError) {
+        console.error(
+          "load work categories failed:",
+          categoryError
+        );
+        setCategories([]);
+      } else {
+        setCategories(
+          (categoryData ?? []) as WorkCategoryRow[]
+        );
+      }
+
+      const {
+        data: categoryLinkData,
+        error: categoryLinkError,
+      } = await supabase
+        .from("parari_work_category_links")
+        .select("work_id,category_id,owner")
+        .eq("owner", user.id);
+
+      if (!mounted) return;
+
+      if (categoryLinkError) {
+        console.error(
+          "load category links failed:",
+          categoryLinkError
+        );
+        setCategoryLinks([]);
+      } else {
+        setCategoryLinks(
+          (categoryLinkData ?? []) as WorkCategoryLinkRow[]
+        );
+      }
+
 
       /*
        * 本棚テーマ
@@ -457,6 +544,77 @@ export default function BookShelfPanel() {
    * どこかのユーザー棚に整理済みの作品ID
    */
 
+  const categoryIdsByBook = useMemo(() => {
+    const map =
+      new Map<string, string[]>();
+
+    for (const link of categoryLinks) {
+      const ids =
+        map.get(link.work_id) ?? [];
+
+      ids.push(link.category_id);
+      map.set(link.work_id, ids);
+    }
+
+    return map;
+  }, [categoryLinks]);
+
+  const categoryById = useMemo(
+    () =>
+      new Map(
+        categories.map((category) => [
+          category.id,
+          category,
+        ])
+      ),
+    [categories]
+  );
+
+  const shelfBookIds = useMemo(
+    () =>
+      new Set(
+        allSavedItems.map(
+          (row) => row.id
+        )
+      ),
+    [allSavedItems]
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts =
+      new Map<string, number>();
+
+    for (const link of categoryLinks) {
+      if (!shelfBookIds.has(link.work_id)) {
+        continue;
+      }
+
+      counts.set(
+        link.category_id,
+        (counts.get(link.category_id) ?? 0) + 1
+      );
+    }
+
+    return counts;
+  }, [
+    categoryLinks,
+    shelfBookIds,
+  ]);
+
+  const uncategorizedCount = useMemo(
+    () =>
+      allSavedItems.filter(
+        (row) =>
+          (
+            categoryIdsByBook.get(row.id) ?? []
+          ).length === 0
+      ).length,
+    [
+      allSavedItems,
+      categoryIdsByBook,
+    ]
+  );
+
   const organizedBookIds = useMemo(() => {
     return new Set(
       customShelfItems.map(
@@ -537,6 +695,255 @@ export default function BookShelfPanel() {
   /*
    * 新しい棚を作る
    */
+
+  const filteredSavedItems =
+    useMemo(() => {
+      if (activeCategoryId === "all") {
+        return savedItems;
+      }
+
+      if (
+        activeCategoryId ===
+        "uncategorized"
+      ) {
+        return savedItems.filter(
+          (row) =>
+            (
+              categoryIdsByBook.get(
+                row.id
+              ) ?? []
+            ).length === 0
+        );
+      }
+
+      return savedItems.filter(
+        (row) =>
+          (
+            categoryIdsByBook.get(
+              row.id
+            ) ?? []
+          ).includes(activeCategoryId)
+      );
+    }, [
+      savedItems,
+      activeCategoryId,
+      categoryIdsByBook,
+    ]);
+
+  const filteredShelvesWithItems =
+    useMemo(
+      () =>
+        shelvesWithItems.map(
+          (shelf) => ({
+            ...shelf,
+            items:
+              activeCategoryId === "all"
+                ? shelf.items
+                : shelf.items.filter(
+                    (row) => {
+                      const ids =
+                        categoryIdsByBook.get(
+                          row.id
+                        ) ?? [];
+
+                      if (
+                        activeCategoryId ===
+                        "uncategorized"
+                      ) {
+                        return ids.length === 0;
+                      }
+
+                      return ids.includes(
+                        activeCategoryId
+                      );
+                    }
+                  ),
+          })
+        ),
+      [
+        shelvesWithItems,
+        activeCategoryId,
+        categoryIdsByBook,
+      ]
+    );
+
+  async function handleCreateCategory() {
+    if (!supabase || !userId) return;
+
+    const rawName = window.prompt(
+      "新しいカテゴリー名を入力してください"
+    );
+
+    const name = rawName?.trim();
+
+    if (!name) return;
+
+    if (name.length > 80) {
+      window.alert(
+        "カテゴリー名は80文字以内で入力してください。"
+      );
+      return;
+    }
+
+    const nextSortOrder =
+      categories.length === 0
+        ? 0
+        : Math.max(
+            ...categories.map(
+              (category) =>
+                category.sort_order ?? 0
+            )
+          ) + 10;
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("parari_work_categories")
+      .insert({
+        owner: userId,
+        name,
+        sort_order: nextSortOrder,
+      })
+      .select("id,owner,name,sort_order")
+      .single();
+
+    if (error) {
+      console.error(
+        "create work category failed:",
+        error
+      );
+
+      window.alert(
+        error.code === "23505"
+          ? "同じ名前のカテゴリーがあります。"
+          : "カテゴリーを作成できませんでした。"
+      );
+
+      return;
+    }
+
+    setCategories((current) =>
+      [
+        ...current,
+        data as WorkCategoryRow,
+      ].sort((a, b) => {
+        const diff =
+          (a.sort_order ?? 0) -
+          (b.sort_order ?? 0);
+
+        if (diff !== 0) return diff;
+
+        return a.name.localeCompare(
+          b.name,
+          "ja"
+        );
+      })
+    );
+  }
+
+  async function handleAddCategory(
+    bookId: string,
+    categoryId: string
+  ) {
+    if (
+      !supabase ||
+      !userId ||
+      !categoryId
+    ) {
+      return;
+    }
+
+    const key =
+      `${bookId}:${categoryId}`;
+
+    setChangingCategoryKey(key);
+
+    try {
+      const { error } =
+        await supabase
+          .from(
+            "parari_work_category_links"
+          )
+          .insert({
+            work_id: bookId,
+            category_id: categoryId,
+            owner: userId,
+          });
+
+      if (error) {
+        console.error(
+          "add category failed:",
+          error
+        );
+
+        window.alert(
+          "カテゴリーを設定できませんでした。"
+        );
+        return;
+      }
+
+      setCategoryLinks((current) => [
+        ...current,
+        {
+          work_id: bookId,
+          category_id: categoryId,
+          owner: userId,
+        },
+      ]);
+    } finally {
+      setChangingCategoryKey(null);
+    }
+  }
+
+  async function handleRemoveCategory(
+    bookId: string,
+    categoryId: string
+  ) {
+    if (!supabase || !userId) return;
+
+    const key =
+      `${bookId}:${categoryId}`;
+
+    setChangingCategoryKey(key);
+
+    try {
+      const { error } =
+        await supabase
+          .from(
+            "parari_work_category_links"
+          )
+          .delete()
+          .eq("owner", userId)
+          .eq("work_id", bookId)
+          .eq("category_id", categoryId);
+
+      if (error) {
+        console.error(
+          "remove category failed:",
+          error
+        );
+
+        window.alert(
+          "カテゴリーを外せませんでした。"
+        );
+        return;
+      }
+
+      setCategoryLinks((current) =>
+        current.filter(
+          (link) =>
+            !(
+              link.work_id === bookId &&
+              link.category_id ===
+                categoryId
+            )
+        )
+      );
+    } finally {
+      setChangingCategoryKey(null);
+    }
+  }
 
   async function handleCreateShelf() {
     if (!supabase || !userId) return;
@@ -757,6 +1164,100 @@ export default function BookShelfPanel() {
       }));
     }
     
+  function renderCategoryControls(
+    row: ShelfRow
+  ) {
+    const assignedIds =
+      categoryIdsByBook.get(row.id) ?? [];
+
+    const assignedCategories =
+      assignedIds
+        .map((id) =>
+          categoryById.get(id)
+        )
+        .filter(
+          (
+            category
+          ): category is WorkCategoryRow =>
+            Boolean(category)
+        );
+
+    const availableCategories =
+      categories.filter(
+        (category) =>
+          !assignedIds.includes(
+            category.id
+          )
+      );
+
+    return (
+      <div className="space-y-2">
+        {assignedCategories.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {assignedCategories.map(
+              (category) => {
+                const key =
+                  `${row.id}:${category.id}`;
+
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    disabled={
+                      changingCategoryKey === key
+                    }
+                    onClick={() =>
+                      void handleRemoveCategory(
+                        row.id,
+                        category.id
+                      )
+                    }
+                    className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-100 disabled:opacity-40"
+                  >
+                    {category.name} ×
+                  </button>
+                );
+              }
+            )}
+          </div>
+        ) : null}
+
+        {availableCategories.length > 0 ? (
+          <select
+            value=""
+            onChange={(event) => {
+              const categoryId =
+                event.target.value;
+
+              if (!categoryId) return;
+
+              void handleAddCategory(
+                row.id,
+                categoryId
+              );
+            }}
+            className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-2 text-xs text-neutral-700"
+          >
+            <option value="">
+              カテゴリーを追加…
+            </option>
+
+            {availableCategories.map(
+              (category) => (
+                <option
+                  key={category.id}
+                  value={category.id}
+                >
+                  {category.name}
+                </option>
+              )
+            )}
+          </select>
+        ) : null}
+      </div>
+    );
+  }
+
   const resolvedPanelTheme =
     normalizeTheme(panelTheme);
 
@@ -773,6 +1274,89 @@ export default function BookShelfPanel() {
 
       {!loading ? (
         <>
+          <section
+            className={`rounded-2xl border ${themePanel.panel} p-4`}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-lg font-semibold text-neutral-950">
+                  カテゴリー
+                </div>
+
+                <div className="mt-1 text-xs text-neutral-500">
+                  自分の作品と本棚で共通です。
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCreateCategory}
+                className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+              >
+                ＋ カテゴリー
+              </button>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveCategoryId("all")
+                }
+                className={[
+                  "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
+                  activeCategoryId === "all"
+                    ? "bg-neutral-950 text-white"
+                    : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50",
+                ].join(" ")}
+              >
+                すべて {allSavedItems.length}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveCategoryId(
+                    "uncategorized"
+                  )
+                }
+                className={[
+                  "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
+                  activeCategoryId ===
+                  "uncategorized"
+                    ? "bg-neutral-950 text-white"
+                    : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50",
+                ].join(" ")}
+              >
+                未分類 {uncategorizedCount}
+              </button>
+
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() =>
+                    setActiveCategoryId(
+                      category.id
+                    )
+                  }
+                  className={[
+                    "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
+                    activeCategoryId ===
+                    category.id
+                      ? "bg-neutral-950 text-white"
+                      : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50",
+                  ].join(" ")}
+                >
+                  {category.name}{" "}
+                  {categoryCounts.get(
+                    category.id
+                  ) ?? 0}
+                </button>
+              ))}
+            </div>
+          </section>
+
           {/* 保存した作品 */}
 
           <section
@@ -784,13 +1368,14 @@ export default function BookShelfPanel() {
               </div>
 
               <div className="mt-1 text-xs text-neutral-500">
-                {savedItems.length}件
+                {filteredSavedItems.length}件
               </div>
             </div>
 
                    <HorizontalShelf
-                     items={savedItems}
+                     items={filteredSavedItems}
                      emptyText="まだ整理していない保存作品はありません。"
+                    renderBeforeActions={renderCategoryControls}
                      renderActions={(row) => (
                        <div className="space-y-2">
                          <select
@@ -865,12 +1450,12 @@ export default function BookShelfPanel() {
               </button>
             </div>
 
-            {shelvesWithItems.length === 0 ? (
+            {filteredShelvesWithItems.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-sm text-neutral-500">
                 まだ自分の棚はありません。
               </div>
             ) : (
-              shelvesWithItems.map(
+              filteredShelvesWithItems.map(
                 (shelf) => (
                   <section
                     key={shelf.id}
@@ -889,6 +1474,7 @@ export default function BookShelfPanel() {
                             <HorizontalShelf
                               items={shelf.items}
                               emptyText="この棚にはまだ作品がありません。"
+                              renderBeforeActions={renderCategoryControls}
                               renderActions={(row) => (
                                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                                   <button
