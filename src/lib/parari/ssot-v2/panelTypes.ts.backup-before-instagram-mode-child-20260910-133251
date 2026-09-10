@@ -107,7 +107,6 @@ export const RESERVED_CHILD_TAGS = new Set([
   "TRANSCRIPT",
   "THUMBNAIL",
   "INSTAGRAM_WIDTH",
-  "INSTAGRAM_MODE",
 ]);
 
 /**
