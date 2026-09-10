@@ -156,28 +156,11 @@ export function PanelBlockCard({
                 }
               }}
                               className={[
-                                "relative cursor-text rounded-xl border p-3 transition",
+                                "cursor-text rounded-xl border p-3 transition",
                                 panelFrameClass(block.tag, "view"),
                               ].join(" ")}
               title="クリックして編集"
             >
-              {canCollapseToSummary ? (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setMode("edit");
-                  }}
-                  onKeyDown={(event) => {
-                    event.stopPropagation();
-                  }}
-                  className="absolute right-2 top-2 z-30 rounded-full border border-neutral-200 bg-white/95 px-3 py-1 text-[11px] font-bold text-neutral-700 shadow-sm backdrop-blur transition hover:bg-white"
-                  title="このパネルを編集"
-                >
-                  編集
-                </button>
-              ) : null}
-
               {Renderer ? (
                 <Renderer
                   block={block}

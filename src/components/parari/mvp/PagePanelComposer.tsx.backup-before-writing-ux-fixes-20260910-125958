@@ -154,26 +154,6 @@ const waitForNextPaint = () =>
       });
     });
 
-  const preserveWindowScrollForNextRender = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    // 構造変更による再マウント後に、元の閲覧位置へ戻す。
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        window.scrollTo({
-          left: scrollX,
-          top: scrollY,
-          behavior: "auto",
-        });
-      });
-    });
-  };
-
   const runLockedMutation = async (task: () => void | Promise<void>) => {
     if (isMutatingRef.current) {
       return;
@@ -221,7 +201,6 @@ const waitForNextPaint = () =>
   };
 
   const replaceBlockWithSsot = (blockId: string, replacementSsot: string) => {
-    preserveWindowScrollForNextRender();
       const replacementBlocks = sanitizeBlocks(parseBlocks(replacementSsot));
 
     if (blockId === EMPTY_TEXT_BLOCK_ID) {
@@ -300,7 +279,6 @@ const waitForNextPaint = () =>
       insertIndex: number,
       tag: PanelInsertItem["tag"],
     ) => {
-      preserveWindowScrollForNextRender();
       // BOOKINFOは作品内に1つだけ、先頭にのみ挿入できる。
       if (tag === "BOOK") {
         if (insertIndex !== 0 || hasBookInfo) {
@@ -359,7 +337,6 @@ const waitForNextPaint = () =>
     };
     
     const insertRawAfterBlockIndex = (blockIndex: number, rawToInsert: string) => {
-      preserveWindowScrollForNextRender();
       const normalizedRaw = rawToInsert.trim();
 
       if (!normalizedRaw) {
