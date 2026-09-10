@@ -28,19 +28,6 @@ type WorkRow = {
   stable_slug: string | null;
 };
 
-type WorkCategoryRow = {
-  id: string;
-  owner: string;
-  name: string;
-  sort_order: number | null;
-};
-
-type WorkCategoryLinkRow = {
-  work_id: string;
-  category_id: string;
-  owner: string;
-};
-
 type OwnerCollaborator = {
   workId: string;
   userId: string;
@@ -78,13 +65,6 @@ export default function MyWorksPage() {
     
     const [canUseCollaboration, setCanUseCollaboration] =
       React.useState(false);
-    const [categories, setCategories] =
-      React.useState<WorkCategoryRow[]>([]);
-    const [categoryLinks, setCategoryLinks] =
-      React.useState<WorkCategoryLinkRow[]>([]);
-    const [activeCategoryId, setActiveCategoryId] =
-      React.useState<string>("all");
-
 
   React.useEffect(() => {
     let cancelled = false;
@@ -176,49 +156,6 @@ export default function MyWorksPage() {
         }
 
         // --------------------------------------------------------
-        // --------------------------------------------------------
-        // 自分の作品カテゴリーを取得
-        // --------------------------------------------------------
-        const {
-          data: categoryData,
-          error: categoryError,
-        } = await supabase
-          .from("parari_work_categories")
-          .select("id,owner,name,sort_order")
-          .eq("owner", user.id)
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true });
-
-        if (cancelled) {
-          return;
-        }
-
-        if (categoryError) {
-          console.warn(
-            "[my/works] category load failed:",
-            categoryError,
-          );
-        }
-
-        const {
-          data: categoryLinkData,
-          error: categoryLinkError,
-        } = await supabase
-          .from("parari_work_category_links")
-          .select("work_id,category_id,owner")
-          .eq("owner", user.id);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (categoryLinkError) {
-          console.warn(
-            "[my/works] category link load failed:",
-            categoryLinkError,
-          );
-        }
-
         // 自分が共同編集者として登録されている作品を取得
         // --------------------------------------------------------
 
@@ -279,16 +216,6 @@ export default function MyWorksPage() {
 
         setWorks((ownerData ?? []) as WorkRow[]);
         setSharedWorks(nextSharedWorks);
-        setCategories(
-          categoryError
-            ? []
-            : ((categoryData ?? []) as WorkCategoryRow[]),
-        );
-        setCategoryLinks(
-          categoryLinkError
-            ? []
-            : ((categoryLinkData ?? []) as WorkCategoryLinkRow[]),
-        );
         setStatus("ready");
     };
 
@@ -648,140 +575,6 @@ export default function MyWorksPage() {
       }
     };
     
-    const categoryIdsByWork = React.useMemo(() => {
-      const map = new Map<string, string[]>();
-
-      for (const link of categoryLinks) {
-        const ids = map.get(link.work_id) ?? [];
-        ids.push(link.category_id);
-        map.set(link.work_id, ids);
-      }
-
-      return map;
-    }, [categoryLinks]);
-
-    const categoryCounts = React.useMemo(() => {
-      const counts = new Map<string, number>();
-
-      for (const link of categoryLinks) {
-        counts.set(
-          link.category_id,
-          (counts.get(link.category_id) ?? 0) + 1,
-        );
-      }
-
-      return counts;
-    }, [categoryLinks]);
-
-    const uncategorizedCount = React.useMemo(
-      () =>
-        works.filter(
-          (work) =>
-            (categoryIdsByWork.get(work.id) ?? []).length === 0,
-        ).length,
-      [works, categoryIdsByWork],
-    );
-
-    const filteredWorks = React.useMemo(() => {
-      if (activeCategoryId === "all") {
-        return works;
-      }
-
-      if (activeCategoryId === "uncategorized") {
-        return works.filter(
-          (work) =>
-            (categoryIdsByWork.get(work.id) ?? []).length === 0,
-        );
-      }
-
-      return works.filter((work) =>
-        (categoryIdsByWork.get(work.id) ?? []).includes(
-          activeCategoryId,
-        ),
-      );
-    }, [
-      works,
-      activeCategoryId,
-      categoryIdsByWork,
-    ]);
-
-    const onCreateCategory = async () => {
-      if (!currentUserId) {
-        window.alert(
-          "カテゴリーを作成するにはログインが必要です。",
-        );
-        return;
-      }
-
-      const input = window.prompt(
-        "新しいカテゴリー名を入力してください。",
-      );
-
-      const name = input?.trim() ?? "";
-
-      if (!name) {
-        return;
-      }
-
-      if (name.length > 80) {
-        window.alert(
-          "カテゴリー名は80文字以内で入力してください。",
-        );
-        return;
-      }
-
-      const nextSortOrder =
-        categories.reduce(
-          (max, category) =>
-            Math.max(
-              max,
-              category.sort_order ?? 0,
-            ),
-          0,
-        ) + 10;
-
-      const { data, error } = await supabase
-        .from("parari_work_categories")
-        .insert({
-          owner: currentUserId,
-          name,
-          sort_order: nextSortOrder,
-        })
-        .select("id,owner,name,sort_order")
-        .single();
-
-      if (error || !data) {
-        window.alert(
-          error?.code === "23505"
-            ? "同じ名前のカテゴリーがあります。"
-            : `カテゴリーを作成できませんでした: ${
-                error?.message ?? "unknown error"
-              }`,
-        );
-        return;
-      }
-
-      setCategories((current) =>
-        [
-          ...current,
-          data as WorkCategoryRow,
-        ].sort((a, b) => {
-          const orderDiff =
-            (a.sort_order ?? 0) -
-            (b.sort_order ?? 0);
-
-          if (orderDiff !== 0) {
-            return orderDiff;
-          }
-
-          return a.name.localeCompare(
-            b.name,
-            "ja",
-          );
-        }),
-      );
-    };
-
     return (
       <main className="min-h-screen bg-neutral-50">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
@@ -842,73 +635,6 @@ export default function MyWorksPage() {
                 </div>
               </div>
 
-            {status === "ready" && works.length > 0 ? (
-              <div className="mt-4 border-t border-neutral-100 pt-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="text-xs font-bold text-neutral-500">
-                    カテゴリー
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => void onCreateCategory()}
-                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-                  >
-                    ＋ カテゴリー
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveCategoryId("all")}
-                    className={[
-                      "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
-                      activeCategoryId === "all"
-                        ? "bg-neutral-950 text-white"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-                    ].join(" ")}
-                  >
-                    すべて {works.length}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveCategoryId("uncategorized")
-                    }
-                    className={[
-                      "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
-                      activeCategoryId === "uncategorized"
-                        ? "bg-neutral-950 text-white"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-                    ].join(" ")}
-                  >
-                    未分類 {uncategorizedCount}
-                  </button>
-
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() =>
-                        setActiveCategoryId(category.id)
-                      }
-                      className={[
-                        "rounded-full px-3 py-1.5 text-[11px] font-bold transition",
-                        activeCategoryId === category.id
-                          ? "bg-neutral-950 text-white"
-                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-                      ].join(" ")}
-                    >
-                      {category.name}{" "}
-                      {categoryCounts.get(category.id) ?? 0}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {message ? (
               <div
                 className={[
@@ -959,7 +685,7 @@ export default function MyWorksPage() {
 
           {status === "ready" && works.length > 0 ? (
             <div className="grid gap-3">
-              {filteredWorks.map((work) => {
+              {works.map((work) => {
                   
                   const workCollaborators = ownerCollaborators.filter(
                     (collaborator) => collaborator.workId === work.id,
