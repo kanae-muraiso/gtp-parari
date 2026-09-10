@@ -9,8 +9,29 @@
 
 import React from "react";
 import type { ParariNodeModule } from "./types";
-import { toYoutubeEmbedUrl } from "../youtubeUrl";
 
+function toYoutubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+
+    if (u.hostname.includes("youtu.be")) {
+      const id = u.pathname.replace("/", "").trim();
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+
+    if (u.hostname.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+
+      const m = u.pathname.match(/^\/embed\/([^/]+)/);
+      if (m?.[1]) return `https://www.youtube.com/embed/${m[1]}`;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 export const youtubeNodeModule: ParariNodeModule = {
   type: "youtube",

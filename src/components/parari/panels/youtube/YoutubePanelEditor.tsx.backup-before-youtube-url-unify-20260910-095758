@@ -6,7 +6,6 @@
 import type { PanelEditorProps } from "../panelDefinitionTypes";
 import type { YoutubePanelData } from "./parseYoutubePanel";
 import { serializeYoutubePanel } from "./serializeYoutubePanel";
-import { extractYoutubeVideoId } from "@/lib/parari/youtubeUrl";
 
 export function YoutubePanelEditor({
   data,
@@ -143,6 +142,33 @@ export function YoutubePanelEditor({
   );
 }
 
+function extractYoutubeVideoId(url: string): string {
+  const trimmed = url.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.replace("/", "").trim();
+    }
+
+    if (parsed.pathname.startsWith("/shorts/")) {
+      return parsed.pathname.replace("/shorts/", "").split("/")[0] ?? "";
+    }
+
+    if (parsed.pathname.startsWith("/embed/")) {
+      return parsed.pathname.replace("/embed/", "").split("/")[0] ?? "";
+    }
+
+    return parsed.searchParams.get("v") ?? "";
+  } catch {
+    return "";
+  }
+}
 
 function toCssAspectRatio(value: string): string | undefined {
   const trimmed = value.trim();

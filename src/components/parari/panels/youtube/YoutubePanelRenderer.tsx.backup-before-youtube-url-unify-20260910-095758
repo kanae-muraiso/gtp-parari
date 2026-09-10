@@ -2,7 +2,6 @@
 
 import type { PanelRendererProps } from "../panelDefinitionTypes";
 import type { YoutubePanelData } from "./parseYoutubePanel";
-import { extractYoutubeVideoId } from "@/lib/parari/youtubeUrl";
 
 export function YoutubePanelRenderer({
   data,
@@ -44,6 +43,39 @@ export function YoutubePanelRenderer({
   );
 }
 
+function extractYoutubeVideoId(value: string): string {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  try {
+    const url = new URL(text);
+
+    if (url.hostname.includes("youtu.be")) {
+      return url.pathname.replace(/^\/+/, "").split("/")[0] ?? "";
+    }
+
+    if (url.hostname.includes("youtube.com")) {
+      const videoId = url.searchParams.get("v");
+
+      if (videoId) {
+        return videoId;
+      }
+
+      const embedMatch = url.pathname.match(/^\/embed\/([^/]+)/);
+
+      if (embedMatch?.[1]) {
+        return embedMatch[1];
+      }
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
 
 function toCssSize(value: string): string | undefined {
   const text = String(value ?? "").trim();
