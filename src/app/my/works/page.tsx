@@ -85,6 +85,12 @@ export default function MyWorksPage() {
     const [activeCategoryId, setActiveCategoryId] =
       React.useState<string>("all");
 
+    const [openCategoryWorkId, setOpenCategoryWorkId] =
+      React.useState<string | null>(null);
+
+    const [changingWorkCategoryKey, setChangingWorkCategoryKey] =
+      React.useState<string | null>(null);
+
 
   React.useEffect(() => {
     let cancelled = false;
@@ -782,6 +788,102 @@ export default function MyWorksPage() {
       );
     };
 
+    const onAddWorkCategory = async (
+      workId: string,
+      categoryId: string,
+    ) => {
+      if (!currentUserId || !categoryId) return;
+
+      const key = `${workId}:${categoryId}`;
+      setChangingWorkCategoryKey(key);
+
+      try {
+        const { error } = await supabase
+          .from("parari_work_category_links")
+          .insert({
+            work_id: workId,
+            category_id: categoryId,
+            owner: currentUserId,
+          });
+
+        if (error && error.code !== "23505") {
+          console.error(
+            "[my/works] add category failed:",
+            error,
+          );
+          window.alert(
+            "カテゴリーを設定できませんでした。",
+          );
+          return;
+        }
+
+        setCategoryLinks((current) => {
+          const exists = current.some(
+            (link) =>
+              link.work_id === workId &&
+              link.category_id === categoryId,
+          );
+
+          if (exists) return current;
+
+          return [
+            ...current,
+            {
+              work_id: workId,
+              category_id: categoryId,
+              owner: currentUserId,
+            },
+          ];
+        });
+
+        setOpenCategoryWorkId(null);
+      } finally {
+        setChangingWorkCategoryKey(null);
+      }
+    };
+
+    const onRemoveWorkCategory = async (
+      workId: string,
+      categoryId: string,
+    ) => {
+      if (!currentUserId) return;
+
+      const key = `${workId}:${categoryId}`;
+      setChangingWorkCategoryKey(key);
+
+      try {
+        const { error } = await supabase
+          .from("parari_work_category_links")
+          .delete()
+          .eq("owner", currentUserId)
+          .eq("work_id", workId)
+          .eq("category_id", categoryId);
+
+        if (error) {
+          console.error(
+            "[my/works] remove category failed:",
+            error,
+          );
+          window.alert(
+            "カテゴリーを外せませんでした。",
+          );
+          return;
+        }
+
+        setCategoryLinks((current) =>
+          current.filter(
+            (link) =>
+              !(
+                link.work_id === workId &&
+                link.category_id === categoryId
+              ),
+          ),
+        );
+      } finally {
+        setChangingWorkCategoryKey(null);
+      }
+    };
+
     return (
       <main className="min-h-screen bg-neutral-50">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
@@ -975,6 +1077,27 @@ export default function MyWorksPage() {
                 const kind = resolveWorkKind(work.content);
                 const isDeleting = deletingWorkIds.includes(work.id);
                 const publicHref = `/p/${work.id}`;
+                const workCategoryIds =
+                  categoryIdsByWork.get(work.id) ?? [];
+
+                const workCategories =
+                  categories.filter((category) =>
+                    workCategoryIds.includes(
+                      category.id,
+                    ),
+                  );
+
+                const availableCategories =
+                  categories.filter(
+                    (category) =>
+                      !workCategoryIds.includes(
+                        category.id,
+                      ),
+                  );
+
+                const isCategoryPickerOpen =
+                  openCategoryWorkId === work.id;
+
 
                 return (
                   <article
@@ -1072,6 +1195,112 @@ export default function MyWorksPage() {
                       </div>
                     </div>
                         
+                        {/* WORK CATEGORY */}
+                        {categories.length > 0 ? (
+                          <div className="mt-3">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {workCategories.map(
+                                (category) => {
+                                  const key =
+                                    `${work.id}:${category.id}`;
+
+                                  return (
+                                    <button
+                                      key={category.id}
+                                      type="button"
+                                      disabled={
+                                        changingWorkCategoryKey ===
+                                        key
+                                      }
+                                      onClick={() =>
+                                        void onRemoveWorkCategory(
+                                          work.id,
+                                          category.id,
+                                        )
+                                      }
+                                      title="クリックするとカテゴリーから外れます"
+                                      className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-100 disabled:opacity-40"
+                                    >
+                                      {category.name} ×
+                                    </button>
+                                  );
+                                },
+                              )}
+
+                              {availableCategories.length >
+                              0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenCategoryWorkId(
+                                      (current) =>
+                                        current === work.id
+                                          ? null
+                                          : work.id,
+                                    )
+                                  }
+                                  className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-neutral-500 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                                >
+                                  ＋カテゴリー
+                                </button>
+                              ) : null}
+                            </div>
+
+                            {isCategoryPickerOpen &&
+                            availableCategories.length >
+                              0 ? (
+                              <div className="mt-2 flex items-center gap-2 rounded-xl bg-neutral-50 p-2">
+                                <select
+                                  value=""
+                                  disabled={
+                                    changingWorkCategoryKey !==
+                                    null
+                                  }
+                                  onChange={(event) => {
+                                    const categoryId =
+                                      event.target.value;
+
+                                    if (!categoryId) return;
+
+                                    void onAddWorkCategory(
+                                      work.id,
+                                      categoryId,
+                                    );
+                                  }}
+                                  className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 outline-none disabled:opacity-50"
+                                >
+                                  <option value="">
+                                    カテゴリーを選ぶ…
+                                  </option>
+
+                                  {availableCategories.map(
+                                    (category) => (
+                                      <option
+                                        key={category.id}
+                                        value={category.id}
+                                      >
+                                        {category.name}
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenCategoryWorkId(
+                                      null,
+                                    )
+                                  }
+                                  className="shrink-0 rounded-full px-3 py-2 text-[11px] font-bold text-neutral-500 hover:bg-white"
+                                >
+                                  閉じる
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+
                         {isCollaborationOpen ? (
                           <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
                             <div className="flex items-center justify-between gap-3">
