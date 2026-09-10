@@ -598,16 +598,9 @@ export default function MyWorksPage() {
                     MY WORKS
                   </div>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2.5">
-                    <h2 className="text-xl font-bold text-neutral-950">
-                      自分の作品
-                    </h2>
-
-                    <StatusBadge
-                      status={status}
-                      count={works.length + sharedWorks.length}
-                    />
-                  </div>
+                  <h2 className="mt-2 text-xl font-bold text-neutral-950">
+                    自分の作品
+                  </h2>
 
                   <p className="mt-2 text-sm leading-7 text-neutral-500">
                     作品を編集したり、表示確認用のURLをコピーしたりできます。
@@ -615,7 +608,10 @@ export default function MyWorksPage() {
                 </div>
 
                 <div className="flex flex-col items-end gap-3">
-
+                  <StatusBadge
+                    status={status}
+                    count={works.length + sharedWorks.length}
+                  />
 
                   <div className="flex flex-wrap justify-end gap-2">
                     <Link
