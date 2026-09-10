@@ -668,8 +668,15 @@ export default function MyWorksPage() {
 
     const categoryCounts = React.useMemo(() => {
       const counts = new Map<string, number>();
+      const ownedWorkIds = new Set(
+        works.map((work) => work.id),
+      );
 
       for (const link of categoryLinks) {
+        if (!ownedWorkIds.has(link.work_id)) {
+          continue;
+        }
+
         counts.set(
           link.category_id,
           (counts.get(link.category_id) ?? 0) + 1,
@@ -677,7 +684,7 @@ export default function MyWorksPage() {
       }
 
       return counts;
-    }, [categoryLinks]);
+    }, [works, categoryLinks]);
 
     const uncategorizedCount = React.useMemo(
       () =>
