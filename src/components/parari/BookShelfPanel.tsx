@@ -767,6 +767,117 @@ export default function BookShelfPanel() {
       ]
     );
 
+  const [categoryManagementOpen, setCategoryManagementOpen] =
+    useState(false);
+
+  const [renamingCategoryId, setRenamingCategoryId] =
+    useState<string | null>(null);
+
+  async function handleRenameCategory(
+    category: WorkCategoryRow
+  ) {
+    if (!supabase || !userId) return;
+
+    const rawName = window.prompt(
+      "カテゴリー名を変更してください。",
+      category.name
+    );
+
+    if (rawName === null) return;
+
+    const name = rawName.trim();
+
+    if (!name) {
+      window.alert(
+        "カテゴリー名を入力してください。"
+      );
+      return;
+    }
+
+    if (name.length > 80) {
+      window.alert(
+        "カテゴリー名は80文字以内で入力してください。"
+      );
+      return;
+    }
+
+    if (name === category.name) {
+      return;
+    }
+
+    const duplicateExists = categories.some(
+      (item) =>
+        item.id !== category.id &&
+        item.name.trim().toLocaleLowerCase() ===
+          name.toLocaleLowerCase()
+    );
+
+    if (duplicateExists) {
+      window.alert(
+        "同じ名前のカテゴリーがあります。"
+      );
+      return;
+    }
+
+    setRenamingCategoryId(category.id);
+
+    try {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("parari_work_categories")
+        .update({
+          name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", category.id)
+        .eq("owner", userId)
+        .select("id,owner,name,sort_order")
+        .single();
+
+      if (error || !data) {
+        console.error(
+          "rename work category failed:",
+          error
+        );
+
+        window.alert(
+          error?.code === "23505"
+            ? "同じ名前のカテゴリーがあります。"
+            : "カテゴリー名を変更できませんでした。"
+        );
+
+        return;
+      }
+
+      setCategories((current) =>
+        current
+          .map((item) =>
+            item.id === category.id
+              ? (data as WorkCategoryRow)
+              : item
+          )
+          .sort((a, b) => {
+            const diff =
+              (a.sort_order ?? 0) -
+              (b.sort_order ?? 0);
+
+            if (diff !== 0) {
+              return diff;
+            }
+
+            return a.name.localeCompare(
+              b.name,
+              "ja"
+            );
+          })
+      );
+    } finally {
+      setRenamingCategoryId(null);
+    }
+  }
+
   async function handleCreateCategory() {
     if (!supabase || !userId) return;
 
@@ -1288,14 +1399,73 @@ export default function BookShelfPanel() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCreateCategory}
-                className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-              >
-                ＋ カテゴリー
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                >
+                  ＋ カテゴリー
+                </button>
+
+                {categories.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCategoryManagementOpen(
+                        (current) => !current
+                      )
+                    }
+                    className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+                  >
+                    {categoryManagementOpen
+                      ? "管理を閉じる"
+                      : "管理"}
+                  </button>
+                ) : null}
+              </div>
             </div>
+
+            {categoryManagementOpen &&
+            categories.length > 0 ? (
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
+                <div className="mb-2 text-[11px] font-bold text-neutral-500">
+                  カテゴリー管理
+                </div>
+
+                <div className="space-y-2">
+                  {categories.map((category) => (
+                    <div
+                      key={category.id}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-neutral-200"
+                    >
+                      <div className="min-w-0 truncate text-xs font-bold text-neutral-700">
+                        {category.name}
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={
+                          renamingCategoryId ===
+                          category.id
+                        }
+                        onClick={() =>
+                          void handleRenameCategory(
+                            category
+                          )
+                        }
+                        className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {renamingCategoryId ===
+                        category.id
+                          ? "変更中..."
+                          : "名前を変更"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-4 flex flex-wrap gap-2">
               <button
