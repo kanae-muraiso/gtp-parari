@@ -111,7 +111,6 @@ function InstagramOfficialEmbed({
         <blockquote
           key={normalizedUrl}
           className="instagram-media"
-          data-instgrm-captioned=""
           data-instgrm-permalink={normalizedUrl}
           data-instgrm-version="14"
           style={instagramBlockquoteStyle}
