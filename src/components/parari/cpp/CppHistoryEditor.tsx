@@ -35,7 +35,7 @@ type Props = {
   userId: string | null;
 };
 
-const YEAR_MIN = 1940;
+const YEAR_MIN = 1900;
 const YEAR_MAX = new Date().getFullYear() + 10;
 
 export default function CppHistoryEditor({ userId }: Props) {
