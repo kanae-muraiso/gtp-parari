@@ -30,9 +30,7 @@ type LocalHistoryRow = HistoryRow & {
   saveMessage?: string;
 };
 
-type Props = {
-  userId: string | null;
-};
+type Props = { userId: string | null };
 
 export default function CppHistoryEditor({ userId }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
@@ -65,13 +63,13 @@ export default function CppHistoryEditor({ userId }: Props) {
       return;
     }
 
-    const normalized = ((data ?? []) as HistoryRow[]).map((row) => ({
-      ...row,
-      event_date: row.event_date ?? legacyDate(row),
-      event_text: row.event_text ?? legacyEventText(row),
-    }));
-
-    setRows(normalized);
+    setRows(
+      ((data ?? []) as HistoryRow[]).map((row) => ({
+        ...row,
+        event_date: row.event_date ?? legacyDate(row),
+        event_text: row.event_text ?? legacyEventText(row),
+      })),
+    );
     setLoading(false);
   }, [supabase, userId]);
 
@@ -83,19 +81,9 @@ export default function CppHistoryEditor({ userId }: Props) {
     async (kind: HistoryKind) => {
       if (!supabase || !userId) return;
 
-      const sameKind = rows.filter((row) => row.kind === kind);
-      const nextSortOrder =
-        sameKind.reduce((max, row) => Math.max(max, row.sort_order), -1) + 1;
-
       const { data, error } = await supabase
         .from("cpp_profile_history")
-        .insert({
-          user_id: userId,
-          kind,
-          event_date: null,
-          event_text: null,
-          sort_order: nextSortOrder,
-        })
+        .insert({ user_id: userId, kind, event_date: null, event_text: null })
         .select(
           "id, user_id, kind, event_date, event_text, sort_order, start_year, start_month, organization, division, title, notes",
         )
@@ -110,10 +98,10 @@ export default function CppHistoryEditor({ userId }: Props) {
 
       setRows((current) => [
         ...current,
-        { ...data, saveState: "saved", saveMessage: "追加しました" },
+        { ...data, saveState: "saved" as const, saveMessage: "追加しました" },
       ]);
     },
-    [rows, supabase, userId],
+    [supabase, userId],
   );
 
   const patchRow = useCallback((rowId: string, patch: Partial<HistoryRow>) => {
@@ -129,7 +117,6 @@ export default function CppHistoryEditor({ userId }: Props) {
   const deleteRow = useCallback(
     async (rowId: string) => {
       if (!supabase || !userId) return;
-
       const previous = rows;
       setRows((current) => current.filter((row) => row.id !== rowId));
 
@@ -147,8 +134,14 @@ export default function CppHistoryEditor({ userId }: Props) {
     [rows, supabase, userId],
   );
 
-  const educationRows = rows.filter((row) => row.kind === "education");
-  const careerRows = rows.filter((row) => row.kind === "career");
+  const educationRows = useMemo(
+    () => sortHistoryRows(rows.filter((row) => row.kind === "education")),
+    [rows],
+  );
+  const careerRows = useMemo(
+    () => sortHistoryRows(rows.filter((row) => row.kind === "career")),
+    [rows],
+  );
 
   return (
     <>
@@ -160,7 +153,7 @@ export default function CppHistoryEditor({ userId }: Props) {
 
       <HistorySection
         title="学歴"
-        description="1項目に「年月日」と「事柄」を記入します。例：2020/04/01　○○大学大学院○○研究科 入学"
+        description="年月日と事柄を記入します。古いものから新しいものへ自動で並びます。例：2020/04/01　○○大学大学院○○研究科 入学"
         rows={educationRows}
         loading={loading}
         userId={userId}
@@ -172,7 +165,7 @@ export default function CppHistoryEditor({ userId }: Props) {
 
       <HistorySection
         title="職歴"
-        description="1項目に「年月日」と「事柄」を記入します。例：2024/04/01　○○研究所 博士研究員 着任"
+        description="年月日と事柄を記入します。古いものから新しいものへ自動で並びます。例：2024/04/01　○○研究所 博士研究員 着任"
         rows={careerRows}
         loading={loading}
         userId={userId}
@@ -215,7 +208,6 @@ function HistorySection({
           <h2 className="text-base font-bold text-neutral-950">{title}</h2>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-neutral-500">{description}</p>
         </div>
-
         <button
           type="button"
           onClick={onAdd}
@@ -272,7 +264,6 @@ function HistoryCard({
       firstRenderRef.current = false;
       return;
     }
-
     if (!supabase || row.saveState === "saving" || row.saveState === "saved") return;
     if (timerRef.current) clearTimeout(timerRef.current);
 
@@ -280,12 +271,12 @@ function HistoryCard({
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id
-            ? { ...item, saveState: "saving", saveMessage: "保存中..." }
+            ? { ...item, saveState: "saving" as const, saveMessage: "保存中..." }
             : item,
         ),
       );
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("cpp_profile_history")
         .update({
           event_date: row.event_date || null,
@@ -293,14 +284,17 @@ function HistoryCard({
           updated_at: new Date().toISOString(),
         })
         .eq("id", row.id)
-        .eq("user_id", row.user_id);
+        .eq("user_id", row.user_id)
+        .select("sort_order")
+        .single<{ sort_order: number }>();
 
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id
             ? {
                 ...item,
-                saveState: error ? "error" : "saved",
+                sort_order: data?.sort_order ?? item.sort_order,
+                saveState: error ? ("error" as const) : ("saved" as const),
                 saveMessage: error ? error.message : "保存しました",
               }
             : item,
@@ -363,12 +357,21 @@ function RowSaveState({ row }: { row: LocalHistoryRow }) {
       : row.saveState === "saving"
         ? "text-amber-700"
         : "text-emerald-700";
-
   return (
     <span className={`text-[11px] font-semibold ${className}`}>
       {row.saveMessage ?? "保存しました"}
     </span>
   );
+}
+
+function sortHistoryRows(rows: LocalHistoryRow[]) {
+  return [...rows].sort((a, b) => {
+    const aKey = a.event_date ?? legacyDate(a) ?? "9999-12-31";
+    const bKey = b.event_date ?? legacyDate(b) ?? "9999-12-31";
+    const byDate = aKey.localeCompare(bKey);
+    if (byDate !== 0) return byDate;
+    return a.id.localeCompare(b.id);
+  });
 }
 
 function legacyDate(row: HistoryRow): string | null {
