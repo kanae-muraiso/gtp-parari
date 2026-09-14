@@ -1,5 +1,5 @@
 // src/app/[username]/cpp/page.tsx
-// CPP public researcher profile
+// CPP public researcher profile v0.2
 // 2026-09-14
 
 "use client";
@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
 
 type ParariProfileRow = {
   user_id: string;
@@ -29,6 +30,9 @@ type CppProfileRow = {
   photo_path: string | null;
   degree_level: string | null;
   degree_text: string | null;
+  degree_status: string | null;
+  degree_institution: string | null;
+  degree_date: string | null;
   affiliation: string | null;
   position_title: string | null;
   self_appeal: string | null;
@@ -84,11 +88,10 @@ type PublicationRow = {
 type HistoryRow = {
   id: string;
   kind: "education" | "career";
+  event_date: string | null;
+  event_text: string | null;
   start_year: number | null;
   start_month: number | null;
-  end_year: number | null;
-  end_month: number | null;
-  is_current: boolean;
   organization: string | null;
   division: string | null;
   title: string | null;
@@ -108,9 +111,9 @@ type LoadedProfile = {
 
 const DEGREE_LABELS: Record<string, string> = {
   doctorate: "博士",
-  doctoral_student: "博士課程在籍",
+  doctoral_student: "博士",
   masters: "修士",
-  masters_student: "修士課程在籍",
+  masters_student: "修士",
   bachelors: "学士",
   other: "その他",
   none: "学位なし",
@@ -159,7 +162,7 @@ export default function PublicCppProfilePage() {
     const { data: cppData, error: cppError } = await supabase
       .from("cpp_profiles")
       .select(
-        "user_id, public_name, photo_path, degree_level, degree_text, affiliation, position_title, self_appeal, section_states, visibility, published_at",
+        "user_id, public_name, photo_path, degree_level, degree_text, degree_status, degree_institution, degree_date, affiliation, position_title, self_appeal, section_states, visibility, published_at",
       )
       .eq("user_id", parariData.user_id)
       .eq("visibility", "published")
@@ -206,7 +209,7 @@ export default function PublicCppProfilePage() {
         supabase
           .from("cpp_profile_history")
           .select(
-            "id, kind, start_year, start_month, end_year, end_month, is_current, organization, division, title, notes, sort_order",
+            "id, kind, event_date, event_text, start_year, start_month, organization, division, title, notes, sort_order",
           )
           .eq("user_id", parariData.user_id)
           .order("kind", { ascending: true })
@@ -269,10 +272,7 @@ export default function PublicCppProfilePage() {
 
   const openPdf = useCallback(
     async (summary: ResearchSummaryRow) => {
-      if (!supabase || !summary.pdf_path) {
-        return;
-      }
-
+      if (!supabase || !summary.pdf_path) return;
       setPdfOpening(summary.id);
       setErrorMessage("");
 
@@ -281,12 +281,10 @@ export default function PublicCppProfilePage() {
         .createSignedUrl(summary.pdf_path, 60 * 10);
 
       setPdfOpening(null);
-
       if (error || !data?.signedUrl) {
         setErrorMessage(`研究資料を開けませんでした: ${error?.message ?? "unknown error"}`);
         return;
       }
-
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     },
     [supabase],
@@ -337,21 +335,15 @@ export default function PublicCppProfilePage() {
       <article className="mx-auto max-w-4xl space-y-6">
         <header className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="grid gap-6 sm:grid-cols-[160px_1fr] sm:items-start">
-            <div>
-              <div className="aspect-square overflow-hidden rounded-[2rem] bg-neutral-100">
-                {photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={photoUrl}
-                    alt={publicName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-neutral-400">
-                    NO PHOTO
-                  </div>
-                )}
-              </div>
+            <div className="aspect-square overflow-hidden rounded-[2rem] bg-neutral-100">
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrl} alt={publicName} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-neutral-400">
+                  NO PHOTO
+                </div>
+              )}
             </div>
 
             <div>
@@ -365,7 +357,7 @@ export default function PublicCppProfilePage() {
               <div className="mt-4 space-y-1 text-sm leading-6 text-neutral-600">
                 {cpp.affiliation ? <div>{cpp.affiliation}</div> : null}
                 {cpp.position_title ? <div>{cpp.position_title}</div> : null}
-                <DegreeLine degreeLevel={cpp.degree_level} degreeText={cpp.degree_text} />
+                <DegreeLine profile={cpp} />
               </div>
 
               {researchFields.length > 0 ? (
@@ -416,8 +408,8 @@ export default function PublicCppProfilePage() {
                   </div>
 
                   {summary.body ? (
-                    <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-                      {summary.body}
+                    <div className="mt-4">
+                      <PageBodyPanelRenderer bodySsot={summary.body} />
                     </div>
                   ) : summary.is_in_progress ? (
                     <p className="mt-3 text-sm text-neutral-400">現在、研究概要を作成中です。</p>
@@ -453,15 +445,11 @@ export default function PublicCppProfilePage() {
                   </div>
                   {publication.authors ? <div className="mt-1">{publication.authors}</div> : null}
                   <div className="mt-1 text-neutral-500">
-                    {[publication.venue, publication.publication_year]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {[publication.venue, publication.publication_year].filter(Boolean).join(" · ")}
                     {formatVolumeIssuePages(publication)}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                    {publication.doi ? (
-                      <span className="text-neutral-500">DOI: {publication.doi}</span>
-                    ) : null}
+                    {publication.doi ? <span className="text-neutral-500">DOI: {publication.doi}</span> : null}
                     {publication.external_url ? (
                       <a
                         href={publication.external_url}
@@ -497,9 +485,7 @@ export default function PublicCppProfilePage() {
 
         <PublicSection title="自己アピール" inProgress={selfAppealInProgress}>
           {cpp.self_appeal ? (
-            <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-              {cpp.self_appeal}
-            </div>
+            <PageBodyPanelRenderer bodySsot={cpp.self_appeal} />
           ) : selfAppealInProgress ? (
             <p className="text-sm text-neutral-400">現在、自己アピールを作成中です。</p>
           ) : (
@@ -512,7 +498,7 @@ export default function PublicCppProfilePage() {
             ← {parari.display_name || parari.username} のPARARIへ
           </Link>
           {cpp.published_at ? (
-            <span>更新 {new Date(cpp.published_at).toLocaleDateString("ja-JP")}</span>
+            <span>公開 {new Date(cpp.published_at).toLocaleDateString("ja-JP")}</span>
           ) : null}
         </footer>
       </article>
@@ -548,16 +534,24 @@ function InProgressBadge() {
   );
 }
 
-function DegreeLine({
-  degreeLevel,
-  degreeText,
-}: {
-  degreeLevel: string | null;
-  degreeText: string | null;
-}) {
-  const label = degreeLevel ? DEGREE_LABELS[degreeLevel] ?? degreeLevel : "";
-  const text = [label, degreeText].filter(Boolean).join(" · ");
-  return text ? <div>{text}</div> : null;
+function DegreeLine({ profile }: { profile: CppProfileRow }) {
+  const degree = profile.degree_text ||
+    (profile.degree_level ? DEGREE_LABELS[profile.degree_level] ?? profile.degree_level : "");
+  const institution = profile.degree_institution ?? "";
+  const date = profile.degree_date ? formatDate(profile.degree_date) : "";
+  const status = profile.degree_status === "expected" ? "取得予定" : profile.degree_status === "obtained" ? "取得" : "";
+  const detail = [institution, date ? `${date} ${status}`.trim() : status]
+    .filter(Boolean)
+    .join(" · ");
+
+  if (!degree && !detail) return null;
+
+  return (
+    <div>
+      <span className="font-semibold text-neutral-800">{degree}</span>
+      {detail ? <span> · {detail}</span> : null}
+    </div>
+  );
 }
 
 function HistoryList({ title, rows }: { title: string; rows: HistoryRow[] }) {
@@ -565,24 +559,17 @@ function HistoryList({ title, rows }: { title: string; rows: HistoryRow[] }) {
     <div>
       <h3 className="text-sm font-bold text-neutral-900">{title}</h3>
       {rows.length > 0 ? (
-        <ol className="mt-4 space-y-5">
-          {rows.map((row) => (
-            <li key={row.id} className="text-sm leading-6 text-neutral-700">
-              <div className="text-xs font-semibold text-neutral-400">
-                {formatHistoryPeriod(row)}
-              </div>
-              <div className="mt-1 font-semibold text-neutral-950">
-                {row.organization || "（名称未入力）"}
-              </div>
-              {row.division ? <div className="mt-0.5 text-neutral-600">{row.division}</div> : null}
-              {row.title ? <div className="mt-0.5 text-neutral-500">{row.title}</div> : null}
-              {row.notes ? (
-                <div className="mt-2 whitespace-pre-wrap text-xs leading-6 text-neutral-500">
-                  {row.notes}
-                </div>
-              ) : null}
-            </li>
-          ))}
+        <ol className="mt-4 space-y-4">
+          {rows.map((row) => {
+            const text = row.event_text || legacyEventText(row) || "（内容未入力）";
+            const date = row.event_date ? formatDate(row.event_date) : legacyHistoryDate(row);
+            return (
+              <li key={row.id} className="grid grid-cols-[100px_1fr] gap-3 text-sm leading-6 text-neutral-700">
+                <div className="text-xs font-semibold text-neutral-400">{date || "日付未入力"}</div>
+                <div>{text}</div>
+              </li>
+            );
+          })}
         </ol>
       ) : (
         <p className="mt-4 text-sm text-neutral-400">まだ登録されていません。</p>
@@ -591,19 +578,24 @@ function HistoryList({ title, rows }: { title: string; rows: HistoryRow[] }) {
   );
 }
 
-function formatHistoryPeriod(row: HistoryRow) {
-  const start = formatYearMonth(row.start_year, row.start_month);
-  const end = row.is_current ? "現在" : formatYearMonth(row.end_year, row.end_month);
-
-  if (start && end) return `${start} – ${end}`;
-  if (start) return `${start} –`;
-  if (end) return `– ${end}`;
-  return "期間未入力";
+function legacyEventText(row: HistoryRow): string {
+  return [row.organization, row.division, row.title, row.notes]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
 }
 
-function formatYearMonth(year: number | null, month: number | null) {
-  if (!year) return "";
-  return month ? `${year}年${month}月` : `${year}年`;
+function legacyHistoryDate(row: HistoryRow): string {
+  if (!row.start_year) return "";
+  return row.start_month ? `${row.start_year}/${String(row.start_month).padStart(2, "0")}` : String(row.start_year);
+}
+
+function formatDate(value: string) {
+  const [year, month, day] = value.split("-");
+  if (!year) return value;
+  if (!month) return year;
+  if (!day) return `${year}/${month}`;
+  return `${year}/${month}/${day}`;
 }
 
 function formatVolumeIssuePages(publication: PublicationRow) {
