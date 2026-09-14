@@ -102,7 +102,7 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
     }
 
     setRows((current) =>
-      [...current, { ...data, saveState: "saved" }].sort(
+      [...current, { ...data, saveState: "saved" as const }].sort(
         (a, b) => a.slot - b.slot,
       ),
     );
