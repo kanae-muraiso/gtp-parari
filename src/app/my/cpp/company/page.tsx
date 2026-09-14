@@ -1,9 +1,11 @@
 import Link from "next/link";
 import CppCompanyWorkbook from "@/components/parari/cpp/company/CppCompanyWorkbook";
+import CppCompanySupportModeBanner from "@/components/parari/cpp/company/CppCompanySupportModeBanner";
 
 export default function CppCompanyEditorPage() {
   return (
     <>
+      <CppCompanySupportModeBanner />
       <CppCompanyWorkbook />
       <div className="fixed bottom-5 right-5 z-50 flex flex-wrap justify-end gap-2">
         <Link
