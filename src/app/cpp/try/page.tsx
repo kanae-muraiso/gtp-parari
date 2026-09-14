@@ -150,6 +150,9 @@ export default function CppTryPage() {
           >
             PARARIにログインして続ける
           </Link>
+          <div className="mt-5">
+            <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">← CPP登録入口へ</Link>
+          </div>
         </div>
       </main>
     );
@@ -159,12 +162,12 @@ export default function CppTryPage() {
     return (
       <main className="min-h-screen bg-neutral-50 px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-3xl space-y-6">
-          <TrialHeader identity={identity} />
+          <Header identity={identity} />
           <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
             <div className="text-xs font-bold tracking-[0.18em] text-emerald-700">CPP RESEARCHER</div>
             <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者プロフィールがあります</h1>
             <p className="mt-3 text-sm leading-7 text-neutral-600">
-              ここから入力を続けるか、現在の内容を「企業から見た画面」で確認できます。入力内容は本物のCPPデータとして保存されています。
+              CPP WORKBOOKで入力を続けるか、現在のプロフィールを企業から見た画面で確認できます。
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/cpp/try/workbook" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
@@ -183,13 +186,13 @@ export default function CppTryPage() {
   return (
     <main className="min-h-screen bg-neutral-50 px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-3xl space-y-6">
-        <TrialHeader identity={identity} />
+        <Header identity={identity} />
 
         <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
           <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">CPP REGISTRATION</div>
           <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者として登録</h1>
           <p className="mt-3 text-sm leading-7 text-neutral-600">
-            登録後、CPP WORKBOOKで研究内容や経歴を少しずつ作成できます。今日入力した内容はそのまま保存され、正式公開するときにも引き継がれます。
+            登録後、CPP WORKBOOKで研究内容や経歴を少しずつ作成できます。入力内容は保存され、公開するタイミングは自分で決められます。
           </p>
 
           {errorMessage ? (
@@ -237,7 +240,7 @@ export default function CppTryPage() {
   );
 }
 
-function TrialHeader({ identity }: { identity: ParariIdentity }) {
+function Header({ identity }: { identity: ParariIdentity }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 px-1">
       <div>
@@ -246,9 +249,7 @@ function TrialHeader({ identity }: { identity: ParariIdentity }) {
           {identity.displayName} <span className="font-normal text-neutral-400">@{identity.username}</span>
         </div>
       </div>
-      <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">
-        STAFF PREVIEW
-      </span>
+      <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">CPP登録入口へ</Link>
     </header>
   );
 }
