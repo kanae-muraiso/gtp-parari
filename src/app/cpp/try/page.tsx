@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type ParariIdentity = {
@@ -14,7 +13,6 @@ type ParariIdentity = {
 
 export default function CppTryPage() {
   const supabase = useMemo(() => sharedSupabase, []);
-  const router = useRouter();
   const [identity, setIdentity] = useState<ParariIdentity | null>(null);
   const [registered, setRegistered] = useState(false);
   const [name, setName] = useState("");
@@ -131,7 +129,6 @@ export default function CppTryPage() {
 
     setRegistered(true);
     setSaving(false);
-    router.push("/my/cpp");
   };
 
   if (loading) {
@@ -170,7 +167,7 @@ export default function CppTryPage() {
               ここから入力を続けるか、現在の内容を「企業から見た画面」で確認できます。入力内容は本物のCPPデータとして保存されています。
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/my/cpp" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
+              <Link href="/cpp/try/workbook" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
                 CPP WORKBOOKを開く
               </Link>
               <Link href="/my/cpp/preview" className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-800">
