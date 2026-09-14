@@ -16,6 +16,10 @@ type MembershipRow = {
   role: "owner" | "editor";
 };
 
+type CreatorCompanyRow = {
+  id: string;
+};
+
 export default function CppCompanyTryPage() {
   const supabase = useMemo(() => sharedSupabase, []);
   const [identity, setIdentity] = useState<Identity | null>(null);
@@ -48,7 +52,7 @@ export default function CppCompanyTryPage() {
       }
 
       const user = authData.user;
-      const [profileResult, memberResult] = await Promise.all([
+      const [profileResult, memberResult, ownCompanyResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("username, display_name")
@@ -59,10 +63,16 @@ export default function CppCompanyTryPage() {
           .select("company_id, role")
           .eq("user_id", user.id)
           .limit(1),
+        supabase
+          .from("cpp_companies")
+          .select("id")
+          .eq("created_by_user_id", user.id)
+          .order("created_at", { ascending: true })
+          .limit(1),
       ]);
 
       if (!active) return;
-      const firstError = profileResult.error || memberResult.error;
+      const firstError = profileResult.error || memberResult.error || ownCompanyResult.error;
       if (firstError) {
         setErrorMessage(`会社登録状況の確認に失敗しました: ${firstError.message}`);
         setLoading(false);
@@ -76,7 +86,37 @@ export default function CppCompanyTryPage() {
         username: profileResult.data?.username || "parari-user",
         displayName,
       });
-      setMembership(((memberResult.data ?? [])[0] as MembershipRow | undefined) ?? null);
+
+      let currentMembership = ((memberResult.data ?? [])[0] as MembershipRow | undefined) ?? null;
+
+      // A company row can survive if the creator/member insert fails midway.
+      // Repair that partial registration instead of creating a duplicate company.
+      if (!currentMembership) {
+        const ownCompany = ((ownCompanyResult.data ?? [])[0] as CreatorCompanyRow | undefined) ?? null;
+        if (ownCompany) {
+          const { error: repairError } = await supabase
+            .from("cpp_company_members")
+            .upsert(
+              {
+                company_id: ownCompany.id,
+                user_id: user.id,
+                role: "owner",
+              },
+              { onConflict: "company_id,user_id" },
+            );
+
+          if (!active) return;
+          if (repairError) {
+            setErrorMessage(`会社担当者情報の復旧に失敗しました: ${repairError.message}`);
+            setLoading(false);
+            return;
+          }
+
+          currentMembership = { company_id: ownCompany.id, role: "owner" };
+        }
+      }
+
+      setMembership(currentMembership);
       setLoading(false);
     };
 
@@ -117,6 +157,8 @@ export default function CppCompanyTryPage() {
     });
 
     if (memberError) {
+      // Avoid leaving an orphan company when the second half of registration fails.
+      await supabase.from("cpp_companies").delete().eq("id", company.id);
       setSaving(false);
       setErrorMessage(`会社担当者の登録に失敗しました: ${memberError.message}`);
       return;
