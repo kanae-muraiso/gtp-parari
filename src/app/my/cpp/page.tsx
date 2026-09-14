@@ -15,6 +15,7 @@ import {
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
+import CppHistoryEditor from "@/components/parari/cpp/CppHistoryEditor";
 
 type SaveState =
   | { type: "loading"; message: string }
@@ -809,6 +810,8 @@ export default function CppWorkbookPage() {
                   </button>
                 </div>
               </section>
+
+              <CppHistoryEditor userId={userId} />
 
               <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
                 <SectionHeading
