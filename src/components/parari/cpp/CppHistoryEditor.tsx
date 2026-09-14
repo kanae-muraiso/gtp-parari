@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import CppResearchSummaryEditor from "@/components/parari/cpp/CppResearchSummaryEditor";
 
 type HistoryKind = "education" | "career";
 
@@ -190,6 +191,8 @@ export default function CppHistoryEditor({ userId }: Props) {
         onPatch={patchRow}
         onRowsChange={setRows}
       />
+
+      <CppResearchSummaryEditor userId={userId} />
     </>
   );
 }
