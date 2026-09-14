@@ -86,11 +86,20 @@ export default function CppRichContentEditor({
       </div>
 
       <div className="space-y-3">
-        {renderBlocks.map((block) => {
+        {renderBlocks.map((block, index) => {
+          // parseBlocks() の block.id は start/end offset を含むため、
+          // 本文を1文字編集するだけでも id が変わる。
+          // それを React key に使うと RichTextPanelEditor が毎回 remount され、
+          // フォーカスと edit mode が失われるので、表示順ベースの安定 key を使う。
+          const stableKey =
+            block.kind === "text"
+              ? `cpp-rich-text-${index}`
+              : `cpp-rich-panel-${block.tag}-${index}`;
+
           if (block.kind === "text") {
             return (
               <RichTextPanelEditor
-                key={block.id}
+                key={stableKey}
                 ssotText={block.raw}
                 placeholder={placeholder}
                 panelizeActions={[]}
@@ -111,7 +120,7 @@ export default function CppRichContentEditor({
 
           return (
             <PanelBlockCard
-              key={block.id}
+              key={stableKey}
               block={block}
               onChangeRaw={(nextRaw) => replaceBlockRaw(block.id, nextRaw)}
               onDelete={() => deleteBlock(block.id)}
