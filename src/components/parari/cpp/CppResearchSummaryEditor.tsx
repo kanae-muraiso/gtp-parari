@@ -83,9 +83,14 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
     }
 
     setRows((current) =>
-      [...current, { ...data, saveState: "saved", saveMessage: "追加しました" }].sort(
-        (a, b) => a.slot - b.slot,
-      ),
+      [
+        ...current,
+        {
+          ...data,
+          saveState: "saved" as const,
+          saveMessage: "追加しました",
+        },
+      ].sort((a, b) => a.slot - b.slot),
     );
   }, [rows, supabase, userId]);
 
