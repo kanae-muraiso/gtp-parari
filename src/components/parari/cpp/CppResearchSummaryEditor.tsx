@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import CppPublicationsAndAppealEditor from "@/components/parari/cpp/CppPublicationsAndAppealEditor";
 
 type ResearchSummaryRow = {
   id: string;
@@ -161,58 +162,62 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
   );
 
   return (
-    <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-neutral-950">研究概要</h2>
-          <p className="mt-1 text-xs leading-5 text-neutral-500">
-            研究テーマは最大3件まで登録できます。図表や研究紹介資料はPDFで添付できます。
-          </p>
+    <>
+      <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-neutral-950">研究概要</h2>
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
+              研究テーマは最大3件まで登録できます。図表や研究紹介資料はPDFで添付できます。
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void addSummary()}
+            disabled={!userId || rows.length >= MAX_SUMMARIES}
+            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ＋研究概要を追加
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void addSummary()}
-          disabled={!userId || rows.length >= MAX_SUMMARIES}
-          className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          ＋研究概要を追加
-        </button>
-      </div>
+        {errorMessage ? (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        ) : null}
 
-      {errorMessage ? (
-        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {errorMessage}
-        </div>
-      ) : null}
+        {loading ? (
+          <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4 text-sm text-neutral-400">
+            読み込んでいます...
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-center text-sm text-neutral-400">
+            まだ研究概要は登録されていません。必要になったところから書き始めてください。
+          </div>
+        ) : (
+          <div className="mt-5 space-y-5">
+            {rows.map((row) => (
+              <ResearchSummaryCard
+                key={row.id}
+                row={row}
+                onPatch={patchRow}
+                onRowsChange={setRows}
+                onError={setErrorMessage}
+                onDelete={deleteSummary}
+              />
+            ))}
+          </div>
+        )}
 
-      {loading ? (
-        <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4 text-sm text-neutral-400">
-          読み込んでいます...
+        <div className="mt-4 text-right text-xs text-neutral-400">
+          {rows.length} / {MAX_SUMMARIES} 件
         </div>
-      ) : rows.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-center text-sm text-neutral-400">
-          まだ研究概要は登録されていません。必要になったところから書き始めてください。
-        </div>
-      ) : (
-        <div className="mt-5 space-y-5">
-          {rows.map((row) => (
-            <ResearchSummaryCard
-              key={row.id}
-              row={row}
-              onPatch={patchRow}
-              onRowsChange={setRows}
-              onError={setErrorMessage}
-              onDelete={deleteSummary}
-            />
-          ))}
-        </div>
-      )}
+      </section>
 
-      <div className="mt-4 text-right text-xs text-neutral-400">
-        {rows.length} / {MAX_SUMMARIES} 件
-      </div>
-    </section>
+      <CppPublicationsAndAppealEditor userId={userId} />
+    </>
   );
 }
 
