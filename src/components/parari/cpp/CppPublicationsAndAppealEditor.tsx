@@ -486,7 +486,7 @@ function PublicationCard({
             <label className="block text-sm font-semibold text-neutral-900">年</label>
             <input
               type="number"
-              min={1800}
+              min={1900}
               max={new Date().getFullYear() + 5}
               value={row.publication_year ?? ""}
               onChange={(event) =>
