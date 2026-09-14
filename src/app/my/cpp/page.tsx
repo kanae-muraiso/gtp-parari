@@ -57,7 +57,7 @@ export default function CppWorkbookPage() {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      setErrorMessage("CPP WORKBOOKを使うにはログインが必要です。");
+      setErrorMessage("");
       setLoading(false);
       return;
     }
@@ -227,9 +227,23 @@ export default function CppWorkbookPage() {
             </div>
           ) : null}
 
-          {loading || !userId ? (
+          {loading ? (
             <div className="mt-5 rounded-3xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500 shadow-sm">
               CPP WORKBOOKを読み込んでいます...
+            </div>
+          ) : !userId ? (
+            <div className="mt-5 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+              <h2 className="text-lg font-bold text-neutral-950">Preview側でログインしてください</h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">
+                このPreviewは parari.app とは別ドメインのため、本番サイトのログイン状態は引き継がれません。
+                一度このPreview上でPARARIにログインすると、CPP WORKBOOKを確認できます。
+              </p>
+              <Link
+                href="/login?next=/my/cpp"
+                className="mt-5 inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+              >
+                Previewでログインする
+              </Link>
             </div>
           ) : (
             <div className="mt-5 space-y-5">
