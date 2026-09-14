@@ -1,38 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
-
-type SectionKey = "company" | "research" | "positions" | "recruitments" | "materials";
-type DisplayStyle = "standard" | "cards" | "featured" | "compact";
-type RecruitmentDisplayMode = "integrated" | "separate" | "hybrid";
-type PresentationType = "position_first" | "researcher_first" | "research_first" | "culture_first" | "challenge_first";
+import {
+  CPP_COMPANY_PAGE_TEMPLATES,
+  CPP_COMPANY_PRESENTATION_TYPES,
+  getCppCompanyTemplate,
+  layoutFromCppCompanyTemplate,
+  type CppCompanyPresentationType,
+} from "@/lib/cpp/companyPageTemplates";
+import type { CppCompanyDisplayStyle, CppCompanySectionKey, CppRecruitmentDisplayMode } from "@/lib/cpp/companyPublicTypes";
 
 type LayoutRow = {
   company_id: string;
-  section_key: SectionKey;
+  section_key: CppCompanySectionKey;
   is_visible: boolean;
-  display_style: DisplayStyle;
+  display_style: CppCompanyDisplayStyle;
   sort_order: number;
 };
 
 type CompanyRow = {
   id: string;
   name: string;
-  presentation_type: PresentationType | null;
-  recruitment_display_mode: RecruitmentDisplayMode;
+  presentation_type: CppCompanyPresentationType | null;
+  recruitment_display_mode: CppRecruitmentDisplayMode;
 };
 
-type Counts = {
-  company: number;
-  research: number;
-  positions: number;
-  recruitments: number;
-  materials: number;
-};
+type Counts = Record<CppCompanySectionKey, number>;
 
-const SECTION_META: Record<SectionKey, { label: string; description: string }> = {
+const SECTION_META: Record<CppCompanySectionKey, { label: string; description: string }> = {
   company: { label: "会社紹介", description: "会社概要・文化・メッセージ" },
   research: { label: "研究・技術", description: "研究領域・技術・研究課題" },
   positions: { label: "ポジション", description: "継続して求める研究者像" },
@@ -40,36 +37,18 @@ const SECTION_META: Record<SectionKey, { label: string; description: string }> =
   materials: { label: "資料", description: "PDF・動画・外部資料" },
 };
 
-const STYLE_LABEL: Record<DisplayStyle, string> = {
+const STYLE_LABEL: Record<CppCompanyDisplayStyle, string> = {
   standard: "標準",
   cards: "カード",
   featured: "大きく表示",
   compact: "コンパクト",
 };
 
-const MODE_LABEL: Record<RecruitmentDisplayMode, string> = {
+const MODE_LABEL: Record<CppRecruitmentDisplayMode, string> = {
   integrated: "合体型：会社ページ内に募集詳細まで表示",
   separate: "分離型：募集は独立ページで表示",
   hybrid: "ハイブリッド型：会社ページに要約、詳細は独立ページ",
 };
-
-const TEMPLATE_LABEL: Record<PresentationType, string> = {
-  position_first: "募集ポジション型",
-  researcher_first: "求める研究者型",
-  research_first: "研究・技術型",
-  culture_first: "会社・文化型",
-  challenge_first: "ベンチャー・挑戦型",
-};
-
-const TEMPLATE_ORDER: Record<PresentationType, SectionKey[]> = {
-  position_first: ["recruitments", "positions", "company", "research", "materials"],
-  researcher_first: ["positions", "research", "company", "recruitments", "materials"],
-  research_first: ["research", "company", "positions", "recruitments", "materials"],
-  culture_first: ["company", "research", "positions", "recruitments", "materials"],
-  challenge_first: ["company", "research", "positions", "materials", "recruitments"],
-};
-
-const DEFAULT_ORDER: SectionKey[] = ["company", "research", "positions", "recruitments", "materials"];
 
 export default function CppCompanyLayoutPage() {
   const supabase = useMemo(() => sharedSupabase, []);
@@ -80,6 +59,7 @@ export default function CppCompanyLayoutPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const queryTemplateApplied = useRef(false);
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -126,31 +106,21 @@ export default function CppCompanyLayoutPage() {
       return;
     }
 
-    let loadedRows = (layoutResult.data ?? []) as LayoutRow[];
-    if (loadedRows.length === 0) {
-      const defaults = DEFAULT_ORDER.map((section_key, sort_order) => ({
+    const loadedCompany = companyResult.data;
+    const loadedLayout = (layoutResult.data ?? []) as LayoutRow[];
+    const initialLayout = loadedLayout.length > 0
+      ? loadedLayout
+      : layoutFromCppCompanyTemplate(loadedCompany.presentation_type).map((row) => ({
         company_id: companyId,
-        section_key,
-        is_visible: true,
-        display_style: "standard" as DisplayStyle,
-        sort_order,
+        section_key: row.sectionKey,
+        is_visible: row.isVisible,
+        display_style: row.displayStyle,
+        sort_order: row.sortOrder,
       }));
-      const { data, error } = await supabase
-        .from("cpp_company_page_sections")
-        .upsert(defaults, { onConflict: "company_id,section_key" })
-        .select("company_id, section_key, is_visible, display_style, sort_order")
-        .order("sort_order", { ascending: true });
-      if (error) {
-        setErrorMessage(`ページ構成の初期化に失敗しました: ${error.message}`);
-        setLoading(false);
-        return;
-      }
-      loadedRows = (data ?? []) as LayoutRow[];
-    }
-
     const blocks = (blockResult.data ?? []) as Array<{ id: string; kind: string }>;
-    setCompany(companyResult.data);
-    setRows(loadedRows);
+
+    setCompany(loadedCompany);
+    setRows(initialLayout);
     setCounts({
       company: blocks.filter((row) => row.kind !== "research").length,
       research: blocks.filter((row) => row.kind === "research").length,
@@ -165,8 +135,26 @@ export default function CppCompanyLayoutPage() {
     void load();
   }, [load]);
 
-  const patchRow = (key: SectionKey, patch: Partial<LayoutRow>) => {
-    setRows((current) => current.map((row) => (row.section_key === key ? { ...row, ...patch } : row)));
+  useEffect(() => {
+    if (!company || rows.length === 0 || queryTemplateApplied.current || typeof window === "undefined") return;
+    queryTemplateApplied.current = true;
+    const requested = new URLSearchParams(window.location.search).get("template");
+    if (!requested || !(requested in CPP_COMPANY_PAGE_TEMPLATES)) return;
+    const type = requested as CppCompanyPresentationType;
+    const template = CPP_COMPANY_PAGE_TEMPLATES[type];
+    setCompany((current) => current ? { ...current, presentation_type: type, recruitment_display_mode: template.recruitmentDisplayMode } : current);
+    setRows(layoutFromCppCompanyTemplate(type).map((row) => ({
+      company_id: company.id,
+      section_key: row.sectionKey,
+      is_visible: row.isVisible,
+      display_style: row.displayStyle,
+      sort_order: row.sortOrder,
+    })));
+    setMessage(`「${template.label}」を読み込みました。保存すると確定します。`);
+  }, [company, rows.length]);
+
+  const patchRow = (key: CppCompanySectionKey, patch: Partial<LayoutRow>) => {
+    setRows((current) => current.map((row) => row.section_key === key ? { ...row, ...patch } : row));
     setMessage("");
   };
 
@@ -181,15 +169,18 @@ export default function CppCompanyLayoutPage() {
     setMessage("");
   };
 
-  const applyTemplate = (type: PresentationType) => {
-    const order = TEMPLATE_ORDER[type];
-    const currentByKey = Object.fromEntries(rows.map((row) => [row.section_key, row])) as Record<SectionKey, LayoutRow>;
-    setRows(order.map((key, sort_order) => ({
-      ...(currentByKey[key] ?? { company_id: company?.id ?? "", section_key: key, is_visible: true, display_style: "standard" as DisplayStyle, sort_order }),
-      sort_order,
+  const applyTemplate = (type: CppCompanyPresentationType) => {
+    if (!company) return;
+    const template = CPP_COMPANY_PAGE_TEMPLATES[type];
+    setCompany({ ...company, presentation_type: type, recruitment_display_mode: template.recruitmentDisplayMode });
+    setRows(layoutFromCppCompanyTemplate(type).map((row) => ({
+      company_id: company.id,
+      section_key: row.sectionKey,
+      is_visible: row.isVisible,
+      display_style: row.displayStyle,
+      sort_order: row.sortOrder,
     })));
-    setCompany((current) => (current ? { ...current, presentation_type: type } : current));
-    setMessage("ひな形の並びを反映しました。保存すると確定します。");
+    setMessage(`「${template.label}」の構成を反映しました。保存すると確定します。`);
   };
 
   const save = async () => {
@@ -222,7 +213,7 @@ export default function CppCompanyLayoutPage() {
       return;
     }
     setRows(normalized as LayoutRow[]);
-    setMessage("ページ構成を保存しました");
+    setMessage("ページ構成を保存しました。プレビューにも同じ構成が反映されます。");
   };
 
   if (loading) return <Centered>ページ構成を読み込んでいます…</Centered>;
@@ -230,11 +221,16 @@ export default function CppCompanyLayoutPage() {
   if (!company) {
     return (
       <Centered>
-        <div>CPPの企業登録が必要です。</div>
-        <Link href="/cpp/company/try" className="mt-5 inline-block rounded-full bg-neutral-900 px-5 py-3 font-bold text-white">企業登録へ</Link>
+        <div>表示できるCPP企業がありません。</div>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Link href="/cpp/company/try" className="rounded-full bg-neutral-900 px-5 py-3 font-bold text-white">企業登録へ</Link>
+          <Link href="/my/cpp/consultant" className="rounded-full border border-neutral-300 px-5 py-3 font-bold text-neutral-700">担当企業を見る</Link>
+        </div>
       </Centered>
     );
   }
+
+  const selectedTemplate = getCppCompanyTemplate(company.presentation_type);
 
   return (
     <main className="min-h-screen bg-neutral-50 px-4 py-8 sm:px-6 sm:py-10">
@@ -243,33 +239,40 @@ export default function CppCompanyLayoutPage() {
           <div>
             <div className="text-xs font-bold tracking-[0.2em] text-neutral-400">CPP COMPANY WORKBOOK</div>
             <h1 className="mt-1 text-2xl font-bold text-neutral-950">ページ構成</h1>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">入力済みの会社情報を、公開ページでどう見せるかだけを決めます。元データは変更しません。</p>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">入力済みの情報はそのままに、公開ページで何を先に見せるかを決めます。</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/my/cpp/company" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700">← WORKBOOKへ</Link>
+            <Link href="/my/cpp/company" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700">← WORKBOOK</Link>
+            <Link href="/my/cpp/company/support" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700">コンサルタント</Link>
             <Link href="/my/cpp/company/preview" className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white">掲載プレビュー →</Link>
           </div>
         </header>
 
         {errorMessage ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div> : null}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2 className="text-lg font-bold text-neutral-950">1. ひな形を選ぶ</h2>
-              <p className="mt-2 text-sm leading-6 text-neutral-500">ひな形は初期の並び方です。選んだあと自由に変えられます。</p>
+              <h2 className="text-lg font-bold text-neutral-950">1. 5つのひな形から始める</h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-500">ひな形は固定デザインではありません。選んだ後で、順番・表示・スタイルを自由に変えられます。</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {(Object.keys(TEMPLATE_LABEL) as PresentationType[]).map((type) => (
-                  <button key={type} type="button" onClick={() => applyTemplate(type)} className={`rounded-2xl border px-4 py-4 text-left transition ${company.presentation_type === type ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white hover:bg-neutral-50"}`}>
-                    <div className="text-sm font-bold">{TEMPLATE_LABEL[type]}</div>
-                    <div className={`mt-1 text-xs ${company.presentation_type === type ? "text-neutral-300" : "text-neutral-400"}`}>この並びを出発点にする</div>
-                  </button>
-                ))}
+                {CPP_COMPANY_PRESENTATION_TYPES.map((type) => {
+                  const template = CPP_COMPANY_PAGE_TEMPLATES[type];
+                  const selected = company.presentation_type === type;
+                  return (
+                    <button key={type} type="button" onClick={() => applyTemplate(type)} className={`rounded-2xl border p-5 text-left transition ${selected ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white hover:bg-neutral-50"}`}>
+                      <div className="text-sm font-bold">{template.label}</div>
+                      <div className={`mt-1 text-xs font-semibold ${selected ? "text-neutral-300" : "text-neutral-500"}`}>{template.shortLabel}</div>
+                      <p className={`mt-3 text-xs leading-6 ${selected ? "text-neutral-300" : "text-neutral-500"}`}>{template.description}</p>
+                      <div className={`mt-3 text-[11px] leading-5 ${selected ? "text-neutral-400" : "text-neutral-400"}`}>{template.sections.filter((section) => section.visible).map((section) => SECTION_META[section.key].label).join(" → ")}</div>
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
             <section className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2 className="text-lg font-bold text-neutral-950">2. 並び順と表示方法</h2>
+              <h2 className="text-lg font-bold text-neutral-950">2. 並び順と見せ方を調整</h2>
               <div className="mt-5 space-y-3">
                 {rows.map((row, index) => {
                   const meta = SECTION_META[row.section_key];
@@ -285,10 +288,10 @@ export default function CppCompanyLayoutPage() {
                           <div className="mt-1 text-xs text-neutral-400">{meta.description} · {counts[row.section_key]}件</div>
                         </div>
                         <label className="flex items-center gap-2 text-xs font-semibold text-neutral-600">
-                          <input type="checkbox" checked={row.is_visible} onChange={(event) => patchRow(row.section_key, { is_visible: event.target.checked })} />表示する
+                          <input type="checkbox" checked={row.is_visible} onChange={(event) => patchRow(row.section_key, { is_visible: event.target.checked })} />表示
                         </label>
-                        <select value={row.display_style} onChange={(event) => patchRow(row.section_key, { display_style: event.target.value as DisplayStyle })} className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs">
-                          {(Object.keys(STYLE_LABEL) as DisplayStyle[]).map((style) => <option key={style} value={style}>{STYLE_LABEL[style]}</option>)}
+                        <select value={row.display_style} onChange={(event) => patchRow(row.section_key, { display_style: event.target.value as CppCompanyDisplayStyle })} className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700">
+                          {(Object.keys(STYLE_LABEL) as CppCompanyDisplayStyle[]).map((style) => <option key={style} value={style}>{STYLE_LABEL[style]}</option>)}
                         </select>
                       </div>
                     </div>
@@ -299,11 +302,11 @@ export default function CppCompanyLayoutPage() {
 
             <section className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-lg font-bold text-neutral-950">3. 募集の見せ方</h2>
-              <div className="mt-4 space-y-3">
-                {(Object.keys(MODE_LABEL) as RecruitmentDisplayMode[]).map((mode) => (
-                  <label key={mode} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${company.recruitment_display_mode === mode ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"}`}>
-                    <input type="radio" name="recruitment-mode" checked={company.recruitment_display_mode === mode} onChange={() => setCompany((current) => current ? { ...current, recruitment_display_mode: mode } : current)} className="mt-1" />
-                    <div className="text-sm font-semibold text-neutral-800">{MODE_LABEL[mode]}</div>
+              <div className="mt-4 space-y-2">
+                {(Object.keys(MODE_LABEL) as CppRecruitmentDisplayMode[]).map((mode) => (
+                  <label key={mode} className={`flex cursor-pointer gap-3 rounded-2xl border p-4 ${company.recruitment_display_mode === mode ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"}`}>
+                    <input type="radio" name="recruitment-mode" checked={company.recruitment_display_mode === mode} onChange={() => setCompany({ ...company, recruitment_display_mode: mode })} />
+                    <span className="text-sm font-semibold text-neutral-800">{MODE_LABEL[mode]}</span>
                   </label>
                 ))}
               </div>
@@ -311,23 +314,29 @@ export default function CppCompanyLayoutPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" onClick={() => void save()} disabled={saving} className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{saving ? "保存中…" : "ページ構成を保存"}</button>
-              <span className="text-xs font-semibold text-neutral-500">{message}</span>
+              {message ? <span className="text-sm font-semibold text-neutral-600">{message}</span> : null}
             </div>
           </div>
 
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <div className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-sm">
-              <div className="border-b border-neutral-100 px-5 py-4">
-                <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">LIVE STRUCTURE PREVIEW</div>
-                <div className="mt-1 font-bold text-neutral-900">{company.name}</div>
-              </div>
-              <div className="space-y-3 bg-neutral-100 p-4">
-                <PreviewBlock label="会社名・ロゴ・タグライン" style="featured" count={1} />
-                {rows.filter((row) => row.is_visible).map((row) => (
-                  <PreviewBlock key={row.section_key} label={SECTION_META[row.section_key].label} style={row.display_style} count={counts[row.section_key]} note={row.section_key === "recruitments" ? MODE_LABEL[company.recruitment_display_mode].split("：")[0] : undefined} />
+            <div className="rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm">
+              <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">CURRENT TEMPLATE</div>
+              <h2 className="mt-2 text-xl font-bold text-neutral-950">{selectedTemplate.label}</h2>
+              <p className="mt-3 text-sm leading-7 text-neutral-600">{selectedTemplate.recommendedFor}</p>
+              <div className="mt-6 space-y-2">
+                {rows.filter((row) => row.is_visible).sort((a, b) => a.sort_order - b.sort_order).map((row, index) => (
+                  <div key={row.section_key} className="flex items-center gap-3 rounded-xl bg-neutral-50 px-4 py-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">{index + 1}</span>
+                    <div className="flex-1 text-sm font-bold text-neutral-800">{SECTION_META[row.section_key].label}</div>
+                    <div className="text-[10px] font-semibold text-neutral-400">{STYLE_LABEL[row.display_style]}</div>
+                  </div>
                 ))}
               </div>
-              <div className="px-5 py-4 text-[11px] leading-5 text-neutral-400">これは構造確認用の簡易プレビューです。実際の文章・画像を含む最終プレビューは「掲載プレビュー」で確認します。</div>
+              <div className="mt-6 rounded-2xl bg-neutral-900 p-5 text-white">
+                <div className="text-xs font-bold text-neutral-400">PREVIEW</div>
+                <p className="mt-2 text-sm leading-6 text-neutral-300">保存後、実際のCOMPANY WORKBOOKの内容をこの構成で確認できます。</p>
+                <Link href="/my/cpp/company/preview" className="mt-4 inline-block rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900">掲載プレビューを見る →</Link>
+              </div>
             </div>
           </aside>
         </div>
@@ -336,21 +345,10 @@ export default function CppCompanyLayoutPage() {
   );
 }
 
-function PreviewBlock({ label, style, count, note }: { label: string; style: DisplayStyle; count: number; note?: string }) {
-  const sizeClass = style === "featured" ? "min-h-28" : style === "compact" ? "min-h-12" : style === "cards" ? "min-h-20" : "min-h-16";
-  return (
-    <div className={`rounded-2xl border border-neutral-200 bg-white p-4 ${sizeClass}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-bold text-neutral-900">{label}</div>
-          <div className="mt-1 text-[11px] text-neutral-400">{STYLE_LABEL[style]} · {count}件{note ? ` · ${note}` : ""}</div>
-        </div>
-        {style === "cards" ? <div className="grid grid-cols-2 gap-1"><span className="h-5 w-8 rounded bg-neutral-100"/><span className="h-5 w-8 rounded bg-neutral-100"/></div> : null}
-      </div>
-    </div>
-  );
-}
-
 function Centered({ children }: { children: React.ReactNode }) {
-  return <main className="min-h-screen bg-neutral-50 px-4 py-16"><div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div></main>;
+  return (
+    <main className="min-h-screen bg-neutral-50 px-4 py-16">
+      <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div>
+    </main>
+  );
 }
