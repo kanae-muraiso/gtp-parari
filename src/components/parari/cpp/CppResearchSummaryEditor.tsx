@@ -1,11 +1,12 @@
 // src/components/parari/cpp/CppResearchSummaryEditor.tsx
-// CPP WORKBOOK - research summaries (max 3) + PDF
+// CPP WORKBOOK - rich research summaries (max 3) + PDF
 // 2026-09-14
 
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
+import CppRichContentEditor from "@/components/parari/cpp/CppRichContentEditor";
 import CppPublicationsAndAppealEditor from "@/components/parari/cpp/CppPublicationsAndAppealEditor";
 
 type ResearchSummaryRow = {
@@ -25,9 +26,7 @@ type LocalResearchSummaryRow = ResearchSummaryRow & {
   pdfUploading?: boolean;
 };
 
-type Props = {
-  userId: string | null;
-};
+type Props = { userId: string | null };
 
 const MAX_SUMMARIES = 3;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
@@ -45,23 +44,17 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
     }
 
     setLoading(true);
-    setErrorMessage("");
-
     const { data, error } = await supabase
       .from("cpp_research_summaries")
-      .select(
-        "id, user_id, slot, title, body, pdf_path, pdf_name, is_in_progress",
-      )
+      .select("id, user_id, slot, title, body, pdf_path, pdf_name, is_in_progress")
       .eq("user_id", userId)
       .order("slot", { ascending: true });
 
     if (error) {
       setErrorMessage(`研究概要の取得に失敗しました: ${error.message}`);
-      setLoading(false);
-      return;
+    } else {
+      setRows((data ?? []) as ResearchSummaryRow[]);
     }
-
-    setRows((data ?? []) as ResearchSummaryRow[]);
     setLoading(false);
   }, [supabase, userId]);
 
@@ -70,28 +63,16 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
   }, [loadRows]);
 
   const addSummary = useCallback(async () => {
-    if (!supabase || !userId || rows.length >= MAX_SUMMARIES) {
-      return;
-    }
+    if (!supabase || !userId || rows.length >= MAX_SUMMARIES) return;
 
     const usedSlots = new Set(rows.map((row) => row.slot));
     const slot = [1, 2, 3].find((candidate) => !usedSlots.has(candidate));
-    if (!slot) {
-      return;
-    }
-
-    setErrorMessage("");
+    if (!slot) return;
 
     const { data, error } = await supabase
       .from("cpp_research_summaries")
-      .insert({
-        user_id: userId,
-        slot,
-        is_in_progress: true,
-      })
-      .select(
-        "id, user_id, slot, title, body, pdf_path, pdf_name, is_in_progress",
-      )
+      .insert({ user_id: userId, slot, is_in_progress: true })
+      .select("id, user_id, slot, title, body, pdf_path, pdf_name, is_in_progress")
       .single<ResearchSummaryRow>();
 
     if (error || !data) {
@@ -102,7 +83,7 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
     }
 
     setRows((current) =>
-      [...current, { ...data, saveState: "saved" as const }].sort(
+      [...current, { ...data, saveState: "saved", saveMessage: "追加しました" }].sort(
         (a, b) => a.slot - b.slot,
       ),
     );
@@ -113,12 +94,7 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
       setRows((current) =>
         current.map((row) =>
           row.id === rowId
-            ? {
-                ...row,
-                ...patch,
-                saveState: "idle",
-                saveMessage: undefined,
-              }
+            ? { ...row, ...patch, saveState: "idle", saveMessage: undefined }
             : row,
         ),
       );
@@ -128,24 +104,9 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
 
   const deleteSummary = useCallback(
     async (row: LocalResearchSummaryRow) => {
-      if (!supabase || !userId) {
-        return;
-      }
-
+      if (!supabase || !userId) return;
       const previous = rows;
       setRows((current) => current.filter((item) => item.id !== row.id));
-
-      if (row.pdf_path) {
-        const { error: storageError } = await supabase.storage
-          .from("cpp-documents")
-          .remove([row.pdf_path]);
-
-        if (storageError) {
-          setRows(previous);
-          setErrorMessage(`PDFの削除に失敗しました: ${storageError.message}`);
-          return;
-        }
-      }
 
       const { error } = await supabase
         .from("cpp_research_summaries")
@@ -156,6 +117,11 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
       if (error) {
         setRows(previous);
         setErrorMessage(`研究概要の削除に失敗しました: ${error.message}`);
+        return;
+      }
+
+      if (row.pdf_path) {
+        await supabase.storage.from("cpp-documents").remove([row.pdf_path]);
       }
     },
     [rows, supabase, userId],
@@ -168,15 +134,14 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
           <div>
             <h2 className="text-base font-bold text-neutral-950">研究概要</h2>
             <p className="mt-1 text-xs leading-5 text-neutral-500">
-              研究テーマは最大3件まで登録できます。図表や研究紹介資料はPDFで添付できます。
+              最大3件。PARARIの文章編集に画像・YouTubeを加えられ、研究資料PDFも添付できます。
             </p>
           </div>
-
           <button
             type="button"
             onClick={() => void addSummary()}
             disabled={!userId || rows.length >= MAX_SUMMARIES}
-            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:opacity-40"
           >
             ＋研究概要を追加
           </button>
@@ -189,12 +154,10 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
         ) : null}
 
         {loading ? (
-          <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4 text-sm text-neutral-400">
-            読み込んでいます...
-          </div>
+          <div className="mt-5 text-sm text-neutral-400">読み込んでいます...</div>
         ) : rows.length === 0 ? (
           <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-center text-sm text-neutral-400">
-            まだ研究概要は登録されていません。必要になったところから書き始めてください。
+            まだ研究概要は登録されていません。
           </div>
         ) : (
           <div className="mt-5 space-y-5">
@@ -243,14 +206,8 @@ function ResearchSummaryCard({
       firstRenderRef.current = false;
       return;
     }
-
-    if (!supabase || row.saveState === "saving" || row.saveState === "saved") {
-      return;
-    }
-
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
+    if (!supabase || row.saveState === "saving" || row.saveState === "saved") return;
+    if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(async () => {
       onRowsChange((current) =>
@@ -265,7 +222,7 @@ function ResearchSummaryCard({
         .from("cpp_research_summaries")
         .update({
           title: cleanText(row.title),
-          body: cleanText(row.body),
+          body: cleanRichContent(row.body),
           is_in_progress: row.is_in_progress,
           updated_at: new Date().toISOString(),
         })
@@ -286,29 +243,22 @@ function ResearchSummaryCard({
     }, 700);
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [row, onRowsChange, supabase]);
 
   const uploadPdf = useCallback(
     async (file: File) => {
-      if (!supabase) {
-        return;
-      }
-
+      if (!supabase) return;
       if (file.type !== "application/pdf") {
         onError("研究資料にはPDFファイルを選択してください。");
         return;
       }
-
       if (file.size > MAX_PDF_BYTES) {
         onError("PDFは20MB以下にしてください。");
         return;
       }
 
-      onError("");
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id ? { ...item, pdfUploading: true } : item,
@@ -336,21 +286,12 @@ function ResearchSummaryCard({
 
       const { error: dbError } = await supabase
         .from("cpp_research_summaries")
-        .update({
-          pdf_path: path,
-          pdf_name: file.name,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ pdf_path: path, pdf_name: file.name, updated_at: new Date().toISOString() })
         .eq("id", row.id)
         .eq("user_id", row.user_id);
 
       if (dbError) {
         await supabase.storage.from("cpp-documents").remove([path]);
-        onRowsChange((current) =>
-          current.map((item) =>
-            item.id === row.id ? { ...item, pdfUploading: false } : item,
-          ),
-        );
         onError(`PDF情報の保存に失敗しました: ${dbError.message}`);
         return;
       }
@@ -378,57 +319,32 @@ function ResearchSummaryCard({
   );
 
   const removePdf = useCallback(async () => {
-    if (!supabase || !row.pdf_path) {
-      return;
-    }
+    if (!supabase || !row.pdf_path) return;
 
-    onError("");
-
-    const { error: dbError } = await supabase
+    const oldPath = row.pdf_path;
+    const { error } = await supabase
       .from("cpp_research_summaries")
-      .update({
-        pdf_path: null,
-        pdf_name: null,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ pdf_path: null, pdf_name: null, updated_at: new Date().toISOString() })
       .eq("id", row.id)
       .eq("user_id", row.user_id);
 
-    if (dbError) {
-      onError(`PDF情報の削除に失敗しました: ${dbError.message}`);
+    if (error) {
+      onError(`PDF情報の削除に失敗しました: ${error.message}`);
       return;
     }
 
-    const { error: storageError } = await supabase.storage
-      .from("cpp-documents")
-      .remove([row.pdf_path]);
-
-    if (storageError) {
-      onError(`PDFファイルの削除に失敗しました: ${storageError.message}`);
-      return;
-    }
-
+    await supabase.storage.from("cpp-documents").remove([oldPath]);
     onRowsChange((current) =>
       current.map((item) =>
         item.id === row.id
-          ? {
-              ...item,
-              pdf_path: null,
-              pdf_name: null,
-              saveState: "saved",
-              saveMessage: "PDFを削除しました",
-            }
+          ? { ...item, pdf_path: null, pdf_name: null, saveState: "saved", saveMessage: "PDFを削除しました" }
           : item,
       ),
     );
   }, [onError, onRowsChange, row, supabase]);
 
   const openPdf = useCallback(async () => {
-    if (!supabase || !row.pdf_path) {
-      return;
-    }
-
-    onError("");
+    if (!supabase || !row.pdf_path) return;
     const { data, error } = await supabase.storage
       .from("cpp-documents")
       .createSignedUrl(row.pdf_path, 60 * 10);
@@ -437,7 +353,6 @@ function ResearchSummaryCard({
       onError(`PDFを開けませんでした: ${error?.message ?? "unknown error"}`);
       return;
     }
-
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }, [onError, row.pdf_path, supabase]);
 
@@ -450,15 +365,12 @@ function ResearchSummaryCard({
           </span>
           <div className="text-sm font-bold text-neutral-900">研究概要 {row.slot}</div>
         </div>
-
         <div className="flex items-center gap-3">
           <RowSaveState row={row} />
           <button
             type="button"
             onClick={() => {
-              if (window.confirm("この研究概要を削除しますか？")) {
-                void onDelete(row);
-              }
+              if (window.confirm("この研究概要を削除しますか？")) void onDelete(row);
             }}
             className="text-xs font-semibold text-neutral-400 hover:text-red-600"
           >
@@ -480,26 +392,23 @@ function ResearchSummaryCard({
 
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-neutral-900">研究概要</label>
-          <textarea
+          <CppRichContentEditor
             value={row.body ?? ""}
-            onChange={(event) => onPatch(row.id, { body: event.target.value })}
-            className="min-h-48 w-full resize-y rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm leading-7 outline-none transition focus:border-neutral-600"
+            onChange={(next) => onPatch(row.id, { body: next })}
             placeholder="研究の背景、目的、方法、分かったこと、今後の展開などを自由に書いてください。"
           />
         </div>
 
         <div className="rounded-2xl border border-neutral-200 bg-white p-4">
           <div className="text-sm font-semibold text-neutral-900">研究資料（PDF）</div>
-          <p className="mt-1 text-xs leading-5 text-neutral-500">
-            図表1枚でも、数ページの研究紹介資料でも構いません。20MBまで。
-          </p>
+          <p className="mt-1 text-xs leading-5 text-neutral-500">図表や研究紹介資料を1本添付できます。20MBまで。</p>
 
           {row.pdf_path ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => void openPdf()}
-                className="max-w-full truncate rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-neutral-50"
+                className="rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-neutral-50"
               >
                 {row.pdf_name ?? "研究資料.pdf"} を見る
               </button>
@@ -512,9 +421,7 @@ function ResearchSummaryCard({
                   disabled={row.pdfUploading}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
-                    if (file) {
-                      void uploadPdf(file);
-                    }
+                    if (file) void uploadPdf(file);
                     event.currentTarget.value = "";
                   }}
                 />
@@ -537,9 +444,7 @@ function ResearchSummaryCard({
                 disabled={row.pdfUploading}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) {
-                    void uploadPdf(file);
-                  }
+                  if (file) void uploadPdf(file);
                   event.currentTarget.value = "";
                 }}
               />
@@ -551,9 +456,7 @@ function ResearchSummaryCard({
           <input
             type="checkbox"
             checked={row.is_in_progress}
-            onChange={(event) =>
-              onPatch(row.id, { is_in_progress: event.target.checked })
-            }
+            onChange={(event) => onPatch(row.id, { is_in_progress: event.target.checked })}
             className="mt-1"
           />
           <span>
@@ -569,10 +472,7 @@ function ResearchSummaryCard({
 }
 
 function RowSaveState({ row }: { row: LocalResearchSummaryRow }) {
-  if (!row.saveState || row.saveState === "idle") {
-    return null;
-  }
-
+  if (!row.saveState || row.saveState === "idle") return null;
   const className =
     row.saveState === "error"
       ? "text-red-600"
@@ -582,14 +482,20 @@ function RowSaveState({ row }: { row: LocalResearchSummaryRow }) {
 
   return (
     <span className={`text-[11px] font-semibold ${className}`}>
-      {row.saveMessage ?? (row.saveState === "saving" ? "保存中..." : "保存しました")}
+      {row.saveMessage ?? "保存しました"}
     </span>
   );
 }
 
-function cleanText(value: string | null): string | null {
-  const trimmed = value?.trim() ?? "";
+function cleanText(value: string | null | undefined): string | null {
+  const trimmed = String(value ?? "").trim();
   return trimmed || null;
+}
+
+function cleanRichContent(value: string | null | undefined): string | null {
+  const source = String(value ?? "");
+  const visible = source.replace(/\u200B|\uFEFF/g, "").trim();
+  return visible ? source : null;
 }
 
 const inputClassName =
