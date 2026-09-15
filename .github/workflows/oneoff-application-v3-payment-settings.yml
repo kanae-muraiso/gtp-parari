@@ -1,0 +1,228 @@
+name: oneoff-application-v3-payment-settings
+
+on:
+  push:
+    branches:
+      - feature/application-v3-payment-settings
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/application-v3-payment-settings
+          fetch-depth: 0
+
+      - name: Patch APPLICATION payment settings
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/components/parari/settings/ApplicationManager.tsx')
+          text = path.read_text()
+
+          old = '''  async function handleSave() {
+    const normalizedTitle =
+      title.trim();'''
+          new = '''  const usesCalendarPricing =
+    applicationMode === "builder" &&
+    blocks.some(
+      (block) => block.type === "calendar",
+    );
+
+  async function handleSave() {
+    const normalizedTitle =
+      title.trim();'''
+          assert old in text, 'handleSave anchor not found'
+          text = text.replace(old, new, 1)
+
+          old = '''      if (
+        paymentMethod !== "none"
+      ) {'''
+          new = '''      if (
+        paymentMethod !== "none" &&
+        !usesCalendarPricing
+      ) {'''
+          assert old in text, 'payment validation anchor not found'
+          text = text.replace(old, new, 1)
+
+          old = '''                  paymentAmount:
+                    paymentMethod ===
+                    "none"
+                      ? null
+                      : Number(
+                          normalizedPaymentAmount,
+                        ),'''
+          new = '''                  paymentAmount:
+                    paymentMethod ===
+                      "none" ||
+                    usesCalendarPricing
+                      ? null
+                      : Number(
+                          normalizedPaymentAmount,
+                        ),'''
+          assert old in text, 'payment body anchor not found'
+          text = text.replace(old, new, 1)
+
+          old = '''                        <p className="mt-1 text-xs leading-5 text-neutral-500">
+                          支払方法は主催者が自由に決められます。
+                          PARARIでは支払状況を管理します。
+                        </p>'''
+          new = '''                        <p className="mt-1 text-xs leading-5 text-neutral-500">
+                          無料、現地払い、PARARI決済から選びます。
+                          PARARI決済はSquare連携後に利用できます。
+                        </p>'''
+          assert old in text, 'payment intro anchor not found'
+          text = text.replace(old, new, 1)
+
+          old = '''                            <option value="none">
+                              {canUseExtendedApplication
+                                ? "支払不要"
+                                : "支払リンクなし"}
+                            </option>
+
+                            <option value="on_site">
+                              当日払い
+                            </option>
+
+                            <option value="bank_transfer">
+                              銀行振込
+                            </option>
+
+                            {canUseExtendedApplication ? (
+                            <option value="payment_link">
+                              支払リンク
+                            </option>
+                          ) : null}'''
+          new = '''                            <option value="none">
+                              無料
+                            </option>
+
+                            <option value="on_site">
+                              現地払い
+                            </option>
+
+                            {paymentMethod ===
+                            "bank_transfer" ? (
+                              <option value="bank_transfer">
+                                銀行振込（旧設定）
+                              </option>
+                            ) : null}
+
+                            {paymentMethod ===
+                            "payment_link" ? (
+                              <option value="payment_link">
+                                支払リンク（旧設定）
+                              </option>
+                            ) : null}
+
+                            <option
+                              value="parari"
+                              disabled
+                            >
+                              PARARI決済（準備中）
+                            </option>'''
+          assert old in text, 'payment options anchor not found'
+          text = text.replace(old, new, 1)
+
+          old = '''                        {paymentMethod !==
+                        "none" ? (
+                          <>
+                            <div className="mt-4">
+                              <label className="block text-xs font-bold text-neutral-600">
+                                参加費
+                              </label>
+
+                              <div className="mt-2 flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  inputMode="numeric"
+                                  value={
+                                    paymentAmount
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setPaymentAmount(
+                                      event.target
+                                        .value,
+                                    )
+                                  }
+                                  placeholder="3000"
+                                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                />
+
+                                <span className="shrink-0 text-sm text-neutral-500">
+                                  円
+                                </span>
+                              </div>
+                            </div>'''
+          new = '''                        {usesCalendarPricing ? (
+                          <div className="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
+                            <div className="text-sm font-bold text-neutral-900">
+                              料金は各開催回で設定します
+                            </div>
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">
+                              CALENDARを使う募集では、APPLICATION側に参加費を重複して設定しません。
+                            </p>
+                          </div>
+                        ) : null}
+
+                        {paymentMethod !==
+                        "none" ? (
+                          <>
+                            {!usesCalendarPricing ? (
+                            <div className="mt-4">
+                              <label className="block text-xs font-bold text-neutral-600">
+                                参加費
+                              </label>
+
+                              <div className="mt-2 flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  inputMode="numeric"
+                                  value={
+                                    paymentAmount
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setPaymentAmount(
+                                      event.target
+                                        .value,
+                                    )
+                                  }
+                                  placeholder="3000"
+                                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                                />
+
+                                <span className="shrink-0 text-sm text-neutral-500">
+                                  円
+                                </span>
+                              </div>
+                            </div>
+                            ) : null}'''
+          assert old in text, 'payment amount UI anchor not found'
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+
+          workflow = Path('.github/workflows/oneoff-application-v3-payment-settings.yml')
+          workflow.unlink()
+
+      - name: Commit patched UI
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/parari/settings/ApplicationManager.tsx .github/workflows/oneoff-application-v3-payment-settings.yml
+          git commit -m "Simplify APPLICATION payment settings"
+          git push origin HEAD:feature/application-v3-payment-settings
