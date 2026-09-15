@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import useParariExperience from "@/components/parari/hooks/useParariExperience";
+import useParariExperience, {
+  notifyParariExperienceChanged,
+} from "@/components/parari/hooks/useParariExperience";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function StudioAccessPanel() {
@@ -47,6 +49,7 @@ export default function StudioAccessPanel() {
       return;
     }
 
+    notifyParariExperienceChanged();
     await reload();
     setActivating(false);
   }
