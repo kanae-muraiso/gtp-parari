@@ -74,6 +74,12 @@ type PublicApplication = {
     | "payment_link";
   payment_amount: number | null;
   payment_currency: string;
+  cancellation_mode:
+    | "not_allowed"
+    | "anytime"
+    | "until_deadline";
+  cancellation_deadline_at: string | null;
+  cancellation_cutoff_minutes: number | null;
   status: "draft" | "open" | "closed";
   version: number;
   remaining_slots: number | null;
@@ -98,7 +104,13 @@ type AnswerMap = Record<string, InputAnswer>;
 
 type GuestEntry = {
   id: string;
-  status: "submitted" | "confirmed" | "rejected";
+  cancellation_token: string;
+  status:
+    | "submitted"
+    | "confirmed"
+    | "rejected"
+    | "withdrawn"
+    | "cancelled";
   qualification_status:
     | "not_required"
     | "pending"
@@ -669,6 +681,25 @@ export default function GuestApplicationPanelRenderer({
         <GuestPaymentSummary
           entry={completedEntry}
         />
+
+        {application.cancellation_mode !== "not_allowed" &&
+        completedEntry.cancellation_token ? (
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="text-sm font-bold text-neutral-950">
+              申込の取り下げ・キャンセル
+            </div>
+            <p className="mt-2 text-xs leading-6 text-neutral-500">
+              PARARIへの登録は不要です。この専用リンクから本人の申込を変更できます。
+              後で使えるよう保存してください。
+            </p>
+            <a
+              href={"/c/" + completedEntry.cancellation_token}
+              className="mt-4 block w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-center text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
+            >
+              キャンセル専用ページを開く
+            </a>
+          </div>
+        ) : null}
       </section>
     );
   }

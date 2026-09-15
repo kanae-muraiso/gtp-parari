@@ -1,7 +1,9 @@
 type EntryStatus =
   | "submitted"
   | "confirmed"
-  | "rejected";
+  | "rejected"
+  | "withdrawn"
+  | "cancelled";
 
 type EntryPaymentStatus =
   | "not_required"
@@ -30,6 +32,10 @@ type Props = {
   isReportingPayment: boolean;
   paymentMessage: string;
   onReportPayment: () => void;
+  canCancel: boolean;
+  isCancelling: boolean;
+  cancellationMessage: string;
+  onCancel: () => void;
 };
 
 export default function ApplicationEntryStatusPanel({
@@ -39,30 +45,52 @@ export default function ApplicationEntryStatusPanel({
   isReportingPayment,
   paymentMessage,
   onReportPayment,
+  canCancel,
+  isCancelling,
+  cancellationMessage,
+  onCancel,
 }: Props) {
+  const active =
+    entry.status === "submitted" ||
+    entry.status === "confirmed";
+
+  const title =
+    entry.status === "confirmed"
+      ? "お申し込みは確定しています"
+      : entry.status === "rejected"
+        ? "今回は受付されませんでした"
+        : entry.status === "withdrawn"
+          ? "申込を取り下げました"
+          : entry.status === "cancelled"
+            ? "参加をキャンセルしました"
+            : "お申し込みを受け付けました";
+
+  const description =
+    entry.status === "confirmed"
+      ? "参加・申込が確定しています。"
+      : entry.status === "rejected"
+        ? "このAPPLICATIONへの再申込はできません。"
+        : entry.status === "withdrawn"
+          ? "この申込は取り下げ済みです。必要であれば、受付中の間は改めて申し込めます。"
+          : entry.status === "cancelled"
+            ? "この参加予約はキャンセル済みです。必要であれば、受付中の間は改めて申し込めます。"
+            : "現在、主催者の確認待ちです。";
+
   return (
     <>
       <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
         <div className="text-lg font-bold text-neutral-950">
-          {entry.status === "confirmed"
-            ? "お申し込みは確定しています"
-            : entry.status === "rejected"
-              ? "今回は受付されませんでした"
-              : "お申し込みを受け付けました"}
+          {title}
         </div>
 
         <p className="mt-2 text-sm leading-7 text-neutral-600">
-          {entry.status === "confirmed"
-            ? "参加・申込が確定しています。"
-            : entry.status === "rejected"
-              ? "このAPPLICATIONへの再申込はできません。"
-              : "現在、主催者の確認待ちです。"}
+          {description}
         </p>
       </div>
 
       {payment &&
       payment.method !== "none" &&
-      entry.status !== "rejected" ? (
+      active ? (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
           <div className="text-sm font-bold text-neutral-950">
             お支払い
@@ -143,6 +171,35 @@ export default function ApplicationEntryStatusPanel({
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {active && canCancel ? (
+        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
+          <div className="text-sm font-bold text-neutral-950">
+            申込の変更
+          </div>
+          <p className="mt-2 text-xs leading-6 text-neutral-500">
+            支払済みの場合も返金は自動では行われません。返金の可否と手続きは主催者が判断します。
+          </p>
+          <button
+            type="button"
+            disabled={isCancelling}
+            onClick={onCancel}
+            className="mt-4 w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
+          >
+            {isCancelling
+              ? "処理しています..."
+              : entry.status === "submitted"
+                ? "申込を取り下げる"
+                : "参加をキャンセルする"}
+          </button>
+        </div>
+      ) : null}
+
+      {cancellationMessage ? (
+        <p className="mt-4 rounded-xl bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-700">
+          {cancellationMessage}
+        </p>
       ) : null}
     </>
   );
