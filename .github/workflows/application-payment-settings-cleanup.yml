@@ -1,0 +1,84 @@
+name: Application payment settings cleanup
+
+on:
+  push:
+    branches:
+      - feature/application-payment-settings-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  patch-application-manager:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/application-payment-settings-cleanup
+
+      - name: Apply targeted payment UI changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('src/components/parari/settings/ApplicationManager.tsx')
+          text = path.read_text()
+
+          def replace_once(old: str, new: str, label: str):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              'import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";\nimport { supabase } from "@/lib/supabaseClient";',
+              'import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";\nimport ApplicationPaymentSettings from "@/components/parari/settings/ApplicationPaymentSettings";\nimport { supabase } from "@/lib/supabaseClient";',
+              'payment settings import',
+          )
+
+          replace_once(
+              '''\n  React.useEffect(() => {\n    if (\n      !showBuilder ||\n      applicationMode !== "lite"\n    ) {''',
+              '''\n  const hasCalendarBlock =\n    applicationMode === "builder" &&\n    blocks.some(\n      (block) =>\n        block.type === "calendar",\n    );\n\n  React.useEffect(() => {\n    if (\n      !showBuilder ||\n      applicationMode !== "lite"\n    ) {''',
+              'calendar pricing derivation',
+          )
+
+          replace_once(
+              '''      if (\n        paymentMethod !== "none"\n      ) {''',
+              '''      if (\n        paymentMethod !== "none" &&\n        !hasCalendarBlock\n      ) {''',
+              'frontend amount validation',
+          )
+
+          replace_once(
+              '''                  paymentAmount:\n                    paymentMethod ===\n                    "none"\n                      ? null\n                      : Number(\n                          normalizedPaymentAmount,\n                        ),''',
+              '''                  paymentAmount:\n                    paymentMethod === "none" ||\n                    hasCalendarBlock\n                      ? null\n                      : Number(\n                          normalizedPaymentAmount,\n                        ),''',
+              'frontend payment payload',
+          )
+
+          pattern = re.compile(
+              r'''\n\n            <div className="mt-5 rounded-2xl border border-neutral-200 p-5">\n\s*<div className="text-sm font-bold text-neutral-950">\n\s*支払\n.*?\n\s*</div>\n\s*\n            <div className="mt-5 rounded-2xl border border-neutral-200 p-5">\n              <div className="text-sm font-bold text-neutral-950">\n                確認・同意事項''',
+              re.S,
+          )
+
+          replacement = '''\n\n            <ApplicationPaymentSettings\n              paymentMethod={paymentMethod}\n              onPaymentMethodChange={\n                setPaymentMethod\n              }\n              paymentAmount={paymentAmount}\n              onPaymentAmountChange={\n                setPaymentAmount\n              }\n              paymentUrl={paymentUrl}\n              onPaymentUrlChange={\n                setPaymentUrl\n              }\n              paymentInstructions={\n                paymentInstructions\n              }\n              onPaymentInstructionsChange={\n                setPaymentInstructions\n              }\n              paymentConfirmationRequired={\n                paymentConfirmationRequired\n              }\n              onPaymentConfirmationRequiredChange={\n                setPaymentConfirmationRequired\n              }\n              hasCalendarBlock={\n                hasCalendarBlock\n              }\n            />\n\n            <div className="mt-5 rounded-2xl border border-neutral-200 p-5">\n              <div className="text-sm font-bold text-neutral-950">\n                確認・同意事項'''
+
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'payment UI section: expected 1 match, found {count}')
+
+          path.write_text(text)
+          PY
+
+      - name: Commit targeted source change and remove temporary workflow
+        shell: bash
+        run: |
+          rm .github/workflows/application-payment-settings-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Simplify APPLICATION payment settings"
+          git push origin HEAD:feature/application-payment-settings-cleanup
