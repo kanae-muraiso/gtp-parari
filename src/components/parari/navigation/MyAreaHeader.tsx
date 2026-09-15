@@ -5,12 +5,13 @@
 // - 利用側は LIBRARY
 // - 制作・運営側は STUDIO
 // - 設定は両方から使う共通領域
+// - OPERATIONS は運営スタッフ専用領域
 
 import LogoutButton from "@/components/parari/navigation/LogoutButton";
 import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
 
-type WorkspaceArea = "library" | "studio" | "settings";
+type WorkspaceArea = "library" | "studio" | "settings" | "operations";
 
 type MyAreaHeaderProps = {
   title: string;
@@ -23,21 +24,21 @@ export default function MyAreaHeader({
   showManagementLinks = true,
   area,
 }: MyAreaHeaderProps) {
-  // showManagementLinks は既存画面との互換用。
-  // 新しい画面は area を明示すれば、タイトル文言に依存しない。
   const resolvedArea: WorkspaceArea =
     area ?? (showManagementLinks ? "library" : "studio");
 
   const areaLabel =
     resolvedArea === "settings"
       ? "PARARI"
-      : resolvedArea === "library"
-        ? "PARARI · LIBRARY"
-        : "PARARI · STUDIO";
+      : resolvedArea === "operations"
+        ? "PARARI · OPERATIONS"
+        : resolvedArea === "library"
+          ? "PARARI · LIBRARY"
+          : "PARARI · STUDIO";
 
   return (
     <>
-      {resolvedArea !== "settings" ? (
+      {resolvedArea === "library" || resolvedArea === "studio" ? (
         <WorkspaceVisitTracker workspace={resolvedArea} />
       ) : null}
 
