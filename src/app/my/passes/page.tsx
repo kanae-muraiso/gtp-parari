@@ -63,6 +63,13 @@ export default function MyPassesPage() {
       setMessage("");
 
       try {
+        if (!supabase) {
+          if (!cancelled) {
+            setMessage("ログイン情報を確認できませんでした。");
+          }
+          return;
+        }
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
