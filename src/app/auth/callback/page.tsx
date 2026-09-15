@@ -48,6 +48,39 @@ export default function AuthCallbackPage() {
           return;
         }
 
+        // Magic Linkでメール所有が確認された後にだけ、
+        // 同じメールで申し込まれたゲストAPPLICATIONをこのユーザーへ紐付ける。
+        // claimに失敗してもログイン自体は成功させる。
+        setStatus("過去の参加履歴を確認しています…");
+
+        try {
+          const claimResponse = await fetch(
+            "/api/application/claim-guest",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${data.session.access_token}`,
+              },
+            },
+          );
+
+          if (!claimResponse.ok) {
+            const claimResult = await claimResponse
+              .json()
+              .catch(() => null);
+
+            console.warn(
+              "guest application claim did not complete",
+              claimResult,
+            );
+          }
+        } catch (claimError) {
+          console.warn(
+            "guest application claim failed",
+            claimError,
+          );
+        }
+
         router.replace(returnTo);
       } catch (e) {
         setStatus("認証失敗");
