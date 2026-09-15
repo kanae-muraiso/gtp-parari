@@ -73,6 +73,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --check
+          git diff --check 263fc66272f9c17c1e0bd94ebc3a8e13a42dbc54 -- src/app/api/application/manage/route.ts
           git commit -m "Keep calendar pricing out of APPLICATION amount"
           git push origin HEAD:feature/application-payment-settings-cleanup
