@@ -1,32 +1,33 @@
-// apps/tools/parari/src/app/page.tsx
-// apps/tools/parari/src/app/page.tsx
-// 2026-04-26 JST
+// src/app/page.tsx
+// 2026/09/15 JST
 
 "use client";
-
-/**
- * PART: Root Home Page
- * コメント:
- * - parari.app の公式トップページ
- * - 未ログインならこのページに公式説明を表示する
- * - ログイン済みなら /mypage へ移動する
- * - SEOのため「PARARI（パラリ）」「ぱらり」を本文に明示する
- */
 
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 
-/**
- * PART: device helper
- * コメント:
- * - OnePAGE はスマホ導線を優先する
- * - 開発中のPC判定も含め、まずは幅基準で十分
- */
-function isSmartphoneViewport() {
-  if (typeof window === "undefined") return false;
-  return window.innerWidth <= 768;
+type StartDestination = "library" | "studio" | "last";
+type Workspace = "library" | "studio";
+
+type ExperienceRow = {
+  studio_enabled: boolean | null;
+};
+
+function resolveDestination(
+  startDestination: StartDestination,
+  lastWorkspace: Workspace,
+  studioEnabled: boolean,
+) {
+  if (!studioEnabled) return "/mypage";
+
+  if (startDestination === "studio") return "/my/works";
+  if (startDestination === "last") {
+    return lastWorkspace === "studio" ? "/my/works" : "/mypage";
+  }
+
+  return "/mypage";
 }
 
 export default function HomePage() {
@@ -38,8 +39,7 @@ export default function HomePage() {
 
     async function checkAuthAndRedirect() {
       if (!supabase) {
-        if (!mounted) return;
-        setChecking(false);
+        if (mounted) setChecking(false);
         return;
       }
 
@@ -49,16 +49,40 @@ export default function HomePage() {
 
       if (!mounted) return;
 
-      // PART: not logged in
-      // コメント:
-      // - 未ログインユーザーには公式トップページを表示する
       if (!user) {
         setChecking(false);
         return;
       }
 
-      // PART: logged in
-      router.replace("/mypage");
+      const [{ data: experienceData }, { data: preferenceData }] =
+        await Promise.all([
+          supabase.rpc("get_my_parari_experience"),
+          supabase
+            .from("user_workspace_preferences")
+            .select("start_destination,last_workspace")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+        ]);
+
+      if (!mounted) return;
+
+      const experience = (Array.isArray(experienceData)
+        ? experienceData[0]
+        : experienceData) as ExperienceRow | null;
+
+      const studioEnabled = Boolean(experience?.studio_enabled);
+
+      const rawStart = String(preferenceData?.start_destination ?? "library");
+      const startDestination: StartDestination =
+        rawStart === "studio" || rawStart === "last" ? rawStart : "library";
+
+      const rawLast = String(preferenceData?.last_workspace ?? "library");
+      const lastWorkspace: Workspace =
+        rawLast === "studio" ? "studio" : "library";
+
+      router.replace(
+        resolveDestination(startDestination, lastWorkspace, studioEnabled),
+      );
     }
 
     void checkAuthAndRedirect();
@@ -74,7 +98,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] text-neutral-900">
-      {/* PART: hero */}
       <section className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
         <p className="mb-4 text-sm tracking-[0.28em] text-neutral-500">
           PARARI
