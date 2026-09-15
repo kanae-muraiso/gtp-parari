@@ -379,18 +379,37 @@ export async function POST(
     if (!updated) {
       const {
         data: latest,
+        error: latestError,
       } = await supabaseAdmin
         .from("application_entries")
-        .select("checked_in_at")
+        .select("status, checked_in_at")
         .eq("id", result.entry.id)
         .maybeSingle();
 
-      return NextResponse.json({
-        ok: true,
-        already_checked_in: true,
-        checked_in_at:
-          latest?.checked_in_at ?? null,
-      });
+      if (latestError) {
+        throw latestError;
+      }
+
+      if (latest?.checked_in_at) {
+        return NextResponse.json({
+          ok: true,
+          already_checked_in: true,
+          checked_in_at:
+            latest.checked_in_at,
+        });
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            latest?.status === "cancelled" ||
+            latest?.status === "withdrawn"
+              ? "この申込はキャンセル済みのため受付できません。"
+              : "申込状態が変更されたため、もう一度参加証を確認してください。",
+        },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json({

@@ -249,7 +249,9 @@ export async function cancelApplicationEntry(identity: CancellationIdentity) {
       updated_at: now,
     })
     .eq("id", inspected.entry.id)
-    .eq("status", inspected.entry.status);
+    .eq("status", inspected.entry.status)
+    .is("checked_in_at", null)
+    .is("cancelled_at", null);
 
   update =
     identity.kind === "member"
@@ -282,7 +284,7 @@ export async function cancelApplicationEntry(identity: CancellationIdentity) {
     return {
       ok: false as const,
       status: 409,
-      message: "申込状態が変更されたため、もう一度ご確認ください。",
+      message: "申込状態または受付状態が変更されたため、もう一度ご確認ください。",
     };
   }
 
