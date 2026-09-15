@@ -17,6 +17,7 @@ import {
   CalendarResourceView,
 } from "../calendar/CalendarPanelRenderer";
 import type { ApplicationPanelData } from "./applicationTypes";
+import ApplicationPassCard from "./ApplicationPassCard";
 
 type ApplicationField = {
   id?: string;
@@ -649,13 +650,21 @@ export default function GuestApplicationPanelRenderer({
           </div>
           <p className="mt-2 text-sm leading-7 text-neutral-600">
             {completedEntry.status === "confirmed"
-              ? "この画面を閉じていただいて大丈夫です。"
-              : "現在、主催者の確認待ちです。"}
+              ? "参加証を下に表示します。スクリーンショットで保存してください。"
+              : "現在、主催者の確認待ちです。参加が確定すると参加証が表示されます。"}
           </p>
           <p className="mt-2 text-xs leading-5 text-neutral-500">
             申込メールアドレス：{applicantEmail.trim().toLowerCase()}
           </p>
         </div>
+
+        {completedEntry.status === "confirmed" ? (
+          <ApplicationPassCard
+            entryId={completedEntry.id}
+            title={application.title}
+            participantName={applicantName.trim()}
+          />
+        ) : null}
 
         <GuestPaymentSummary
           entry={completedEntry}
