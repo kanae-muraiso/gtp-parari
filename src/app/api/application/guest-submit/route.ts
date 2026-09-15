@@ -5,6 +5,7 @@
 // - PARARI account is not required.
 // - Guest identity is name + normalized email.
 // - Existing authenticated submit API remains unchanged.
+// - Supports both CALENDAR-origin APPLICATIONs and manual CALENDAR blocks.
 
 import {
   NextRequest,
@@ -85,6 +86,21 @@ type ApplicationRow = {
   payment_confirmation_required: boolean;
   status: "draft" | "open" | "closed";
   version: number;
+};
+
+type CalendarOccurrenceRow = {
+  id: string;
+  calendar_item_id: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string;
+  title: string;
+  location: string | null;
+  capacity: number | null;
+  minimum_capacity: number | null;
+  fee_amount: number | null;
+  fee_currency: string;
+  status: string;
 };
 
 function normalizeEmail(value: unknown): string {
@@ -203,6 +219,57 @@ function hasMembershipBlock(
       typeof block === "object" &&
       block.type === "membership",
   );
+}
+
+function getCalendarBlockItemIds(
+  definition: ApplicationDefinition | null,
+): string[] {
+  const blocks =
+    Array.isArray(definition?.blocks)
+      ? definition.blocks
+      : [];
+
+  return Array.from(
+    new Set(
+      blocks
+        .filter(
+          (block) =>
+            block &&
+            typeof block === "object" &&
+            block.type === "calendar",
+        )
+        .map((block) =>
+          typeof block.calendarItemId === "string"
+            ? block.calendarItemId.trim()
+            : "",
+        )
+        .filter(
+          (id) => UUID_RE.test(id),
+        ),
+    ),
+  );
+}
+
+function getAllowedCalendarItemIds(
+  application: ApplicationRow,
+): string[] {
+  const ids: string[] = [];
+
+  if (
+    application.origin === "calendar" &&
+    application.calendar_item_id &&
+    UUID_RE.test(application.calendar_item_id)
+  ) {
+    ids.push(application.calendar_item_id);
+  }
+
+  ids.push(
+    ...getCalendarBlockItemIds(
+      application.definition,
+    ),
+  );
+
+  return Array.from(new Set(ids));
 }
 
 function normalizeApplicationAnswers(
@@ -583,28 +650,12 @@ export async function POST(
     }
 
     let calendarOccurrence:
-      | {
-          id: string;
-          calendar_item_id: string;
-          starts_at: string;
-          ends_at: string;
-          timezone: string;
-          title: string;
-          location: string | null;
-          capacity: number | null;
-          minimum_capacity: number | null;
-          fee_amount: number | null;
-          fee_currency: string;
-          status: string;
-        }
-      | null = null;
+      CalendarOccurrenceRow | null = null;
 
-    const calendarItemId =
-      application.origin === "calendar"
-        ? application.calendar_item_id
-        : null;
+    const allowedCalendarItemIds =
+      getAllowedCalendarItemIds(application);
 
-    if (calendarItemId) {
+    if (allowedCalendarItemIds.length > 0) {
       if (!UUID_RE.test(occurrenceId)) {
         return NextResponse.json(
           {
@@ -638,7 +689,10 @@ export async function POST(
           `,
         )
         .eq("id", occurrenceId)
-        .eq("calendar_item_id", calendarItemId)
+        .in(
+          "calendar_item_id",
+          allowedCalendarItemIds,
+        )
         .maybeSingle();
 
       if (
@@ -719,7 +773,7 @@ export async function POST(
       }
 
       calendarOccurrence =
-        occurrenceData;
+        occurrenceData as CalendarOccurrenceRow;
     } else if (occurrenceId) {
       return NextResponse.json(
         {
@@ -994,6 +1048,8 @@ export async function POST(
         calendarOccurrence
           ? {
               id: calendarOccurrence.id,
+              calendar_item_id:
+                calendarOccurrence.calendar_item_id,
               starts_at:
                 calendarOccurrence.starts_at,
               ends_at:
@@ -1100,7 +1156,9 @@ export async function POST(
           {
             ok: false,
             message:
-              "このメールアドレスでは、すでにお申し込み済みです。",
+              calendarOccurrence
+                ? "このメールアドレスでは、この開催回にすでに予約済みです。"
+                : "このメールアドレスでは、すでにお申し込み済みです。",
           },
           { status: 409 },
         );
