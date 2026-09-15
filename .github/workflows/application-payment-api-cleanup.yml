@@ -1,0 +1,77 @@
+name: Application payment API cleanup
+
+on:
+  push:
+    branches:
+      - feature/application-payment-settings-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  patch-payment-api:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/application-payment-settings-cleanup
+
+      - name: Restore API formatting and apply only pricing changes
+        shell: bash
+        run: |
+          git show 263fc66272f9c17c1e0bd94ebc3a8e13a42dbc54:src/app/api/application/manage/route.ts > src/app/api/application/manage/route.ts
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/app/api/application/manage/route.ts')
+          text = path.read_text()
+
+          def replace_once(old: str, new: str, label: str):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              '''function isPaymentMethod(\n  value: string,\n): value is\n  (typeof PAYMENT_METHODS)[number] {\n  return PAYMENT_METHODS.includes(\n    value as\n      (typeof PAYMENT_METHODS)[number],\n  );\n}\n''',
+              '''function isPaymentMethod(\n  value: string,\n): value is\n  (typeof PAYMENT_METHODS)[number] {\n  return PAYMENT_METHODS.includes(\n    value as\n      (typeof PAYMENT_METHODS)[number],\n  );\n}\n\nfunction hasCalendarBlock(\n  definition: unknown,\n): boolean {\n  if (\n    !definition ||\n    typeof definition !== "object" ||\n    Array.isArray(definition)\n  ) {\n    return false;\n  }\n\n  const blocks =\n    (\n      definition as {\n        blocks?: unknown;\n      }\n    ).blocks;\n\n  if (!Array.isArray(blocks)) {\n    return false;\n  }\n\n  return blocks.some((rawBlock) => {\n    if (\n      !rawBlock ||\n      typeof rawBlock !== "object" ||\n      Array.isArray(rawBlock)\n    ) {\n      return false;\n    }\n\n    return (\n      rawBlock as {\n        type?: unknown;\n      }\n    ).type === "calendar";\n  });\n}\n''',
+              'calendar helper',
+          )
+
+          old_marker = '''  const isLiteApplication =\n    applicationMode === "lite";\n'''
+          new_marker = '''  const isLiteApplication =\n    applicationMode === "lite";\n\n  const usesCalendarPricing =\n    applicationMode === "builder" &&\n    hasCalendarBlock(rawDefinition);\n'''
+          marker_count = text.count(old_marker)
+          if marker_count != 2:
+              raise SystemExit(f'calendar marker: expected 2 matches, found {marker_count}')
+          text = text.replace(old_marker, new_marker)
+
+          old_validation = '''    if (\n      paymentMethod !== "none" &&\n      (\n        paymentAmount === null ||\n'''
+          new_validation = '''    if (\n      paymentMethod !== "none" &&\n      !usesCalendarPricing &&\n      (\n        paymentAmount === null ||\n'''
+          validation_count = text.count(old_validation)
+          if validation_count != 2:
+              raise SystemExit(f'amount validation: expected 2 matches, found {validation_count}')
+          text = text.replace(old_validation, new_validation)
+
+          old_amount = '''    payment_amount:\n      paymentMethod === "none"\n        ? null\n        : paymentAmount,\n'''
+          new_amount = '''    payment_amount:\n      paymentMethod === "none" ||\n      usesCalendarPricing\n        ? null\n        : paymentAmount,\n'''
+          amount_count = text.count(old_amount)
+          if amount_count != 2:
+              raise SystemExit(f'payment amount persistence: expected 2 matches, found {amount_count}')
+          text = text.replace(old_amount, new_amount)
+
+          path.write_text(text)
+          PY
+
+      - name: Commit targeted API change and remove temporary workflow
+        shell: bash
+        run: |
+          rm .github/workflows/application-payment-api-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Keep calendar pricing out of APPLICATION amount"
+          git push origin HEAD:feature/application-payment-settings-cleanup
