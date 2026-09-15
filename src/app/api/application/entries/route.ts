@@ -826,6 +826,8 @@ export async function PATCH(
           status,
           qualification_status,
           payment_status,
+          payment_hold_expires_at,
+          expired_at,
           application_snapshot
         `,
       )
@@ -976,13 +978,34 @@ export async function PATCH(
     }
 
 
-    const paymentSatisfied =
-      application
-        .payment_confirmation_required !==
-        true ||
-      entry.payment_status ===
-        "paid";
+    if (entry.status !== "submitted") {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "現在の申込状態では資格確認を変更できません。",
+        },
+        { status: 409 },
+      );
+    }
 
+    const startsParariHold =
+      application.payment_method === "parari" &&
+      entry.payment_status === "unpaid";
+
+    const paymentSatisfied =
+      startsParariHold
+        ? false
+        : application.payment_confirmation_required !== true ||
+          entry.payment_status === "paid";
+
+    const approvedAt = new Date();
+    const paymentHoldExpiresAt =
+      startsParariHold
+        ? new Date(
+            approvedAt.getTime() + 15 * 60_000,
+          ).toISOString()
+        : null;
 
     const {
       data: updatedEntry,
@@ -1000,10 +1023,27 @@ export async function PATCH(
             paymentSatisfied
               ? "confirmed"
               : "submitted",
+
+          payment_hold_expires_at:
+            paymentHoldExpiresAt,
+
+          expired_at: null,
         })
         .eq(
           "id",
           entryId,
+        )
+        .eq(
+          "qualification_status",
+          "pending",
+        )
+        .eq(
+          "status",
+          "submitted",
+        )
+        .eq(
+          "payment_status",
+          entry.payment_status,
         )
         .select(
           `
@@ -1013,16 +1053,15 @@ export async function PATCH(
             payment_status,
             payment_reported_at,
             payment_confirmed_at,
+            payment_hold_expires_at,
+            expired_at,
             updated_at
           `,
         )
-        .single();
+        .maybeSingle();
 
 
-    if (
-      updateError ||
-      !updatedEntry
-    ) {
+    if (updateError) {
       console.error(
         "[APPLICATION entries PATCH] qualification approve failed",
         updateError,
@@ -1034,9 +1073,18 @@ export async function PATCH(
           message:
             "資格確認を更新できませんでした。",
         },
+        { status: 500 },
+      );
+    }
+
+    if (!updatedEntry) {
+      return NextResponse.json(
         {
-          status: 500,
+          ok: false,
+          message:
+            "申込状態が変更されたため、もう一度ご確認ください。",
         },
+        { status: 409 },
       );
     }
 
@@ -1090,6 +1138,16 @@ export async function PATCH(
       );
     }
 
+    if (entry.status !== "submitted") {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "現在の申込状態では資格確認を変更できません。",
+        },
+        { status: 409 },
+      );
+    }
 
     const {
       data: updatedEntry,
@@ -1109,6 +1167,14 @@ export async function PATCH(
         .eq(
           "id",
           entryId,
+        )
+        .eq(
+          "qualification_status",
+          "pending",
+        )
+        .eq(
+          "status",
+          "submitted",
         )
         .select(
           `
@@ -1180,18 +1246,18 @@ export async function PATCH(
 
 
     if (
-      entry.status ===
-      "rejected"
+      entry.status === "rejected" ||
+      entry.status === "withdrawn" ||
+      entry.status === "cancelled" ||
+      entry.status === "expired"
     ) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "受付されなかった申込の支払確認はできません。",
+            "現在の申込状態では支払確認できません。",
         },
-        {
-          status: 409,
-        },
+        { status: 409 },
       );
     }
 
