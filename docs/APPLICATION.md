@@ -239,6 +239,12 @@ QR には個人情報を入れません。
 - CALENDAR / MEMBERSHIP blockの読み取り・表示補助
 - APPLICATIONラベル / status badge / info row / 日付・値の表示整形
 
+`src/components/parari/panels/application/ApplicationEntryStatusPanel.tsx`
+
+- 申込済みユーザーの submitted / confirmed / rejected 表示
+- 現地払い / 旧支払リンク等の支払状態表示
+- 支払報告ボタンは親runtimeのactionをcallbackで呼ぶ
+
 `src/components/parari/panels/application/GuestApplicationPanelRenderer.tsx`
 
 - ゲスト申込側
@@ -323,7 +329,8 @@ E. pricing / payment / acceptance / capacity を pure domain logic として分�
 F. guest / member 共通の submit service を作る                         完了
 G. 参加者画面を小コンポーネントへ分割                                  進行中
    - support / input renderer / snapshot解析                              完了
-   - 状態表示 / CALENDAR予約 / FORM表示                                  次
+   - 申込状態 / 支払状態表示                                           完了
+   - CALENDAR予約 / FORM表示                                              次
 H. ApplicationManagerV3Compat を削除
 ```
 
