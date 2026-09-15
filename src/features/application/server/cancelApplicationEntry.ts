@@ -1,5 +1,8 @@
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
+  expireApplicationPaymentHoldIfNeeded,
+} from "@/features/application/server/paymentHoldExpiry";
+import {
   resolveCancellationDecision,
   type ApplicationCancellationMode,
   type ApplicationEntryCancellationStatus,
@@ -19,6 +22,7 @@ type EntryRow = {
   calendar_occurrence_id: string | null;
   checked_in_at: string | null;
   cancelled_at: string | null;
+  payment_hold_expires_at: string | null;
 };
 
 type ApplicationRow = {
@@ -94,7 +98,8 @@ async function loadEntry(identity: CancellationIdentity): Promise<EntryRow | nul
         application_snapshot,
         calendar_occurrence_id,
         checked_in_at,
-        cancelled_at
+        cancelled_at,
+        payment_hold_expires_at
       `,
     );
 
@@ -175,7 +180,7 @@ function refundNotice(paymentStatus: EntryRow["payment_status"]): string | null 
 export async function inspectApplicationEntryCancellation(
   identity: CancellationIdentity,
 ) {
-  const entry = await loadEntry(identity);
+  let entry = await loadEntry(identity);
 
   if (!entry) {
     return {
@@ -183,6 +188,18 @@ export async function inspectApplicationEntryCancellation(
       status: 404,
       message: "申込情報が見つかりません。",
     };
+  }
+
+  if (await expireApplicationPaymentHoldIfNeeded(entry)) {
+    entry = await loadEntry(identity);
+
+    if (!entry) {
+      return {
+        ok: false as const,
+        status: 404,
+        message: "申込情報が見つかりません。",
+      };
+    }
   }
 
   const application = await loadApplication(entry.application_id);

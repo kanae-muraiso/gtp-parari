@@ -252,7 +252,8 @@ export default function ApplicationPanelRenderer({
           | "confirmed"
           | "rejected"
           | "withdrawn"
-          | "cancelled";
+          | "cancelled"
+          | "expired";
 
         qualification_status:
           | "not_required"
@@ -939,7 +940,9 @@ export default function ApplicationPanelRenderer({
               entry.status ===
                 "withdrawn" ||
               entry.status ===
-                "cancelled"
+                "cancelled" ||
+              entry.status ===
+                "expired"
             )
           ) {
               setCompletedEntry({

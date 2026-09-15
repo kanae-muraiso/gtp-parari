@@ -16,6 +16,9 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   cancelApplicationEntry,
 } from "@/features/application/server/cancelApplicationEntry";
+import {
+  expireApplicationPaymentHoldIfNeeded,
+} from "@/features/application/server/paymentHoldExpiry";
 
 
 const UUID_RE =
@@ -173,6 +176,61 @@ export async function GET(
   }
 
   const {
+    data: holdEntry,
+    error: holdError,
+  } =
+    await supabaseAdmin
+      .from("application_entries")
+      .select(
+        `
+          application_id,
+          calendar_occurrence_id,
+          status,
+          payment_status,
+          payment_hold_expires_at
+        `,
+      )
+      .eq("application_id", applicationId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  if (holdError) {
+    console.error(
+      "[APPLICATION my-entry] hold preflight failed:",
+      holdError,
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "申込状況を確認できませんでした。",
+      },
+      { status: 500 },
+    );
+  }
+
+  if (holdEntry) {
+    try {
+      await expireApplicationPaymentHoldIfNeeded(holdEntry);
+    } catch (holdExpiryError) {
+      console.error(
+        "[APPLICATION my-entry] hold expiry failed:",
+        holdExpiryError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "申込状況を確認できませんでした。",
+        },
+        { status: 500 },
+      );
+    }
+  }
+
+  const {
     data: entry,
     error,
   } =
@@ -192,6 +250,9 @@ export async function GET(
           answers,
           checked_in_at,
           cancelled_at,
+          calendar_occurrence_id,
+          payment_hold_expires_at,
+          expired_at,
           created_at,
           agreed_at
         `,
@@ -430,7 +491,8 @@ export async function PATCH(
   if (
     entry.status === "rejected" ||
     entry.status === "withdrawn" ||
-    entry.status === "cancelled"
+    entry.status === "cancelled" ||
+    entry.status === "expired"
   ) {
     return NextResponse.json(
       {
