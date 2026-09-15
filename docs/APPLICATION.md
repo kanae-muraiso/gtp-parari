@@ -202,6 +202,17 @@ QR には個人情報を入れません。
 - 公開画面の応募ボタン文言
 - 値の保存そのものは親の `ApplicationManagerLegacy.tsx` が担当する
 
+### APPLICATION domain rules
+
+`src/features/application/domain/`
+
+- `pricing.ts` — CALENDAR開催回 / APPLICATION本体のどちらが正式価格かを解決する
+- `payment.ts` — 正式価格と支払方法から初期支払状態を決める
+- `acceptance.ts` — 即時確定 / 主催者承認から資格状態を決める
+- `capacity.ts` — 定員上限と、席を占有する申込状態を一元化する
+- `submissionState.ts` — payment と acceptance を合わせて初期 `status` を決める
+- DBの `set_application_entry_pricing()` と同じ業務ルールをTypeScript側でも共有する
+
 `src/components/parari/settings/ApplicationManagerV3Compat.tsx`
 
 - 一時的な互換レイヤー
@@ -288,8 +299,8 @@ C. 主催者画面の申込者管理 UI を分離                     完了
 D. 主催者画面の作成 / 編集 UI を分離                    完了
    - 支払 / 同意 / 承認 / ボタン設定                    完了
    - FIELD / CALENDAR / MEMBERSHIP ビルダー              完了
-E. pricing / payment / acceptance / capacity を pure domain logic として分離
-F. guest / member 共通の submit service を作る
+E. pricing / payment / acceptance / capacity を pure domain logic として分離  完了
+F. guest / member 共通の submit service を作る                         次
 G. 参加者画面を小コンポーネントへ分割
 H. ApplicationManagerV3Compat を削除
 ```
