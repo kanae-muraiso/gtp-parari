@@ -63,12 +63,6 @@ export default function SettingsHomePage() {
           />
 
           <SettingsCard
-            title="表示設定"
-            description="本棚や読書画面の見え方を調整します。"
-            href="/display"
-          />
-
-          <SettingsCard
             title="プラン"
             description="現在のプランや利用できる機能を確認します。"
             href="/billing"
