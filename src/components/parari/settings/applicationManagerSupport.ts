@@ -72,6 +72,11 @@ export type ApplicationManagerProps = {
 };
 
 
+export type ApplicationCancellationMode =
+  | "not_allowed"
+  | "anytime"
+  | "until_deadline";
+
 export type ManagedApplication = {
   id: string;
   application_type: ApplicationType;
@@ -98,6 +103,10 @@ export type ManagedApplication = {
       | null;
     
     payment_confirmation_required: boolean;
+
+  cancellation_mode: ApplicationCancellationMode;
+  cancellation_deadline_at: string | null;
+  cancellation_cutoff_minutes: number | null;
     
   status: "draft" | "open" | "closed";
   version: number;

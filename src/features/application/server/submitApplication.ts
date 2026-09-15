@@ -57,6 +57,9 @@ type ApplicationRow = {
   payment_url: string | null;
   payment_instructions: string | null;
   payment_confirmation_required: boolean;
+  cancellation_mode: "not_allowed" | "anytime" | "until_deadline";
+  cancellation_deadline_at: string | null;
+  cancellation_cutoff_minutes: number | null;
   status: "draft" | "open" | "closed";
   version: number;
 };
@@ -190,6 +193,9 @@ export async function submitApplication(
         payment_url,
         payment_instructions,
         payment_confirmation_required,
+        cancellation_mode,
+        cancellation_deadline_at,
+        cancellation_cutoff_minutes,
         status,
         version
       `,
@@ -607,6 +613,12 @@ export async function submitApplication(
       application.payment_instructions,
     payment_confirmation_required:
       application.payment_confirmation_required,
+    cancellation_mode:
+      application.cancellation_mode,
+    cancellation_deadline_at:
+      application.cancellation_deadline_at,
+    cancellation_cutoff_minutes:
+      application.cancellation_cutoff_minutes,
     version: application.version,
     calendar_occurrence:
       calendarOccurrence
