@@ -9,6 +9,7 @@ import ApplicationEntryMessagePanel from "@/components/parari/application/Applic
 import * as React from "react";
 
 import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
+import ApplicationPaymentSettings from "@/components/parari/settings/ApplicationPaymentSettings";
 import { supabase } from "@/lib/supabaseClient";
 
 
@@ -708,6 +709,13 @@ export default function ApplicationManager({
       paymentConfirmationRequired,
       setPaymentConfirmationRequired,
     ] = React.useState(false);
+
+  const hasCalendarBlock =
+    applicationMode === "builder" &&
+    blocks.some(
+      (block) =>
+        block.type === "calendar",
+    );
 
   React.useEffect(() => {
     if (
@@ -2179,7 +2187,8 @@ Membershipに設定された参加条件・利用条件をご確認ください�
         paymentAmount.trim();
 
       if (
-        paymentMethod !== "none"
+        paymentMethod !== "none" &&
+        !hasCalendarBlock
       ) {
         const amount =
           Number(
@@ -2340,8 +2349,8 @@ Membershipに設定された参加条件・利用条件をご確認ください�
                   paymentMethod,
 
                   paymentAmount:
-                    paymentMethod ===
-                    "none"
+                    paymentMethod === "none" ||
+                    hasCalendarBlock
                       ? null
                       : Number(
                           normalizedPaymentAmount,
@@ -3073,188 +3082,36 @@ Membershipに設定された参加条件・利用条件をご確認ください�
             ) : null}
 
 
-            <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
-                        <div className="text-sm font-bold text-neutral-950">
-                          支払
-                        </div>
+            <ApplicationPaymentSettings
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={
+                setPaymentMethod
+              }
+              paymentAmount={paymentAmount}
+              onPaymentAmountChange={
+                setPaymentAmount
+              }
+              paymentUrl={paymentUrl}
+              onPaymentUrlChange={
+                setPaymentUrl
+              }
+              paymentInstructions={
+                paymentInstructions
+              }
+              onPaymentInstructionsChange={
+                setPaymentInstructions
+              }
+              paymentConfirmationRequired={
+                paymentConfirmationRequired
+              }
+              onPaymentConfirmationRequiredChange={
+                setPaymentConfirmationRequired
+              }
+              hasCalendarBlock={
+                hasCalendarBlock
+              }
+            />
 
-                        <p className="mt-1 text-xs leading-5 text-neutral-500">
-                          支払方法は主催者が自由に決められます。
-                          PARARIでは支払状況を管理します。
-                        </p>
-
-                        <div className="mt-4">
-                          <label className="block text-xs font-bold text-neutral-600">
-                            支払方法
-                          </label>
-
-                          <select
-                            value={
-                              paymentMethod
-                            }
-                            onChange={(
-                              event,
-                            ) => {
-                              setPaymentMethod(
-                                event.target
-                                  .value as ApplicationPaymentMethod,
-                              );
-                            }}
-                            className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                          >
-                            <option value="none">
-                              {canUseExtendedApplication
-                                ? "支払不要"
-                                : "支払リンクなし"}
-                            </option>
-
-                            <option value="on_site">
-                              当日払い
-                            </option>
-
-                            <option value="bank_transfer">
-                              銀行振込
-                            </option>
-
-                            {canUseExtendedApplication ? (
-                            <option value="payment_link">
-                              支払リンク
-                            </option>
-                          ) : null}
-                          </select>
-                        </div>
-
-                        {paymentMethod !==
-                        "none" ? (
-                          <>
-                            <div className="mt-4">
-                              <label className="block text-xs font-bold text-neutral-600">
-                                参加費
-                              </label>
-
-                              <div className="mt-2 flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  inputMode="numeric"
-                                  value={
-                                    paymentAmount
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    setPaymentAmount(
-                                      event.target
-                                        .value,
-                                    )
-                                  }
-                                  placeholder="3000"
-                                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                                />
-
-                                <span className="shrink-0 text-sm text-neutral-500">
-                                  円
-                                </span>
-                              </div>
-                            </div>
-
-                            {paymentMethod ===
-                            "payment_link" ? (
-                              <div className="mt-4">
-                                <label className="block text-xs font-bold text-neutral-600">
-                                  支払リンク
-                                </label>
-
-                                <input
-                                  type="url"
-                                  value={
-                                    paymentUrl
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    setPaymentUrl(
-                                      event.target
-                                        .value,
-                                    )
-                                  }
-                                  placeholder="https://..."
-                                  className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                                />
-                              </div>
-                            ) : null}
-
-                            <div className="mt-4">
-                              <label className="block text-xs font-bold text-neutral-600">
-                                {paymentMethod ===
-                                "on_site"
-                                  ? "当日の支払案内"
-                                  : paymentMethod ===
-                                      "bank_transfer"
-                                    ? "振込案内"
-                                    : "支払についての案内"}
-                              </label>
-
-                              <textarea
-                                value={
-                                  paymentInstructions
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  setPaymentInstructions(
-                                    event.target
-                                      .value,
-                                  )
-                                }
-                                rows={3}
-                                placeholder={
-                                  paymentMethod ===
-                                  "on_site"
-                                    ? "例）当日受付で現金またはクレジットカードでお支払いください。"
-                                    : paymentMethod ===
-                                        "bank_transfer"
-                                      ? "例）振込先、振込期限などを入力してください。"
-                                      : "必要な案内があれば入力してください。"
-                                }
-                                className="mt-2 w-full resize-y rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-7 outline-none focus:border-neutral-600"
-                              />
-                            </div>
-                                  
-                                  {paymentMethod === "bank_transfer" ||
-                                  paymentMethod === "payment_link" ? (
-                                    <label className="mt-5 flex items-start gap-3 rounded-xl bg-neutral-50 p-4">
-                                      <input
-                                        type="checkbox"
-                                        checked={
-                                          paymentConfirmationRequired
-                                        }
-                                        onChange={(event) =>
-                                          setPaymentConfirmationRequired(
-                                            event.target.checked,
-                                          )
-                                        }
-                                        className="mt-1"
-                                      />
-
-                                      <span>
-                                        <span className="block text-sm font-bold text-neutral-900">
-                                          支払確認後に参加確定とする
-                                        </span>
-
-                                        <span className="mt-1 block text-xs leading-5 text-neutral-500">
-                                          主催者が着金を確認するまで、
-                                          参加は「確認中」となります。
-                                        </span>
-                                      </span>
-                                    </label>
-                                  ) : null}
-                                  
-                          </>
-                        ) : null}
-                      </div>
-                      
             <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
               <div className="text-sm font-bold text-neutral-950">
                 確認・同意事項
