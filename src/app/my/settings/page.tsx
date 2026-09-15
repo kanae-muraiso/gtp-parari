@@ -37,6 +37,14 @@ function SettingsCard({ title, description, href }: SettingsCardProps) {
   );
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-1 pt-2 text-[11px] font-bold tracking-[0.16em] text-neutral-400">
+      {children}
+    </div>
+  );
+}
+
 export default function SettingsHomePage() {
   const { studioEnabled, loading } = useParariExperience();
 
@@ -46,6 +54,8 @@ export default function SettingsHomePage() {
         <MyAreaHeader title="設定" showManagementLinks={false} />
 
         <div className="mx-auto mt-8 max-w-3xl space-y-4">
+          <SectionTitle>基本</SectionTitle>
+
           <SettingsCard
             title="基本設定"
             description="氏名、表示名、ユーザーネームなどを設定します。"
@@ -66,6 +76,8 @@ export default function SettingsHomePage() {
 
           {!loading && studioEnabled ? (
             <>
+              <SectionTitle>STUDIO</SectionTitle>
+
               <StartDestinationPanel />
 
               <SettingsCard
@@ -76,9 +88,12 @@ export default function SettingsHomePage() {
             </>
           ) : null}
 
-          <div className="pt-3">
-            <StudioAccessPanel />
-          </div>
+          {!loading && !studioEnabled ? (
+            <>
+              <SectionTitle>制作・運営</SectionTitle>
+              <StudioAccessPanel />
+            </>
+          ) : null}
         </div>
       </div>
     </main>
