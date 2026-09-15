@@ -1,12 +1,13 @@
 // src/components/parari/navigation/ManagementTabs.tsx
-// 2026/08/18 JST
+// 2026/09/15 JST
 //
-// PARARI 管理側メインメニュー
-//
-// 作品 / 運営 / 設定
-//
-// 管理側では常に同じ3項目を表示する。
+// STUDIO側メインメニュー。
+// STUDIO未有効の利用者には制作・運営タブを見せない。
+// 直リンクで当該画面を開いている場合だけ現在地は残す。
 
+"use client";
+
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
 export type ManagementTab =
@@ -18,35 +19,43 @@ type ManagementTabsProps = {
   active: ManagementTab;
 };
 
-const ITEMS = [
-  {
-    key: "works",
-    label: "作品",
-    href: "/my/works",
-  },
-  {
-    key: "manage",
-    label: "運営",
-    href: "/my/manage",
-  },
-  {
-    key: "settings",
-    label: "設定",
-    href: "/my/profile",
-  },
-] satisfies Array<{
+type Item = {
   key: ManagementTab;
   label: string;
   href: string;
-}>;
+};
 
-export default function ManagementTabs({
-  active,
-}: ManagementTabsProps) {
-  return (
-    <ParariTabs
-      items={ITEMS}
-      active={active}
-    />
-  );
+const WORKS_ITEM: Item = {
+  key: "works",
+  label: "作品",
+  href: "/my/works",
+};
+
+const MANAGE_ITEM: Item = {
+  key: "manage",
+  label: "運営",
+  href: "/my/manage",
+};
+
+const SETTINGS_ITEM: Item = {
+  key: "settings",
+  label: "設定",
+  href: "/my/settings",
+};
+
+export default function ManagementTabs({ active }: ManagementTabsProps) {
+  const { studioEnabled } = useParariExperience();
+  const items: Item[] = [];
+
+  if (studioEnabled || active === "works") {
+    items.push(WORKS_ITEM);
+  }
+
+  if (studioEnabled || active === "manage") {
+    items.push(MANAGE_ITEM);
+  }
+
+  items.push(SETTINGS_ITEM);
+
+  return <ParariTabs items={items} active={active} />;
 }
