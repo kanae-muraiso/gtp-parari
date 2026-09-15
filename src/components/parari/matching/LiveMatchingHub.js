@@ -34,11 +34,9 @@ export default function LiveMatchingHub() {
   }, []);
 
   const refreshRoster = useCallback(async (ids) => {
-    if (!supabase || !ids.length) {
-      setRoster([]);
-      return;
-    }
-    const { data, error } = await supabase.rpc("cpp_live_roster", { p_target_user_ids: ids });
+    if (!supabase) return;
+    const safeIds = Array.isArray(ids) ? ids : [];
+    const { data, error } = await supabase.rpc("cpp_live_roster", { p_target_user_ids: safeIds });
     if (error) {
       setErrorMessage(`LIVE STATUSを取得できませんでした: ${error.message}`);
       return;
@@ -77,9 +75,10 @@ export default function LiveMatchingHub() {
   }, [supabase]);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([refreshRoster(liveUserIds), refreshCoordination()]);
+    const ids = userId ? Array.from(new Set([userId, ...liveUserIds])) : liveUserIds;
+    await Promise.all([refreshRoster(ids), refreshCoordination()]);
     if (activeRoomId) await refreshRoomMessages(activeRoomId);
-  }, [liveUserIds, activeRoomId, refreshRoster, refreshCoordination, refreshRoomMessages]);
+  }, [userId, liveUserIds, activeRoomId, refreshRoster, refreshCoordination, refreshRoomMessages]);
 
   useEffect(() => {
     if (!activeRoomId) {
@@ -108,7 +107,10 @@ export default function LiveMatchingHub() {
       setContext(nextContext);
       if (!nextContext) return;
 
-      await refreshCoordination();
+      await Promise.all([
+        refreshCoordination(),
+        refreshRoster([authData.user.id]),
+      ]);
       if (sessionData.session?.access_token) await supabase.realtime.setAuth(sessionData.session.access_token);
       if (!active) return;
 
@@ -118,7 +120,8 @@ export default function LiveMatchingHub() {
       channelRef.current = channel;
 
       const syncRoster = async () => {
-        const ids = Object.keys(channel.presenceState()).filter((value) => /^[0-9a-f-]{36}$/i.test(value));
+        const presenceIds = Object.keys(channel.presenceState()).filter((value) => /^[0-9a-f-]{36}$/i.test(value));
+        const ids = Array.from(new Set([authData.user.id, ...presenceIds]));
         if (!active) return;
         setLiveUserIds(ids);
         await refreshRoster(ids);
@@ -258,8 +261,8 @@ export default function LiveMatchingHub() {
                   <div className="mt-1 text-sm font-black text-neutral-900">{statusLabel(self?.live_status || "available")}</div>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => void setAvailability("available")} disabled={!!busy} className={`rounded-full px-3 py-2 text-xs font-bold ${self?.live_status !== "away" ? "bg-neutral-900 text-white" : "border border-neutral-300 bg-white text-neutral-600"}`}>話せます</button>
-                  <button type="button" onClick={() => void setAvailability("away")} disabled={!!busy || self?.live_status === "chatting"} className={`rounded-full px-3 py-2 text-xs font-bold ${self?.live_status === "away" ? "bg-neutral-900 text-white" : "border border-neutral-300 bg-white text-neutral-600"}`}>離席</button>
+                  <button type="button" onClick={() => void setAvailability("available")} disabled={!!busy} className={`rounded-full px-3 py-2 text-xs font-bold ${self?.live_status === "available" ? "bg-neutral-900 text-white" : "border border-neutral-300 bg-white text-neutral-600"}`}>話せます</button>
+                  <button type="button" onClick={() => void setAvailability("away")} disabled={!!busy} className={`rounded-full px-3 py-2 text-xs font-bold ${self?.live_status === "away" ? "bg-neutral-900 text-white" : "border border-neutral-300 bg-white text-neutral-600"}`}>離席</button>
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3">
