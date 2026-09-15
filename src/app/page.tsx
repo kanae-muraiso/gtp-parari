@@ -1,6 +1,5 @@
 // apps/tools/parari/src/app/page.tsx
-// apps/tools/parari/src/app/page.tsx
-// 2026-04-26 JST
+// 2026-09-15 JST
 
 "use client";
 
@@ -9,25 +8,14 @@
  * コメント:
  * - parari.app の公式トップページ
  * - 未ログインならこのページに公式説明を表示する
- * - ログイン済みなら /mypage へ移動する
- * - SEOのため「PARARI（パラリ）」「ぱらり」を本文に明示する
+ * - ログイン済みならユーザー設定に応じて LIBRARY / STUDIO へ移動する
  */
 
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
-
-/**
- * PART: device helper
- * コメント:
- * - OnePAGE はスマホ導線を優先する
- * - 開発中のPC判定も含め、まずは幅基準で十分
- */
-function isSmartphoneViewport() {
-  if (typeof window === "undefined") return false;
-  return window.innerWidth <= 768;
-}
+import { resolveParariStartPath } from "@/lib/parariWorkspace";
 
 export default function HomePage() {
   const router = useRouter();
@@ -49,16 +37,15 @@ export default function HomePage() {
 
       if (!mounted) return;
 
-      // PART: not logged in
-      // コメント:
-      // - 未ログインユーザーには公式トップページを表示する
       if (!user) {
         setChecking(false);
         return;
       }
 
-      // PART: logged in
-      router.replace("/mypage");
+      const startPath = await resolveParariStartPath(user.id);
+      if (!mounted) return;
+
+      router.replace(startPath);
     }
 
     void checkAuthAndRedirect();
@@ -74,7 +61,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] text-neutral-900">
-      {/* PART: hero */}
       <section className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
         <p className="mb-4 text-sm tracking-[0.28em] text-neutral-500">
           PARARI
