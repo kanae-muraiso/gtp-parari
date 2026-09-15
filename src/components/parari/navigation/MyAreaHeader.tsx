@@ -6,10 +6,8 @@
 // - 制作・運営側は STUDIO
 // - 設定は両方から使う共通領域
 
-import Link from "next/link";
-
-import ManagementLinks from "@/components/parari/navigation/ManagementLinks";
 import LogoutButton from "@/components/parari/navigation/LogoutButton";
+import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
 
 type MyAreaHeaderProps = {
@@ -22,21 +20,24 @@ export default function MyAreaHeader({
   showManagementLinks = true,
 }: MyAreaHeaderProps) {
   const isSettings = title === "設定";
-  const areaLabel = isSettings
-    ? "PARARI"
-    : showManagementLinks
-      ? "PARARI · LIBRARY"
-      : "PARARI · STUDIO";
-
-  const workspace = isSettings
-    ? null
+  const area = isSettings
+    ? "settings"
     : showManagementLinks
       ? "library"
       : "studio";
 
+  const areaLabel =
+    area === "settings"
+      ? "PARARI"
+      : area === "library"
+        ? "PARARI · LIBRARY"
+        : "PARARI · STUDIO";
+
   return (
     <>
-      {workspace ? <WorkspaceVisitTracker workspace={workspace} /> : null}
+      {area !== "settings" ? (
+        <WorkspaceVisitTracker workspace={area} />
+      ) : null}
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -49,18 +50,8 @@ export default function MyAreaHeader({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          {showManagementLinks ? (
-            <ManagementLinks />
-          ) : (
-            <Link
-              href="/mypage"
-              className="rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-            >
-              LIBRARY
-            </Link>
-          )}
-
+        <div className="flex items-center gap-4">
+          <WorkspaceLinks area={area} />
           <LogoutButton />
         </div>
       </div>
