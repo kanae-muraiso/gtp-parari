@@ -1,18 +1,12 @@
 // src/components/parari/settings/SettingsTabs.tsx
-// 2026/08/23 JST
+// 2026/09/15 JST
 //
-// PARARI settings tabs
-//
-// 設定画面は
-// - 基本設定
-// - トップページ
-// - プラン
-//
-// の3つ。
-//
-// PLUS / HOST / PRO は画面の場所ではなく、
-// 利用できる機能を決めるプラン名として扱う。
+// 共通設定は基本設定 / プラン。
+// 公開トップページは STUDIO を使う人にだけ表示する。
 
+"use client";
+
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
 export type SettingsTab =
@@ -24,35 +18,39 @@ type SettingsTabsProps = {
   active: SettingsTab;
 };
 
-const ITEMS = [
-  {
-    key: "basic",
-    label: "基本設定",
-    href: "/my/profile",
-  },
-  {
-    key: "public",
-    label: "トップページ",
-    href: "/my/profile/public",
-  },
-  {
-    key: "plan",
-    label: "プラン",
-    href: "/billing",
-  },
-] satisfies Array<{
+type Item = {
   key: SettingsTab;
   label: string;
   href: string;
-}>;
+};
 
-export default function SettingsTabs({
-  active,
-}: SettingsTabsProps) {
-  return (
-    <ParariTabs
-      items={ITEMS}
-      active={active}
-    />
-  );
+const BASIC_ITEM: Item = {
+  key: "basic",
+  label: "基本設定",
+  href: "/my/profile",
+};
+
+const PUBLIC_ITEM: Item = {
+  key: "public",
+  label: "トップページ",
+  href: "/my/profile/public",
+};
+
+const PLAN_ITEM: Item = {
+  key: "plan",
+  label: "プラン",
+  href: "/billing",
+};
+
+export default function SettingsTabs({ active }: SettingsTabsProps) {
+  const { studioEnabled } = useParariExperience();
+  const items: Item[] = [BASIC_ITEM];
+
+  if (studioEnabled || active === "public") {
+    items.push(PUBLIC_ITEM);
+  }
+
+  items.push(PLAN_ITEM);
+
+  return <ParariTabs items={items} active={active} />;
 }
