@@ -21,12 +21,22 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   getEffectivePlan,
   getPlanLimits,
-  isAtOrOverLimit,
 } from "@/lib/billing/plan";
 
 import {
   getUserBillingByUserId,
 } from "@/lib/billing/supabaseBilling";
+import {
+  CAPACITY_HOLDING_STATUSES,
+  isCapacityReached,
+  resolveEffectiveCapacityLimit,
+} from "@/features/application/domain/capacity";
+import {
+  resolveEffectivePricing,
+} from "@/features/application/domain/pricing";
+import {
+  resolveInitialApplicationEntryState,
+} from "@/features/application/domain/submissionState";
 
 
 const UUID_RE =
@@ -422,35 +432,6 @@ function getCapacity(
   );
 }
 
-
-function resolveEffectiveLimit(
-  capacityLimit: number | null,
-  planLimit: number | null,
-): number | null {
-  if (
-    capacityLimit === null &&
-    planLimit === null
-  ) {
-    return null;
-  }
-
-  if (
-    capacityLimit === null
-  ) {
-    return planLimit;
-  }
-
-  if (
-    planLimit === null
-  ) {
-    return capacityLimit;
-  }
-
-  return Math.min(
-    capacityLimit,
-    planLimit,
-  );
-}
 
 
 function deadlineHasPassed(
@@ -1224,7 +1205,7 @@ export async function POST(
         );
 
       effectiveLimit =
-        resolveEffectiveLimit(
+        resolveEffectiveCapacityLimit(
           capacityLimit,
           planParticipantLimit,
         );
@@ -1245,11 +1226,7 @@ export async function POST(
         )
         .in(
           "status",
-          [
-            "submitted",
-            "confirmed",
-            "rejected",
-          ],
+          [...CAPACITY_HOLDING_STATUSES],
         );
 
 
@@ -1302,7 +1279,7 @@ export async function POST(
 
 
     if (
-      isAtOrOverLimit(
+      isCapacityReached(
         count ?? 0,
         effectiveLimit,
       )
@@ -1399,32 +1376,34 @@ export async function POST(
     // Entry作成
     // ======================================================
 
-      const qualificationStatus =
-        application.acceptance_mode ===
-        "approval"
-          ? "pending"
-          : "not_required";
+      const effectivePricing =
+      resolveEffectivePricing({
+        applicationAmount:
+          application.payment_amount,
+        applicationCurrency:
+          application.payment_currency,
+        calendarOccurrence:
+          calendarOccurrence
+            ? {
+                feeAmount:
+                  calendarOccurrence.fee_amount,
+                feeCurrency:
+                  calendarOccurrence.fee_currency,
+              }
+            : null,
+      });
 
-      const paymentStatus =
-        application.payment_method ===
-        "none"
-          ? "not_required"
-          : "unpaid";
-
-      const qualificationSatisfied =
-        qualificationStatus ===
-          "not_required";
-
-      const paymentSatisfied =
-        application
-          .payment_confirmation_required !==
-          true;
-
-      const entryStatus =
-        qualificationSatisfied &&
-        paymentSatisfied
-          ? "confirmed"
-          : "submitted";
+    const initialEntryState =
+      resolveInitialApplicationEntryState({
+        pricingAmount:
+          effectivePricing.amount,
+        paymentMethod:
+          application.payment_method,
+        paymentConfirmationRequired:
+          application.payment_confirmation_required,
+        acceptanceMode:
+          application.acceptance_mode,
+      });
 
     const {
       data: entry,
@@ -1456,13 +1435,13 @@ export async function POST(
             applicationAnswers,
 
           status:
-            entryStatus,
+            initialEntryState.status,
 
         qualification_status:
-          qualificationStatus,
+          initialEntryState.qualificationStatus,
 
         payment_status:
-          paymentStatus,
+          initialEntryState.paymentStatus,
             
           application_snapshot:
             applicationSnapshot,
