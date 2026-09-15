@@ -1,27 +1,13 @@
-// apps/tools/parari/src/components/parari/WorkspaceSwitchBar.tsx
-// apps/tools/parari/src/components/parari/WorkspaceSwitchBar.tsx
-// 2026-04-06 JST
+// src/components/parari/WorkspaceSwitchBar.tsx
+// 2026-09-15 JST
 
 "use client";
-
-/**
- * PART: WorkspaceSwitchBar
- * コメント:
- * - 本棚環境と編集環境を見た目で分ける
- * - shelf:
- *   - パステル1本バー
- *   - 左は「マイ本棚 ⇆」のラベル
- *   - 「編集環境」だけをボタンにする
- *   - 右に「表示設定 / EN / logout」
- * - editor:
- *   - 黒1本バー
- *   - 左にページタイトル
- *   - 右に主要操作
- */
 
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import { supabase } from "../../lib/supabaseClient";
 
 type Props = {
@@ -68,6 +54,7 @@ export default function WorkspaceSwitchBar({
   extraActions,
 }: Props) {
   const router = useRouter();
+  const { studioEnabled } = useParariExperience();
 
   const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>("mint");
   const [loadingTheme, setLoadingTheme] = React.useState(variant === "shelf");
@@ -177,15 +164,21 @@ export default function WorkspaceSwitchBar({
             }`}
           >
             <div className="flex items-center gap-3 text-sm font-medium">
-              <span>マイ本棚</span>
-              <span>⇆</span>
-
-              <Link
-                href="/editor"
-                className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm hover:bg-white"
-              >
-                マイ作品
+              <Link href="/mypage" className="hover:underline">
+                LIBRARY
               </Link>
+
+              {studioEnabled ? (
+                <>
+                  <span>⇆</span>
+                  <Link
+                    href="/my/works"
+                    className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm hover:bg-white"
+                  >
+                    STUDIO
+                  </Link>
+                </>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -236,7 +229,7 @@ export default function WorkspaceSwitchBar({
           ) : null}
 
           <div className="truncate text-sm font-semibold">
-            {title || "マイ作品"}
+            {title || "STUDIO"}
           </div>
         </div>
 
