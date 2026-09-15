@@ -2,6 +2,11 @@
 
 import * as React from "react";
 
+// Stable creator-side entry point for APPLICATION.
+// The current implementation is delegated to ApplicationManagerLegacy.tsx.
+// ApplicationManagerV3Compat.tsx is temporary and should be removed after
+// the behavior-preserving APPLICATION refactor.
+// Architecture map: /docs/APPLICATION.md
 import ApplicationManagerLegacy, {
   type ApplicationManagerCreatedApplication,
 } from "./ApplicationManagerLegacy";
