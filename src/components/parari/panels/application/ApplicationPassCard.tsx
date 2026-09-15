@@ -21,11 +21,13 @@ type PassResponse = {
 export default function ApplicationPassCard({
   entryId,
   title,
-  participantName,
+  participantName = "",
+  storageHint = "screenshot",
 }: {
   entryId: string;
   title: string;
-  participantName: string;
+  participantName?: string;
+  storageHint?: "screenshot" | "library";
 }) {
   const [passCode, setPassCode] =
     React.useState("");
@@ -130,9 +132,11 @@ export default function ApplicationPassCard({
         <div className="text-sm font-bold leading-6 text-neutral-950">
           {title}
         </div>
-        <div className="mt-1 text-sm text-neutral-600">
-          {participantName}
-        </div>
+        {participantName ? (
+          <div className="mt-1 text-sm text-neutral-600">
+            {participantName}
+          </div>
+        ) : null}
 
         <div className="mx-auto mt-5 w-full max-w-[260px] rounded-2xl bg-white p-3">
           <QrSvg value={checkInUrl} />
@@ -144,10 +148,14 @@ export default function ApplicationPassCard({
 
         <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4 text-left">
           <div className="text-sm font-bold text-neutral-950">
-            この画面をスクリーンショットで保存してください
+            {storageHint === "library"
+              ? "この参加証はPARARIに保存されています"
+              : "この画面をスクリーンショットで保存してください"}
           </div>
           <p className="mt-2 text-sm leading-7 text-neutral-600">
-            当日は、この参加証を受付でご提示ください。
+            {storageHint === "library"
+              ? "当日は、この画面または保存済みのスクリーンショットをご提示ください。"
+              : "当日は、この参加証を受付でご提示ください。"}
           </p>
         </div>
       </div>

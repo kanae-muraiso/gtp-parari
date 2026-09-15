@@ -104,6 +104,15 @@ export default function MyPage() {
             />
           ) : null}
 
+          {!loading && hasApplications ? (
+            <HomeCard
+              title="参加証"
+              description="確定したイベントやクラスのQR参加証をいつでも表示できます。"
+              href="/my/passes"
+              action="参加証を見る"
+            />
+          ) : null}
+
           {!loading && hasCalendar ? (
             <HomeCard
               title="カレンダー"
