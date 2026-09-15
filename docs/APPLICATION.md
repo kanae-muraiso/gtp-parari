@@ -237,6 +237,7 @@ QR には個人情報を入れません。
 - FIELD / FORM入力欄renderer
 - completed entry / payment snapshot解析
 - CALENDAR / MEMBERSHIP blockの読み取り・表示補助
+- APPLICATIONラベル / status badge / info row / 日付・値の表示整形
 
 `src/components/parari/panels/application/GuestApplicationPanelRenderer.tsx`
 
