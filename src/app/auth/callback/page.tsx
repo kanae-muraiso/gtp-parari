@@ -1,6 +1,5 @@
-// apps/tools/parari/src/app/auth/callback/page.tsx
-// apps/tools/parari/src/app/auth/callback/page.tsx
-// 2026-03-18 JST
+// src/app/auth/callback/page.tsx
+// 2026/09/15 JST
 
 "use client";
 
@@ -18,21 +17,17 @@ export default function AuthCallbackPage() {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
 
-          /**
-           * PART: callback return destination
-           * コメント:
-           * - returnTo と next の両方を受け取れるようにする
-           * - 外部URLへ飛ばされないよう内部パスだけ許可する
-           */
-          const rawReturnTo =
-            url.searchParams.get("returnTo") ||
-            url.searchParams.get("next") ||
-            "/mypage";
+        // returnTo / next が明示されている場合は、その導線を優先する。
+        // 通常ログインは / に戻し、起動画面設定をそこで解決する。
+        const rawReturnTo =
+          url.searchParams.get("returnTo") ||
+          url.searchParams.get("next") ||
+          "/";
 
-          const returnTo =
-            rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//")
-              ? rawReturnTo
-              : "/mypage";
+        const returnTo =
+          rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//")
+            ? rawReturnTo
+            : "/";
 
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -53,13 +48,13 @@ export default function AuthCallbackPage() {
           return;
         }
 
-          router.replace(returnTo);
+        router.replace(returnTo);
       } catch (e) {
         setStatus("認証失敗");
       }
     };
 
-    run();
+    void run();
   }, [router]);
 
   return (
