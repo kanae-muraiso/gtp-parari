@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 export default function StudioAccessPanel() {
   const { studioEnabled, loading, reload } = useParariExperience();
+  const [confirming, setConfirming] = useState(false);
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,6 +52,7 @@ export default function StudioAccessPanel() {
 
     notifyParariExperienceChanged();
     await reload();
+    setConfirming(false);
     setActivating(false);
   }
 
@@ -69,9 +71,7 @@ export default function StudioAccessPanel() {
         <div className="text-xs font-bold tracking-[0.18em] text-white/50">
           STUDIO
         </div>
-        <div className="mt-2 text-base font-bold">
-          制作・運営機能が有効です
-        </div>
+        <div className="mt-2 text-base font-bold">制作・運営機能が有効です</div>
         <p className="mt-2 text-xs leading-6 text-white/65">
           作品をつくる、募集する、MembershipやCalendarを運営する機能はこちらにまとまります。
         </p>
@@ -87,6 +87,51 @@ export default function StudioAccessPanel() {
     );
   }
 
+  if (confirming) {
+    return (
+      <section className="rounded-3xl border border-neutral-900 bg-white p-5 shadow-sm">
+        <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+          STUDIO
+        </div>
+        <div className="mt-2 text-base font-bold text-neutral-950">
+          制作・運営機能を有効にしますか？
+        </div>
+        <p className="mt-2 text-xs leading-6 text-neutral-500">
+          有効にすると、LIBRARYとは別にSTUDIOが現れます。作品制作、募集、Membership、Calendarなどの運営機能はSTUDIO側にまとまります。読む・参加するだけの画面は変わりません。
+        </p>
+
+        {error ? (
+          <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void activateStudio()}
+            disabled={activating}
+            className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {activating ? "有効にしています…" : "STUDIOを有効にする"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setConfirming(false);
+              setError("");
+            }}
+            disabled={activating}
+            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+          >
+            やめる
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="text-sm font-bold text-neutral-900">
@@ -96,19 +141,12 @@ export default function StudioAccessPanel() {
         読む・参加するだけなら、この機能を有効にする必要はありません。作品制作や募集、Membership、Calendarの運営を始めるときだけ有効にできます。
       </p>
 
-      {error ? (
-        <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-700">
-          {error}
-        </div>
-      ) : null}
-
       <button
         type="button"
-        onClick={activateStudio}
-        disabled={activating}
-        className="mt-4 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-800 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => setConfirming(true)}
+        className="mt-4 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-800 transition hover:bg-neutral-50"
       >
-        {activating ? "有効にしています…" : "制作・運営機能を使う"}
+        制作・運営機能を使う
       </button>
     </section>
   );
