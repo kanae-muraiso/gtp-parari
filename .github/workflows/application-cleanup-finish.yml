@@ -1,0 +1,52 @@
+name: APPLICATION cleanup finish
+
+on:
+  push:
+    branches:
+      - refactor/application-cleanup-finish
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: ${{ !contains(github.event.head_commit.message, '[application-cleanup-complete]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Finish APPLICATION cleanup
+        run: node .github/scripts/finish-application-cleanup.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Verify cleanup invariants
+        run: |
+          test -z "$(find src/components/parari/panels/application -maxdepth 1 -name 'applicationTypes.ts.backup-before-*' -print)"
+          ! grep -R --line-number --fixed-strings 'ApplicationManagerV3Compat' src docs
+
+      - name: Remove one-time tooling
+        run: |
+          rm .github/scripts/finish-application-cleanup.mjs
+          rm .github/workflows/application-cleanup-finish.yml
+          git checkout -- tsconfig.tsbuildinfo || true
+          rmdir .github/scripts 2>/dev/null || true
+
+      - name: Commit verified cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finish APPLICATION cleanup [application-cleanup-complete]"
+          git push
