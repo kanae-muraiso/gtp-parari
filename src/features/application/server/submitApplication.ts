@@ -7,16 +7,8 @@ import {
   getUserBillingByUserId,
 } from "@/lib/billing/supabaseBilling";
 import {
-  CAPACITY_HOLDING_STATUSES,
-  isCapacityReached,
   resolveEffectiveCapacityLimit,
 } from "@/features/application/domain/capacity";
-import {
-  resolveEffectivePricing,
-} from "@/features/application/domain/pricing";
-import {
-  resolveInitialApplicationEntryState,
-} from "@/features/application/domain/submissionState";
 import type {
   ApplicationAcceptanceMode,
   ApplicationPaymentMethod,
@@ -383,6 +375,28 @@ export async function submitApplication(
     );
   }
 
+  const { error: expireError } =
+    await supabaseAdmin.rpc(
+      "expire_application_payment_holds",
+      {
+        p_application_id: application.id,
+        p_calendar_occurrence_id:
+          calendarOccurrence?.id ?? null,
+      },
+    );
+
+  if (expireError) {
+    console.error(
+      "application payment hold expiry failed:",
+      expireError,
+    );
+
+    return fail(
+      500,
+      "申込状況を確認できませんでした。",
+    );
+  }
+
   let duplicateQuery = supabaseAdmin
     .from("application_entries")
     .select("id, status")
@@ -530,60 +544,6 @@ export async function submitApplication(
       );
   }
 
-  let countQuery = supabaseAdmin
-    .from("application_entries")
-    .select(
-      "id",
-      {
-        count: "exact",
-        head: true,
-      },
-    )
-    .in(
-      "status",
-      [...CAPACITY_HOLDING_STATUSES],
-    );
-
-  if (calendarOccurrence) {
-    countQuery = countQuery.eq(
-      "calendar_occurrence_id",
-      calendarOccurrence.id,
-    );
-  } else {
-    countQuery = countQuery
-      .eq("application_id", application.id)
-      .is("calendar_occurrence_id", null);
-  }
-
-  const {
-    count,
-    error: countError,
-  } = await countQuery;
-
-  if (countError) {
-    console.error(
-      "application count failed:",
-      countError,
-    );
-
-    return fail(
-      500,
-      "現在の申込数を確認できませんでした。",
-    );
-  }
-
-  if (
-    isCapacityReached(
-      count ?? 0,
-      effectiveLimit,
-    )
-  ) {
-    return fail(
-      409,
-      "受付可能人数に達しています。",
-    );
-  }
-
   const snapshotDefinition =
     input.identity.kind === "guest"
       ? withGuestIdentityDefinition(
@@ -647,34 +607,6 @@ export async function submitApplication(
         : null,
   };
 
-  const effectivePricing =
-    resolveEffectivePricing({
-      applicationAmount:
-        application.payment_amount,
-      applicationCurrency:
-        application.payment_currency,
-      calendarOccurrence:
-        calendarOccurrence
-          ? {
-              feeAmount:
-                calendarOccurrence.fee_amount,
-              feeCurrency:
-                calendarOccurrence.fee_currency,
-            }
-          : null,
-    });
-
-  const initialEntryState =
-    resolveInitialApplicationEntryState({
-      pricingAmount: effectivePricing.amount,
-      paymentMethod:
-        application.payment_method,
-      paymentConfirmationRequired:
-        application.payment_confirmation_required,
-      acceptanceMode:
-        application.acceptance_mode,
-    });
-
   const answers =
     input.identity.kind === "guest"
       ? {
@@ -684,57 +616,52 @@ export async function submitApplication(
         }
       : answersResult.answers;
 
-  const identityColumns =
-    input.identity.kind === "guest"
-      ? {
-          user_id: null,
-          applicant_name: guestName,
-          applicant_email: guestEmail,
-        }
-      : {
-          user_id: input.identity.userId,
-        };
-
   const {
-    data: entry,
+    data: atomicEntryData,
     error: insertError,
-  } = await supabaseAdmin
-    .from("application_entries")
-    .insert({
-      application_id: application.id,
-      application_version: application.version,
-      ...identityColumns,
-      calendar_occurrence_id:
+  } = await supabaseAdmin.rpc(
+    "create_application_entry_atomic",
+    {
+      p_application_id: application.id,
+      p_application_version: application.version,
+      p_application_snapshot: applicationSnapshot,
+      p_answers: answers,
+      p_capacity_limit: effectiveLimit,
+      p_user_id:
+        input.identity.kind === "member"
+          ? input.identity.userId
+          : null,
+      p_applicant_name:
+        input.identity.kind === "guest"
+          ? guestName
+          : null,
+      p_applicant_email:
+        input.identity.kind === "guest"
+          ? guestEmail
+          : null,
+      p_calendar_occurrence_id:
         calendarOccurrence?.id ?? null,
-      form_submission_id:
+      p_form_submission_id:
         validatedFormSubmissionId,
-      answers,
-      status: initialEntryState.status,
-      qualification_status:
-        initialEntryState.qualificationStatus,
-      payment_status:
-        initialEntryState.paymentStatus,
-      application_snapshot:
-        applicationSnapshot,
-    })
-    .select(
-      `
-        id,
-        cancellation_token,
-        calendar_occurrence_id,
-        status,
-        qualification_status,
-        payment_status,
-        payment_reported_at,
-        payment_confirmed_at,
-        application_snapshot,
-        agreed_at,
-        created_at
-      `,
-    )
-    .single();
+    },
+  );
+
+  const entry = Array.isArray(atomicEntryData)
+    ? atomicEntryData[0] ?? null
+    : atomicEntryData;
 
   if (insertError) {
+    if (
+      (insertError.message ?? "").includes(
+        "application_capacity_reached",
+      )
+    ) {
+      return fail(
+        409,
+        "受付可能人数に達しています。",
+      );
+    }
+
     if (insertError.code === "23505") {
       return fail(
         409,
@@ -753,6 +680,13 @@ export async function submitApplication(
       insertError,
     );
 
+    return fail(
+      500,
+      "お申し込みを登録できませんでした。",
+    );
+  }
+
+  if (!entry) {
     return fail(
       500,
       "お申し込みを登録できませんでした。",
