@@ -27,7 +27,7 @@ type Item = {
 const BASIC_ITEM: Item = {
   key: "basic",
   label: "基本設定",
-  href: "/my/profile",
+  href: "/my/profile?returnTo=/my/settings",
 };
 
 const PUBLIC_ITEM: Item = {
