@@ -257,6 +257,18 @@ QR には個人情報を入れません。
 - `messages` — APPLICATION メッセージ
 - `occurrence-participants` — 開催回の参加者
 
+### 共通申込サービス
+
+`src/features/application/server/submitApplication.ts`
+
+- guest / member 共通の募集取得、開催回検証、重複確認、FORM確認、定員確認、snapshot、entry作成
+- `/api/application/guest-submit` と `/api/application/submit` は identity を渡す薄いadapter
+- manual CALENDAR block も両経路で同じ開催回解決を使う
+
+`src/features/application/server/submissionDefinition.ts`
+
+- APPLICATION definition の読み取り、入力回答検証、CALENDAR block抽出、締切・定員の補助処理
+
 ## 8. 主なDBテーブル
 
 - `applications` — 募集・申込設定
@@ -279,14 +291,13 @@ support helper、manual 申込者表示 UI、FIELD / CALENDAR / MEMBERSHIP ビ�
 
 `MutationObserver` で既存 UI を補正しています。長期的な本体ではありません。
 
-### D. ゲスト申込と登録ユーザー申込のロジックが重複
+### D. submit経路の共通化は完了
 
-`guest-submit` と `submit` に似た検証があり、差が生じやすい状態です。
+`guest-submit` と `submit` は共通の `submitApplication()` を利用します。identity 固有の処理だけroute側に残しています。
 
-### E. manual CALENDAR block の経路に非対称が残っている
+### E. manual CALENDAR block の非対称は解消済み
 
-ゲスト側は manual CALENDAR block を開催回予約として扱えますが、登録ユーザー側の submit 経路には古い処理が残っています。
-これは機能追加前に共有 submit service へ寄せて解消します。
+ゲスト / 登録ユーザーとも、APPLICATION内のCALENDAR blockから同じ開催回解決ロジックを利用します。
 
 ## 10. リファクタリング順序
 
@@ -300,8 +311,8 @@ D. 主催者画面の作成 / 編集 UI を分離                    完了
    - 支払 / 同意 / 承認 / ボタン設定                    完了
    - FIELD / CALENDAR / MEMBERSHIP ビルダー              完了
 E. pricing / payment / acceptance / capacity を pure domain logic として分離  完了
-F. guest / member 共通の submit service を作る                         次
-G. 参加者画面を小コンポーネントへ分割
+F. guest / member 共通の submit service を作る                         完了
+G. 参加者画面を小コンポーネントへ分割                                  次
 H. ApplicationManagerV3Compat を削除
 ```
 
