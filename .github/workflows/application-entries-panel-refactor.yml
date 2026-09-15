@@ -1,0 +1,45 @@
+name: APPLICATION entries-panel one-time refactor
+
+on:
+  push:
+    branches:
+      - refactor/application-entries-panel
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: ${{ !contains(github.event.head_commit.message, '[entries-panel-refactor-applied]') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply extraction
+        run: node scripts/refactor-application-entries-panel.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Commit refactor
+        run: |
+          rm scripts/refactor-application-entries-panel.mjs
+          rm .github/workflows/application-entries-panel-refactor.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Extract APPLICATION entries panel [entries-panel-refactor-applied]"
+          git push origin HEAD:refactor/application-entries-panel
