@@ -227,8 +227,16 @@ QR には個人情報を入れません。
 
 `src/components/parari/panels/application/ApplicationPanelRenderer.tsx`
 
-- PARARI 登録ユーザー側の現在の巨大ランタイム
-- 認証 / CALENDAR / FORM / 申込 / 既存申込編集 / 支払連絡 / 表示を抱えている
+- PARARI 登録ユーザー側のランタイム本体
+- state / 認証 / データ取得 / 申込アクションを中心に持つ
+- 型、入力欄renderer、snapshot解析、CALENDAR/MEMBERSHIP表示補助は support へ分離済み
+
+`src/components/parari/panels/application/applicationPanelSupport.tsx`
+
+- 公開APPLICATIONの型
+- FIELD / FORM入力欄renderer
+- completed entry / payment snapshot解析
+- CALENDAR / MEMBERSHIP blockの読み取り・表示補助
 
 `src/components/parari/panels/application/GuestApplicationPanelRenderer.tsx`
 
@@ -312,7 +320,9 @@ D. 主催者画面の作成 / 編集 UI を分離                    完了
    - FIELD / CALENDAR / MEMBERSHIP ビルダー              完了
 E. pricing / payment / acceptance / capacity を pure domain logic として分離  完了
 F. guest / member 共通の submit service を作る                         完了
-G. 参加者画面を小コンポーネントへ分割                                  次
+G. 参加者画面を小コンポーネントへ分割                                  進行中
+   - support / input renderer / snapshot解析                              完了
+   - 状態表示 / CALENDAR予約 / FORM表示                                  次
 H. ApplicationManagerV3Compat を削除
 ```
 
