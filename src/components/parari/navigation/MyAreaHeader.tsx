@@ -10,33 +10,35 @@ import LogoutButton from "@/components/parari/navigation/LogoutButton";
 import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
 
+type WorkspaceArea = "library" | "studio" | "settings";
+
 type MyAreaHeaderProps = {
   title: string;
   showManagementLinks?: boolean;
+  area?: WorkspaceArea;
 };
 
 export default function MyAreaHeader({
   title,
   showManagementLinks = true,
+  area,
 }: MyAreaHeaderProps) {
-  const isSettings = title === "設定";
-  const area = isSettings
-    ? "settings"
-    : showManagementLinks
-      ? "library"
-      : "studio";
+  // showManagementLinks は既存画面との互換用。
+  // 新しい画面は area を明示すれば、タイトル文言に依存しない。
+  const resolvedArea: WorkspaceArea =
+    area ?? (showManagementLinks ? "library" : "studio");
 
   const areaLabel =
-    area === "settings"
+    resolvedArea === "settings"
       ? "PARARI"
-      : area === "library"
+      : resolvedArea === "library"
         ? "PARARI · LIBRARY"
         : "PARARI · STUDIO";
 
   return (
     <>
-      {area !== "settings" ? (
-        <WorkspaceVisitTracker workspace={area} />
+      {resolvedArea !== "settings" ? (
+        <WorkspaceVisitTracker workspace={resolvedArea} />
       ) : null}
 
       <div className="flex items-start justify-between gap-4">
@@ -51,7 +53,7 @@ export default function MyAreaHeader({
         </div>
 
         <div className="flex items-center gap-4">
-          <WorkspaceLinks area={area} />
+          <WorkspaceLinks area={resolvedArea} />
           <LogoutButton />
         </div>
       </div>
