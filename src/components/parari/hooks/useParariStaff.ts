@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabaseClient";
 
+type AccessRow = {
+  is_superuser: boolean | null;
+  parari_role: string | null;
+  cpp_role: string | null;
+};
+
 export default function useParariStaff() {
-  const [isStaff, setIsStaff] = useState(false);
+  const [isSuperuser, setIsSuperuser] = useState(false);
+  const [parariRole, setParariRole] = useState<string | null>(null);
+  const [cppRole, setCppRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,20 +32,30 @@ export default function useParariStaff() {
       if (!mounted) return;
 
       if (!user) {
-        setIsStaff(false);
+        setIsSuperuser(false);
+        setParariRole(null);
+        setCppRole(null);
         setLoading(false);
         return;
       }
 
-      const { data } = await supabase
-        .from("parari_staff_users")
-        .select("is_active")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_my_operations_access");
 
       if (!mounted) return;
 
-      setIsStaff(Boolean(data?.is_active));
+      if (error) {
+        setIsSuperuser(false);
+        setParariRole(null);
+        setCppRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const row = (Array.isArray(data) ? data[0] : data) as AccessRow | null;
+
+      setIsSuperuser(Boolean(row?.is_superuser));
+      setParariRole(row?.parari_role ?? null);
+      setCppRole(row?.cpp_role ?? null);
       setLoading(false);
     }
 
@@ -48,5 +66,17 @@ export default function useParariStaff() {
     };
   }, []);
 
-  return { isStaff, loading };
+  const canParari = Boolean(parariRole) || isSuperuser;
+  const canCpp = Boolean(cppRole) || isSuperuser;
+  const isStaff = canParari || canCpp || isSuperuser;
+
+  return {
+    isStaff,
+    isSuperuser,
+    canParari,
+    canCpp,
+    parariRole,
+    cppRole,
+    loading,
+  };
 }
