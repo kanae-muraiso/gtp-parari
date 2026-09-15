@@ -2,8 +2,7 @@
 // 2026/09/15 JST
 //
 // STUDIO側メインメニュー。
-// STUDIO未有効の利用者には制作・運営タブを見せない。
-// 直リンクで当該画面を開いている場合だけ現在地は残す。
+// 設定はSTUDIOの仕事ではないため、共通ヘッダー側へ分離する。
 
 "use client";
 
@@ -37,12 +36,6 @@ const MANAGE_ITEM: Item = {
   href: "/my/manage",
 };
 
-const SETTINGS_ITEM: Item = {
-  key: "settings",
-  label: "設定",
-  href: "/my/settings",
-};
-
 export default function ManagementTabs({ active }: ManagementTabsProps) {
   const { studioEnabled } = useParariExperience();
   const items: Item[] = [];
@@ -54,8 +47,6 @@ export default function ManagementTabs({ active }: ManagementTabsProps) {
   if (studioEnabled || active === "manage") {
     items.push(MANAGE_ITEM);
   }
-
-  items.push(SETTINGS_ITEM);
 
   return <ParariTabs items={items} active={active} />;
 }
