@@ -8,6 +8,7 @@ import {
   ACTION_LABEL_OPTIONS,
 } from "./applicationManagerSupport";
 import type {
+  ApplicationCancellationMode,
   ApplicationPaymentMethod,
 } from "./applicationManagerSupport";
 
@@ -61,6 +62,12 @@ type ApplicationPolicySettingsProps = {
   onPaymentConfirmationRequiredChange: (
     value: boolean,
   ) => void;
+  cancellationMode: ApplicationCancellationMode;
+  onCancellationModeChange: (value: ApplicationCancellationMode) => void;
+  cancellationDeadlineAt: string;
+  onCancellationDeadlineAtChange: (value: string) => void;
+  cancellationCutoffMinutes: string;
+  onCancellationCutoffMinutesChange: (value: string) => void;
   agreement: string;
   onAgreementChange: (value: string) => void;
   acceptanceMode: ApplicationAcceptanceMode;
@@ -85,6 +92,12 @@ export default function ApplicationPolicySettings({
   onPaymentInstructionsChange,
   paymentConfirmationRequired,
   onPaymentConfirmationRequiredChange,
+  cancellationMode,
+  onCancellationModeChange,
+  cancellationDeadlineAt,
+  onCancellationDeadlineAtChange,
+  cancellationCutoffMinutes,
+  onCancellationCutoffMinutesChange,
   agreement,
   onAgreementChange,
   acceptanceMode,
@@ -272,6 +285,84 @@ export default function ApplicationPolicySettings({
               </label>
             ) : null}
           </>
+        ) : null}
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-neutral-200 p-5">
+        <div className="text-sm font-bold text-neutral-950">
+          キャンセル
+        </div>
+
+        <p className="mt-1 text-xs leading-5 text-neutral-500">
+          参加者本人が申込後に取り下げ・キャンセルできる条件です。
+          支払済みの場合も、返金の判断と処理は主催者が行います。
+        </p>
+
+        <select
+          value={cancellationMode}
+          onChange={(event) =>
+            onCancellationModeChange(
+              event.target.value as ApplicationCancellationMode,
+            )
+          }
+          className="mt-3 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+        >
+          <option value="not_allowed">参加者からのキャンセル不可</option>
+          <option value="anytime">開催前ならいつでもキャンセル可</option>
+          <option value="until_deadline">期限までキャンセル可</option>
+        </select>
+
+        {cancellationMode === "until_deadline" ? (
+          hasCalendarBlock ? (
+            <label className="mt-4 block">
+              <span className="text-xs font-bold text-neutral-600">
+                開催の何時間前まで
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={
+                  cancellationCutoffMinutes &&
+                  Number.isFinite(Number(cancellationCutoffMinutes))
+                    ? String(Number(cancellationCutoffMinutes) / 60)
+                    : ""
+                }
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  if (!raw) {
+                    onCancellationCutoffMinutesChange("");
+                    return;
+                  }
+                  const hours = Number(raw);
+                  onCancellationCutoffMinutesChange(
+                    Number.isFinite(hours) && hours >= 0
+                      ? String(Math.round(hours * 60))
+                      : "",
+                  );
+                }}
+                placeholder="24"
+                className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+              />
+              <span className="mt-1 block text-xs leading-5 text-neutral-500">
+                各開催回の開始時刻から逆算します。例：24 → 前日同時刻まで。
+              </span>
+            </label>
+          ) : (
+            <label className="mt-4 block">
+              <span className="text-xs font-bold text-neutral-600">
+                キャンセル期限
+              </span>
+              <input
+                type="datetime-local"
+                value={cancellationDeadlineAt}
+                onChange={(event) =>
+                  onCancellationDeadlineAtChange(event.target.value)
+                }
+                className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+              />
+            </label>
+          )
         ) : null}
       </div>
 

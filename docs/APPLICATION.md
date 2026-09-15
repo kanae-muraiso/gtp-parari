@@ -369,3 +369,15 @@ src/features/application/
 3. guest / member で同じ業務ルールをコピーしない。domain / server service を共有する。
 4. UI は価格・承認・支払の最終ルールを独自判断しない。共通ロジックまたはDB制約を使う。
 5. 迷ったら、まずこの文書と上記の「入口」ファイルから追う。
+
+## 11. キャンセルポリシー
+
+APPLICATION の参加者キャンセル条件は 'applications' に持ちます。
+
+- 'cancellation_mode': 'not_allowed | anytime | until_deadline'
+- CALENDAR を使わない募集: 'cancellation_deadline_at'
+- CALENDAR を使う募集: 'cancellation_cutoff_minutes'（各開催回の開始時刻から逆算）
+
+申込時点の条件は 'application_snapshot' に固定します。参加者による状態遷移は 'submitted → withdrawn'、'confirmed → cancelled' とし、どちらも定員を即時に解放します。
+
+支払済みのキャンセルでも APPLICATION は返金判断を行いません。返金可否と返金操作は主催者の責任とし、将来の COMMERCE / Square 層が取引状態を記録します。

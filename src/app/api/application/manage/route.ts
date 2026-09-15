@@ -45,6 +45,12 @@ const PAYMENT_METHODS = [
   "payment_link",
 ] as const;
 
+const CANCELLATION_MODES = [
+  "not_allowed",
+  "anytime",
+  "until_deadline",
+] as const;
+
 
 function getBearerToken(
   request: NextRequest,
@@ -196,6 +202,29 @@ function isPaymentMethod(
   return PAYMENT_METHODS.includes(
     value as
       (typeof PAYMENT_METHODS)[number],
+  );
+}
+
+function isCancellationMode(
+  value: string,
+): value is (typeof CANCELLATION_MODES)[number] {
+  return CANCELLATION_MODES.includes(
+    value as (typeof CANCELLATION_MODES)[number],
+  );
+}
+
+function definitionHasCalendarBlock(definition: unknown): boolean {
+  if (!definition || typeof definition !== "object" || Array.isArray(definition)) {
+    return false;
+  }
+  const blocks = (definition as { blocks?: unknown }).blocks;
+  return Array.isArray(blocks) && blocks.some((block) =>
+    Boolean(
+      block &&
+      typeof block === "object" &&
+      !Array.isArray(block) &&
+      (block as { type?: unknown }).type === "calendar",
+    ),
   );
 }
 
@@ -767,6 +796,9 @@ export async function GET(
         payment_url,
         payment_instructions,
         payment_confirmation_required,
+        cancellation_mode,
+        cancellation_deadline_at,
+        cancellation_cutoff_minutes,
         status,
         version,
         created_at,
@@ -970,6 +1002,9 @@ export async function POST(
         paymentUrl?: unknown;
         paymentInstructions?: unknown;
         paymentConfirmationRequired?: unknown;
+        cancellationMode?: unknown;
+        cancellationDeadlineAt?: unknown;
+        cancellationCutoffMinutes?: unknown;
       }
     | null;
     
@@ -1071,6 +1106,26 @@ export async function POST(
       )
         ? paymentConfirmationRequired
         : false;
+
+    const cancellationMode =
+      typeof body?.cancellationMode === "string"
+        ? body.cancellationMode.trim()
+        : "not_allowed";
+
+    const cancellationDeadlineAt =
+      typeof body?.cancellationDeadlineAt === "string"
+        ? body.cancellationDeadlineAt.trim()
+        : "";
+
+    const cancellationCutoffMinutes =
+      typeof body?.cancellationCutoffMinutes === "number"
+        ? body.cancellationCutoffMinutes
+        : typeof body?.cancellationCutoffMinutes === "string" && body.cancellationCutoffMinutes.trim()
+          ? Number(body.cancellationCutoffMinutes)
+          : null;
+
+    const hasCalendarPricing =
+      !isLiteApplication && definitionHasCalendarBlock(rawDefinition);
     
   if (
     !isApplicationType(
@@ -1184,6 +1239,7 @@ export async function POST(
 
     if (
       paymentMethod !== "none" &&
+      !hasCalendarPricing &&
       (
         paymentAmount === null ||
         !Number.isFinite(
@@ -1203,6 +1259,36 @@ export async function POST(
         },
       );
     }
+
+  if (!isCancellationMode(cancellationMode)) {
+    return NextResponse.json(
+      { ok: false, message: "キャンセル設定が正しくありません。" },
+      { status: 400 },
+    );
+  }
+
+  if (cancellationMode === "until_deadline") {
+    if (hasCalendarPricing) {
+      if (
+        cancellationCutoffMinutes === null ||
+        !Number.isFinite(cancellationCutoffMinutes) ||
+        cancellationCutoffMinutes < 0
+      ) {
+        return NextResponse.json(
+          { ok: false, message: "キャンセル期限を正しく設定してください。" },
+          { status: 400 },
+        );
+      }
+    } else {
+      const deadlineTime = new Date(cancellationDeadlineAt).getTime();
+      if (!Number.isFinite(deadlineTime) || deadlineTime <= Date.now()) {
+        return NextResponse.json(
+          { ok: false, message: "キャンセル期限を未来の日時で設定してください。" },
+          { status: 400 },
+        );
+      }
+    }
+  }
 
   const definition =
     isLiteApplication
@@ -1296,7 +1382,7 @@ export async function POST(
       paymentMethod,
 
     payment_amount:
-      paymentMethod === "none"
+      paymentMethod === "none" || hasCalendarPricing
         ? null
         : paymentAmount,
 
@@ -1318,6 +1404,17 @@ export async function POST(
     payment_confirmation_required:
       normalizedPaymentConfirmationRequired,
 
+    cancellation_mode:
+      cancellationMode,
+    cancellation_deadline_at:
+      cancellationMode === "until_deadline" && !hasCalendarPricing
+        ? cancellationDeadlineAt
+        : null,
+    cancellation_cutoff_minutes:
+      cancellationMode === "until_deadline" && hasCalendarPricing
+        ? cancellationCutoffMinutes
+        : null,
+
       status:
         "draft",
     })
@@ -1338,6 +1435,9 @@ export async function POST(
         payment_url,
         payment_instructions,
         payment_confirmation_required,
+        cancellation_mode,
+        cancellation_deadline_at,
+        cancellation_cutoff_minutes,
         status,
         version,
         created_at,
@@ -1411,6 +1511,9 @@ export async function PATCH(
         paymentUrl?: unknown;
         paymentInstructions?: unknown;
         paymentConfirmationRequired?: unknown;
+        cancellationMode?: unknown;
+        cancellationDeadlineAt?: unknown;
+        cancellationCutoffMinutes?: unknown;
       }
     | null;
     
@@ -1535,6 +1638,26 @@ export async function PATCH(
       )
         ? paymentConfirmationRequired
         : false;
+
+    const cancellationMode =
+      typeof body?.cancellationMode === "string"
+        ? body.cancellationMode.trim()
+        : "not_allowed";
+
+    const cancellationDeadlineAt =
+      typeof body?.cancellationDeadlineAt === "string"
+        ? body.cancellationDeadlineAt.trim()
+        : "";
+
+    const cancellationCutoffMinutes =
+      typeof body?.cancellationCutoffMinutes === "number"
+        ? body.cancellationCutoffMinutes
+        : typeof body?.cancellationCutoffMinutes === "string" && body.cancellationCutoffMinutes.trim()
+          ? Number(body.cancellationCutoffMinutes)
+          : null;
+
+    const hasCalendarPricing =
+      !isLiteApplication && definitionHasCalendarBlock(rawDefinition);
     
   if (!applicationId) {
     return NextResponse.json(
@@ -1631,6 +1754,7 @@ export async function PATCH(
 
     if (
       paymentMethod !== "none" &&
+      !hasCalendarPricing &&
       (
         paymentAmount === null ||
         !Number.isFinite(
@@ -1650,6 +1774,36 @@ export async function PATCH(
         },
       );
     }
+
+  if (!isCancellationMode(cancellationMode)) {
+    return NextResponse.json(
+      { ok: false, message: "キャンセル設定が正しくありません。" },
+      { status: 400 },
+    );
+  }
+
+  if (cancellationMode === "until_deadline") {
+    if (hasCalendarPricing) {
+      if (
+        cancellationCutoffMinutes === null ||
+        !Number.isFinite(cancellationCutoffMinutes) ||
+        cancellationCutoffMinutes < 0
+      ) {
+        return NextResponse.json(
+          { ok: false, message: "キャンセル期限を正しく設定してください。" },
+          { status: 400 },
+        );
+      }
+    } else {
+      const deadlineTime = new Date(cancellationDeadlineAt).getTime();
+      if (!Number.isFinite(deadlineTime) || deadlineTime <= Date.now()) {
+        return NextResponse.json(
+          { ok: false, message: "キャンセル期限を未来の日時で設定してください。" },
+          { status: 400 },
+        );
+      }
+    }
+  }
 
   const definition =
     isLiteApplication
@@ -1740,7 +1894,7 @@ export async function PATCH(
       paymentMethod,
 
     payment_amount:
-      paymentMethod === "none"
+      paymentMethod === "none" || hasCalendarPricing
         ? null
         : paymentAmount,
 
@@ -1761,6 +1915,17 @@ export async function PATCH(
         
     payment_confirmation_required:
       normalizedPaymentConfirmationRequired,
+
+    cancellation_mode:
+      cancellationMode,
+    cancellation_deadline_at:
+      cancellationMode === "until_deadline" && !hasCalendarPricing
+        ? cancellationDeadlineAt
+        : null,
+    cancellation_cutoff_minutes:
+      cancellationMode === "until_deadline" && hasCalendarPricing
+        ? cancellationCutoffMinutes
+        : null,
         
     })
     .eq(
@@ -1788,6 +1953,9 @@ export async function PATCH(
         payment_url,
         payment_instructions,
         payment_confirmation_required,
+        cancellation_mode,
+        cancellation_deadline_at,
+        cancellation_cutoff_minutes,
         status,
         version,
         created_at,

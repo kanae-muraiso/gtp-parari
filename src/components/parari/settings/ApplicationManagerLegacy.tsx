@@ -68,6 +68,14 @@ export type {
   ApplicationManagerCreatedApplication,
 } from "./applicationManagerSupport";
 
+function toDateTimeLocalValue(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default function ApplicationManager({
   createOnly = false,
   onCreated,
@@ -219,6 +227,11 @@ export default function ApplicationManager({
       paymentConfirmationRequired,
       setPaymentConfirmationRequired,
     ] = React.useState(false);
+
+    const [cancellationMode, setCancellationMode] =
+      React.useState<import("./applicationManagerSupport").ApplicationCancellationMode>("not_allowed");
+    const [cancellationDeadlineAt, setCancellationDeadlineAt] = React.useState("");
+    const [cancellationCutoffMinutes, setCancellationCutoffMinutes] = React.useState("");
 
   React.useEffect(() => {
     if (
@@ -569,6 +582,9 @@ export default function ApplicationManager({
       setPaymentUrl("");
       setPaymentInstructions("");
       setPaymentConfirmationRequired(false);
+      setCancellationMode("not_allowed");
+      setCancellationDeadlineAt("");
+      setCancellationCutoffMinutes("");
       
     setAgreement("");
 
@@ -693,6 +709,13 @@ export default function ApplicationManager({
       setPaymentConfirmationRequired(
         application.payment_confirmation_required ===
           true,
+      );
+      setCancellationMode(application.cancellation_mode ?? "not_allowed");
+      setCancellationDeadlineAt(toDateTimeLocalValue(application.cancellation_deadline_at));
+      setCancellationCutoffMinutes(
+        application.cancellation_cutoff_minutes == null
+          ? ""
+          : String(application.cancellation_cutoff_minutes),
       );
       
     setAgreement(
@@ -826,6 +849,16 @@ export default function ApplicationManager({
         setPaymentInstructions(
           application.payment_instructions ??
             "",
+        );
+        setPaymentConfirmationRequired(
+          application.payment_confirmation_required === true,
+        );
+        setCancellationMode(application.cancellation_mode ?? "not_allowed");
+        setCancellationDeadlineAt(toDateTimeLocalValue(application.cancellation_deadline_at));
+        setCancellationCutoffMinutes(
+          application.cancellation_cutoff_minutes == null
+            ? ""
+            : String(application.cancellation_cutoff_minutes),
         );
         
       setAgreement(
@@ -1687,6 +1720,30 @@ export default function ApplicationManager({
 
         return;
       }
+
+      if (cancellationMode === "until_deadline") {
+        if (hasCalendarPricing) {
+          const cutoff = Number(cancellationCutoffMinutes);
+          if (
+            !cancellationCutoffMinutes.trim() ||
+            !Number.isFinite(cutoff) ||
+            cutoff < 0
+          ) {
+            setStatusMessage("キャンセル期限を正しく設定してください。");
+            return;
+          }
+        } else {
+          const deadline = new Date(cancellationDeadlineAt);
+          if (
+            !cancellationDeadlineAt ||
+            Number.isNaN(deadline.getTime()) ||
+            deadline.getTime() <= Date.now()
+          ) {
+            setStatusMessage("キャンセル期限を未来の日時で設定してください。");
+            return;
+          }
+        }
+      }
       
     if (!supabase) {
       setStatusMessage(
@@ -1837,6 +1894,16 @@ export default function ApplicationManager({
                       : paymentInstructions.trim(),
                   
                   paymentConfirmationRequired,
+
+                  cancellationMode,
+                  cancellationDeadlineAt:
+                    cancellationMode === "until_deadline" && !hasCalendarPricing
+                      ? new Date(cancellationDeadlineAt).toISOString()
+                      : null,
+                  cancellationCutoffMinutes:
+                    cancellationMode === "until_deadline" && hasCalendarPricing
+                      ? Number(cancellationCutoffMinutes)
+                      : null,
                   
               }),
           },
@@ -2187,6 +2254,12 @@ export default function ApplicationManager({
               onPaymentConfirmationRequiredChange={
                 setPaymentConfirmationRequired
               }
+              cancellationMode={cancellationMode}
+              onCancellationModeChange={setCancellationMode}
+              cancellationDeadlineAt={cancellationDeadlineAt}
+              onCancellationDeadlineAtChange={setCancellationDeadlineAt}
+              cancellationCutoffMinutes={cancellationCutoffMinutes}
+              onCancellationCutoffMinutesChange={setCancellationCutoffMinutes}
               agreement={agreement}
               onAgreementChange={setAgreement}
               acceptanceMode={acceptanceMode}

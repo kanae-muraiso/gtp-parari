@@ -75,6 +75,10 @@ type ApplicationRow = {
 
   payment_currency: string;
 
+  cancellation_mode: "not_allowed" | "anytime" | "until_deadline";
+  cancellation_deadline_at: string | null;
+  cancellation_cutoff_minutes: number | null;
+
   status:
     | "draft"
     | "open"
@@ -264,6 +268,9 @@ export async function GET(
           payment_method,
           payment_amount,
           payment_currency,
+          cancellation_mode,
+          cancellation_deadline_at,
+          cancellation_cutoff_minutes,
           status,
           version,
           created_at,
@@ -458,6 +465,15 @@ export async function GET(
 
         payment_currency:
           application.payment_currency,
+
+        cancellation_mode:
+          application.cancellation_mode,
+
+        cancellation_deadline_at:
+          application.cancellation_deadline_at,
+
+        cancellation_cutoff_minutes:
+          application.cancellation_cutoff_minutes,
 
         status:
           application.status,
