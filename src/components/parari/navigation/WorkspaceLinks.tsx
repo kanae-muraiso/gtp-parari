@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
+import useParariStaff from "@/components/parari/hooks/useParariStaff";
 
 type WorkspaceLinksProps = {
-  area: "library" | "studio" | "settings";
+  area: "library" | "studio" | "settings" | "operations";
 };
 
 const linkClass =
@@ -13,6 +14,7 @@ const linkClass =
 
 export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
   const { studioEnabled } = useParariExperience();
+  const { isStaff } = useParariStaff();
 
   return (
     <div className="flex items-center gap-4">
@@ -25,6 +27,12 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
       {studioEnabled && area !== "studio" ? (
         <Link href="/my/works" className={linkClass}>
           STUDIO
+        </Link>
+      ) : null}
+
+      {isStaff && area !== "operations" ? (
+        <Link href="/my/operations" className={linkClass}>
+          OPERATIONS
         </Link>
       ) : null}
 
