@@ -19,6 +19,8 @@ type ExperienceRow = {
   has_messages: boolean | null;
 };
 
+const EXPERIENCE_CHANGED_EVENT = "parari-experience-changed";
+
 const EMPTY_STATE: ParariExperience = {
   studioEnabled: false,
   hasApplications: false,
@@ -26,6 +28,11 @@ const EMPTY_STATE: ParariExperience = {
   hasMessages: false,
   loading: true,
 };
+
+export function notifyParariExperienceChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(EXPERIENCE_CHANGED_EVENT));
+}
 
 export default function useParariExperience() {
   const [state, setState] = useState<ParariExperience>(EMPTY_STATE);
@@ -65,17 +72,16 @@ export default function useParariExperience() {
   }, []);
 
   useEffect(() => {
-    let active = true;
+    void reload();
 
-    async function load() {
-      if (!active) return;
-      await reload();
+    function handleExperienceChanged() {
+      void reload();
     }
 
-    void load();
+    window.addEventListener(EXPERIENCE_CHANGED_EVENT, handleExperienceChanged);
 
     return () => {
-      active = false;
+      window.removeEventListener(EXPERIENCE_CHANGED_EVENT, handleExperienceChanged);
     };
   }, [reload]);
 
