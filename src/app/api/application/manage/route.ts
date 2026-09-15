@@ -45,6 +45,7 @@ const PAYMENT_METHODS = [
   "payment_link",
 ] as const;
 
+
 function getBearerToken(
   request: NextRequest,
 ): string | null {
@@ -57,29 +58,39 @@ function getBearerToken(
   return match?.[1]?.trim() || null;
 }
 
+
 async function getAuthenticatedUser(
   request: NextRequest,
 ) {
-  const token = getBearerToken(request);
+  const token =
+    getBearerToken(request);
 
   if (!token) {
     return {
       ok: false as const,
       status: 401,
-      message: "ログイン情報がありません。",
+      message:
+        "ログイン情報がありません。",
     };
   }
 
   const {
     data: { user },
     error,
-  } = await supabaseAdmin.auth.getUser(token);
+  } =
+    await supabaseAdmin.auth.getUser(
+      token,
+    );
 
-  if (error || !user) {
+  if (
+    error ||
+    !user
+  ) {
     return {
       ok: false as const,
       status: 401,
-      message: "ログイン情報を確認できませんでした。",
+      message:
+        "ログイン情報を確認できませんでした。",
     };
   }
 
@@ -94,7 +105,9 @@ async function getApplicationAccess(
 ) {
   try {
     const billing =
-      await getUserBillingByUserId(userId);
+      await getUserBillingByUserId(
+        userId,
+      );
 
     const {
       data: profile,
@@ -113,13 +126,21 @@ async function getApplicationAccess(
 
       return {
         ok: false as const,
-        message: "利用権限を確認できませんでした。",
+        message:
+          "利用権限を確認できませんでした。",
       };
     }
 
-    const isMonitor = profile?.is_monitor === true;
-    const effectivePlan = getEffectivePlan(billing);
-    const planLimits = getPlanLimits(effectivePlan);
+    const isMonitor =
+      profile?.is_monitor === true;
+
+    const effectivePlan =
+      getEffectivePlan(billing);
+
+    const planLimits =
+      getPlanLimits(
+        effectivePlan,
+      );
 
     // モニターは契約プランに関係なく無制限
     const applicationLimit =
@@ -141,32 +162,40 @@ async function getApplicationAccess(
 
     return {
       ok: false as const,
-      message: "利用権限を確認できませんでした。",
+      message:
+        "利用権限を確認できませんでした。",
     };
   }
 }
 
 function isApplicationType(
   value: string,
-): value is (typeof APPLICATION_TYPES)[number] {
+): value is
+  (typeof APPLICATION_TYPES)[number] {
   return APPLICATION_TYPES.includes(
-    value as (typeof APPLICATION_TYPES)[number],
+    value as
+      (typeof APPLICATION_TYPES)[number],
   );
 }
 
+
 function isAcceptanceMode(
   value: string,
-): value is (typeof ACCEPTANCE_MODES)[number] {
+): value is
+  (typeof ACCEPTANCE_MODES)[number] {
   return ACCEPTANCE_MODES.includes(
-    value as (typeof ACCEPTANCE_MODES)[number],
+    value as
+      (typeof ACCEPTANCE_MODES)[number],
   );
 }
 
 function isPaymentMethod(
   value: string,
-): value is (typeof PAYMENT_METHODS)[number] {
+): value is
+  (typeof PAYMENT_METHODS)[number] {
   return PAYMENT_METHODS.includes(
-    value as (typeof PAYMENT_METHODS)[number],
+    value as
+      (typeof PAYMENT_METHODS)[number],
   );
 }
 
@@ -182,7 +211,11 @@ function hasCalendarBlock(
   }
 
   const blocks =
-    (definition as { blocks?: unknown }).blocks;
+    (
+      definition as {
+        blocks?: unknown;
+      }
+    ).blocks;
 
   if (!Array.isArray(blocks)) {
     return false;
@@ -198,7 +231,9 @@ function hasCalendarBlock(
     }
 
     return (
-      rawBlock as { type?: unknown }
+      rawBlock as {
+        type?: unknown;
+      }
     ).type === "calendar";
   });
 }
@@ -207,11 +242,18 @@ async function validateFormOwnership(
   formId: string | null,
   userId: string,
 ): Promise<
-  | { ok: true }
-  | { ok: false; message: string }
+  | {
+      ok: true;
+    }
+  | {
+      ok: false;
+      message: string;
+    }
 > {
   if (!formId) {
-    return { ok: true };
+    return {
+      ok: true,
+    };
   }
 
   const {
@@ -221,18 +263,28 @@ async function validateFormOwnership(
     .from("forms")
     .select("id")
     .eq("id", formId)
-    .eq("owner_user_id", userId)
+    .eq(
+      "owner_user_id",
+      userId,
+    )
     .maybeSingle();
 
-  if (error || !form) {
+  if (
+    error ||
+    !form
+  ) {
     return {
       ok: false,
-      message: "指定されたFORMを使用できません。",
+      message:
+        "指定されたFORMを使用できません。",
     };
   }
 
-  return { ok: true };
+  return {
+    ok: true,
+  };
 }
+
 
 // ============================================================
 // GET
@@ -244,8 +296,13 @@ async function validateApplicationBlocks(
   userId: string,
   applicationFormId: string | null,
 ): Promise<
-  | { ok: true }
-  | { ok: false; message: string }
+  | {
+      ok: true;
+    }
+  | {
+      ok: false;
+      message: string;
+    }
 > {
   if (
     !definition ||
@@ -254,102 +311,140 @@ async function validateApplicationBlocks(
   ) {
     return {
       ok: false,
-      message: "APPLICATIONの構成が正しくありません。",
+      message:
+        "APPLICATIONの構成が正しくありません。",
     };
   }
 
   const rawBlocks =
-    (definition as { blocks?: unknown }).blocks;
+    (
+      definition as {
+        blocks?: unknown;
+      }
+    ).blocks;
 
   // 旧APPLICATION / calendar-origin は
   // blocksを持たなくても有効。
   if (rawBlocks === undefined) {
-    return { ok: true };
+    return {
+      ok: true,
+    };
   }
 
   if (!Array.isArray(rawBlocks)) {
     return {
       ok: false,
-      message: "APPLICATIONの構成が正しくありません。",
+      message:
+        "APPLICATIONの構成が正しくありません。",
     };
   }
 
   const rawInputFields =
-    (definition as { inputFields?: unknown }).inputFields;
+    (
+      definition as {
+        inputFields?: unknown;
+      }
+    ).inputFields;
 
-  const inputFieldIds = new Set<string>();
+  const inputFieldIds =
+    new Set<string>();
 
-  if (rawInputFields !== undefined) {
-    if (!Array.isArray(rawInputFields)) {
+  if (
+    rawInputFields !== undefined
+  ) {
+    if (
+      !Array.isArray(
+        rawInputFields,
+      )
+    ) {
       return {
         ok: false,
-        message: "APPLICATIONの入力項目が正しくありません。",
+        message:
+          "APPLICATIONの入力項目が正しくありません。",
       };
     }
 
-    const allowedKinds = new Set([
-      "name",
-      "email",
-      "tel",
-      "postalCode",
-      "address",
-      "text",
-      "textarea",
-      "checkbox",
-      "radio",
-      "select",
-      "date",
-      "datetime",
-    ]);
+    const allowedKinds =
+      new Set([
+        "name",
+        "email",
+        "tel",
+        "postalCode",
+        "address",
+        "text",
+        "textarea",
+        "checkbox",
+        "radio",
+        "select",
+        "date",
+        "datetime",
+      ]);
 
-    for (const rawField of rawInputFields) {
+    for (
+      const rawField of
+      rawInputFields
+    ) {
       if (
         !rawField ||
-        typeof rawField !== "object" ||
-        Array.isArray(rawField)
+        typeof rawField !==
+          "object" ||
+        Array.isArray(
+          rawField,
+        )
       ) {
         return {
           ok: false,
-          message: "APPLICATIONの入力項目が正しくありません。",
+          message:
+            "APPLICATIONの入力項目が正しくありません。",
         };
       }
 
-      const field = rawField as {
-        id?: unknown;
-        kind?: unknown;
-        label?: unknown;
-      };
+      const field =
+        rawField as {
+          id?: unknown;
+          kind?: unknown;
+          label?: unknown;
+        };
 
       const id =
-        typeof field.id === "string"
+        typeof field.id ===
+          "string"
           ? field.id.trim()
           : "";
 
       const kind =
-        typeof field.kind === "string"
+        typeof field.kind ===
+          "string"
           ? field.kind.trim()
           : "";
 
       const label =
-        typeof field.label === "string"
+        typeof field.label ===
+          "string"
           ? field.label.trim()
           : "";
 
       if (
         !id ||
-        !allowedKinds.has(kind) ||
+        !allowedKinds.has(
+          kind,
+        ) ||
         !label
       ) {
         return {
           ok: false,
-          message: "FIELDの種類を選択してください。",
+          message:
+            "FIELDの種類を選択してください。",
         };
       }
 
-      if (inputFieldIds.has(id)) {
+      if (
+        inputFieldIds.has(id)
+      ) {
         return {
           ok: false,
-          message: "同じFIELDが重複しています。",
+          message:
+            "同じFIELDが重複しています。",
         };
       }
 
@@ -357,8 +452,9 @@ async function validateApplicationBlocks(
     }
   }
 
-  const blockIds = new Set<string>();
 
+  const blockIds =
+    new Set<string>();
   for (const rawBlock of rawBlocks) {
     if (
       !rawBlock ||
@@ -367,11 +463,16 @@ async function validateApplicationBlocks(
     ) {
       return {
         ok: false,
-        message: "APPLICATIONの構成要素が正しくありません。",
+        message:
+          "APPLICATIONの構成要素が正しくありません。",
       };
     }
 
-    const block = rawBlock as Record<string, unknown>;
+    const block =
+      rawBlock as Record<
+        string,
+        unknown
+      >;
 
     const blockId =
       typeof block.id === "string"
@@ -383,10 +484,14 @@ async function validateApplicationBlocks(
         ? block.type.trim()
         : "";
 
-    if (!blockId || blockIds.has(blockId)) {
+    if (
+      !blockId ||
+      blockIds.has(blockId)
+    ) {
       return {
         ok: false,
-        message: "APPLICATIONの構成要素IDが正しくありません。",
+        message:
+          "APPLICATIONの構成要素IDが正しくありません。",
       };
     }
 
@@ -394,53 +499,76 @@ async function validateApplicationBlocks(
 
     if (blockType === "field") {
       const fieldId =
-        typeof block.fieldId === "string"
+        typeof block.fieldId ===
+          "string"
           ? block.fieldId.trim()
           : "";
 
-      if (!fieldId || !inputFieldIds.has(fieldId)) {
+      if (
+        !fieldId ||
+        !inputFieldIds.has(
+          fieldId,
+        )
+      ) {
         return {
           ok: false,
-          message: "FIELDを確認してください。",
+          message:
+            "FIELDを確認してください。",
         };
       }
 
       continue;
     }
 
+
     if (blockType === "form") {
-      const formId = applicationFormId ?? "";
-      const rawFieldIds = block.fieldIds;
+      const formId =
+        applicationFormId ?? "";
 
-      if (!Array.isArray(rawFieldIds)) {
-        return {
-          ok: false,
-          message: "FORMで使用する項目が正しくありません。",
-        };
-      }
-
-      const fieldIds = rawFieldIds
-        .map((value) =>
-          typeof value === "string"
-            ? value.trim()
-            : "",
-        )
-        .filter(Boolean);
+      const rawFieldIds =
+        block.fieldIds;
 
       if (
-        fieldIds.length === 0 ||
-        fieldIds.length !== rawFieldIds.length
+        !Array.isArray(
+          rawFieldIds,
+        )
       ) {
         return {
           ok: false,
-          message: "FORMで使用する項目を1つ以上選択してください。",
+          message:
+            "FORMで使用する項目が正しくありません。",
         };
       }
 
-      if (new Set(fieldIds).size !== fieldIds.length) {
+      const fieldIds =
+        rawFieldIds
+          .map((value) =>
+            typeof value === "string"
+              ? value.trim()
+              : "",
+          )
+          .filter(Boolean);
+
+      if (
+        fieldIds.length === 0 ||
+        fieldIds.length !==
+          rawFieldIds.length
+      ) {
         return {
           ok: false,
-          message: "同じFORM項目が重複しています。",
+          message:
+            "FORMで使用する項目を1つ以上選択してください。",
+        };
+      }
+
+      if (
+        new Set(fieldIds).size !==
+        fieldIds.length
+      ) {
+        return {
+          ok: false,
+          message:
+            "同じFORM項目が重複しています。",
         };
       }
 
@@ -451,57 +579,82 @@ async function validateApplicationBlocks(
         .from("forms")
         .select("id,definition")
         .eq("id", formId)
-        .eq("owner_user_id", userId)
+        .eq(
+          "owner_user_id",
+          userId,
+        )
         .maybeSingle();
 
-      if (error || !form) {
+      if (
+        error ||
+        !form
+      ) {
         return {
           ok: false,
-          message: "指定されたFORMを使用できません。",
+          message:
+            "指定されたFORMを使用できません。",
         };
       }
 
       const formDefinition =
         form.definition &&
-        typeof form.definition === "object" &&
-        !Array.isArray(form.definition)
-          ? (form.definition as { fields?: unknown })
+        typeof form.definition ===
+          "object" &&
+        !Array.isArray(
+          form.definition,
+        )
+          ? (
+              form.definition as {
+                fields?: unknown;
+              }
+            )
           : null;
 
       const formFields =
-        Array.isArray(formDefinition?.fields)
+        Array.isArray(
+          formDefinition?.fields,
+        )
           ? formDefinition.fields
           : [];
 
-      const availableFieldIds = new Set(
-        formFields
-          .map((field) => {
-            if (
-              !field ||
-              typeof field !== "object" ||
-              Array.isArray(field)
-            ) {
-              return "";
-            }
+      const availableFieldIds =
+        new Set(
+          formFields
+            .map((field) => {
+              if (
+                !field ||
+                typeof field !== "object" ||
+                Array.isArray(field)
+              ) {
+                return "";
+              }
 
-            const id =
-              (field as { id?: unknown }).id;
+              const id =
+                (
+                  field as {
+                    id?: unknown;
+                  }
+                ).id;
 
-            return typeof id === "string"
-              ? id.trim()
-              : "";
-          })
-          .filter(Boolean),
-      );
+              return typeof id === "string"
+                ? id.trim()
+                : "";
+            })
+            .filter(Boolean),
+        );
 
       if (
         fieldIds.some(
-          (fieldId) => !availableFieldIds.has(fieldId),
+          (fieldId) =>
+            !availableFieldIds.has(
+              fieldId,
+            ),
         )
       ) {
         return {
           ok: false,
-          message: "FORMに存在しない項目が指定されています。",
+          message:
+            "FORMに存在しない項目が指定されています。",
         };
       }
 
@@ -509,15 +662,17 @@ async function validateApplicationBlocks(
     }
 
     if (blockType === "calendar") {
-      const calendarItemId =
-        typeof block.calendarItemId === "string"
+const calendarItemId =
+        typeof block.calendarItemId ===
+          "string"
           ? block.calendarItemId.trim()
           : "";
 
       if (!calendarItemId) {
         return {
           ok: false,
-          message: "CALENDARを選択してください。",
+          message:
+            "CALENDARを選択してください。",
         };
       }
 
@@ -527,30 +682,44 @@ async function validateApplicationBlocks(
       } = await supabaseAdmin
         .from("calendar_items")
         .select("id")
-        .eq("id", calendarItemId)
-        .eq("owner_user_id", userId)
+        .eq(
+          "id",
+          calendarItemId,
+        )
+        .eq(
+          "owner_user_id",
+          userId,
+        )
         .maybeSingle();
 
-      if (error || !calendarItem) {
+      if (
+        error ||
+        !calendarItem
+      ) {
         return {
           ok: false,
-          message: "指定されたCALENDARを使用できません。",
+          message:
+            "指定されたCALENDARを使用できません。",
         };
       }
 
       continue;
     }
 
-    if (blockType === "membership") {
-      const membershipId =
-        typeof block.membershipId === "string"
+    if (
+      blockType === "membership"
+    ) {
+const membershipId =
+        typeof block.membershipId ===
+          "string"
           ? block.membershipId.trim()
           : "";
 
       if (!membershipId) {
         return {
           ok: false,
-          message: "MEMBERSHIPを選択してください。",
+          message:
+            "MEMBERSHIPを選択してください。",
         };
       }
 
@@ -560,14 +729,24 @@ async function validateApplicationBlocks(
       } = await supabaseAdmin
         .from("memberships")
         .select("id")
-        .eq("id", membershipId)
-        .eq("owner_user_id", userId)
+        .eq(
+          "id",
+          membershipId,
+        )
+        .eq(
+          "owner_user_id",
+          userId,
+        )
         .maybeSingle();
 
-      if (error || !membership) {
+      if (
+        error ||
+        !membership
+      ) {
         return {
           ok: false,
-          message: "指定されたMEMBERSHIPを使用できません。",
+          message:
+            "指定されたMEMBERSHIPを使用できません。",
         };
       }
 
@@ -576,22 +755,32 @@ async function validateApplicationBlocks(
 
     return {
       ok: false,
-      message: "未対応のAPPLICATION構成要素があります。",
+      message:
+        "未対応のAPPLICATION構成要素があります。",
     };
   }
 
-  return { ok: true };
+  return {
+    ok: true,
+  };
 }
+
 
 export async function GET(
   request: NextRequest,
 ) {
-  const auth = await getAuthenticatedUser(request);
+  const auth =
+    await getAuthenticatedUser(request);
 
   if (auth.ok === false) {
     return NextResponse.json(
-      { ok: false, message: auth.message },
-      { status: auth.status },
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
     );
   }
 
@@ -600,70 +789,112 @@ export async function GET(
     error,
   } = await supabaseAdmin
     .from("applications")
-    .select(`
-      id,
-      origin,
-      calendar_item_id,
-      application_type,
-      title,
-      description,
-      definition,
-      form_id,
-      acceptance_mode,
-      payment_method,
-      payment_amount,
-      payment_currency,
-      payment_url,
-      payment_instructions,
-      payment_confirmation_required,
-      status,
-      version,
-      created_at,
-      updated_at
-    `)
-    .eq("owner_user_id", auth.user.id)
-    .order("created_at", { ascending: false });
+    .select(
+      `
+        id,
+        origin,
+        calendar_item_id,
+        application_type,
+        title,
+        description,
+        definition,
+        form_id,
+        acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
+        status,
+        version,
+        created_at,
+        updated_at
+      `,
+    )
+    .eq(
+      "owner_user_id",
+      auth.user.id,
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false,
+      },
+    );
 
   if (error) {
-    console.error("application list failed:", error);
+    console.error(
+      "application list failed:",
+      error,
+    );
 
     return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATION一覧を取得できませんでした。",
+        message:
+          "APPLICATION一覧を取得できませんでした。",
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 
-  const access = await getApplicationAccess(auth.user.id);
+    const access =
+      await getApplicationAccess(
+        auth.user.id,
+      );
 
-  if (access.ok === false) {
-    return NextResponse.json(
-      { ok: false, message: access.message },
-      { status: 500 },
-    );
-  }
+    if (access.ok === false) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: access.message,
+        },
+        {
+          status: 500,
+        },
+      );
+    }
 
-  const applicationCount =
-    (applications ?? []).filter(
-      (application) => application.origin === "manual",
-    ).length;
+    const applicationCount =
+      (
+        applications ??
+        []
+      ).filter(
+        (
+          application,
+        ) =>
+          application.origin ===
+          "manual",
+      ).length;
 
-  return NextResponse.json({
-    ok: true,
-    applications: applications ?? [],
-    access: {
-      isMonitor: access.isMonitor,
-      effectivePlan: access.effectivePlan,
-      applicationLimit: access.applicationLimit,
-      canCreateApplication: !isAtOrOverLimit(
-        applicationCount,
-        access.applicationLimit,
-      ),
-    },
-  });
+    return NextResponse.json({
+      ok: true,
+
+      applications:
+        applications ?? [],
+
+      access: {
+        isMonitor:
+          access.isMonitor,
+
+        effectivePlan:
+          access.effectivePlan,
+
+        applicationLimit:
+          access.applicationLimit,
+
+        canCreateApplication:
+          !isAtOrOverLimit(
+            applicationCount,
+            access.applicationLimit,
+          ),
+      },
+    });
 }
+
 
 // ============================================================
 // POST
@@ -673,60 +904,95 @@ export async function GET(
 export async function POST(
   request: NextRequest,
 ) {
-  const auth = await getAuthenticatedUser(request);
+  const auth =
+    await getAuthenticatedUser(request);
 
   if (auth.ok === false) {
     return NextResponse.json(
-      { ok: false, message: auth.message },
-      { status: auth.status },
-    );
-  }
-
-  const access = await getApplicationAccess(auth.user.id);
-
-  if (access.ok === false) {
-    return NextResponse.json(
-      { ok: false, message: access.message },
-      { status: 500 },
-    );
-  }
-
-  const {
-    count,
-    error: countError,
-  } = await supabaseAdmin
-    .from("applications")
-    .select("id", { count: "exact", head: true })
-    .eq("owner_user_id", auth.user.id)
-    .eq("origin", "manual");
-
-  if (countError) {
-    console.error("application count failed:", countError);
-
-    return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATION数を確認できませんでした。",
+        message: auth.message,
       },
-      { status: 500 },
-    );
-  }
-
-  if (
-    isAtOrOverLimit(
-      count ?? 0,
-      access.applicationLimit,
-    )
-  ) {
-    return NextResponse.json(
       {
-        ok: false,
-        message: "FREEプランではAPPLICATIONは1つまで作成できます。",
+        status: auth.status,
       },
-      { status: 403 },
     );
   }
 
+    const access =
+      await getApplicationAccess(
+        auth.user.id,
+      );
+
+    if (access.ok === false) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: access.message,
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const {
+      count,
+      error: countError,
+    } = await supabaseAdmin
+      .from("applications")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        },
+      )
+      .eq(
+        "owner_user_id",
+        auth.user.id,
+      )
+      .eq(
+        "origin",
+        "manual",
+      );
+
+    if (countError) {
+      console.error(
+        "application count failed:",
+        countError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "APPLICATION数を確認できませんでした。",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    if (
+      isAtOrOverLimit(
+        count ?? 0,
+        access.applicationLimit,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEプランではAPPLICATIONは1つまで作成できます。",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+    
   const body = (await request
     .json()
     .catch(() => null)) as
@@ -737,6 +1003,7 @@ export async function POST(
         definition?: unknown;
         formId?: unknown;
         acceptanceMode?: unknown;
+
         paymentMethod?: unknown;
         paymentAmount?: unknown;
         paymentUrl?: unknown;
@@ -744,7 +1011,7 @@ export async function POST(
         paymentConfirmationRequired?: unknown;
       }
     | null;
-
+    
   const isFreePlan =
     access.isMonitor !== true &&
     access.effectivePlan === "free";
@@ -754,10 +1021,15 @@ export async function POST(
     typeof body.definition === "object" &&
     !Array.isArray(body.definition)
       ? body.definition
-      : { fields: [] };
+      : {
+          fields: [],
+        };
 
   const requestedMode =
-    (rawDefinition as Record<string, unknown>).mode;
+    (
+      rawDefinition as
+        Record<string, unknown>
+    ).mode;
 
   // FREEは常にLite。
   // Plus / Pro / Monitorは保存されたmodeを使う。
@@ -777,7 +1049,8 @@ export async function POST(
     hasCalendarBlock(rawDefinition);
 
   const applicationType =
-    typeof body?.applicationType === "string"
+    typeof body?.applicationType ===
+      "string"
       ? body.applicationType.trim()
       : "";
 
@@ -787,7 +1060,8 @@ export async function POST(
       : "";
 
   const description =
-    typeof body?.description === "string"
+    typeof body?.description ===
+      "string"
       ? body.description.trim()
       : "";
 
@@ -800,155 +1074,218 @@ export async function POST(
         : null;
 
   const acceptanceMode =
-    typeof body?.acceptanceMode === "string"
+    typeof body?.acceptanceMode ===
+      "string"
       ? body.acceptanceMode.trim()
       : "instant";
+    
+    const paymentMethod =
+      typeof body?.paymentMethod === "string"
+        ? body.paymentMethod.trim()
+        : "none";
 
-  const paymentMethod =
-    typeof body?.paymentMethod === "string"
-      ? body.paymentMethod.trim()
-      : "none";
+    const paymentAmount =
+      typeof body?.paymentAmount === "number"
+        ? body.paymentAmount
+        : typeof body?.paymentAmount === "string" &&
+            body.paymentAmount.trim()
+          ? Number(body.paymentAmount)
+          : null;
 
-  const paymentAmount =
-    typeof body?.paymentAmount === "number"
-      ? body.paymentAmount
-      : typeof body?.paymentAmount === "string" &&
-          body.paymentAmount.trim()
-        ? Number(body.paymentAmount)
-        : null;
+    const paymentUrl =
+      isFreePlan
+        ? ""
+        : typeof body?.paymentUrl === "string"
+          ? body.paymentUrl.trim()
+          : "";
 
-  const paymentUrl =
-    isFreePlan
-      ? ""
-      : typeof body?.paymentUrl === "string"
-        ? body.paymentUrl.trim()
+    const paymentInstructions =
+      typeof body?.paymentInstructions === "string"
+        ? body.paymentInstructions.trim()
         : "";
 
-  const paymentInstructions =
-    typeof body?.paymentInstructions === "string"
-      ? body.paymentInstructions.trim()
-      : "";
-
-  const paymentConfirmationRequired =
-    body?.paymentConfirmationRequired === true;
-
-  const normalizedPaymentConfirmationRequired =
-    (
-      paymentMethod === "bank_transfer" ||
-      paymentMethod === "payment_link"
+    const paymentConfirmationRequired =
+      body?.paymentConfirmationRequired === true;
+    
+    const normalizedPaymentConfirmationRequired =
+      (
+        paymentMethod === "bank_transfer" ||
+        paymentMethod === "payment_link"
+      )
+        ? paymentConfirmationRequired
+        : false;
+    
+  if (
+    !isApplicationType(
+      applicationType,
     )
-      ? paymentConfirmationRequired
-      : false;
-
-  if (!isApplicationType(applicationType)) {
+  ) {
     return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATIONの種類が正しくありません。",
+        message:
+          "APPLICATIONの種類が正しくありません。",
       },
-      { status: 400 },
+      {
+        status: 400,
+      },
     );
   }
 
   if (!title) {
     return NextResponse.json(
-      { ok: false, message: "募集名を入力してください。" },
-      { status: 400 },
-    );
-  }
-
-  if (title.length > 120) {
-    return NextResponse.json(
       {
         ok: false,
-        message: "募集名は120文字以内で入力してください。",
+        message:
+          "募集名を入力してください。",
       },
-      { status: 400 },
-    );
-  }
-
-  if (description.length > 5000) {
-    return NextResponse.json(
       {
-        ok: false,
-        message: "募集案内は5000文字以内で入力してください。",
+        status: 400,
       },
-      { status: 400 },
-    );
-  }
-
-  if (!isAcceptanceMode(acceptanceMode)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "受付方法が正しくありません。",
-      },
-      { status: 400 },
-    );
-  }
-
-  if (!isPaymentMethod(paymentMethod)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "支払方法が正しくありません。",
-      },
-      { status: 400 },
     );
   }
 
   if (
-    isFreePlan &&
-    paymentMethod === "payment_link"
+    title.length > 120
   ) {
     return NextResponse.json(
       {
         ok: false,
-        message: "FREEプランでは支払リンクを利用できません。",
+        message:
+          "募集名は120文字以内で入力してください。",
       },
-      { status: 403 },
+      {
+        status: 400,
+      },
     );
   }
 
   if (
-    paymentMethod !== "none" &&
-    !usesCalendarPricing &&
-    (
-      paymentAmount === null ||
-      !Number.isFinite(paymentAmount) ||
-      paymentAmount <= 0
+    description.length > 5000
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "募集案内は5000文字以内で入力してください。",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (
+    !isAcceptanceMode(
+      acceptanceMode,
     )
   ) {
     return NextResponse.json(
       {
         ok: false,
-        message: "参加費を正しく入力してください。",
+        message:
+          "受付方法が正しくありません。",
       },
-      { status: 400 },
+      {
+        status: 400,
+      },
     );
   }
+    
+    if (
+      !isPaymentMethod(
+        paymentMethod,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "支払方法が正しくありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      isFreePlan &&
+      paymentMethod === "payment_link"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEプランでは支払リンクを利用できません。",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    if (
+      paymentMethod !== "none" &&
+      !usesCalendarPricing &&
+      (
+        paymentAmount === null ||
+        !Number.isFinite(
+          paymentAmount,
+        ) ||
+        paymentAmount <= 0
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "参加費を正しく入力してください。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
   const definition =
     isLiteApplication
       ? {
-          ...(rawDefinition as Record<string, unknown>),
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
           mode: "lite",
           fields: [],
           inputFields: [],
           blocks: [],
         }
       : {
-          ...(rawDefinition as Record<string, unknown>),
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
           mode: "builder",
         };
 
   const formCheck =
-    await validateFormOwnership(formId, auth.user.id);
+    await validateFormOwnership(
+      formId,
+      auth.user.id,
+    );
 
-  if (formCheck.ok === false) {
+  if (
+    formCheck.ok === false
+  ) {
     return NextResponse.json(
-      { ok: false, message: formCheck.message },
-      { status: 400 },
+      {
+        ok: false,
+        message:
+          formCheck.message,
+      },
+      {
+        status: 400,
+      },
     );
   }
 
@@ -959,10 +1296,18 @@ export async function POST(
       formId,
     );
 
-  if (blockCheck.ok === false) {
+  if (
+    blockCheck.ok === false
+  ) {
     return NextResponse.json(
-      { ok: false, message: blockCheck.message },
-      { status: 400 },
+      {
+        ok: false,
+        message:
+          blockCheck.message,
+      },
+      {
+        status: 400,
+      },
     );
   }
 
@@ -972,64 +1317,95 @@ export async function POST(
   } = await supabaseAdmin
     .from("applications")
     .insert({
-      owner_user_id: auth.user.id,
-      application_type: applicationType,
+      owner_user_id:
+        auth.user.id,
+
+      application_type:
+        applicationType,
+
       title,
-      description: description || null,
+
+      description:
+        description || null,
+
       definition,
-      form_id: formId,
-      acceptance_mode: acceptanceMode,
-      payment_method: paymentMethod,
-      payment_amount:
-        paymentMethod === "none" ||
-        usesCalendarPricing
-          ? null
-          : paymentAmount,
-      payment_currency: "JPY",
-      payment_url:
-        paymentMethod === "payment_link"
-          ? paymentUrl || null
-          : null,
-      payment_instructions:
-        paymentMethod === "none"
-          ? null
-          : paymentInstructions || null,
-      payment_confirmation_required:
-        normalizedPaymentConfirmationRequired,
-      status: "draft",
+
+      form_id:
+        formId,
+
+      acceptance_mode:
+        acceptanceMode,
+        
+    payment_method:
+      paymentMethod,
+
+    payment_amount:
+      paymentMethod === "none" ||
+      usesCalendarPricing
+        ? null
+        : paymentAmount,
+
+    payment_currency:
+      "JPY",
+
+    payment_url:
+      paymentMethod ===
+      "payment_link"
+        ? paymentUrl || null
+        : null,
+
+    payment_instructions:
+      paymentMethod === "none"
+        ? null
+        : paymentInstructions ||
+          null,
+        
+    payment_confirmation_required:
+      normalizedPaymentConfirmationRequired,
+
+      status:
+        "draft",
     })
-    .select(`
-      id,
-      origin,
-      calendar_item_id,
-      application_type,
-      title,
-      description,
-      definition,
-      form_id,
-      acceptance_mode,
-      payment_method,
-      payment_amount,
-      payment_currency,
-      payment_url,
-      payment_instructions,
-      payment_confirmation_required,
-      status,
-      version,
-      created_at,
-      updated_at
-    `)
+    .select(
+      `
+        id,
+        origin,
+        calendar_item_id,
+        application_type,
+        title,
+        description,
+        definition,
+        form_id,
+        acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
+        status,
+        version,
+        created_at,
+        updated_at
+      `,
+    )
     .single();
 
   if (error) {
-    console.error("application create failed:", error);
+    console.error(
+      "application create failed:",
+      error,
+    );
 
     return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATIONを保存できませんでした。",
+        message:
+          "APPLICATIONを保存できませんでした。",
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 
@@ -1039,6 +1415,7 @@ export async function POST(
   });
 }
 
+
 // ============================================================
 // PATCH
 // 既存APPLICATION編集
@@ -1047,12 +1424,18 @@ export async function POST(
 export async function PATCH(
   request: NextRequest,
 ) {
-  const auth = await getAuthenticatedUser(request);
+  const auth =
+    await getAuthenticatedUser(request);
 
   if (auth.ok === false) {
     return NextResponse.json(
-      { ok: false, message: auth.message },
-      { status: auth.status },
+      {
+        ok: false,
+        message: auth.message,
+      },
+      {
+        status: auth.status,
+      },
     );
   }
 
@@ -1067,6 +1450,7 @@ export async function PATCH(
         definition?: unknown;
         formId?: unknown;
         acceptanceMode?: unknown;
+
         paymentMethod?: unknown;
         paymentAmount?: unknown;
         paymentUrl?: unknown;
@@ -1074,14 +1458,22 @@ export async function PATCH(
         paymentConfirmationRequired?: unknown;
       }
     | null;
-
+    
   const patchAccess =
-    await getApplicationAccess(auth.user.id);
+    await getApplicationAccess(
+      auth.user.id,
+    );
 
   if (patchAccess.ok === false) {
     return NextResponse.json(
-      { ok: false, message: patchAccess.message },
-      { status: 500 },
+      {
+        ok: false,
+        message:
+          patchAccess.message,
+      },
+      {
+        status: 500,
+      },
     );
   }
 
@@ -1094,10 +1486,15 @@ export async function PATCH(
     typeof body.definition === "object" &&
     !Array.isArray(body.definition)
       ? body.definition
-      : { fields: [] };
+      : {
+          fields: [],
+        };
 
   const requestedMode =
-    (rawDefinition as Record<string, unknown>).mode;
+    (
+      rawDefinition as
+        Record<string, unknown>
+    ).mode;
 
   // FREEは常にLite。
   // mode未設定の旧APPLICATIONはBuilderとして扱う。
@@ -1116,12 +1513,14 @@ export async function PATCH(
     hasCalendarBlock(rawDefinition);
 
   const applicationId =
-    typeof body?.applicationId === "string"
+    typeof body?.applicationId ===
+      "string"
       ? body.applicationId.trim()
       : "";
 
   const applicationType =
-    typeof body?.applicationType === "string"
+    typeof body?.applicationType ===
+      "string"
       ? body.applicationType.trim()
       : "";
 
@@ -1131,7 +1530,8 @@ export async function PATCH(
       : "";
 
   const description =
-    typeof body?.description === "string"
+    typeof body?.description ===
+      "string"
       ? body.description.trim()
       : "";
 
@@ -1144,145 +1544,201 @@ export async function PATCH(
         : null;
 
   const acceptanceMode =
-    typeof body?.acceptanceMode === "string"
+    typeof body?.acceptanceMode ===
+      "string"
       ? body.acceptanceMode.trim()
       : "instant";
+    
+    const paymentMethod =
+      typeof body?.paymentMethod === "string"
+        ? body.paymentMethod.trim()
+        : "none";
 
-  const paymentMethod =
-    typeof body?.paymentMethod === "string"
-      ? body.paymentMethod.trim()
-      : "none";
+    const paymentAmount =
+      typeof body?.paymentAmount === "number"
+        ? body.paymentAmount
+        : typeof body?.paymentAmount === "string" &&
+            body.paymentAmount.trim()
+          ? Number(body.paymentAmount)
+          : null;
 
-  const paymentAmount =
-    typeof body?.paymentAmount === "number"
-      ? body.paymentAmount
-      : typeof body?.paymentAmount === "string" &&
-          body.paymentAmount.trim()
-        ? Number(body.paymentAmount)
-        : null;
+    const paymentUrl =
+      isFreePlan
+        ? ""
+        : typeof body?.paymentUrl === "string"
+          ? body.paymentUrl.trim()
+          : "";
 
-  const paymentUrl =
-    isFreePlan
-      ? ""
-      : typeof body?.paymentUrl === "string"
-        ? body.paymentUrl.trim()
+    const paymentInstructions =
+      typeof body?.paymentInstructions === "string"
+        ? body.paymentInstructions.trim()
         : "";
 
-  const paymentInstructions =
-    typeof body?.paymentInstructions === "string"
-      ? body.paymentInstructions.trim()
-      : "";
-
-  const paymentConfirmationRequired =
-    body?.paymentConfirmationRequired === true;
-
-  const normalizedPaymentConfirmationRequired =
-    (
-      paymentMethod === "bank_transfer" ||
-      paymentMethod === "payment_link"
-    )
-      ? paymentConfirmationRequired
-      : false;
-
+    const paymentConfirmationRequired =
+      body?.paymentConfirmationRequired === true;
+    
+    const normalizedPaymentConfirmationRequired =
+      (
+        paymentMethod === "bank_transfer" ||
+        paymentMethod === "payment_link"
+      )
+        ? paymentConfirmationRequired
+        : false;
+    
   if (!applicationId) {
     return NextResponse.json(
       {
         ok: false,
-        message: "編集するAPPLICATIONが指定されていません。",
+        message:
+          "編集するAPPLICATIONが指定されていません。",
       },
-      { status: 400 },
+      {
+        status: 400,
+      },
     );
   }
 
-  if (!isApplicationType(applicationType)) {
+  if (
+    !isApplicationType(
+      applicationType,
+    )
+  ) {
     return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATIONの種類が正しくありません。",
+        message:
+          "APPLICATIONの種類が正しくありません。",
       },
-      { status: 400 },
+      {
+        status: 400,
+      },
     );
   }
 
   if (!title) {
     return NextResponse.json(
-      { ok: false, message: "募集名を入力してください。" },
-      { status: 400 },
-    );
-  }
-
-  if (!isAcceptanceMode(acceptanceMode)) {
-    return NextResponse.json(
       {
         ok: false,
-        message: "受付方法が正しくありません。",
+        message:
+          "募集名を入力してください。",
       },
-      { status: 400 },
-    );
-  }
-
-  if (!isPaymentMethod(paymentMethod)) {
-    return NextResponse.json(
       {
-        ok: false,
-        message: "支払方法が正しくありません。",
+        status: 400,
       },
-      { status: 400 },
     );
   }
 
   if (
-    isFreePlan &&
-    paymentMethod === "payment_link"
-  ) {
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "FREEプランでは支払リンクを利用できません。",
-      },
-      { status: 403 },
-    );
-  }
-
-  if (
-    paymentMethod !== "none" &&
-    !usesCalendarPricing &&
-    (
-      paymentAmount === null ||
-      !Number.isFinite(paymentAmount) ||
-      paymentAmount <= 0
+    !isAcceptanceMode(
+      acceptanceMode,
     )
   ) {
     return NextResponse.json(
       {
         ok: false,
-        message: "参加費を正しく入力してください。",
+        message:
+          "受付方法が正しくありません。",
       },
-      { status: 400 },
+      {
+        status: 400,
+      },
     );
   }
+    
+    if (
+      !isPaymentMethod(
+        paymentMethod,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "支払方法が正しくありません。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      isFreePlan &&
+      paymentMethod === "payment_link"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEプランでは支払リンクを利用できません。",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    if (
+      paymentMethod !== "none" &&
+      !usesCalendarPricing &&
+      (
+        paymentAmount === null ||
+        !Number.isFinite(
+          paymentAmount,
+        ) ||
+        paymentAmount <= 0
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "参加費を正しく入力してください。",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
   const definition =
     isLiteApplication
       ? {
-          ...(rawDefinition as Record<string, unknown>),
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
           mode: "lite",
           fields: [],
           inputFields: [],
           blocks: [],
         }
       : {
-          ...(rawDefinition as Record<string, unknown>),
+          ...(
+            rawDefinition as
+              Record<string, unknown>
+          ),
           mode: "builder",
         };
 
   const formCheck =
-    await validateFormOwnership(formId, auth.user.id);
+    await validateFormOwnership(
+      formId,
+      auth.user.id,
+    );
 
-  if (formCheck.ok === false) {
+  if (
+    formCheck.ok === false
+  ) {
     return NextResponse.json(
-      { ok: false, message: formCheck.message },
-      { status: 400 },
+      {
+        ok: false,
+        message:
+          formCheck.message,
+      },
+      {
+        status: 400,
+      },
     );
   }
 
@@ -1293,10 +1749,18 @@ export async function PATCH(
       formId,
     );
 
-  if (blockCheck.ok === false) {
+  if (
+    blockCheck.ok === false
+  ) {
     return NextResponse.json(
-      { ok: false, message: blockCheck.message },
-      { status: 400 },
+      {
+        ok: false,
+        message:
+          blockCheck.message,
+      },
+      {
+        status: 400,
+      },
     );
   }
 
@@ -1306,64 +1770,98 @@ export async function PATCH(
   } = await supabaseAdmin
     .from("applications")
     .update({
-      application_type: applicationType,
+      application_type:
+        applicationType,
+
       title,
-      description: description || null,
+
+      description:
+        description || null,
+
       definition,
-      form_id: formId,
-      acceptance_mode: acceptanceMode,
-      payment_method: paymentMethod,
-      payment_amount:
-        paymentMethod === "none" ||
-        usesCalendarPricing
-          ? null
-          : paymentAmount,
-      payment_currency: "JPY",
-      payment_url:
-        paymentMethod === "payment_link"
-          ? paymentUrl || null
-          : null,
-      payment_instructions:
-        paymentMethod === "none"
-          ? null
-          : paymentInstructions || null,
-      payment_confirmation_required:
-        normalizedPaymentConfirmationRequired,
+
+      form_id:
+        formId,
+
+      acceptance_mode:
+        acceptanceMode,
+        
+    payment_method:
+      paymentMethod,
+
+    payment_amount:
+      paymentMethod === "none" ||
+      usesCalendarPricing
+        ? null
+        : paymentAmount,
+
+    payment_currency:
+      "JPY",
+
+    payment_url:
+      paymentMethod ===
+      "payment_link"
+        ? paymentUrl || null
+        : null,
+
+    payment_instructions:
+      paymentMethod === "none"
+        ? null
+        : paymentInstructions ||
+          null,
+        
+    payment_confirmation_required:
+      normalizedPaymentConfirmationRequired,
+        
     })
-    .eq("id", applicationId)
-    .eq("owner_user_id", auth.user.id)
-    .select(`
-      id,
-      origin,
-      calendar_item_id,
-      application_type,
-      title,
-      description,
-      definition,
-      form_id,
-      acceptance_mode,
-      payment_method,
-      payment_amount,
-      payment_currency,
-      payment_url,
-      payment_instructions,
-      payment_confirmation_required,
-      status,
-      version,
-      created_at,
-      updated_at
-    `)
+    .eq(
+      "id",
+      applicationId,
+    )
+    .eq(
+      "owner_user_id",
+      auth.user.id,
+    )
+    .select(
+      `
+        id,
+        origin,
+        calendar_item_id,
+        application_type,
+        title,
+        description,
+        definition,
+        form_id,
+        acceptance_mode,
+        payment_method,
+        payment_amount,
+        payment_currency,
+        payment_url,
+        payment_instructions,
+        payment_confirmation_required,
+        status,
+        version,
+        created_at,
+        updated_at
+      `,
+    )
     .maybeSingle();
 
   if (error) {
-    console.error("application update failed:", error);
+    console.error(
+      "application update failed:",
+      error,
+    );
 
     return NextResponse.json(
       {
         ok: false,
-        message: "APPLICATIONを更新できませんでした。",
+        message:
+          "APPLICATIONを更新できませんでした。",
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 
@@ -1371,9 +1869,12 @@ export async function PATCH(
     return NextResponse.json(
       {
         ok: false,
-        message: "編集するAPPLICATIONが見つかりません。",
+        message:
+          "編集するAPPLICATIONが見つかりません。",
       },
-      { status: 404 },
+      {
+        status: 404,
+      },
     );
   }
 
