@@ -826,6 +826,13 @@ export type PublicApplication = {
 
   payment_currency: string;
 
+  cancellation_mode:
+    | "not_allowed"
+    | "anytime"
+    | "until_deadline";
+  cancellation_deadline_at: string | null;
+  cancellation_cutoff_minutes: number | null;
+
   status:
     | "draft"
     | "open"

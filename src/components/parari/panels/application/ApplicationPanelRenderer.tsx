@@ -250,7 +250,9 @@ export default function ApplicationPanelRenderer({
         status:
           | "submitted"
           | "confirmed"
-          | "rejected";
+          | "rejected"
+          | "withdrawn"
+          | "cancelled";
 
         qualification_status:
           | "not_required"
@@ -329,6 +331,16 @@ export default function ApplicationPanelRenderer({
       setPaymentMessage,
     ] =
       React.useState("");
+
+    const [
+      isCancellingEntry,
+      setIsCancellingEntry,
+    ] = React.useState(false);
+
+    const [
+      cancellationMessage,
+      setCancellationMessage,
+    ] = React.useState("");
     
   React.useEffect(() => {
     let cancelled = false;
@@ -923,7 +935,11 @@ export default function ApplicationPanelRenderer({
               entry.status ===
                 "confirmed" ||
               entry.status ===
-                "rejected"
+                "rejected" ||
+              entry.status ===
+                "withdrawn" ||
+              entry.status ===
+                "cancelled"
             )
           ) {
               setCompletedEntry({
@@ -1853,7 +1869,9 @@ export default function ApplicationPanelRenderer({
                   status:
                     | "submitted"
                     | "confirmed"
-                    | "rejected";
+                    | "rejected"
+                    | "withdrawn"
+                    | "cancelled";
 
                   qualification_status:
                     | "not_required"
@@ -1922,6 +1940,109 @@ export default function ApplicationPanelRenderer({
         setIsReportingPayment(
           false,
         );
+      }
+    }
+
+    async function cancelCompletedEntry() {
+      if (
+        !applicationId ||
+        !completedEntry ||
+        isCancellingEntry ||
+        (completedEntry.status !== "submitted" &&
+          completedEntry.status !== "confirmed")
+      ) {
+        return;
+      }
+
+      const prompt =
+        completedEntry.status === "submitted"
+          ? "この申込を取り下げますか？"
+          : "参加をキャンセルしますか？";
+
+      if (typeof window !== "undefined" && !window.confirm(prompt)) {
+        return;
+      }
+
+      setIsCancellingEntry(true);
+      setCancellationMessage("");
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setCancellationMessage("ログイン状態を確認できませんでした。");
+          return;
+        }
+
+        const response = await fetch(
+          "/api/application/my-entry",
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({
+              applicationId,
+              action: "cancel",
+            }),
+          },
+        );
+
+        const result = (await response.json().catch(() => null)) as
+          | {
+              ok?: boolean;
+              entry?: typeof completedEntry;
+              action?: "withdrawn" | "cancelled";
+              refund_notice?: string | null;
+              message?: string;
+            }
+          | null;
+
+        if (!response.ok || !result?.ok || !result.entry) {
+          setCancellationMessage(
+            result?.message || "キャンセルを完了できませんでした。",
+          );
+          return;
+        }
+
+        setCompletedEntry(result.entry);
+        setIsApplying(false);
+        setPaymentMessage("");
+
+        setLoadState((current) => {
+          if (current.type !== "success") return current;
+
+          return {
+            ...current,
+            application: {
+              ...current.application,
+              entry_count:
+                typeof current.application.entry_count === "number"
+                  ? Math.max(0, current.application.entry_count - 1)
+                  : current.application.entry_count,
+              remaining_slots:
+                typeof current.application.remaining_slots === "number"
+                  ? current.application.remaining_slots + 1
+                  : current.application.remaining_slots,
+            },
+          };
+        });
+
+        const base =
+          result.action === "withdrawn"
+            ? "申込を取り下げました。"
+            : "参加をキャンセルしました。";
+        setCancellationMessage(
+          result.refund_notice
+            ? base + " " + result.refund_notice
+            : base,
+        );
+      } catch (error) {
+        console.error("[APPLICATION] cancellation failed:", error);
+        setCancellationMessage("キャンセルを完了できませんでした。");
+      } finally {
+        setIsCancellingEntry(false);
       }
     }
 
@@ -2777,6 +2898,16 @@ export default function ApplicationPanelRenderer({
               paymentMessage={paymentMessage}
               onReportPayment={() => {
                 void reportPayment();
+              }}
+              canCancel={
+                application.cancellation_mode !== "not_allowed" &&
+                (completedEntry.status === "submitted" ||
+                  completedEntry.status === "confirmed")
+              }
+              isCancelling={isCancellingEntry}
+              cancellationMessage={cancellationMessage}
+              onCancel={() => {
+                void cancelCompletedEntry();
               }}
             />
           ) : null}

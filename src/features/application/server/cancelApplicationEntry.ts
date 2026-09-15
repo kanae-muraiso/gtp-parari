@@ -6,7 +6,7 @@ import {
 } from "@/features/application/domain/cancellation";
 
 type CancellationIdentity =
-  | { kind: "member"; userId: string }
+  | { kind: "member"; userId: string; applicationId: string }
   | { kind: "guest"; token: string };
 
 type EntryRow = {
@@ -100,7 +100,9 @@ async function loadEntry(identity: CancellationIdentity): Promise<EntryRow | nul
 
   query =
     identity.kind === "member"
-      ? query.eq("user_id", identity.userId)
+      ? query
+          .eq("user_id", identity.userId)
+          .eq("application_id", identity.applicationId)
       : query.eq("cancellation_token", identity.token);
 
   const { data, error } = await query

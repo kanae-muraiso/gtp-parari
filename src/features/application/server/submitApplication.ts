@@ -720,6 +720,7 @@ export async function submitApplication(
     .select(
       `
         id,
+        cancellation_token,
         calendar_occurrence_id,
         status,
         qualification_status,

@@ -13,6 +13,9 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import {
+  cancelApplicationEntry,
+} from "@/features/application/server/cancelApplicationEntry";
 
 
 const UUID_RE =
@@ -187,6 +190,8 @@ export async function GET(
           payment_confirmed_at,
           application_snapshot,
           answers,
+          checked_in_at,
+          cancelled_at,
           created_at,
           agreed_at
         `,
@@ -322,8 +327,8 @@ export async function PATCH(
   }
 
   if (
-    action !==
-    "payment_report"
+    action !== "payment_report" &&
+    action !== "cancel"
   ) {
     return NextResponse.json(
       {
@@ -335,6 +340,39 @@ export async function PATCH(
         status: 400,
       },
     );
+  }
+
+  if (action === "cancel") {
+    try {
+      const result = await cancelApplicationEntry({
+        kind: "member",
+        userId: user.id,
+        applicationId,
+      });
+
+      if (result.ok === false) {
+        return NextResponse.json(
+          { ok: false, message: result.message },
+          { status: result.status },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        entry: result.entry,
+        action: result.action,
+        refund_notice: result.refund_notice,
+      });
+    } catch (error) {
+      console.error(
+        "[APPLICATION my-entry] cancellation failed:",
+        error,
+      );
+      return NextResponse.json(
+        { ok: false, message: "キャンセルを完了できませんでした。" },
+        { status: 500 },
+      );
+    }
   }
 
   const {
@@ -390,8 +428,9 @@ export async function PATCH(
   }
 
   if (
-    entry.status ===
-    "rejected"
+    entry.status === "rejected" ||
+    entry.status === "withdrawn" ||
+    entry.status === "cancelled"
   ) {
     return NextResponse.json(
       {
