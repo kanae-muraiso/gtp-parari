@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
 import StudioAccessPanel from "@/components/parari/settings/StudioAccessPanel";
 
 type SettingsCardProps = {
@@ -64,11 +65,15 @@ export default function SettingsHomePage() {
           />
 
           {!loading && studioEnabled ? (
-            <SettingsCard
-              title="公開トップページ"
-              description="STUDIOで公開するプロフィールや作品の入口を設定します。"
-              href="/my/profile/public"
-            />
+            <>
+              <StartDestinationPanel />
+
+              <SettingsCard
+                title="公開トップページ"
+                description="STUDIOで公開するプロフィールや作品の入口を設定します。"
+                href="/my/profile/public"
+              />
+            </>
           ) : null}
 
           <div className="pt-3">
