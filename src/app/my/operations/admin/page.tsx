@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 
 import useParariStaff from "@/components/parari/hooks/useParariStaff";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -71,47 +71,49 @@ function AccessButtons({
 
 export default function OperationsAdminPage() {
   const { isSuperuser, loading: accessLoading } = useParariStaff();
-  const [query, setQuery] = useState("");
-  const [users, setUsers] = useState<OperatorUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [user, setUser] = useState<OperatorUser | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  const loadUsers = useCallback(async (searchText: string) => {
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!supabase) return;
 
+    const targetEmail = email.trim();
+    if (!targetEmail) {
+      setUser(null);
+      setSearched(false);
+      setMessage("メールアドレスを入力してください。");
+      return;
+    }
+
     setLoading(true);
+    setSearched(false);
     setMessage("");
+    setUser(null);
 
     const { data, error } = await supabase.rpc(
-      "superuser_search_operator_users",
-      { p_query: searchText },
+      "superuser_get_operator_user_by_email",
+      { p_email: targetEmail },
     );
 
     if (error) {
-      setUsers([]);
-      setMessage(`読み込めませんでした: ${error.message}`);
+      setMessage(`検索できませんでした: ${error.message}`);
       setLoading(false);
       return;
     }
 
-    setUsers((data ?? []) as OperatorUser[]);
+    const found = ((data ?? []) as OperatorUser[])[0] ?? null;
+    setUser(found);
+    setSearched(true);
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!accessLoading && isSuperuser) {
-      void loadUsers("");
-    }
-  }, [accessLoading, isSuperuser, loadUsers]);
-
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await loadUsers(query.trim());
   }
 
-  async function setAccess(user: OperatorUser, scope: Scope, level: Level) {
-    if (!supabase) return;
+  async function setAccess(scope: Scope, level: Level) {
+    if (!supabase || !user) return;
 
     const key = `${user.user_id}:${scope}`;
     setSavingKey(key);
@@ -133,26 +135,25 @@ export default function OperationsAdminPage() {
       return;
     }
 
-    setUsers((current) =>
-      current.map((item) => {
-        if (item.user_id !== user.user_id) return item;
+    setUser((current) => {
+      if (!current) return current;
 
-        if (scope === "parari") {
-          return {
-            ...item,
-            parari_active: enabled,
-            parari_role: enabled ? role : item.parari_role,
-          };
-        }
-
+      if (scope === "parari") {
         return {
-          ...item,
-          cpp_active: enabled,
-          cpp_role: enabled ? role : item.cpp_role,
+          ...current,
+          parari_active: enabled,
+          parari_role: enabled ? role : current.parari_role,
         };
-      }),
-    );
+      }
 
+      return {
+        ...current,
+        cpp_active: enabled,
+        cpp_role: enabled ? role : current.cpp_role,
+      };
+    });
+
+    setMessage("権限を変更しました。");
     setSavingKey(null);
   }
 
@@ -173,6 +174,14 @@ export default function OperationsAdminPage() {
     );
   }
 
+  const parari = user
+    ? accessLevel(user.parari_active, user.parari_role)
+    : "none";
+  const cpp = user ? accessLevel(user.cpp_active, user.cpp_role) : "none";
+  const name = user
+    ? user.display_name || user.username || user.email || "名称未設定"
+    : "";
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
@@ -184,7 +193,7 @@ export default function OperationsAdminPage() {
               SUPERUSER
             </div>
             <p className="mt-1 text-xs leading-6 text-neutral-500">
-              PARARIとCPPの運営資格は別々に設定できます。
+              メールアドレスでユーザーを呼び出し、PARARIとCPPの運営資格を設定します。
             </p>
           </div>
 
@@ -196,99 +205,87 @@ export default function OperationsAdminPage() {
           </Link>
         </div>
 
-        <form onSubmit={handleSearch} className="mt-6 flex gap-2">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="メールアドレス・ユーザー名・表示名で検索"
-            className="min-w-0 flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-neutral-400"
-          />
-          <button
-            type="submit"
-            className="rounded-2xl bg-neutral-950 px-5 py-3 text-xs font-bold text-white"
-          >
-            検索
-          </button>
-        </form>
+        <div className="mx-auto mt-8 max-w-2xl">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="user@example.com"
+              autoComplete="off"
+              className="min-w-0 flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-neutral-400"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-2xl bg-neutral-950 px-5 py-3 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {loading ? "検索中…" : "検索"}
+            </button>
+          </form>
 
-        {message ? (
-          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs leading-5 text-rose-700">
-            {message}
-          </div>
-        ) : null}
-
-        <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
-          <div className="hidden grid-cols-[minmax(0,1fr)_250px_250px] gap-4 border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-[11px] font-bold tracking-[0.12em] text-neutral-400 md:grid">
-            <div>USER</div>
-            <div>PARARI</div>
-            <div>CPP</div>
-          </div>
-
-          {loading ? (
-            <div className="px-5 py-8 text-sm text-neutral-500">読み込み中…</div>
-          ) : users.length === 0 ? (
-            <div className="px-5 py-8 text-sm text-neutral-500">
-              該当するユーザーはいません。
+          {message ? (
+            <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-xs leading-5 text-neutral-600">
+              {message}
             </div>
-          ) : (
-            users.map((user) => {
-              const name = user.display_name || user.username || user.email || "名称未設定";
-              const parari = accessLevel(user.parari_active, user.parari_role);
-              const cpp = accessLevel(user.cpp_active, user.cpp_role);
+          ) : null}
 
-              return (
-                <div
-                  key={user.user_id}
-                  className="grid gap-5 border-b border-neutral-100 px-5 py-5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_250px_250px] md:items-center"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="truncate text-sm font-bold text-neutral-950">
-                        {name}
-                      </div>
-                      {user.is_superuser ? (
-                        <span className="rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-white">
-                          SUPERUSER
-                        </span>
-                      ) : null}
+          {searched && !user ? (
+            <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500 shadow-sm">
+              このメールアドレスのPARARIユーザーは見つかりませんでした。
+            </div>
+          ) : null}
+
+          {user ? (
+            <section className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-neutral-100 pb-5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="truncate text-base font-bold text-neutral-950">
+                      {name}
                     </div>
-                    {user.email ? (
-                      <div className="mt-1 truncate text-xs text-neutral-400">
-                        {user.email}
-                      </div>
+                    {user.is_superuser ? (
+                      <span className="rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-white">
+                        SUPERUSER
+                      </span>
                     ) : null}
                   </div>
-
-                  <div>
-                    <div className="mb-2 text-[10px] font-bold tracking-[0.12em] text-neutral-400 md:hidden">
-                      PARARI
-                    </div>
-                    <AccessButtons
-                      value={parari}
-                      disabled={savingKey === `${user.user_id}:parari`}
-                      onChange={(next) => void setAccess(user, "parari", next)}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="mb-2 text-[10px] font-bold tracking-[0.12em] text-neutral-400 md:hidden">
-                      CPP
-                    </div>
-                    <AccessButtons
-                      value={cpp}
-                      disabled={savingKey === `${user.user_id}:cpp`}
-                      onChange={(next) => void setAccess(user, "cpp", next)}
-                    />
+                  <div className="mt-1 truncate text-xs text-neutral-400">
+                    {user.email}
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
 
-        <p className="mt-4 text-xs leading-6 text-neutral-400">
-          OPERATORは日常運営、ADMINはその領域の管理者です。SUPERUSER資格そのものはこの画面では変更できません。
-        </p>
+              <div className="grid gap-6 pt-5 sm:grid-cols-2">
+                <div>
+                  <div className="mb-3 text-[11px] font-bold tracking-[0.12em] text-neutral-400">
+                    PARARI
+                  </div>
+                  <AccessButtons
+                    value={parari}
+                    disabled={savingKey === `${user.user_id}:parari`}
+                    onChange={(next) => void setAccess("parari", next)}
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-3 text-[11px] font-bold tracking-[0.12em] text-neutral-400">
+                    CPP
+                  </div>
+                  <AccessButtons
+                    value={cpp}
+                    disabled={savingKey === `${user.user_id}:cpp`}
+                    onChange={(next) => void setAccess("cpp", next)}
+                  />
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          <p className="mt-4 text-xs leading-6 text-neutral-400">
+            OPERATORは日常運営、ADMINはその領域の管理者です。SUPERUSER資格そのものはこの画面では変更できません。
+          </p>
+        </div>
       </div>
     </main>
   );
