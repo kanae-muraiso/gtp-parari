@@ -51,7 +51,7 @@ export default function SettingsHomePage() {
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="設定" showManagementLinks={false} />
+        <MyAreaHeader title="設定" area="settings" />
 
         <div className="mx-auto mt-8 max-w-3xl space-y-4">
           <SectionTitle>基本</SectionTitle>
