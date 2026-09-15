@@ -25,7 +25,7 @@ export default function ManagementLinks() {
       ) : null}
 
       <Link
-        href="/my/profile"
+        href="/my/settings"
         className="text-xs font-bold text-neutral-500 transition hover:text-neutral-950"
       >
         設定
