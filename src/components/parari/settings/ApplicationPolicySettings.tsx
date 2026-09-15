@@ -44,7 +44,7 @@ Membershipに設定された参加条件・利用条件をご確認ください�
 } as const;
 
 type ApplicationPolicySettingsProps = {
-  canUseExtendedApplication: boolean;
+  hasCalendarBlock: boolean;
   paymentMethod: ApplicationPaymentMethod;
   onPaymentMethodChange: (
     method: ApplicationPaymentMethod,
@@ -74,7 +74,7 @@ type ApplicationPolicySettingsProps = {
 };
 
 export default function ApplicationPolicySettings({
-  canUseExtendedApplication,
+  hasCalendarBlock,
   paymentMethod,
   onPaymentMethodChange,
   paymentAmount,
@@ -108,8 +108,8 @@ export default function ApplicationPolicySettings({
         </div>
 
         <p className="mt-1 text-xs leading-5 text-neutral-500">
-          支払方法は主催者が自由に決められます。
-          PARARIでは支払状況を管理します。
+          無料、現地払い、PARARI決済から選びます。
+          PARARI決済はSquare連携後に利用できます。
         </p>
 
         <div className="mt-4">
@@ -127,55 +127,75 @@ export default function ApplicationPolicySettings({
             className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
           >
             <option value="none">
-              {canUseExtendedApplication
-                ? "支払不要"
-                : "支払リンクなし"}
+              無料
             </option>
 
             <option value="on_site">
-              当日払い
+              現地払い
             </option>
 
-            <option value="bank_transfer">
-              銀行振込
-            </option>
-
-            {canUseExtendedApplication ? (
-              <option value="payment_link">
-                支払リンク
+            {paymentMethod === "bank_transfer" ? (
+              <option value="bank_transfer">
+                銀行振込（旧設定）
               </option>
             ) : null}
+
+            {paymentMethod === "payment_link" ? (
+              <option value="payment_link">
+                支払リンク（旧設定）
+              </option>
+            ) : null}
+
+            <option
+              value="__parari_pending__"
+              disabled
+            >
+              PARARI決済（準備中）
+            </option>
           </select>
         </div>
 
+        {hasCalendarBlock && paymentMethod !== "none" ? (
+          <div className="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
+            <div className="text-sm font-bold text-neutral-900">
+              料金は各開催回で設定します
+            </div>
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
+              CALENDARを使う募集では、APPLICATION側に参加費を重複して設定しません。
+            </p>
+          </div>
+        ) : null}
+
         {paymentMethod !== "none" ? (
           <>
-            <div className="mt-4">
-              <label className="block text-xs font-bold text-neutral-600">
-                参加費
-              </label>
+            {!hasCalendarBlock ? (
+              <div className="mt-4">
+                <label className="block text-xs font-bold text-neutral-600">
+                  参加費
+                </label>
 
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="numeric"
-                  value={paymentAmount}
-                  onChange={(event) =>
-                    onPaymentAmountChange(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="3000"
-                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                />
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={paymentAmount}
+                    onChange={(event) =>
+                      onPaymentAmountChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="3000"
+                    className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+                  />
 
-                <span className="shrink-0 text-sm text-neutral-500">
-                  円
-                </span>
+                  <span className="shrink-0 text-sm text-neutral-500">
+                    円
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {paymentMethod === "payment_link" ? (
               <div className="mt-4">

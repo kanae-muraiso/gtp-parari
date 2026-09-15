@@ -1645,11 +1645,18 @@ export default function ApplicationManager({
       return;
     }
 
+      const hasCalendarPricing =
+        blocks.some(
+          (block) =>
+            block?.type === "calendar",
+        );
+
       const normalizedPaymentAmount =
         paymentAmount.trim();
 
       if (
-        paymentMethod !== "none"
+        paymentMethod !== "none" &&
+        !hasCalendarPricing
       ) {
         const amount =
           Number(
@@ -1810,8 +1817,8 @@ export default function ApplicationManager({
                   paymentMethod,
 
                   paymentAmount:
-                    paymentMethod ===
-                    "none"
+                    paymentMethod === "none" ||
+                    hasCalendarPricing
                       ? null
                       : Number(
                           normalizedPaymentAmount,
@@ -2150,8 +2157,11 @@ export default function ApplicationManager({
 
 
             <ApplicationPolicySettings
-              canUseExtendedApplication={
-                canUseExtendedApplication
+              hasCalendarBlock={
+                blocks.some(
+                  (block) =>
+                    block?.type === "calendar",
+                )
               }
               paymentMethod={paymentMethod}
               onPaymentMethodChange={

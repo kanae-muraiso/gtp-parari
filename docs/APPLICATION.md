@@ -213,11 +213,6 @@ QR には個人情報を入れません。
 - `submissionState.ts` — payment と acceptance を合わせて初期 `status` を決める
 - DBの `set_application_entry_pricing()` と同じ業務ルールをTypeScript側でも共有する
 
-`src/components/parari/settings/ApplicationManagerV3Compat.tsx`
-
-- 一時的な互換レイヤー
-- 既存画面に v3 の支払 UI を適用するための DOM 互換処理
-- 本体分割後に削除する
 
 ### 参加者側
 
@@ -298,19 +293,17 @@ QR には個人情報を入れません。
 support helper、manual 申込者表示 UI、FIELD / CALENDAR / MEMBERSHIP ビルダー、支払 / 同意 / 承認などの設定 UI は分離済みです。
 残る主な責務は状態管理、ロード / 保存、作成モード選択、募集一覧のオーケストレーションです。
 
-### B. `ApplicationPanelRenderer.tsx` が巨大
+### B. `ApplicationPanelRenderer.tsx` は participant orchestration を担当
 
-表示と申込ロジックが密結合しています。
+型・入力欄renderer・snapshot解析・表示helper・申込状態/支払状態表示は分離済みです。
+認証、データ取得、申込action、CALENDAR / FORM の構成は runtime の orchestration 責務として意図的に残します。
+今後は新機能の責務境界が明確になった時だけ追加分割します。
 
-### C. `ApplicationManagerV3Compat.tsx` は一時処置
-
-`MutationObserver` で既存 UI を補正しています。長期的な本体ではありません。
-
-### D. submit経路の共通化は完了
+### C. submit経路の共通化は完了
 
 `guest-submit` と `submit` は共通の `submitApplication()` を利用します。identity 固有の処理だけroute側に残しています。
 
-### E. manual CALENDAR block の非対称は解消済み
+### D. manual CALENDAR block の非対称は解消済み
 
 ゲスト / 登録ユーザーとも、APPLICATION内のCALENDAR blockから同じ開催回解決ロジックを利用します。
 
@@ -327,12 +320,14 @@ D. 主催者画面の作成 / 編集 UI を分離                    完了
    - FIELD / CALENDAR / MEMBERSHIP ビルダー              完了
 E. pricing / payment / acceptance / capacity を pure domain logic として分離  完了
 F. guest / member 共通の submit service を作る                         完了
-G. 参加者画面を小コンポーネントへ分割                                  進行中
+G. 参加者画面を責務ごとに分割                                        完了
    - support / input renderer / snapshot解析                              完了
-   - 申込状態 / 支払状態表示                                           完了
-   - CALENDAR予約 / FORM表示                                              次
-H. ApplicationManagerV3Compat を削除
+   - 申込状態 / 支払状態表示                                             完了
+   - CALENDAR / FORM は runtime orchestration として意図的に維持          完了
+H. 旧DOM互換レイヤーを正規UIへ統合して削除                               完了
 ```
+
+**②.5 APPLICATION 大掃除: 2026-09-15 完了**
 
 その後に機能追加へ戻ります。
 
