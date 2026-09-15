@@ -170,14 +170,29 @@ QR には個人情報を入れません。
 
 `src/components/parari/settings/ApplicationManagerLegacy.tsx`
 
-- 現在の実質的な巨大本体
-- 作成 / 編集 / FORM / CALENDAR / MEMBERSHIP / 申込者一覧 / 承認 / 支払 / CSV / メッセージまで抱えている
-- 今後、機能を変えずに分割する
+- 主催者側の作成 / 編集と状態・API連携を持つ現在の本体
+- FORM / CALENDAR / MEMBERSHIP の編集 UI もまだここに残る
+- 申込者表示 UI と周辺 helper/type はすでに別ファイルへ分離済み
+- 引き続き、機能を変えずに小さくする
+
+`src/components/parari/settings/applicationManagerSupport.ts`
+
+- 主催者画面専用の型・表示整形・CSV出力・申込者回答整形などの補助ロジック
+- React の状態管理から切り離した support 層
+
+`src/components/parari/settings/ApplicationEntriesPanel.tsx`
+
+- manual APPLICATION の申込者一覧 / 詳細表示
+- メッセージ画面
+- CSV出力
+- 資格承認 / 却下
+- 支払確認 UI
+- API呼び出しやキャッシュ状態そのものは親の `ApplicationManagerLegacy.tsx` に残す
 
 `src/components/parari/settings/ApplicationManagerV3Compat.tsx`
 
 - 一時的な互換レイヤー
-- 既存巨大画面に v3 の支払 UI を適用するための DOM 互換処理
+- 既存画面に v3 の支払 UI を適用するための DOM 互換処理
 - 本体分割後に削除する
 
 ### 参加者側
@@ -227,9 +242,10 @@ QR には個人情報を入れません。
 
 ## 9. 現在わかっている技術的負債
 
-### A. `ApplicationManagerLegacy.tsx` が巨大
+### A. `ApplicationManagerLegacy.tsx` はまだ大きい
 
-複数責務を一つの client component が持っています。
+support helper と manual 申込者表示 UI は分離済みです。
+次は作成 / 編集 UI を分離し、主コンポーネントを状態・連携のオーケストレーターへ縮めます。
 
 ### B. `ApplicationPanelRenderer.tsx` が巨大
 
@@ -250,15 +266,17 @@ QR には個人情報を入れません。
 
 ## 10. リファクタリング順序
 
-機能を変えず、次の順で小さくします。
+機能を変えず、小さな PR で進めます。
 
 ```text
-A. 不要な手作業バックアップ削除 + この地図を作る
-B. pricing / payment / acceptance / capacity を pure domain logic として分離
-C. guest / member 共通の submit service を作る
-D. 主催者画面を小コンポーネントへ分割
-E. 参加者画面を小コンポーネントへ分割
-F. ApplicationManagerV3Compat を削除
+A. 不要な手作業バックアップ削除 + この地図を作る        完了
+B. 主催者画面の support/type/helper を分離              完了
+C. 主催者画面の申込者管理 UI を分離                     進行中
+D. 主催者画面の作成 / 編集 UI を分離
+E. pricing / payment / acceptance / capacity を pure domain logic として分離
+F. guest / member 共通の submit service を作る
+G. 参加者画面を小コンポーネントへ分割
+H. ApplicationManagerV3Compat を削除
 ```
 
 その後に機能追加へ戻ります。
