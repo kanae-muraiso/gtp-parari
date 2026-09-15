@@ -34,11 +34,18 @@ import type { ApplicationPanelData } from "./applicationTypes";
 import {
   ApplicationFormFieldRenderer,
   ApplicationInputFieldRenderer,
+  ApplicationLabel,
+  InfoRow,
+  StatusBadge,
+  applicationTypeLabel,
+  defaultActionLabel,
+  formatFieldValue,
   formatCalendarOccurrence,
   getCalendarBlockItemId,
   getCompletedEntryInputFields,
   getMembershipBlockId,
   getSnapshotPayment,
+  normalizeText,
   resolveFormBlockFields,
 } from "./applicationPanelSupport";
 import type {
@@ -3154,211 +3161,4 @@ export default function ApplicationPanelRenderer({
     ) : null}
     </section>
   );
-}
-
-
-// ========================================================
-// UI helpers
-// ========================================================
-
-function ApplicationLabel() {
-  return (
-    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-      APPLICATION
-    </div>
-  );
-}
-
-
-function StatusBadge({
-  status,
-}: {
-  status:
-    | "draft"
-    | "open"
-    | "closed";
-}) {
-  const label =
-    status === "open"
-      ? "受付中"
-      : status ===
-          "draft"
-        ? "下書き"
-        : "受付終了";
-
-  return (
-    <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-600">
-      {label}
-    </span>
-  );
-}
-
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl bg-neutral-50 px-4 py-3">
-      <dt className="text-xs font-semibold text-neutral-400">
-        {label}
-      </dt>
-
-      <dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-neutral-800">
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-
-// ========================================================
-// data helpers
-// ========================================================
-
-function normalizeText(
-  value: unknown,
-): string {
-  return String(
-    value ?? "",
-  ).trim();
-}
-
-
-function formatFieldValue(
-  field: ApplicationField,
-): string {
-  const value =
-    field.value;
-
-  if (
-    value === null ||
-    typeof value ===
-      "undefined"
-  ) {
-    return "";
-  }
-
-  const text =
-    String(value).trim();
-
-  if (!text) {
-    return "";
-  }
-
-  if (
-    field.type ===
-    "money"
-  ) {
-    return text;
-  }
-
-  if (
-    field.type ===
-      "datetime" ||
-    field.type ===
-      "date"
-  ) {
-    return formatDateValue(
-      text,
-    );
-  }
-
-  return text;
-}
-
-
-function formatDateValue(
-  value: string,
-): string {
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "ja-JP",
-    {
-      year:
-        "numeric",
-      month:
-        "long",
-      day:
-        "numeric",
-
-      ...(value.includes(
-        "T",
-      )
-        ? {
-            hour:
-              "2-digit" as const,
-            minute:
-              "2-digit" as const,
-          }
-        : {}),
-    },
-  ).format(date);
-}
-
-
-function applicationTypeLabel(
-  type:
-    PublicApplication["application_type"],
-): string {
-  switch (type) {
-    case "EVENT":
-      return "イベント・参加募集";
-
-    case "RECRUITMENT":
-      return "採用・人材募集";
-
-    case "SCHOOL":
-      return "教室・講座募集";
-
-    case "CONTEST":
-      return "コンテスト・作品募集";
-
-    case "VOLUNTEER":
-      return "ボランティア募集";
-
-    case "OTHER":
-    default:
-      return "募集";
-  }
-}
-
-
-function defaultActionLabel(
-  type:
-    PublicApplication["application_type"],
-): string {
-  switch (type) {
-    case "EVENT":
-      return "参加する";
-
-    case "RECRUITMENT":
-      return "応募する";
-
-    case "SCHOOL":
-      return "受講を申し込む";
-
-    case "CONTEST":
-      return "作品を応募する";
-
-    case "VOLUNTEER":
-      return "参加を申し込む";
-
-    case "OTHER":
-    default:
-      return "申し込む";
-  }
 }
