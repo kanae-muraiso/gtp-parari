@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feature/application-payment-settings-cleanup
+          fetch-depth: 0
 
       - name: Restore API formatting and apply only pricing changes
         shell: bash
