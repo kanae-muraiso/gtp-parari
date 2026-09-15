@@ -1,0 +1,71 @@
+name: APPLICATION payment hold phase 4
+
+on:
+  push:
+    branches:
+      - feature/application-payment-hold-db
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.event.head_commit.message == 'Prepare APPLICATION payment hold phase 4 integration'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feature/application-payment-hold-db
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Preserve generated build cache
+        run: cp tsconfig.tsbuildinfo /tmp/tsconfig.tsbuildinfo
+
+      - name: Apply guarded expiry integration
+        run: node .github/scripts/application-payment-hold-phase4.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Verify expiry integration
+        run: |
+          grep -q 'expireApplicationPaymentHoldIfNeeded' src/app/api/application/my-entry/route.ts
+          grep -q 'expireApplicationPaymentHoldIfNeeded' src/features/application/server/cancelApplicationEntry.ts
+          grep -q '"expired"' src/features/application/domain/cancellation.ts
+          grep -q '支払期限が終了しました' src/components/parari/panels/application/ApplicationEntryStatusPanel.tsx
+          grep -q '"expired"' src/components/parari/panels/application/ApplicationPanelRenderer.tsx
+          test -f src/features/application/server/paymentHoldExpiry.ts
+
+      - name: Restore generated build cache
+        run: cp /tmp/tsconfig.tsbuildinfo tsconfig.tsbuildinfo
+
+      - name: Remove temporary workflow and script
+        run: |
+          rm .github/scripts/application-payment-hold-phase4.mjs
+          rm .github/workflows/application-payment-hold-phase4.yml
+
+      - name: Commit integration
+        run: |
+          git config user.name kanae-muraiso
+          git config user.email kanae@muraiso.jp
+          git add src/features/application/server/paymentHoldExpiry.ts \
+                  src/features/application/domain/cancellation.ts \
+                  src/features/application/server/cancelApplicationEntry.ts \
+                  src/app/api/application/my-entry/route.ts \
+                  src/components/parari/panels/application/ApplicationEntryStatusPanel.tsx \
+                  src/components/parari/panels/application/ApplicationPanelRenderer.tsx \
+                  tsconfig.tsbuildinfo \
+                  .github/scripts/application-payment-hold-phase4.mjs \
+                  .github/workflows/application-payment-hold-phase4.yml
+          git commit -m 'Surface expired APPLICATION payment holds'
+          git push origin HEAD:feature/application-payment-hold-db
