@@ -6,6 +6,7 @@
 // - Guest identity is name + normalized email.
 // - Existing authenticated submit API remains unchanged.
 // - Supports both CALENDAR-origin APPLICATIONs and manual CALENDAR blocks.
+// - Issues a one-time raw management token and stores only its SHA-256 hash.
 
 import {
   NextRequest,
@@ -21,6 +22,10 @@ import {
 import {
   getUserBillingByUserId,
 } from "@/lib/billing/supabaseBilling";
+import {
+  createGuestAccessToken,
+  hashGuestAccessToken,
+} from "@/lib/application/guestAccess";
 
 const UUID_RE =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -1106,6 +1111,13 @@ export async function POST(
       ...answersResult.answers,
     };
 
+    const guestAccessToken =
+      createGuestAccessToken();
+    const guestAccessTokenHash =
+      hashGuestAccessToken(
+        guestAccessToken,
+      );
+
     const {
       data: entry,
       error: insertError,
@@ -1121,6 +1133,10 @@ export async function POST(
           applicantName,
         applicant_email:
           applicantEmail,
+        guest_access_token_hash:
+          guestAccessTokenHash,
+        guest_access_token_created_at:
+          new Date().toISOString(),
         calendar_occurrence_id:
           calendarOccurrence?.id ?? null,
         form_submission_id:
@@ -1185,6 +1201,7 @@ export async function POST(
       guest: {
         name: applicantName,
         email: applicantEmail,
+        accessToken: guestAccessToken,
       },
     });
   } catch (error) {
