@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import useParariExperience, {
@@ -54,38 +53,9 @@ export default function StudioAccessPanel() {
     setActivating(false);
   }
 
-  if (loading) {
-    return (
-      <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="h-5 w-32 animate-pulse rounded bg-neutral-100" />
-        <div className="mt-3 h-4 w-64 max-w-full animate-pulse rounded bg-neutral-100" />
-      </section>
-    );
-  }
-
-  if (studioEnabled) {
-    return (
-      <section className="rounded-3xl border border-neutral-900 bg-neutral-950 p-5 text-white shadow-sm">
-        <div className="text-xs font-bold tracking-[0.18em] text-white/50">
-          STUDIO
-        </div>
-        <div className="mt-2 text-base font-bold">
-          制作・運営機能が有効です
-        </div>
-        <p className="mt-2 text-xs leading-6 text-white/65">
-          作品をつくる、募集する、MembershipやCalendarを運営する機能はこちらにまとまります。
-        </p>
-        <div className="mt-4">
-          <Link
-            href="/my/works"
-            className="inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-950 transition hover:bg-neutral-100"
-          >
-            STUDIOを開く
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  // STUDIOを有効にした後は、この「入口」は役目を終える。
+  // 設定画面にはSTUDIO利用者向けの設定だけを表示する。
+  if (loading || studioEnabled) return null;
 
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
