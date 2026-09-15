@@ -48,7 +48,7 @@ export default function SettingsHomePage() {
           <SettingsCard
             title="基本設定"
             description="氏名、表示名、ユーザーネームなどを設定します。"
-            href="/my/profile"
+            href="/my/profile?returnTo=/my/settings"
           />
 
           <SettingsCard
