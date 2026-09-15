@@ -3,7 +3,8 @@ type EntryStatus =
   | "confirmed"
   | "rejected"
   | "withdrawn"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 type EntryPaymentStatus =
   | "not_required"
@@ -63,7 +64,9 @@ export default function ApplicationEntryStatusPanel({
           ? "申込を取り下げました"
           : entry.status === "cancelled"
             ? "参加をキャンセルしました"
-            : "お申し込みを受け付けました";
+            : entry.status === "expired"
+              ? "支払期限が終了しました"
+              : "お申し込みを受け付けました";
 
   const description =
     entry.status === "confirmed"
@@ -74,7 +77,9 @@ export default function ApplicationEntryStatusPanel({
           ? "この申込は取り下げ済みです。必要であれば、受付中の間は改めて申し込めます。"
           : entry.status === "cancelled"
             ? "この参加予約はキャンセル済みです。必要であれば、受付中の間は改めて申し込めます。"
-            : "現在、主催者の確認待ちです。";
+            : entry.status === "expired"
+              ? "15分の支払期限を過ぎたため、この申込は失効しました。受付中であれば改めてお申し込みください。"
+              : "現在、主催者の確認待ちです。";
 
   return (
     <>

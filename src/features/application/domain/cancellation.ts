@@ -8,7 +8,8 @@ export type ApplicationEntryCancellationStatus =
   | "confirmed"
   | "rejected"
   | "withdrawn"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 type CancellationDecisionInput = {
   status: ApplicationEntryCancellationStatus;
@@ -38,6 +39,15 @@ export function resolveCancellationDecision(
 ): CancellationDecision {
   const now = input.now ?? new Date();
   const nowTime = now.getTime();
+
+  if (input.status === "expired") {
+    return {
+      allowed: false,
+      targetStatus: null,
+      deadlineAt: null,
+      message: "支払期限が終了したため、この申込は失効しています。",
+    };
+  }
 
   if (input.status !== "submitted" && input.status !== "confirmed") {
     return {
