@@ -19,6 +19,18 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Repair generated documentation literal
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/application-cancellation-phase1.mjs')
+          text = path.read_text()
+          start = text.index('`## 11. キャンセルポリシー')
+          end = text.index('`,\n);', start)
+          body = text[start + 1:end].replace('`', "'")
+          path.write_text(text[:start + 1] + body + text[end:])
+          PY
+
       - name: Apply guarded source changes
         run: node .github/scripts/application-cancellation-phase1.mjs
 
