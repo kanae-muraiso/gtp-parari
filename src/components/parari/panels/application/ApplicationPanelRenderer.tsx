@@ -31,6 +31,8 @@ import EventClassBrandPanel from "../../EventClassBrandPanel";
 
 import type { ApplicationPanelData } from "./applicationTypes";
 
+import ApplicationEntryStatusPanel from "./ApplicationEntryStatusPanel";
+
 import {
   ApplicationFormFieldRenderer,
   ApplicationInputFieldRenderer,
@@ -2767,136 +2769,16 @@ export default function ApplicationPanelRenderer({
           ) : null}
 
           {completedEntry ? (
-            <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-              <div className="text-lg font-bold text-neutral-950">
-                {completedEntry.status ===
-                "confirmed"
-                  ? "お申し込みは確定しています"
-                  : completedEntry.status ===
-                      "rejected"
-                    ? "今回は受付されませんでした"
-                    : "お申し込みを受け付けました"}
-              </div>
-
-              <p className="mt-2 text-sm leading-7 text-neutral-600">
-                {completedEntry.status ===
-                "confirmed"
-                  ? "参加・申込が確定しています。"
-                  : completedEntry.status ===
-                      "rejected"
-                    ? "このAPPLICATIONへの再申込はできません。"
-                    : "現在、主催者の確認待ちです。"}
-              </p>
-            </div>
-          ) : null}
-          
-          {completedEntry &&
-          entryPayment &&
-          entryPayment.method !==
-            "none" &&
-          completedEntry.status !==
-            "rejected" ? (
-            <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
-              <div className="text-sm font-bold text-neutral-950">
-                お支払い
-              </div>
-
-              {entryPayment.amount !==
-              null ? (
-                <div className="mt-2 text-lg font-bold text-neutral-950">
-                  {entryPayment.amount.toLocaleString(
-                    "ja-JP",
-                  )}
-                  円
-                </div>
-              ) : null}
-
-              {completedEntry
-                .payment_status ===
-              "paid" ? (
-                <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm font-bold text-neutral-700">
-                  ✓ 支払確認済み
-                </div>
-              ) : entryPayment.method ===
-                "on_site" ? (
-                <>
-                  <div className="mt-3 text-sm font-bold text-neutral-700">
-                    当日払い
-                  </div>
-
-                  {entryPayment.instructions ? (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-neutral-600">
-                      {
-                        entryPayment.instructions
-                      }
-                    </p>
-                  ) : null}
-                </>
-              ) : completedEntry
-                  .payment_status ===
-                "reported" ? (
-                <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                  支払の連絡を受け付けました。
-                  現在、主催者の着金確認待ちです。
-                </div>
-              ) : !qualificationReady ? (
-                <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
-                  主催者の確認が終わると、
-                  支払手続きができるようになります。
-                </div>
-              ) : (
-                <>
-                  {entryPayment.instructions ? (
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-neutral-600">
-                      {
-                        entryPayment.instructions
-                      }
-                    </p>
-                  ) : null}
-
-                  {entryPayment.method ===
-                    "payment_link" &&
-                  entryPayment.url ? (
-                    <a
-                      href={
-                        entryPayment.url
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 block w-full rounded-full bg-neutral-950 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-neutral-700"
-                    >
-                      支払う
-                    </a>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    disabled={
-                      isReportingPayment
-                    }
-                    onClick={() => {
-                      void reportPayment();
-                    }}
-                    className="mt-3 w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-40"
-                  >
-                    {isReportingPayment
-                      ? "送信中..."
-                      : "支払いました"}
-                  </button>
-
-                  <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
-                    支払後にこのボタンを押してください。
-                    主催者が着金を確認すると「支払確認済み」になります。
-                  </p>
-                </>
-              )}
-
-              {paymentMessage ? (
-                <p className="mt-3 text-sm leading-6 text-neutral-600">
-                  {paymentMessage}
-                </p>
-              ) : null}
-            </div>
+            <ApplicationEntryStatusPanel
+              entry={completedEntry}
+              payment={entryPayment}
+              qualificationReady={qualificationReady}
+              isReportingPayment={isReportingPayment}
+              paymentMessage={paymentMessage}
+              onReportPayment={() => {
+                void reportPayment();
+              }}
+            />
           ) : null}
           
           {completedEntry &&
