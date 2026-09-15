@@ -171,9 +171,8 @@ QR には個人情報を入れません。
 `src/components/parari/settings/ApplicationManagerLegacy.tsx`
 
 - 主催者側の状態・API連携・保存処理を持つ現在の本体
-- FORM / CALENDAR / MEMBERSHIP のビルダー UI はまだここに残る
-- support、申込者管理、支払/同意/承認などの設定 UI は分離済み
-- 引き続き、機能を変えずにオーケストレーターへ縮める
+- support、申込者管理、内容ビルダー、支払/同意/承認などの設定 UI は分離済み
+- 画面部品を抱える巨大 component から、状態・連携のオーケストレーターへ縮小中
 
 `src/components/parari/settings/applicationManagerSupport.ts`
 
@@ -188,6 +187,12 @@ QR には個人情報を入れません。
 - 資格承認 / 却下
 - 支払確認 UI
 - API呼び出しやキャッシュ状態そのものは親の `ApplicationManagerLegacy.tsx` に残す
+
+`src/components/parari/settings/ApplicationContentBuilder.tsx`
+
+- Builder モードの FIELD / CALENDAR / MEMBERSHIP の配置・並べ替え・削除 UI
+- FIELD の種類、質問名、選択肢、必須設定
+- 実際の state 更新関数は親から callback として受け取る
 
 `src/components/parari/settings/ApplicationPolicySettings.tsx`
 
@@ -252,8 +257,8 @@ QR には個人情報を入れません。
 
 ### A. `ApplicationManagerLegacy.tsx` はまだ大きい
 
-support helper、manual 申込者表示 UI、支払 / 同意 / 承認などの設定 UI は分離済みです。
-次は FIELD / CALENDAR / MEMBERSHIP を組み立てるビルダー部分を分離し、主コンポーネントを状態・連携のオーケストレーターへ縮めます。
+support helper、manual 申込者表示 UI、FIELD / CALENDAR / MEMBERSHIP ビルダー、支払 / 同意 / 承認などの設定 UI は分離済みです。
+残る主な責務は状態管理、ロード / 保存、作成モード選択、募集一覧のオーケストレーションです。
 
 ### B. `ApplicationPanelRenderer.tsx` が巨大
 
@@ -280,9 +285,9 @@ support helper、manual 申込者表示 UI、支払 / 同意 / 承認などの�
 A. 不要な手作業バックアップ削除 + この地図を作る        完了
 B. 主催者画面の support/type/helper を分離              完了
 C. 主催者画面の申込者管理 UI を分離                     完了
-D. 主催者画面の作成 / 編集 UI を分離                    進行中
+D. 主催者画面の作成 / 編集 UI を分離                    完了
    - 支払 / 同意 / 承認 / ボタン設定                    完了
-   - FIELD / CALENDAR / MEMBERSHIP ビルダー              次
+   - FIELD / CALENDAR / MEMBERSHIP ビルダー              完了
 E. pricing / payment / acceptance / capacity を pure domain logic として分離
 F. guest / member 共通の submit service を作る
 G. 参加者画面を小コンポーネントへ分割
