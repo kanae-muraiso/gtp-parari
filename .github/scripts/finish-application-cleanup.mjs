@@ -129,7 +129,7 @@ docs = docs.replace(
 );
 
 const roadmap = `G. 参加者画面を小コンポーネントへ分割                                  進行中\n   - support / input renderer / snapshot解析                              完了\n   - 申込状態 / 支払状態表示                                           完了\n   - CALENDAR予約 / FORM表示                                              次\nH. ApplicationManagerV3Compat を削除`;
-const roadmapReplacement = `G. 参加者画面を責務ごとに分割                                        完了\n   - support / input renderer / snapshot解析                              完了\n   - 申込状態 / 支払状態表示                                             完了\n   - CALENDAR / FORM は runtime orchestration として意図的に維持          完了\nH. ApplicationManagerV3Compat を正規UIへ統合して削除                      完了`;
+const roadmapReplacement = `G. 参加者画面を責務ごとに分割                                        完了\n   - support / input renderer / snapshot解析                              完了\n   - 申込状態 / 支払状態表示                                             完了\n   - CALENDAR / FORM は runtime orchestration として意図的に維持          完了\nH. 旧DOM互換レイヤーを正規UIへ統合して削除                               完了`;
 docs = replaceExactly(
   docs,
   roadmap,
