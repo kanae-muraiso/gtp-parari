@@ -1,5 +1,5 @@
 // src/app/my/passes/page.tsx
-// 2026-09-15 JST
+// 2026-09-16 JST
 
 "use client";
 
@@ -8,6 +8,7 @@ import * as React from "react";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import ApplicationMemberCancellationButton from "@/components/parari/application/ApplicationMemberCancellationButton";
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
 
 type MyPass = {
@@ -54,6 +55,7 @@ export default function MyPassesPage() {
   const [passes, setPasses] = React.useState<MyPass[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [message, setMessage] = React.useState("");
+  const [notice, setNotice] = React.useState("");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -141,6 +143,12 @@ export default function MyPassesPage() {
           </p>
         </div>
 
+        {notice ? (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
+            {notice}
+          </div>
+        ) : null}
+
         {loading ? (
           <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
             参加証を読み込んでいます...
@@ -190,6 +198,27 @@ export default function MyPassesPage() {
                     participantName={pass.participant_name}
                     storageHint="library"
                   />
+
+                  {pass.checked_in_at ? (
+                    <p className="mt-4 text-sm leading-6 text-neutral-500">
+                      受付済みの参加証はキャンセルできません。
+                    </p>
+                  ) : (
+                    <div className="mt-4 border-t border-neutral-100 pt-4">
+                      <ApplicationMemberCancellationButton
+                        applicationId={pass.application_id}
+                        status="confirmed"
+                        onCompleted={() => {
+                          setPasses((current) =>
+                            current.filter(
+                              (item) => item.entry_id !== pass.entry_id,
+                            ),
+                          );
+                          setNotice("参加をキャンセルしました。申込履歴には記録が残ります。");
+                        }}
+                      />
+                    </div>
+                  )}
                 </details>
               );
             })}
