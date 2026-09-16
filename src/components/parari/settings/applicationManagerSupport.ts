@@ -79,6 +79,8 @@ export type ApplicationCancellationMode =
 
 export type ManagedApplication = {
   id: string;
+  origin?: "manual" | "calendar";
+  calendar_item_id?: string | null;
   application_type: ApplicationType;
   title: string;
   description: string | null;
