@@ -8,16 +8,19 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
 
 type Occurrence = {
   id: string;
+  calendar_item_id?: string;
   starts_at: string;
   ends_at: string;
   timezone: string;
   title: string | null;
   location: string | null;
+  status?: string;
 };
 
 type PassData = {
@@ -34,6 +37,13 @@ type CheckInResponse = {
   checked_in_at?: string | null;
   already_checked_in?: boolean;
   message?: string;
+};
+
+type ManagedApplication = {
+  id: string;
+  origin?: "manual" | "calendar";
+  calendar_item_id?: string | null;
+  title: string;
 };
 
 type BarcodeResult = {
@@ -56,6 +66,8 @@ type CameraState =
   | "error";
 
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function readPassCode(value: string): string {
   const normalized = value.trim().toLowerCase();
@@ -80,11 +92,41 @@ function readPassCode(value: string): string {
   }
 }
 
+function formatOccurrenceDate(occurrence: Occurrence): string {
+  try {
+    return new Intl.DateTimeFormat("ja-JP", {
+      timeZone: occurrence.timezone,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(occurrence.starts_at));
+  } catch {
+    return occurrence.starts_at;
+  }
+}
+
 export default function CheckInModePage() {
+  const searchParams = useSearchParams();
+  const requestedApplicationId =
+    searchParams.get("applicationId")?.trim() ?? "";
+  const requestedCalendarItemId =
+    searchParams.get("calendarItemId")?.trim() ?? "";
+
   const [authState, setAuthState] = React.useState<
     "checking" | "signed_out" | "signed_in"
   >("checking");
   const [accessToken, setAccessToken] = React.useState("");
+
+  const [application, setApplication] =
+    React.useState<ManagedApplication | null>(null);
+  const [contextLoading, setContextLoading] = React.useState(false);
+  const [contextMessage, setContextMessage] = React.useState("");
+  const [occurrences, setOccurrences] = React.useState<Occurrence[]>([]);
+  const [selectedOccurrenceId, setSelectedOccurrenceId] = React.useState("");
+
   const [rawCode, setRawCode] = React.useState("");
   const [passCode, setPassCode] = React.useState("");
   const [pass, setPass] = React.useState<PassData | null>(null);
@@ -165,8 +207,193 @@ export default function CheckInModePage() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (authState !== "signed_in" || !accessToken) {
+      return;
+    }
+
+    if (!UUID_RE.test(requestedApplicationId)) {
+      setApplication(null);
+      setOccurrences([]);
+      setSelectedOccurrenceId("");
+      setContextMessage(
+        "運営 → APPLICATION の［QR受付］から受付する募集を選んでください。",
+      );
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadContext() {
+      setContextLoading(true);
+      setContextMessage("");
+      setApplication(null);
+      setOccurrences([]);
+      setSelectedOccurrenceId("");
+      setPass(null);
+      setPassCode("");
+      setRawCode("");
+      stopCamera();
+
+      try {
+        const applicationResponse = await fetch("/api/application/manage", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store",
+        });
+
+        const applicationResult =
+          (await applicationResponse.json().catch(() => null)) as
+            | {
+                ok?: boolean;
+                applications?: ManagedApplication[];
+                message?: string;
+              }
+            | null;
+
+        if (
+          !applicationResponse.ok ||
+          !applicationResult?.ok ||
+          !Array.isArray(applicationResult.applications)
+        ) {
+          if (!cancelled) {
+            setContextMessage(
+              applicationResult?.message ??
+                "APPLICATIONを確認できませんでした。",
+            );
+          }
+          return;
+        }
+
+        const selectedApplication =
+          applicationResult.applications.find(
+            (item) => item.id === requestedApplicationId,
+          ) ?? null;
+
+        if (!selectedApplication) {
+          if (!cancelled) {
+            setContextMessage(
+              "このAPPLICATIONの受付権限を確認できませんでした。",
+            );
+          }
+          return;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setApplication(selectedApplication);
+
+        const isCalendar = selectedApplication.origin === "calendar";
+        const calendarItemId =
+          selectedApplication.calendar_item_id?.trim() ||
+          requestedCalendarItemId;
+
+        if (!isCalendar) {
+          return;
+        }
+
+        if (!UUID_RE.test(calendarItemId)) {
+          setContextMessage(
+            "このAPPLICATIONの開催回を確認できませんでした。",
+          );
+          return;
+        }
+
+        const occurrenceResponse = await fetch(
+          `/api/calendar/occurrences?calendarItemId=${encodeURIComponent(
+            calendarItemId,
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+          },
+        );
+
+        const occurrenceResult =
+          (await occurrenceResponse.json().catch(() => null)) as
+            | {
+                ok?: boolean;
+                occurrences?: Occurrence[];
+                message?: string;
+              }
+            | null;
+
+        if (
+          !occurrenceResponse.ok ||
+          !occurrenceResult?.ok ||
+          !Array.isArray(occurrenceResult.occurrences)
+        ) {
+          setContextMessage(
+            occurrenceResult?.message ??
+              "開催回を確認できませんでした。",
+          );
+          return;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setOccurrences(
+          occurrenceResult.occurrences.filter(
+            (occurrence) => occurrence.status !== "cancelled",
+          ),
+        );
+      } catch (error) {
+        console.error("[CHECK-IN MODE] context load failed:", error);
+        if (!cancelled) {
+          setContextMessage(
+            "受付するAPPLICATIONを確認できませんでした。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setContextLoading(false);
+        }
+      }
+    }
+
+    void loadContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    authState,
+    requestedApplicationId,
+    requestedCalendarItemId,
+    stopCamera,
+  ]);
+
+  const isCalendarApplication = application?.origin === "calendar";
+  const contextReady =
+    Boolean(application) &&
+    (!isCalendarApplication || Boolean(selectedOccurrenceId));
+
+  const returnTo = React.useMemo(() => {
+    if (!requestedApplicationId) {
+      return "/checkin";
+    }
+
+    const params = new URLSearchParams({
+      applicationId: requestedApplicationId,
+    });
+
+    if (requestedCalendarItemId) {
+      params.set("calendarItemId", requestedCalendarItemId);
+    }
+
+    return `/checkin?${params.toString()}`;
+  }, [requestedApplicationId, requestedCalendarItemId]);
+
   async function inspectPass(value: string = rawCode) {
-    if (!accessToken || loading) {
+    if (!accessToken || loading || !contextReady) {
       return;
     }
 
@@ -204,6 +431,24 @@ export default function CheckInModePage() {
         return;
       }
 
+      if (
+        selectedOccurrenceId &&
+        result.pass.occurrence?.id !== selectedOccurrenceId
+      ) {
+        setMessage("選択した開催回とは別の参加証です。");
+        setPassCode("");
+        return;
+      }
+
+      if (
+        application &&
+        result.pass.application_title !== application.title
+      ) {
+        setMessage("選択したAPPLICATIONとは別の参加証です。");
+        setPassCode("");
+        return;
+      }
+
       setPass(result.pass);
     } catch (error) {
       console.error("[CHECK-IN MODE] inspect failed:", error);
@@ -214,6 +459,10 @@ export default function CheckInModePage() {
   }
 
   async function startCamera() {
+    if (!contextReady) {
+      return;
+    }
+
     if (cameraState === "starting" || cameraState === "scanning") {
       return;
     }
@@ -300,7 +549,7 @@ export default function CheckInModePage() {
   }
 
   async function checkIn() {
-    if (!accessToken || !pass || !passCode || checkingIn) {
+    if (!accessToken || !pass || !passCode || checkingIn || !contextReady) {
       return;
     }
 
@@ -352,10 +601,17 @@ export default function CheckInModePage() {
         <div className="text-xs font-bold tracking-[0.2em] text-white/60">
           PARARI CHECK-IN MODE
         </div>
-        <h1 className="mt-2 text-2xl font-bold">主催者受付モード</h1>
+        <h1 className="mt-2 text-2xl font-bold">QR受付</h1>
         <p className="mt-3 text-sm leading-7 text-white/70">
-          この画面だけが参加者の受付処理を行います。通常の参加証QRをスマホのカメラで開いただけでは受付されません。
+          APPLICATIONから受付する募集を選び、参加者を確認してから受付します。QRを読んだだけでは受付されません。
         </p>
+
+        <a
+          href="/my/manage?tab=application"
+          className="mt-4 inline-flex text-xs font-bold text-white/70 underline underline-offset-4"
+        >
+          APPLICATIONへ戻る
+        </a>
 
         {authState === "checking" ? (
           <div className="mt-6 rounded-2xl bg-white/10 p-4 text-sm text-white/70">
@@ -365,10 +621,10 @@ export default function CheckInModePage() {
           <div className="mt-6 rounded-2xl bg-white p-5 text-neutral-950">
             <div className="font-bold">受付担当者のログインが必要です</div>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              現在はAPPLICATION主催者だけが受付できます。受付スタッフへの一時権限は次の工程で追加します。
+              現在はAPPLICATION主催者だけが受付できます。受付スタッフへの一時権限は後の工程で追加します。
             </p>
             <a
-              href={`/login?returnTo=${encodeURIComponent("/checkin")}`}
+              href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
               className="mt-4 block w-full rounded-full bg-neutral-950 px-5 py-3 text-center text-sm font-bold text-white"
             >
               PARARIにログイン
@@ -377,74 +633,163 @@ export default function CheckInModePage() {
         ) : (
           <>
             <div className="mt-6 rounded-2xl bg-white p-5 text-neutral-950">
-              <div className="text-sm font-bold">参加証QRを読み取る</div>
-              <p className="mt-1 text-xs leading-6 text-neutral-500">
-                CHECK-IN MODEからカメラを起動して参加証QRを読み取ります。読み取っただけでは受付されません。
-              </p>
-
-              <div className="mt-4 overflow-hidden rounded-2xl bg-neutral-950">
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  className={[
-                    "aspect-square w-full object-cover",
-                    cameraState === "scanning" || cameraState === "starting"
-                      ? "block"
-                      : "hidden",
-                  ].join(" ")}
-                />
-
-                {cameraState !== "scanning" && cameraState !== "starting" ? (
-                  <div className="flex aspect-square items-center justify-center px-6 text-center text-sm leading-7 text-white/60">
-                    カメラを起動すると、ここにQR読み取り画面が表示されます。
-                  </div>
-                ) : null}
+              <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                CHECK-IN TARGET
               </div>
 
-              {cameraState === "scanning" ? (
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="mt-3 w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-800"
-                >
-                  カメラを停止
-                </button>
+              {contextLoading ? (
+                <p className="mt-3 text-sm text-neutral-500">
+                  受付するAPPLICATIONを確認しています...
+                </p>
+              ) : application ? (
+                <>
+                  <div className="mt-2 text-lg font-bold">
+                    {application.title}
+                  </div>
+                  <div className="mt-1 text-xs text-neutral-500">
+                    {application.origin === "calendar"
+                      ? "CALENDAR連携APPLICATION"
+                      : "APPLICATION"}
+                  </div>
+
+                  {application.origin === "calendar" ? (
+                    <div className="mt-5">
+                      <div className="text-sm font-bold">受付する開催回を選択</div>
+
+                      {occurrences.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          {occurrences.map((occurrence) => (
+                            <button
+                              key={occurrence.id}
+                              type="button"
+                              onClick={() => {
+                                stopCamera();
+                                setSelectedOccurrenceId(occurrence.id);
+                                setPass(null);
+                                setPassCode("");
+                                setRawCode("");
+                                setMessage("");
+                              }}
+                              className={[
+                                "w-full rounded-xl border px-4 py-3 text-left transition",
+                                selectedOccurrenceId === occurrence.id
+                                  ? "border-neutral-950 bg-neutral-950 text-white"
+                                  : "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50",
+                              ].join(" ")}
+                            >
+                              <div className="text-sm font-bold">
+                                {formatOccurrenceDate(occurrence)}
+                              </div>
+                              {occurrence.location ? (
+                                <div
+                                  className={[
+                                    "mt-1 text-xs",
+                                    selectedOccurrenceId === occurrence.id
+                                      ? "text-white/70"
+                                      : "text-neutral-500",
+                                  ].join(" ")}
+                                >
+                                  {occurrence.location}
+                                </div>
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm text-neutral-500">
+                          受付できる開催回がありません。
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </>
               ) : (
-                <button
-                  type="button"
-                  disabled={cameraState === "starting"}
-                  onClick={() => void startCamera()}
-                  className="mt-3 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
-                >
-                  {cameraState === "starting" ? "カメラを開始しています..." : "カメラでQRを読む"}
-                </button>
+                <p className="mt-3 text-sm leading-7 text-neutral-600">
+                  {contextMessage ||
+                    "運営 → APPLICATION の［QR受付］から受付する募集を選んでください。"}
+                </p>
               )}
 
-              <div className="my-5 flex items-center gap-3 text-xs text-neutral-400">
-                <div className="h-px flex-1 bg-neutral-200" />
-                または手動入力
-                <div className="h-px flex-1 bg-neutral-200" />
-              </div>
-
-              <input
-                value={rawCode}
-                onChange={(event) => {
-                  setRawCode(event.target.value);
-                  setMessage("");
-                }}
-                placeholder="https://www.parari.app/q/..."
-                className="w-full rounded-xl border border-neutral-300 px-3 py-3 text-sm outline-none focus:border-neutral-700"
-              />
-              <button
-                type="button"
-                disabled={loading || !rawCode.trim()}
-                onClick={() => void inspectPass()}
-                className="mt-3 w-full rounded-full bg-neutral-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
-              >
-                {loading ? "確認しています..." : "参加証を確認"}
-              </button>
+              {contextMessage && application ? (
+                <p className="mt-3 text-sm leading-7 text-rose-700">
+                  {contextMessage}
+                </p>
+              ) : null}
             </div>
+
+            {contextReady ? (
+              <div className="mt-5 rounded-2xl bg-white p-5 text-neutral-950">
+                <div className="text-sm font-bold">参加証QRを読み取る</div>
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  次工程で、このAPPLICATIONの参加者名簿を最初に一括取得してローカル照合する方式へ変更します。今は受付導線の確認段階です。
+                </p>
+
+                <div className="mt-4 overflow-hidden rounded-2xl bg-neutral-950">
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    className={[
+                      "aspect-square w-full object-cover",
+                      cameraState === "scanning" || cameraState === "starting"
+                        ? "block"
+                        : "hidden",
+                    ].join(" ")}
+                  />
+
+                  {cameraState !== "scanning" && cameraState !== "starting" ? (
+                    <div className="flex aspect-square items-center justify-center px-6 text-center text-sm leading-7 text-white/60">
+                      カメラを起動すると、ここにQR読み取り画面が表示されます。
+                    </div>
+                  ) : null}
+                </div>
+
+                {cameraState === "scanning" ? (
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="mt-3 w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-800"
+                  >
+                    カメラを停止
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={cameraState === "starting"}
+                    onClick={() => void startCamera()}
+                    className="mt-3 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                  >
+                    {cameraState === "starting"
+                      ? "カメラを開始しています..."
+                      : "カメラでQRを読む"}
+                  </button>
+                )}
+
+                <div className="my-5 flex items-center gap-3 text-xs text-neutral-400">
+                  <div className="h-px flex-1 bg-neutral-200" />
+                  または手動入力
+                  <div className="h-px flex-1 bg-neutral-200" />
+                </div>
+
+                <input
+                  value={rawCode}
+                  onChange={(event) => {
+                    setRawCode(event.target.value);
+                    setMessage("");
+                  }}
+                  placeholder="https://www.parari.app/q/..."
+                  className="w-full rounded-xl border border-neutral-300 px-3 py-3 text-sm outline-none focus:border-neutral-700"
+                />
+                <button
+                  type="button"
+                  disabled={loading || !rawCode.trim()}
+                  onClick={() => void inspectPass()}
+                  className="mt-3 w-full rounded-full bg-neutral-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                >
+                  {loading ? "確認しています..." : "参加証を確認"}
+                </button>
+              </div>
+            ) : null}
 
             {pass ? (
               <div className="mt-5 rounded-2xl bg-white p-5 text-neutral-950">
