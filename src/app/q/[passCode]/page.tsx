@@ -1,11 +1,12 @@
 // src/app/q/[passCode]/page.tsx
-// 2026-09-15 JST
+// 2026-09-16 JST
 
 "use client";
 
 import * as React from "react";
 import { useParams } from "next/navigation";
 
+import GuestPassCancellationAccess from "@/components/parari/application/GuestPassCancellationAccess";
 import { supabase } from "@/lib/supabaseClient";
 
 type Occurrence = {
@@ -272,22 +273,35 @@ export default function ApplicationCheckInPage() {
       <CheckInShell>
         <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            PARARI CHECK-IN
+            PARARI PASS
           </div>
           <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-            受付するにはログインしてください
+            参加証
           </h1>
           <p className="mt-3 text-sm leading-7 text-neutral-600">
-            この参加証の主催者だけが受付できます。
+            参加者は申込時のメールアドレスから申込の変更・キャンセルができます。主催者はログインすると受付できます。
           </p>
-          <a
-            href={`/login?returnTo=${encodeURIComponent(
-              returnTo,
-            )}`}
-            className="mt-5 block w-full rounded-full bg-neutral-950 px-5 py-3 text-center text-sm font-bold text-white"
-          >
-            PARARIにログイン
-          </a>
+
+          <GuestPassCancellationAccess
+            passCode={passCode}
+          />
+
+          <div className="mt-6 border-t border-neutral-200 pt-5">
+            <div className="text-sm font-bold text-neutral-950">
+              主催者の方
+            </div>
+            <p className="mt-1 text-xs leading-6 text-neutral-500">
+              この参加証を受付するにはPARARIへログインしてください。
+            </p>
+            <a
+              href={`/login?returnTo=${encodeURIComponent(
+                returnTo,
+              )}`}
+              className="mt-3 block w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-center text-sm font-bold text-neutral-800"
+            >
+              主催者としてログイン
+            </a>
+          </div>
         </div>
       </CheckInShell>
     );
