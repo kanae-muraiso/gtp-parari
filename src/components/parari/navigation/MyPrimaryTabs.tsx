@@ -1,5 +1,5 @@
 // src/components/parari/navigation/MyPrimaryTabs.tsx
-// 2026/09/15 JST
+// 2026/09/16 JST
 //
 // PARARI LIBRARY 共通メインナビ
 //
@@ -9,6 +9,9 @@
 
 "use client";
 
+import { usePathname } from "next/navigation";
+
+import ApplicationMemberQuickActions from "@/components/parari/application/ApplicationMemberQuickActions";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
@@ -60,6 +63,8 @@ const MESSAGES_ITEM: Item = {
 };
 
 export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
+  const pathname = usePathname();
+
   const {
     hasApplications,
     hasCalendar,
@@ -80,5 +85,13 @@ export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
     items.push(MESSAGES_ITEM);
   }
 
-  return <ParariTabs items={items} active={active} />;
+  return (
+    <>
+      <ParariTabs items={items} active={active} />
+
+      {pathname === "/my/applications" ? (
+        <ApplicationMemberQuickActions />
+      ) : null}
+    </>
+  );
 }
