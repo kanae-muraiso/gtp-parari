@@ -17,12 +17,15 @@ export default function CppLiveQueueStatus() {
   useEffect(() => {
     if (!supabase) return;
     let cancelled = false;
-
     void supabase.auth.getUser().then(({ data }) => {
-      if (cancelled) return;
-      setUserId(data.user?.id || null);
-      if (data.user) void refresh();
+      if (!cancelled) setUserId(data.user?.id || null);
     });
+    return () => { cancelled = true; };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!userId) return;
+    void refresh();
 
     const timer = window.setInterval(() => void refresh(), 2500);
     const onFocus = () => void refresh();
@@ -33,12 +36,11 @@ export default function CppLiveQueueStatus() {
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      cancelled = true;
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [refresh, supabase]);
+  }, [refresh, userId]);
 
   if (!userId || rows.length === 0) return null;
 
