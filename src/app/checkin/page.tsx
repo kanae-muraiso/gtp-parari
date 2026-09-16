@@ -36,6 +36,25 @@ type CheckInResponse = {
   message?: string;
 };
 
+type BarcodeResult = {
+  rawValue?: string;
+};
+
+type BarcodeDetectorLike = {
+  detect(source: HTMLVideoElement): Promise<BarcodeResult[]>;
+};
+
+type BarcodeDetectorConstructor = new (options?: {
+  formats?: string[];
+}) => BarcodeDetectorLike;
+
+type CameraState =
+  | "idle"
+  | "starting"
+  | "scanning"
+  | "unsupported"
+  | "error";
+
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
 
 function readPassCode(value: string): string {
@@ -72,6 +91,32 @@ export default function CheckInModePage() {
   const [message, setMessage] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [checkingIn, setCheckingIn] = React.useState(false);
+  const [cameraState, setCameraState] = React.useState<CameraState>("idle");
+
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const scanTimerRef = React.useRef<number | null>(null);
+  const scanActiveRef = React.useRef(false);
+
+  const stopCamera = React.useCallback(() => {
+    scanActiveRef.current = false;
+
+    if (scanTimerRef.current !== null) {
+      window.clearTimeout(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setCameraState((current) =>
+      current === "unsupported" || current === "error" ? current : "idle",
+    );
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -108,12 +153,24 @@ export default function CheckInModePage() {
     };
   }, []);
 
-  async function inspectPass() {
+  React.useEffect(() => {
+    return () => {
+      scanActiveRef.current = false;
+
+      if (scanTimerRef.current !== null) {
+        window.clearTimeout(scanTimerRef.current);
+      }
+
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  async function inspectPass(value: string = rawCode) {
     if (!accessToken || loading) {
       return;
     }
 
-    const code = readPassCode(rawCode);
+    const code = readPassCode(value);
 
     if (!code) {
       setPassCode("");
@@ -153,6 +210,92 @@ export default function CheckInModePage() {
       setMessage("参加証を確認できませんでした。");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function startCamera() {
+    if (cameraState === "starting" || cameraState === "scanning") {
+      return;
+    }
+
+    setMessage("");
+
+    const Detector = (
+      window as typeof window & {
+        BarcodeDetector?: BarcodeDetectorConstructor;
+      }
+    ).BarcodeDetector;
+
+    if (!navigator.mediaDevices?.getUserMedia || !Detector) {
+      setCameraState("unsupported");
+      setMessage(
+        "このブラウザーではカメラからのQR自動読取を利用できません。下の入力欄へQR URLまたは参加証コードを入力してください。",
+      );
+      return;
+    }
+
+    setCameraState("starting");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+
+      const video = videoRef.current;
+
+      if (!video) {
+        stream.getTracks().forEach((track) => track.stop());
+        setCameraState("error");
+        setMessage("カメラ画面を開始できませんでした。");
+        return;
+      }
+
+      streamRef.current = stream;
+      video.srcObject = stream;
+      await video.play();
+
+      const detector = new Detector({ formats: ["qr_code"] });
+      scanActiveRef.current = true;
+      setCameraState("scanning");
+
+      const scanFrame = async () => {
+        if (!scanActiveRef.current || !videoRef.current) {
+          return;
+        }
+
+        try {
+          const results = await detector.detect(videoRef.current);
+          const rawValue = results.find((result) => result.rawValue)?.rawValue ?? "";
+          const code = readPassCode(rawValue);
+
+          if (code) {
+            setRawCode(rawValue);
+            stopCamera();
+            await inspectPass(rawValue);
+            return;
+          }
+        } catch (error) {
+          console.error("[CHECK-IN MODE] QR scan frame failed:", error);
+        }
+
+        if (scanActiveRef.current) {
+          scanTimerRef.current = window.setTimeout(() => {
+            void scanFrame();
+          }, 250);
+        }
+      };
+
+      void scanFrame();
+    } catch (error) {
+      console.error("[CHECK-IN MODE] camera start failed:", error);
+      stopCamera();
+      setCameraState("error");
+      setMessage(
+        "カメラを開始できませんでした。ブラウザーのカメラ権限を確認するか、下の入力欄を利用してください。",
+      );
     }
   }
 
@@ -234,10 +377,56 @@ export default function CheckInModePage() {
         ) : (
           <>
             <div className="mt-6 rounded-2xl bg-white p-5 text-neutral-950">
-              <label className="block text-sm font-bold">参加証を読み取る</label>
+              <div className="text-sm font-bold">参加証QRを読み取る</div>
               <p className="mt-1 text-xs leading-6 text-neutral-500">
-                まずはQRのURLまたは参加証コードで受付できます。カメラ読取は次の工程でこの欄に接続します。
+                CHECK-IN MODEからカメラを起動して参加証QRを読み取ります。読み取っただけでは受付されません。
               </p>
+
+              <div className="mt-4 overflow-hidden rounded-2xl bg-neutral-950">
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className={[
+                    "aspect-square w-full object-cover",
+                    cameraState === "scanning" || cameraState === "starting"
+                      ? "block"
+                      : "hidden",
+                  ].join(" ")}
+                />
+
+                {cameraState !== "scanning" && cameraState !== "starting" ? (
+                  <div className="flex aspect-square items-center justify-center px-6 text-center text-sm leading-7 text-white/60">
+                    カメラを起動すると、ここにQR読み取り画面が表示されます。
+                  </div>
+                ) : null}
+              </div>
+
+              {cameraState === "scanning" ? (
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="mt-3 w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-800"
+                >
+                  カメラを停止
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={cameraState === "starting"}
+                  onClick={() => void startCamera()}
+                  className="mt-3 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                >
+                  {cameraState === "starting" ? "カメラを開始しています..." : "カメラでQRを読む"}
+                </button>
+              )}
+
+              <div className="my-5 flex items-center gap-3 text-xs text-neutral-400">
+                <div className="h-px flex-1 bg-neutral-200" />
+                または手動入力
+                <div className="h-px flex-1 bg-neutral-200" />
+              </div>
+
               <input
                 value={rawCode}
                 onChange={(event) => {
@@ -245,13 +434,13 @@ export default function CheckInModePage() {
                   setMessage("");
                 }}
                 placeholder="https://www.parari.app/q/..."
-                className="mt-3 w-full rounded-xl border border-neutral-300 px-3 py-3 text-sm outline-none focus:border-neutral-700"
+                className="w-full rounded-xl border border-neutral-300 px-3 py-3 text-sm outline-none focus:border-neutral-700"
               />
               <button
                 type="button"
                 disabled={loading || !rawCode.trim()}
                 onClick={() => void inspectPass()}
-                className="mt-3 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                className="mt-3 w-full rounded-full bg-neutral-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
               >
                 {loading ? "確認しています..." : "参加証を確認"}
               </button>
