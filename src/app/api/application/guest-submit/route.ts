@@ -1,5 +1,5 @@
 // src/app/api/application/guest-submit/route.ts
-// 2026-09-15 JST
+// 2026-09-17 JST
 //
 // Public guest adapter for the shared APPLICATION submit service.
 
@@ -8,6 +8,10 @@ import {
   NextResponse,
 } from "next/server";
 
+import {
+  CHECK_IN_SUBMISSION_CLOSED_MESSAGE,
+  inspectApplicationCheckInGate,
+} from "@/features/application/server/checkInGate";
 import {
   submitApplication,
 } from "@/features/application/server/submitApplication";
@@ -30,19 +34,39 @@ export async function POST(
           }
         | null;
 
+    const applicationId =
+      typeof body?.applicationId === "string"
+        ? body.applicationId
+        : "";
+    const occurrenceId =
+      typeof body?.occurrenceId === "string"
+        ? body.occurrenceId
+        : "";
+
+    const checkInGate =
+      await inspectApplicationCheckInGate({
+        applicationId,
+        occurrenceId,
+      });
+
+    if (checkInGate.closed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            CHECK_IN_SUBMISSION_CLOSED_MESSAGE,
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await submitApplication({
-      applicationId:
-        typeof body?.applicationId === "string"
-          ? body.applicationId
-          : "",
+      applicationId,
       formSubmissionId:
         typeof body?.formSubmissionId === "string"
           ? body.formSubmissionId
           : "",
-      occurrenceId:
-        typeof body?.occurrenceId === "string"
-          ? body.occurrenceId
-          : "",
+      occurrenceId,
       answers: body?.answers,
       identity: {
         kind: "guest",
