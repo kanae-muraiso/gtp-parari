@@ -1,5 +1,5 @@
 // src/app/checkin/page.tsx
-// 2026-09-16 JST
+// 2026-09-17 JST
 //
 // Dedicated APPLICATION check-in mode.
 // Ordinary participant QR URLs (/q/:passCode) are read-only.
@@ -35,6 +35,16 @@ type CheckInResponse = {
   pass?: PassData;
   checked_in_at?: string | null;
   already_checked_in?: boolean;
+  message?: string;
+};
+
+type CheckInStartResponse = {
+  ok?: boolean;
+  already_started?: boolean;
+  check_in_started_at?: string | null;
+  scope?: "application" | "occurrence";
+  application_id?: string;
+  occurrence_id?: string | null;
   message?: string;
 };
 
@@ -107,6 +117,21 @@ function formatOccurrenceDate(occurrence: Occurrence): string {
   }
 }
 
+function formatStartedAt(value: string): string {
+  try {
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
 export default function CheckInModePage() {
   const [queryReady, setQueryReady] = React.useState(false);
   const [requestedApplicationId, setRequestedApplicationId] =
@@ -125,6 +150,10 @@ export default function CheckInModePage() {
   const [contextMessage, setContextMessage] = React.useState("");
   const [occurrences, setOccurrences] = React.useState<Occurrence[]>([]);
   const [selectedOccurrenceId, setSelectedOccurrenceId] = React.useState("");
+
+  const [startingCheckIn, setStartingCheckIn] = React.useState(false);
+  const [checkInStartedAt, setCheckInStartedAt] = React.useState("");
+  const [checkInStartMessage, setCheckInStartMessage] = React.useState("");
 
   const [rawCode, setRawCode] = React.useState("");
   const [passCode, setPassCode] = React.useState("");
@@ -227,6 +256,8 @@ export default function CheckInModePage() {
       setApplication(null);
       setOccurrences([]);
       setSelectedOccurrenceId("");
+      setCheckInStartedAt("");
+      setCheckInStartMessage("");
       setContextMessage(
         "運営 → APPLICATION の［QR受付］から受付する募集を選んでください。",
       );
@@ -241,6 +272,8 @@ export default function CheckInModePage() {
       setApplication(null);
       setOccurrences([]);
       setSelectedOccurrenceId("");
+      setCheckInStartedAt("");
+      setCheckInStartMessage("");
       setPass(null);
       setPassCode("");
       setRawCode("");
@@ -387,6 +420,7 @@ export default function CheckInModePage() {
   const contextReady =
     Boolean(application) &&
     (!isCalendarApplication || Boolean(selectedOccurrenceId));
+  const checkInActive = contextReady && Boolean(checkInStartedAt);
 
   const returnTo = React.useMemo(() => {
     if (!requestedApplicationId) {
@@ -404,8 +438,77 @@ export default function CheckInModePage() {
     return `/checkin?${params.toString()}`;
   }, [requestedApplicationId, requestedCalendarItemId]);
 
+  async function startCheckInMode() {
+    if (
+      !accessToken ||
+      !application ||
+      !contextReady ||
+      startingCheckIn ||
+      checkInStartedAt
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "入場受付を開始します。\n\n開始すると、新規申込と参加者本人によるキャンセルを締め切ります。この操作は元に戻せません。",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStartingCheckIn(true);
+    setMessage("");
+    setCheckInStartMessage("");
+    stopCamera();
+
+    try {
+      const response = await fetch("/api/application/check-in/start", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          applicationId: application.id,
+          occurrenceId:
+            application.origin === "calendar"
+              ? selectedOccurrenceId
+              : undefined,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | CheckInStartResponse
+        | null;
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.check_in_started_at
+      ) {
+        setMessage(
+          result?.message ?? "入場受付を開始できませんでした。",
+        );
+        return;
+      }
+
+      setCheckInStartedAt(result.check_in_started_at);
+      setCheckInStartMessage(
+        result.already_started
+          ? "この入場受付はすでに開始されています。申込・本人キャンセルは締め切られています。"
+          : "入場受付を開始しました。申込・本人キャンセルを締め切りました。",
+      );
+    } catch (error) {
+      console.error("[CHECK-IN MODE] start failed:", error);
+      setMessage("入場受付を開始できませんでした。");
+    } finally {
+      setStartingCheckIn(false);
+    }
+  }
+
   async function inspectPass(value: string = rawCode) {
-    if (!accessToken || loading || !contextReady) {
+    if (!accessToken || loading || !checkInActive) {
       return;
     }
 
@@ -471,7 +574,7 @@ export default function CheckInModePage() {
   }
 
   async function startCamera() {
-    if (!contextReady) {
+    if (!checkInActive) {
       return;
     }
 
@@ -561,7 +664,7 @@ export default function CheckInModePage() {
   }
 
   async function checkIn() {
-    if (!accessToken || !pass || !passCode || checkingIn || !contextReady) {
+    if (!accessToken || !pass || !passCode || checkingIn || !checkInActive) {
       return;
     }
 
@@ -615,7 +718,7 @@ export default function CheckInModePage() {
         </div>
         <h1 className="mt-2 text-2xl font-bold">QR受付</h1>
         <p className="mt-3 text-sm leading-7 text-white/70">
-          APPLICATIONから受付する募集を選び、参加者を確認してから受付します。QRを読んだだけでは受付されません。
+          APPLICATIONから受付する募集を選び、入場受付を開始してから参加者のQRを読み取ります。
         </p>
 
         <a
@@ -677,6 +780,8 @@ export default function CheckInModePage() {
                               onClick={() => {
                                 stopCamera();
                                 setSelectedOccurrenceId(occurrence.id);
+                                setCheckInStartedAt("");
+                                setCheckInStartMessage("");
                                 setPass(null);
                                 setPassCode("");
                                 setRawCode("");
@@ -729,7 +834,45 @@ export default function CheckInModePage() {
               ) : null}
             </div>
 
-            {contextReady ? (
+            {contextReady && !checkInStartedAt ? (
+              <div className="mt-5 rounded-2xl bg-amber-50 p-5 text-neutral-950">
+                <div className="text-sm font-bold">入場受付を開始</div>
+                <p className="mt-2 text-sm leading-7 text-neutral-700">
+                  開始すると、このAPPLICATIONの新規申込と参加者本人によるキャンセルを締め切ります。
+                </p>
+                <p className="mt-2 text-xs leading-6 text-amber-800">
+                  受付開始後は元に戻せません。受付を始める準備ができてから押してください。
+                </p>
+                <button
+                  type="button"
+                  disabled={startingCheckIn}
+                  onClick={() => void startCheckInMode()}
+                  className="mt-4 w-full rounded-full bg-emerald-700 px-5 py-4 text-base font-bold text-white disabled:opacity-40"
+                >
+                  {startingCheckIn
+                    ? "入場受付を開始しています..."
+                    : "入場受付を開始する"}
+                </button>
+              </div>
+            ) : null}
+
+            {checkInStartedAt ? (
+              <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-neutral-950">
+                <div className="text-sm font-bold text-emerald-800">
+                  入場受付中
+                </div>
+                <p className="mt-1 text-xs leading-6 text-emerald-800/80">
+                  開始: {formatStartedAt(checkInStartedAt)}
+                </p>
+                {checkInStartMessage ? (
+                  <p className="mt-2 text-xs leading-6 text-emerald-800">
+                    {checkInStartMessage}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {checkInActive ? (
               <div className="mt-5 rounded-2xl bg-white p-5 text-neutral-950">
                 <div className="text-sm font-bold">参加証QRを読み取る</div>
                 <p className="mt-1 text-xs leading-6 text-neutral-500">
