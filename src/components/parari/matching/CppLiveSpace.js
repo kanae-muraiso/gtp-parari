@@ -16,7 +16,6 @@ export default function CppLiveSpace() {
   const [lobbyCount, setLobbyCount] = useState(0);
   const [entered, setEntered] = useState(false);
   const [liveUntil, setLiveUntil] = useState(null);
-  const [entryMode, setEntryMode] = useState("available");
   const [availability, setAvailabilityState] = useState("available");
   const [clock, setClock] = useState(Date.now());
   const [profiles, setProfiles] = useState([]);
@@ -76,7 +75,7 @@ export default function CppLiveSpace() {
     if (!enteredRef.current || !channelRef.current || !userId) return;
     const safe = { x: clamp(nextPosition.x, 7, 93), y: clamp(nextPosition.y, 15, 88) };
     selfPositionRef.current = safe;
-    setPositions((current) => ({ ...current, [userId]: safe }));
+    setPositions((current) => ({ ...current, [userId]: { ...safe, availability: nextAvailability } }));
     await channelRef.current.track({
       user_id: userId,
       x: safe.x,
@@ -239,7 +238,7 @@ export default function CppLiveSpace() {
     setErrorMessage("");
     const { data, error } = await supabase.rpc("cpp_live_enter_as", {
       p_minutes: DEFAULT_STAY_MINUTES,
-      p_availability: entryMode,
+      p_availability: "available",
     });
     if (error) {
       setBusy(null);
@@ -248,7 +247,7 @@ export default function CppLiveSpace() {
     const until = (data || [])[0]?.live_until || new Date(Date.now() + DEFAULT_STAY_MINUTES * 60000).toISOString();
     setLiveUntil(until);
     liveUntilRef.current = until;
-    setAvailabilityState(entryMode);
+    setAvailabilityState("available");
     const startPosition = stablePosition(userId);
     selfPositionRef.current = startPosition;
 
@@ -266,7 +265,7 @@ export default function CppLiveSpace() {
       if (status === "SUBSCRIBED") {
         setEntered(true);
         enteredRef.current = true;
-        await channel.track({ user_id: userId, x: startPosition.x, y: startPosition.y, availability: entryMode, entered_at: new Date().toISOString() });
+        await channel.track({ user_id: userId, x: startPosition.x, y: startPosition.y, availability: "available", entered_at: new Date().toISOString() });
         await refreshAll();
         await refreshLobbyCount();
         setBusy(null);
@@ -406,7 +405,7 @@ export default function CppLiveSpace() {
   };
 
   const requestConversation = async (targetId) => {
-    if (!supabase || busy || availability !== "available") return;
+    if (!supabase || busy) return;
     setBusy("request");
     setApproachTargetId(targetId);
     await moveNear(targetId, 4.2);
@@ -574,25 +573,11 @@ export default function CppLiveSpace() {
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">CPP MATCHING · LIVE</div>
           <h1 className="mt-4 text-4xl font-black tracking-tight text-neutral-950">CPP LIVE</h1>
           <p className="mt-5 text-lg font-bold text-neutral-700">現在 {lobbyCount} 人が参加中</p>
-          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-neutral-500">このページを見ているだけではLIVEには入りません。状態を選んでから入室してください。</p>
-
-          <div className="mx-auto mt-7 max-w-md rounded-[1.6rem] bg-neutral-50 p-4 text-left">
-            <div className="text-[10px] font-black tracking-[0.14em] text-neutral-400">HOW DO YOU JOIN?</div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <button type="button" onClick={() => setEntryMode("available")} className={`rounded-2xl border px-4 py-4 text-left transition ${entryMode === "available" ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-100" : "border-neutral-200 bg-white"}`}>
-                <div className="text-sm font-black text-neutral-950">話せます</div>
-                <div className="mt-1 text-xs leading-5 text-neutral-500">話しかけられても大丈夫です</div>
-              </button>
-              <button type="button" onClick={() => setEntryMode("observe")} className={`rounded-2xl border px-4 py-4 text-left transition ${entryMode === "observe" ? "border-neutral-500 bg-neutral-100 ring-2 ring-neutral-200" : "border-neutral-200 bg-white"}`}>
-                <div className="text-sm font-black text-neutral-950">見学で入る</div>
-                <div className="mt-1 text-xs leading-5 text-neutral-500">まずは空間を見て回ります</div>
-              </button>
-            </div>
-          </div>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-neutral-500">このページを見ているだけではLIVEには入りません。参加すると、ほかの参加者にあなたが表示されます。</p>
 
           {errorMessage ? <div className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div> : null}
           <button type="button" onClick={() => void enterLive()} disabled={Boolean(busy)} className="mt-8 rounded-full bg-neutral-950 px-8 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40">{busy === "enter" ? "入室しています…" : "LIVEに入る"}</button>
-          <p className="mt-3 text-[11px] text-neutral-400">入室時間はまず60分。必要なら入室後に延長できます。</p>
+          <p className="mt-3 text-[11px] text-neutral-400">入室時は「話せます」で参加します。席を外すときだけ、入室後に「離席中」へ切り替えられます。</p>
           <div className="mt-6 flex justify-center gap-2"><Link href="/my/cpp/members" className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-600">BROWSE</Link><Link href="/my/cpp/social-profile" className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-600">SOCIAL PROFILE</Link></div>
         </div>
       </main>
@@ -626,7 +611,6 @@ export default function CppLiveSpace() {
               ) : (
                 <div className="flex rounded-full border border-neutral-200 bg-neutral-50 p-1">
                   <button type="button" onClick={() => void setAvailability("available")} disabled={Boolean(busy)} className={`rounded-full px-3 py-1.5 text-[11px] font-black ${availability === "available" ? "bg-emerald-600 text-white" : "text-neutral-500"}`}>話せます</button>
-                  <button type="button" onClick={() => void setAvailability("observe")} disabled={Boolean(busy)} className={`rounded-full px-3 py-1.5 text-[11px] font-black ${availability === "observe" ? "bg-neutral-700 text-white" : "text-neutral-500"}`}>見学中</button>
                   <button type="button" onClick={() => void setAvailability("away")} disabled={Boolean(busy)} className={`rounded-full px-3 py-1.5 text-[11px] font-black ${availability === "away" ? "bg-neutral-300 text-neutral-800" : "text-neutral-500"}`}>離席中</button>
                 </div>
               )}
@@ -645,7 +629,7 @@ export default function CppLiveSpace() {
         ) : null}
 
         {incoming.length > 0 ? (
-          <div className="mt-3 space-y-2">{incoming.map((request) => <div key={request.request_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white px-4 py-3 shadow-sm"><div><div className="text-[10px] font-black tracking-[0.12em] text-amber-700">TALK REQUEST</div><div className="mt-1 text-sm font-black text-neutral-900">{request.display_name}さんが話しかけています</div></div><div className="flex gap-2"><button type="button" onClick={() => void respondConversation(request.request_id, true)} disabled={Boolean(busy) || selfBusy || availability !== "available"} className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-black text-white disabled:opacity-35">話す</button><button type="button" onClick={() => void respondConversation(request.request_id, false)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-500">今回は話さない</button></div></div>)}</div>
+          <div className="mt-3 space-y-2">{incoming.map((request) => <div key={request.request_id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white px-4 py-3 shadow-sm"><div><div className="text-[10px] font-black tracking-[0.12em] text-amber-700">TALK REQUEST</div><div className="mt-1 text-sm font-black text-neutral-900">{request.display_name}さんが話しかけています</div></div><div className="flex gap-2"><button type="button" onClick={() => void respondConversation(request.request_id, true)} disabled={Boolean(busy) || selfBusy} className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-black text-white disabled:opacity-35">話す</button><button type="button" onClick={() => void respondConversation(request.request_id, false)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-500">今回は話さない</button></div></div>)}</div>
         ) : null}
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -669,8 +653,8 @@ export default function CppLiveSpace() {
               const liveMode = positions[profile.user_id]?.availability || "available";
               return (
                 <button key={profile.user_id} type="button" onClick={() => void selectPerson(profile.user_id)} className="absolute z-30 -translate-x-1/2 -translate-y-1/2 text-center focus:outline-none" style={{ left: `${pos.x}%`, top: `${pos.y}%`, transition: "left .45s ease, top .45s ease" }}>
-                  <span className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full transition ${isResearcher ? "bg-neutral-950" : "border-[3px] border-neutral-950 bg-white"} ${selectedUserId === profile.user_id ? "scale-125 shadow-lg" : "hover:scale-110"} ${isSelf ? "ring-4 ring-neutral-300 ring-offset-2" : ""} ${liveMode !== "available" ? "opacity-55" : ""}`}>{!isResearcher ? <span className="h-2 w-2 rounded-full bg-neutral-950" /> : null}</span>
-                  <span className="mt-1.5 inline-flex max-w-32 items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-neutral-800 shadow-sm"><span className="truncate">{profile.display_name}</span>{isSelf ? <span className="text-neutral-400">YOU</span> : null}{liveMode === "observe" ? <span className="text-neutral-400">見学</span> : null}{liveMode === "away" ? <span className="text-neutral-400">離席</span> : null}{q ? <span className="rounded-full bg-amber-100 px-1.5 text-[9px] text-amber-700">{q.queue_position}</span> : null}{waitlist ? <span className="text-neutral-400">…</span> : null}</span>
+                  <span className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full transition ${isResearcher ? "bg-neutral-950" : "border-[3px] border-neutral-950 bg-white"} ${selectedUserId === profile.user_id ? "scale-125 shadow-lg" : "hover:scale-110"} ${isSelf ? "ring-4 ring-neutral-300 ring-offset-2" : ""} ${liveMode === "away" ? "opacity-55" : ""}`}>{!isResearcher ? <span className="h-2 w-2 rounded-full bg-neutral-950" /> : null}</span>
+                  <span className="mt-1.5 inline-flex max-w-32 items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-neutral-800 shadow-sm"><span className="truncate">{profile.display_name}</span>{isSelf ? <span className="text-neutral-400">YOU</span> : null}{liveMode === "away" ? <span className="text-neutral-400">離席</span> : null}{q ? <span className="rounded-full bg-amber-100 px-1.5 text-[9px] text-amber-700">{q.queue_position}</span> : null}{waitlist ? <span className="text-neutral-400">…</span> : null}</span>
                 </button>
               );
             })}
@@ -684,7 +668,7 @@ export default function CppLiveSpace() {
               <div>
                 <SocialProfileCard displayName={selected.display_name} photoUrl={selected.photo_url} affiliation={selected.affiliation} roleTitle={selected.role_title} topics={selected.topics} intro={selected.intro} />
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {selected.user_id === userId ? <Link href="/my/cpp/social-profile" className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white">名札を編集</Link> : selectedThread ? <button type="button" onClick={() => setActiveThreadId(selectedThread.thread_id)} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white">会話を開く</button> : selectedConversation?.conversation_mode === "open" ? <><button type="button" onClick={() => void joinOpenRoom(selectedConversation.conversation_id)} disabled={Boolean(busy) || selfBusy || availability === "away"} className="rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">OPEN会話に入る</button>{selectedQueue ? <QueueButton row={selectedQueue} onCancel={cancelQueue} busy={busy} /> : <button type="button" onClick={() => void joinQueue(selected.user_id)} disabled={Boolean(busy) || availability === "away"} className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 disabled:opacity-35">この人を待つ</button>}</> : selectedConversation ? (selectedQueue ? <QueueButton row={selectedQueue} onCancel={cancelQueue} busy={busy} /> : <button type="button" onClick={() => void joinQueue(selected.user_id)} disabled={Boolean(busy) || availability === "away"} className="rounded-full bg-amber-100 px-4 py-2.5 text-xs font-black text-amber-800 disabled:opacity-35">順番を待つ</button>) : selectedIncoming ? <><button type="button" onClick={() => void respondConversation(selectedIncoming.request_id, true)} disabled={Boolean(busy) || selfBusy || availability !== "available"} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">話す</button><button type="button" onClick={() => void respondConversation(selectedIncoming.request_id, false)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2.5 text-xs font-bold text-neutral-500">今回は話さない</button></> : selectedOutgoing ? <><span className="rounded-full bg-amber-100 px-4 py-2.5 text-xs font-black text-amber-800">返事待ち</span><button type="button" onClick={() => void cancelRequest(selectedOutgoing.request_id)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2.5 text-xs font-bold text-neutral-500">取り消す</button></> : positions[selected.user_id]?.availability === "available" ? <button type="button" onClick={() => void requestConversation(selected.user_id)} disabled={Boolean(busy) || selfBusy || availability !== "available"} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">話しかける</button> : <span className="rounded-full bg-neutral-100 px-4 py-2.5 text-xs font-bold text-neutral-500">{positions[selected.user_id]?.availability === "observe" ? "見学中です" : "離席中です"}</span>}
+                  {selected.user_id === userId ? <Link href="/my/cpp/social-profile" className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white">名札を編集</Link> : selectedThread ? <button type="button" onClick={() => setActiveThreadId(selectedThread.thread_id)} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white">会話を開く</button> : selectedConversation?.conversation_mode === "open" ? <><button type="button" onClick={() => void joinOpenRoom(selectedConversation.conversation_id)} disabled={Boolean(busy) || selfBusy} className="rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">OPEN会話に入る</button>{selectedQueue ? <QueueButton row={selectedQueue} onCancel={cancelQueue} busy={busy} /> : <button type="button" onClick={() => void joinQueue(selected.user_id)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 disabled:opacity-35">この人を待つ</button>}</> : selectedConversation ? (selectedQueue ? <QueueButton row={selectedQueue} onCancel={cancelQueue} busy={busy} /> : <button type="button" onClick={() => void joinQueue(selected.user_id)} disabled={Boolean(busy)} className="rounded-full bg-amber-100 px-4 py-2.5 text-xs font-black text-amber-800 disabled:opacity-35">順番を待つ</button>) : selectedIncoming ? <><button type="button" onClick={() => void respondConversation(selectedIncoming.request_id, true)} disabled={Boolean(busy) || selfBusy} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">話す</button><button type="button" onClick={() => void respondConversation(selectedIncoming.request_id, false)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2.5 text-xs font-bold text-neutral-500">今回は話さない</button></> : selectedOutgoing ? <><span className="rounded-full bg-amber-100 px-4 py-2.5 text-xs font-black text-amber-800">返事待ち</span><button type="button" onClick={() => void cancelRequest(selectedOutgoing.request_id)} disabled={Boolean(busy)} className="rounded-full border border-neutral-300 px-4 py-2.5 text-xs font-bold text-neutral-500">取り消す</button></> : <><button type="button" onClick={() => void requestConversation(selected.user_id)} disabled={Boolean(busy) || selfBusy} className="rounded-full bg-neutral-950 px-4 py-2.5 text-xs font-black text-white disabled:opacity-35">話しかける</button>{positions[selected.user_id]?.availability === "away" ? <span className="rounded-full bg-neutral-100 px-3 py-2.5 text-[11px] font-bold text-neutral-500">離席中でもリクエストは届きます</span> : null}</>}
                 </div>
               </div>
             ) : null}
