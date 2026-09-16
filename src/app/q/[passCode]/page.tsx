@@ -26,38 +26,28 @@ type PassData = {
   occurrence: Occurrence | null;
 };
 
-type CheckInResponse = {
+type PassResponse = {
   ok?: boolean;
   pass?: PassData;
-  checked_in_at?: string | null;
-  already_checked_in?: boolean;
   message?: string;
 };
 
-export default function ApplicationCheckInPage() {
+export default function ApplicationPassPage() {
   const params = useParams<{
     passCode: string;
   }>();
 
-  const passCode =
-    String(params.passCode ?? "")
-      .trim()
-      .toLowerCase();
+  const passCode = String(params.passCode ?? "")
+    .trim()
+    .toLowerCase();
 
-  const [authState, setAuthState] =
-    React.useState<
-      "checking" | "signed_out" | "signed_in"
-    >("checking");
-  const [accessToken, setAccessToken] =
-    React.useState("");
-  const [pass, setPass] =
-    React.useState<PassData | null>(null);
-  const [message, setMessage] =
-    React.useState("");
-  const [loading, setLoading] =
-    React.useState(false);
-  const [checkingIn, setCheckingIn] =
-    React.useState(false);
+  const [authState, setAuthState] = React.useState<
+    "checking" | "signed_out" | "signed_in"
+  >("checking");
+  const [accessToken, setAccessToken] = React.useState("");
+  const [pass, setPass] = React.useState<PassData | null>(null);
+  const [message, setMessage] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -104,34 +94,24 @@ export default function ApplicationCheckInPage() {
 
       try {
         const response = await fetch(
-          `/api/application/check-in?passCode=${encodeURIComponent(
-            passCode,
-          )}`,
+          `/api/application/check-in?passCode=${encodeURIComponent(passCode)}`,
           {
             headers: {
-              Authorization:
-                `Bearer ${accessToken}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             cache: "no-store",
           },
         );
 
-        const result =
-          (await response
-            .json()
-            .catch(() => null)) as
-            | CheckInResponse
-            | null;
+        const result = (await response.json().catch(() => null)) as
+          | PassResponse
+          | null;
 
         if (cancelled) {
           return;
         }
 
-        if (
-          !response.ok ||
-          !result?.ok ||
-          !result.pass
-        ) {
+        if (!response.ok || !result?.ok || !result.pass) {
           setPass(null);
           setMessage(
             result?.message ??
@@ -143,15 +123,13 @@ export default function ApplicationCheckInPage() {
         setPass(result.pass);
       } catch (error) {
         console.error(
-          "[APPLICATION CHECK-IN PAGE] load failed:",
+          "[APPLICATION PASS PAGE] load failed:",
           error,
         );
 
         if (!cancelled) {
           setPass(null);
-          setMessage(
-            "参加証を確認できませんでした。",
-          );
+          setMessage("参加証を確認できませんでした。");
         }
       } finally {
         if (!cancelled) {
@@ -165,112 +143,35 @@ export default function ApplicationCheckInPage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    accessToken,
-    authState,
-    passCode,
-  ]);
-
-  async function checkIn() {
-    if (
-      !accessToken ||
-      checkingIn ||
-      !pass
-    ) {
-      return;
-    }
-
-    setCheckingIn(true);
-    setMessage("");
-
-    try {
-      const response = await fetch(
-        "/api/application/check-in",
-        {
-          method: "POST",
-          headers: {
-            Authorization:
-              `Bearer ${accessToken}`,
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            passCode,
-          }),
-        },
-      );
-
-      const result =
-        (await response
-          .json()
-          .catch(() => null)) as
-          | CheckInResponse
-          | null;
-
-      if (
-        !response.ok ||
-        !result?.ok
-      ) {
-        setMessage(
-          result?.message ??
-            "受付を完了できませんでした。",
-        );
-        return;
-      }
-
-      setPass((current) =>
-        current
-          ? {
-              ...current,
-              checked_in_at:
-                result.checked_in_at ??
-                current.checked_in_at,
-            }
-          : current,
-      );
-    } catch (error) {
-      console.error(
-        "[APPLICATION CHECK-IN PAGE] check-in failed:",
-        error,
-      );
-      setMessage(
-        "受付を完了できませんでした。",
-      );
-    } finally {
-      setCheckingIn(false);
-    }
-  }
+  }, [accessToken, authState, passCode]);
 
   if (!/^[0-9a-f]{16}$/.test(passCode)) {
     return (
-      <CheckInShell>
+      <PassShell>
         <StatusCard
           kind="error"
           title="参加証を確認できません"
           body="参加証コードが正しくありません。"
         />
-      </CheckInShell>
+      </PassShell>
     );
   }
 
   if (authState === "checking") {
     return (
-      <CheckInShell>
+      <PassShell>
         <StatusCard
           kind="neutral"
           title="確認中..."
           body="PARARIのログイン状態を確認しています。"
         />
-      </CheckInShell>
+      </PassShell>
     );
   }
 
   if (authState === "signed_out") {
-    const returnTo =
-      `/q/${passCode}`;
-
     return (
-      <CheckInShell>
+      <PassShell>
         <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
             PARARI PASS
@@ -279,68 +180,53 @@ export default function ApplicationCheckInPage() {
             参加証
           </h1>
           <p className="mt-3 text-sm leading-7 text-neutral-600">
-            参加者は申込時のメールアドレスから申込の変更・キャンセルができます。主催者はログインすると受付できます。
+            参加者は申込時のメールアドレスから申込の変更・キャンセルができます。
           </p>
 
-          <GuestPassCancellationAccess
-            passCode={passCode}
-          />
+          <GuestPassCancellationAccess passCode={passCode} />
 
           <div className="mt-6 border-t border-neutral-200 pt-5">
             <div className="text-sm font-bold text-neutral-950">
-              主催者の方
+              受付について
             </div>
             <p className="mt-1 text-xs leading-6 text-neutral-500">
-              この参加証を受付するにはPARARIへログインしてください。
+              このQRを通常のスマホカメラで開いても受付処理は行われません。受付はPARARIの専用CHECK-IN MODEから行います。
             </p>
-            <a
-              href={`/login?returnTo=${encodeURIComponent(
-                returnTo,
-              )}`}
-              className="mt-3 block w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-center text-sm font-bold text-neutral-800"
-            >
-              主催者としてログイン
-            </a>
           </div>
         </div>
-      </CheckInShell>
+      </PassShell>
     );
   }
 
   if (loading) {
     return (
-      <CheckInShell>
+      <PassShell>
         <StatusCard
           kind="neutral"
           title="参加証を確認しています..."
           body="少しだけお待ちください。"
         />
-      </CheckInShell>
+      </PassShell>
     );
   }
 
   if (!pass) {
     return (
-      <CheckInShell>
+      <PassShell>
         <StatusCard
           kind="error"
-          title="受付できません"
-          body={
-            message ||
-            "参加証を確認できませんでした。"
-          }
+          title="参加証を確認できません"
+          body={message || "参加証を確認できませんでした。"}
         />
-      </CheckInShell>
+      </PassShell>
     );
   }
 
-  const alreadyCheckedIn =
-    Boolean(pass.checked_in_at);
-  const confirmed =
-    pass.status === "confirmed";
+  const alreadyCheckedIn = Boolean(pass.checked_in_at);
+  const confirmed = pass.status === "confirmed";
 
   return (
-    <CheckInShell>
+    <PassShell>
       <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
         <div
           className={[
@@ -353,7 +239,7 @@ export default function ApplicationCheckInPage() {
           ].join(" ")}
         >
           <div className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">
-            PARARI CHECK-IN
+            PARARI PASS · READ ONLY
           </div>
           <h1 className="mt-2 text-2xl font-bold">
             {alreadyCheckedIn
@@ -365,7 +251,12 @@ export default function ApplicationCheckInPage() {
         </div>
 
         <div className="p-6">
-          <div className="text-xs font-semibold text-neutral-400">
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm leading-7 text-sky-900">
+            <div className="font-bold">参加証閲覧モード</div>
+            この画面から受付操作はできません。受付はPARARIの専用CHECK-IN MODEから行います。
+          </div>
+
+          <div className="mt-5 text-xs font-semibold text-neutral-400">
             APPLICATION
           </div>
           <div className="mt-1 text-lg font-bold text-neutral-950">
@@ -380,54 +271,35 @@ export default function ApplicationCheckInPage() {
           </div>
 
           {pass.occurrence ? (
-            <OccurrenceSummary
-              occurrence={pass.occurrence}
-            />
+            <OccurrenceSummary occurrence={pass.occurrence} />
           ) : null}
 
           {alreadyCheckedIn ? (
             <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-800">
               この参加証はすでに受付済みです。
               <br />
-              受付時刻：{formatDateTime(
-                pass.checked_in_at,
-              )}
+              受付時刻：{formatDateTime(pass.checked_in_at)}
             </div>
           ) : confirmed ? (
-            <button
-              type="button"
-              disabled={checkingIn}
-              onClick={() => {
-                void checkIn();
-              }}
-              className="mt-6 w-full rounded-full bg-neutral-950 px-5 py-4 text-base font-bold text-white disabled:opacity-50"
-            >
-              {checkingIn
-                ? "受付しています..."
-                : "受付する"}
-            </button>
+            <div className="mt-6 rounded-2xl bg-neutral-50 p-4 text-sm leading-7 text-neutral-700">
+              この参加証は有効です。通常のQR閲覧では受付状態は変更されません。
+            </div>
           ) : (
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">
-              主催者による承認や支払い確認が完了すると受付できます。
+              主催者による承認や支払い確認が完了すると参加確定になります。
             </div>
           )}
 
           {message ? (
-            <p className="mt-4 text-sm text-red-600">
-              {message}
-            </p>
+            <p className="mt-4 text-sm text-red-600">{message}</p>
           ) : null}
         </div>
       </div>
-    </CheckInShell>
+    </PassShell>
   );
 }
 
-function CheckInShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function PassShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto min-h-screen max-w-md bg-neutral-50 p-5 sm:py-10">
       {children}
@@ -453,21 +325,13 @@ function StatusCard({
           : "border-neutral-200 bg-white text-neutral-900",
       ].join(" ")}
     >
-      <div className="text-xl font-bold">
-        {title}
-      </div>
-      <p className="mt-2 text-sm leading-7 opacity-75">
-        {body}
-      </p>
+      <div className="text-xl font-bold">{title}</div>
+      <p className="mt-2 text-sm leading-7 opacity-75">{body}</p>
     </div>
   );
 }
 
-function OccurrenceSummary({
-  occurrence,
-}: {
-  occurrence: Occurrence;
-}) {
+function OccurrenceSummary({ occurrence }: { occurrence: Occurrence }) {
   return (
     <div className="mt-5 rounded-2xl bg-neutral-50 p-4">
       <div className="text-sm font-bold text-neutral-950">
@@ -482,47 +346,35 @@ function OccurrenceSummary({
   );
 }
 
-function formatOccurrenceDate(
-  occurrence: Occurrence,
-): string {
+function formatOccurrenceDate(occurrence: Occurrence): string {
   try {
-    return new Intl.DateTimeFormat(
-      "ja-JP",
-      {
-        timeZone: occurrence.timezone,
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-        weekday: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      },
-    ).format(
-      new Date(occurrence.starts_at),
-    );
+    return new Intl.DateTimeFormat("ja-JP", {
+      timeZone: occurrence.timezone,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(occurrence.starts_at));
   } catch {
     return occurrence.starts_at;
   }
 }
 
-function formatDateTime(
-  value: string | null,
-): string {
+function formatDateTime(value: string | null): string {
   if (!value) {
     return "";
   }
 
   try {
-    return new Intl.DateTimeFormat(
-      "ja-JP",
-      {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      },
-    ).format(new Date(value));
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
   } catch {
     return value;
   }
