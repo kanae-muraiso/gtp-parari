@@ -8,7 +8,6 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
 
@@ -109,11 +108,11 @@ function formatOccurrenceDate(occurrence: Occurrence): string {
 }
 
 export default function CheckInModePage() {
-  const searchParams = useSearchParams();
-  const requestedApplicationId =
-    searchParams.get("applicationId")?.trim() ?? "";
-  const requestedCalendarItemId =
-    searchParams.get("calendarItemId")?.trim() ?? "";
+  const [queryReady, setQueryReady] = React.useState(false);
+  const [requestedApplicationId, setRequestedApplicationId] =
+    React.useState("");
+  const [requestedCalendarItemId, setRequestedCalendarItemId] =
+    React.useState("");
 
   const [authState, setAuthState] = React.useState<
     "checking" | "signed_out" | "signed_in"
@@ -158,6 +157,18 @@ export default function CheckInModePage() {
     setCameraState((current) =>
       current === "unsupported" || current === "error" ? current : "idle",
     );
+  }, []);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    setRequestedApplicationId(
+      params.get("applicationId")?.trim() ?? "",
+    );
+    setRequestedCalendarItemId(
+      params.get("calendarItemId")?.trim() ?? "",
+    );
+    setQueryReady(true);
   }, []);
 
   React.useEffect(() => {
@@ -208,7 +219,7 @@ export default function CheckInModePage() {
   }, []);
 
   React.useEffect(() => {
-    if (authState !== "signed_in" || !accessToken) {
+    if (!queryReady || authState !== "signed_in" || !accessToken) {
       return;
     }
 
@@ -366,6 +377,7 @@ export default function CheckInModePage() {
   }, [
     accessToken,
     authState,
+    queryReady,
     requestedApplicationId,
     requestedCalendarItemId,
     stopCamera,
@@ -613,7 +625,7 @@ export default function CheckInModePage() {
           APPLICATIONへ戻る
         </a>
 
-        {authState === "checking" ? (
+        {authState === "checking" || !queryReady ? (
           <div className="mt-6 rounded-2xl bg-white/10 p-4 text-sm text-white/70">
             ログイン状態を確認しています...
           </div>
