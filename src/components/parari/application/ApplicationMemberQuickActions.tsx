@@ -23,8 +23,13 @@ type QuickEntry = {
   };
 };
 
+type ActiveQuickEntry =
+  Omit<QuickEntry, "status"> & {
+    status: "submitted" | "confirmed";
+  };
+
 export default function ApplicationMemberQuickActions() {
-  const [entries, setEntries] = React.useState<QuickEntry[]>([]);
+  const [entries, setEntries] = React.useState<ActiveQuickEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [message, setMessage] = React.useState("");
   const [notice, setNotice] = React.useState("");
@@ -88,7 +93,7 @@ export default function ApplicationMemberQuickActions() {
 
         setEntries(
           (result.entries ?? []).filter(
-            (entry) =>
+            (entry): entry is ActiveQuickEntry =>
               entry.status === "submitted" ||
               entry.status === "confirmed",
           ),
