@@ -9,6 +9,9 @@ import {
 import {
   resolveEffectiveCapacityLimit,
 } from "@/features/application/domain/capacity";
+import {
+  CHECK_IN_SUBMISSION_CLOSED_MESSAGE,
+} from "./checkInGate";
 import type {
   ApplicationAcceptanceMode,
   ApplicationPaymentMethod,
@@ -651,6 +654,17 @@ export async function submitApplication(
     : atomicEntryData;
 
   if (insertError) {
+    if (
+      (insertError.message ?? "").includes(
+        "application_check_in_started",
+      )
+    ) {
+      return fail(
+        409,
+        CHECK_IN_SUBMISSION_CLOSED_MESSAGE,
+      );
+    }
+
     if (
       (insertError.message ?? "").includes(
         "application_capacity_reached",
