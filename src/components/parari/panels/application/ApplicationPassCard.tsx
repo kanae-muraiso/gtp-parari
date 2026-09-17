@@ -10,6 +10,8 @@ import {
   QR_VERSION_3_SIZE,
 } from "@/lib/qr/qrVersion3M";
 
+const PASS_CODE_RE = /^[0-9a-f]{16}$/;
+
 type PassResponse = {
   ok?: boolean;
   pass?: {
@@ -20,21 +22,46 @@ type PassResponse = {
 
 export default function ApplicationPassCard({
   entryId,
+  passCode: providedPassCode = "",
   title,
   participantName = "",
   storageHint = "screenshot",
 }: {
   entryId: string;
+  passCode?: string;
   title: string;
   participantName?: string;
   storageHint?: "screenshot" | "library";
 }) {
+  const initialPassCode =
+    providedPassCode.trim().toLowerCase();
   const [passCode, setPassCode] =
-    React.useState("");
+    React.useState(
+      PASS_CODE_RE.test(initialPassCode)
+        ? initialPassCode
+        : "",
+    );
   const [message, setMessage] =
     React.useState("");
 
   React.useEffect(() => {
+    const preloadedPassCode =
+      providedPassCode.trim().toLowerCase();
+
+    if (preloadedPassCode) {
+      if (PASS_CODE_RE.test(preloadedPassCode)) {
+        setPassCode(preloadedPassCode);
+        setMessage("");
+      } else {
+        setPassCode("");
+        setMessage(
+          "参加証を表示できませんでした。",
+        );
+      }
+
+      return;
+    }
+
     let cancelled = false;
 
     async function loadPass() {
@@ -67,7 +94,7 @@ export default function ApplicationPassCard({
         if (
           !response.ok ||
           !result?.ok ||
-          !/^[0-9a-f]{16}$/.test(code)
+          !PASS_CODE_RE.test(code)
         ) {
           setMessage(
             result?.message ??
@@ -96,7 +123,7 @@ export default function ApplicationPassCard({
     return () => {
       cancelled = true;
     };
-  }, [entryId]);
+  }, [entryId, providedPassCode]);
 
   if (message) {
     return (
