@@ -1,5 +1,5 @@
 // src/app/api/application/check-in/route.ts
-// 2026-09-15 JST
+// 2026-09-17 JST
 
 import {
   NextRequest,
@@ -12,6 +12,8 @@ import {
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function getBearerToken(
   request: NextRequest,
@@ -179,6 +181,23 @@ async function loadAuthorizedPass(
   };
 }
 
+function matchesCheckInTarget(input: {
+  applicationId: string;
+  occurrenceId: string;
+  entryApplicationId: string;
+  entryOccurrenceId: string | null;
+}) {
+  if (input.applicationId !== input.entryApplicationId) {
+    return false;
+  }
+
+  if (input.occurrenceId) {
+    return input.entryOccurrenceId === input.occurrenceId;
+  }
+
+  return input.entryOccurrenceId === null;
+}
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -200,12 +219,33 @@ export async function GET(
       .get("passCode")
       ?.trim()
       .toLowerCase() ?? "";
+  const applicationId =
+    request.nextUrl.searchParams
+      .get("applicationId")
+      ?.trim() ?? "";
+  const occurrenceId =
+    request.nextUrl.searchParams
+      .get("occurrenceId")
+      ?.trim() ?? "";
 
   if (!PASS_CODE_RE.test(passCode)) {
     return NextResponse.json(
       {
         ok: false,
         message: "参加証コードを確認してください。",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (
+    !UUID_RE.test(applicationId) ||
+    (occurrenceId && !UUID_RE.test(occurrenceId))
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "受付対象を確認してください。",
       },
       { status: 400 },
     );
@@ -239,9 +279,32 @@ export async function GET(
       );
     }
 
+    if (
+      !matchesCheckInTarget({
+        applicationId,
+        occurrenceId,
+        entryApplicationId: result.entry.application_id,
+        entryOccurrenceId: result.entry.calendar_occurrence_id,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: occurrenceId
+            ? "選択したAPPLICATION・開催回とは別の参加証です。"
+            : "選択したAPPLICATIONとは別の参加証です。",
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       pass: {
+        application_id:
+          result.entry.application_id,
+        occurrence_id:
+          result.entry.calendar_occurrence_id,
         application_title:
           result.application.title,
         participant_name:
@@ -290,6 +353,8 @@ export async function POST(
       .catch(() => null)) as
       | {
           passCode?: unknown;
+          applicationId?: unknown;
+          occurrenceId?: unknown;
         }
       | null;
 
@@ -297,12 +362,33 @@ export async function POST(
     typeof body?.passCode === "string"
       ? body.passCode.trim().toLowerCase()
       : "";
+  const applicationId =
+    typeof body?.applicationId === "string"
+      ? body.applicationId.trim()
+      : "";
+  const occurrenceId =
+    typeof body?.occurrenceId === "string"
+      ? body.occurrenceId.trim()
+      : "";
 
   if (!PASS_CODE_RE.test(passCode)) {
     return NextResponse.json(
       {
         ok: false,
         message: "参加証コードを確認してください。",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (
+    !UUID_RE.test(applicationId) ||
+    (occurrenceId && !UUID_RE.test(occurrenceId))
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "受付対象を確認してください。",
       },
       { status: 400 },
     );
@@ -336,12 +422,29 @@ export async function POST(
       );
     }
 
+    if (
+      !matchesCheckInTarget({
+        applicationId,
+        occurrenceId,
+        entryApplicationId: result.entry.application_id,
+        entryOccurrenceId: result.entry.calendar_occurrence_id,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: occurrenceId
+            ? "選択したAPPLICATION・開催回とは別の参加証です。"
+            : "選択したAPPLICATIONとは別の参加証です。",
+        },
+        { status: 409 },
+      );
+    }
+
     const checkInGate =
       await inspectApplicationCheckInGate({
-        applicationId:
-          result.entry.application_id,
-        occurrenceId:
-          result.entry.calendar_occurrence_id,
+        applicationId,
+        occurrenceId: occurrenceId || null,
       });
 
     if (!checkInGate.closed) {
@@ -387,6 +490,7 @@ export async function POST(
         checked_in_by: user.id,
       })
       .eq("id", result.entry.id)
+      .eq("application_id", applicationId)
       .eq("status", "confirmed")
       .is("checked_in_at", null)
       .select("checked_in_at")
