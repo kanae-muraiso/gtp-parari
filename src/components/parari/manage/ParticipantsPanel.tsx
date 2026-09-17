@@ -418,6 +418,25 @@ export default function ParticipantsPanel({
                           .applicant ??
                         {};
 
+                      const guestNameValue =
+                        Array.isArray(
+                          entry.answers,
+                        )
+                          ? entry.answers.find(
+                              (
+                                answer: any,
+                              ) =>
+                                answer?.field_id ===
+                                "__parari_applicant_name",
+                            )?.value
+                          : null;
+
+                      const guestName =
+                        typeof guestNameValue ===
+                        "string"
+                          ? guestNameValue.trim()
+                          : "";
+
 
                       return {
                         id:
@@ -427,8 +446,9 @@ export default function ParticipantsPanel({
 
                         name:
                           String(
-                            applicant
-                              .display_name ||
+                            guestName ||
+                              applicant
+                                .display_name ||
                               applicant
                                 .username ||
                               "参加者",
