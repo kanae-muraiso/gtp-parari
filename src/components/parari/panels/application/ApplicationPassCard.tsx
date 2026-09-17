@@ -5,6 +5,7 @@
 
 import * as React from "react";
 
+import { supabase } from "@/lib/supabaseClient";
 import {
   createQrVersion3M,
   QR_VERSION_3_SIZE,
@@ -68,11 +69,43 @@ export default function ApplicationPassCard({
       setMessage("");
 
       try {
+        if (!supabase) {
+          setMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+          return;
+        }
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          sessionError ||
+          !session?.access_token
+        ) {
+          setMessage(
+            "参加証を見るにはログインしてください。",
+          );
+          return;
+        }
+
         const response = await fetch(
           `/api/application/pass?entryId=${encodeURIComponent(
             entryId,
           )}`,
-          { cache: "no-store" },
+          {
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          },
         );
 
         const result =
