@@ -420,7 +420,20 @@ export function getApplicationEntryAnswerValue(
 export function getApplicationEntryApplicantName(
   entry: ManagedApplicationEntry,
 ): string {
+  const guestName =
+    entry.answers.find(
+      (answer) =>
+        answer.field_id ===
+        "__parari_applicant_name",
+    )?.value;
+
+  const normalizedGuestName =
+    typeof guestName === "string"
+      ? guestName.trim()
+      : "";
+
   return (
+    normalizedGuestName ||
     entry.applicant.display_name ||
     entry.applicant.username ||
     "申込者"
