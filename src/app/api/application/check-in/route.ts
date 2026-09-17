@@ -6,6 +6,9 @@ import {
   NextResponse,
 } from "next/server";
 
+import {
+  inspectApplicationCheckInGate,
+} from "@/features/application/server/checkInGate";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
@@ -13,11 +16,9 @@ const PASS_CODE_RE = /^[0-9a-f]{16}$/;
 function getBearerToken(
   request: NextRequest,
 ): string | null {
-  const authorization =
-    request.headers.get("authorization") ?? "";
+  const authorization = request.headers.get("authorization") ?? "";
 
-  const match =
-    authorization.match(/^Bearer\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
 
   return match?.[1]?.trim() || null;
 }
@@ -332,6 +333,25 @@ export async function POST(
             "この参加証を受付する権限がありません。",
         },
         { status: 403 },
+      );
+    }
+
+    const checkInGate =
+      await inspectApplicationCheckInGate({
+        applicationId:
+          result.entry.application_id,
+        occurrenceId:
+          result.entry.calendar_occurrence_id,
+      });
+
+    if (!checkInGate.closed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "入場受付がまだ開始されていません。APPLICATIONのQR受付から受付を開始してください。",
+        },
+        { status: 409 },
       );
     }
 
