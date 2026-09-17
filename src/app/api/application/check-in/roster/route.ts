@@ -100,7 +100,7 @@ export async function GET(
     } = await supabaseAdmin
       .from("applications")
       .select(
-        "id, owner_user_id, title, origin, calendar_item_id",
+        "id, owner_user_id, title, origin, calendar_item_id, check_in_started_at",
       )
       .eq("id", applicationId)
       .maybeSingle();
@@ -143,13 +143,29 @@ export async function GET(
       );
     }
 
+    if (
+      !isCalendar &&
+      !application.check_in_started_at
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "受付を開始してから名簿を取得してください。",
+        },
+        { status: 409 },
+      );
+    }
+
     if (isCalendar && occurrenceId) {
       const {
         data: occurrence,
         error: occurrenceError,
       } = await supabaseAdmin
         .from("calendar_occurrences")
-        .select("id, calendar_item_id")
+        .select(
+          "id, calendar_item_id, check_in_started_at",
+        )
         .eq("id", occurrenceId)
         .maybeSingle();
 
@@ -168,6 +184,17 @@ export async function GET(
               "このAPPLICATIONの開催回を確認できませんでした。",
           },
           { status: 404 },
+        );
+      }
+
+      if (!occurrence.check_in_started_at) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "受付を開始してから名簿を取得してください。",
+          },
+          { status: 409 },
         );
       }
     }
