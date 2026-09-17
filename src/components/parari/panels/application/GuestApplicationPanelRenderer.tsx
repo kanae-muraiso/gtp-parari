@@ -177,6 +177,10 @@ export default function GuestApplicationPanelRenderer({
     React.useState("");
   const [completedEntry, setCompletedEntry] =
     React.useState<GuestEntry | null>(null);
+  const [emailDelivery, setEmailDelivery] =
+    React.useState<
+      "sent" | "failed" | "not_applicable"
+    >("not_applicable");
 
   React.useEffect(() => {
     if (!applicationId) {
@@ -616,6 +620,10 @@ export default function GuestApplicationPanelRenderer({
               ok?: boolean;
               message?: string;
               entry?: GuestEntry;
+              email_delivery?:
+                | "sent"
+                | "failed"
+                | "not_applicable";
             }
           | null;
 
@@ -632,6 +640,9 @@ export default function GuestApplicationPanelRenderer({
       }
 
       setCompletedEntry(result.entry);
+      setEmailDelivery(
+        result.email_delivery ?? "not_applicable",
+      );
       setSubmitMessage("");
     } catch (error) {
       setSubmitMessage(
@@ -691,8 +702,11 @@ export default function GuestApplicationPanelRenderer({
               申込の取り下げ・キャンセル
             </div>
             <p className="mt-2 text-xs leading-6 text-neutral-500">
-              PARARIへの登録は不要です。この専用リンクから本人の申込を変更できます。
-              後で使えるよう保存してください。
+              {emailDelivery === "sent"
+                ? "キャンセル専用リンクを申込メールアドレスにも送信しました。"
+                : emailDelivery === "failed"
+                  ? "メールを送信できなかったため、このページから専用リンクを保存してください。"
+                  : "PARARIへの登録は不要です。この専用リンクから本人の申込を変更できます。後で使えるよう保存してください。"}
             </p>
             <a
               href={"/c/" + completedEntry.cancellation_token}
