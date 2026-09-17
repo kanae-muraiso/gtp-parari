@@ -21,6 +21,7 @@ type EntryRow = {
   application_id: string;
   user_id: string | null;
   status: ApplicationEntryCancellationStatus;
+  pass_code: string | null;
   payment_status: "not_required" | "unpaid" | "reported" | "paid";
   application_snapshot: unknown;
   calendar_occurrence_id: string | null;
@@ -98,6 +99,7 @@ async function loadEntry(identity: CancellationIdentity): Promise<EntryRow | nul
         application_id,
         user_id,
         status,
+        pass_code,
         payment_status,
         application_snapshot,
         calendar_occurrence_id,
