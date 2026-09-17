@@ -695,24 +695,23 @@ export default function GuestApplicationPanelRenderer({
           entry={completedEntry}
         />
 
-        {application.cancellation_mode !== "not_allowed" &&
-        completedEntry.cancellation_token ? (
+        {completedEntry.cancellation_token ? (
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
             <div className="text-sm font-bold text-neutral-950">
-              申込の取り下げ・キャンセル
+              申込内容・状況の確認
             </div>
             <p className="mt-2 text-xs leading-6 text-neutral-500">
               {emailDelivery === "sent"
-                ? "キャンセル専用リンクを申込メールアドレスにも送信しました。"
+                ? "申込状況を確認する専用リンクを、申込メールアドレスにも送信しました。"
                 : emailDelivery === "failed"
                   ? "メールを送信できなかったため、このページから専用リンクを保存してください。"
-                  : "PARARIへの登録は不要です。この専用リンクから本人の申込を変更できます。後で使えるよう保存してください。"}
+                  : "PARARIへの登録は不要です。この専用リンクから申込状況を確認できます。後で使えるよう保存してください。"}
             </p>
             <a
               href={"/c/" + completedEntry.cancellation_token}
               className="mt-4 block w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-center text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
             >
-              キャンセル専用ページを開く
+              申込内容・状況を確認する
             </a>
           </div>
         ) : null}
@@ -1054,9 +1053,171 @@ export default function GuestApplicationPanelRenderer({
                 ? "申し込んでいます..."
                 : actionLabel}
           </button>
+
+          <GuestApplicationStatusLookup
+            applicationId={applicationId}
+            defaultEmail={applicantEmail}
+          />
         </>
       )}
     </section>
+  );
+}
+
+function GuestApplicationStatusLookup({
+  applicationId,
+  defaultEmail,
+}: {
+  applicationId: string;
+  defaultEmail: string;
+}) {
+  const [expanded, setExpanded] =
+    React.useState(false);
+  const [email, setEmail] =
+    React.useState("");
+  const [sending, setSending] =
+    React.useState(false);
+  const [message, setMessage] =
+    React.useState("");
+  const [messageType, setMessageType] =
+    React.useState<"error" | "success" | null>(null);
+
+  async function sendStatusEmail() {
+    if (sending) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!EMAIL_RE.test(normalizedEmail)) {
+      setMessage("メールアドレスを確認してください。");
+      setMessageType("error");
+      return;
+    }
+
+    setSending(true);
+    setMessage("");
+    setMessageType(null);
+
+    try {
+      const response = await fetch(
+        "/api/application/guest-status-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            applicationId,
+            email: normalizedEmail,
+          }),
+        },
+      );
+      const result =
+        (await response.json().catch(() => null)) as
+          | {
+              ok?: boolean;
+              message?: string;
+            }
+          | null;
+
+      if (!response.ok || !result?.ok) {
+        setMessage(
+          result?.message ??
+            "確認用メールを送信できませんでした。",
+        );
+        setMessageType("error");
+        return;
+      }
+
+      setMessage(
+        result.message ??
+          "該当する申込がある場合は、確認用メールを送信しました。",
+      );
+      setMessageType("success");
+    } catch {
+      setMessage(
+        "確認用メールを送信できませんでした。時間をおいて、もう一度お試しください。",
+      );
+      setMessageType("error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 border-t border-neutral-200 pt-5">
+      {!expanded ? (
+        <button
+          type="button"
+          aria-controls={`guest-application-status-${applicationId}`}
+          aria-expanded={expanded}
+          onClick={() => {
+            setEmail(
+              (current) =>
+                current || defaultEmail.trim().toLowerCase(),
+            );
+            setExpanded(true);
+          }}
+          className="w-full rounded-full border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
+        >
+          申込済みの方：申込状況を確認する
+        </button>
+      ) : (
+        <div
+          id={`guest-application-status-${applicationId}`}
+          className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
+        >
+          <div className="text-sm font-bold text-neutral-950">
+            申込状況を確認する
+          </div>
+          <p className="mt-1 text-xs leading-5 text-neutral-500">
+            申込時のメールアドレスへ、確認用の専用リンクを送信します。
+          </p>
+
+          <label className="mt-4 block">
+            <span className="text-sm font-bold text-neutral-800">
+              申込時のメールアドレス
+            </span>
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setMessage("");
+                setMessageType(null);
+              }}
+              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
+            />
+          </label>
+
+          {message ? (
+            <p
+              aria-live="polite"
+              role={messageType === "error" ? "alert" : "status"}
+              className={[
+                "mt-3 text-xs leading-6",
+                messageType === "error"
+                  ? "text-red-600"
+                  : "text-neutral-600",
+              ].join(" ")}
+            >
+              {message}
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            disabled={sending}
+            onClick={() => void sendStatusEmail()}
+            className="mt-4 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+          >
+            {sending
+              ? "送信しています..."
+              : "確認用リンクをメールで受け取る"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

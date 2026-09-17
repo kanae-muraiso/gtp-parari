@@ -13,6 +13,44 @@ type CancellationInfo = {
   refund_notice: string | null;
 };
 
+function statusLabel(status: string): string {
+  switch (status) {
+    case "submitted":
+      return "受付済み";
+    case "confirmed":
+      return "参加確定";
+    case "rejected":
+      return "不承認";
+    case "withdrawn":
+      return "取り下げ済み";
+    case "cancelled":
+      return "キャンセル済み";
+    case "expired":
+      return "失効";
+    default:
+      return "確認中";
+  }
+}
+
+function statusDescription(status: string): string {
+  switch (status) {
+    case "submitted":
+      return "お申し込みを受け付けました。現在、主催者の確認待ちです。";
+    case "confirmed":
+      return "お申し込みは確定しています。";
+    case "rejected":
+      return "このお申し込みは承認されませんでした。";
+    case "withdrawn":
+      return "このお申し込みは取り下げ済みです。";
+    case "cancelled":
+      return "この参加はキャンセル済みです。";
+    case "expired":
+      return "支払期限が終了したため、このお申し込みは失効しています。";
+    default:
+      return "現在の申込状況を確認できません。";
+  }
+}
+
 export default function GuestApplicationCancellationPage() {
   const params = useParams<{ token: string }>();
   const token = String(params.token ?? "")
@@ -112,6 +150,19 @@ export default function GuestApplicationCancellationPage() {
 
       setCompleted(true);
       setRefundNotice(result.refund_notice ?? null);
+      setInfo((current) =>
+        current
+          ? {
+              ...current,
+              can_cancel: false,
+              entry_status:
+                result.action === "withdrawn"
+                  ? "withdrawn"
+                  : "cancelled",
+              message: "",
+            }
+          : current,
+      );
       setMessage(
         result.action === "withdrawn"
           ? "申込を取り下げました。"
@@ -132,7 +183,7 @@ export default function GuestApplicationCancellationPage() {
           APPLICATION
         </div>
         <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-          申込の取り下げ・キャンセル
+          申込内容・状況
         </h1>
 
         {loading ? (
@@ -143,8 +194,19 @@ export default function GuestApplicationCancellationPage() {
               <div className="text-sm font-bold text-neutral-950">
                 {info.application_title}
               </div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200 pt-4">
+                <span className="text-xs font-semibold text-neutral-500">
+                  現在の申込状況
+                </span>
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-neutral-800 shadow-sm">
+                  {statusLabel(info.entry_status)}
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-7 text-neutral-700">
+                {statusDescription(info.entry_status)}
+              </p>
               {!completed && info.message ? (
-                <p className="mt-2 text-sm leading-7 text-neutral-600">
+                <p className="mt-3 border-t border-neutral-200 pt-3 text-xs leading-6 text-neutral-500">
                   {info.message}
                 </p>
               ) : null}
