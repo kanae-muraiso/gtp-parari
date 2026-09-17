@@ -1,5 +1,9 @@
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
+  CHECK_IN_CANCELLATION_CLOSED_MESSAGE,
+  inspectApplicationCheckInGate,
+} from "@/features/application/server/checkInGate";
+import {
   expireApplicationPaymentHoldIfNeeded,
 } from "@/features/application/server/paymentHoldExpiry";
 import {
@@ -212,6 +216,28 @@ export async function inspectApplicationEntryCancellation(
     };
   }
 
+  const checkInGate =
+    await inspectApplicationCheckInGate({
+      applicationId: entry.application_id,
+      occurrenceId: entry.calendar_occurrence_id,
+    });
+
+  if (checkInGate.closed) {
+    return {
+      ok: true as const,
+      entry,
+      application,
+      decision: {
+        allowed: false,
+        targetStatus: null,
+        deadlineAt: checkInGate.startedAt,
+        message:
+          CHECK_IN_CANCELLATION_CLOSED_MESSAGE,
+      },
+      refund_notice: refundNotice(entry.payment_status),
+    };
+  }
+
   const snapshot = readSnapshotPolicy(entry.application_snapshot);
   const mode = snapshot.mode ?? application.cancellation_mode;
   const deadlineAt = snapshot.mode ? snapshot.deadlineAt : application.cancellation_deadline_at;
@@ -257,45 +283,47 @@ export async function cancelApplicationEntry(identity: CancellationIdentity) {
     };
   }
 
-  const now = new Date().toISOString();
-  let update = supabaseAdmin
-    .from("application_entries")
-    .update({
-      status: inspected.decision.targetStatus,
-      cancelled_at: now,
-      updated_at: now,
-    })
-    .eq("id", inspected.entry.id)
-    .eq("status", inspected.entry.status)
-    .is("checked_in_at", null)
-    .is("cancelled_at", null);
-
-  update =
-    identity.kind === "member"
-      ? update.eq("user_id", identity.userId)
-      : update.eq("cancellation_token", identity.token);
-
-  const { data: updated, error } = await update
-    .select(
-      `
-        id,
-        status,
-        qualification_status,
-        payment_status,
-        payment_reported_at,
-        payment_confirmed_at,
-        application_snapshot,
-        answers,
-        cancelled_at,
-        created_at,
-        agreed_at
-      `,
-    )
-    .maybeSingle();
+  const {
+    data: atomicData,
+    error,
+  } = await supabaseAdmin.rpc(
+    "cancel_application_entry_atomic",
+    {
+      p_entry_id: inspected.entry.id,
+      p_expected_status: inspected.entry.status,
+      p_target_status: inspected.decision.targetStatus,
+      p_user_id:
+        identity.kind === "member"
+          ? identity.userId
+          : null,
+      p_cancellation_token:
+        identity.kind === "guest"
+          ? identity.token
+          : null,
+    },
+  );
 
   if (error) {
+    if (
+      (error.message ?? "").includes(
+        "application_check_in_started",
+      )
+    ) {
+      return {
+        ok: false as const,
+        status: 409,
+        message:
+          CHECK_IN_CANCELLATION_CLOSED_MESSAGE,
+        application_title: inspected.application.title,
+      };
+    }
+
     throw error;
   }
+
+  const updated = Array.isArray(atomicData)
+    ? atomicData[0] ?? null
+    : atomicData;
 
   if (!updated) {
     return {

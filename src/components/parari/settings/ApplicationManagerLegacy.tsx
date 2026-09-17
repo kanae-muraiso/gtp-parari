@@ -2557,6 +2557,18 @@ export default function ApplicationManager({
                       previousOrigin !==
                         applicationOrigin;
 
+                    const checkInHref =
+                      `/checkin?applicationId=${encodeURIComponent(
+                        application.id,
+                      )}${
+                        applicationOrigin === "calendar" &&
+                        application.calendar_item_id
+                          ? `&calendarItemId=${encodeURIComponent(
+                              application.calendar_item_id,
+                            )}`
+                          : ""
+                      }`;
+
                     return (
                       <React.Fragment
                         key={application.id}
@@ -2731,6 +2743,13 @@ export default function ApplicationManager({
                                                 }名`
                                               : "申込者を見る"}
                                       </button>
+
+                                      <a
+                                        href={checkInHref}
+                                        className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-600"
+                                      >
+                                        QR受付
+                                      </a>
 
                                     {applicationOrigin ===
                                     "manual" ? (

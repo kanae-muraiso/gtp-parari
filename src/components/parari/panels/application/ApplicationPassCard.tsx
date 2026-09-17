@@ -5,10 +5,13 @@
 
 import * as React from "react";
 
+import { supabase } from "@/lib/supabaseClient";
 import {
   createQrVersion3M,
   QR_VERSION_3_SIZE,
 } from "@/lib/qr/qrVersion3M";
+
+const PASS_CODE_RE = /^[0-9a-f]{16}$/;
 
 type PassResponse = {
   ok?: boolean;
@@ -20,32 +23,89 @@ type PassResponse = {
 
 export default function ApplicationPassCard({
   entryId,
+  passCode: providedPassCode = "",
   title,
   participantName = "",
   storageHint = "screenshot",
 }: {
   entryId: string;
+  passCode?: string;
   title: string;
   participantName?: string;
   storageHint?: "screenshot" | "library";
 }) {
+  const initialPassCode =
+    providedPassCode.trim().toLowerCase();
   const [passCode, setPassCode] =
-    React.useState("");
+    React.useState(
+      PASS_CODE_RE.test(initialPassCode)
+        ? initialPassCode
+        : "",
+    );
   const [message, setMessage] =
     React.useState("");
 
   React.useEffect(() => {
+    const preloadedPassCode =
+      providedPassCode.trim().toLowerCase();
+
+    if (preloadedPassCode) {
+      if (PASS_CODE_RE.test(preloadedPassCode)) {
+        setPassCode(preloadedPassCode);
+        setMessage("");
+      } else {
+        setPassCode("");
+        setMessage(
+          "参加証を表示できませんでした。",
+        );
+      }
+
+      return;
+    }
+
     let cancelled = false;
 
     async function loadPass() {
       setMessage("");
 
       try {
+        if (!supabase) {
+          setMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+          return;
+        }
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          sessionError ||
+          !session?.access_token
+        ) {
+          setMessage(
+            "参加証を見るにはログインしてください。",
+          );
+          return;
+        }
+
         const response = await fetch(
           `/api/application/pass?entryId=${encodeURIComponent(
             entryId,
           )}`,
-          { cache: "no-store" },
+          {
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          },
         );
 
         const result =
@@ -67,7 +127,7 @@ export default function ApplicationPassCard({
         if (
           !response.ok ||
           !result?.ok ||
-          !/^[0-9a-f]{16}$/.test(code)
+          !PASS_CODE_RE.test(code)
         ) {
           setMessage(
             result?.message ??
@@ -96,7 +156,7 @@ export default function ApplicationPassCard({
     return () => {
       cancelled = true;
     };
-  }, [entryId]);
+  }, [entryId, providedPassCode]);
 
   if (message) {
     return (

@@ -79,6 +79,8 @@ export type ApplicationCancellationMode =
 
 export type ManagedApplication = {
   id: string;
+  origin?: "manual" | "calendar";
+  calendar_item_id?: string | null;
   application_type: ApplicationType;
   title: string;
   description: string | null;
@@ -418,7 +420,20 @@ export function getApplicationEntryAnswerValue(
 export function getApplicationEntryApplicantName(
   entry: ManagedApplicationEntry,
 ): string {
+  const guestName =
+    entry.answers.find(
+      (answer) =>
+        answer.field_id ===
+        "__parari_applicant_name",
+    )?.value;
+
+  const normalizedGuestName =
+    typeof guestName === "string"
+      ? guestName.trim()
+      : "";
+
   return (
+    normalizedGuestName ||
     entry.applicant.display_name ||
     entry.applicant.username ||
     "申込者"

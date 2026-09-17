@@ -6,11 +6,16 @@ import {
   NextResponse,
 } from "next/server";
 
+import {
+  inspectApplicationCheckInGate,
+} from "@/features/application/server/checkInGate";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 const UUID_RE =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
+const CHECK_IN_CONFIRMATION_CLOSED_MESSAGE =
+  "入場受付を開始したため、この申込を参加確定に変更できません。";
 
 function getBearerToken(
   request: NextRequest,
@@ -31,13 +36,28 @@ function getBearerToken(
   );
 }
 
+function isCheckInStartedError(
+  error: unknown,
+): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message =
+    "message" in error
+      ? String(error.message ?? "")
+      : "";
+
+  return message.includes(
+    "application_check_in_started",
+  );
+}
 
 type FormSnapshotField = {
   id?: unknown;
   label?: unknown;
   type?: unknown;
 };
-
 
 function resolveFormAnswers(
   formSnapshot: unknown,
@@ -122,7 +142,6 @@ function resolveFormAnswers(
       > => item !== null,
     );
 }
-
 
 function resolveApplicationAnswers(
   applicationSnapshot: unknown,
@@ -213,7 +232,6 @@ function resolveApplicationAnswers(
     );
 }
 
-
 export async function GET(
   request: NextRequest,
 ) {
@@ -288,17 +306,18 @@ export async function GET(
   } =
     await supabaseAdmin
       .from("applications")
-    .select(
-      `
-        id,
-        owner_user_id,
-        title,
-        acceptance_mode,
-        payment_method,
-        payment_confirmation_required,
-        status
-      `,
-    )      .eq(
+      .select(
+        `
+          id,
+          owner_user_id,
+          title,
+          acceptance_mode,
+          payment_method,
+          payment_confirmation_required,
+          status
+        `,
+      )
+      .eq(
         "id",
         applicationId,
       )
@@ -353,8 +372,6 @@ export async function GET(
     );
   }
 
-
-
   const {
     data: entries,
     error: entriesError,
@@ -373,10 +390,10 @@ export async function GET(
           answers,
           application_snapshot,
           status,
-        qualification_status,
-        payment_status,
-        payment_reported_at,
-        payment_confirmed_at,
+          qualification_status,
+          payment_status,
+          payment_reported_at,
+          payment_confirmed_at,
           agreed_at,
           created_at,
           updated_at
@@ -452,7 +469,6 @@ export async function GET(
       ),
     );
 
-
   const profileMap =
     new Map<
       string,
@@ -513,9 +529,6 @@ export async function GET(
       }
     }
   }
-
-
-
 
   const submissionMap =
     new Map<
@@ -578,7 +591,6 @@ export async function GET(
     }
   }
 
-
   const resultEntries =
     rows.map((entry) => {
       const profile =
@@ -602,18 +614,18 @@ export async function GET(
         status:
           entry.status,
 
-      qualification_status:
-        entry.qualification_status,
+        qualification_status:
+          entry.qualification_status,
 
-      payment_status:
-        entry.payment_status,
+        payment_status:
+          entry.payment_status,
 
-      payment_reported_at:
-        entry.payment_reported_at,
+        payment_reported_at:
+          entry.payment_reported_at,
 
-      payment_confirmed_at:
-        entry.payment_confirmed_at,
-          
+        payment_confirmed_at:
+          entry.payment_confirmed_at,
+
         application_version:
           entry.application_version,
 
@@ -669,7 +681,6 @@ export async function GET(
       };
     });
 
-
   return NextResponse.json({
     ok: true,
 
@@ -682,12 +693,12 @@ export async function GET(
 
       acceptance_mode:
         application.acceptance_mode,
-        
-    payment_method:
-      application.payment_method,
 
-    payment_confirmation_required:
-      application.payment_confirmation_required,
+      payment_method:
+        application.payment_method,
+
+      payment_confirmation_required:
+        application.payment_confirmation_required,
 
       status:
         application.status,
@@ -697,7 +708,6 @@ export async function GET(
       resultEntries,
   });
 }
-
 
 export async function PATCH(
   request: NextRequest,
@@ -745,18 +755,15 @@ export async function PATCH(
     );
   }
 
-
   const body =
     (await request
       .json()
       .catch(() => null)) as
       | {
           entryId?: unknown;
-
           action?: unknown;
         }
       | null;
-
 
   const entryId =
     typeof body?.entryId ===
@@ -770,7 +777,6 @@ export async function PATCH(
       ? body.action.trim()
       : "";
 
-
   if (!UUID_RE.test(entryId)) {
     return NextResponse.json(
       {
@@ -783,7 +789,6 @@ export async function PATCH(
       },
     );
   }
-
 
   if (
     action !==
@@ -804,7 +809,6 @@ export async function PATCH(
       },
     );
   }
-
 
   // ========================================================
   // Entry取得
@@ -828,7 +832,8 @@ export async function PATCH(
           payment_status,
           payment_hold_expires_at,
           expired_at,
-          application_snapshot
+          application_snapshot,
+          calendar_occurrence_id
         `,
       )
       .eq(
@@ -836,7 +841,6 @@ export async function PATCH(
         entryId,
       )
       .maybeSingle();
-
 
   if (entryError) {
     console.error(
@@ -856,7 +860,6 @@ export async function PATCH(
     );
   }
 
-
   if (!entry) {
     return NextResponse.json(
       {
@@ -869,7 +872,6 @@ export async function PATCH(
       },
     );
   }
-
 
   // ========================================================
   // APPLICATION取得
@@ -896,7 +898,6 @@ export async function PATCH(
       )
       .maybeSingle();
 
-
   if (
     applicationError ||
     !application
@@ -918,7 +919,6 @@ export async function PATCH(
     );
   }
 
-
   if (
     application.owner_user_id !==
     user.id
@@ -934,7 +934,6 @@ export async function PATCH(
       },
     );
   }
-
 
   // ========================================================
   // 資格 OK
@@ -960,7 +959,6 @@ export async function PATCH(
       );
     }
 
-
     if (
       entry.qualification_status !==
       "pending"
@@ -976,7 +974,6 @@ export async function PATCH(
         },
       );
     }
-
 
     if (entry.status !== "submitted") {
       return NextResponse.json(
@@ -998,6 +995,43 @@ export async function PATCH(
         ? false
         : application.payment_confirmation_required !== true ||
           entry.payment_status === "paid";
+
+    if (paymentSatisfied) {
+      try {
+        const gate =
+          await inspectApplicationCheckInGate({
+            applicationId:
+              entry.application_id,
+            occurrenceId:
+              entry.calendar_occurrence_id,
+          });
+
+        if (gate.closed) {
+          return NextResponse.json(
+            {
+              ok: false,
+              message:
+                CHECK_IN_CONFIRMATION_CLOSED_MESSAGE,
+            },
+            { status: 409 },
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[APPLICATION entries PATCH] check-in gate load failed",
+          error,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "受付状態を確認できませんでした。",
+          },
+          { status: 500 },
+        );
+      }
+    }
 
     const approvedAt = new Date();
     const paymentHoldExpiresAt =
@@ -1060,8 +1094,18 @@ export async function PATCH(
         )
         .maybeSingle();
 
-
     if (updateError) {
+      if (isCheckInStartedError(updateError)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              CHECK_IN_CONFIRMATION_CLOSED_MESSAGE,
+          },
+          { status: 409 },
+        );
+      }
+
       console.error(
         "[APPLICATION entries PATCH] qualification approve failed",
         updateError,
@@ -1088,14 +1132,12 @@ export async function PATCH(
       );
     }
 
-
     return NextResponse.json({
       ok: true,
       entry:
         updatedEntry,
     });
   }
-
 
   // ========================================================
   // 資格 NG
@@ -1120,7 +1162,6 @@ export async function PATCH(
         },
       );
     }
-
 
     if (
       entry.qualification_status !==
@@ -1189,7 +1230,6 @@ export async function PATCH(
         )
         .single();
 
-
     if (
       updateError ||
       !updatedEntry
@@ -1211,14 +1251,12 @@ export async function PATCH(
       );
     }
 
-
     return NextResponse.json({
       ok: true,
       entry:
         updatedEntry,
     });
   }
-
 
   // ========================================================
   // 着金確認
@@ -1244,7 +1282,6 @@ export async function PATCH(
       );
     }
 
-
     if (
       entry.status === "rejected" ||
       entry.status === "withdrawn" ||
@@ -1260,7 +1297,6 @@ export async function PATCH(
         { status: 409 },
       );
     }
-
 
     if (
       entry.payment_status ===
@@ -1278,13 +1314,48 @@ export async function PATCH(
       );
     }
 
-
     const qualificationSatisfied =
       application.acceptance_mode !==
         "approval" ||
       entry.qualification_status ===
         "approved";
 
+    if (qualificationSatisfied) {
+      try {
+        const gate =
+          await inspectApplicationCheckInGate({
+            applicationId:
+              entry.application_id,
+            occurrenceId:
+              entry.calendar_occurrence_id,
+          });
+
+        if (gate.closed) {
+          return NextResponse.json(
+            {
+              ok: false,
+              message:
+                CHECK_IN_CONFIRMATION_CLOSED_MESSAGE,
+            },
+            { status: 409 },
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[APPLICATION entries PATCH] check-in gate load failed",
+          error,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "受付状態を確認できませんでした。",
+          },
+          { status: 500 },
+        );
+      }
+    }
 
     const {
       data: updatedEntry,
@@ -1323,11 +1394,21 @@ export async function PATCH(
         )
         .single();
 
-
     if (
       updateError ||
       !updatedEntry
     ) {
+      if (isCheckInStartedError(updateError)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              CHECK_IN_CONFIRMATION_CLOSED_MESSAGE,
+          },
+          { status: 409 },
+        );
+      }
+
       console.error(
         "[APPLICATION entries PATCH] payment confirm failed",
         updateError,
@@ -1345,14 +1426,12 @@ export async function PATCH(
       );
     }
 
-
     return NextResponse.json({
       ok: true,
       entry:
         updatedEntry,
     });
   }
-
 
   return NextResponse.json(
     {

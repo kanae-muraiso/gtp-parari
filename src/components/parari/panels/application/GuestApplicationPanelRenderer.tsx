@@ -104,6 +104,7 @@ type AnswerMap = Record<string, InputAnswer>;
 
 type GuestEntry = {
   id: string;
+  pass_code: string;
   cancellation_token: string;
   status:
     | "submitted"
@@ -673,6 +674,7 @@ export default function GuestApplicationPanelRenderer({
         {completedEntry.status === "confirmed" ? (
           <ApplicationPassCard
             entryId={completedEntry.id}
+            passCode={completedEntry.pass_code}
             title={application.title}
             participantName={applicantName.trim()}
           />
