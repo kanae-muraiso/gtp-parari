@@ -70,7 +70,7 @@ export async function sendGuestApplicationConfirmationEmail(
     return { ok: false };
   }
 
-  const cancellationUrl = new URL(
+  const statusUrl = new URL(
     `/c/${cancellationToken}`,
     getAppUrl(),
   ).toString();
@@ -84,8 +84,9 @@ export async function sendGuestApplicationConfirmationEmail(
     "",
     `「${input.applicationTitle}」への${acceptedMessage}`,
     "",
-    "申込の取り下げ・キャンセルは、次の専用ページから行えます。",
-    cancellationUrl,
+    "申込内容・現在の状況は、次の専用ページから確認できます。",
+    "申込の取り下げ・キャンセルが可能な場合も、このページから手続きできます。",
+    statusUrl,
     "",
     "このURLは申込者専用です。第三者へ共有しないでください。",
     "",
@@ -94,15 +95,15 @@ export async function sendGuestApplicationConfirmationEmail(
   const safeName = escapeHtml(input.applicantName);
   const safeTitle = escapeHtml(input.applicationTitle);
   const safeAcceptedMessage = escapeHtml(acceptedMessage);
-  const safeCancellationUrl = escapeHtml(cancellationUrl);
+  const safeStatusUrl = escapeHtml(statusUrl);
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #171717; line-height: 1.8; max-width: 600px; margin: 0 auto; padding: 24px;">
       <p>${safeName} 様</p>
       <h1 style="font-size: 20px; margin: 24px 0 12px;">${safeTitle}</h1>
       <p>お申し込みについて、${safeAcceptedMessage}</p>
-      <p style="margin-top: 24px;">申込の取り下げ・キャンセルは、次の専用ページから行えます。</p>
+      <p style="margin-top: 24px;">申込内容・現在の状況は、次の専用ページから確認できます。申込の取り下げ・キャンセルが可能な場合も、このページから手続きできます。</p>
       <p style="margin: 24px 0;">
-        <a href="${safeCancellationUrl}" style="display: inline-block; border-radius: 9999px; background: #171717; color: #ffffff; padding: 12px 20px; text-decoration: none; font-weight: 700;">キャンセル専用ページを開く</a>
+        <a href="${safeStatusUrl}" style="display: inline-block; border-radius: 9999px; background: #171717; color: #ffffff; padding: 12px 20px; text-decoration: none; font-weight: 700;">申込内容・状況を確認する</a>
       </p>
       <p style="font-size: 12px; color: #737373;">このURLは申込者専用です。第三者へ共有しないでください。</p>
       <p style="margin-top: 32px;">PARARI</p>

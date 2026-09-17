@@ -153,10 +153,7 @@ export async function POST(
     const emailContext =
       readGuestEntryEmailContext(result.entry);
 
-    if (
-      emailContext &&
-      emailContext.cancellationMode !== "not_allowed"
-    ) {
+    if (emailContext) {
       const emailResult =
         await sendGuestApplicationConfirmationEmail({
           applicantEmail: result.guest?.email ?? "",
