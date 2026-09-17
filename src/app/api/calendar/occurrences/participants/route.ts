@@ -10,8 +10,8 @@
 //   ↓
 // application_entries
 //
-// 氏名は user_private_profiles.full_name を優先。
-// 公開プロフィール名はフォールバックとして使用する。
+// guestは application_entries.applicant_name を優先。
+// 会員は user_private_profiles.full_name、公開プロフィール名の順で補完する。
 
 import {
   NextRequest,
@@ -329,6 +329,7 @@ export async function GET(
         `
           id,
           user_id,
+          applicant_name,
           status,
           calendar_recurring_booking_id,
           created_at
@@ -525,8 +526,15 @@ export async function GET(
       (entry) => {
         const userId =
           String(
-            entry.user_id,
+            entry.user_id ??
+              "",
           );
+
+        const guestName =
+          String(
+            entry.applicant_name ??
+              "",
+          ).trim();
 
         const publicProfile =
           publicProfileMap.get(
@@ -555,9 +563,10 @@ export async function GET(
             entry.id,
 
           user_id:
-            userId,
+            userId || null,
 
           name:
+            guestName ||
             fullName ||
             displayName ||
             username ||
