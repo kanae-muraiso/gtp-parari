@@ -1,5 +1,5 @@
 // src/app/q/[passCode]/page.tsx
-// 2026-09-16 JST
+// 2026-09-17 JST
 
 "use client";
 
@@ -7,7 +7,6 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 
 import GuestPassCancellationAccess from "@/components/parari/application/GuestPassCancellationAccess";
-import { supabase } from "@/lib/supabaseClient";
 
 type Occurrence = {
   id: string;
@@ -24,6 +23,7 @@ type PassData = {
   status: string;
   checked_in_at: string | null;
   occurrence: Occurrence | null;
+  is_guest: boolean;
 };
 
 type PassResponse = {
@@ -41,48 +41,13 @@ export default function ApplicationPassPage() {
     .trim()
     .toLowerCase();
 
-  const [authState, setAuthState] = React.useState<
-    "checking" | "signed_out" | "signed_in"
-  >("checking");
-  const [accessToken, setAccessToken] = React.useState("");
   const [pass, setPass] = React.useState<PassData | null>(null);
   const [message, setMessage] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    let cancelled = false;
-
-    async function checkSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (cancelled) {
-        return;
-      }
-
-      if (!session?.access_token) {
-        setAuthState("signed_out");
-        return;
-      }
-
-      setAccessToken(session.access_token);
-      setAuthState("signed_in");
-    }
-
-    void checkSession();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (
-      authState !== "signed_in" ||
-      !accessToken ||
-      !/^[0-9a-f]{16}$/.test(passCode)
-    ) {
+    if (!/^[0-9a-f]{16}$/.test(passCode)) {
+      setLoading(false);
       return;
     }
 
@@ -94,11 +59,8 @@ export default function ApplicationPassPage() {
 
       try {
         const response = await fetch(
-          `/api/application/check-in?passCode=${encodeURIComponent(passCode)}`,
+          `/api/application/pass/view?passCode=${encodeURIComponent(passCode)}`,
           {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
             cache: "no-store",
           },
         );
@@ -143,7 +105,7 @@ export default function ApplicationPassPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, authState, passCode]);
+  }, [passCode]);
 
   if (!/^[0-9a-f]{16}$/.test(passCode)) {
     return (
@@ -153,47 +115,6 @@ export default function ApplicationPassPage() {
           title="参加証を確認できません"
           body="参加証コードが正しくありません。"
         />
-      </PassShell>
-    );
-  }
-
-  if (authState === "checking") {
-    return (
-      <PassShell>
-        <StatusCard
-          kind="neutral"
-          title="確認中..."
-          body="PARARIのログイン状態を確認しています。"
-        />
-      </PassShell>
-    );
-  }
-
-  if (authState === "signed_out") {
-    return (
-      <PassShell>
-        <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            PARARI PASS
-          </div>
-          <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-            参加証
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-neutral-600">
-            参加者は申込時のメールアドレスから申込の変更・キャンセルができます。
-          </p>
-
-          <GuestPassCancellationAccess passCode={passCode} />
-
-          <div className="mt-6 border-t border-neutral-200 pt-5">
-            <div className="text-sm font-bold text-neutral-950">
-              受付について
-            </div>
-            <p className="mt-1 text-xs leading-6 text-neutral-500">
-              このQRを通常のスマホカメラで開いても受付処理は行われません。受付はPARARIの専用CHECK-IN MODEから行います。
-            </p>
-          </div>
-        </div>
       </PassShell>
     );
   }
@@ -289,6 +210,18 @@ export default function ApplicationPassPage() {
               主催者による承認や支払い確認が完了すると参加確定になります。
             </div>
           )}
+
+          {pass.is_guest ? (
+            <div className="mt-6 border-t border-neutral-200 pt-5">
+              <div className="text-sm font-bold text-neutral-950">
+                申込の変更・キャンセル
+              </div>
+              <p className="mt-1 text-xs leading-6 text-neutral-500">
+                申込時のメールアドレスを確認して、申込内容へ進めます。
+              </p>
+              <GuestPassCancellationAccess passCode={passCode} />
+            </div>
+          ) : null}
 
           {message ? (
             <p className="mt-4 text-sm text-red-600">{message}</p>
