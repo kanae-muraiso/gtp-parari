@@ -3,9 +3,12 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 
+import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
+
 type CancellationInfo = {
   application_title: string;
   entry_status: string;
+  pass_code: string | null;
   can_cancel: boolean;
   action: "withdraw" | "cancel";
   message: string;
@@ -93,6 +96,10 @@ export default function GuestApplicationCancellationPage() {
         setInfo({
           application_title: result.application_title,
           entry_status: result.entry_status ?? "",
+          pass_code:
+            typeof result.pass_code === "string"
+              ? result.pass_code
+              : null,
           can_cancel: result.can_cancel === true,
           action: result.action === "withdraw" ? "withdraw" : "cancel",
           message: result.message ?? "",
@@ -159,6 +166,7 @@ export default function GuestApplicationCancellationPage() {
                 result.action === "withdrawn"
                   ? "withdrawn"
                   : "cancelled",
+              pass_code: null,
               message: "",
             }
           : current,
@@ -183,7 +191,7 @@ export default function GuestApplicationCancellationPage() {
           APPLICATION
         </div>
         <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-          申込内容・状況
+          申込内容・参加証
         </h1>
 
         {loading ? (
@@ -211,6 +219,22 @@ export default function GuestApplicationCancellationPage() {
                 </p>
               ) : null}
             </div>
+
+            {info.entry_status === "confirmed" && info.pass_code ? (
+              <section className="mt-6">
+                <h2 className="text-base font-bold text-neutral-950">
+                  当日の参加証
+                </h2>
+                <p className="mt-1 text-xs leading-6 text-neutral-500">
+                  この認証リンクから、必要なときに何度でも表示できます。
+                </p>
+                <ApplicationPassCard
+                  passCode={info.pass_code}
+                  title={info.application_title}
+                  storageHint="authenticated-link"
+                />
+              </section>
+            ) : null}
 
             {!completed && info.can_cancel ? (
               <button
