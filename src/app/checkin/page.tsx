@@ -23,6 +23,8 @@ type Occurrence = {
 };
 
 type PassData = {
+  application_id: string;
+  occurrence_id: string | null;
   application_title: string;
   participant_name: string;
   status: string;
@@ -508,7 +510,7 @@ export default function CheckInModePage() {
   }
 
   async function inspectPass(value: string = rawCode) {
-    if (!accessToken || loading || !checkInActive) {
+    if (!accessToken || !application || loading || !checkInActive) {
       return;
     }
 
@@ -527,8 +529,17 @@ export default function CheckInModePage() {
     setPassCode(code);
 
     try {
+      const params = new URLSearchParams({
+        passCode: code,
+        applicationId: application.id,
+      });
+
+      if (application.origin === "calendar" && selectedOccurrenceId) {
+        params.set("occurrenceId", selectedOccurrenceId);
+      }
+
       const response = await fetch(
-        `/api/application/check-in?passCode=${encodeURIComponent(code)}`,
+        `/api/application/check-in?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -546,20 +557,19 @@ export default function CheckInModePage() {
         return;
       }
 
-      if (
-        selectedOccurrenceId &&
-        result.pass.occurrence?.id !== selectedOccurrenceId
-      ) {
-        setMessage("選択した開催回とは別の参加証です。");
+      const expectedOccurrenceId =
+        application.origin === "calendar"
+          ? selectedOccurrenceId
+          : null;
+
+      if (result.pass.application_id !== application.id) {
+        setMessage("選択したAPPLICATIONとは別の参加証です。");
         setPassCode("");
         return;
       }
 
-      if (
-        application &&
-        result.pass.application_title !== application.title
-      ) {
-        setMessage("選択したAPPLICATIONとは別の参加証です。");
+      if (result.pass.occurrence_id !== expectedOccurrenceId) {
+        setMessage("選択した開催回とは別の参加証です。");
         setPassCode("");
         return;
       }
@@ -664,7 +674,14 @@ export default function CheckInModePage() {
   }
 
   async function checkIn() {
-    if (!accessToken || !pass || !passCode || checkingIn || !checkInActive) {
+    if (
+      !accessToken ||
+      !application ||
+      !pass ||
+      !passCode ||
+      checkingIn ||
+      !checkInActive
+    ) {
       return;
     }
 
@@ -682,7 +699,14 @@ export default function CheckInModePage() {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ passCode }),
+        body: JSON.stringify({
+          passCode,
+          applicationId: application.id,
+          occurrenceId:
+            application.origin === "calendar"
+              ? selectedOccurrenceId
+              : undefined,
+        }),
       });
 
       const result = (await response.json().catch(() => null)) as
