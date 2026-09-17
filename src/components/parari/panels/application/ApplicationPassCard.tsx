@@ -22,17 +22,17 @@ type PassResponse = {
 };
 
 export default function ApplicationPassCard({
-  entryId,
+  entryId = "",
   passCode: providedPassCode = "",
   title,
   participantName = "",
   storageHint = "screenshot",
 }: {
-  entryId: string;
+  entryId?: string;
   passCode?: string;
   title: string;
   participantName?: string;
-  storageHint?: "screenshot" | "library";
+  storageHint?: "screenshot" | "library" | "authenticated-link";
 }) {
   const initialPassCode =
     providedPassCode.trim().toLowerCase();
@@ -210,11 +210,15 @@ export default function ApplicationPassCard({
           <div className="text-sm font-bold text-neutral-950">
             {storageHint === "library"
               ? "この参加証はPARARIに保存されています"
+              : storageHint === "authenticated-link"
+                ? "この参加証は認証リンクから再表示できます"
               : "この画面をスクリーンショットで保存してください"}
           </div>
           <p className="mt-2 text-sm leading-7 text-neutral-600">
             {storageHint === "library"
               ? "当日は、この画面または保存済みのスクリーンショットをご提示ください。"
+              : storageHint === "authenticated-link"
+                ? "スクリーンショットを取り忘れても、申込状況メールのリンクからいつでも表示できます。"
               : "当日は、この参加証を受付でご提示ください。"}
           </p>
         </div>
