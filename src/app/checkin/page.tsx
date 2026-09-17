@@ -9,6 +9,7 @@
 
 import * as React from "react";
 
+import CancelCheckInStartButton from "@/components/parari/checkin/CancelCheckInStartButton";
 import { supabase } from "@/lib/supabaseClient";
 
 type Occurrence = {
@@ -452,7 +453,7 @@ export default function CheckInModePage() {
     }
 
     const confirmed = window.confirm(
-      "入場受付を開始します。\n\n開始すると、新規申込と参加者本人によるキャンセルを締め切ります。この操作は元に戻せません。",
+      "入場受付を開始します。\n\n開始すると、新規申込と参加者本人によるキャンセルを締め切ります。最初の参加者を受付する前なら開始を取り消せます。",
     );
 
     if (!confirmed) {
@@ -865,7 +866,7 @@ export default function CheckInModePage() {
                   開始すると、このAPPLICATIONの新規申込と参加者本人によるキャンセルを締め切ります。
                 </p>
                 <p className="mt-2 text-xs leading-6 text-amber-800">
-                  受付開始後は元に戻せません。受付を始める準備ができてから押してください。
+                  受付開始後でも、まだ1人も受付していなければ開始を取り消せます。
                 </p>
                 <button
                   type="button"
@@ -892,6 +893,17 @@ export default function CheckInModePage() {
                   <p className="mt-2 text-xs leading-6 text-emerald-800">
                     {checkInStartMessage}
                   </p>
+                ) : null}
+                {application ? (
+                  <CancelCheckInStartButton
+                    accessToken={accessToken}
+                    applicationId={application.id}
+                    occurrenceId={
+                      application.origin === "calendar"
+                        ? selectedOccurrenceId
+                        : null
+                    }
+                  />
                 ) : null}
               </div>
             ) : null}
