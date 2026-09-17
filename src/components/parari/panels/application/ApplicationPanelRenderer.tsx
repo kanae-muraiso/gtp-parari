@@ -936,13 +936,7 @@ export default function ApplicationPanelRenderer({
               entry.status ===
                 "confirmed" ||
               entry.status ===
-                "rejected" ||
-              entry.status ===
-                "withdrawn" ||
-              entry.status ===
-                "cancelled" ||
-              entry.status ===
-                "expired"
+                "rejected"
             )
           ) {
               setCompletedEntry({
@@ -2009,7 +2003,7 @@ export default function ApplicationPanelRenderer({
           return;
         }
 
-        setCompletedEntry(result.entry);
+        setCompletedEntry(null);
         setIsApplying(false);
         setPaymentMessage("");
 
@@ -2889,6 +2883,16 @@ export default function ApplicationPanelRenderer({
                   </button>
                 </>
               )}
+            </div>
+          ) : null}
+
+          {!completedEntry &&
+          cancellationMessage ? (
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-7 text-emerald-800">
+              {cancellationMessage}
+              {!closed
+                ? " 再度申し込むことができます。"
+                : ""}
             </div>
           ) : null}
 

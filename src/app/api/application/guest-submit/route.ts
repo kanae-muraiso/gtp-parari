@@ -15,6 +15,67 @@ import {
 import {
   submitApplication,
 } from "@/features/application/server/submitApplication";
+import {
+  sendGuestApplicationConfirmationEmail,
+} from "@/features/application/server/sendGuestApplicationConfirmationEmail";
+
+type GuestEntryEmailContext = {
+  cancellationMode:
+    | "not_allowed"
+    | "anytime"
+    | "until_deadline";
+  cancellationToken: string;
+  entryStatus: string;
+  title: string;
+};
+
+function readGuestEntryEmailContext(
+  entry: unknown,
+): GuestEntryEmailContext | null {
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    Array.isArray(entry)
+  ) {
+    return null;
+  }
+
+  const row = entry as Record<string, unknown>;
+  const snapshot =
+    row.application_snapshot &&
+    typeof row.application_snapshot === "object" &&
+    !Array.isArray(row.application_snapshot)
+      ? (row.application_snapshot as Record<string, unknown>)
+      : null;
+  const cancellationMode = snapshot?.cancellation_mode;
+  const cancellationToken =
+    typeof row.cancellation_token === "string"
+      ? row.cancellation_token.trim().toLowerCase()
+      : "";
+  const title =
+    typeof snapshot?.title === "string"
+      ? snapshot.title.trim()
+      : "";
+
+  if (
+    (cancellationMode !== "not_allowed" &&
+      cancellationMode !== "anytime" &&
+      cancellationMode !== "until_deadline") ||
+    !title
+  ) {
+    return null;
+  }
+
+  return {
+    cancellationMode,
+    cancellationToken,
+    entryStatus:
+      typeof row.status === "string"
+        ? row.status
+        : "submitted",
+    title,
+  };
+}
 
 export async function POST(
   request: NextRequest,
@@ -85,10 +146,37 @@ export async function POST(
       );
     }
 
+    let emailDelivery:
+      | "sent"
+      | "failed"
+      | "not_applicable" = "not_applicable";
+    const emailContext =
+      readGuestEntryEmailContext(result.entry);
+
+    if (
+      emailContext &&
+      emailContext.cancellationMode !== "not_allowed"
+    ) {
+      const emailResult =
+        await sendGuestApplicationConfirmationEmail({
+          applicantEmail: result.guest?.email ?? "",
+          applicantName: result.guest?.name ?? "",
+          applicationTitle: emailContext.title,
+          cancellationToken:
+            emailContext.cancellationToken,
+          entryStatus: emailContext.entryStatus,
+        });
+
+      emailDelivery = emailResult.ok
+        ? "sent"
+        : "failed";
+    }
+
     return NextResponse.json({
       ok: true,
       entry: result.entry,
       guest: result.guest,
+      email_delivery: emailDelivery,
     });
   } catch (error) {
     console.error(
