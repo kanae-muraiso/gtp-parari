@@ -9,6 +9,7 @@ import {
 } from "@/features/application/server/cancelApplicationEntry";
 
 const TOKEN_RE = /^[0-9a-f]{32}$/;
+const PASS_CODE_RE = /^[0-9a-f]{16}$/;
 
 function readToken(value: unknown): string {
   return typeof value === "string"
@@ -45,6 +46,11 @@ export async function GET(request: NextRequest) {
       ok: true,
       application_title: result.application.title,
       entry_status: result.entry.status,
+      pass_code:
+        result.entry.status === "confirmed" &&
+        PASS_CODE_RE.test(result.entry.pass_code ?? "")
+          ? result.entry.pass_code
+          : null,
       can_cancel: result.decision.allowed,
       action:
         result.decision.targetStatus === "withdrawn"
