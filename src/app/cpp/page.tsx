@@ -11,6 +11,14 @@ export default function CppEntryPage() {
             CPPは、博士号取得者・取得予定者を中心とした研究者と、研究者を必要とする企業・団体が出会うための場です。
             研究者と企業では登録方法が異なります。
           </p>
+          <div className="mt-7">
+            <Link
+              href="/my/cpp/home"
+              className="inline-flex rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-900 transition hover:border-neutral-500"
+            >
+              登録済みの方：CPPに入室する →
+            </Link>
+          </div>
         </header>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-2">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -99,7 +100,7 @@ export default function CppMembersPage() {
           CPP-R または CPP-C のメンバーシップが発行されると、ここに相手側の参加メンバーが表示されます。
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/cpp" className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white">CPPへ戻る</Link>
+          <Link href="/my/cpp/home" className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white">CPPホームへ</Link>
           <Link href="/my/cpp/social-profile" className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-800">SOCIAL PROFILE</Link>
         </div>
       </CenteredCard>
@@ -111,6 +112,7 @@ export default function CppMembersPage() {
 
   return (
     <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+      <CppSectionNav active="browse" />
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-wrap items-end justify-between gap-5">
           <div>
@@ -122,7 +124,7 @@ export default function CppMembersPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/my/cpp/social-profile" className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700">SOCIAL PROFILE</Link>
-            <Link href="/cpp" className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700">CPPへ</Link>
+            <Link href="/my/cpp/home" className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700">CPPホーム</Link>
           </div>
         </header>
 

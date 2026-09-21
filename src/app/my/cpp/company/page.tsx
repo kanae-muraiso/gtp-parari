@@ -1,10 +1,12 @@
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import CppCompanyWorkbook from "@/components/parari/cpp/company/CppCompanyWorkbook";
 import CppCompanySupportModeBanner from "@/components/parari/cpp/company/CppCompanySupportModeBanner";
 
 export default function CppCompanyEditorPage() {
   return (
     <>
+      <CppSectionNav />
       <CppCompanySupportModeBanner />
       <CppCompanyWorkbook />
       <div className="fixed bottom-5 right-5 z-50 flex flex-wrap justify-end gap-2">

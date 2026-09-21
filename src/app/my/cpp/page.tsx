@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppProfileBasicsEditor from "@/components/parari/cpp/CppProfileBasicsEditor";
 import CppHistoryEditor from "@/components/parari/cpp/CppHistoryEditor";
@@ -207,6 +208,7 @@ export default function CppWorkbookPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50">
+      <CppSectionNav />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-3xl">
           <div>
@@ -300,8 +302,8 @@ export default function CppWorkbookPage() {
               </section>
 
               <div className="flex justify-between pb-10 text-sm">
-                <Link href="/my/profile" className="text-neutral-500 hover:text-neutral-900">
-                  ← マイページへ戻る
+                <Link href="/my/cpp/home" className="text-neutral-500 hover:text-neutral-900">
+                  ← CPPホームへ戻る
                 </Link>
                 <span className="text-neutral-400">CPP WORKBOOK v0.2</span>
               </div>

@@ -187,7 +187,7 @@ export default function CppSocialProfilePage() {
               詳しい研究者プロフィールや企業プロフィールとは別です。CPPの中で人と出会うときに、研究者同士・企業担当者同士を含め、まず全員に見える最小限のプロフィールです。
             </p>
           </div>
-          <Link href="/cpp" className="text-xs font-bold text-neutral-500 hover:text-neutral-900">CPPへ戻る</Link>
+          <Link href="/my/cpp/home" className="text-xs font-bold text-neutral-500 hover:text-neutral-900">CPPホームへ戻る</Link>
         </header>
 
         {errorMessage ? (
