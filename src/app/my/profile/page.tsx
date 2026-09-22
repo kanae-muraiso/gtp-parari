@@ -1,6 +1,6 @@
 // src/app/my/profile/page.tsx
 // src/app/my/profile/page.tsx
-// 2026/08/18 14:45
+// 2026-09-22 JST
 // PART: MVP profile settings
 // コメント:
 // - /my/works から使う公開URL設定ページ
@@ -329,17 +329,25 @@ export default function MyProfilePage() {
       return;
     }
 
+    const homepageMode =
+      userTopMode === "web"
+        ? "book"
+        : userTopMode === "works"
+          ? "tag"
+          : "profile";
+
     const payload = {
       user_id: userId,
       username: normalizedUsername,
       display_name: displayName.trim() || null,
-      homepage_mode:
-        userTopMode === "web"
-          ? "book"
-          : userTopMode,
+      homepage_mode: homepageMode,
       homepage_book_id:
         userTopMode === "web"
           ? homepageBookId
+          : null,
+      homepage_tag_key:
+        userTopMode === "works"
+          ? "works"
           : null,
     };
 
@@ -351,6 +359,8 @@ export default function MyProfilePage() {
         homepage_mode: payload.homepage_mode,
         homepage_book_id:
           payload.homepage_book_id,
+        homepage_tag_key:
+          payload.homepage_tag_key,
       })
       .eq("user_id", userId)
       .select("user_id");
@@ -371,6 +381,8 @@ export default function MyProfilePage() {
         homepage_mode: payload.homepage_mode,
         homepage_book_id:
           payload.homepage_book_id,
+        homepage_tag_key:
+          payload.homepage_tag_key,
       });
 
       if (insertError) {
