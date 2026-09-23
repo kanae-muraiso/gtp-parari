@@ -368,7 +368,10 @@ export default function MyPublicProfileSettingsPage() {
     : null;
 
   const representativeWorkLimit =
-    isMonitor || effectivePlan !== "free" ? null : 3;
+    getPlanEntitlements(
+      effectivePlan,
+      isMonitor,
+    ).profileCollectionLimit;
 
   const linkLimit =
     getPlanEntitlements(
@@ -1558,7 +1561,13 @@ export default function MyPublicProfileSettingsPage() {
       .eq("owner", userId);
 
     if (error) {
-      setMessage(`代表作品の更新に失敗しました: ${error.message}`);
+      setMessage(
+        error.message.includes(
+          "FREE_PROFILE_COLLECTION_LIMIT_REACHED",
+        )
+          ? `Freeプランでは代表作品を${representativeWorkLimit ?? 3}作品まで掲載できます。`
+          : `代表作品の更新に失敗しました: ${error.message}`,
+      );
       setMessageIsError(true);
       setWorkSavingId(null);
       return;
