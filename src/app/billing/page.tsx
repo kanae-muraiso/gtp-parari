@@ -8,6 +8,9 @@ import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
+import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
+
+const PLUS_MONTHLY_PRICE_USD = PLAN_ENTITLEMENTS.plus.monthlyPriceUsd;
 
 function LimitItem({ children }: { children: React.ReactNode }) {
   return (
@@ -70,7 +73,7 @@ export default function BillingPage() {
 
             <p className="mt-3 text-sm leading-7 text-slate-600">
               PARARIはFreeから始められます。作品数やページ数を増やしたい場合は、
-              月額5ドルのPlusをご利用ください。
+              月額{PLUS_MONTHLY_PRICE_USD}ドルのPlusをご利用ください。
             </p>
           </div>
 
@@ -109,7 +112,7 @@ export default function BillingPage() {
                   </p>
 
                   <p className="mt-2 text-3xl font-bold">
-                    $5
+                    ${PLUS_MONTHLY_PRICE_USD}
                     <span className="ml-1 text-sm font-medium text-slate-300">
                       / month
                     </span>
