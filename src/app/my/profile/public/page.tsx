@@ -23,6 +23,7 @@ import {
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import {
   getEffectivePlan,
+  getPlanEntitlements,
   type EffectivePlan,
 } from "@/lib/billing/plan";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
@@ -368,6 +369,16 @@ export default function MyPublicProfileSettingsPage() {
 
   const representativeWorkLimit =
     isMonitor || effectivePlan !== "free" ? null : 3;
+
+  const linkLimit =
+    getPlanEntitlements(
+      effectivePlan,
+      isMonitor,
+    ).linkTreeLimit;
+
+  const isAtLinkLimit =
+    linkLimit !== null &&
+    links.length >= linkLimit;
 
   const selectedWorks = useMemo(() => {
     return works
@@ -1400,8 +1411,10 @@ export default function MyPublicProfileSettingsPage() {
       return;
     }
 
-    if (links.length >= 10) {
-      setMessage("リンクは最大10件までです。");
+    if (isAtLinkLimit) {
+      setMessage(
+        `現在のプランではリンクは最大${linkLimit}件までです。`,
+      );
       setMessageIsError(true);
       return;
     }
@@ -1451,7 +1464,13 @@ export default function MyPublicProfileSettingsPage() {
       });
 
     if (error) {
-      setMessage(`リンクの追加に失敗しました: ${error.message}`);
+      setMessage(
+        error.message.includes(
+          "FREE_PROFILE_LINK_LIMIT_REACHED",
+        )
+          ? "Freeプランではリンクを3件まで登録できます。"
+          : `リンクの追加に失敗しました: ${error.message}`,
+      );
       setMessageIsError(true);
       setLinkSaving(false);
       return;
@@ -2827,7 +2846,11 @@ export default function MyPublicProfileSettingsPage() {
             <SectionCard
               number="3"
               title="リンク"
-              description="SNSやホームページなどへのリンクを最大10件まで登録できます。追加・削除はその場で反映されます。"
+              description={
+                linkLimit === null
+                  ? "SNSやホームページなどへのリンクを登録できます。追加・削除はその場で反映されます。"
+                  : `SNSやホームページなどへのリンクを最大${linkLimit}件まで登録できます。追加・削除はその場で反映されます。`
+              }
             >
               <div className="flex flex-wrap gap-2">
                 {LINK_PRESETS.map((preset) => (
@@ -2895,14 +2918,14 @@ export default function MyPublicProfileSettingsPage() {
                   type="button"
                   onClick={handleAddLink}
                   disabled={
-                    linkSaving || links.length >= 10
+                    linkSaving || isAtLinkLimit
                   }
                   className="w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
                 >
                   {linkSaving
                     ? "追加中..."
-                    : links.length >= 10
-                      ? "最大10件です"
+                    : isAtLinkLimit
+                      ? `最大${linkLimit}件です`
                       : "リンクを追加"}
                 </button>
               </div>
