@@ -128,6 +128,16 @@ export default function ApplicationPanelEditor({
   ] = React.useState(false);
 
   const [
+    canCreateApplication,
+    setCanCreateApplication,
+  ] = React.useState(true);
+
+  const [
+    applicationLimit,
+    setApplicationLimit,
+  ] = React.useState<number | null>(null);
+
+  const [
     statusUpdatingApplicationId,
     setStatusUpdatingApplicationId,
   ] = React.useState<string | null>(null);
@@ -203,6 +213,11 @@ export default function ApplicationPanelEditor({
                 applications?:
                   ManagedApplication[];
 
+                access?: {
+                  canCreateApplication?: boolean;
+                  applicationLimit?: number | null;
+                };
+
                 message?:
                   string;
               }
@@ -234,6 +249,15 @@ export default function ApplicationPanelEditor({
                 application.origin !==
                 "calendar",
             ),
+          );
+
+          setCanCreateApplication(
+            result.access?.canCreateApplication !== false,
+          );
+          setApplicationLimit(
+            typeof result.access?.applicationLimit === "number"
+              ? result.access.applicationLimit
+              : null,
           );
         }
       } catch (error) {
@@ -516,19 +540,27 @@ export default function ApplicationPanelEditor({
         )}
 
         {!applicationId ? (
-          <button
-            type="button"
-            onClick={() => {
-              setCreatingApplication(
-                true,
-              );
-              setMessage("");
-              setStatusMessage("");
-            }}
-            className="mt-3 w-full rounded-xl border border-amber-300 bg-white px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100"
-          >
-            ＋ 新しいAPPLICATIONを作る
-          </button>
+          canCreateApplication ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingApplication(
+                  true,
+                );
+                setMessage("");
+                setStatusMessage("");
+              }}
+              className="mt-3 w-full rounded-xl border border-amber-300 bg-white px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100"
+            >
+              ＋ 新しいAPPLICATIONを作る
+            </button>
+          ) : (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm leading-7 text-neutral-700">
+              {applicationLimit === 1
+                ? "FREEではAPPLICATIONは1つまでです。上の作成済みAPPLICATIONを選んで、この作品で使ってください。"
+                : "現在、新しいAPPLICATIONは作成できません。作成済みのAPPLICATIONを選んでください。"}
+            </div>
+          )
         ) : null}
 
         {message ? (

@@ -2127,6 +2127,39 @@ export default function ApplicationManager({
   }
 
 
+  if (
+    createOnly &&
+    !isLoading &&
+    applicationAccess?.canCreateApplication === false
+  ) {
+    return (
+      <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+        <div className="px-6 py-8 sm:px-10">
+          <div className="mx-auto max-w-2xl">
+            <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+              APPLICATION
+            </div>
+            <h3 className="mt-2 text-xl font-bold text-neutral-950">
+              新しいAPPLICATIONは作成できません
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-neutral-600">
+              {applicationAccess.applicationLimit === 1
+                ? "FREEではAPPLICATIONは1つまでです。作成済みのAPPLICATIONをこの作品で選んで使ってください。"
+                : "現在のプランではAPPLICATIONの作成上限に達しています。"}
+            </p>
+            <button
+              type="button"
+              onClick={() => onCancel?.()}
+              className="mt-6 rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-700"
+            >
+              作成済みAPPLICATIONを選ぶ
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-6 py-5">
