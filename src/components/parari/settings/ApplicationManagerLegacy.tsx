@@ -10,6 +10,7 @@ import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
 import ApplicationEntriesPanel from "./ApplicationEntriesPanel";
 import ApplicationPolicySettings from "./ApplicationPolicySettings";
 import ApplicationContentBuilder from "./ApplicationContentBuilder";
+import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
 import { supabase } from "@/lib/supabaseClient";
 
 
@@ -110,6 +111,14 @@ export default function ApplicationManager({
   const canUseExtendedApplication =
     applicationAccess?.applicationMode ===
     "builder";
+
+  const isFreePlan =
+    applicationAccess?.effectivePlan ===
+    "free";
+
+  const isFreeLiteApplication =
+    isFreePlan &&
+    applicationMode === "lite";
 
   const [
     forms,
@@ -552,6 +561,27 @@ export default function ApplicationManager({
       cancelled = true;
     };
   }, []);
+
+  React.useEffect(() => {
+    if (
+      !createOnly ||
+      isLoading ||
+      !applicationAccess ||
+      applicationAccess.effectivePlan !== "free" ||
+      applicationAccess.canCreateApplication === false ||
+      showBuilder
+    ) {
+      return;
+    }
+
+    setApplicationMode("lite");
+    startCreate("OTHER");
+  }, [
+    applicationAccess,
+    createOnly,
+    isLoading,
+    showBuilder,
+  ]);
 
 
   function startCreate(
@@ -1678,6 +1708,7 @@ export default function ApplicationManager({
     }
 
       const hasCalendarPricing =
+        !isFreePlan &&
         blocks.some(
           (block) =>
             block?.type === "calendar",
@@ -1687,6 +1718,7 @@ export default function ApplicationManager({
         paymentAmount.trim();
 
       if (
+        !isFreePlan &&
         paymentMethod !== "none" &&
         !hasCalendarPricing
       ) {
@@ -1709,6 +1741,7 @@ export default function ApplicationManager({
       }
 
       if (
+        !isFreePlan &&
         paymentMethod ===
           "payment_link" &&
         !paymentUrl.trim()
@@ -1720,7 +1753,10 @@ export default function ApplicationManager({
         return;
       }
 
-      if (cancellationMode === "until_deadline") {
+      if (
+        !isFreePlan &&
+        cancellationMode === "until_deadline"
+      ) {
         if (hasCalendarPricing) {
           const cutoff = Number(cancellationCutoffMinutes);
           if (
@@ -1823,13 +1859,17 @@ export default function ApplicationManager({
               : [],
 
           agreement:
-            agreement.trim(),
+            isFreePlan
+              ? ""
+              : agreement.trim(),
 
           actionLabel:
             actionLabel.trim() ||
-            APPLICATION_DEFAULT_ACTION_LABELS[
-              applicationType
-            ],
+            (isFreePlan
+              ? "申し込む"
+              : APPLICATION_DEFAULT_ACTION_LABELS[
+                  applicationType
+                ]),
         };
 
       const response =
@@ -1861,18 +1901,29 @@ export default function ApplicationManager({
                   normalizedTitle,
 
                 description:
-                  description.trim(),
+                  isFreePlan
+                    ? ""
+                    : description.trim(),
 
                 definition,
 
                 formId:
-                  formId || null,
+                  isFreePlan
+                    ? null
+                    : formId || null,
 
-                acceptanceMode,
+                acceptanceMode:
+                  isFreePlan
+                    ? "instant"
+                    : acceptanceMode,
                   
-                  paymentMethod,
+                  paymentMethod:
+                    isFreePlan
+                      ? "none"
+                      : paymentMethod,
 
                   paymentAmount:
+                    isFreePlan ||
                     paymentMethod === "none" ||
                     hasCalendarPricing
                       ? null
@@ -1881,26 +1932,38 @@ export default function ApplicationManager({
                         ),
 
                   paymentUrl:
+                    !isFreePlan &&
                     paymentMethod ===
                     "payment_link"
                       ? paymentUrl.trim()
                       : "",
 
                   paymentInstructions:
+                    isFreePlan ||
                     paymentMethod ===
                     "none"
                       ? ""
                       : paymentInstructions.trim(),
                   
-                  paymentConfirmationRequired,
+                  paymentConfirmationRequired:
+                    isFreePlan
+                      ? false
+                      : paymentConfirmationRequired,
 
-                  cancellationMode,
+                  cancellationMode:
+                    isFreePlan
+                      ? "not_allowed"
+                      : cancellationMode,
                   cancellationDeadlineAt:
-                    cancellationMode === "until_deadline" && !hasCalendarPricing
+                    !isFreePlan &&
+                    cancellationMode === "until_deadline" &&
+                    !hasCalendarPricing
                       ? new Date(cancellationDeadlineAt).toISOString()
                       : null,
                   cancellationCutoffMinutes:
-                    cancellationMode === "until_deadline" && hasCalendarPricing
+                    !isFreePlan &&
+                    cancellationMode === "until_deadline" &&
+                    hasCalendarPricing
                       ? Number(cancellationCutoffMinutes)
                       : null,
                   
@@ -2094,7 +2157,10 @@ export default function ApplicationManager({
                                return;
                              }
 
-                             if (canUseExtendedApplication) {
+                             if (isFreePlan) {
+                               setApplicationMode("lite");
+                               startCreate("OTHER");
+                             } else if (canUseExtendedApplication) {
                                setShowModeChooser(true);
                              } else {
                                setApplicationMode("lite");
@@ -2118,27 +2184,39 @@ export default function ApplicationManager({
         <div className="px-6 py-8 sm:px-10 sm:py-10">
           <div className="mx-auto max-w-2xl">
             <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-              APPLICATION DESIGN
+              {isFreeLiteApplication
+                ? "APPLICATION LITE"
+                : "APPLICATION DESIGN"}
             </div>
 
             <h3 className="mt-2 text-2xl font-bold text-neutral-950">
               {editingApplicationId
                 ? "APPLICATIONを編集する"
-                : "新しい募集を作る"}
+                : isFreeLiteApplication
+                  ? "APPLICATIONを作る"
+                  : "新しい募集を作る"}
             </h3>
 
-            <div className="mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600">
-              {
-                APPLICATION_TYPE_LABELS[
-                  applicationType
-                ]
-              }
-            </div>
+            {!isFreeLiteApplication ? (
+              <>
+                <div className="mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600">
+                  {
+                    APPLICATION_TYPE_LABELS[
+                      applicationType
+                    ]
+                  }
+                </div>
 
-            <p className="mt-3 text-sm leading-7 text-neutral-500">
-              テンプレートの項目は、
-              名前の変更・削除・追加ができます。
-            </p>
+                <p className="mt-3 text-sm leading-7 text-neutral-500">
+                  テンプレートの項目は、
+                  名前の変更・削除・追加ができます。
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm leading-7 text-neutral-500">
+                FREEでは、シンプルな受付ボタンを作品に設置します。
+              </p>
+            )}
 
 
             <div className="mt-8 space-y-5">
@@ -2156,33 +2234,37 @@ export default function ApplicationManager({
                     )
                   }
                   placeholder={
-                    getTitlePlaceholder(
-                      applicationType,
-                    )
+                    isFreeLiteApplication
+                      ? "例）資料請求"
+                      : getTitlePlaceholder(
+                          applicationType,
+                        )
                   }
                   className="mt-2 w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-600"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-neutral-900">
-                  募集案内
-                </label>
+              {!isFreeLiteApplication ? (
+                <div>
+                  <label className="block text-sm font-bold text-neutral-900">
+                    募集案内
+                  </label>
 
-                <textarea
-                  value={
-                    description
-                  }
-                  onChange={(event) =>
-                    setDescription(
-                      event.target.value,
-                    )
-                  }
-                  rows={4}
-                  placeholder="募集の目的や内容を自由に書いてください。少しくらい脱線しても構いません。"
-                  className="mt-2 w-full resize-y rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm leading-7 outline-none focus:border-neutral-600"
-                />
-              </div>
+                  <textarea
+                    value={
+                      description
+                    }
+                    onChange={(event) =>
+                      setDescription(
+                        event.target.value,
+                      )
+                    }
+                    rows={4}
+                    placeholder="募集の目的や内容を自由に書いてください。少しくらい脱線しても構いません。"
+                    className="mt-2 w-full resize-y rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm leading-7 outline-none focus:border-neutral-600"
+                  />
+                </div>
+              ) : null}
             </div>
 
 
@@ -2227,60 +2309,69 @@ export default function ApplicationManager({
             ) : null}
 
 
-            <ApplicationPolicySettings
-              hasCalendarBlock={
-                blocks.some(
-                  (block) =>
-                    block?.type === "calendar",
-                )
-              }
-              paymentMethod={paymentMethod}
-              onPaymentMethodChange={
-                setPaymentMethod
-              }
-              paymentAmount={paymentAmount}
-              onPaymentAmountChange={
-                setPaymentAmount
-              }
-              paymentUrl={paymentUrl}
-              onPaymentUrlChange={
-                setPaymentUrl
-              }
-              paymentInstructions={
-                paymentInstructions
-              }
-              onPaymentInstructionsChange={
-                setPaymentInstructions
-              }
-              paymentConfirmationRequired={
-                paymentConfirmationRequired
-              }
-              onPaymentConfirmationRequiredChange={
-                setPaymentConfirmationRequired
-              }
-              cancellationMode={cancellationMode}
-              onCancellationModeChange={setCancellationMode}
-              cancellationDeadlineAt={cancellationDeadlineAt}
-              onCancellationDeadlineAtChange={setCancellationDeadlineAt}
-              cancellationCutoffMinutes={cancellationCutoffMinutes}
-              onCancellationCutoffMinutesChange={setCancellationCutoffMinutes}
-              agreement={agreement}
-              onAgreementChange={setAgreement}
-              acceptanceMode={acceptanceMode}
-              onAcceptanceModeChange={
-                setAcceptanceMode
-              }
-              actionLabelPreset={
-                actionLabelPreset
-              }
-              onActionLabelPresetChange={
-                setActionLabelPreset
-              }
-              actionLabel={actionLabel}
-              onActionLabelChange={
-                setActionLabel
-              }
-            />
+            {isFreeLiteApplication ? (
+              <FreeApplicationLiteSettings
+                actionLabel={actionLabel}
+                onActionLabelChange={
+                  setActionLabel
+                }
+              />
+            ) : (
+              <ApplicationPolicySettings
+                hasCalendarBlock={
+                  blocks.some(
+                    (block) =>
+                      block?.type === "calendar",
+                  )
+                }
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={
+                  setPaymentMethod
+                }
+                paymentAmount={paymentAmount}
+                onPaymentAmountChange={
+                  setPaymentAmount
+                }
+                paymentUrl={paymentUrl}
+                onPaymentUrlChange={
+                  setPaymentUrl
+                }
+                paymentInstructions={
+                  paymentInstructions
+                }
+                onPaymentInstructionsChange={
+                  setPaymentInstructions
+                }
+                paymentConfirmationRequired={
+                  paymentConfirmationRequired
+                }
+                onPaymentConfirmationRequiredChange={
+                  setPaymentConfirmationRequired
+                }
+                cancellationMode={cancellationMode}
+                onCancellationModeChange={setCancellationMode}
+                cancellationDeadlineAt={cancellationDeadlineAt}
+                onCancellationDeadlineAtChange={setCancellationDeadlineAt}
+                cancellationCutoffMinutes={cancellationCutoffMinutes}
+                onCancellationCutoffMinutesChange={setCancellationCutoffMinutes}
+                agreement={agreement}
+                onAgreementChange={setAgreement}
+                acceptanceMode={acceptanceMode}
+                onAcceptanceModeChange={
+                  setAcceptanceMode
+                }
+                actionLabelPreset={
+                  actionLabelPreset
+                }
+                onActionLabelPresetChange={
+                  setActionLabelPreset
+                }
+                actionLabel={actionLabel}
+                onActionLabelChange={
+                  setActionLabel
+                }
+              />
+            )}
 
             {statusMessage ? (
               <p className="mt-5 text-sm leading-7 text-neutral-600">
@@ -2323,9 +2414,13 @@ export default function ApplicationManager({
                   );
 
                   if (createOnly) {
-                    setShowTypeChooser(
-                      true,
-                    );
+                    if (isFreePlan) {
+                      onCancel?.();
+                    } else {
+                      setShowTypeChooser(
+                        true,
+                      );
+                    }
                   }
                 }}
                 disabled={isSaving}
@@ -2530,11 +2625,17 @@ export default function ApplicationManager({
 
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    if (isFreePlan) {
+                      setApplicationMode("lite");
+                      startCreate("OTHER");
+                      return;
+                    }
+
                     setShowModeChooser(
                       true,
-                    )
-                  }
+                    );
+                  }}
                   className="mt-6 rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-700"
                 >
                   ＋ 新しいAPPLICATIONを作る
