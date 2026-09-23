@@ -19,6 +19,9 @@ import {
   replaceWebPageMetaValue,
   type WebPageType,
 } from "@/components/parari/viewer-v2/web/webSsot";
+import type {
+  PlanEntitlements,
+} from "@/lib/billing/plan";
 
 type WebPageComposerProps = {
   value: string;
@@ -29,6 +32,7 @@ type WebPageComposerProps = {
   ownerUsername?: string;
   siteSlug?: string;
   onSiteSlugChange?: (nextSlug: string) => void;
+  entitlements?: PlanEntitlements;
 };
 
 export function WebPageComposer({
@@ -40,6 +44,7 @@ export function WebPageComposer({
   ownerUsername,
   siteSlug,
   onSiteSlugChange,
+  entitlements,
 }: WebPageComposerProps) {
   const parsed = parseWebSsot(value);
 
@@ -220,6 +225,7 @@ export function WebPageComposer({
               }}
               textPlaceholder="このWEBPAGEの本文"
               publicBasePath={publicBasePath}
+              entitlements={entitlements}
             />
           </div>
         </section>

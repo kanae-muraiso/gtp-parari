@@ -21,7 +21,10 @@ import {
   useState,
 } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
-import { getEffectivePlan } from "@/lib/billing/plan";
+import {
+  getEffectivePlan,
+  type EffectivePlan,
+} from "@/lib/billing/plan";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import PublicPageStrategyWizard, {
   type PublicPagePattern,
@@ -34,7 +37,6 @@ import PublicPageModelLab, {
 type ProfileImageStyle = "circle" | "logo" | "none";
 type ProfileAlign = "left" | "center" | "right";
 type ProfilePageType = "profile" | "links" | "works";
-type EffectivePlan = "free" | "plus" | "pro";
 type UserTopMode = "web" | "profile" | "works";
 type ProfileBuilderMode = "simple" | "strategy";
 

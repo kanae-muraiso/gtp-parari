@@ -284,9 +284,7 @@ export async function POST(request: NextRequest) {
 
       const webLimit = isMonitor
         ? null
-        : effectivePlan === "free"
-          ? 1
-          : 3;
+        : limits.webWorkLimit;
 
       const {
         data: activeWorks,

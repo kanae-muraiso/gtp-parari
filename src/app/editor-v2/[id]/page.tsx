@@ -24,7 +24,8 @@ import { WebPageComposer } from "@/components/parari/mvp/WebPageComposer";
 import { parseMetaFields, getMetaValue } from "@/components/parari/panels/shared/metaFields";
 import {
   getEffectivePlan,
-  getPlanLimits,
+  getPlanEntitlements,
+  type PlanEntitlements,
 } from "@/lib/billing/plan";
 import {
   ParariOwnerTopBar,
@@ -217,6 +218,12 @@ export default function BookPanelSequenceEditorPage() {
     number | null | undefined
   >(undefined);
   const [limitMessage, setLimitMessage] = useState("");
+  const [
+    entitlements,
+    setEntitlements,
+  ] = useState<PlanEntitlements>(
+    getPlanEntitlements("free"),
+  );
 
   const isWebWork = isWebLikeSsot(ssot);
 
@@ -308,10 +315,15 @@ export default function BookPanelSequenceEditorPage() {
       setPageLimit(undefined);
     } else {
       const effectivePlan = getEffectivePlan(billingData);
+      const nextEntitlements =
+        getPlanEntitlements(
+          effectivePlan,
+          isMonitor,
+        );
+
+      setEntitlements(nextEntitlements);
       setPageLimit(
-        isMonitor
-          ? null
-          : getPlanLimits(effectivePlan).pageLimitPerWork,
+        nextEntitlements.pageLimitPerWork,
       );
     }
 
@@ -1264,6 +1276,7 @@ export default function BookPanelSequenceEditorPage() {
                  ownerUsername={ownerUsername}
                  siteSlug={stableSlugDraft}
                  onSiteSlugChange={setStableSlugDraft}
+                 entitlements={entitlements}
                />
              ) : (
                   <PagePanelComposer
@@ -1273,6 +1286,7 @@ export default function BookPanelSequenceEditorPage() {
                  pageLimit={pageLimit}
                  onLimitMessage={setLimitMessage}
                  publicBasePath={publicPath}
+                 entitlements={entitlements}
                />
              )}
            </div>

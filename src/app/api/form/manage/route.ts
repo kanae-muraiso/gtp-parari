@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { getUserPlanAccess } from "@/lib/billing/access";
 
 
 function getBearerToken(
@@ -157,6 +158,18 @@ export async function POST(
     );
   }
 
+  const access = await getUserPlanAccess(auth.user.id);
+
+  if (!access.entitlements.canManageForms) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "FORMの作成はOrganizerプラン以上で利用できます。",
+      },
+      { status: 403 },
+    );
+  }
+
   const body = (await request
     .json()
     .catch(() => null)) as
@@ -298,6 +311,18 @@ export async function PATCH(
       {
         status: auth.status,
       },
+    );
+  }
+
+  const access = await getUserPlanAccess(auth.user.id);
+
+  if (!access.entitlements.canManageForms) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "FORMの編集はOrganizerプラン以上で利用できます。",
+      },
+      { status: 403 },
     );
   }
 

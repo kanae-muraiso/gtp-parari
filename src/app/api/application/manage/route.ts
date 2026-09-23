@@ -16,7 +16,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 import {
   getEffectivePlan,
-  getPlanLimits,
+  getPlanEntitlements,
   isAtOrOverLimit,
 } from "@/lib/billing/plan";
 
@@ -143,22 +143,24 @@ async function getApplicationAccess(
     const effectivePlan =
       getEffectivePlan(billing);
 
-    const planLimits =
-      getPlanLimits(
+    const planEntitlements =
+      getPlanEntitlements(
         effectivePlan,
+        isMonitor,
       );
 
-    // モニターは契約プランに関係なく無制限
     const applicationLimit =
-      isMonitor
-        ? null
-        : planLimits.applicationPanelLimit;
+      planEntitlements.applicationPanelLimit;
 
     return {
       ok: true as const,
       isMonitor,
       effectivePlan,
       applicationLimit,
+      applicationMode:
+        planEntitlements.applicationMode,
+      canUseIntegratedSales:
+        planEntitlements.canUseIntegratedSales,
     };
   } catch (error) {
     console.error(
@@ -879,6 +881,12 @@ export async function GET(
         applicationLimit:
           access.applicationLimit,
 
+        applicationMode:
+          access.applicationMode,
+
+        canUseIntegratedSales:
+          access.canUseIntegratedSales,
+
         canCreateApplication:
           !isAtOrOverLimit(
             applicationCount,
@@ -1008,9 +1016,11 @@ export async function POST(
       }
     | null;
     
-  const isFreePlan =
-    access.isMonitor !== true &&
-    access.effectivePlan === "free";
+  const isLiteOnlyPlan =
+    access.applicationMode === "lite";
+
+  const canUseIntegratedSales =
+    access.canUseIntegratedSales;
 
   const rawDefinition =
     body?.definition &&
@@ -1027,11 +1037,11 @@ export async function POST(
         Record<string, unknown>
     ).mode;
 
-  // FREEは常にLite。
-  // Plus / Pro / Monitorは保存されたmodeを使う。
+  // FREE / PLUSは常にLite。
+  // ORGANIZER以上 / Monitorは保存されたmodeを使う。
   // mode未設定の旧APPLICATIONはBuilderとして扱う。
   const applicationMode =
-    isFreePlan
+    isLiteOnlyPlan
       ? "lite"
       : requestedMode === "lite"
         ? "lite"
@@ -1085,7 +1095,7 @@ export async function POST(
           : null;
 
     const paymentUrl =
-      isFreePlan
+      !canUseIntegratedSales
         ? ""
         : typeof body?.paymentUrl === "string"
           ? body.paymentUrl.trim()
@@ -1222,14 +1232,14 @@ export async function POST(
     }
 
     if (
-      isFreePlan &&
+      !canUseIntegratedSales &&
       paymentMethod === "payment_link"
     ) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "FREEプランでは支払リンクを利用できません。",
+            "支払リンクはPlusプラン以上で利用できます。",
         },
         {
           status: 403,
@@ -1535,9 +1545,11 @@ export async function PATCH(
     );
   }
 
-  const isFreePlan =
-    patchAccess.isMonitor !== true &&
-    patchAccess.effectivePlan === "free";
+  const isLiteOnlyPlan =
+    patchAccess.applicationMode === "lite";
+
+  const canUseIntegratedSales =
+    patchAccess.canUseIntegratedSales;
 
   const rawDefinition =
     body?.definition &&
@@ -1554,10 +1566,10 @@ export async function PATCH(
         Record<string, unknown>
     ).mode;
 
-  // FREEは常にLite。
+  // FREE / PLUSは常にLite。
   // mode未設定の旧APPLICATIONはBuilderとして扱う。
   const applicationMode =
-    isFreePlan
+    isLiteOnlyPlan
       ? "lite"
       : requestedMode === "lite"
         ? "lite"
@@ -1617,7 +1629,7 @@ export async function PATCH(
           : null;
 
     const paymentUrl =
-      isFreePlan
+      !canUseIntegratedSales
         ? ""
         : typeof body?.paymentUrl === "string"
           ? body.paymentUrl.trim()
@@ -1737,14 +1749,14 @@ export async function PATCH(
     }
 
     if (
-      isFreePlan &&
+      !canUseIntegratedSales &&
       paymentMethod === "payment_link"
     ) {
       return NextResponse.json(
         {
           ok: false,
           message:
-            "FREEプランでは支払リンクを利用できません。",
+            "支払リンクはPlusプラン以上で利用できます。",
         },
         {
           status: 403,

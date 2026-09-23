@@ -3,6 +3,10 @@ import type {
   ApplicationDefinitionData,
   ApplicationType,
 } from "@/components/parari/panels/application/applicationTypes";
+import type {
+  ApplicationMode,
+  EffectivePlan,
+} from "@/lib/billing/plan";
 
 // Creator-side APPLICATION model/view helpers.
 // Keep formatting, CSV export, entry display helpers, and manager-only types
@@ -190,13 +194,16 @@ export type ApplicationEntryAnswerColumn = {
 export type ApplicationAccess = {
   isMonitor: boolean;
 
-  effectivePlan:
-    | "free"
-    | "plus"
-    | "pro";
+  effectivePlan: EffectivePlan;
 
   applicationLimit:
     number | null;
+
+  applicationMode:
+    ApplicationMode;
+
+  canUseIntegratedSales:
+    boolean;
 
   canCreateApplication:
     boolean;

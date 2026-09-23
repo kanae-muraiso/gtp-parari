@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,12 @@ import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
 import CalendarManagerPanel from "@/components/parari/manage/CalendarManagerPanel";
 import MembershipManagerPanel from "@/components/parari/manage/MembershipManagerPanel";
+import {
+  getEffectivePlan,
+  getPlanEntitlements,
+  type PlanEntitlements,
+} from "@/lib/billing/plan";
+import { supabase } from "@/lib/supabaseClient";
 
 
 type ManageMode =
@@ -32,26 +38,6 @@ type ManageMode =
   | "membership";
 
 
-const MANAGE_TABS = [
-  {
-    key: "form",
-    label: "FORM",
-  },
-  {
-    key: "application",
-    label: "APPLICATION",
-  },
-  {
-    key: "calendar",
-    label: "CALENDAR",
-  },
-  {
-    key: "membership",
-    label: "Membership",
-  },
-];
-
-
 export default function MyManagePage() {
   const router =
     useRouter();
@@ -59,7 +45,111 @@ export default function MyManagePage() {
   const [
     manageMode,
     setManageMode,
-  ] = useState<ManageMode>("form");
+  ] = useState<ManageMode>("application");
+
+  const [
+    entitlements,
+    setEntitlements,
+  ] = useState<PlanEntitlements>(
+    getPlanEntitlements("free"),
+  );
+  const [
+    accessLoaded,
+    setAccessLoaded,
+  ] = useState(false);
+
+  const manageTabs = useMemo(() => {
+    const tabs: {
+      key: ManageMode;
+      label: string;
+    }[] = [];
+
+    if (entitlements.canManageForms) {
+      tabs.push({
+        key: "form",
+        label: "FORM",
+      });
+    }
+
+    tabs.push({
+      key: "application",
+      label: "APPLICATION",
+    });
+
+    if (entitlements.canManageCalendar) {
+      tabs.push({
+        key: "calendar",
+        label: "CALENDAR",
+      });
+    }
+
+    if (entitlements.canManageMembership) {
+      tabs.push({
+        key: "membership",
+        label: "Membership",
+      });
+    }
+
+    return tabs;
+  }, [entitlements]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEntitlements() {
+      if (!supabase) {
+        setAccessLoaded(true);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || cancelled) {
+        if (!cancelled) {
+          setAccessLoaded(true);
+        }
+        return;
+      }
+
+      const [billingResult, profileResult] =
+        await Promise.all([
+          supabase
+            .from("user_billing")
+            .select("plan, billing_status")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("profiles")
+            .select("is_monitor")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+        ]);
+
+      if (cancelled) return;
+
+      const effectivePlan =
+        getEffectivePlan(
+          billingResult.data,
+        );
+
+      setEntitlements(
+        getPlanEntitlements(
+          effectivePlan,
+          profileResult.data
+            ?.is_monitor === true,
+        ),
+      );
+      setAccessLoaded(true);
+    }
+
+    void loadEntitlements();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
 
   /*
@@ -89,6 +179,28 @@ export default function MyManagePage() {
       );
     }
   }, []);
+
+  useEffect(() => {
+    if (!accessLoaded) return;
+
+    const isVisible =
+      manageTabs.some(
+        (tab) => tab.key === manageMode,
+      );
+
+    if (!isVisible) {
+      setManageMode("application");
+      router.replace(
+        "/my/manage?tab=application",
+        { scroll: false },
+      );
+    }
+  }, [
+    accessLoaded,
+    manageMode,
+    manageTabs,
+    router,
+  ]);
 
 
   function changeManageMode(
@@ -126,7 +238,7 @@ export default function MyManagePage() {
 
         <div className="mt-4">
           <ParariTabs
-            items={MANAGE_TABS}
+            items={manageTabs}
             active={manageMode}
             onChange={(key) =>
               changeManageMode(
@@ -136,40 +248,30 @@ export default function MyManagePage() {
           />
         </div>
 
-        <div className="mt-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-xs leading-6 text-neutral-500 shadow-sm">
-          <span className="font-bold text-neutral-700">
-            必要なプラン：
-          </span>
-
-          FORM・APPLICATIONは
-
-          <span className="mx-1 font-bold text-neutral-900">
-            PLUS
-          </span>
-
-          、Membershipは
-
-          <span className="mx-1 font-bold text-neutral-900">
-            HOST
-          </span>
-
-          で利用できます。
-        </div>
-
         <div className="mt-8">
-          {manageMode === "form" ? (
+          {!accessLoaded ? (
+            <p className="text-sm text-neutral-400">
+              利用できる機能を確認しています…
+            </p>
+          ) : null}
+
+          {accessLoaded &&
+          manageMode === "form" ? (
             <FormManagerPanel />
           ) : null}
 
-          {manageMode === "application" ? (
+          {accessLoaded &&
+          manageMode === "application" ? (
             <ApplicationManager />
           ) : null}
 
-          {manageMode === "calendar" ? (
+          {accessLoaded &&
+          manageMode === "calendar" ? (
             <CalendarManagerPanel />
           ) : null}
 
-          {manageMode === "membership" ? (
+          {accessLoaded &&
+          manageMode === "membership" ? (
             <MembershipManagerPanel />
           ) : null}
         </div>

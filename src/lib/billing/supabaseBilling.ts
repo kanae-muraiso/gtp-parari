@@ -10,8 +10,9 @@
 
 import type Stripe from "stripe";
 import { supabaseAdmin } from "./supabaseAdmin";
+import type { BillingPlan } from "./plan";
 
-export type BillingPlan = "free" | "plus" | "pro";
+export type { BillingPlan } from "./plan";
 
 export type BillingStatus =
   | "none"
