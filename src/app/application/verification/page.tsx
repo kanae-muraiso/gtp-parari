@@ -1,7 +1,7 @@
 type VerificationPageProps = {
-  searchParams:
-    | Promise<{ state?: string }>
-    | { state?: string };
+  searchParams: Promise<{
+    state?: string | string[];
+  }>;
 };
 
 function messageForState(
@@ -25,9 +25,13 @@ export default async function ApplicationVerificationPage({
   searchParams,
 }: VerificationPageProps) {
   const params =
-    await Promise.resolve(searchParams);
+    await searchParams;
+  const rawState =
+    params?.state;
   const state =
-    String(params?.state ?? "failed");
+    Array.isArray(rawState)
+      ? rawState[0] ?? "failed"
+      : rawState ?? "failed";
 
   return (
     <main className="mx-auto min-h-screen max-w-xl px-5 py-12 sm:py-16">
