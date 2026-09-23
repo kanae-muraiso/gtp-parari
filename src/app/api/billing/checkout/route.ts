@@ -4,7 +4,7 @@
 
 // パーツ名：Stripe Checkout API
 // コメント：
-// PARARI Plus 月5ドルのStripe Checkout Sessionを作成するAPI。
+// PARARI Plus 月3ドルのStripe Checkout Sessionを作成するAPI。
 // クライアント側から Authorization: Bearer <access_token> を受け取り、
 // Supabaseのユーザー確認後、Stripe Checkout URLを返す。
 // 戻り先URLは、PARARI既存設定の NEXT_PUBLIC_APP_URL / NEXT_PUBLIC_BASE_URL を利用する。
@@ -17,7 +17,10 @@ import {
   ensureUserBillingRow,
   saveStripeCustomerIdForUser,
 } from "@/lib/billing/supabaseBilling";
-import { getEffectivePlan } from "@/lib/billing/plan";
+import {
+  getEffectivePlan,
+  PLAN_ENTITLEMENTS,
+} from "@/lib/billing/plan";
 
 export const runtime = "nodejs";
 
@@ -100,6 +103,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_BASE_URL is not set" },
         { status: 500 }
+      );
+    }
+
+    const plusPrice = await stripe.prices.retrieve(plusPriceId);
+    const expectedUnitAmount =
+      PLAN_ENTITLEMENTS.plus.monthlyPriceUsd * 100;
+    const isExpectedPlusPrice =
+      plusPrice.active &&
+      plusPrice.currency === "usd" &&
+      plusPrice.unit_amount === expectedUnitAmount &&
+      plusPrice.type === "recurring" &&
+      plusPrice.recurring?.interval === "month" &&
+      plusPrice.recurring.interval_count === 1;
+
+    if (!isExpectedPlusPrice) {
+      console.error(
+        "[billing/checkout] STRIPE_PLUS_PRICE_ID does not match the Plus plan SSOT",
+        {
+          priceId: plusPrice.id,
+          currency: plusPrice.currency,
+          unitAmount: plusPrice.unit_amount,
+          type: plusPrice.type,
+          interval: plusPrice.recurring?.interval ?? null,
+          intervalCount: plusPrice.recurring?.interval_count ?? null,
+        },
+      );
+
+      return NextResponse.json(
+        { error: "Plus price configuration is invalid" },
+        { status: 500 },
       );
     }
 
