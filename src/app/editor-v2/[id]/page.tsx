@@ -1075,34 +1075,36 @@ export default function BookPanelSequenceEditorPage() {
                     表示確認
                   </ParariTopBarButton>
 
-                  <button
-                    type="button"
-                    onClick={handleExportEpub}
-                    disabled={
-                      isExportingEpub ||
-                      !row ||
-                      isDirty ||
-                      isWebLikeSsot(ssot)
-                    }
-                    title={
-                      isWebLikeSsot(ssot)
-                        ? "WEB作品はEPUB3出力の対象外です"
-                        : isDirty
-                          ? "未保存の変更があります。先に保存してください"
-                          : "保存済みSSOTからEPUB3を書き出します"
-                    }
-                    className={[
-                      "rounded-full border px-4 py-1.5 text-xs font-bold transition",
-                      isExportingEpub ||
-                      !row ||
-                      isDirty ||
-                      isWebLikeSsot(ssot)
-                        ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
-                        : "border-violet-300 bg-white text-violet-700 hover:bg-violet-50",
-                    ].join(" ")}
-                  >
-                    {isExportingEpub ? "EPUB生成中…" : "EPUB3出力"}
-                  </button>
+                  {entitlements.canExportEpub ? (
+                    <button
+                      type="button"
+                      onClick={handleExportEpub}
+                      disabled={
+                        isExportingEpub ||
+                        !row ||
+                        isDirty ||
+                        isWebLikeSsot(ssot)
+                      }
+                      title={
+                        isWebLikeSsot(ssot)
+                          ? "WEB作品はEPUB3出力の対象外です"
+                          : isDirty
+                            ? "未保存の変更があります。先に保存してください"
+                            : "保存済みSSOTからEPUB3を書き出します"
+                      }
+                      className={[
+                        "rounded-full border px-4 py-1.5 text-xs font-bold transition",
+                        isExportingEpub ||
+                        !row ||
+                        isDirty ||
+                        isWebLikeSsot(ssot)
+                          ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                          : "border-violet-300 bg-white text-violet-700 hover:bg-violet-50",
+                      ].join(" ")}
+                    >
+                      {isExportingEpub ? "EPUB生成中…" : "EPUB3出力"}
+                    </button>
+                  ) : null}
                   
                   <EditorSaveButton
                     status={status}
