@@ -6,8 +6,8 @@
 import { useEffect, useState } from "react";
 import {
   getEffectivePlan,
+  getPlanEntitlements,
   getPlanLabel,
-  getPlanLimits,
   type EffectivePlan,
 } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
@@ -127,6 +127,7 @@ function formatStorageLimit(value: number | null): string {
 
 export default function CurrentPlanPanel() {
   const [billing, setBilling] = useState<BillingRow | null>(null);
+  const [isMonitor, setIsMonitor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -136,6 +137,7 @@ export default function CurrentPlanPanel() {
     async function loadBilling() {
       setLoading(true);
       setMessage(null);
+      setIsMonitor(false);
 
       const {
         data: { user },
@@ -157,10 +159,30 @@ export default function CurrentPlanPanel() {
         return;
       }
 
+      const [profileResult, sessionResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("is_monitor")
+          .eq("user_id", user.id)
+          .maybeSingle<{ is_monitor: boolean | null }>(),
+        supabase.auth.getSession(),
+      ]);
+
+      if (cancelled) return;
+
+      if (profileResult.error) {
+        console.warn(
+          "[CurrentPlanPanel] failed to load monitor status:",
+          profileResult.error,
+        );
+      } else {
+        setIsMonitor(profileResult.data?.is_monitor === true);
+      }
+
       const {
         data: { session },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } = sessionResult;
 
       if (!sessionError && session?.access_token) {
         try {
@@ -236,11 +258,15 @@ export default function CurrentPlanPanel() {
 
   const rawStatus = billing?.billing_status ?? "none";
   const effectivePlan = getEffectivePlan(billing);
-  const planLabel = getPlanLabel(effectivePlan);
-  const limits = getPlanLimits(effectivePlan);
-  const planMessage = getPlanMessage(effectivePlan, rawStatus);
-  const statusLabel = getStatusLabel(rawStatus);
-  const statusTone = getStatusTone(rawStatus);
+  const planLabel = isMonitor ? "Monitor" : getPlanLabel(effectivePlan);
+  const limits = getPlanEntitlements(effectivePlan, isMonitor);
+  const planMessage = isMonitor
+    ? "PARARIモニターとして、検証期間中は全機能と無制限の画像容量をご利用いただけます。"
+    : getPlanMessage(effectivePlan, rawStatus);
+  const statusLabel = isMonitor ? "モニター" : getStatusLabel(rawStatus);
+  const statusTone = isMonitor
+    ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+    : getStatusTone(rawStatus);
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
