@@ -112,6 +112,19 @@ function formatLimit(value: number | null): string {
   return value === null ? "無制限" : `${value}`;
 }
 
+function formatStorageLimit(value: number | null): string {
+  if (value === null) return "無制限";
+
+  const mebibyte = 1024 * 1024;
+  const gibibyte = 1024 * mebibyte;
+
+  if (value >= gibibyte) {
+    return `${value / gibibyte}GB`;
+  }
+
+  return `${value / mebibyte}MB`;
+}
+
 export default function CurrentPlanPanel() {
   const [billing, setBilling] = useState<BillingRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -275,7 +288,7 @@ export default function CurrentPlanPanel() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
               <p className="text-xs font-semibold text-slate-400">
                 作品作成
@@ -312,6 +325,16 @@ export default function CurrentPlanPanel() {
                 <span className="ml-1 text-xs font-medium text-slate-500">
                   ページ
                 </span>
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+              <p className="text-xs font-semibold text-slate-400">
+                画像容量
+              </p>
+
+              <p className="mt-1 text-lg font-bold text-slate-900">
+                {formatStorageLimit(limits.imageStorageLimitBytes)}
               </p>
             </div>
           </div>

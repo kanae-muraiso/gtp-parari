@@ -60,10 +60,11 @@ export type PlanEntitlements = {
 export type PlanLimits = PlanEntitlements;
 
 const MEBIBYTE = 1024 * 1024;
+const GIBIBYTE = 1024 * MEBIBYTE;
 
 /**
- * 現時点で合意済みの境界だけを定義する。
- * 有料プランの画像総量は未決定のため、FREEの100MBだけ先に強制する。
+ * 画面表示とStorage RLSで共通利用する、合意済みのプラン境界。
+ * 画像容量はバイト単位で保持し、画面ではMB/GBへ整形して表示する。
  */
 export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   free: {
@@ -98,7 +99,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationParticipantLimit: 10,
     profileCollectionLimit: null,
     linkTreeLimit: null,
-    imageStorageLimitBytes: null,
+    imageStorageLimitBytes: 1 * GIBIBYTE,
     applicationMode: "lite",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
@@ -120,7 +121,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationParticipantLimit: 30,
     profileCollectionLimit: null,
     linkTreeLimit: null,
-    imageStorageLimitBytes: null,
+    imageStorageLimitBytes: 5 * GIBIBYTE,
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
@@ -142,7 +143,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationParticipantLimit: null,
     profileCollectionLimit: null,
     linkTreeLimit: null,
-    imageStorageLimitBytes: null,
+    imageStorageLimitBytes: 20 * GIBIBYTE,
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
@@ -164,7 +165,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationParticipantLimit: null,
     profileCollectionLimit: null,
     linkTreeLimit: null,
-    imageStorageLimitBytes: null,
+    imageStorageLimitBytes: 50 * GIBIBYTE,
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
@@ -175,6 +176,12 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canManageMembership: true,
     canUseGateway: true,
   },
+};
+
+/** モニターは検証用途のため、全機能を使え、画像容量も制限しない。 */
+const MONITOR_ENTITLEMENTS: PlanEntitlements = {
+  ...PLAN_ENTITLEMENTS.pro,
+  imageStorageLimitBytes: null,
 };
 
 export const PLAN_LIMITS = PLAN_ENTITLEMENTS;
@@ -228,7 +235,7 @@ export function getPlanEntitlements(
   plan: EffectivePlan,
   isMonitor = false,
 ): PlanEntitlements {
-  return isMonitor ? PLAN_ENTITLEMENTS.pro : PLAN_ENTITLEMENTS[plan];
+  return isMonitor ? MONITOR_ENTITLEMENTS : PLAN_ENTITLEMENTS[plan];
 }
 
 export function getPlanLimits(plan: EffectivePlan): PlanLimits {
