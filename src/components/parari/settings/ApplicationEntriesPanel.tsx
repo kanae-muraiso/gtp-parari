@@ -9,6 +9,7 @@ import {
   getApplicationEntryAnswerColumns,
   getApplicationEntryAnswerValue,
   getApplicationEntryApplicantName,
+  getApplicationEntryIdentityLabel,
   getApplicationEntryStatusLabel,
 } from "./applicationManagerSupport";
 import type {
@@ -165,6 +166,9 @@ export default function ApplicationEntriesPanel({
                   状態
                 </th>
                 <th className="whitespace-nowrap border-b border-neutral-200 px-3 py-3 font-bold">
+                  本人確認
+                </th>
+                <th className="whitespace-nowrap border-b border-neutral-200 px-3 py-3 font-bold">
                   連絡
                 </th>
 
@@ -200,6 +204,12 @@ export default function ApplicationEntriesPanel({
                   <td className="whitespace-nowrap border-b border-neutral-100 px-3 py-3 text-neutral-600">
                     {getApplicationEntryStatusLabel(
                       entry.status,
+                    )}
+                  </td>
+
+                  <td className="whitespace-nowrap border-b border-neutral-100 px-3 py-3 text-neutral-600">
+                    {getApplicationEntryIdentityLabel(
+                      entry,
                     )}
                   </td>
 
@@ -271,6 +281,11 @@ export default function ApplicationEntriesPanel({
                 <div>
                   <div className="text-sm font-bold text-neutral-950">
                     {getApplicationEntryApplicantName(
+                      entry,
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs font-semibold text-neutral-500">
+                    {getApplicationEntryIdentityLabel(
                       entry,
                     )}
                   </div>
