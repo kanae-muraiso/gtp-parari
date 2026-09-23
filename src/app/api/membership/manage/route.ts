@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
-import { authenticateMonitor } from "@/lib/auth/monitor";
+import { getUserPlanAccess } from "@/lib/billing/access";
 
 export const runtime = "nodejs";
 
@@ -158,21 +158,36 @@ export async function POST(
   request: NextRequest,
 ) {
   try {
-      const monitorAuth =
-        await authenticateMonitor(request);
+      const user =
+        await getAuthenticatedUser(request);
 
-      if (monitorAuth.ok === false) {
+      if (!user) {
         return NextResponse.json(
           {
             ok: false,
-            message: monitorAuth.message,
+            message: "ログインが必要です。",
           },
-          {
-            status: monitorAuth.status,
-          },
+          { status: 401 },
         );
       }
-      
+
+      const access =
+        await getUserPlanAccess(user.id);
+
+      if (
+        !access.entitlements
+          .canManageMembership
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "Membershipの開設はHostプラン以上で利用できます。",
+          },
+          { status: 403 },
+        );
+      }
+
     const body = await request
       .json()
       .catch(() => null);
@@ -224,7 +239,7 @@ export async function POST(
     } = await supabaseAdmin
       .from("memberships")
       .insert({
-          owner_user_id: monitorAuth.userId,
+        owner_user_id: user.id,
         name,
         description:
           description || null,

@@ -1,10 +1,13 @@
 // src/lib/billing/plan.ts
-// 2026-07-11 JST
-//
-// PARARIのFree / Plus / Pro判定と利用上限を一元管理する。
-// 制限値は画面表示とサーバー側制限処理の両方から利用する。
+// PARARIの5段階プランと権限のSSOT。
+// 画面表示とサーバー側制限は、必ずこの定義を参照する。
 
-export type BillingPlan = "free" | "plus" | "pro";
+export type BillingPlan =
+  | "free"
+  | "plus"
+  | "organizer"
+  | "host"
+  | "pro";
 
 export type BillingStatus =
   | "none"
@@ -26,52 +29,180 @@ export type BillingLike = {
   billing_status?: BillingStatus;
 };
 
-export type PlanLimits = {
-  /** 作成できる作品数 */
+export type ApplicationMode = "lite" | "builder";
+
+export type PlanEntitlements = {
+  monthlyPriceUsd: 0 | 3 | 10 | 30 | 100;
+
+  /** nullは無制限 */
   workLimit: number | null;
-
-  /** 公開状態にできる作品数 */
   publishedWorkLimit: number | null;
-
-  /** 1作品に作成できるページ数 */
   pageLimitPerWork: number | null;
-
-  /** 作成できるAPPLICATION数 */
+  webWorkLimit: number | null;
   applicationPanelLimit: number | null;
-
-  /** 1つのAPPLICATIONで受付できる参加者数 */
   applicationParticipantLimit: number | null;
-
   profileCollectionLimit: number | null;
   linkTreeLimit: number | null;
+  imageStorageLimitBytes: number | null;
+
+  applicationMode: ApplicationMode;
   canUseLinkTreeBackgroundImage: boolean;
+  canUseIntegratedSales: boolean;
+  canExportEpub: boolean;
+  canCollaborate: boolean;
+  canManageForms: boolean;
+  canManageCalendar: boolean;
+  canManageMembership: boolean;
+  canUseGateway: boolean;
 };
 
+/** 後方互換。既存コードのlimits参照も同じSSOTへ集約する。 */
+export type PlanLimits = PlanEntitlements;
+
+const MEBIBYTE = 1024 * 1024;
+
 /**
- * PARARI上で有料プランとして扱うStripeステータス。
+ * 現時点で合意済みの境界だけを定義する。
+ * 有料プランの画像総量は未決定のため、FREEの100MBだけ先に強制する。
  */
-export function isBillableActiveStatus(
-  status: BillingStatus,
-): boolean {
+export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
+  free: {
+    monthlyPriceUsd: 0,
+    workLimit: 10,
+    publishedWorkLimit: 3,
+    pageLimitPerWork: 10,
+    webWorkLimit: 1,
+    applicationPanelLimit: 1,
+    applicationParticipantLimit: 10,
+    profileCollectionLimit: 3,
+    linkTreeLimit: 3,
+    imageStorageLimitBytes: 100 * MEBIBYTE,
+    applicationMode: "lite",
+    canUseLinkTreeBackgroundImage: false,
+    canUseIntegratedSales: false,
+    canExportEpub: false,
+    canCollaborate: false,
+    canManageForms: false,
+    canManageCalendar: false,
+    canManageMembership: false,
+    canUseGateway: false,
+  },
+
+  plus: {
+    monthlyPriceUsd: 3,
+    workLimit: 100,
+    publishedWorkLimit: 100,
+    pageLimitPerWork: 100,
+    webWorkLimit: 3,
+    applicationPanelLimit: 1,
+    applicationParticipantLimit: 10,
+    profileCollectionLimit: null,
+    linkTreeLimit: null,
+    imageStorageLimitBytes: null,
+    applicationMode: "lite",
+    canUseLinkTreeBackgroundImage: true,
+    canUseIntegratedSales: true,
+    canExportEpub: true,
+    canCollaborate: true,
+    canManageForms: false,
+    canManageCalendar: false,
+    canManageMembership: false,
+    canUseGateway: false,
+  },
+
+  organizer: {
+    monthlyPriceUsd: 10,
+    workLimit: 100,
+    publishedWorkLimit: 100,
+    pageLimitPerWork: 100,
+    webWorkLimit: 3,
+    applicationPanelLimit: null,
+    applicationParticipantLimit: 30,
+    profileCollectionLimit: null,
+    linkTreeLimit: null,
+    imageStorageLimitBytes: null,
+    applicationMode: "builder",
+    canUseLinkTreeBackgroundImage: true,
+    canUseIntegratedSales: true,
+    canExportEpub: true,
+    canCollaborate: true,
+    canManageForms: true,
+    canManageCalendar: true,
+    canManageMembership: false,
+    canUseGateway: false,
+  },
+
+  host: {
+    monthlyPriceUsd: 30,
+    workLimit: 100,
+    publishedWorkLimit: 100,
+    pageLimitPerWork: 100,
+    webWorkLimit: 3,
+    applicationPanelLimit: null,
+    applicationParticipantLimit: null,
+    profileCollectionLimit: null,
+    linkTreeLimit: null,
+    imageStorageLimitBytes: null,
+    applicationMode: "builder",
+    canUseLinkTreeBackgroundImage: true,
+    canUseIntegratedSales: true,
+    canExportEpub: true,
+    canCollaborate: true,
+    canManageForms: true,
+    canManageCalendar: true,
+    canManageMembership: true,
+    canUseGateway: true,
+  },
+
+  pro: {
+    monthlyPriceUsd: 100,
+    workLimit: null,
+    publishedWorkLimit: null,
+    pageLimitPerWork: null,
+    webWorkLimit: null,
+    applicationPanelLimit: null,
+    applicationParticipantLimit: null,
+    profileCollectionLimit: null,
+    linkTreeLimit: null,
+    imageStorageLimitBytes: null,
+    applicationMode: "builder",
+    canUseLinkTreeBackgroundImage: true,
+    canUseIntegratedSales: true,
+    canExportEpub: true,
+    canCollaborate: true,
+    canManageForms: true,
+    canManageCalendar: true,
+    canManageMembership: true,
+    canUseGateway: true,
+  },
+};
+
+export const PLAN_LIMITS = PLAN_ENTITLEMENTS;
+
+export function isBillableActiveStatus(status: BillingStatus): boolean {
   return status === "active" || status === "trialing";
 }
 
-/**
- * DB上のplanとbilling_statusから、実際に適用するプランを返す。
- * Plus / Proでも有効な契約状態でなければFreeとして扱う。
- */
+export function isBillingPlan(value: unknown): value is BillingPlan {
+  return (
+    value === "free" ||
+    value === "plus" ||
+    value === "organizer" ||
+    value === "host" ||
+    value === "pro"
+  );
+}
+
+/** 有料プランでも契約が有効でなければFREEとして扱う。 */
 export function getEffectivePlan(
   billing: BillingLike | null | undefined,
 ): EffectivePlan {
   const plan = billing?.plan ?? "free";
-  const status = billing?.billing_status ?? "none";
 
-  if (plan === "plus" && isBillableActiveStatus(status)) {
-    return "plus";
-  }
+  if (plan === "free") return "free";
 
-  if (plan === "pro" && isBillableActiveStatus(status)) {
-    return "pro";
+  if (isBillingPlan(plan) && isBillableActiveStatus(billing?.billing_status)) {
+    return plan;
   }
 
   return "free";
@@ -81,6 +212,10 @@ export function getPlanLabel(plan: EffectivePlan): string {
   switch (plan) {
     case "plus":
       return "Plus";
+    case "organizer":
+      return "Organizer";
+    case "host":
+      return "Host";
     case "pro":
       return "Pro";
     case "free":
@@ -89,63 +224,18 @@ export function getPlanLabel(plan: EffectivePlan): string {
   }
 }
 
-/**
- * 2026-07-11確定仕様
- *
- * Free
- * - 作品作成：10
- * - 公開作品：3
- * - 1作品：10ページ
- *
- * Plus
- * - 作品作成：100
- * - 公開作品：100
- * - 1作品：100ページ
- */
-export const PLAN_LIMITS: Record<EffectivePlan, PlanLimits> = {
-  free: {
-    workLimit: 10,
-    publishedWorkLimit: 3,
-    pageLimitPerWork: 10,
-    applicationPanelLimit: 1,
-    applicationParticipantLimit: 10,
-    profileCollectionLimit: 3,
-    linkTreeLimit: 3,
-    canUseLinkTreeBackgroundImage: false,
-  },
-
-  plus: {
-    workLimit: 100,
-    publishedWorkLimit: 100,
-    pageLimitPerWork: 100,
-    applicationPanelLimit: null,
-    applicationParticipantLimit: 30,
-    profileCollectionLimit: null,
-    linkTreeLimit: null,
-    canUseLinkTreeBackgroundImage: true,
-  },
-
-  // Proは現時点では申込を提供しない。
-  pro: {
-    workLimit: null,
-    publishedWorkLimit: null,
-    pageLimitPerWork: null,
-    applicationPanelLimit: null,
-    applicationParticipantLimit: null,
-    profileCollectionLimit: null,
-    linkTreeLimit: null,
-    canUseLinkTreeBackgroundImage: true,
-  },
-};
-
-export function getPlanLimits(plan: EffectivePlan): PlanLimits {
-  return PLAN_LIMITS[plan];
+export function getPlanEntitlements(
+  plan: EffectivePlan,
+  isMonitor = false,
+): PlanEntitlements {
+  return isMonitor ? PLAN_ENTITLEMENTS.pro : PLAN_ENTITLEMENTS[plan];
 }
 
-/**
- * nullは無制限。
- * 現在数が上限以上なら、新規追加不可。
- */
+export function getPlanLimits(plan: EffectivePlan): PlanLimits {
+  return getPlanEntitlements(plan);
+}
+
+/** nullは無制限。現在数が上限以上なら新規追加不可。 */
 export function isAtOrOverLimit(
   currentCount: number,
   limit: number | null,

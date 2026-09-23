@@ -14,7 +14,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-import { getEffectivePlan } from "@/lib/billing/plan";
+import {
+  getEffectivePlan,
+  getPlanEntitlements,
+} from "@/lib/billing/plan";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 import { buildEpubModel } from "@/lib/parari/epub/buildEpubModel";
@@ -173,9 +176,7 @@ export async function POST(request: NextRequest) {
     const effectivePlan = getEffectivePlan(billing);
 
     const canExportEpub =
-      isMonitor ||
-      effectivePlan === "plus" ||
-      effectivePlan === "pro";
+      getPlanEntitlements(effectivePlan, isMonitor).canExportEpub;
 
     if (!canExportEpub) {
       return NextResponse.json(
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
           code: "EPUB_EXPORT_REQUIRES_PLUS",
           plan: effectivePlan,
           message:
-            "EPUB3出力はPlusプラン（月5ドル）で利用できます。",
+            "EPUB3出力はPlusプラン（月3ドル）以上で利用できます。",
         },
         { status: 403 },
       );

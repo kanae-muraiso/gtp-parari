@@ -108,9 +108,8 @@ export default function ApplicationManager({
     );
 
   const canUseExtendedApplication =
-    applicationAccess?.isMonitor === true ||
-    applicationAccess?.effectivePlan === "plus" ||
-    applicationAccess?.effectivePlan === "pro";
+    applicationAccess?.applicationMode ===
+    "builder";
 
   const [
     forms,
@@ -2095,7 +2094,12 @@ export default function ApplicationManager({
                                return;
                              }
 
-                             setShowModeChooser(true);
+                             if (canUseExtendedApplication) {
+                               setShowModeChooser(true);
+                             } else {
+                               setApplicationMode("lite");
+                               setShowTypeChooser(true);
+                             }
                              setStatusMessage("");
                            }}
                            className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -2103,7 +2107,7 @@ export default function ApplicationManager({
                            {applicationAccess
                              ?.canCreateApplication ===
                            false
-                             ? "FREEは1つまで"
+                             ? "1つまで"
                              : "＋ 新しいAPPLICATION"}
                          </button>
         ) : null}
@@ -2340,11 +2344,19 @@ export default function ApplicationManager({
             </h3>
 
             <p className="mt-2 text-sm leading-7 text-neutral-500">
-              Liteはボタンだけのシンプルな受付、
-              Builderは入力項目や他のパネルを組み合わせるAPPLICATIONです。
+              {canUseExtendedApplication
+                ? "Liteはボタンだけのシンプルな受付、Builderは入力項目や他のパネルを組み合わせるAPPLICATIONです。"
+                : "ボタンだけのシンプルな受付を作成します。"}
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div
+              className={[
+                "mt-6 grid gap-3",
+                canUseExtendedApplication
+                  ? "sm:grid-cols-2"
+                  : "",
+              ].join(" ")}
+            >
               <button
                 type="button"
                 disabled={
@@ -2383,22 +2395,21 @@ export default function ApplicationManager({
                 </p>
               </button>
 
-              <button
+              {canUseExtendedApplication ? (
+                <button
                 type="button"
                 disabled={
                   isLoading ||
                   applicationAccess
                     ?.canCreateApplication ===
-                    false ||
-                  !canUseExtendedApplication
+                    false
                 }
                 onClick={() => {
                   if (
                     isLoading ||
                     applicationAccess
                       ?.canCreateApplication ===
-                      false ||
-                    !canUseExtendedApplication
+                      false
                   ) {
                     return;
                   }
@@ -2425,12 +2436,8 @@ export default function ApplicationManager({
                   組み合わせて作ります。
                 </p>
 
-                {!canUseExtendedApplication ? (
-                  <div className="mt-3 text-xs font-bold text-neutral-400">
-                    Plus以上で利用できます
-                  </div>
-                ) : null}
-              </button>
+                </button>
+              ) : null}
             </div>
 
             <button
@@ -2493,7 +2500,9 @@ export default function ApplicationManager({
               type="button"
               onClick={() => {
                 setShowTypeChooser(false);
-                setShowModeChooser(true);
+                setShowModeChooser(
+                  canUseExtendedApplication,
+                );
               }}
               className="mt-6 text-sm font-bold text-neutral-500"
             >
@@ -2887,12 +2896,12 @@ export default function ApplicationManager({
              false ? (
              <div className="mt-5 rounded-2xl bg-neutral-50 px-5 py-4">
                <div className="text-sm font-bold text-neutral-900">
-                 FREEプランではAPPLICATIONを1つ利用できます
+                 このプランではAPPLICATIONを1つ利用できます
                </div>
 
                <p className="mt-1 text-xs leading-6 text-neutral-500">
                  現在のAPPLICATIONは引き続き編集できます。
-                 追加のAPPLICATIONを作成するにはPLUSをご利用ください。
+                 追加のAPPLICATIONを作成するにはOrganizer以上をご利用ください。
                </p>
              </div>
            ) : null}

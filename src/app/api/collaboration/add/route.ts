@@ -16,7 +16,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
-import { getEffectivePlan } from "@/lib/billing/plan";
+import {
+  getEffectivePlan,
+  getPlanEntitlements,
+} from "@/lib/billing/plan";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 
 export const runtime = "nodejs";
@@ -183,7 +186,12 @@ export async function POST(request: NextRequest) {
       const billing = await getUserBillingByUserId(user.id);
       const effectivePlan = getEffectivePlan(billing);
 
-      if (!isMonitor && effectivePlan === "free") {
+      if (
+        !getPlanEntitlements(
+          effectivePlan,
+          isMonitor,
+        ).canCollaborate
+      ) {
         return NextResponse.json(
           {
             ok: false,

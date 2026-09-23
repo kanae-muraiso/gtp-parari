@@ -13,7 +13,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 
 type BillingRow = {
-  plan: "free" | "plus" | "pro" | string | null;
+  plan: string | null;
   billing_status: string | null;
   cancel_at_period_end: boolean | null;
   current_period_end: string | null;
@@ -23,12 +23,8 @@ function getPlanMessage(
   effectivePlan: EffectivePlan,
   status: BillingRow["billing_status"],
 ): string {
-  if (effectivePlan === "plus") {
-    return "PARARI Plusをご利用中です。Plusの利用上限が適用されています。";
-  }
-
-  if (effectivePlan === "pro") {
-    return "PARARI Proをご利用中です。";
+  if (effectivePlan !== "free") {
+    return `PARARI ${getPlanLabel(effectivePlan)}をご利用中です。このプランの利用範囲が適用されています。`;
   }
 
   if (status === "past_due" || status === "unpaid") {
@@ -36,11 +32,11 @@ function getPlanMessage(
   }
 
   if (status === "canceled") {
-    return "Plusプランは終了しています。現在はFreeプランとしてご利用いただけます。";
+    return "有料プランは終了しています。現在はFreeプランとしてご利用いただけます。";
   }
 
   if (status === "incomplete" || status === "incomplete_expired") {
-    return "Plus申込が完了していません。必要な場合は、もう一度Plus申込を行ってください。";
+    return "プラン申込が完了していません。必要な場合は、もう一度申込を行ってください。";
   }
 
   return "現在はFreeプランです。無料の利用上限内で作品を作成・公開できます。";
@@ -344,7 +340,7 @@ export default function CurrentPlanPanel() {
 
           {billing?.cancel_at_period_end ? (
             <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-              Plusは現在の請求期間の終了時に解約されます。それまではPlusを利用できます。
+              現在の請求期間の終了時に解約されます。それまでは現在のプランを利用できます。
             </p>
           ) : null}
         </div>

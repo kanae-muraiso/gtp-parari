@@ -121,8 +121,7 @@ export default function ApplicationPolicySettings({
         </div>
 
         <p className="mt-1 text-xs leading-5 text-neutral-500">
-          無料、現地払い、PARARI決済から選びます。
-          PARARI決済はSquare連携後に利用できます。
+          無料または現地払いを設定できます。
         </p>
 
         <div className="mt-4">
@@ -159,12 +158,6 @@ export default function ApplicationPolicySettings({
               </option>
             ) : null}
 
-            <option
-              value="__parari_pending__"
-              disabled
-            >
-              PARARI決済（準備中）
-            </option>
           </select>
         </div>
 

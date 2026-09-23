@@ -18,6 +18,10 @@ import {
   PanelInsertSlot,
   type PanelInsertItem,
 } from "./PanelInsertSlot";
+import {
+  getPlanEntitlements,
+  type PlanEntitlements,
+} from "@/lib/billing/plan";
 
 type PagePanelComposerProps = {
   value: string;
@@ -27,6 +31,7 @@ type PagePanelComposerProps = {
   onLimitMessage?: (message: string) => void;
   publicBasePath?: string;
   mode?: "page" | "card";
+  entitlements?: PlanEntitlements;
 };
 
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
@@ -59,7 +64,6 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
   { tag: "APPLICATION", label: "APPLICATION" },
   { tag: "CALENDAR", label: "CALENDAR" },
   { tag: "MEMBERSHIP", label: "MEMBERSHIP" },
-  { tag: "GATEWAY", label: "GATEWAY" },
 ];
 
 const CARD_CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
@@ -143,10 +147,27 @@ export function PagePanelComposer({
   onLimitMessage,
   publicBasePath,
   mode = "page",
+  entitlements = getPlanEntitlements("free"),
 }: PagePanelComposerProps) {
   const [structureVersion, setStructureVersion] = useState(0);
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
+  const visibleContentInsertItems = useMemo(
+    () =>
+      CONTENT_INSERT_ITEMS.filter((item) => {
+        switch (item.tag) {
+          case "FORM":
+            return entitlements.canManageForms;
+          case "CALENDAR":
+            return entitlements.canManageCalendar;
+          case "MEMBERSHIP":
+            return entitlements.canManageMembership;
+          default:
+            return true;
+        }
+      }),
+    [entitlements],
+  );
 const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
@@ -541,7 +562,7 @@ const waitForNextPaint = () =>
               items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
-                  : CONTENT_INSERT_ITEMS
+                  : visibleContentInsertItems
               }
               structureItems={
                 mode === "card"
@@ -594,6 +615,7 @@ const waitForNextPaint = () =>
                                                 textPlaceholder="カードの内容"
                                                 publicBasePath={publicBasePath}
                                                 mode="card"
+                                                entitlements={entitlements}
                                               />
                                             )
                                           : undefined
@@ -623,7 +645,7 @@ const waitForNextPaint = () =>
                                  items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
-                  : CONTENT_INSERT_ITEMS
+                  : visibleContentInsertItems
               }
                                  structureItems={
                                   mode === "card"

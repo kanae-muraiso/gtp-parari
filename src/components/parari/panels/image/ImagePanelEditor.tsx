@@ -157,7 +157,16 @@ export function ImagePanelEditor({
         });
 
       if (uploadError) {
-        setUploadStatus(`アップロード失敗: ${uploadError.message}`);
+        const isPolicyError =
+          /row-level security|policy/i.test(
+            uploadError.message,
+          );
+
+        setUploadStatus(
+          isPolicyError
+            ? "画像容量の上限に達しているためアップロードできません。FREEは合計100MBまでです。"
+            : `アップロード失敗: ${uploadError.message}`,
+        );
         return;
       }
 
