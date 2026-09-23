@@ -114,11 +114,8 @@ export default function ApplicationManager({
 
   const isFreePlan =
     applicationAccess?.effectivePlan ===
-    "free";
-
-  const isFreeLiteApplication =
-    isFreePlan &&
-    applicationMode === "lite";
+      "free" &&
+    applicationAccess?.isMonitor !== true;
 
   const [
     forms,
@@ -169,6 +166,10 @@ export default function ApplicationManager({
     applicationMode,
     setApplicationMode,
   ] = React.useState<ApplicationMode>("lite");
+
+  const isFreeLiteApplication =
+    isFreePlan &&
+    applicationMode === "lite";
 
   const [
     title,
@@ -568,6 +569,7 @@ export default function ApplicationManager({
       isLoading ||
       !applicationAccess ||
       applicationAccess.effectivePlan !== "free" ||
+      applicationAccess.isMonitor === true ||
       applicationAccess.canCreateApplication === false ||
       showBuilder
     ) {
@@ -1695,6 +1697,7 @@ export default function ApplicationManager({
     }
 
     if (
+      !isFreePlan &&
       fields.some(
         (field) =>
           !field.label.trim(),
