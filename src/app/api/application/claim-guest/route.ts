@@ -93,7 +93,11 @@ export async function POST(request: NextRequest) {
       error: updateError,
     } = await supabaseAdmin
       .from("application_entries")
-      .update({ user_id: user.id })
+      .update({
+        user_id: user.id,
+        applicant_email_verified_at:
+          new Date().toISOString(),
+      })
       .eq("id", entry.id)
       .is("user_id", null)
       .select("id");

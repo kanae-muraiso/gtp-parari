@@ -18,6 +18,8 @@ import {
 } from "../calendar/CalendarPanelRenderer";
 import type { ApplicationPanelData } from "./applicationTypes";
 import ApplicationPassCard from "./ApplicationPassCard";
+import GuestIdentityBlock from "./GuestIdentityBlock";
+import GuestVerificationPending from "./GuestVerificationPending";
 
 type ApplicationField = {
   id?: string;
@@ -181,6 +183,10 @@ export default function GuestApplicationPanelRenderer({
     React.useState<
       "sent" | "failed" | "not_applicable"
     >("not_applicable");
+  const [
+    verificationPending,
+    setVerificationPending,
+  ] = React.useState(false);
 
   React.useEffect(() => {
     if (!applicationId) {
@@ -620,6 +626,7 @@ export default function GuestApplicationPanelRenderer({
               ok?: boolean;
               message?: string;
               entry?: GuestEntry;
+              verification_required?: boolean;
               email_delivery?:
                 | "sent"
                 | "failed"
@@ -629,12 +636,29 @@ export default function GuestApplicationPanelRenderer({
 
       if (
         !response.ok ||
-        !result?.ok ||
-        !result.entry
+        !result?.ok
       ) {
         setSubmitMessage(
           result?.message ??
-            "お申し込みを完了できませんでした。",
+            "お申し込みを開始できませんでした。",
+        );
+        return;
+      }
+
+      if (
+        result.verification_required === true
+      ) {
+        setEmailDelivery(
+          result.email_delivery ?? "sent",
+        );
+        setVerificationPending(true);
+        setSubmitMessage("");
+        return;
+      }
+
+      if (!result.entry) {
+        setSubmitMessage(
+          "お申し込みを完了できませんでした。",
         );
         return;
       }
@@ -653,6 +677,20 @@ export default function GuestApplicationPanelRenderer({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (verificationPending) {
+    return (
+      <GuestVerificationPending
+        title={application.title}
+        email={applicantEmail.trim().toLowerCase()}
+        onEdit={() => {
+          setVerificationPending(false);
+          setEmailDelivery("not_applicable");
+          setSubmitMessage("");
+        }}
+      />
+    );
   }
 
   if (completedEntry) {
@@ -803,54 +841,19 @@ export default function GuestApplicationPanelRenderer({
         </div>
       ) : (
         <>
-          <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-            <div className="text-sm font-bold text-neutral-950">
-              お申し込みになる方
-            </div>
-            <p className="mt-1 text-xs leading-5 text-neutral-500">
-              PARARIへの登録は必要ありません。
-            </p>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-bold text-neutral-800">
-                  お名前
-                  <span className="ml-1 text-red-500">*</span>
-                </span>
-                <input
-                  type="text"
-                  autoComplete="name"
-                  value={applicantName}
-                  onChange={(event) => {
-                    setApplicantName(
-                      event.target.value,
-                    );
-                    setSubmitMessage("");
-                  }}
-                  className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-bold text-neutral-800">
-                  メールアドレス
-                  <span className="ml-1 text-red-500">*</span>
-                </span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={applicantEmail}
-                  onChange={(event) => {
-                    setApplicantEmail(
-                      event.target.value,
-                    );
-                    setSubmitMessage("");
-                  }}
-                  className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                />
-              </label>
-            </div>
-          </div>
+          <GuestIdentityBlock
+            name={applicantName}
+            email={applicantEmail}
+            disabled={isSubmitting}
+            onNameChange={(value) => {
+              setApplicantName(value);
+              setSubmitMessage("");
+            }}
+            onEmailChange={(value) => {
+              setApplicantEmail(value);
+              setSubmitMessage("");
+            }}
+          />
 
           {blocks.length > 0 ? (
             <div className="mt-4 space-y-4">

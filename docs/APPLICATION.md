@@ -46,16 +46,26 @@ APPLICATION は「支払が必要か」「支払済みか」という申込状�
   ↓
 GuestApplicationPanelRenderer
   ↓
+名前 + メール
+  ↓
 /api/application/guest-submit
+  ↓
+application_guest_verifications
+  ↓
+確認メール
+  ↓
+/api/application/guest-verify
   ↓
 application_entries
   ↓
-confirmed
+applicant_email_verified_at
+  ↓
+confirmed / submitted
   ↓
 QR参加証
 ```
 
-PARARI 登録は申込の必須条件ではありません。
+PARARI 登録は申込の必須条件ではありません。未登録者はメール内の確認リンクを開くまで `application_entries` を作らないため、未確認メールで定員を消費しません。
 
 ### PARARI 登録ユーザー
 
@@ -282,7 +292,8 @@ QR には個人情報を入れません。
 ## 8. 主なDBテーブル
 
 - `applications` — 募集・申込設定
-- `application_entries` — 一人ひとりの申込
+- `application_entries` — メール確認まで完了したゲスト / 登録ユーザーの申込
+- `application_guest_verifications` — ゲストのメール確認待ち（server-only・短期）
 - `calendar_occurrences` — 実際の開催回
 - `form_submissions` — FORM回答
 

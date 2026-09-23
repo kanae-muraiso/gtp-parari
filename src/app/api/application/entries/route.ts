@@ -386,6 +386,7 @@ export async function GET(
           application_id,
           application_version,
           user_id,
+          applicant_email_verified_at,
           form_submission_id,
           answers,
           application_snapshot,
@@ -646,6 +647,10 @@ export async function GET(
           display_name:
             profile
               ?.display_name ??
+            null,
+
+          email_verified_at:
+            entry.applicant_email_verified_at ??
             null,
         },
 
