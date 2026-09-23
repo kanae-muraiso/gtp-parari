@@ -172,6 +172,7 @@ export type ManagedApplicationEntry = {
     user_id: string | null;
     username: string | null;
     display_name: string | null;
+    email_verified_at: string | null;
   };
 
   answers: ApplicationEntryAnswer[];
@@ -448,6 +449,19 @@ export function getApplicationEntryApplicantName(
 }
 
 
+export function getApplicationEntryIdentityLabel(
+  entry: ManagedApplicationEntry,
+): string {
+  if (entry.applicant.user_id) {
+    return "PARARI";
+  }
+
+  return entry.applicant.email_verified_at
+    ? "Email確認済み"
+    : "Email未確認";
+}
+
+
 export function escapeCsvCell(
   value: unknown,
 ): string {
@@ -486,6 +500,7 @@ export function downloadApplicationEntriesCsv(
     "氏名",
     "ユーザー名",
     "状態",
+    "本人確認",
     "APPLICATION version",
     "同意日時",
     ...answerColumns.map(
@@ -502,6 +517,9 @@ export function downloadApplicationEntriesCsv(
     entry.applicant.username ?? "",
     getApplicationEntryStatusLabel(
       entry.status,
+    ),
+    getApplicationEntryIdentityLabel(
+      entry,
     ),
     entry.application_version,
     formatApplicationDateTime(
