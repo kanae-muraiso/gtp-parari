@@ -164,7 +164,7 @@ export function ImagePanelEditor({
 
         setUploadStatus(
           isPolicyError
-            ? "画像容量の上限に達しているためアップロードできません。FREEは合計100MBまでです。"
+            ? "画像容量の上限に達しているためアップロードできません。不要な画像を削除するか、現在のプランをご確認ください。"
             : `アップロード失敗: ${uploadError.message}`,
         );
         return;
