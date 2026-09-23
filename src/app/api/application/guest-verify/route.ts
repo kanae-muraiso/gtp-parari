@@ -261,16 +261,31 @@ export async function GET(
 
     let entry: unknown;
 
-    if (result.ok) {
+    if (result.ok === true) {
       entry = result.entry;
-    } else if (result.status === 409) {
-      entry =
-        await findExistingGuestEntry(pending);
+    } else {
+      const failure = result;
 
-      if (!entry) {
+      if (failure.status === 409) {
+        entry =
+          await findExistingGuestEntry(pending);
+
+        if (!entry) {
+          const state =
+            failure.message.includes("受付可能人数")
+              ? "full"
+              : "failed";
+
+          return NextResponse.redirect(
+            verificationResultUrl(request, state),
+            303,
+          );
+        }
+      } else {
         const state =
-          result.message.includes("受付可能人数")
-            ? "full"
+          failure.message.includes("受付していません") ||
+          failure.message.includes("締切")
+            ? "closed"
             : "failed";
 
         return NextResponse.redirect(
@@ -278,17 +293,6 @@ export async function GET(
           303,
         );
       }
-    } else {
-      const state =
-        result.message.includes("受付していません") ||
-        result.message.includes("締切")
-          ? "closed"
-          : "failed";
-
-      return NextResponse.redirect(
-        verificationResultUrl(request, state),
-        303,
-      );
     }
 
     const entryView =
