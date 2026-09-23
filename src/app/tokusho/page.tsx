@@ -4,8 +4,10 @@
 // 免責条項等は、必要に応じて専門家の確認を受けてください。
 
 import type { ReactNode } from "react";
+import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
 
-const LAST_UPDATED = "2026年7月12日";
+const LAST_UPDATED = "2026年9月23日";
+const PLUS_MONTHLY_PRICE_USD = PLAN_ENTITLEMENTS.plus.monthlyPriceUsd;
 
 type RowProps = {
   label: string;
@@ -63,7 +65,7 @@ export default function TokushoPage() {
             </Row>
 
           <Row label="販売価格">
-            PARARI Plus：月額5米ドル
+            PARARI Plus：月額{PLUS_MONTHLY_PRICE_USD}米ドル
             <br />
             実際の請求額は、申込画面およびStripeの決済画面に表示されます。
           </Row>
