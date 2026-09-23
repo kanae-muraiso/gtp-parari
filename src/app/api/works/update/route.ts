@@ -388,6 +388,71 @@ export async function POST(request: NextRequest) {
     const limits = getPlanLimits(effectivePlan);
 
     // ----------------------------------------------------
+    // WEBサイト数制限
+    //
+    // 通常作品をWEB形式へ変更する更新でも、新規作成時と同じ上限を守る。
+    // すでにWEB形式の作品を編集する場合は、既存超過があっても保存を許可する。
+    // ----------------------------------------------------
+
+    const currentIsWeb = isWebContent(currentWork.content);
+    const webLimit = isMonitor ? null : limits.webWorkLimit;
+
+    if (
+      nextIsWeb &&
+      !currentIsWeb &&
+      webLimit !== null
+    ) {
+      const {
+        data: activeWorks,
+        error: activeWorksError,
+      } = await supabaseAdmin
+        .from("parari_books")
+        .select("id, content")
+        .eq("owner", ownerUserId)
+        .neq("id", workId)
+        .or("is_deleted.is.null,is_deleted.eq.false");
+
+      if (activeWorksError) {
+        console.error(
+          "[api/works/update] web count failed:",
+          activeWorksError,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "現在のWEBサイト数を確認できませんでした。",
+          },
+          { status: 500 },
+        );
+      }
+
+      const currentWebCount = (
+        activeWorks ?? []
+      ).filter((work) =>
+        isWebContent(work.content),
+      ).length;
+
+      if (currentWebCount >= webLimit) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "WEB_LIMIT_REACHED",
+            plan: effectivePlan,
+            currentCount: currentWebCount,
+            limit: webLimit,
+            message:
+              effectivePlan === "free"
+                ? "FreeプランではWEBサイトを1個まで作成できます。複数のWEBサイトを作成するにはPlusをご利用ください。"
+                : "現在のプランではWEBサイトを3個まで作成できます。",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
+    // ----------------------------------------------------
     // ページ数制限
     //
     // 既存作品がすでに上限を超えている場合でも、
