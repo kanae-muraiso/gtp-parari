@@ -11,7 +11,7 @@ import {
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 const UUID_RE =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 const TOKEN_RE =
   /^[0-9a-f]{32}$/;
