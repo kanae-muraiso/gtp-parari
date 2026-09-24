@@ -14,6 +14,9 @@ import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
 import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
 import ApplicationPassSettings from "./ApplicationPassSettings";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 
 import type {
@@ -3317,12 +3320,16 @@ export default function ApplicationManager({
                                               : "申込者を見る"}
                                       </button>
 
-                                      <a
-                                        href={checkInHref}
-                                        className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-600"
-                                      >
-                                        QR受付
-                                      </a>
+                                      {isApplicationPassEnabledFromDefinition(
+                                        application.definition,
+                                      ) ? (
+                                        <a
+                                          href={checkInHref}
+                                          className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-600"
+                                        >
+                                          QR受付
+                                        </a>
+                                      ) : null}
 
                                     {applicationOrigin ===
                                     "manual" ? (
