@@ -231,7 +231,7 @@ export default function QuickEditorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-emerald-50">
+    <main className="min-h-screen bg-neutral-100">
       <ParariOwnerTopBar
         title="STUDIO · 今すぐ書く"
         leftHref="/my/works"
