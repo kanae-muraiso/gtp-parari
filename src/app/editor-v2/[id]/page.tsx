@@ -1117,7 +1117,7 @@ export default function BookPanelSequenceEditorPage() {
             />
 
           
-    <main className="min-h-screen bg-neutral-100 pt-11">
+    <main className="min-h-screen bg-amber-50 pt-11">
       {status.type === "error" ? (
         <div className="mx-auto max-w-6xl px-4 py-6">
           <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-rose-800">
