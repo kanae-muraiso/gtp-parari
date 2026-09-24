@@ -4,7 +4,10 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
-import ApplicationDeliveryDownloadButton from "@/components/parari/panels/application/ApplicationDeliveryDownloadButton";
+import ApplicationDeliveryAccessPanel from "@/components/parari/panels/application/ApplicationDeliveryAccessPanel";
+import type {
+  ApplicationDeliveryMeta,
+} from "@/components/parari/panels/application/applicationDeliveryClient";
 
 type CancellationInfo = {
   application_title: string;
@@ -16,10 +19,7 @@ type CancellationInfo = {
   deadline_at: string | null;
   refund_notice: string | null;
   delivery:
-    | {
-        file_name: string;
-        size: number;
-      }
+    | ApplicationDeliveryMeta
     | null;
   delivery_ready: boolean;
   delivery_message: string;
@@ -95,10 +95,17 @@ export default function GuestApplicationCancellationPage() {
           | ({
               ok?: boolean;
               message?: string;
-              delivery?: {
-                file_name?: unknown;
-                size?: unknown;
-              } | null;
+              delivery?:
+                | {
+                    kind?: "file";
+                    file_name?: unknown;
+                    size?: unknown;
+                  }
+                | {
+                    kind?: "work";
+                    work_title?: unknown;
+                  }
+                | null;
               delivery_ready?: boolean;
               delivery_message?: string;
             } & Partial<CancellationInfo>)
@@ -124,18 +131,25 @@ export default function GuestApplicationCancellationPage() {
           deadline_at: result.deadline_at ?? null,
           refund_notice: result.refund_notice ?? null,
           delivery:
-            result.delivery &&
-            typeof result.delivery === "object" &&
-            typeof result.delivery.file_name === "string"
+            result.delivery?.kind === "work" &&
+            typeof result.delivery.work_title === "string"
               ? {
-                  file_name:
-                    result.delivery.file_name,
-                  size:
-                    typeof result.delivery.size === "number"
-                      ? result.delivery.size
-                      : 0,
+                  kind: "work",
+                  workTitle:
+                    result.delivery.work_title,
                 }
-              : null,
+              : result.delivery?.kind === "file" &&
+                  typeof result.delivery.file_name === "string"
+                ? {
+                    kind: "file",
+                    fileName:
+                      result.delivery.file_name,
+                    size:
+                      typeof result.delivery.size === "number"
+                        ? result.delivery.size
+                        : 0,
+                  }
+                : null,
           delivery_ready:
             result.delivery_ready === true,
           delivery_message:
@@ -274,13 +288,10 @@ export default function GuestApplicationCancellationPage() {
             ) : null}
 
             {info.delivery ? (
-              <ApplicationDeliveryDownloadButton
+              <ApplicationDeliveryAccessPanel
                 guestToken={token}
-                fileName={
-                  info.delivery.file_name
-                }
-                size={
-                  info.delivery.size
+                delivery={
+                  info.delivery
                 }
                 ready={
                   info.delivery_ready
