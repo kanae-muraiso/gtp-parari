@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type AlumniRow = {
@@ -261,31 +260,12 @@ export default function CppAlumniMembersPage() {
         {members.length > 0 ? (
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             {members.map(({ alumni, social, participations }) => (
-              <section key={alumni.user_id} className="space-y-3">
-                <SocialProfileCard
-                  displayName={social?.display_name || "CPP参加者"}
-                  photoUrl={social?.photo_url}
-                  affiliation={social?.affiliation}
-                  roleTitle={social?.role_title}
-                  topics={social?.topics}
-                  intro={social?.intro}
-                />
-
-                <div className="rounded-[1.75rem] border border-neutral-200 bg-white px-5 py-5 shadow-sm">
-                  <div className="flex flex-wrap gap-2">
-                    {participations.map((participation) => (
-                      <span
-                        key={`${participation.participation_year}-${participation.participation_location}`}
-                        className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-black text-white"
-                      >
-                        CPP {participation.participation_year} ·{" "}
-                        {participation.participation_location}
-                      </span>
-                    ))}
-                  </div>
-                  <AlumniMemory text={alumni.cpp_memory} />
-                </div>
-              </section>
+              <AlumniMemberCard
+                key={alumni.user_id}
+                alumni={alumni}
+                social={social}
+                participations={participations}
+              />
             ))}
           </div>
         ) : (
@@ -295,6 +275,95 @@ export default function CppAlumniMembersPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function AlumniMemberCard({
+  alumni,
+  social,
+  participations,
+}: AlumniMember) {
+  const displayName = social?.display_name || "CPP参加者";
+  const topics = (social?.topics ?? []).filter(Boolean).slice(0, 6);
+
+  return (
+    <article className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-sm">
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100 sm:h-20 sm:w-20">
+            {social?.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={social.photo_url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-lg font-black text-neutral-400">
+                {displayName.trim().slice(0, 1) || "?"}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-black tracking-[0.15em] text-neutral-400">
+              CPP ALUMNI
+            </div>
+            <h2 className="mt-1 text-xl font-black text-neutral-950 sm:text-2xl">
+              {displayName}
+            </h2>
+            {social?.affiliation || social?.role_title ? (
+              <p className="mt-1 text-sm leading-6 text-neutral-600">
+                {[social?.affiliation, social?.role_title]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {topics.length > 0 ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {topics.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {social?.intro ? (
+          <p className="mt-4 text-sm leading-7 text-neutral-700">
+            {social.intro}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="border-t border-neutral-200 bg-neutral-50/70 px-5 py-5 sm:px-6">
+        <div className="text-xs font-black tracking-[0.14em] text-neutral-400">
+          CPP HISTORY
+        </div>
+
+        {participations.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {participations.map((participation) => (
+              <span
+                key={`${participation.participation_year}-${participation.participation_location}`}
+                className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-black text-white"
+              >
+                {participation.participation_year} ·{" "}
+                {participation.participation_location}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <AlumniMemory text={alumni.cpp_memory} />
+      </div>
+    </article>
   );
 }
 
