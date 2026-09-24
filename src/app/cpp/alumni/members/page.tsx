@@ -211,7 +211,7 @@ export default function CppAlumniMembersPage() {
           CPPに参加した年・開催地と短い思い出を登録すると、ほかの登録者の現在のプロフィールを閲覧できます。
         </p>
         <Link
-          href="/cpp/alumni"
+          href="/cpp/alumni?edit=1"
           className="mt-6 inline-flex rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white"
         >
           CPP同窓会に登録する
@@ -238,7 +238,7 @@ export default function CppAlumniMembersPage() {
 
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/cpp/alumni"
+              href="/cpp/alumni?edit=1"
               className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700"
             >
               自分の同窓会登録を編集

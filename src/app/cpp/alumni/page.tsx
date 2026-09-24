@@ -76,10 +76,15 @@ export default function CppAlumniPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    const editRequested =
+      new URLSearchParams(window.location.search).get("edit") === "1";
+    setEditMode(editRequested);
+
     if (!supabase) {
       setErrorMessage("PARARIの接続設定を確認できませんでした。");
       setLoading(false);
@@ -154,6 +159,11 @@ export default function CppAlumniPage() {
     const cpp = cppResult.data;
     const parari = parariResult.data;
     const alumni = alumniResult.data;
+
+    if (alumni && !editRequested) {
+      window.location.replace("/cpp/alumni/members");
+      return;
+    }
 
     setSocialProfile(social ?? null);
     setDisplayName(
@@ -370,7 +380,7 @@ export default function CppAlumniPage() {
             CPP同窓会はPARARIアカウントを使って登録します。すでにPARARIを利用している方は、同じアカウントでそのまま続けられます。
           </p>
           <Link
-            href="/login?returnTo=/cpp/alumni"
+            href={editMode ? "/login?returnTo=/cpp/alumni%3Fedit%3D1" : "/login?returnTo=/cpp/alumni"}
             className="mt-7 inline-flex rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white"
           >
             PARARIにログインして登録する
