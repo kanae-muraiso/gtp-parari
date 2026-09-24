@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import ApplicationEntryMessagePanel from "@/components/parari/application/ApplicationEntryMessagePanel";
-import ApplicationDeliveryDownloadButton from "@/components/parari/panels/application/ApplicationDeliveryDownloadButton";
+import ApplicationDeliveryAccessPanel from "@/components/parari/panels/application/ApplicationDeliveryAccessPanel";
 import {
   getApplicationDeliveryMetaFromSnapshot,
 } from "@/components/parari/panels/application/applicationDeliveryClient";
@@ -1932,15 +1932,12 @@ export default function MyApplicationsPage() {
 
                         {delivery ? (
                           <div className="mt-7 border-t border-neutral-200 pt-6">
-                            <ApplicationDeliveryDownloadButton
+                            <ApplicationDeliveryAccessPanel
                               applicationId={
                                 entry.application.id
                               }
-                              fileName={
-                                delivery.fileName
-                              }
-                              size={
-                                delivery.size
+                              delivery={
+                                delivery
                               }
                               ready={
                                 deliveryReady
