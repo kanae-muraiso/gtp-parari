@@ -32,7 +32,7 @@ import EventClassBrandPanel from "../../EventClassBrandPanel";
 import type { ApplicationPanelData } from "./applicationTypes";
 
 import ApplicationEntryStatusPanel from "./ApplicationEntryStatusPanel";
-import ApplicationDeliveryDownloadButton from "./ApplicationDeliveryDownloadButton";
+import ApplicationDeliveryAccessPanel from "./ApplicationDeliveryAccessPanel";
 import {
   getApplicationDeliveryMetaFromSnapshot,
 } from "./applicationDeliveryClient";
@@ -2957,15 +2957,12 @@ export default function ApplicationPanelRenderer({
 
           {completedEntry &&
           entryDelivery ? (
-            <ApplicationDeliveryDownloadButton
+            <ApplicationDeliveryAccessPanel
               applicationId={
                 applicationId
               }
-              fileName={
-                entryDelivery.fileName
-              }
-              size={
-                entryDelivery.size
+              delivery={
+                entryDelivery
               }
               ready={
                 deliveryReady
