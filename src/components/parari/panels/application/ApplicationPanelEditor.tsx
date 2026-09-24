@@ -655,34 +655,50 @@ export default function ApplicationPanelEditor({
               </span>
             </div>
 
-            <button
-              type="button"
-              disabled={
-                statusUpdatingApplicationId ===
-                selectedApplication.id
-              }
-              onClick={() => {
-                void updateApplicationStatus(
-                  selectedApplication.id,
-                  selectedApplication.status ===
-                    "open"
-                    ? "closed"
-                    : "open",
-                );
-              }}
-              className="mt-3 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {statusUpdatingApplicationId ===
-              selectedApplication.id
-                ? "変更中..."
-                : selectedApplication.status ===
-                    "draft"
-                  ? "受付を開始する"
-                  : selectedApplication.status ===
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingApplication(
+                    true,
+                  );
+                  setStatusMessage("");
+                  setMessage("");
+                }}
+                className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
+              >
+                設定を編集
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  statusUpdatingApplicationId ===
+                  selectedApplication.id
+                }
+                onClick={() => {
+                  void updateApplicationStatus(
+                    selectedApplication.id,
+                    selectedApplication.status ===
                       "open"
-                    ? "受付を終了する"
-                    : "受付を再開する"}
-            </button>
+                      ? "closed"
+                      : "open",
+                  );
+                }}
+                className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {statusUpdatingApplicationId ===
+                selectedApplication.id
+                  ? "変更中..."
+                  : selectedApplication.status ===
+                      "draft"
+                    ? "受付を開始する"
+                    : selectedApplication.status ===
+                        "open"
+                      ? "受付を終了する"
+                      : "受付を再開する"}
+              </button>
+            </div>
 
             {statusMessage ? (
               <p className="mt-2 text-xs leading-6 text-neutral-600">
@@ -700,8 +716,8 @@ export default function ApplicationPanelEditor({
 
 
         <p className="mt-3 text-xs leading-relaxed text-neutral-500">
-          自分が作成したAPPLICATIONから選択します。
-          作品にはAPPLICATIONへの参照だけが保存されます。
+          この作品で使うAPPLICATIONを選びます。
+          選択後は「設定を編集」から、この画面のまま内容を変更できます。
         </p>
       </div>
     </div>
