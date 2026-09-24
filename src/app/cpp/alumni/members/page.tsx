@@ -283,9 +283,7 @@ export default function CppAlumniMembersPage() {
                       </span>
                     ))}
                   </div>
-                  <p className="mt-4 text-sm leading-7 text-neutral-700">
-                    {alumni.cpp_memory}
-                  </p>
+                  <AlumniMemory text={alumni.cpp_memory} />
                 </div>
               </section>
             ))}
@@ -297,6 +295,32 @@ export default function CppAlumniMembersPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function AlumniMemory({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const shouldCollapse = text.length > 320;
+  const visibleText =
+    shouldCollapse && !expanded
+      ? `${text.slice(0, 320)}…`
+      : text;
+
+  return (
+    <div className="mt-4">
+      <p className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+        {visibleText}
+      </p>
+      {shouldCollapse ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-3 text-xs font-bold text-neutral-500 hover:text-neutral-950"
+        >
+          {expanded ? "閉じる" : "続きを読む"}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
