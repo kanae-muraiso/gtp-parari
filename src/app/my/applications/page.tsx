@@ -1930,6 +1930,28 @@ export default function MyApplicationsPage() {
                           </div>
                         ) : null}
 
+                        {delivery ? (
+                          <div className="mt-7 border-t border-neutral-200 pt-6">
+                            <ApplicationDeliveryDownloadButton
+                              applicationId={
+                                entry.application.id
+                              }
+                              fileName={
+                                delivery.fileName
+                              }
+                              size={
+                                delivery.size
+                              }
+                              ready={
+                                deliveryReady
+                              }
+                              pendingMessage={
+                                deliveryPendingMessage
+                              }
+                            />
+                          </div>
+                        ) : null}
+
                         {agreement ? (
                           <div className="mt-7 border-t border-neutral-200 pt-6">
                             <div className="text-xs font-bold text-neutral-400">
