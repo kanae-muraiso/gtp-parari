@@ -12,6 +12,7 @@ import ApplicationPolicySettings from "./ApplicationPolicySettings";
 import ApplicationContentBuilder from "./ApplicationContentBuilder";
 import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
 import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
+import ApplicationPassSettings from "./ApplicationPassSettings";
 import { supabase } from "@/lib/supabaseClient";
 
 
@@ -275,7 +276,14 @@ export default function ApplicationManager({
     // 外部FORMを持たない。
     setFields([]);
     setInputFields([]);
-    setBlocks([]);
+    setBlocks(
+      (current) =>
+        current.filter(
+          (block) =>
+            block.type ===
+            "delivery",
+        ),
+    );
     setFormId("");
 
   }, [
@@ -288,6 +296,11 @@ export default function ApplicationManager({
     agreement,
     setAgreement,
   ] = React.useState("");
+
+  const [
+    passEnabled,
+    setPassEnabled,
+  ] = React.useState(false);
 
   const [
     actionLabel,
@@ -684,6 +697,7 @@ export default function ApplicationManager({
       setCancellationCutoffMinutes("");
       
     setAgreement("");
+    setPassEnabled(false);
 
       const defaultActionLabel =
         APPLICATION_DEFAULT_ACTION_LABELS[type];
@@ -818,6 +832,11 @@ export default function ApplicationManager({
     setAgreement(
       application.definition
         ?.agreement ?? "",
+    );
+
+    setPassEnabled(
+      application.definition
+        ?.passEnabled !== false,
     );
 
       const existingActionLabel =
@@ -961,6 +980,11 @@ export default function ApplicationManager({
       setAgreement(
         application.definition
           ?.agreement ?? "",
+      );
+
+      setPassEnabled(
+        application.definition
+          ?.passEnabled !== false,
       );
 
       const copiedActionLabel =
@@ -2221,6 +2245,8 @@ export default function ApplicationManager({
               : APPLICATION_DEFAULT_ACTION_LABELS[
                   applicationType
                 ]),
+
+          passEnabled,
         };
 
       const response =
@@ -2779,6 +2805,15 @@ export default function ApplicationManager({
                 }
               />
             )}
+
+            <div className="mt-6">
+              <ApplicationPassSettings
+                enabled={passEnabled}
+                onChange={
+                  setPassEnabled
+                }
+              />
+            </div>
 
             {applicationMode ===
             "lite" ? (
