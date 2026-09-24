@@ -101,6 +101,16 @@ export async function GET(
       ),
     );
 
+    if (
+      request.nextUrl.searchParams.get("summary") === "1"
+    ) {
+      return NextResponse.json({
+        ok: true,
+        hasMemberships:
+          membershipIds.length > 0,
+      });
+    }
+
     if (membershipIds.length === 0) {
       return NextResponse.json({
         ok: true,
