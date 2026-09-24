@@ -11,6 +11,9 @@ import {
   canAccessApplicationDelivery,
   getApplicationDeliveryFromSnapshot,
 } from "@/features/application/server/delivery";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 const TOKEN_RE = /^[0-9a-f]{32}$/;
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
@@ -81,6 +84,9 @@ export async function GET(request: NextRequest) {
             : "支払確認が完了するとダウンロードできます。"
           : "",
       pass_code:
+        isApplicationPassEnabledFromDefinition(
+          result.application.definition,
+        ) &&
         result.entry.status === "confirmed" &&
         PASS_CODE_RE.test(result.entry.pass_code ?? "")
           ? result.entry.pass_code
