@@ -49,7 +49,7 @@ export default function MyAreaHeader({
         className={[
           "flex items-start justify-between gap-4 rounded-2xl border px-4 py-3",
           isStudio
-            ? "border-amber-200 bg-amber-100/70"
+            ? "border-emerald-200 bg-emerald-100/70"
             : "border-neutral-200 bg-white/70",
         ].join(" ")}
       >
@@ -58,7 +58,7 @@ export default function MyAreaHeader({
             className={[
               "text-xs font-bold tracking-[0.18em]",
               isStudio
-                ? "text-amber-800"
+                ? "text-emerald-800"
                 : "text-neutral-400",
             ].join(" ")}
           >

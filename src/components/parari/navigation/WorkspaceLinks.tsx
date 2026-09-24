@@ -42,7 +42,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
             workspaceClass(isStudio),
             isStudio
               ? ""
-              : "hover:bg-amber-50 hover:text-amber-950",
+              : "hover:bg-emerald-50 hover:text-emerald-950",
           ].join(" ")}
           aria-current={isStudio ? "page" : undefined}
         >
