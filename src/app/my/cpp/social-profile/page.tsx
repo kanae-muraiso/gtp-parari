@@ -119,6 +119,13 @@ export default function CppSocialProfilePage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo");
+    if (requestedReturnTo?.startsWith("/")) {
+      setReturnTo(requestedReturnTo);
+    }
+  }, []);
+
   const topics = useMemo(
     () =>
       topicsText
