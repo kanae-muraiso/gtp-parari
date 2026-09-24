@@ -746,23 +746,6 @@ const membershipId =
     }
 
     if (blockType === "delivery") {
-      const storagePath =
-        typeof block.storagePath === "string"
-          ? block.storagePath.trim()
-          : "";
-      const fileName =
-        typeof block.fileName === "string"
-          ? block.fileName.trim()
-          : "";
-      const contentType =
-        typeof block.contentType === "string"
-          ? block.contentType.trim()
-          : "";
-      const size =
-        typeof block.size === "number"
-          ? block.size
-          : Number.NaN;
-
       const deliveryCount =
         rawBlocks.filter(
           (item) =>
@@ -782,6 +765,77 @@ const membershipId =
             "DELIVERYは1つのAPPLICATIONに1つまで設定できます。",
         };
       }
+
+      const targetType =
+        block.targetType === "work"
+          ? "work"
+          : "file";
+
+      if (targetType === "work") {
+        const workId =
+          typeof block.workId === "string"
+            ? block.workId.trim()
+            : "";
+
+        if (!UUID_RE.test(workId)) {
+          return {
+            ok: false,
+            message:
+              "DELIVERYするPARARI作品を選択してください。",
+          };
+        }
+
+        const {
+          data: work,
+          error: workError,
+        } =
+          await supabaseAdmin
+            .from("parari_books")
+            .select("id,title,is_deleted")
+            .eq("id", workId)
+            .eq("owner", userId)
+            .or(
+              "is_deleted.is.null,is_deleted.eq.false",
+            )
+            .maybeSingle();
+
+        if (
+          workError ||
+          !work
+        ) {
+          return {
+            ok: false,
+            message:
+              "指定されたPARARI作品をDELIVERYに使用できません。",
+          };
+        }
+
+        // 保存時点の作品名をsnapshotに残す。
+        block.workTitle =
+          String(
+            work.title ?? "",
+          ).trim() ||
+          "（無題）";
+
+        continue;
+      }
+
+      const storagePath =
+        typeof block.storagePath === "string"
+          ? block.storagePath.trim()
+          : "";
+      const fileName =
+        typeof block.fileName === "string"
+          ? block.fileName.trim()
+          : "";
+      const contentType =
+        typeof block.contentType === "string"
+          ? block.contentType.trim()
+          : "";
+      const size =
+        typeof block.size === "number"
+          ? block.size
+          : Number.NaN;
 
       if (
         !storagePath ||
