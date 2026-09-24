@@ -185,6 +185,15 @@ Magic Link で本人確認されたメールアドレスと、未紐付けのゲ
 
 ## 5. QR参加証
 
+QR参加証はAPPLICATIONごとの任意機能です。
+
+- 新規APPLICATIONは `definition.passEnabled = false` が初期値
+- 既存APPLICATIONで `passEnabled` 未設定の場合は互換のため `true` として扱う
+- 主催者はAPPLICATION編集画面で「発行しない / 発行する」を変更できる
+- OFFではゲスト画面、登録ユーザー画面、LIBRARY参加証一覧、QR受付を表示しない
+- 参加証URL/APIも現在のAPPLICATION設定がOFFなら利用できない
+- ON/OFFは現在設定として扱い、既存申込にも即時反映する
+
 `application_entries.pass_code` が参加証の実体です。
 
 ```text
