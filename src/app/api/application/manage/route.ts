@@ -745,6 +745,66 @@ const membershipId =
       continue;
     }
 
+    if (blockType === "delivery") {
+      const storagePath =
+        typeof block.storagePath === "string"
+          ? block.storagePath.trim()
+          : "";
+      const fileName =
+        typeof block.fileName === "string"
+          ? block.fileName.trim()
+          : "";
+      const contentType =
+        typeof block.contentType === "string"
+          ? block.contentType.trim()
+          : "";
+      const size =
+        typeof block.size === "number"
+          ? block.size
+          : Number.NaN;
+
+      const deliveryCount =
+        rawBlocks.filter(
+          (item) =>
+            Boolean(
+              item &&
+              typeof item === "object" &&
+              !Array.isArray(item) &&
+              (item as Record<string, unknown>).type ===
+                "delivery",
+            ),
+        ).length;
+
+      if (deliveryCount > 1) {
+        return {
+          ok: false,
+          message:
+            "DELIVERYは1つのAPPLICATIONに1つまで設定できます。",
+        };
+      }
+
+      if (
+        !storagePath ||
+        !storagePath.startsWith(
+          `${userId}/`,
+        ) ||
+        storagePath.includes("..") ||
+        !fileName ||
+        !contentType ||
+        !Number.isFinite(size) ||
+        size <= 0 ||
+        size > 20 * 1024 * 1024
+      ) {
+        return {
+          ok: false,
+          message:
+            "DELIVERYファイルを確認してください。",
+        };
+      }
+
+      continue;
+    }
+
     return {
       ok: false,
       message:
@@ -1328,7 +1388,31 @@ export async function POST(
           mode: "lite",
           fields: [],
           inputFields: [],
-          blocks: [],
+          blocks:
+            Array.isArray(
+              (
+                rawDefinition as
+                  Record<string, unknown>
+              ).blocks,
+            )
+              ? (
+                  (
+                    rawDefinition as
+                      Record<string, unknown>
+                  ).blocks as unknown[]
+                ).filter(
+                  (block) =>
+                    Boolean(
+                      block &&
+                      typeof block === "object" &&
+                      !Array.isArray(block) &&
+                      (
+                        block as
+                          Record<string, unknown>
+                      ).type === "delivery",
+                    ),
+                )
+              : [],
         }
       : {
           ...(
@@ -1846,7 +1930,31 @@ export async function PATCH(
           mode: "lite",
           fields: [],
           inputFields: [],
-          blocks: [],
+          blocks:
+            Array.isArray(
+              (
+                rawDefinition as
+                  Record<string, unknown>
+              ).blocks,
+            )
+              ? (
+                  (
+                    rawDefinition as
+                      Record<string, unknown>
+                  ).blocks as unknown[]
+                ).filter(
+                  (block) =>
+                    Boolean(
+                      block &&
+                      typeof block === "object" &&
+                      !Array.isArray(block) &&
+                      (
+                        block as
+                          Record<string, unknown>
+                      ).type === "delivery",
+                    ),
+                )
+              : [],
         }
       : {
           ...(
