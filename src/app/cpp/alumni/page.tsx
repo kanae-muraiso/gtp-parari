@@ -609,7 +609,7 @@ export default function CppAlumniPage() {
                 onChange={(event) => setCppMemory(event.target.value.slice(0, 2000))}
                 rows={8}
                 className={`${inputClassName} resize-none leading-7`}
-                placeholder="当時の出会いや、印象に残っていることを自由にお書きください。"
+                placeholder="当時の出会い、印象に残っていること、その後につながったことなどを自由にお書きください。"
               />
               <span className="mt-2 block text-right text-xs text-neutral-400">
                 {cppMemory.length}/2000
