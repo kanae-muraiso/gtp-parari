@@ -41,6 +41,7 @@ export default function CppSocialProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -119,6 +120,13 @@ export default function CppSocialProfilePage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo");
+    if (requestedReturnTo?.startsWith("/")) {
+      setReturnTo(requestedReturnTo);
+    }
+  }, []);
+
   const topics = useMemo(
     () =>
       topicsText
@@ -187,7 +195,7 @@ export default function CppSocialProfilePage() {
               詳しい研究者プロフィールや企業プロフィールとは別です。CPPの中で人と出会うときに、研究者同士・企業担当者同士を含め、まず全員に見える最小限のプロフィールです。
             </p>
           </div>
-          <Link href="/my/cpp/home" className="text-xs font-bold text-neutral-500 hover:text-neutral-900">CPPホームへ戻る</Link>
+          <Link href={returnTo || "/my/cpp/home"} className="text-xs font-bold text-neutral-500 hover:text-neutral-900">{returnTo ? "CPP同窓会一覧へ戻る" : "CPPホームへ戻る"}</Link>
         </header>
 
         {errorMessage ? (
@@ -237,9 +245,16 @@ export default function CppSocialProfilePage() {
                 写真は現在のPARARIプロフィール写真を使います。写真アップロードはこの骨組みを確認してから追加できます。
               </div>
 
-              <button type="button" onClick={() => void save()} disabled={saving || !displayName.trim()} className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
-                {saving ? "保存しています…" : "SOCIAL PROFILEを保存"}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" onClick={() => void save()} disabled={saving || !displayName.trim()} className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
+                  {saving ? "保存しています…" : "SOCIAL PROFILEを保存"}
+                </button>
+                {saved && returnTo ? (
+                  <Link href={returnTo} className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-800">
+                    CPP同窓会一覧を見る →
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </section>
 
