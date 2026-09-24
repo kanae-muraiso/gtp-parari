@@ -33,6 +33,7 @@ type EntryRow = {
 type ApplicationRow = {
   id: string;
   title: string;
+  definition: unknown;
   cancellation_mode: ApplicationCancellationMode;
   cancellation_deadline_at: string | null;
   cancellation_cutoff_minutes: number | null;
@@ -135,6 +136,7 @@ async function loadApplication(applicationId: string): Promise<ApplicationRow | 
       `
         id,
         title,
+        definition,
         cancellation_mode,
         cancellation_deadline_at,
         cancellation_cutoff_minutes
