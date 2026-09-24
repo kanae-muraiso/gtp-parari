@@ -91,10 +91,19 @@ export type ApplicationMembershipBlock = {
 export type ApplicationDeliveryBlock = {
   id: string;
   type: "delivery";
-  storagePath: string;
-  fileName: string;
-  contentType: string;
-  size: number;
+
+  // 未設定の既存DELIVERYは file として扱う。
+  targetType?: "file" | "work";
+
+  // file delivery
+  storagePath?: string;
+  fileName?: string;
+  contentType?: string;
+  size?: number;
+
+  // PARARI work access
+  workId?: string;
+  workTitle?: string;
 };
 
 export type ApplicationBlock =
