@@ -298,6 +298,17 @@ export async function GET(
     );
   }
 
+  if (delivery.kind !== "file") {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "PARARI作品は作品閲覧ページから開いてください。",
+      },
+      { status: 409 },
+    );
+  }
+
   try {
     const signedUrl =
       await createApplicationDeliverySignedUrl(
@@ -308,6 +319,7 @@ export async function GET(
       {
         ok: true,
         delivery: {
+          kind: "file",
           fileName:
             delivery.fileName,
           contentType:
