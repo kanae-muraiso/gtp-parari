@@ -1,6 +1,6 @@
 # PARARI APPLICATION — Current Architecture Map
 
-Updated: 2026-09-15
+Updated: 2026-09-24
 
 > APPLICATION を変更するときは、まずこのファイルを見る。
 > この文書は「何がどこにあり、誰が何を担当するか」を人間が追える状態に保つための地図です。
@@ -265,6 +265,7 @@ QR には個人情報を入れません。
 - `public` — 公開 APPLICATION の取得
 - `create` — 作成
 - `manage` — 主催者管理
+- `archive` — manual APPLICATION のアーカイブ / 復活
 - `entries` — 申込者管理
 - `submit` — ログイン済みユーザーの申込
 - `guest-meta` — ゲスト向け公開メタ情報
@@ -292,10 +293,43 @@ QR には個人情報を入れません。
 ## 8. 主なDBテーブル
 
 - `applications` — 募集・申込設定
+  - `archived_at IS NULL` = 現役
+  - `archived_at IS NOT NULL` = アーカイブ済み
 - `application_entries` — メール確認まで完了したゲスト / 登録ユーザーの申込
 - `application_guest_verifications` — ゲストのメール確認待ち（server-only・短期）
 - `calendar_occurrences` — 実際の開催回
 - `form_submissions` — FORM回答
+
+### APPLICATION のアーカイブ
+
+APPLICATION は通常削除せず、使い終わったらアーカイブします。
+
+```text
+現役 APPLICATION
+  ↓ archive
+status = closed
+archived_at = timestamp
+  ↓
+申込記録・参加者情報は保持
+  ↓ restore
+archived_at = null
+status は closed のまま
+  ↓
+必要なら受付を再開
+```
+
+- アーカイブ済み APPLICATION は作品側の選択肢に出さない
+- アーカイブ済み APPLICATION はプランの「現役 APPLICATION 数」に数えない
+- FREE は現役 manual APPLICATION を1つまで持てる
+- 復活時にプラン上限へ達している場合は復活を拒否する
+- 過去の `application_entries` は削除せず、管理画面から閲覧・CSV出力できる
+- `application_entries.application_id` は `ON DELETE RESTRICT` のため、申込記録がある APPLICATION の物理削除はDBでも防止される
+
+担当:
+
+- `src/app/api/application/archive/route.ts`
+- `src/app/api/application/manage/route.ts`
+- `src/components/parari/settings/ApplicationManagerLegacy.tsx`
 
 ## 9. 現在わかっている技術的負債
 

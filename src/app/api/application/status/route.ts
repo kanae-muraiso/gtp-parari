@@ -135,7 +135,8 @@ export async function PATCH(
         `
           id,
           owner_user_id,
-          status
+          status,
+          archived_at
         `,
       )
       .eq(
@@ -177,6 +178,19 @@ export async function PATCH(
     );
   }
 
+
+  if (application.archived_at) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "アーカイブ済みのAPPLICATIONは受付状態を変更できません。先に復活してください。",
+      },
+      {
+        status: 409,
+      },
+    );
+  }
 
   const currentStatus =
     application.status;

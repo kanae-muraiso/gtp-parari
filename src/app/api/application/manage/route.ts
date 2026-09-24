@@ -804,7 +804,8 @@ export async function GET(
         status,
         version,
         created_at,
-        updated_at
+        updated_at,
+        archived_at
       `,
     )
     .eq(
@@ -853,14 +854,25 @@ export async function GET(
       );
     }
 
+    const allApplications =
+      applications ?? [];
+
+    const activeApplications =
+      allApplications.filter(
+        (application) =>
+          application.archived_at == null,
+      );
+
+    const archivedApplications =
+      allApplications.filter(
+        (application) =>
+          application.origin === "manual" &&
+          application.archived_at != null,
+      );
+
     const applicationCount =
-      (
-        applications ??
-        []
-      ).filter(
-        (
-          application,
-        ) =>
+      activeApplications.filter(
+        (application) =>
           application.origin ===
           "manual",
       ).length;
@@ -869,7 +881,9 @@ export async function GET(
       ok: true,
 
       applications:
-        applications ?? [],
+        activeApplications,
+
+      archivedApplications,
 
       access: {
         isMonitor:
@@ -956,6 +970,10 @@ export async function POST(
       .eq(
         "origin",
         "manual",
+      )
+      .is(
+        "archived_at",
+        null,
       );
 
     if (countError) {
@@ -1451,7 +1469,8 @@ export async function POST(
         status,
         version,
         created_at,
-        updated_at
+        updated_at,
+        archived_at
       `,
     )
     .single();
@@ -1948,6 +1967,10 @@ export async function PATCH(
       "owner_user_id",
       auth.user.id,
     )
+    .is(
+      "archived_at",
+      null,
+    )
     .select(
       `
         id,
@@ -1971,7 +1994,8 @@ export async function PATCH(
         status,
         version,
         created_at,
-        updated_at
+        updated_at,
+        archived_at
       `,
     )
     .maybeSingle();
