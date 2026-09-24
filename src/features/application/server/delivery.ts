@@ -3,12 +3,23 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 export const APPLICATION_DELIVERY_BUCKET =
   "application-delivery";
 
-export type ApplicationDelivery = {
+export type ApplicationFileDelivery = {
+  kind: "file";
   storagePath: string;
   fileName: string;
   contentType: string;
   size: number;
 };
+
+export type ApplicationWorkDelivery = {
+  kind: "work";
+  workId: string;
+  workTitle: string;
+};
+
+export type ApplicationDelivery =
+  | ApplicationFileDelivery
+  | ApplicationWorkDelivery;
 
 function asRecord(
   value: unknown,
@@ -46,6 +57,32 @@ export function getApplicationDeliveryFromSnapshot(
       continue;
     }
 
+    const targetType =
+      block.targetType === "work"
+        ? "work"
+        : "file";
+
+    if (targetType === "work") {
+      const workId =
+        typeof block.workId === "string"
+          ? block.workId.trim()
+          : "";
+      const workTitle =
+        typeof block.workTitle === "string"
+          ? block.workTitle.trim()
+          : "";
+
+      if (!workId || !workTitle) {
+        return null;
+      }
+
+      return {
+        kind: "work",
+        workId,
+        workTitle,
+      };
+    }
+
     const storagePath =
       typeof block.storagePath === "string"
         ? block.storagePath.trim()
@@ -74,6 +111,7 @@ export function getApplicationDeliveryFromSnapshot(
     }
 
     return {
+      kind: "file",
       storagePath,
       fileName,
       contentType,
@@ -102,7 +140,7 @@ export function canAccessApplicationDelivery(
 }
 
 export async function createApplicationDeliverySignedUrl(
-  delivery: ApplicationDelivery,
+  delivery: ApplicationFileDelivery,
 ) {
   const {
     data,
