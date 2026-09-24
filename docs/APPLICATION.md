@@ -211,9 +211,14 @@ QR には個人情報を入れません。
 
 ### 主催者側
 
+作品編集画面では、選択中のAPPLICATIONをその場で編集できます。
+募集名・ボタン文言・DELIVERY・Builder構成などの「内容編集」は作品画面から離れずに行い、
+申込者一覧・CSV・アーカイブ・過去記録などの「運営管理」は STUDIO → 運営 → APPLICATION で行います。
+
 `src/components/parari/settings/ApplicationManager.tsx`
 
 - 主催者側 APPLICATION 管理画面の安定した入口
+- 作品編集画面からは embedded edit mode で同じ編集フォームを再利用する
 - 現在は `ApplicationManagerLegacy.tsx` を呼ぶ薄いラッパー
 
 `src/components/parari/settings/ApplicationManagerLegacy.tsx`

@@ -81,7 +81,9 @@ function toDateTimeLocalValue(value: string | null | undefined): string {
 
 export default function ApplicationManager({
   createOnly = false,
+  embeddedEditApplicationId = null,
   onCreated,
+  onUpdated,
   onCancel,
 }: ApplicationManagerProps) {
   const [
@@ -162,6 +164,9 @@ export default function ApplicationManager({
     editingApplicationId,
     setEditingApplicationId,
   ] = React.useState<string | null>(null);
+
+  const embeddedEditStartedRef =
+    React.useRef(false);
 
   const [
     applicationType,
@@ -609,6 +614,41 @@ export default function ApplicationManager({
     createOnly,
     isLoading,
     showBuilder,
+  ]);
+
+  React.useEffect(() => {
+    if (
+      !embeddedEditApplicationId ||
+      embeddedEditStartedRef.current ||
+      isLoading ||
+      !applicationAccess
+    ) {
+      return;
+    }
+
+    const target =
+      applications.find(
+        (application) =>
+          application.id ===
+          embeddedEditApplicationId,
+      );
+
+    embeddedEditStartedRef.current =
+      true;
+
+    if (!target) {
+      setStatusMessage(
+        "この作品に設定されているAPPLICATIONを編集できませんでした。",
+      );
+      return;
+    }
+
+    startEdit(target);
+  }, [
+    applicationAccess,
+    applications,
+    embeddedEditApplicationId,
+    isLoading,
   ]);
 
 
@@ -2349,6 +2389,23 @@ export default function ApplicationManager({
         });
       }
 
+      if (
+        wasEditing &&
+        embeddedEditApplicationId
+      ) {
+        onUpdated?.({
+          id: result.application.id,
+          application_type:
+            result.application.application_type,
+          title:
+            result.application.title,
+          acceptance_mode:
+            result.application.acceptance_mode,
+          status:
+            result.application.status,
+        });
+      }
+
       setShowBuilder(false);
       setEditingApplicationId(null);
 
@@ -2477,13 +2534,16 @@ export default function ApplicationManager({
           </div>
 
           <div className="mt-1 text-sm font-bold text-neutral-900">
-            {createOnly
-              ? "新しいAPPLICATIONを作る"
-              : "募集を作成・管理する"}
+            {embeddedEditApplicationId
+              ? "この作品のAPPLICATIONを編集"
+              : createOnly
+                ? "新しいAPPLICATIONを作る"
+                : "募集を作成・管理する"}
           </div>
         </div>
 
         {!createOnly &&
+        !embeddedEditApplicationId &&
         !showBuilder ? (
                          <button
                            type="button"
@@ -2774,7 +2834,11 @@ export default function ApplicationManager({
                     "",
                   );
 
-                  if (createOnly) {
+                  if (
+                    embeddedEditApplicationId
+                  ) {
+                    onCancel?.();
+                  } else if (createOnly) {
                     if (isFreePlan) {
                       onCancel?.();
                     } else {
@@ -2899,7 +2963,10 @@ export default function ApplicationManager({
             <button
               type="button"
               onClick={() => {
-                if (createOnly) {
+                if (
+                  embeddedEditApplicationId ||
+                  createOnly
+                ) {
                   onCancel?.();
                   return;
                 }

@@ -69,7 +69,11 @@ export type ApplicationManagerCreatedApplication = {
 
 export type ApplicationManagerProps = {
   createOnly?: boolean;
+  embeddedEditApplicationId?: string | null;
   onCreated?: (
+    application: ApplicationManagerCreatedApplication,
+  ) => void;
+  onUpdated?: (
     application: ApplicationManagerCreatedApplication,
   ) => void;
   onCancel?: () => void;
