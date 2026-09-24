@@ -18,6 +18,12 @@ type Props = {
   ) => void;
 };
 
+type WorkOption = {
+  id: string;
+  title: string;
+  visibility: string;
+};
+
 function formatSize(
   bytes: number,
 ): string {
@@ -46,15 +52,124 @@ export default function ApplicationDeliverySettings({
   delivery,
   onChange,
 }: Props) {
+  const targetMode =
+    delivery?.targetType === "work"
+      ? "work"
+      : "file";
+
   const [
     uploading,
     setUploading,
   ] = React.useState(false);
 
   const [
+    works,
+    setWorks,
+  ] = React.useState<WorkOption[]>([]);
+
+  const [
+    worksLoading,
+    setWorksLoading,
+  ] = React.useState(false);
+
+  const [
     message,
     setMessage,
   ] = React.useState("");
+
+  React.useEffect(() => {
+    if (
+      targetMode !== "work" ||
+      !supabase
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadWorks() {
+      setWorksLoading(true);
+      setMessage("");
+
+      try {
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          cancelled ||
+          !session?.access_token
+        ) {
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/application/delivery/works",
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                works?: WorkOption[];
+                message?: string;
+              }
+            | null;
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result?.ok
+        ) {
+          setMessage(
+            result?.message ||
+              "PARARI作品を取得できませんでした。",
+          );
+          setWorks([]);
+          return;
+        }
+
+        setWorks(
+          result.works ?? [],
+        );
+      } catch (error) {
+        console.error(
+          "[APPLICATION DELIVERY settings] work load failed:",
+          error,
+        );
+
+        if (!cancelled) {
+          setMessage(
+            "PARARI作品を取得できませんでした。",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setWorksLoading(false);
+        }
+      }
+    }
+
+    void loadWorks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [targetMode]);
 
   async function uploadFile(
     file: File,
@@ -138,6 +253,8 @@ export default function ApplicationDeliverySettings({
           crypto.randomUUID(),
         type:
           "delivery",
+        targetType:
+          "file",
         ...result.delivery,
       });
 
@@ -158,71 +275,228 @@ export default function ApplicationDeliverySettings({
     }
   }
 
+  function chooseMode(
+    mode: "file" | "work",
+  ) {
+    if (mode === targetMode) {
+      return;
+    }
+
+    onChange(null);
+    setMessage("");
+
+    if (mode === "work") {
+      onChange({
+        id:
+          delivery?.id ??
+          crypto.randomUUID(),
+        type:
+          "delivery",
+        targetType:
+          "work",
+        workId:
+          "",
+        workTitle:
+          "",
+      });
+    }
+  }
+
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-4">
       <div className="text-sm font-bold text-neutral-950">
-        受け取るファイル
+        DELIVERY / ACCESS
       </div>
 
       <p className="mt-1 text-xs leading-6 text-neutral-500">
-        申込が確定すると、本人だけがダウンロードできます。PDF、ZIP、EPUB、Office文書、CSV、TXT、JPG、PNGに対応します（20MBまで）。
+        申込成立後に渡すものを選びます。ファイルをダウンロードさせるか、PARARI作品の閲覧権を付与できます。
       </p>
 
-      {delivery ? (
-        <div className="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
-          <div className="break-all text-sm font-bold text-neutral-900">
-            {delivery.fileName}
-          </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => {
+            chooseMode("file");
+          }}
+          className={[
+            "rounded-xl border px-4 py-3 text-left text-sm font-bold transition",
+            targetMode === "file"
+              ? "border-neutral-950 bg-neutral-950 text-white"
+              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100",
+          ].join(" ")}
+        >
+          ファイル
+        </button>
 
-          <div className="mt-1 text-xs text-neutral-500">
-            {formatSize(
-              delivery.size,
-            )}
-          </div>
-        </div>
-      ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            chooseMode("work");
+          }}
+          className={[
+            "rounded-xl border px-4 py-3 text-left text-sm font-bold transition",
+            targetMode === "work"
+              ? "border-neutral-950 bg-neutral-950 text-white"
+              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100",
+          ].join(" ")}
+        >
+          PARARI作品
+        </button>
+      </div>
 
-      <label className="mt-4 block">
-        <span className="inline-flex cursor-pointer rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100">
-          {uploading
-            ? "アップロード中..."
-            : delivery
-              ? "ファイルを差し替える"
-              : "ファイルを選ぶ"}
+      {targetMode === "file" ? (
+        <>
+          {delivery?.targetType !== "work" &&
+          delivery?.fileName ? (
+            <div className="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
+              <div className="break-all text-sm font-bold text-neutral-900">
+                {delivery.fileName}
+              </div>
 
-          <input
-            type="file"
-            className="hidden"
-            disabled={uploading}
-            accept=".pdf,.zip,.epub,.txt,.csv,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
-            onChange={(event) => {
-              const file =
-                event.target.files?.[0];
+              <div className="mt-1 text-xs text-neutral-500">
+                {formatSize(
+                  delivery.size ?? 0,
+                )}
+              </div>
+            </div>
+          ) : null}
 
-              if (file) {
-                void uploadFile(file);
+          <label className="mt-4 block">
+            <span className="inline-flex cursor-pointer rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100">
+              {uploading
+                ? "アップロード中..."
+                : delivery?.fileName
+                  ? "ファイルを差し替える"
+                  : "ファイルを選ぶ"}
+
+              <input
+                type="file"
+                className="hidden"
+                disabled={uploading}
+                accept=".pdf,.zip,.epub,.txt,.csv,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
+                onChange={(event) => {
+                  const file =
+                    event.target.files?.[0];
+
+                  if (file) {
+                    void uploadFile(file);
+                  }
+
+                  event.currentTarget.value =
+                    "";
+                }}
+              />
+            </span>
+          </label>
+        </>
+      ) : (
+        <div className="mt-4">
+          <label className="block">
+            <span className="text-xs font-bold text-neutral-600">
+              申込後に読めるPARARI作品
+            </span>
+
+            <select
+              value={
+                delivery?.targetType === "work"
+                  ? delivery.workId ?? ""
+                  : ""
               }
+              disabled={worksLoading}
+              onChange={(event) => {
+                const workId =
+                  event.target.value;
 
-              event.currentTarget.value =
-                "";
-            }}
-          />
-        </span>
-      </label>
+                const work =
+                  works.find(
+                    (item) =>
+                      item.id === workId,
+                  );
 
-      {delivery ? (
+                if (!work) {
+                  onChange({
+                    id:
+                      delivery?.id ??
+                      crypto.randomUUID(),
+                    type:
+                      "delivery",
+                    targetType:
+                      "work",
+                    workId:
+                      "",
+                    workTitle:
+                      "",
+                  });
+                  return;
+                }
+
+                onChange({
+                  id:
+                    delivery?.id ??
+                    crypto.randomUUID(),
+                  type:
+                    "delivery",
+                  targetType:
+                    "work",
+                  workId:
+                    work.id,
+                  workTitle:
+                    work.title,
+                });
+
+                setMessage(
+                  "PARARI作品を設定しました。",
+                );
+              }}
+              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-3 text-sm outline-none focus:border-neutral-600"
+            >
+              <option value="">
+                {worksLoading
+                  ? "作品を読み込んでいます..."
+                  : "作品を選択してください"}
+              </option>
+
+              {works.map(
+                (work) => (
+                  <option
+                    key={work.id}
+                    value={work.id}
+                  >
+                    {work.title}
+                    {work.visibility === "private"
+                      ? "（非公開）"
+                      : work.visibility === "unlisted"
+                        ? "（限定公開）"
+                        : ""}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+
+          <p className="mt-2 text-xs leading-6 text-neutral-500">
+            PARARI未登録の申込者も、メール確認済みの専用リンクから読むことができます。後からPARARI登録した場合は、同じ申込履歴がLIBRARYに引き継がれます。
+          </p>
+        </div>
+      )}
+
+      {delivery &&
+      (
+        Boolean(delivery.fileName) ||
+        Boolean(delivery.workId)
+      ) ? (
         <button
           type="button"
           disabled={uploading}
           onClick={() => {
             onChange(null);
             setMessage(
-              "このAPPLICATIONからファイルを外しました。",
+              "このAPPLICATIONからDELIVERY / ACCESSを外しました。",
             );
           }}
-          className="ml-2 rounded-full px-4 py-2 text-xs font-bold text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800"
+          className="mt-4 rounded-full px-4 py-2 text-xs font-bold text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800"
         >
-          添付を外す
+          設定を外す
         </button>
       ) : null}
 
