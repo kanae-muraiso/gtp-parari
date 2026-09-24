@@ -84,10 +84,7 @@ export default function MyBookshelfPage() {
           nextHasMemberships,
         );
 
-        if (
-          !nextHasMemberships &&
-          bookshelfMode === "membership"
-        ) {
+        if (!nextHasMemberships) {
           setBookshelfMode("mine");
         }
       } catch (error) {
@@ -103,7 +100,7 @@ export default function MyBookshelfPage() {
     return () => {
       cancelled = true;
     };
-  }, [bookshelfMode]);
+  }, []);
 
   const bookshelfTabs =
     hasMemberships
