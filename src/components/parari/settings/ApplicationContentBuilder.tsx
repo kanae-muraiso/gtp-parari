@@ -373,7 +373,11 @@ export default function ApplicationContentBuilder({
 
                   {block.type === "delivery" ? (
                     <ApplicationDeliverySettings
-                      delivery={block}
+                      delivery={
+                        block.storagePath
+                          ? block
+                          : null
+                      }
                       onChange={(delivery) =>
                         onDeliveryChange(
                           block.id,
