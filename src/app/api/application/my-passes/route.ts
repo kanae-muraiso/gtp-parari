@@ -7,6 +7,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -66,9 +69,84 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const occurrenceIds = Array.from(
+
+  const applicationIds = Array.from(
     new Set(
       (entries ?? [])
+        .map((entry) => entry.application_id)
+        .filter(Boolean),
+    ),
+  );
+
+  const passEnabledByApplicationId =
+    new Map<string, boolean>();
+
+  if (applicationIds.length > 0) {
+    const {
+      data: applications,
+      error: applicationsError,
+    } = await supabaseAdmin
+      .from("applications")
+      .select("id,definition")
+      .in("id", applicationIds);
+
+    if (applicationsError) {
+      console.error(
+        "[MY PASSES] applications load failed:",
+        applicationsError,
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "参加証を取得できませんでした。",
+        },
+        { status: 500 },
+      );
+    }
+
+    for (
+      const application of
+      applications ?? []
+    ) {
+      passEnabledByApplicationId.set(
+        application.id,
+        isApplicationPassEnabledFromDefinition(
+          application.definition,
+        ),
+      );
+    }
+  }
+
+  const passEntries =
+    (entries ?? []).filter(
+      (entry) =>
+        passEnabledByApplicationId.get(
+          entry.application_id,
+        ) ??
+        isApplicationPassEnabledFromDefinition(
+          asRecord(
+            entry.application_snapshot,
+          )?.definition,
+        ),
+    );
+
+  if (
+    request.nextUrl.searchParams.get(
+      "summary",
+    ) === "1"
+  ) {
+    return NextResponse.json({
+      ok: true,
+      hasPasses:
+        passEntries.length > 0,
+    });
+  }
+
+  const occurrenceIds = Array.from(
+    new Set(
+      passEntries
         .map((entry) => entry.calendar_occurrence_id)
         .filter((id): id is string => typeof id === "string" && Boolean(id)),
     ),
@@ -103,7 +181,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const passes = (entries ?? []).map((entry) => {
+  const passes = passEntries.map((entry) => {
     const snapshot = asRecord(entry.application_snapshot) ?? {};
     const occurrence = entry.calendar_occurrence_id
       ? occurrenceById.get(entry.calendar_occurrence_id) ?? null

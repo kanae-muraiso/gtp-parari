@@ -7,6 +7,9 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 export const runtime = "nodejs";
 
@@ -529,6 +532,9 @@ export async function GET(
     const calendarApplicationIds =
       new Set<string>();
 
+    const passEnabledByApplicationId =
+      new Map<string, boolean>();
+
 
     if (
       applicationIds.length > 0
@@ -545,7 +551,8 @@ export async function GET(
           .select(
             `
               id,
-              origin
+              origin,
+              definition
             `,
           )
           .in(
@@ -577,6 +584,13 @@ export async function GET(
         const application of
         applications ?? []
       ) {
+        passEnabledByApplicationId.set(
+          application.id,
+          isApplicationPassEnabledFromDefinition(
+            application.definition,
+          ),
+        );
+
         if (
           application.origin ===
           "calendar"
@@ -754,6 +768,14 @@ export async function GET(
                 "string"
                   ? snapshot.acceptance_mode
                   : null,
+
+              pass_enabled:
+                passEnabledByApplicationId.get(
+                  entry.application_id,
+                ) ??
+                isApplicationPassEnabledFromDefinition(
+                  snapshot.definition,
+                ),
 
               version:
                 typeof snapshot.version ===

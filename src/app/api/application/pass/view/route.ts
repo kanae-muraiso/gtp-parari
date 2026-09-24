@@ -13,6 +13,9 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
 
@@ -74,7 +77,7 @@ export async function GET(
       error: applicationError,
     } = await supabaseAdmin
       .from("applications")
-      .select("id, title")
+      .select("id, title, definition")
       .eq("id", entry.application_id)
       .maybeSingle();
 
@@ -87,6 +90,21 @@ export async function GET(
         {
           ok: false,
           message: "参加証を確認できませんでした。",
+        },
+        { status: 404 },
+      );
+    }
+
+    if (
+      !isApplicationPassEnabledFromDefinition(
+        application.definition,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "このAPPLICATIONでは参加証を発行していません。",
         },
         { status: 404 },
       );

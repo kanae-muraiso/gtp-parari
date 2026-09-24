@@ -12,7 +12,11 @@ import ApplicationPolicySettings from "./ApplicationPolicySettings";
 import ApplicationContentBuilder from "./ApplicationContentBuilder";
 import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
 import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
+import ApplicationPassSettings from "./ApplicationPassSettings";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 
 import type {
@@ -275,7 +279,14 @@ export default function ApplicationManager({
     // 外部FORMを持たない。
     setFields([]);
     setInputFields([]);
-    setBlocks([]);
+    setBlocks(
+      (current) =>
+        current.filter(
+          (block) =>
+            block.type ===
+            "delivery",
+        ),
+    );
     setFormId("");
 
   }, [
@@ -288,6 +299,11 @@ export default function ApplicationManager({
     agreement,
     setAgreement,
   ] = React.useState("");
+
+  const [
+    passEnabled,
+    setPassEnabled,
+  ] = React.useState(false);
 
   const [
     actionLabel,
@@ -684,6 +700,7 @@ export default function ApplicationManager({
       setCancellationCutoffMinutes("");
       
     setAgreement("");
+    setPassEnabled(false);
 
       const defaultActionLabel =
         APPLICATION_DEFAULT_ACTION_LABELS[type];
@@ -818,6 +835,11 @@ export default function ApplicationManager({
     setAgreement(
       application.definition
         ?.agreement ?? "",
+    );
+
+    setPassEnabled(
+      application.definition
+        ?.passEnabled !== false,
     );
 
       const existingActionLabel =
@@ -961,6 +983,11 @@ export default function ApplicationManager({
       setAgreement(
         application.definition
           ?.agreement ?? "",
+      );
+
+      setPassEnabled(
+        application.definition
+          ?.passEnabled !== false,
       );
 
       const copiedActionLabel =
@@ -2221,6 +2248,8 @@ export default function ApplicationManager({
               : APPLICATION_DEFAULT_ACTION_LABELS[
                   applicationType
                 ]),
+
+          passEnabled,
         };
 
       const response =
@@ -2780,6 +2809,15 @@ export default function ApplicationManager({
               />
             )}
 
+            <div className="mt-6">
+              <ApplicationPassSettings
+                enabled={passEnabled}
+                onChange={
+                  setPassEnabled
+                }
+              />
+            </div>
+
             {applicationMode ===
             "lite" ? (
               <div className="mt-6">
@@ -3282,12 +3320,16 @@ export default function ApplicationManager({
                                               : "申込者を見る"}
                                       </button>
 
-                                      <a
-                                        href={checkInHref}
-                                        className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-600"
-                                      >
-                                        QR受付
-                                      </a>
+                                      {isApplicationPassEnabledFromDefinition(
+                                        application.definition,
+                                      ) ? (
+                                        <a
+                                          href={checkInHref}
+                                          className="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-600"
+                                        >
+                                          QR受付
+                                        </a>
+                                      ) : null}
 
                                     {applicationOrigin ===
                                     "manual" ? (
