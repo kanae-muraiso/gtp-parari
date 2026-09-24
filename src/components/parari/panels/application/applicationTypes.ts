@@ -129,6 +129,10 @@ export type ApplicationDefinitionData = {
 
   // 「参加する」「応募する」など
   actionLabel?: string;
+
+  // 当日のQR参加証を発行するか。
+  // undefined の旧APPLICATIONは互換のため true として扱う。
+  passEnabled?: boolean;
 };
 
 export type ApplicationPanelData = {
