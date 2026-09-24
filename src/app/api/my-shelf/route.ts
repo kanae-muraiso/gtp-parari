@@ -5,6 +5,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isExpired } from "../../../lib/parariExpiry";
+import {
+  canAccessApplicationDelivery,
+  getApplicationDeliveryFromSnapshot,
+} from "@/features/application/server/delivery";
 
 type ShelfType =
   | "shelf"
@@ -19,6 +23,7 @@ type UserBookshelfRow = {
   book_id: string;
   type: ShelfType;
   created_at?: string | null;
+  application_id?: string | null;
 };
 
 type ParariBookRow = {
@@ -30,11 +35,6 @@ type ParariBookRow = {
   is_deleted: boolean | null;
   expires_at: string | null;
   owner: string | null;
-};
-
-type ApplicationPassBookRow = {
-  application_id: string;
-  book_id: string;
 };
 
 type ShelfBook = {
@@ -170,18 +170,87 @@ export async function GET(request: Request) {
       ? (shelfRowsRaw as UserBookshelfRow[])
       : [];
 
-    if (shelfRows.length === 0) {
+    const {
+      data: accessEntriesRaw,
+      error: accessEntriesError,
+    } = await (adminClient as any)
+      .from("application_entries")
+      .select(
+        "application_id,status,payment_status,application_snapshot,created_at",
+      )
+      .eq("user_id", userId)
+      .eq("status", "confirmed")
+      .in(
+        "payment_status",
+        ["not_required", "paid"],
+      )
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (accessEntriesError) {
+      console.error(
+        "load APPLICATION work access failed:",
+        accessEntriesError,
+      );
+    }
+
+    const participantRows: UserBookshelfRow[] = [];
+
+    for (const entry of accessEntriesRaw ?? []) {
+      if (
+        !canAccessApplicationDelivery(
+          entry,
+        )
+      ) {
+        continue;
+      }
+
+      const delivery =
+        getApplicationDeliveryFromSnapshot(
+          entry.application_snapshot,
+        );
+
+      if (
+        !delivery ||
+        delivery.kind !== "work"
+      ) {
+        continue;
+      }
+
+      participantRows.push({
+        id:
+          `application:${entry.application_id}:${delivery.workId}`,
+        user_id:
+          userId,
+        book_id:
+          delivery.workId,
+        type:
+          "participant",
+        created_at:
+          entry.created_at ?? null,
+        application_id:
+          entry.application_id,
+      });
+    }
+
+    const allShelfRows = [
+      ...shelfRows,
+      ...participantRows,
+    ];
+
+    if (allShelfRows.length === 0) {
       return NextResponse.json(createEmptyShelfResponse());
     }
 
     /**
      * PART: collect book ids
      * コメント:
-     * - parari_books / application_pass_books 取得用に一意な book_id 一覧を作る
+     * - 通常の本棚 + APPLICATION ACCESS作品から一意なbook_id一覧を作る
      */
     const uniqueBookIds = Array.from(
       new Set(
-        shelfRows
+        allShelfRows
           .map((row) => String(row.book_id ?? "").trim())
           .filter((id) => id.length > 0)
       )
@@ -207,37 +276,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: booksError.message }, { status: 500 });
     }
 
-    /**
-     * PART: load application mapping
-     * コメント:
-     * - participant / managed 用の event route に必要
-     * - 読めなくても本棚全体は落とさない
-     */
-    const { data: passBookRowsRaw, error: passBookError } = await (adminClient as any)
-      .from("application_pass_books")
-      .select("application_id,book_id")
-      .in("book_id", uniqueBookIds);
-
     const bookMap = new Map<string, ParariBookRow>();
     for (const row of booksRaw ?? []) {
       const book = row as ParariBookRow;
       bookMap.set(book.id, book);
-    }
-
-    const passBookMap = new Map<string, string>();
-    if (passBookError) {
-      console.error("load application_pass_books failed:", {
-        message: passBookError.message,
-        details: passBookError.details,
-        hint: passBookError.hint,
-        code: passBookError.code,
-      });
-    } else {
-      for (const row of (passBookRowsRaw ?? []) as ApplicationPassBookRow[]) {
-        if (row.book_id && row.application_id) {
-          passBookMap.set(row.book_id, row.application_id);
-        }
-      }
     }
 
     /**
@@ -248,7 +290,7 @@ export async function GET(request: Request) {
      */
     const response = createEmptyShelfResponse();
 
-    for (const shelfRow of shelfRows) {
+    for (const shelfRow of allShelfRows) {
       const book = bookMap.get(shelfRow.book_id);
       if (!book) continue;
 
@@ -264,8 +306,8 @@ export async function GET(request: Request) {
         shelfType: shelfRow.type,
         shelfAddedAt: shelfRow.created_at ?? null,
         application_id:
-          shelfRow.type === "participant" || shelfRow.type === "managed"
-            ? passBookMap.get(book.id) ?? null
+          shelfRow.type === "participant"
+            ? shelfRow.application_id ?? null
             : null,
       };
 
