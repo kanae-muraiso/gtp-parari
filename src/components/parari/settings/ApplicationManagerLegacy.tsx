@@ -3106,6 +3106,7 @@ export default function ApplicationManager({
 
                                     {applicationOrigin ===
                                     "manual" ? (
+                                      <>
                                       <button
                                         type="button"
                                         onClick={() =>
@@ -3142,6 +3143,7 @@ export default function ApplicationManager({
                                           ? "処理中..."
                                           : "アーカイブ"}
                                       </button>
+                                      </>
                                     ) : null}
 
                                       <button
