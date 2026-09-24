@@ -9,35 +9,61 @@ type WorkspaceLinksProps = {
   area: "library" | "studio" | "settings" | "operations";
 };
 
-const linkClass =
-  "text-xs font-bold tracking-[0.06em] text-neutral-500 transition hover:text-neutral-950";
+function workspaceClass(active: boolean) {
+  return [
+    "rounded-full px-3 py-1.5 text-xs font-bold tracking-[0.06em] transition",
+    active
+      ? "bg-neutral-950 text-white"
+      : "text-neutral-500 hover:bg-white hover:text-neutral-950",
+  ].join(" ");
+}
 
 export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
   const { studioEnabled } = useParariExperience();
   const { isStaff } = useParariStaff();
 
-  return (
-    <div className="flex items-center gap-4">
-      {area !== "library" ? (
-        <Link href="/mypage" className={linkClass}>
-          LIBRARY
-        </Link>
-      ) : null}
+  const isLibrary = area === "library";
+  const isStudio = area === "studio";
 
-      {studioEnabled && area !== "studio" ? (
-        <Link href="/my/works" className={linkClass}>
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-full bg-neutral-100 p-1">
+      <Link
+        href="/mypage"
+        className={workspaceClass(isLibrary)}
+        aria-current={isLibrary ? "page" : undefined}
+      >
+        LIBRARY
+      </Link>
+
+      {studioEnabled ? (
+        <Link
+          href="/my/works"
+          className={[
+            workspaceClass(isStudio),
+            isStudio
+              ? ""
+              : "hover:bg-amber-50 hover:text-amber-950",
+          ].join(" ")}
+          aria-current={isStudio ? "page" : undefined}
+        >
           STUDIO
         </Link>
       ) : null}
 
       {isStaff && area !== "operations" ? (
-        <Link href="/my/operations" className={linkClass}>
+        <Link
+          href="/my/operations"
+          className="rounded-full px-3 py-1.5 text-xs font-bold tracking-[0.06em] text-neutral-500 transition hover:bg-white hover:text-neutral-950"
+        >
           OPERATIONS
         </Link>
       ) : null}
 
       {area !== "settings" ? (
-        <Link href="/my/settings" className={linkClass}>
+        <Link
+          href="/my/settings"
+          className="rounded-full px-3 py-1.5 text-xs font-bold tracking-[0.06em] text-neutral-500 transition hover:bg-white hover:text-neutral-950"
+        >
           設定
         </Link>
       ) : null}
