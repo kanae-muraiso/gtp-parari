@@ -128,6 +128,11 @@ export default function ApplicationPanelEditor({
   ] = React.useState(false);
 
   const [
+    editingApplication,
+    setEditingApplication,
+  ] = React.useState(false);
+
+  const [
     canCreateApplication,
     setCanCreateApplication,
   ] = React.useState(true);
@@ -463,6 +468,54 @@ export default function ApplicationPanelEditor({
         }}
         onCancel={() => {
           setCreatingApplication(
+            false,
+          );
+        }}
+      />
+    );
+  }
+
+  if (
+    editingApplication &&
+    applicationId
+  ) {
+    return (
+      <ApplicationManager
+        embeddedEditApplicationId={
+          applicationId
+        }
+        onUpdated={(application) => {
+          setApplications(
+            (current) =>
+              current.map(
+                (item) =>
+                  item.id ===
+                  application.id
+                    ? {
+                        ...item,
+                        application_type:
+                          application.application_type,
+                        title:
+                          application.title,
+                        acceptance_mode:
+                          application.acceptance_mode,
+                        status:
+                          application.status,
+                      }
+                    : item,
+              ),
+          );
+
+          setEditingApplication(
+            false,
+          );
+          setMessage("");
+          setStatusMessage(
+            "APPLICATIONを更新しました。",
+          );
+        }}
+        onCancel={() => {
+          setEditingApplication(
             false,
           );
         }}
