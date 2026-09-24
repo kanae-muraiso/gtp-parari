@@ -224,7 +224,7 @@ export default function EditorNewPage() {
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="mb-6">
             <div className="text-xs font-bold tracking-[0.2em] text-neutral-400">
-              NEW PARARI WORK
+              PARARI · STUDIO · 新しい作品
             </div>
             <h1 className="mt-2 text-2xl font-bold text-neutral-950">
               新規作成
