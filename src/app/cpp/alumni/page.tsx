@@ -7,11 +7,22 @@ import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type AlumniRow = {
   user_id: string;
-  participation_year: number;
-  participation_location: string;
+  participation_year: number | null;
+  participation_location: string | null;
   cpp_memory: string;
   created_at: string;
   updated_at: string;
+};
+
+type ParticipationRow = {
+  participation_year: number;
+  participation_location: string;
+  sort_order: number;
+};
+
+type ParticipationInput = {
+  year: string;
+  location: string;
 };
 
 type SocialProfileRow = {
@@ -45,6 +56,11 @@ const yearOptions = Array.from(
   (_, index) => currentYear - index,
 );
 
+const emptyParticipation = (): ParticipationInput => ({
+  year: "",
+  location: "",
+});
+
 export default function CppAlumniPage() {
   const supabase = useMemo(() => sharedSupabase, []);
   const [userId, setUserId] = useState<string | null>(null);
@@ -52,8 +68,9 @@ export default function CppAlumniPage() {
   const [displayName, setDisplayName] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
-  const [participationYear, setParticipationYear] = useState("");
-  const [participationLocation, setParticipationLocation] = useState("");
+  const [participations, setParticipations] = useState<ParticipationInput[]>([
+    emptyParticipation(),
+  ]);
   const [cppMemory, setCppMemory] = useState("");
   const [socialProfile, setSocialProfile] = useState<SocialProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,36 +96,48 @@ export default function CppAlumniPage() {
     setUserId(user.id);
     setEmail(user.email ?? "");
 
-    const [alumniResult, socialResult, cppResult, parariResult] =
-      await Promise.all([
-        supabase
-          .from("cpp_alumni")
-          .select(
-            "user_id, participation_year, participation_location, cpp_memory, created_at, updated_at",
-          )
-          .eq("user_id", user.id)
-          .maybeSingle<AlumniRow>(),
-        supabase
-          .from("parari_social_profiles")
-          .select(
-            "user_id, display_name, photo_url, affiliation, role_title, topics, intro",
-          )
-          .eq("user_id", user.id)
-          .maybeSingle<SocialProfileRow>(),
-        supabase
-          .from("cpp_profiles")
-          .select("public_name, affiliation, position_title")
-          .eq("user_id", user.id)
-          .maybeSingle<CppProfileRow>(),
-        supabase
-          .from("profiles")
-          .select("display_name, username, avatar_url")
-          .eq("user_id", user.id)
-          .maybeSingle<ParariProfileRow>(),
-      ]);
+    const [
+      alumniResult,
+      participationResult,
+      socialResult,
+      cppResult,
+      parariResult,
+    ] = await Promise.all([
+      supabase
+        .from("cpp_alumni")
+        .select(
+          "user_id, participation_year, participation_location, cpp_memory, created_at, updated_at",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle<AlumniRow>(),
+      supabase
+        .from("cpp_alumni_participations")
+        .select("participation_year, participation_location, sort_order")
+        .eq("user_id", user.id)
+        .order("sort_order", { ascending: true })
+        .returns<ParticipationRow[]>(),
+      supabase
+        .from("parari_social_profiles")
+        .select(
+          "user_id, display_name, photo_url, affiliation, role_title, topics, intro",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle<SocialProfileRow>(),
+      supabase
+        .from("cpp_profiles")
+        .select("public_name, affiliation, position_title")
+        .eq("user_id", user.id)
+        .maybeSingle<CppProfileRow>(),
+      supabase
+        .from("profiles")
+        .select("display_name, username, avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle<ParariProfileRow>(),
+    ]);
 
     const firstError =
       alumniResult.error ||
+      participationResult.error ||
       socialResult.error ||
       cppResult.error ||
       parariResult.error;
@@ -137,9 +166,23 @@ export default function CppAlumniPage() {
     setAffiliation(social?.affiliation || cpp?.affiliation || "");
     setRoleTitle(social?.role_title || cpp?.position_title || "");
 
+    if ((participationResult.data ?? []).length > 0) {
+      setParticipations(
+        (participationResult.data ?? []).map((item) => ({
+          year: String(item.participation_year),
+          location: item.participation_location,
+        })),
+      );
+    } else if (alumni?.participation_year && alumni.participation_location) {
+      setParticipations([
+        {
+          year: String(alumni.participation_year),
+          location: alumni.participation_location,
+        },
+      ]);
+    }
+
     if (alumni) {
-      setParticipationYear(String(alumni.participation_year));
-      setParticipationLocation(alumni.participation_location);
       setCppMemory(alumni.cpp_memory);
       setRegistered(true);
     }
@@ -151,28 +194,72 @@ export default function CppAlumniPage() {
     void load();
   }, [load]);
 
+  const updateParticipation = (
+    index: number,
+    key: keyof ParticipationInput,
+    value: string,
+  ) => {
+    setParticipations((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    );
+  };
+
+  const addParticipation = () => {
+    setParticipations((current) => [...current, emptyParticipation()]);
+  };
+
+  const removeParticipation = (index: number) => {
+    setParticipations((current) =>
+      current.length <= 1
+        ? current
+        : current.filter((_, itemIndex) => itemIndex !== index),
+    );
+  };
+
   const save = async () => {
     if (!supabase || !userId || saving) return;
 
     const normalizedName = displayName.trim();
     const normalizedAffiliation = affiliation.trim();
     const normalizedRoleTitle = roleTitle.trim();
-    const normalizedLocation = participationLocation.trim();
     const normalizedMemory = cppMemory.trim();
-    const year = Number(participationYear);
+
+    const normalizedParticipations = participations.map((item) => ({
+      year: Number(item.year),
+      location: item.location.trim(),
+    }));
 
     if (!normalizedName) {
       setErrorMessage("お名前を入力してください。");
       return;
     }
-    if (!Number.isInteger(year) || year < 2005 || year > currentYear) {
-      setErrorMessage("CPPに参加した年を選んでください。");
+
+    for (const [index, participation] of normalizedParticipations.entries()) {
+      if (
+        !Number.isInteger(participation.year) ||
+        participation.year < 2005 ||
+        participation.year > currentYear
+      ) {
+        setErrorMessage(`参加歴 ${index + 1} の年を選んでください。`);
+        return;
+      }
+
+      if (!participation.location) {
+        setErrorMessage(`参加歴 ${index + 1} の開催地を入力してください。`);
+        return;
+      }
+    }
+
+    const participationKeys = normalizedParticipations.map(
+      (item) => `${item.year}::${item.location.toLocaleLowerCase("ja-JP")}`,
+    );
+    if (new Set(participationKeys).size !== participationKeys.length) {
+      setErrorMessage("同じ年・開催地の参加歴が重複しています。");
       return;
     }
-    if (!normalizedLocation) {
-      setErrorMessage("CPPの開催地を入力してください。");
-      return;
-    }
+
     if (!normalizedMemory) {
       setErrorMessage("CPPで印象に残っていること、当時の感想を入力してください。");
       return;
@@ -212,22 +299,42 @@ export default function CppAlumniPage() {
       return;
     }
 
+    const firstParticipation = normalizedParticipations[0];
+
     const { error: alumniError } = await supabase.from("cpp_alumni").upsert(
       {
         user_id: userId,
-        participation_year: year,
-        participation_location: normalizedLocation,
+        participation_year: firstParticipation.year,
+        participation_location: firstParticipation.location,
         cpp_memory: normalizedMemory,
         updated_at: now,
       },
       { onConflict: "user_id" },
     );
 
-    setSaving(false);
-
     if (alumniError) {
+      setSaving(false);
       setErrorMessage(
         `CPP同窓会への登録に失敗しました: ${alumniError.message}`,
+      );
+      return;
+    }
+
+    const { error: participationError } = await supabase.rpc(
+      "cpp_alumni_replace_participations",
+      {
+        p_participations: normalizedParticipations.map((item) => ({
+          participation_year: item.year,
+          participation_location: item.location,
+        })),
+      },
+    );
+
+    setSaving(false);
+
+    if (participationError) {
+      setErrorMessage(
+        `CPP参加歴を保存できませんでした: ${participationError.message}`,
       );
       return;
     }
@@ -284,7 +391,7 @@ export default function CppAlumniPage() {
             {registered ? "CPP同窓会 登録内容" : "CPP同窓会に登録"}
           </h1>
           <p className="mt-4 text-sm leading-7 text-neutral-600">
-            CPPに参加した皆さんが、今どこで何をしているのかをもう一度つなぐための登録です。入力は数分で終わります。
+            CPPに参加した皆さんが、今どこで何をしているのかをもう一度つなぐための登録です。複数回参加した方は、すべての参加歴を登録できます。
           </p>
 
           {registered ? (
@@ -415,42 +522,83 @@ export default function CppAlumniPage() {
             <h2 className="mt-2 text-xl font-black text-neutral-950">
               CPPに参加したときのこと
             </h2>
+            <p className="mt-2 text-xs leading-6 text-neutral-500">
+              参加した回数分、年と開催地を追加してください。
+            </p>
           </div>
 
           <div className="mt-6 space-y-5">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-xs font-bold text-neutral-600">
-                  参加した年
-                </span>
-                <select
-                  value={participationYear}
-                  onChange={(event) => setParticipationYear(event.target.value)}
-                  className={inputClassName}
+            <div className="space-y-4">
+              {participations.map((participation, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5"
                 >
-                  <option value="">選択してください</option>
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}年
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="text-xs font-black tracking-[0.12em] text-neutral-500">
+                      参加歴 {index + 1}
+                    </div>
+                    {participations.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeParticipation(index)}
+                        className="text-xs font-bold text-neutral-400 hover:text-red-600"
+                      >
+                        削除
+                      </button>
+                    ) : null}
+                  </div>
 
-              <label className="block">
-                <span className="mb-2 block text-xs font-bold text-neutral-600">
-                  開催地
-                </span>
-                <input
-                  value={participationLocation}
-                  onChange={(event) =>
-                    setParticipationLocation(event.target.value.slice(0, 120))
-                  }
-                  className={inputClassName}
-                  placeholder="東京 / 京都 / 大阪 など"
-                />
-              </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold text-neutral-600">
+                        参加した年
+                      </span>
+                      <select
+                        value={participation.year}
+                        onChange={(event) =>
+                          updateParticipation(index, "year", event.target.value)
+                        }
+                        className={inputClassName}
+                      >
+                        <option value="">選択してください</option>
+                        {yearOptions.map((year) => (
+                          <option key={year} value={year}>
+                            {year}年
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-bold text-neutral-600">
+                        開催地
+                      </span>
+                      <input
+                        value={participation.location}
+                        onChange={(event) =>
+                          updateParticipation(
+                            index,
+                            "location",
+                            event.target.value.slice(0, 120),
+                          )
+                        }
+                        className={inputClassName}
+                        placeholder="東京 / 京都 / 大阪 など"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            <button
+              type="button"
+              onClick={addParticipation}
+              className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:border-neutral-500"
+            >
+              ＋ 参加歴を追加
+            </button>
 
             <label className="block">
               <span className="mb-2 block text-xs font-bold text-neutral-600">
