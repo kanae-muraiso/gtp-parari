@@ -224,7 +224,7 @@ export default function MyManagePage() {
 
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <main className="min-h-screen bg-amber-50">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 
         <MyAreaHeader

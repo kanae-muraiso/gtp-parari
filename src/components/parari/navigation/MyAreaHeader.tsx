@@ -33,8 +33,11 @@ export default function MyAreaHeader({
       : resolvedArea === "operations"
         ? "PARARI · OPERATIONS"
         : resolvedArea === "library"
-          ? "PARARI · LIBRARY"
-          : "PARARI · STUDIO";
+          ? "PARARI · LIBRARY · 読む・参加する"
+          : "PARARI · STUDIO · 制作・編集";
+
+  const isStudio =
+    resolvedArea === "studio";
 
   return (
     <>
@@ -42,9 +45,23 @@ export default function MyAreaHeader({
         <WorkspaceVisitTracker workspace={resolvedArea} />
       ) : null}
 
-      <div className="flex items-start justify-between gap-4">
+      <div
+        className={[
+          "flex items-start justify-between gap-4 rounded-2xl border px-4 py-3",
+          isStudio
+            ? "border-amber-200 bg-amber-100/70"
+            : "border-neutral-200 bg-white/70",
+        ].join(" ")}
+      >
         <div>
-          <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+          <div
+            className={[
+              "text-xs font-bold tracking-[0.18em]",
+              isStudio
+                ? "text-amber-800"
+                : "text-neutral-400",
+            ].join(" ")}
+          >
             {areaLabel}
           </div>
 
