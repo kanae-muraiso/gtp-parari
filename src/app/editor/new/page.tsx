@@ -210,7 +210,7 @@ export default function EditorNewPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-8">
+    <main className="min-h-screen bg-amber-50 px-4 py-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6">
           <a
