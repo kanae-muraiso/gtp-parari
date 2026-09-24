@@ -261,11 +261,11 @@ export default function CppAlumniPage() {
     }
 
     if (!normalizedMemory) {
-      setErrorMessage("CPPで印象に残っていること、当時の感想を入力してください。");
+      setErrorMessage("CPPで印象に残っていること、当時の感想・その後につながったことを入力してください。");
       return;
     }
-    if (normalizedMemory.length > 150) {
-      setErrorMessage("当時の感想は150字以内で入力してください。");
+    if (normalizedMemory.length > 2000) {
+      setErrorMessage("当時の感想は2000字以内で入力してください。");
       return;
     }
 
@@ -606,13 +606,13 @@ export default function CppAlumniPage() {
               </span>
               <textarea
                 value={cppMemory}
-                onChange={(event) => setCppMemory(event.target.value.slice(0, 150))}
-                rows={5}
+                onChange={(event) => setCppMemory(event.target.value.slice(0, 2000))}
+                rows={8}
                 className={`${inputClassName} resize-none leading-7`}
                 placeholder="当時の出会いや、印象に残っていることを自由にお書きください。"
               />
               <span className="mt-2 block text-right text-xs text-neutral-400">
-                {cppMemory.length}/150
+                {cppMemory.length}/2000
               </span>
             </label>
 
