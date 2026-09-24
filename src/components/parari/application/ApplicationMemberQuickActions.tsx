@@ -20,6 +20,7 @@ type QuickEntry = {
   application: {
     id: string;
     title: string;
+    pass_enabled: boolean;
   };
 };
 
@@ -129,13 +130,24 @@ export default function ApplicationMemberQuickActions() {
     return null;
   }
 
+  const hasPasses =
+    entries.some(
+      (entry) =>
+        entry.status === "confirmed" &&
+        entry.application.pass_enabled,
+    );
+
   return (
     <section className="mt-6 rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
       <div className="text-sm font-bold text-neutral-950">
-        参加証・申込の操作
+        {hasPasses
+          ? "参加証・申込の操作"
+          : "申込の操作"}
       </div>
       <p className="mt-1 text-xs leading-6 text-neutral-500">
-        確定した参加証の表示、申込の取り下げ・キャンセルができます。
+        {hasPasses
+          ? "確定した参加証の表示、申込の取り下げ・キャンセルができます。"
+          : "申込の取り下げ・キャンセルができます。"}
       </p>
 
       {notice ? (
@@ -180,7 +192,8 @@ export default function ApplicationMemberQuickActions() {
               />
             </div>
 
-            {entry.status === "confirmed" ? (
+            {entry.status === "confirmed" &&
+            entry.application.pass_enabled ? (
               <details className="mt-4 border-t border-neutral-100 pt-4">
                 <summary className="cursor-pointer text-sm font-bold text-neutral-700">
                   参加証（QRコード）を見る
