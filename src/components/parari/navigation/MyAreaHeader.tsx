@@ -50,7 +50,7 @@ export default function MyAreaHeader({
           "flex items-start justify-between gap-4 rounded-2xl border px-4 py-3",
           isStudio
             ? "border-neutral-300 bg-neutral-100"
-            : "border-neutral-200 bg-white/70",
+            : "border-neutral-200 bg-white",
         ].join(" ")}
       >
         <div>
