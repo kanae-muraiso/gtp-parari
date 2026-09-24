@@ -238,7 +238,7 @@ export default function CppAlumniMembersPage() {
 
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/cpp/alumni"
+              href="/cpp/alumni?edit=1"
               className="rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700"
             >
               自分の同窓会登録を編集
