@@ -8,10 +8,17 @@ import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type AlumniRow = {
   user_id: string;
-  participation_year: number;
-  participation_location: string;
+  participation_year: number | null;
+  participation_location: string | null;
   cpp_memory: string;
   created_at: string;
+};
+
+type ParticipationRow = {
+  user_id: string;
+  participation_year: number;
+  participation_location: string;
+  sort_order: number;
 };
 
 type SocialProfileRow = {
@@ -27,6 +34,7 @@ type SocialProfileRow = {
 type AlumniMember = {
   alumni: AlumniRow;
   social: SocialProfileRow | null;
+  participations: ParticipationRow[];
 };
 
 export default function CppAlumniMembersPage() {
@@ -93,35 +101,77 @@ export default function CppAlumniMembersPage() {
     const userIds = alumni.map((row) => row.user_id);
 
     let socialRows: SocialProfileRow[] = [];
+    let participationRows: ParticipationRow[] = [];
 
     if (userIds.length > 0) {
-      const { data, error } = await supabase
-        .from("parari_social_profiles")
-        .select(
-          "user_id, display_name, photo_url, affiliation, role_title, topics, intro",
-        )
-        .in("user_id", userIds);
+      const [socialResult, participationResult] = await Promise.all([
+        supabase
+          .from("parari_social_profiles")
+          .select(
+            "user_id, display_name, photo_url, affiliation, role_title, topics, intro",
+          )
+          .in("user_id", userIds),
+        supabase
+          .from("cpp_alumni_participations")
+          .select(
+            "user_id, participation_year, participation_location, sort_order",
+          )
+          .in("user_id", userIds)
+          .order("sort_order", { ascending: true }),
+      ]);
 
-      if (error) {
+      const firstError = socialResult.error || participationResult.error;
+      if (firstError) {
         setErrorMessage(
-          `SOCIAL PROFILEを読み込めませんでした: ${error.message}`,
+          `同窓会プロフィールを読み込めませんでした: ${firstError.message}`,
         );
         setLoading(false);
         return;
       }
 
-      socialRows = (data ?? []) as SocialProfileRow[];
+      socialRows = (socialResult.data ?? []) as SocialProfileRow[];
+      participationRows = (participationResult.data ?? []) as ParticipationRow[];
     }
 
     const socialByUserId = new Map(
       socialRows.map((profile) => [profile.user_id, profile]),
     );
 
+    const participationsByUserId = new Map<string, ParticipationRow[]>();
+    participationRows.forEach((participation) => {
+      const current = participationsByUserId.get(participation.user_id) ?? [];
+      current.push(participation);
+      participationsByUserId.set(participation.user_id, current);
+    });
+
     setMembers(
-      alumni.map((row) => ({
-        alumni: row,
-        social: socialByUserId.get(row.user_id) ?? null,
-      })),
+      alumni.map((row) => {
+        const storedParticipations =
+          participationsByUserId.get(row.user_id) ?? [];
+
+        const fallbackParticipations =
+          storedParticipations.length === 0 &&
+          row.participation_year &&
+          row.participation_location
+            ? [
+                {
+                  user_id: row.user_id,
+                  participation_year: row.participation_year,
+                  participation_location: row.participation_location,
+                  sort_order: 0,
+                },
+              ]
+            : [];
+
+        return {
+          alumni: row,
+          social: socialByUserId.get(row.user_id) ?? null,
+          participations:
+            storedParticipations.length > 0
+              ? storedParticipations
+              : fallbackParticipations,
+        };
+      }),
     );
     setLoading(false);
   }, [supabase]);
@@ -210,7 +260,7 @@ export default function CppAlumniMembersPage() {
 
         {members.length > 0 ? (
           <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {members.map(({ alumni, social }) => (
+            {members.map(({ alumni, social, participations }) => (
               <section key={alumni.user_id} className="space-y-3">
                 <SocialProfileCard
                   displayName={social?.display_name || "CPP参加者"}
@@ -223,12 +273,15 @@ export default function CppAlumniMembersPage() {
 
                 <div className="rounded-[1.75rem] border border-neutral-200 bg-white px-5 py-5 shadow-sm">
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-black text-white">
-                      CPP {alumni.participation_year}
-                    </span>
-                    <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700">
-                      {alumni.participation_location}
-                    </span>
+                    {participations.map((participation) => (
+                      <span
+                        key={`${participation.participation_year}-${participation.participation_location}`}
+                        className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-black text-white"
+                      >
+                        CPP {participation.participation_year} ·{" "}
+                        {participation.participation_location}
+                      </span>
+                    ))}
                   </div>
                   <p className="mt-4 text-sm leading-7 text-neutral-700">
                     {alumni.cpp_memory}
