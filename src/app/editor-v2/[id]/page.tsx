@@ -1066,7 +1066,7 @@ export default function BookPanelSequenceEditorPage() {
           <>
             <ParariOwnerTopBar
               fixed
-  title="編集中"
+  title="STUDIO · 編集中"
               leftHref="/my/works"
               leftLabel="作品リストへ"
               actions={
