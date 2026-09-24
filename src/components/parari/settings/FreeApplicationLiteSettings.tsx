@@ -11,7 +11,11 @@ export default function FreeApplicationLiteSettings({
 }: FreeApplicationLiteSettingsProps) {
   return (
     <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-      <label className="block">
+      <div className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-6 text-neutral-700">
+        FREEではAPPLICATIONは1つまで作成できます。申込者は10名までです。
+      </div>
+
+      <label className="mt-4 block">
         <span className="text-sm font-bold text-neutral-900">
           ボタンの文字
         </span>
