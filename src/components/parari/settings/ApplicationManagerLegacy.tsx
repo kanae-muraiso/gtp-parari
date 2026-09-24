@@ -87,6 +87,10 @@ export default function ApplicationManager({
     setApplications,
   ] = React.useState<ManagedApplication[]>([]);
 
+  const [
+    archivedApplications,
+    setArchivedApplications,
+  ] = React.useState<ManagedApplication[]>([]);
 
   const manualApplications =
     applications.filter(
@@ -295,6 +299,11 @@ export default function ApplicationManager({
       setStatusUpdatingApplicationId,
     ] = React.useState<string | null>(null);
 
+    const [
+      archiveUpdatingApplicationId,
+      setArchiveUpdatingApplicationId,
+    ] = React.useState<string | null>(null);
+
   const [
     openEntriesApplicationId,
     setOpenEntriesApplicationId,
@@ -428,6 +437,9 @@ export default function ApplicationManager({
               applications?:
                 ManagedApplication[];
 
+              archivedApplications?:
+                ManagedApplication[];
+
               access?:
                 ApplicationAccess;
 
@@ -520,6 +532,10 @@ export default function ApplicationManager({
 
         setApplications(
           applicationResult.applications ?? [],
+        );
+
+        setArchivedApplications(
+          applicationResult.archivedApplications ?? [],
         );
           
           setApplicationAccess(
@@ -1679,6 +1695,197 @@ export default function ApplicationManager({
         );
       } finally {
         setStatusUpdatingApplicationId(
+          null,
+        );
+      }
+    }
+
+    async function updateApplicationArchive(
+      application: ManagedApplication,
+      action: "archive" | "restore",
+    ) {
+      if (archiveUpdatingApplicationId) {
+        return;
+      }
+
+      if (action === "archive") {
+        const confirmed = window.confirm(
+          "このAPPLICATIONをアーカイブしますか？\n\n受付は終了しますが、申込記録・参加者情報は残ります。アーカイブすると現役APPLICATIONの枠が空きます。",
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      setArchiveUpdatingApplicationId(
+        application.id,
+      );
+      setStatusMessage("");
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setStatusMessage(
+            "ログイン情報を確認できませんでした。",
+          );
+          return;
+        }
+
+        const response = await fetch(
+          "/api/application/archive",
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              applicationId:
+                application.id,
+              action,
+            }),
+          },
+        );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                application?: {
+                  id: string;
+                  status:
+                    | "draft"
+                    | "open"
+                    | "closed";
+                  archived_at:
+                    | string
+                    | null;
+                  updated_at?: string;
+                };
+                canCreateApplication?: boolean;
+                message?: string;
+              }
+            | null;
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.application
+        ) {
+          setStatusMessage(
+            result?.message ||
+              (action === "archive"
+                ? "APPLICATIONをアーカイブできませんでした。"
+                : "APPLICATIONを復活できませんでした。"),
+          );
+          return;
+        }
+
+        const nextApplication: ManagedApplication = {
+          ...application,
+          status:
+            result.application.status,
+          archived_at:
+            result.application.archived_at,
+          updated_at:
+            result.application.updated_at ??
+            application.updated_at,
+        };
+
+        if (action === "archive") {
+          setApplications(
+            (current) =>
+              current.filter(
+                (item) =>
+                  item.id !==
+                  application.id,
+              ),
+          );
+
+          setArchivedApplications(
+            (current) => [
+              nextApplication,
+              ...current.filter(
+                (item) =>
+                  item.id !==
+                  application.id,
+              ),
+            ],
+          );
+
+          if (
+            openEntriesApplicationId ===
+            application.id
+          ) {
+            setOpenEntriesApplicationId(
+              null,
+            );
+          }
+        } else {
+          setArchivedApplications(
+            (current) =>
+              current.filter(
+                (item) =>
+                  item.id !==
+                  application.id,
+              ),
+          );
+
+          setApplications(
+            (current) => [
+              nextApplication,
+              ...current.filter(
+                (item) =>
+                  item.id !==
+                  application.id,
+              ),
+            ],
+          );
+        }
+
+        if (
+          typeof result.canCreateApplication ===
+          "boolean"
+        ) {
+          setApplicationAccess(
+            (current) =>
+              current
+                ? {
+                    ...current,
+                    canCreateApplication:
+                      result.canCreateApplication!,
+                  }
+                : current,
+          );
+        }
+
+        setStatusMessage(
+          result.message ||
+            (action === "archive"
+              ? "APPLICATIONをアーカイブしました。"
+              : "APPLICATIONを復活しました。"),
+        );
+      } catch (error) {
+        console.error(
+          "application archive update failed:",
+          error,
+        );
+
+        setStatusMessage(
+          action === "archive"
+            ? "APPLICATIONをアーカイブできませんでした。"
+            : "APPLICATIONを復活できませんでした。",
+        );
+      } finally {
+        setArchiveUpdatingApplicationId(
           null,
         );
       }
