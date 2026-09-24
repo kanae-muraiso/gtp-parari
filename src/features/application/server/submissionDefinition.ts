@@ -35,6 +35,10 @@ export type ApplicationDefinition = {
     fieldIds?: unknown;
     calendarItemId?: unknown;
     membershipId?: unknown;
+    storagePath?: unknown;
+    fileName?: unknown;
+    contentType?: unknown;
+    size?: unknown;
   }>;
   [key: string]: unknown;
 };
