@@ -7,6 +7,10 @@ import {
   cancelApplicationEntry,
   inspectApplicationEntryCancellation,
 } from "@/features/application/server/cancelApplicationEntry";
+import {
+  canAccessApplicationDelivery,
+  getApplicationDeliveryFromSnapshot,
+} from "@/features/application/server/delivery";
 
 const TOKEN_RE = /^[0-9a-f]{32}$/;
 const PASS_CODE_RE = /^[0-9a-f]{16}$/;
@@ -42,10 +46,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const delivery =
+      getApplicationDeliveryFromSnapshot(
+        result.entry.application_snapshot,
+      );
+
     return NextResponse.json({
       ok: true,
       application_title: result.application.title,
       entry_status: result.entry.status,
+      delivery:
+        delivery
+          ? {
+              file_name:
+                delivery.fileName,
+              size:
+                delivery.size,
+            }
+          : null,
+      delivery_ready:
+        delivery
+          ? canAccessApplicationDelivery(
+              result.entry,
+            )
+          : false,
+      delivery_message:
+        delivery &&
+        !canAccessApplicationDelivery(
+          result.entry,
+        )
+          ? result.entry.status !==
+              "confirmed"
+            ? "申込が確定するとダウンロードできます。"
+            : "支払確認が完了するとダウンロードできます。"
+          : "",
       pass_code:
         result.entry.status === "confirmed" &&
         PASS_CODE_RE.test(result.entry.pass_code ?? "")
