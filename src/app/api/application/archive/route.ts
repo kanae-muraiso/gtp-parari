@@ -413,7 +413,10 @@ export async function PATCH(
       application:
         restored,
       canCreateApplication:
-        false,
+        !isAtOrOverLimit(
+          (count ?? 0) + 1,
+          access.limit,
+        ),
       message:
         "APPLICATIONを復活しました。受付は終了したままです。必要に応じて受付を再開してください。",
     });
@@ -496,7 +499,7 @@ export async function PATCH(
       archived,
     canCreateApplication:
       activeCountError
-        ? true
+        ? undefined
         : !isAtOrOverLimit(
             activeCount ?? 0,
             access.limit,
