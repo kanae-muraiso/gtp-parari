@@ -94,10 +94,6 @@ export async function GET(
           "cancellation_token",
           guestToken,
         )
-        .is(
-          "user_id",
-          null,
-        )
         .maybeSingle();
 
     if (error) {
