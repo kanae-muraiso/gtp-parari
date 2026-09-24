@@ -76,6 +76,7 @@ export default function CppAlumniPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
