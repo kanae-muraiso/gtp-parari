@@ -4,10 +4,15 @@
 "use client";
 
 import Link from "next/link";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import { supabase } from "@/lib/supabaseClient";
 
 const notices: Array<{
   id: string;
@@ -53,6 +58,90 @@ export default function MyPage() {
     hasMessages,
     loading,
   } = useParariExperience();
+
+  const [
+    hasPasses,
+    setHasPasses,
+  ] = useState(false);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !hasApplications ||
+      !supabase
+    ) {
+      if (!hasApplications) {
+        setHasPasses(false);
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPassAvailability() {
+      const {
+        data: { session },
+      } =
+        await supabase.auth.getSession();
+
+      if (
+        cancelled ||
+        !session?.access_token
+      ) {
+        return;
+      }
+
+      try {
+        const response =
+          await fetch(
+            "/api/application/my-passes?summary=1",
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+              cache: "no-store",
+            },
+          );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                hasPasses?: boolean;
+              }
+            | null;
+
+        if (
+          cancelled ||
+          !response.ok ||
+          !result?.ok
+        ) {
+          return;
+        }
+
+        setHasPasses(
+          result.hasPasses === true,
+        );
+      } catch (error) {
+        console.error(
+          "[LIBRARY HOME] pass availability load failed:",
+          error,
+        );
+      }
+    }
+
+    void loadPassAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hasApplications,
+    loading,
+  ]);
 
   return (
     <main className="min-h-screen bg-white">
@@ -104,7 +193,7 @@ export default function MyPage() {
             />
           ) : null}
 
-          {!loading && hasApplications ? (
+          {!loading && hasPasses ? (
             <HomeCard
               title="参加証"
               description="確定したイベントやクラスのQR参加証をいつでも表示できます。"
