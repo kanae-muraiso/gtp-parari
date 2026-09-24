@@ -38,7 +38,7 @@ FORM は質問票・回答を担当します。APPLICATION は必要な FORM を
 APPLICATION は「支払が必要か」「支払済みか」という申込状態を参照しますが、Square の取引そのものを APPLICATION に埋め込みません。
 
 
-### DELIVERY
+### DELIVERY / ACCESS
 
 APPLICATION は、申込成立後に本人へ渡すファイルを1つ持てます。
 
@@ -74,6 +74,19 @@ private Storage のファイルを短時間 signed URL でダウンロード
 - `src/features/application/server/delivery.ts`
 - `src/components/parari/settings/ApplicationDeliverySettings.tsx`
 - `src/components/parari/panels/application/ApplicationDeliveryDownloadButton.tsx`
+
+#### PARARI作品 ACCESS
+
+- DELIVERY / ACCESS の対象として、主催者本人が所有するPARARI作品を選択できる
+- public / unlisted / private のいずれでも選択可能
+- private作品をpublicへ変更する必要はない
+- 申込時の `application_snapshot` に `workId` と作品名を固定する
+- 未登録ゲストは、メール確認後の `/c/<token>` と同じ認証トークンを使って `/access/<token>` から閲覧できる
+- 登録ユーザーは `/access/<applicationId>` で本人の申込を確認して閲覧する
+- ゲストが後からclaimされた場合は、同じ申込履歴からLIBRARYの participant shelfへ自動表示する
+- ACCESS条件はファイルDELIVERYと同じく `confirmed` かつ `payment_status = not_required | paid`
+- 作品本文は公開APPLICATION APIには含めず、ACCESS APIが資格確認後にだけ返す
+
 
 ## 2. 現在の基本フロー
 
