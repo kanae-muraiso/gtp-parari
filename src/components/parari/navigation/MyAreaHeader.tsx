@@ -58,7 +58,7 @@ export default function MyAreaHeader({
             className={[
               "text-xs font-bold tracking-[0.18em]",
               isStudio
-                ? "text-amber-800"
+                ? "text-emerald-800"
                 : "text-neutral-400",
             ].join(" ")}
           >
