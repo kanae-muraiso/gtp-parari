@@ -60,12 +60,19 @@ export async function GET(request: NextRequest) {
       entry_status: result.entry.status,
       delivery:
         delivery
-          ? {
-              file_name:
-                delivery.fileName,
-              size:
-                delivery.size,
-            }
+          ? delivery.kind === "work"
+            ? {
+                kind: "work",
+                work_title:
+                  delivery.workTitle,
+              }
+            : {
+                kind: "file",
+                file_name:
+                  delivery.fileName,
+                size:
+                  delivery.size,
+              }
           : null,
       delivery_ready:
         delivery
@@ -80,8 +87,12 @@ export async function GET(request: NextRequest) {
         )
           ? result.entry.status !==
               "confirmed"
-            ? "申込が確定するとダウンロードできます。"
-            : "支払確認が完了するとダウンロードできます。"
+            ? delivery.kind === "work"
+              ? "申込が確定すると作品を読めます。"
+              : "申込が確定するとダウンロードできます。"
+            : delivery.kind === "work"
+              ? "支払確認が完了すると作品を読めます。"
+              : "支払確認が完了するとダウンロードできます。"
           : "",
       pass_code:
         isApplicationPassEnabledFromDefinition(
