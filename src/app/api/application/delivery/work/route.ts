@@ -5,14 +5,14 @@ import {
 
 import {
   canAccessApplicationDelivery,
-  createApplicationDeliverySignedUrl,
   getApplicationDeliveryFromSnapshot,
 } from "@/features/application/server/delivery";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
+export const runtime = "nodejs";
+
 const UUID_RE =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 const TOKEN_RE =
   /^[0-9a-f]{32}$/;
 
@@ -20,38 +20,27 @@ function getBearerToken(
   request: NextRequest,
 ): string | null {
   const authorization =
-    request.headers.get(
-      "authorization",
-    ) ?? "";
+    request.headers.get("authorization") ?? "";
 
   const match =
     authorization.match(
       /^Bearer\s+(.+)$/i,
     );
 
-  return (
-    match?.[1]?.trim() ||
-    null
-  );
-}
-
-function normalizeToken(
-  value: unknown,
-): string {
-  return typeof value === "string"
-    ? value.trim().toLowerCase()
-    : "";
+  return match?.[1]?.trim() || null;
 }
 
 export async function GET(
   request: NextRequest,
 ) {
   const guestToken =
-    normalizeToken(
+    String(
       request.nextUrl.searchParams.get(
         "token",
-      ),
-    );
+      ) ?? "",
+    )
+      .trim()
+      .toLowerCase();
 
   const applicationId =
     String(
@@ -78,17 +67,9 @@ export async function GET(
       error,
     } =
       await supabaseAdmin
-        .from(
-          "application_entries",
-        )
+        .from("application_entries")
         .select(
-          `
-            status,
-            payment_status,
-            application_snapshot,
-            applicant_email_verified_at,
-            user_id
-          `,
+          "status,payment_status,application_snapshot,applicant_email_verified_at",
         )
         .eq(
           "cancellation_token",
@@ -98,7 +79,7 @@ export async function GET(
 
     if (error) {
       console.error(
-        "[APPLICATION DELIVERY] guest entry load failed:",
+        "[APPLICATION WORK ACCESS] guest entry load failed:",
         error,
       );
 
@@ -106,11 +87,9 @@ export async function GET(
         {
           ok: false,
           message:
-            "ダウンロード情報を確認できませんでした。",
+            "作品へのアクセスを確認できませんでした。",
         },
-        {
-          status: 500,
-        },
+        { status: 500 },
       );
     }
 
@@ -122,11 +101,9 @@ export async function GET(
         {
           ok: false,
           message:
-            "このダウンロードリンクを利用できません。",
+            "このアクセスリンクを利用できません。",
         },
-        {
-          status: 404,
-        },
+        { status: 404 },
       );
     }
 
@@ -143,9 +120,7 @@ export async function GET(
           message:
             "APPLICATIONを確認してください。",
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
@@ -159,9 +134,7 @@ export async function GET(
           message:
             "ログインが必要です。",
         },
-        {
-          status: 401,
-        },
+        { status: 401 },
       );
     }
 
@@ -183,9 +156,7 @@ export async function GET(
           message:
             "ログイン状態を確認できませんでした。",
         },
-        {
-          status: 401,
-        },
+        { status: 401 },
       );
     }
 
@@ -194,15 +165,9 @@ export async function GET(
       error,
     } =
       await supabaseAdmin
-        .from(
-          "application_entries",
-        )
+        .from("application_entries")
         .select(
-          `
-            status,
-            payment_status,
-            application_snapshot
-          `,
+          "status,payment_status,application_snapshot",
         )
         .eq(
           "application_id",
@@ -214,16 +179,14 @@ export async function GET(
         )
         .order(
           "created_at",
-          {
-            ascending: false,
-          },
+          { ascending: false },
         )
         .limit(1)
         .maybeSingle();
 
     if (error) {
       console.error(
-        "[APPLICATION DELIVERY] member entry load failed:",
+        "[APPLICATION WORK ACCESS] member entry load failed:",
         error,
       );
 
@@ -231,16 +194,13 @@ export async function GET(
         {
           ok: false,
           message:
-            "ダウンロード情報を確認できませんでした。",
+            "作品へのアクセスを確認できませんでした。",
         },
-        {
-          status: 500,
-        },
+        { status: 500 },
       );
     }
 
-    entry =
-      data ?? null;
+    entry = data ?? null;
   }
 
   if (!entry) {
@@ -250,9 +210,7 @@ export async function GET(
         message:
           "申込情報が見つかりません。",
       },
-      {
-        status: 404,
-      },
+      { status: 404 },
     );
   }
 
@@ -261,16 +219,17 @@ export async function GET(
       entry.application_snapshot,
     );
 
-  if (!delivery) {
+  if (
+    !delivery ||
+    delivery.kind !== "work"
+  ) {
     return NextResponse.json(
       {
         ok: false,
         message:
-          "このAPPLICATIONにはダウンロードファイルがありません。",
+          "このAPPLICATIONにはPARARI作品のACCESSがありません。",
       },
-      {
-        status: 404,
-      },
+      { status: 404 },
     );
   }
 
@@ -283,70 +242,69 @@ export async function GET(
       {
         ok: false,
         message:
-          entry.status !==
-          "confirmed"
-            ? "申込が確定するとダウンロードできます。"
-            : "支払確認が完了するとダウンロードできます。",
-      },
-      {
-        status: 409,
-      },
-    );
-  }
-
-  if (delivery.kind !== "file") {
-    return NextResponse.json(
-      {
-        ok: false,
-        message:
-          "PARARI作品は作品閲覧ページから開いてください。",
+          entry.status !== "confirmed"
+            ? "申込が確定すると作品を読めます。"
+            : "支払確認が完了すると作品を読めます。",
       },
       { status: 409 },
     );
   }
 
-  try {
-    const signedUrl =
-      await createApplicationDeliverySignedUrl(
-        delivery,
-      );
+  const {
+    data: work,
+    error: workError,
+  } =
+    await supabaseAdmin
+      .from("parari_books")
+      .select(
+        "id,title,content,owner,render_mode,physical_pagination,is_deleted,updated_at",
+      )
+      .eq(
+        "id",
+        delivery.workId,
+      )
+      .maybeSingle();
 
-    return NextResponse.json(
-      {
-        ok: true,
-        delivery: {
-          kind: "file",
-          fileName:
-            delivery.fileName,
-          contentType:
-            delivery.contentType,
-          size:
-            delivery.size,
-        },
-        signedUrl,
-      },
-      {
-        headers: {
-          "Cache-Control":
-            "no-store",
-        },
-      },
-    );
-  } catch (error) {
-    console.error(
-      "[APPLICATION DELIVERY] signed URL failed:",
-      error,
-    );
-
+  if (
+    workError ||
+    !work ||
+    work.is_deleted === true
+  ) {
     return NextResponse.json(
       {
         ok: false,
         message:
-          "ダウンロードURLを発行できませんでした。",
+          "この作品は現在読むことができません。",
       },
-      {
-        status: 500,
-      },
+      { status: 404 },
     );
   }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      work: {
+        id: work.id,
+        title:
+          work.title ||
+          delivery.workTitle,
+        content:
+          work.content ?? "",
+        owner:
+          work.owner,
+        render_mode:
+          work.render_mode ?? null,
+        physical_pagination:
+          work.physical_pagination === true,
+        updated_at:
+          work.updated_at ?? null,
+      },
+    },
+    {
+      headers: {
+        "Cache-Control":
+          "no-store, private",
+      },
+    },
+  );
 }

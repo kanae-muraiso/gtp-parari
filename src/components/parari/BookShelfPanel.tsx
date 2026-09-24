@@ -153,7 +153,13 @@ function ShelfCard({
 }) {
   const title = getBookTitle(row);
   const img = getBookImage(row);
-  const href = `/p/${row.id}`;
+  const href =
+    row.shelfType === "participant" &&
+    row.application_id
+      ? `/access/${encodeURIComponent(
+          row.application_id,
+        )}`
+      : `/p/${row.id}`;
   const dateLabel = formatDateJa(
     row.shelfAddedAt || row.updated_at
   );

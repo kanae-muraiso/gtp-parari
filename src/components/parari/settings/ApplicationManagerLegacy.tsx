@@ -1098,6 +1098,7 @@ export default function ApplicationManager({
           {
             id,
             type: "delivery",
+            targetType: "file",
             storagePath: "",
             fileName: "",
             contentType: "",
@@ -2067,10 +2068,18 @@ export default function ApplicationManager({
           (block) =>
             block.type === "delivery" &&
             (
-              !block.storagePath ||
-              !block.fileName ||
-              !block.contentType ||
-              block.size <= 0
+              block.targetType === "work"
+                ? (
+                    !block.workId ||
+                    !block.workTitle
+                  )
+                : (
+                    !block.storagePath ||
+                    !block.fileName ||
+                    !block.contentType ||
+                    !block.size ||
+                    block.size <= 0
+                  )
             ),
         );
 

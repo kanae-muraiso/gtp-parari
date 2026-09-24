@@ -259,11 +259,29 @@ function sanitizePublicDefinition(
               return block;
             }
 
+            if (
+              block.targetType ===
+              "work"
+            ) {
+              return {
+                id:
+                  block.id,
+                type:
+                  "delivery",
+                targetType:
+                  "work",
+                workTitle:
+                  block.workTitle,
+              };
+            }
+
             return {
               id:
                 block.id,
               type:
                 "delivery",
+              targetType:
+                "file",
               fileName:
                 block.fileName,
               contentType:
