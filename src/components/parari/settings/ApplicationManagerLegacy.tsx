@@ -11,6 +11,7 @@ import ApplicationEntriesPanel from "./ApplicationEntriesPanel";
 import ApplicationPolicySettings from "./ApplicationPolicySettings";
 import ApplicationContentBuilder from "./ApplicationContentBuilder";
 import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
+import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
 import { supabase } from "@/lib/supabaseClient";
 
 
@@ -18,6 +19,7 @@ import type {
   ApplicationAcceptanceMode,
   ApplicationBlock,
   ApplicationDefinitionData,
+  ApplicationDeliveryBlock,
   ApplicationField,
   ApplicationFieldType,
   ApplicationInputField,
@@ -199,6 +201,14 @@ export default function ApplicationManager({
     blocks,
     setBlocks,
   ] = React.useState<ApplicationBlock[]>([]);
+
+  const deliveryBlock =
+    blocks.find(
+      (
+        block,
+      ): block is ApplicationDeliveryBlock =>
+        block.type === "delivery",
+    ) ?? null;
 
   const [
     formId,
@@ -982,7 +992,8 @@ export default function ApplicationManager({
   function insertApplicationResourceBlock(
     type:
       | "calendar"
-      | "membership",
+      | "membership"
+      | "delivery",
     insertIndex: number,
   ) {
     const id =
@@ -1001,7 +1012,9 @@ export default function ApplicationManager({
             calendarItemId: "",
           },
         );
-      } else {
+      } else if (
+        type === "membership"
+      ) {
         next.splice(
           insertIndex,
           0,
@@ -1011,10 +1024,75 @@ export default function ApplicationManager({
             membershipId: "",
           },
         );
+      } else {
+        next.splice(
+          insertIndex,
+          0,
+          {
+            id,
+            type: "delivery",
+            storagePath: "",
+            fileName: "",
+            contentType: "",
+            size: 0,
+          },
+        );
       }
 
       return next;
     });
+  }
+
+
+  function changeApplicationDelivery(
+    blockId: string,
+    delivery:
+      | ApplicationDeliveryBlock
+      | null,
+  ) {
+    if (!delivery) {
+      removeApplicationBlock(
+        blockId,
+      );
+      return;
+    }
+
+    setBlocks(
+      (current) =>
+        current.map(
+          (block) =>
+            block.id === blockId
+              ? {
+                  ...delivery,
+                  id: blockId,
+                }
+              : block,
+        ),
+    );
+  }
+
+  function setLiteApplicationDelivery(
+    delivery:
+      | ApplicationDeliveryBlock
+      | null,
+  ) {
+    setBlocks(
+      (current) => {
+        const withoutDelivery =
+          current.filter(
+            (block) =>
+              block.type !==
+              "delivery",
+          );
+
+        return delivery
+          ? [
+              ...withoutDelivery,
+              delivery,
+            ]
+          : withoutDelivery;
+      },
+    );
   }
 
 
@@ -1917,6 +1995,25 @@ export default function ApplicationManager({
       return;
     }
 
+      const invalidDelivery =
+        blocks.find(
+          (block) =>
+            block.type === "delivery" &&
+            (
+              !block.storagePath ||
+              !block.fileName ||
+              !block.contentType ||
+              block.size <= 0
+            ),
+        );
+
+      if (invalidDelivery) {
+        setStatusMessage(
+          "DELIVERYファイルを選択してください。",
+        );
+        return;
+      }
+
       const hasCalendarPricing =
         !isFreePlan &&
         blocks.some(
@@ -2023,7 +2120,11 @@ export default function ApplicationManager({
           blocks:
             applicationMode === "builder"
               ? blocks
-              : [],
+              : blocks.filter(
+                  (block) =>
+                    block.type ===
+                    "delivery",
+                ),
 
           inputFields:
             applicationMode === "builder"
@@ -2544,6 +2645,9 @@ export default function ApplicationManager({
                 onMembershipChange={
                   selectMembershipForBlock
                 }
+                onDeliveryChange={
+                  changeApplicationDelivery
+                }
                 onMoveBlock={moveApplicationBlock}
                 onRemoveBlock={
                   removeApplicationBlock
@@ -2615,6 +2719,20 @@ export default function ApplicationManager({
                 }
               />
             )}
+
+            {applicationMode ===
+            "lite" ? (
+              <div className="mt-6">
+                <ApplicationDeliverySettings
+                  delivery={
+                    deliveryBlock
+                  }
+                  onChange={
+                    setLiteApplicationDelivery
+                  }
+                />
+              </div>
+            ) : null}
 
             {statusMessage ? (
               <p className="mt-5 text-sm leading-7 text-neutral-600">

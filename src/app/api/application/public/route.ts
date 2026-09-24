@@ -218,6 +218,70 @@ function resolveEffectiveLimit(
 }
 
 
+function sanitizePublicDefinition(
+  value: unknown,
+) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return {
+      fields: [],
+    };
+  }
+
+  const definition =
+    value as Record<string, unknown>;
+
+  const blocks =
+    Array.isArray(
+      definition.blocks,
+    )
+      ? definition.blocks.map(
+          (rawBlock) => {
+            if (
+              !rawBlock ||
+              typeof rawBlock !== "object" ||
+              Array.isArray(rawBlock)
+            ) {
+              return rawBlock;
+            }
+
+            const block =
+              rawBlock as
+                Record<string, unknown>;
+
+            if (
+              block.type !==
+              "delivery"
+            ) {
+              return block;
+            }
+
+            return {
+              id:
+                block.id,
+              type:
+                "delivery",
+              fileName:
+                block.fileName,
+              contentType:
+                block.contentType,
+              size:
+                block.size,
+            };
+          },
+        )
+      : definition.blocks;
+
+  return {
+    ...definition,
+    blocks,
+  };
+}
+
+
 export async function GET(
   request: Request,
 ) {
@@ -447,9 +511,9 @@ export async function GET(
           application.description,
 
         definition:
-          application.definition ?? {
-            fields: [],
-          },
+          sanitizePublicDefinition(
+            application.definition,
+          ),
 
         form_id:
           application.form_id,

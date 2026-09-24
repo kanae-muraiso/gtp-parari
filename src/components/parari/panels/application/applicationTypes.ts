@@ -88,11 +88,21 @@ export type ApplicationMembershipBlock = {
   membershipId: string;
 };
 
+export type ApplicationDeliveryBlock = {
+  id: string;
+  type: "delivery";
+  storagePath: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+};
+
 export type ApplicationBlock =
   | ApplicationFieldBlock
   | ApplicationFormBlock
   | ApplicationCalendarBlock
-  | ApplicationMembershipBlock;
+  | ApplicationMembershipBlock
+  | ApplicationDeliveryBlock;
 
 export type ApplicationDefinitionData = {
   // APPLICATIONの編集モード。

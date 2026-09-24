@@ -32,6 +32,10 @@ import EventClassBrandPanel from "../../EventClassBrandPanel";
 import type { ApplicationPanelData } from "./applicationTypes";
 
 import ApplicationEntryStatusPanel from "./ApplicationEntryStatusPanel";
+import ApplicationDeliveryDownloadButton from "./ApplicationDeliveryDownloadButton";
+import {
+  getApplicationDeliveryMetaFromSnapshot,
+} from "./applicationDeliveryClient";
 
 import {
   ApplicationFormFieldRenderer,
@@ -2250,6 +2254,38 @@ export default function ApplicationPanelRenderer({
           )
         : false;
 
+    const entryDelivery =
+      completedEntry
+        ? getApplicationDeliveryMetaFromSnapshot(
+            completedEntry
+              .application_snapshot,
+          )
+        : null;
+
+    const deliveryReady =
+      Boolean(
+        completedEntry &&
+        completedEntry.status ===
+          "confirmed" &&
+        (
+          completedEntry.payment_status ===
+            "not_required" ||
+          completedEntry.payment_status ===
+            "paid"
+        ),
+      );
+
+    const deliveryPendingMessage =
+      completedEntry?.status !==
+      "confirmed"
+        ? "申込が確定するとダウンロードできます。"
+        : completedEntry.payment_status !==
+            "not_required" &&
+          completedEntry.payment_status !==
+            "paid"
+          ? "支払確認が完了するとダウンロードできます。"
+          : "";
+
   // ========================================================
   // APPLICATION UI
   // ========================================================
@@ -2916,6 +2952,27 @@ export default function ApplicationPanelRenderer({
               onCancel={() => {
                 void cancelCompletedEntry();
               }}
+            />
+          ) : null}
+
+          {completedEntry &&
+          entryDelivery ? (
+            <ApplicationDeliveryDownloadButton
+              applicationId={
+                applicationId
+              }
+              fileName={
+                entryDelivery.fileName
+              }
+              size={
+                entryDelivery.size
+              }
+              ready={
+                deliveryReady
+              }
+              pendingMessage={
+                deliveryPendingMessage
+              }
             />
           ) : null}
           

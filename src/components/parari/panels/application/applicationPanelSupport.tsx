@@ -43,6 +43,10 @@ export type ApplicationDefinition = {
     fieldIds?: string[];
     calendarItemId?: string;
     membershipId?: string;
+    storagePath?: string;
+    fileName?: string;
+    contentType?: string;
+    size?: number;
   }>;
 
   agreement?: string;

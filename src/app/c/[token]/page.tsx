@@ -4,6 +4,7 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
+import ApplicationDeliveryDownloadButton from "@/components/parari/panels/application/ApplicationDeliveryDownloadButton";
 
 type CancellationInfo = {
   application_title: string;
@@ -14,6 +15,14 @@ type CancellationInfo = {
   message: string;
   deadline_at: string | null;
   refund_notice: string | null;
+  delivery:
+    | {
+        file_name: string;
+        size: number;
+      }
+    | null;
+  delivery_ready: boolean;
+  delivery_message: string;
 };
 
 function statusLabel(status: string): string {
@@ -83,7 +92,16 @@ export default function GuestApplicationCancellationPage() {
           { cache: "no-store" },
         );
         const result = (await response.json().catch(() => null)) as
-          | ({ ok?: boolean; message?: string } & Partial<CancellationInfo>)
+          | ({
+              ok?: boolean;
+              message?: string;
+              delivery?: {
+                file_name?: unknown;
+                size?: unknown;
+              } | null;
+              delivery_ready?: boolean;
+              delivery_message?: string;
+            } & Partial<CancellationInfo>)
           | null;
 
         if (cancelled) return;
@@ -105,6 +123,25 @@ export default function GuestApplicationCancellationPage() {
           message: result.message ?? "",
           deadline_at: result.deadline_at ?? null,
           refund_notice: result.refund_notice ?? null,
+          delivery:
+            result.delivery &&
+            typeof result.delivery === "object" &&
+            typeof result.delivery.file_name === "string"
+              ? {
+                  file_name:
+                    result.delivery.file_name,
+                  size:
+                    typeof result.delivery.size === "number"
+                      ? result.delivery.size
+                      : 0,
+                }
+              : null,
+          delivery_ready:
+            result.delivery_ready === true,
+          delivery_message:
+            typeof result.delivery_message === "string"
+              ? result.delivery_message
+              : "",
         });
       } catch (error) {
         console.error("[APPLICATION cancellation page] load failed:", error);
@@ -234,6 +271,24 @@ export default function GuestApplicationCancellationPage() {
                   storageHint="authenticated-link"
                 />
               </section>
+            ) : null}
+
+            {info.delivery ? (
+              <ApplicationDeliveryDownloadButton
+                guestToken={token}
+                fileName={
+                  info.delivery.file_name
+                }
+                size={
+                  info.delivery.size
+                }
+                ready={
+                  info.delivery_ready
+                }
+                pendingMessage={
+                  info.delivery_message
+                }
+              />
             ) : null}
 
             {!completed && info.can_cancel ? (

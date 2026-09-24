@@ -462,6 +462,7 @@ export async function GET(
           application_version,
           form_submission_id,
           status,
+          payment_status,
           application_snapshot,
           answers,
           agreed_at,
@@ -703,6 +704,9 @@ export async function GET(
 
             status:
               entry.status,
+
+            payment_status:
+              entry.payment_status,
 
             created_at:
               entry.created_at,

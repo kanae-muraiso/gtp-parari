@@ -1,6 +1,6 @@
 # PARARI APPLICATION — Current Architecture Map
 
-Updated: 2026-09-24
+Updated: 2026-09-25
 
 > APPLICATION を変更するときは、まずこのファイルを見る。
 > この文書は「何がどこにあり、誰が何を担当するか」を人間が追える状態に保つための地図です。
@@ -36,6 +36,44 @@ FORM は質問票・回答を担当します。APPLICATION は必要な FORM を
 
 実際のオンライン決済は APPLICATION とは別レイヤーにします。
 APPLICATION は「支払が必要か」「支払済みか」という申込状態を参照しますが、Square の取引そのものを APPLICATION に埋め込みません。
+
+
+### DELIVERY
+
+APPLICATION は、申込成立後に本人へ渡すファイルを1つ持てます。
+
+```text
+SUBMIT
+  ↓
+本人確認
+  ↓
+APPLICATION成立
+  ↓
+必要なら支払確認
+  ↓
+DELIVERY
+  ↓
+private Storage のファイルを短時間 signed URL でダウンロード
+```
+
+- FREE / PLUS の Lite APPLICATION でも利用可能
+- Builder では DELIVERY block として配置する
+- 1 APPLICATION につき DELIVERY は1つ
+- ファイル実体は private bucket `application-delivery`
+- 公開 APPLICATION API では Storage path を返さない
+- 申込時の `application_snapshot` に DELIVERY を固定する
+- 過去申込者は、主催者が後からファイルを差し替えても申込時のファイルを再取得できる
+- 登録ユーザーはログイン認証、ゲストはメール確認後の `/c/<token>` 認証リンクを利用する
+- signed URL はダウンロード時に都度発行し、60秒で失効する
+- `confirmed` かつ `payment_status = not_required | paid` の申込だけ取得可能
+
+主な担当:
+
+- `src/app/api/application/delivery/upload/route.ts`
+- `src/app/api/application/delivery/route.ts`
+- `src/features/application/server/delivery.ts`
+- `src/components/parari/settings/ApplicationDeliverySettings.tsx`
+- `src/components/parari/panels/application/ApplicationDeliveryDownloadButton.tsx`
 
 ## 2. 現在の基本フロー
 
@@ -266,6 +304,8 @@ QR には個人情報を入れません。
 - `create` — 作成
 - `manage` — 主催者管理
 - `archive` — manual APPLICATION のアーカイブ / 復活
+- `delivery/upload` — DELIVERYファイルのprivate Storageへの保存
+- `delivery` — 申込成立済み本人への短時間ダウンロードURL発行
 - `entries` — 申込者管理
 - `submit` — ログイン済みユーザーの申込
 - `guest-meta` — ゲスト向け公開メタ情報

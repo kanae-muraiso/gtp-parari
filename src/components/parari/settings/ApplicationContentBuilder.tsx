@@ -4,8 +4,10 @@ import * as React from "react";
 
 import type {
   ApplicationBlock,
+  ApplicationDeliveryBlock,
   ApplicationInputField,
 } from "@/components/parari/panels/application/applicationTypes";
+import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
 import {
   FORM_INPUT_BLOCK_CATALOG,
 } from "@/components/parari/panels/form/formInputBlockCatalog";
@@ -18,7 +20,8 @@ import type {
 
 type ApplicationResourceBlockType =
   | "calendar"
-  | "membership";
+  | "membership"
+  | "delivery";
 
 type ApplicationContentBuilderProps = {
   blocks: ApplicationBlock[];
@@ -56,6 +59,12 @@ type ApplicationContentBuilderProps = {
     blockId: string,
     membershipId: string,
   ) => void;
+  onDeliveryChange: (
+    blockId: string,
+    delivery:
+      | ApplicationDeliveryBlock
+      | null,
+  ) => void;
   onMoveBlock: (
     blockId: string,
     direction: -1 | 1,
@@ -78,6 +87,7 @@ export default function ApplicationContentBuilder({
   onInputFieldRequiredChange,
   onCalendarChange,
   onMembershipChange,
+  onDeliveryChange,
   onMoveBlock,
   onRemoveBlock,
 }: ApplicationContentBuilderProps) {
@@ -136,6 +146,27 @@ export default function ApplicationContentBuilder({
             >
               MEMBERSHIP
             </button>
+
+            {!blocks.some(
+              (block) =>
+                block.type === "delivery",
+            ) ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  onInsertResourceBlock(
+                    "delivery",
+                    insertIndex,
+                  );
+                  event.currentTarget
+                    .closest("details")
+                    ?.removeAttribute("open");
+                }}
+                className="block w-full px-4 py-2 text-left text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+              >
+                DELIVERY
+              </button>
+            ) : null}
           </div>
         </details>
       </div>
@@ -181,7 +212,9 @@ export default function ApplicationContentBuilder({
                       ? "CALENDAR"
                       : block.type === "membership"
                         ? "MEMBERSHIP"
-                        : "FIELD"}
+                        : block.type === "delivery"
+                          ? "DELIVERY"
+                          : "FIELD"}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -336,6 +369,22 @@ export default function ApplicationContentBuilder({
                         </option>
                       ))}
                     </select>
+                  ) : null}
+
+                  {block.type === "delivery" ? (
+                    <ApplicationDeliverySettings
+                      delivery={
+                        block.storagePath
+                          ? block
+                          : null
+                      }
+                      onChange={(delivery) =>
+                        onDeliveryChange(
+                          block.id,
+                          delivery,
+                        )
+                      }
+                    />
                   ) : null}
 
                   {block.type === "form" ? (
