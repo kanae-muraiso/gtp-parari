@@ -1,7 +1,13 @@
-export type ApplicationDeliveryMeta = {
-  fileName: string;
-  size: number;
-};
+export type ApplicationDeliveryMeta =
+  | {
+      kind: "file";
+      fileName: string;
+      size: number;
+    }
+  | {
+      kind: "work";
+      workTitle: string;
+    };
 
 function asRecord(
   value: unknown,
@@ -39,6 +45,22 @@ export function getApplicationDeliveryMetaFromSnapshot(
       continue;
     }
 
+    if (block.targetType === "work") {
+      const workTitle =
+        typeof block.workTitle === "string"
+          ? block.workTitle.trim()
+          : "";
+
+      if (!workTitle) {
+        return null;
+      }
+
+      return {
+        kind: "work",
+        workTitle,
+      };
+    }
+
     const fileName =
       typeof block.fileName === "string"
         ? block.fileName.trim()
@@ -55,6 +77,7 @@ export function getApplicationDeliveryMetaFromSnapshot(
     }
 
     return {
+      kind: "file",
       fileName,
       size,
     };
