@@ -40,7 +40,7 @@ export default function CppSocialProfilePage() {
   const [intro, setIntro] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(false);\n  const [returnTo, setReturnTo] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
