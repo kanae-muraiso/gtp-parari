@@ -7,6 +7,9 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import {
+  isApplicationPassEnabledFromDefinition,
+} from "@/features/application/domain/pass";
 
 const UUID_RE =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -107,38 +110,52 @@ export async function GET(
     );
   }
 
-  let authorized =
-    entry.user_id === user.id;
+  const {
+    data: application,
+    error: applicationError,
+  } = await supabaseAdmin
+    .from("applications")
+    .select("owner_user_id,definition")
+    .eq("id", entry.application_id)
+    .maybeSingle();
 
-  if (!authorized) {
-    const {
-      data: application,
-      error: applicationError,
-    } = await supabaseAdmin
-      .from("applications")
-      .select("owner_user_id")
-      .eq("id", entry.application_id)
-      .maybeSingle();
+  if (
+    applicationError ||
+    !application
+  ) {
+    console.error(
+      "[APPLICATION PASS] application load failed:",
+      applicationError,
+    );
 
-    if (applicationError) {
-      console.error(
-        "[APPLICATION PASS] owner load failed:",
-        applicationError,
-      );
-
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "参加証を確認できませんでした。",
-        },
-        { status: 500 },
-      );
-    }
-
-    authorized =
-      application?.owner_user_id === user.id;
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "参加証を確認できませんでした。",
+      },
+      { status: 500 },
+    );
   }
+
+  if (
+    !isApplicationPassEnabledFromDefinition(
+      application.definition,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "このAPPLICATIONでは参加証を発行していません。",
+      },
+      { status: 404 },
+    );
+  }
+
+  const authorized =
+    entry.user_id === user.id ||
+    application.owner_user_id === user.id;
 
   if (!authorized) {
     return NextResponse.json(
