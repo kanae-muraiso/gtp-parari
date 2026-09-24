@@ -3122,6 +3122,26 @@ export default function ApplicationManager({
                                       >
                                         複製して新規作成
                                       </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void updateApplicationArchive(
+                                            application,
+                                            "archive",
+                                          );
+                                        }}
+                                        disabled={
+                                          archiveUpdatingApplicationId ===
+                                          application.id
+                                        }
+                                        className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-600 transition hover:bg-neutral-100 disabled:opacity-40"
+                                      >
+                                        {archiveUpdatingApplicationId ===
+                                        application.id
+                                          ? "処理中..."
+                                          : "アーカイブ"}
+                                      </button>
                                     ) : null}
 
                                       <button
@@ -3233,6 +3253,156 @@ export default function ApplicationManager({
             )}
 
 
+            {archivedApplications.length > 0 ? (
+              <details className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50">
+                <summary className="cursor-pointer list-none px-5 py-4 text-sm font-bold text-neutral-800">
+                  アーカイブ済み APPLICATION
+                  <span className="ml-2 text-xs font-normal text-neutral-400">
+                    {archivedApplications.length}件
+                  </span>
+                </summary>
+
+                <div className="space-y-3 border-t border-neutral-200 px-5 py-5">
+                  {archivedApplications.map(
+                    (application) => (
+                      <div
+                        key={application.id}
+                        className="rounded-2xl border border-neutral-200 bg-white p-5"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <div className="text-xs font-bold tracking-[0.14em] text-neutral-400">
+                              ARCHIVED
+                            </div>
+
+                            <div className="mt-1 text-base font-bold text-neutral-950">
+                              {application.title}
+                            </div>
+
+                            <p className="mt-1 text-xs leading-6 text-neutral-500">
+                              {application.archived_at
+                                ? `${formatApplicationDateTime(
+                                    application.archived_at,
+                                  )} にアーカイブ`
+                                : "アーカイブ済み"}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void updateApplicationArchive(
+                                application,
+                                "restore",
+                              );
+                            }}
+                            disabled={
+                              archiveUpdatingApplicationId ===
+                              application.id
+                            }
+                            className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                          >
+                            {archiveUpdatingApplicationId ===
+                            application.id
+                              ? "処理中..."
+                              : "復活する"}
+                          </button>
+                        </div>
+
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void toggleApplicationEntries(
+                                application.id,
+                              );
+                            }}
+                            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100"
+                          >
+                            {openEntriesApplicationId ===
+                            application.id
+                              ? "記録を閉じる"
+                              : entriesByApplicationId[
+                                    application.id
+                                  ]
+                                ? `記録を見る（${entriesByApplicationId[
+                                    application.id
+                                  ].length}名）`
+                                : "記録を見る"}
+                          </button>
+                        </div>
+
+                        {openEntriesApplicationId ===
+                        application.id ? (
+                          <ApplicationEntriesPanel
+                            application={application}
+                            entries={
+                              entriesByApplicationId[
+                                application.id
+                              ] ?? []
+                            }
+                            isLoaded={Boolean(
+                              entriesByApplicationId[
+                                application.id
+                              ],
+                            )}
+                            isLoading={
+                              entriesLoadingApplicationId ===
+                              application.id
+                            }
+                            message={entriesMessage}
+                            viewMode={entriesViewMode}
+                            onViewModeChange={
+                              setEntriesViewMode
+                            }
+                            openMessageEntryId={
+                              openMessageEntryId
+                            }
+                            openMessageApplicantName={
+                              openMessageApplicantName
+                            }
+                            entryActionId={
+                              entryActionId
+                            }
+                            onOpenMessage={(
+                              entryId,
+                              applicantName,
+                            ) => {
+                              setOpenMessageEntryId(
+                                entryId,
+                              );
+                              setOpenMessageApplicantName(
+                                applicantName,
+                              );
+                            }}
+                            onCloseMessage={() => {
+                              setOpenMessageEntryId(
+                                null,
+                              );
+                              setOpenMessageApplicantName(
+                                "",
+                              );
+                            }}
+                            onEntryAction={(
+                              entryId,
+                              action,
+                            ) =>
+                              updateApplicationEntryAction(
+                                application.id,
+                                entryId,
+                                action,
+                              )
+                            }
+                          />
+                        ) : null}
+                      </div>
+                    ),
+                  )}
+                </div>
+              </details>
+            ) : null}
+
+
            {applicationAccess &&
            applicationAccess.applicationLimit !==
              null &&
@@ -3240,7 +3410,7 @@ export default function ApplicationManager({
              false ? (
              <div className="mt-5 rounded-2xl bg-neutral-50 px-5 py-4">
                <div className="text-sm font-bold text-neutral-900">
-                 このプランではAPPLICATIONを1つ利用できます
+                 FREEでは現役のAPPLICATIONを1つ利用できます
                </div>
 
                <p className="mt-1 text-xs leading-6 text-neutral-500">
