@@ -10,6 +10,10 @@ import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import ApplicationEntryMessagePanel from "@/components/parari/application/ApplicationEntryMessagePanel";
+import ApplicationDeliveryDownloadButton from "@/components/parari/panels/application/ApplicationDeliveryDownloadButton";
+import {
+  getApplicationDeliveryMetaFromSnapshot,
+} from "@/components/parari/panels/application/applicationDeliveryClient";
 
 type EntryStatus =
   | "submitted"
@@ -31,6 +35,12 @@ type MyApplicationEntry = {
   id: string;
 
   status: EntryStatus;
+
+  payment_status:
+    | "not_required"
+    | "unpaid"
+    | "reported"
+    | "paid";
 
   created_at: string;
 
@@ -1249,6 +1259,39 @@ export default function MyApplicationsPage() {
                     entry.status ===
                       "confirmed"
                   );
+
+                const delivery =
+                  getApplicationDeliveryMetaFromSnapshot(
+                    {
+                      definition:
+                        entry.application
+                          .definition,
+                    },
+                  );
+
+                const deliveryReady =
+                  Boolean(
+                    delivery &&
+                    entry.status ===
+                      "confirmed" &&
+                    (
+                      entry.payment_status ===
+                        "not_required" ||
+                      entry.payment_status ===
+                        "paid"
+                    ),
+                  );
+
+                const deliveryPendingMessage =
+                  entry.status !==
+                    "confirmed"
+                    ? "申込が確定するとダウンロードできます。"
+                    : entry.payment_status !==
+                        "not_required" &&
+                      entry.payment_status !==
+                        "paid"
+                      ? "支払確認が完了するとダウンロードできます。"
+                      : "";
 
                 return (
                   <section
