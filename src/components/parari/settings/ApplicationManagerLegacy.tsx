@@ -2217,6 +2217,8 @@ export default function ApplicationManager({
       capacityEnabled &&
       (
         !capacityValue.trim() ||
+        typeof normalizedCapacity !==
+          "number" ||
         !Number.isInteger(
           normalizedCapacity,
         ) ||
