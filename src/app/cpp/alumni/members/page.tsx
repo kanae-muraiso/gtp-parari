@@ -342,7 +342,7 @@ function AlumniMemberCard({
         ) : null}
       </div>
 
-      <div className="border-t border-neutral-200 bg-neutral-50/70 px-5 py-5 sm:px-6">
+      <div className="px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="text-xs font-black tracking-[0.14em] text-neutral-400">
           CPP HISTORY
         </div>
