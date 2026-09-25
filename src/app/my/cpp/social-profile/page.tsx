@@ -29,11 +29,17 @@ type CppProfileRow = {
 const inputClassName =
   "w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-neutral-700";
 
+const PHOTO_BUCKET = "cpp-profile-photos";
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 export default function CppSocialProfilePage() {
   const supabase = useMemo(() => sharedSupabase, []);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [localPhotoPreviewUrl, setLocalPhotoPreviewUrl] = useState<string | null>(null);
   const [affiliation, setAffiliation] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
   const [topicsText, setTopicsText] = useState("");
@@ -127,6 +133,14 @@ export default function CppSocialProfilePage() {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (localPhotoPreviewUrl) {
+        URL.revokeObjectURL(localPhotoPreviewUrl);
+      }
+    };
+  }, [localPhotoPreviewUrl]);
+
   const topics = useMemo(
     () =>
       topicsText
@@ -138,6 +152,30 @@ export default function CppSocialProfilePage() {
     [topicsText],
   );
 
+  const handlePhotoChange = (file: File | null) => {
+    if (!file) return;
+
+    if (!PHOTO_TYPES.includes(file.type)) {
+      setErrorMessage("顔写真はJPEG・PNG・WebPを選んでください。");
+      return;
+    }
+
+    if (file.size > PHOTO_MAX_BYTES) {
+      setErrorMessage("顔写真は5MB以内にしてください。");
+      return;
+    }
+
+    setErrorMessage("");
+    setSaved(false);
+    setSelectedPhotoFile(file);
+    setLocalPhotoPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return URL.createObjectURL(file);
+    });
+  };
+
   const save = async () => {
     if (!supabase || !userId || saving) return;
     if (!displayName.trim()) {
@@ -148,11 +186,36 @@ export default function CppSocialProfilePage() {
     setSaving(true);
     setErrorMessage("");
 
+    let nextPhotoUrl = photoUrl;
+
+    if (selectedPhotoFile) {
+      const objectPath = `${userId}/social-profile`;
+      const { error: uploadError } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(objectPath, selectedPhotoFile, {
+          upsert: true,
+          contentType: selectedPhotoFile.type,
+          cacheControl: "3600",
+        });
+
+      if (uploadError) {
+        setSaving(false);
+        setErrorMessage(`顔写真を保存できませんでした: ${uploadError.message}`);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(PHOTO_BUCKET)
+        .getPublicUrl(objectPath);
+
+      nextPhotoUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+    }
+
     const { error } = await supabase.from("parari_social_profiles").upsert(
       {
         user_id: userId,
         display_name: displayName.trim(),
-        photo_url: photoUrl,
+        photo_url: nextPhotoUrl,
         affiliation: affiliation.trim() || null,
         role_title: roleTitle.trim() || null,
         topics,
@@ -166,6 +229,15 @@ export default function CppSocialProfilePage() {
       setErrorMessage(`保存に失敗しました: ${error.message}`);
       return;
     }
+
+    setPhotoUrl(nextPhotoUrl);
+    setSelectedPhotoFile(null);
+    setLocalPhotoPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
     setSaved(true);
   };
 
@@ -213,6 +285,46 @@ export default function CppSocialProfilePage() {
             </div>
 
             <div className="mt-6 space-y-5">
+              <div>
+                <span className="mb-2 block text-xs font-bold text-neutral-600">
+                  顔写真（CPP用）
+                </span>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="h-24 w-24 overflow-hidden rounded-full bg-neutral-100">
+                    {localPhotoPreviewUrl || photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={localPhotoPreviewUrl || photoUrl || ""}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-2xl font-black text-neutral-400">
+                        {displayName.trim().slice(0, 1) || "?"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="inline-flex cursor-pointer rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-xs font-bold text-neutral-700 transition hover:bg-neutral-100">
+                      写真を選ぶ
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(event) => {
+                          handlePhotoChange(event.target.files?.[0] ?? null);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="mt-2 max-w-sm text-xs leading-5 text-neutral-400">
+                      JPEG・PNG・WebP、5MBまで。CPP同窓会とCPP LIVEの名札に使います。PARARI本体のプロフィールを編集する必要はありません。
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <label className="block">
                 <span className="mb-2 block text-xs font-bold text-neutral-600">表示名</span>
                 <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className={inputClassName} placeholder="山田 花子" />
@@ -241,10 +353,6 @@ export default function CppSocialProfilePage() {
                 <span className="mt-2 block text-right text-xs text-neutral-400">{intro.length}/220</span>
               </label>
 
-              <div className="rounded-2xl bg-neutral-50 p-4 text-xs leading-6 text-neutral-500">
-                写真は現在のPARARIプロフィール写真を使います。写真アップロードはこの骨組みを確認してから追加できます。
-              </div>
-
               <div className="flex flex-wrap gap-3">
                 <button type="button" onClick={() => void save()} disabled={saving || !displayName.trim()} className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
                   {saving ? "保存しています…" : "SOCIAL PROFILEを保存"}
@@ -262,7 +370,7 @@ export default function CppSocialProfilePage() {
             <div className="mb-3 px-1 text-xs font-black tracking-[0.14em] text-neutral-400">PREVIEW</div>
             <SocialProfileCard
               displayName={displayName || "名前未設定"}
-              photoUrl={photoUrl}
+              photoUrl={localPhotoPreviewUrl || photoUrl}
               affiliation={affiliation}
               roleTitle={roleTitle}
               topics={topics}
