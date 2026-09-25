@@ -319,7 +319,7 @@ export default function CppSocialProfilePage() {
                       />
                     </label>
                     <p className="mt-2 max-w-sm text-xs leading-5 text-neutral-400">
-                      JPEG・PNG・WebP、5MBまで。CPP同窓会とCPP LIVEの名札に使います。PARARI本体のプロフィールを編集する必要はありません。
+                      JPEG・PNG・WebP、5MBまで。「SOCIAL PROFILEを保存」で登録します。CPP同窓会とCPP LIVEの名札に使い、PARARI本体のプロフィールを編集する必要はありません。
                     </p>
                   </div>
                 </div>
