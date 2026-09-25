@@ -13,6 +13,8 @@ import ApplicationContentBuilder from "./ApplicationContentBuilder";
 import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
 import ApplicationDeliverySettings from "./ApplicationDeliverySettings";
 import ApplicationPassSettings from "./ApplicationPassSettings";
+import ApplicationCapacitySettings from "./ApplicationCapacitySettings";
+import ApplicationDisplaySettingsPanel from "./ApplicationDisplaySettingsPanel";
 import { supabase } from "@/lib/supabaseClient";
 import {
   isApplicationPassEnabledFromDefinition,
@@ -24,6 +26,7 @@ import type {
   ApplicationBlock,
   ApplicationDefinitionData,
   ApplicationDeliveryBlock,
+  ApplicationDisplaySettings,
   ApplicationField,
   ApplicationFieldType,
   ApplicationInputField,
@@ -81,6 +84,93 @@ function toDateTimeLocalValue(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return "";
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+const NEW_APPLICATION_DISPLAY: Required<ApplicationDisplaySettings> = {
+  applicationLabel: false,
+  typeLabel: false,
+  title: false,
+  status: false,
+  remainingSlots: false,
+};
+
+const LEGACY_APPLICATION_DISPLAY: Required<ApplicationDisplaySettings> = {
+  applicationLabel: true,
+  typeLabel: true,
+  title: true,
+  status: true,
+  remainingSlots: true,
+};
+
+function resolveApplicationDisplay(
+  definition: ApplicationDefinitionData | null | undefined,
+): Required<ApplicationDisplaySettings> {
+  const display = definition?.display;
+
+  if (!display) {
+    return { ...LEGACY_APPLICATION_DISPLAY };
+  }
+
+  return {
+    applicationLabel:
+      display.applicationLabel !== false,
+    typeLabel:
+      display.typeLabel !== false,
+    title:
+      display.title !== false,
+    status:
+      display.status !== false,
+    remainingSlots:
+      display.remainingSlots !== false,
+  };
+}
+
+function resolveApplicationCapacity(
+  definition: ApplicationDefinitionData | null | undefined,
+): number | null {
+  if (!definition) {
+    return null;
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      definition,
+      "capacity",
+    )
+  ) {
+    const capacity =
+      definition.capacity;
+
+    return (
+      typeof capacity === "number" &&
+      Number.isFinite(capacity) &&
+      capacity > 0
+    )
+      ? Math.floor(capacity)
+      : null;
+  }
+
+  const legacyField =
+    (definition.fields ?? []).find(
+      (field) =>
+        field.key === "capacity",
+    );
+
+  const legacyCapacity =
+    Number(
+      legacyField?.value,
+    );
+
+  return (
+    Number.isFinite(
+      legacyCapacity,
+    ) &&
+    legacyCapacity > 0
+  )
+    ? Math.floor(
+        legacyCapacity,
+      )
+    : null;
 }
 
 export default function ApplicationManager({
@@ -195,6 +285,25 @@ export default function ApplicationManager({
     description,
     setDescription,
   ] = React.useState("");
+
+  const [
+    capacityEnabled,
+    setCapacityEnabled,
+  ] = React.useState(false);
+
+  const [
+    capacityValue,
+    setCapacityValue,
+  ] = React.useState("");
+
+  const [
+    displaySettings,
+    setDisplaySettings,
+  ] = React.useState<
+    Required<ApplicationDisplaySettings>
+  >({
+    ...NEW_APPLICATION_DISPLAY,
+  });
 
   const [
     fields,
@@ -678,6 +787,12 @@ export default function ApplicationManager({
     setTitle("");
     setDescription("");
 
+    setCapacityEnabled(false);
+    setCapacityValue("");
+    setDisplaySettings({
+      ...NEW_APPLICATION_DISPLAY,
+    });
+
     setFields([]);
 
     setInputFields([]);
@@ -745,6 +860,27 @@ export default function ApplicationManager({
 
     setDescription(
       application.description ?? "",
+    );
+
+    const currentCapacity =
+      resolveApplicationCapacity(
+        application.definition,
+      );
+
+    setCapacityEnabled(
+      currentCapacity !== null,
+    );
+    setCapacityValue(
+      currentCapacity === null
+        ? ""
+        : String(
+            currentCapacity,
+          ),
+    );
+    setDisplaySettings(
+      resolveApplicationDisplay(
+        application.definition,
+      ),
     );
 
     setFields(
@@ -890,6 +1026,27 @@ export default function ApplicationManager({
 
       setDescription(
         application.description ?? "",
+      );
+
+      const copiedCapacity =
+        resolveApplicationCapacity(
+          application.definition,
+        );
+
+      setCapacityEnabled(
+        copiedCapacity !== null,
+      );
+      setCapacityValue(
+        copiedCapacity === null
+          ? ""
+          : String(
+              copiedCapacity,
+            ),
+      );
+      setDisplaySettings(
+        resolveApplicationDisplay(
+          application.definition,
+        ),
       );
 
       setFields(
@@ -2049,6 +2206,31 @@ export default function ApplicationManager({
       return;
     }
 
+    const normalizedCapacity =
+      capacityEnabled
+        ? Number(
+            capacityValue.trim(),
+          )
+        : null;
+
+    if (
+      capacityEnabled &&
+      (
+        !capacityValue.trim() ||
+        typeof normalizedCapacity !==
+          "number" ||
+        !Number.isInteger(
+          normalizedCapacity,
+        ) ||
+        normalizedCapacity <= 0
+      )
+    ) {
+      setStatusMessage(
+        "定員は1人以上の整数で入力してください。",
+      );
+      return;
+    }
+
     if (
       !isFreePlan &&
       fields.some(
@@ -2259,6 +2441,14 @@ export default function ApplicationManager({
                 ]),
 
           passEnabled,
+
+          capacity:
+            capacityEnabled
+              ? normalizedCapacity
+              : null,
+
+          display:
+            displaySettings,
         };
 
       const response =
@@ -2710,6 +2900,28 @@ export default function ApplicationManager({
             </div>
 
 
+            <div className="mt-6">
+              <ApplicationCapacitySettings
+                enabled={
+                  capacityEnabled
+                }
+                value={
+                  capacityValue
+                }
+                participantLimit={
+                  applicationAccess
+                    ?.participantLimit ??
+                  null
+                }
+                onEnabledChange={
+                  setCapacityEnabled
+                }
+                onValueChange={
+                  setCapacityValue
+                }
+              />
+            </div>
+
             {canUseExtendedApplication &&
             applicationMode === "builder" ? (
               <ApplicationContentBuilder
@@ -2840,6 +3052,17 @@ export default function ApplicationManager({
                 />
               </div>
             ) : null}
+
+            <div className="mt-6">
+              <ApplicationDisplaySettingsPanel
+                value={
+                  displaySettings
+                }
+                onChange={
+                  setDisplaySettings
+                }
+              />
+            </div>
 
             {statusMessage ? (
               <p className="mt-5 text-sm leading-7 text-neutral-600">

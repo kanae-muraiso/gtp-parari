@@ -35,6 +35,14 @@ type ApplicationDefinition = {
   fields?: ApplicationField[];
   agreement?: string;
   actionLabel?: string;
+  capacity?: number | null;
+  display?: {
+    applicationLabel?: boolean;
+    typeLabel?: boolean;
+    title?: boolean;
+    status?: boolean;
+    remainingSlots?: boolean;
+  };
 };
 
 
@@ -163,6 +171,28 @@ function getCapacity(
     | null
     | undefined,
 ): number | null {
+  if (!definition) {
+    return null;
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      definition,
+      "capacity",
+    )
+  ) {
+    const capacity =
+      definition.capacity;
+
+    return (
+      typeof capacity === "number" &&
+      Number.isFinite(capacity) &&
+      capacity > 0
+    )
+      ? Math.floor(capacity)
+      : null;
+  }
+
   const field =
     getFields(definition).find(
       (item) =>
@@ -473,8 +503,9 @@ export async function GET(
     // ========================================================
     // APPLICATION自身の定員
     //
-    // definition.fields の
-    // key="capacity" を標準定員として読む。
+    // definition.capacity を標準定員として読む。
+    // 未設定の旧APPLICATIONだけ definition.fields の
+    // key="capacity" へフォールバックする。
     // ========================================================
 
     const capacityLimit =

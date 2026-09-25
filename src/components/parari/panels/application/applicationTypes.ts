@@ -113,6 +113,14 @@ export type ApplicationBlock =
   | ApplicationMembershipBlock
   | ApplicationDeliveryBlock;
 
+export type ApplicationDisplaySettings = {
+  applicationLabel?: boolean;
+  typeLabel?: boolean;
+  title?: boolean;
+  status?: boolean;
+  remainingSlots?: boolean;
+};
+
 export type ApplicationDefinitionData = {
   // APPLICATIONの編集モード。
   // 既存APPLICATIONとの互換のためoptional。
@@ -142,6 +150,15 @@ export type ApplicationDefinitionData = {
   // 当日のQR参加証を発行するか。
   // undefined の旧APPLICATIONは互換のため true として扱う。
   passEnabled?: boolean;
+
+  // 主催者が設定するAPPLICATION固有の定員。
+  // null / undefined は主催者側の人数制限なし。
+  // 実際の受付上限はプラン上限との小さい方。
+  capacity?: number | null;
+
+  // 読者に見せるメタ情報。
+  // undefined の旧APPLICATIONは各項目 true として扱う。
+  display?: ApplicationDisplaySettings;
 };
 
 export type ApplicationPanelData = {

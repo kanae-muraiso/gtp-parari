@@ -196,6 +196,31 @@ Magic Link で本人確認されたメールアドレスと、未紐付けのゲ
 現地払いは未払いでも参加予約を `confirmed` にできます。
 将来の PARARI 決済は、決済完了まで `confirmed` にしない設計にします。
 
+## 4.5 定員と公開表示
+
+manual APPLICATION は、受付機能と読者向け表示を分離します。
+
+### 定員
+
+- `definition.capacity` に主催者が設定した定員を保存する
+- `null` は主催者側の人数指定なし
+- 実際の受付上限は `min(主催者定員, プラン参加人数上限)`
+- 旧APPLICATIONで `definition.capacity` が未設定の場合のみ、旧 `definition.fields[key=capacity]` を互換用に読む
+- 定員を設定していても「残り枠」を読者に表示する必要はない
+
+### 公開表示
+
+`definition.display` で以下を個別に表示 / 非表示にできます。
+
+- `applicationLabel` — APPLICATION
+- `typeLabel` — 募集 / イベント・参加募集 等
+- `title` — APPLICATIONタイトル
+- `status` — 受付中 / 受付終了
+- `remainingSlots` — 残り○枠
+
+新規manual APPLICATIONは上記をすべてOFFで開始し、申込ボタンだけでも利用できます。
+既存APPLICATIONで `definition.display` が未設定の場合は、互換のため従来どおりすべて表示します。
+
 ## 5. QR参加証
 
 QR参加証はAPPLICATIONごとの任意機能です。

@@ -54,6 +54,14 @@ export type ApplicationDefinition = {
 
   agreement?: string;
   actionLabel?: string;
+  capacity?: number | null;
+  display?: {
+    applicationLabel?: boolean;
+    typeLabel?: boolean;
+    title?: boolean;
+    status?: boolean;
+    remainingSlots?: boolean;
+  };
 };
 
 
