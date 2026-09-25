@@ -160,6 +160,8 @@ async function getApplicationAccess(
       isMonitor,
       effectivePlan,
       applicationLimit,
+      participantLimit:
+        planEntitlements.applicationParticipantLimit,
       applicationMode:
         planEntitlements.applicationMode,
       canUseIntegratedSales:
@@ -1011,6 +1013,9 @@ export async function GET(
 
         applicationLimit:
           access.applicationLimit,
+
+        participantLimit:
+          access.participantLimit,
 
         applicationMode:
           access.applicationMode,
