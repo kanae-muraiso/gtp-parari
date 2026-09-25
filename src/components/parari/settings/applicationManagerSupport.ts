@@ -205,6 +205,9 @@ export type ApplicationAccess = {
   applicationLimit:
     number | null;
 
+  participantLimit:
+    number | null;
+
   applicationMode:
     ApplicationMode;
 
