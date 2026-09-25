@@ -2208,6 +2208,42 @@ export default function ApplicationPanelRenderer({
     showTitle ||
     showStatus;
 
+  const hasMetaBadges =
+    (
+      showRemainingSlots &&
+      typeof application.remaining_slots ===
+        "number"
+    ) ||
+    (
+      !isLiteApplication &&
+      application.acceptance_mode ===
+        "approval"
+    );
+
+  const hasLitePreSubmitInfo =
+    isLiteApplication &&
+    !completedEntry &&
+    (
+      application.payment_method !==
+        "none" ||
+      Boolean(agreement) ||
+      application.acceptance_mode ===
+        "approval" ||
+      Boolean(
+        applicationSubmitMessage,
+      )
+    );
+
+  const hasVisibleContentBeforePrimaryAction =
+    showApplicationLabel ||
+    showHeader ||
+    Boolean(
+      application.description,
+    ) ||
+    visibleFields.length > 0 ||
+    hasMetaBadges ||
+    hasLitePreSubmitInfo;
+
   const litePaymentLabel =
     application.payment_method === "on_site"
       ? "当日払い"
@@ -2423,31 +2459,32 @@ export default function ApplicationPanelRenderer({
       ) : null}
 
 
-      <div className="mt-5 flex flex-wrap gap-2 text-xs">
-        {showRemainingSlots &&
-        typeof application.remaining_slots ===
-          "number" ? (
-          <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700">
-            残り{" "}
-            {
-              application.remaining_slots
-            }
-            枠
-          </span>
-        ) : null}
+      {hasMetaBadges ? (
+        <div className="mt-5 flex flex-wrap gap-2 text-xs">
+          {showRemainingSlots &&
+          typeof application.remaining_slots ===
+            "number" ? (
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700">
+              残り{" "}
+              {
+                application.remaining_slots
+              }
+              枠
+            </span>
+          ) : null}
 
-        {!isLiteApplication &&
-        application.acceptance_mode ===
-        "approval" ? (
-          <span className="rounded-full bg-blue-50 px-3 py-1.5 font-semibold text-blue-700">
-            申込後に主催者確認
-          </span>
-        ) : null}
-      </div>
+          {!isLiteApplication &&
+          application.acceptance_mode ===
+          "approval" ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1.5 font-semibold text-blue-700">
+              申込後に主催者確認
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
 
-          {isLiteApplication &&
-          !completedEntry ? (
+          {hasLitePreSubmitInfo ? (
             <div className="mt-6 space-y-3">
               {application.payment_method !==
               "none" ? (
@@ -3244,7 +3281,13 @@ export default function ApplicationPanelRenderer({
           !completedEntry &&
           !existingEntryLoading ? (
           
-          <div className="mt-6">
+          <div
+            className={
+              hasVisibleContentBeforePrimaryAction
+                ? "mt-6"
+                : ""
+            }
+          >
         <button
           type="button"
           disabled={
