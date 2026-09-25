@@ -2179,6 +2179,29 @@ export default function ApplicationPanelRenderer({
   const isLiteApplication =
     definition.mode === "lite";
 
+  const display =
+    definition.display;
+
+  const showApplicationLabel =
+    display?.applicationLabel !== false;
+
+  const showTypeLabel =
+    display?.typeLabel !== false;
+
+  const showTitle =
+    display?.title !== false;
+
+  const showStatus =
+    display?.status !== false;
+
+  const showRemainingSlots =
+    display?.remainingSlots !== false;
+
+  const showHeader =
+    showTypeLabel ||
+    showTitle ||
+    showStatus;
+
   const litePaymentLabel =
     application.payment_method === "on_site"
       ? "当日払い"
@@ -2295,27 +2318,54 @@ export default function ApplicationPanelRenderer({
       id={`application-${applicationId}`}
       className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
     >
-      <ApplicationLabel />
+      {showApplicationLabel ? (
+        <ApplicationLabel />
+      ) : null}
 
-      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold text-neutral-400">
-            {applicationTypeLabel(
-              application.application_type,
-            )}
-          </div>
+      {showHeader ? (
+        <div
+          className={[
+            "flex flex-wrap items-start justify-between gap-3",
+            showApplicationLabel
+              ? "mt-2"
+              : "",
+          ].join(" ")}
+        >
+          {showTypeLabel ||
+          showTitle ? (
+            <div>
+              {showTypeLabel ? (
+                <div className="text-xs font-semibold text-neutral-400">
+                  {applicationTypeLabel(
+                    application.application_type,
+                  )}
+                </div>
+              ) : null}
 
-          <h2 className="mt-1 text-xl font-bold leading-8 text-neutral-950">
-            {application.title}
-          </h2>
+              {showTitle ? (
+                <h2
+                  className={[
+                    "text-xl font-bold leading-8 text-neutral-950",
+                    showTypeLabel
+                      ? "mt-1"
+                      : "",
+                  ].join(" ")}
+                >
+                  {application.title}
+                </h2>
+              ) : null}
+            </div>
+          ) : null}
+
+          {showStatus ? (
+            <StatusBadge
+              status={
+                application.status
+              }
+            />
+          ) : null}
         </div>
-
-        <StatusBadge
-          status={
-            application.status
-          }
-        />
-      </div>
+      ) : null}
 
 
       {application.description ? (
@@ -2368,8 +2418,9 @@ export default function ApplicationPanelRenderer({
 
 
       <div className="mt-5 flex flex-wrap gap-2 text-xs">
-        {typeof application.remaining_slots ===
-        "number" ? (
+        {showRemainingSlots &&
+        typeof application.remaining_slots ===
+          "number" ? (
           <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700">
             残り{" "}
             {
