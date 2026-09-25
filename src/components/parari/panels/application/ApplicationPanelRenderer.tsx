@@ -2140,6 +2140,12 @@ export default function ApplicationPanelRenderer({
       ? definition.fields
       : [];
 
+  const visibleFields =
+    fields.filter(
+      (field) =>
+        field.key !== "capacity",
+    );
+
   const applicationInputFields =
     Array.isArray(
       definition.inputFields,
@@ -2377,10 +2383,10 @@ export default function ApplicationPanelRenderer({
       ) : null}
 
 
-      {fields.length >
+      {visibleFields.length >
       0 ? (
         <dl className="mt-5 grid gap-3">
-          {fields.map(
+          {visibleFields.map(
             (
               field,
               index,
