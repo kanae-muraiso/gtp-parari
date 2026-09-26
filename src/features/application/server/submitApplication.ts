@@ -538,12 +538,18 @@ export async function submitApplication(
     const planLimits =
       getPlanLimits(effectivePlan);
 
+    const planParticipantLimit =
+      application.payment_method === "parari" &&
+      Number(application.payment_amount ?? 0) > 0
+        ? null
+        : planLimits.applicationParticipantLimit;
+
     effectiveLimit =
       resolveEffectiveCapacityLimit(
         getApplicationCapacity(
           application.definition,
         ),
-        planLimits.applicationParticipantLimit,
+        planParticipantLimit,
       );
   }
 
