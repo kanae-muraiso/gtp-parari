@@ -1458,6 +1458,8 @@ export default function ApplicationPanelRenderer({
                 };
 
                 message?: string;
+                checkout_url?: string | null;
+                checkout_message?: string | null;
               }
             | null;
 
