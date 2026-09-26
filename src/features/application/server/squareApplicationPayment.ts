@@ -17,6 +17,8 @@ type EntryRow = {
   id: string;
   application_id: string;
   status: string;
+  user_id: string | null;
+  cancellation_token: string;
   payment_status: string;
   payment_hold_expires_at: string | null;
   pricing_amount: number | string;
@@ -57,7 +59,10 @@ function toMinorUnits(
 }
 
 function resultUrl(
-  entryId: string,
+  entry: Pick<
+    EntryRow,
+    "id" | "user_id" | "cancellation_token"
+  >,
 ): string {
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
@@ -69,11 +74,31 @@ function resultUrl(
     );
   }
 
+  if (
+    !entry.user_id &&
+    /^[0-9a-f]{32}$/.test(
+      entry.cancellation_token,
+    )
+  ) {
+    const guestUrl = new URL(
+      `/c/${entry.cancellation_token}`,
+      base,
+    );
+    guestUrl.searchParams.set(
+      "payment",
+      "return",
+    );
+    return guestUrl.toString();
+  }
+
   const url = new URL(
     "/application/payment/result",
     base,
   );
-  url.searchParams.set("entryId", entryId);
+  url.searchParams.set(
+    "entryId",
+    entry.id,
+  );
   return url.toString();
 }
 
@@ -88,7 +113,7 @@ export async function createSquareCheckoutForEntry(
   } = await supabaseAdmin
     .from("application_entries")
     .select(
-      "id,application_id,status,payment_status,payment_hold_expires_at,pricing_amount,pricing_currency,applicant_email,application_snapshot",
+      "id,application_id,status,user_id,cancellation_token,payment_status,payment_hold_expires_at,pricing_amount,pricing_currency,applicant_email,application_snapshot",
     )
     .eq("id", entryId)
     .maybeSingle();
@@ -98,6 +123,16 @@ export async function createSquareCheckoutForEntry(
   }
 
   const entry = entryData as EntryRow;
+
+  if (
+    !["submitted", "confirmed"].includes(
+      entry.status,
+    )
+  ) {
+    throw new Error(
+      "APPLICATION_PAYMENT_NOT_ACTIVE",
+    );
+  }
 
   if (
     entry.status === "expired" ||
@@ -257,7 +292,7 @@ export async function createSquareCheckoutForEntry(
       amountMinor,
       currency,
       redirectUrl:
-        resultUrl(entry.id),
+        resultUrl(entry),
       buyerEmail:
         entry.applicant_email,
       paymentNote:
