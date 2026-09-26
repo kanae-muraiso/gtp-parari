@@ -79,9 +79,9 @@ export function getParariSquareApplicationFeeBps(): number {
   if (!raw) return 0;
 
   const value = Number(raw);
-  if (!Number.isFinite(value) || value < 0 || value > 10000) {
+  if (!Number.isFinite(value) || value < 0 || value > 9000) {
     throw new Error(
-      "PARARI_SQUARE_APPLICATION_FEE_BPS must be between 0 and 10000",
+      "PARARI_SQUARE_APPLICATION_FEE_BPS must be between 0 and 9000",
     );
   }
 
