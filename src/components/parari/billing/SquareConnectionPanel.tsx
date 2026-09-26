@@ -17,6 +17,10 @@ export default function SquareConnectionPanel() {
     setConnection,
   ] = React.useState<SquareConnectionState | null>(null);
   const [
+    configured,
+    setConfigured,
+  ] = React.useState(false);
+  const [
     isLoading,
     setIsLoading,
   ] = React.useState(true);
@@ -72,6 +76,7 @@ export default function SquareConnectionPanel() {
             .catch(() => null)) as
             | {
                 ok?: boolean;
+                configured?: boolean;
                 connection?: SquareConnectionState;
               }
             | null;
@@ -87,6 +92,9 @@ export default function SquareConnectionPanel() {
         }
 
         if (!cancelled) {
+          setConfigured(
+            result.configured === true,
+          );
           setConnection(
             result.connection,
           );
@@ -191,6 +199,15 @@ export default function SquareConnectionPanel() {
         <p className="mt-5 text-sm text-slate-500">
           接続状態を確認しています...
         </p>
+      ) : !configured ? (
+        <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4">
+          <div className="text-sm font-bold text-neutral-900">
+            Square連携は準備中です
+          </div>
+          <p className="mt-1 text-xs leading-6 text-neutral-600">
+            PARARI側のSquare設定が完了すると、ここから接続できるようになります。
+          </p>
+        </div>
       ) : connection?.connected ? (
         <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-4">
           <div className="text-sm font-bold text-emerald-900">
