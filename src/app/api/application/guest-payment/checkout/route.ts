@@ -89,7 +89,9 @@ export async function POST(
             ? "お支払いの受付時間を過ぎました。受付中であれば改めてお申し込みください。"
             : code === "APPLICATION_ALREADY_PAID"
               ? "この申込は支払済みです。"
-              : "Square決済を開始できませんでした。",
+              : code === "APPLICATION_PAYMENT_NOT_ACTIVE"
+                ? "この申込は現在支払できません。"
+                : "Square決済を開始できませんでした。",
       },
       {
         status:
