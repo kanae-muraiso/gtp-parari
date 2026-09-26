@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/square-application-payments
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
