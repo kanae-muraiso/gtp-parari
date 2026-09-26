@@ -15,6 +15,9 @@ import {
 import {
   submitApplication,
 } from "@/features/application/server/submitApplication";
+import {
+  createSquareCheckoutForEntry,
+} from "@/features/application/server/squareApplicationPayment";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 function getBearerToken(
@@ -124,9 +127,51 @@ export async function POST(
       );
     }
 
+    const entry =
+      result.entry &&
+      typeof result.entry === "object" &&
+      !Array.isArray(result.entry)
+        ? result.entry as Record<string, unknown>
+        : null;
+
+    const snapshot =
+      entry?.application_snapshot &&
+      typeof entry.application_snapshot === "object" &&
+      !Array.isArray(entry.application_snapshot)
+        ? entry.application_snapshot as Record<string, unknown>
+        : null;
+
+    let checkoutUrl: string | null = null;
+    let checkoutMessage: string | null = null;
+
+    if (
+      typeof entry?.id === "string" &&
+      entry.payment_status === "unpaid" &&
+      snapshot?.payment_method === "parari"
+    ) {
+      try {
+        const checkout =
+          await createSquareCheckoutForEntry(
+            entry.id,
+          );
+
+        checkoutUrl = checkout.url;
+      } catch (checkoutError) {
+        console.error(
+          "[APPLICATION submit] Square checkout failed:",
+          checkoutError,
+        );
+
+        checkoutMessage =
+          "申込は受け付けましたが、Square決済を開始できませんでした。もう一度お支払いをお試しください。";
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       entry: result.entry,
+      checkout_url: checkoutUrl,
+      checkout_message: checkoutMessage,
     });
   } catch (error) {
     console.error(
