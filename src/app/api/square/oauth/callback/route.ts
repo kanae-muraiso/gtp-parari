@@ -78,6 +78,7 @@ export async function GET(
     }
 
     const {
+      data: consumedState,
       error: consumeError,
     } = await supabaseAdmin
       .from("square_oauth_states")
@@ -85,10 +86,18 @@ export async function GET(
         consumed_at: new Date().toISOString(),
       })
       .eq("id", stateRow.id)
-      .is("consumed_at", null);
+      .is("consumed_at", null)
+      .select("id")
+      .maybeSingle();
 
-    if (consumeError) {
-      throw consumeError;
+    if (
+      consumeError ||
+      !consumedState
+    ) {
+      return NextResponse.redirect(
+        resultUrl(request, "invalid-state"),
+        303,
+      );
     }
 
     const token =
@@ -98,12 +107,22 @@ export async function GET(
         token.access_token,
       );
 
-    await saveSquareConnection({
-      ownerUserId: stateRow.owner_user_id,
-      merchantId:
+    const merchantId =
+      (
         token.merchant_id ||
         location.merchant_id ||
-        "",
+        ""
+      ).trim();
+
+    if (!merchantId) {
+      throw new Error(
+        "Square merchant ID was not returned.",
+      );
+    }
+
+    await saveSquareConnection({
+      ownerUserId: stateRow.owner_user_id,
+      merchantId,
       locationId: location.id,
       accessToken: token.access_token,
       refreshToken:
