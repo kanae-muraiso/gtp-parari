@@ -30,3 +30,4 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: diagnostic-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: diagnostic-service-role-key
