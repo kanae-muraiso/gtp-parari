@@ -497,7 +497,10 @@ export async function GET(
       );
 
     const planParticipantLimit =
-      limits.applicationParticipantLimit;
+      application.payment_method === "parari" &&
+      Number(application.payment_amount ?? 0) > 0
+        ? null
+        : limits.applicationParticipantLimit;
 
 
     // ========================================================
