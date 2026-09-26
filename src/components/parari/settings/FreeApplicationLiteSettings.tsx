@@ -26,7 +26,7 @@ export default function FreeApplicationLiteSettings({
   return (
     <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
       <div className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-6 text-neutral-700">
-        FREEではAPPLICATIONは1つまで作成できます。申込者は10名までです。
+        FREEではAPPLICATIONは1つまで作成できます。無料のAPPLICATIONは申込者10名までです。PARARI決済を使う有料APPLICATIONは、プランによる人数上限を設けません。
       </div>
 
       <label className="mt-4 block">
