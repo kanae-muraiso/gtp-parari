@@ -1475,34 +1475,6 @@ export async function POST(
       );
     }
 
-    if (
-      paymentMethod === "parari" &&
-      acceptanceMode !== "instant"
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "PARARI決済は現在、即時確定のAPPLICATIONで利用できます。",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (
-      paymentMethod === "parari" &&
-      !(await hasActiveSquareConnection(auth.user.id))
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "PARARI決済を使うには、先に設定画面でSquareを接続してください。",
-        },
-        { status: 409 },
-      );
-    }
-
   if (!isCancellationMode(cancellationMode)) {
     return NextResponse.json(
       { ok: false, message: "キャンセル設定が正しくありません。" },
@@ -2058,6 +2030,34 @@ export async function PATCH(
         {
           status: 400,
         },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      acceptanceMode !== "instant"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済は現在、即時確定のAPPLICATIONで利用できます。",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      !(await hasActiveSquareConnection(auth.user.id))
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済を使うには、先に設定画面でSquareを接続してください。",
+        },
+        { status: 409 },
       );
     }
 
