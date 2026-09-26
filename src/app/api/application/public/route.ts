@@ -75,7 +75,8 @@ type ApplicationRow = {
     | "none"
     | "on_site"
     | "bank_transfer"
-    | "payment_link";
+    | "payment_link"
+    | "parari";
 
   payment_amount:
     | number
