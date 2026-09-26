@@ -129,7 +129,8 @@ export type ApplicationPaymentMethod =
   | "none"
   | "on_site"
   | "bank_transfer"
-  | "payment_link";
+  | "payment_link"
+  | "parari";
 
 export type ApplicationEntryStatus =
   | "submitted"
