@@ -4,6 +4,7 @@ import {
   getSquareApiBase,
   getSquareApplicationId,
   getSquareApplicationSecret,
+  getSquareOAuthRedirectUrl,
   SQUARE_API_VERSION,
 } from "./config";
 
@@ -91,6 +92,8 @@ export async function exchangeSquareOAuthCode(
         client_secret: getSquareApplicationSecret(),
         code,
         grant_type: "authorization_code",
+        redirect_uri:
+          getSquareOAuthRedirectUrl(),
       },
     },
   );
