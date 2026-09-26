@@ -5,6 +5,9 @@ import {
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getSquareConnection } from "@/lib/square/connection";
+import {
+  squarePlatformConfigured,
+} from "@/lib/square/config";
 
 function bearerToken(
   request: NextRequest,
@@ -46,6 +49,8 @@ export async function GET(
 
   return NextResponse.json({
     ok: true,
+    configured:
+      squarePlatformConfigured(),
     connection: connection
       ? {
           connected:
