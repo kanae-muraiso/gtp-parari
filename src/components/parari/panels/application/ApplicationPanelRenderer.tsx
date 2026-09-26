@@ -536,6 +536,8 @@ export default function ApplicationPanelRenderer({
                 ok?: boolean;
                 form?: ApplicationForm;
                 message?: string;
+                checkout_url?: string | null;
+                checkout_message?: string | null;
               }
             | null;
 
@@ -1470,6 +1472,19 @@ export default function ApplicationPanelRenderer({
           );
 
           return;
+        }
+
+        if (result.checkout_url) {
+          window.location.assign(
+            result.checkout_url,
+          );
+          return;
+        }
+
+        if (result.checkout_message) {
+          setApplicationSubmitMessage(
+            result.checkout_message,
+          );
         }
 
           setCompletedEntry({
