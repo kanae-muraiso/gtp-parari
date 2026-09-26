@@ -221,6 +221,26 @@ function isCancellationMode(
   );
 }
 
+async function hasActiveSquareConnection(
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("square_connections")
+    .select("status")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Square connection check failed:",
+      error,
+    );
+    return false;
+  }
+
+  return data?.status === "active";
+}
+
 function definitionHasCalendarBlock(definition: unknown): boolean {
   if (!definition || typeof definition !== "object" || Array.isArray(definition)) {
     return false;
@@ -1424,6 +1444,62 @@ export async function POST(
         {
           status: 400,
         },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      acceptanceMode !== "instant"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済は現在、即時確定のAPPLICATIONで利用できます。",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      !(await hasActiveSquareConnection(auth.user.id))
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済を使うには、先に設定画面でSquareを接続してください。",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      acceptanceMode !== "instant"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済は現在、即時確定のAPPLICATIONで利用できます。",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      paymentMethod === "parari" &&
+      !(await hasActiveSquareConnection(auth.user.id))
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "PARARI決済を使うには、先に設定画面でSquareを接続してください。",
+        },
+        { status: 409 },
       );
     }
 
