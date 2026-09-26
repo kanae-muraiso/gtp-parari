@@ -2007,8 +2007,8 @@ export async function PATCH(
     }
 
     if (
-      access.effectivePlan === "free" &&
-      access.isMonitor !== true &&
+      patchAccess.effectivePlan === "free" &&
+      patchAccess.isMonitor !== true &&
       paymentMethod !== "none" &&
       paymentMethod !== "parari"
     ) {
