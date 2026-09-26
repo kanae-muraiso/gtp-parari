@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   getSquareApiBase,
   getSquareApplicationId,
+  getSquareEnvironment,
   getSquareOAuthRedirectUrl,
 } from "@/lib/square/config";
 
@@ -102,10 +103,12 @@ export async function POST(
       "state",
       state,
     );
-    authorizeUrl.searchParams.set(
-      "session",
-      "false",
-    );
+    if (getSquareEnvironment() === "production") {
+      authorizeUrl.searchParams.set(
+        "session",
+        "false",
+      );
+    }
     authorizeUrl.searchParams.set(
       "redirect_uri",
       getSquareOAuthRedirectUrl(),
