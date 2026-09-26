@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 
 type SquareConnectionState = {
   connected: boolean;
