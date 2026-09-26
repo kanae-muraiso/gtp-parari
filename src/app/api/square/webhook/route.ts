@@ -242,6 +242,8 @@ export async function POST(
       );
     }
 
+    const amountMinor =
+      payment.amount_money.amount;
     const currency =
       payment.amount_money.currency
         .toUpperCase();
@@ -253,9 +255,8 @@ export async function POST(
       ]).has(currency);
     const amount =
       zeroDecimal
-        ? payment.amount_money.amount
-        : payment.amount_money.amount /
-          100;
+        ? amountMinor
+        : amountMinor / 100;
 
     const {
       data: completionRows,
@@ -295,8 +296,7 @@ export async function POST(
         accessToken:
           connection.accessToken,
         paymentId: payment.id,
-        amountMinor:
-          payment.amount_money.amount,
+        amountMinor,
         currency,
         idempotencyKey:
           `late-${eventId}`.slice(0, 45),
