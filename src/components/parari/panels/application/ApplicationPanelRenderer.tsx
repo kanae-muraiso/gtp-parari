@@ -332,6 +332,12 @@ export default function ApplicationPanelRenderer({
       React.useState(false);
 
     const [
+      isStartingOnlinePayment,
+      setIsStartingOnlinePayment,
+    ] =
+      React.useState(false);
+
+    const [
       paymentMessage,
       setPaymentMessage,
     ] =
@@ -536,6 +542,8 @@ export default function ApplicationPanelRenderer({
                 ok?: boolean;
                 form?: ApplicationForm;
                 message?: string;
+                checkout_url?: string | null;
+                checkout_message?: string | null;
               }
             | null;
 
@@ -1450,6 +1458,8 @@ export default function ApplicationPanelRenderer({
                 };
 
                 message?: string;
+                checkout_url?: string | null;
+                checkout_message?: string | null;
               }
             | null;
 
@@ -1470,6 +1480,19 @@ export default function ApplicationPanelRenderer({
           );
 
           return;
+        }
+
+        if (result.checkout_url) {
+          window.location.assign(
+            result.checkout_url,
+          );
+          return;
+        }
+
+        if (result.checkout_message) {
+          setApplicationSubmitMessage(
+            result.checkout_message,
+          );
         }
 
           setCompletedEntry({
@@ -1944,6 +1967,85 @@ export default function ApplicationPanelRenderer({
       }
     }
 
+    async function startSquarePayment() {
+      if (
+        !completedEntry ||
+        isStartingOnlinePayment
+      ) {
+        return;
+      }
+
+      setIsStartingOnlinePayment(true);
+      setPaymentMessage("");
+
+      try {
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setPaymentMessage(
+            "ログイン状態を確認できませんでした。",
+          );
+          return;
+        }
+
+        const response = await fetch(
+          "/api/application/payment/checkout",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              entryId:
+                completedEntry.id,
+            }),
+          },
+        );
+
+        const result =
+          (await response
+            .json()
+            .catch(() => null)) as
+            | {
+                ok?: boolean;
+                url?: string;
+                message?: string;
+              }
+            | null;
+
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !result.url
+        ) {
+          setPaymentMessage(
+            result?.message ??
+              "Square決済を開始できませんでした。",
+          );
+          return;
+        }
+
+        window.location.assign(
+          result.url,
+        );
+      } catch (error) {
+        setPaymentMessage(
+          error instanceof Error
+            ? error.message
+            : "Square決済を開始できませんでした。",
+        );
+      } finally {
+        setIsStartingOnlinePayment(false);
+      }
+    }
+
+
     async function cancelCompletedEntry() {
       if (
         !applicationId ||
@@ -2251,7 +2353,9 @@ export default function ApplicationPanelRenderer({
         ? "銀行振込"
         : application.payment_method === "payment_link"
           ? "オンライン支払"
-          : "";
+          : application.payment_method === "parari"
+            ? "PARARI決済（Square）"
+            : "";
 
   const litePaymentAmount =
     typeof application.payment_amount === "number" &&
@@ -3032,9 +3136,15 @@ export default function ApplicationPanelRenderer({
               payment={entryPayment}
               qualificationReady={qualificationReady}
               isReportingPayment={isReportingPayment}
+              isStartingOnlinePayment={
+                isStartingOnlinePayment
+              }
               paymentMessage={paymentMessage}
               onReportPayment={() => {
                 void reportPayment();
+              }}
+              onStartOnlinePayment={() => {
+                void startSquarePayment();
               }}
               canCancel={
                 application.cancellation_mode !== "not_allowed" &&

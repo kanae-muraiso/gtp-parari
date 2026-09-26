@@ -54,10 +54,22 @@ export async function GET(request: NextRequest) {
         result.entry.application_snapshot,
       );
 
+    const snapshot =
+      result.entry.application_snapshot &&
+      typeof result.entry.application_snapshot === "object" &&
+      !Array.isArray(result.entry.application_snapshot)
+        ? result.entry.application_snapshot as Record<string, unknown>
+        : null;
+
     return NextResponse.json({
       ok: true,
       application_title: result.application.title,
       entry_status: result.entry.status,
+      payment_status: result.entry.payment_status,
+      payment_method:
+        typeof snapshot?.payment_method === "string"
+          ? snapshot.payment_method
+          : "none",
       delivery:
         delivery
           ? delivery.kind === "work"

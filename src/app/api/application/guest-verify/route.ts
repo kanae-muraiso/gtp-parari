@@ -13,6 +13,9 @@ import {
 import {
   submitApplication,
 } from "@/features/application/server/submitApplication";
+import {
+  createSquareCheckoutForEntry,
+} from "@/features/application/server/squareApplicationPayment";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 type PendingVerification = {
@@ -300,6 +303,42 @@ export async function GET(
         pending,
         entry,
       );
+
+    const entryRecord =
+      entry &&
+      typeof entry === "object" &&
+      !Array.isArray(entry)
+        ? entry as Record<string, unknown>
+        : null;
+
+    const snapshot =
+      entryRecord?.application_snapshot &&
+      typeof entryRecord.application_snapshot === "object" &&
+      !Array.isArray(entryRecord.application_snapshot)
+        ? entryRecord.application_snapshot as Record<string, unknown>
+        : null;
+
+    if (
+      entryRecord?.payment_status === "unpaid" &&
+      snapshot?.payment_method === "parari"
+    ) {
+      try {
+        const checkout =
+          await createSquareCheckoutForEntry(
+            entryView.id,
+          );
+
+        return NextResponse.redirect(
+          checkout.url,
+          303,
+        );
+      } catch (checkoutError) {
+        console.error(
+          "[APPLICATION guest verification] Square checkout failed:",
+          checkoutError,
+        );
+      }
+    }
 
     return NextResponse.redirect(
       new URL(

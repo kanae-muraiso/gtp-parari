@@ -2283,7 +2283,6 @@ export default function ApplicationManager({
         paymentAmount.trim();
 
       if (
-        !isFreePlan &&
         paymentMethod !== "none" &&
         !hasCalendarPricing
       ) {
@@ -2497,12 +2496,12 @@ export default function ApplicationManager({
                     : acceptanceMode,
                   
                   paymentMethod:
-                    isFreePlan
+                    isFreePlan &&
+                    paymentMethod !== "parari"
                       ? "none"
                       : paymentMethod,
 
                   paymentAmount:
-                    isFreePlan ||
                     paymentMethod === "none" ||
                     hasCalendarPricing
                       ? null
@@ -2971,6 +2970,14 @@ export default function ApplicationManager({
                 actionLabel={actionLabel}
                 onActionLabelChange={
                   setActionLabel
+                }
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={
+                  setPaymentMethod
+                }
+                paymentAmount={paymentAmount}
+                onPaymentAmountChange={
+                  setPaymentAmount
                 }
               />
             ) : (
