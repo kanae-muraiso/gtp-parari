@@ -43,6 +43,7 @@ const PAYMENT_METHODS = [
   "on_site",
   "bank_transfer",
   "payment_link",
+  "parari",
 ] as const;
 
 const CANCELLATION_MODES = [
