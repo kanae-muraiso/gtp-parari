@@ -1373,6 +1373,38 @@ export async function POST(
     }
 
     if (
+      access.effectivePlan === "free" &&
+      access.isMonitor !== true &&
+      paymentMethod !== "none" &&
+      paymentMethod !== "parari"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEでは無料またはPARARI決済を選択してください。",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (
+      access.effectivePlan === "free" &&
+      access.isMonitor !== true &&
+      paymentMethod !== "none" &&
+      paymentMethod !== "parari"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "FREEでは無料またはPARARI決済を選択してください。",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (
       !canUseIntegratedSales &&
       paymentMethod === "payment_link"
     ) {
