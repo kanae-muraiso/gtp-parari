@@ -87,3 +87,13 @@ export function getParariSquareApplicationFeeBps(): number {
 
   return value;
 }
+
+
+export function squarePlatformConfigured(): boolean {
+  return Boolean(
+    process.env.SQUARE_APPLICATION_ID?.trim() &&
+    process.env.SQUARE_APPLICATION_SECRET?.trim() &&
+    process.env.SQUARE_TOKEN_ENCRYPTION_KEY?.trim() &&
+    process.env.SQUARE_WEBHOOK_SIGNATURE_KEY?.trim()
+  );
+}
