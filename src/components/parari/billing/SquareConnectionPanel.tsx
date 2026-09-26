@@ -30,6 +30,10 @@ export default function SquareConnectionPanel() {
   ] = React.useState("");
 
   async function accessToken(): Promise<string | null> {
+    if (!supabase) {
+      return null;
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
