@@ -302,7 +302,10 @@ export function getApplicationEntryStatusLabel(
       return "取下げ";
 
     case "cancelled":
-      return "キャンセル";
+      return "キャンセル済み";
+
+    case "expired":
+      return "支払期限切れ";
 
     default:
       return status;
