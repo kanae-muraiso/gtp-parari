@@ -4,7 +4,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -205,12 +204,12 @@ export default function MyPassesPage() {
                         この参加証は受付済みです。
                       </p>
                     ) : null}
-                    <Link
+                    <a
                       href={`/my/applications?entry=${encodeURIComponent(pass.entry_id)}`}
                       className="inline-flex rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
                     >
                       申込内容・条件を確認
-                    </Link>
+                    </a>
                   </div>
                 </details>
               );
