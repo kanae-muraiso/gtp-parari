@@ -4,11 +4,11 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
-import ApplicationMemberCancellationButton from "@/components/parari/application/ApplicationMemberCancellationButton";
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
 
 type MyPass = {
@@ -199,26 +199,19 @@ export default function MyPassesPage() {
                     storageHint="library"
                   />
 
-                  {pass.checked_in_at ? (
-                    <p className="mt-4 text-sm leading-6 text-neutral-500">
-                      受付済みの参加証はキャンセルできません。
-                    </p>
-                  ) : (
-                    <div className="mt-4 border-t border-neutral-100 pt-4">
-                      <ApplicationMemberCancellationButton
-                        applicationId={pass.application_id}
-                        status="confirmed"
-                        onCompleted={() => {
-                          setPasses((current) =>
-                            current.filter(
-                              (item) => item.entry_id !== pass.entry_id,
-                            ),
-                          );
-                          setNotice("参加をキャンセルしました。申込履歴には記録が残ります。");
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="mt-4 border-t border-neutral-100 pt-4">
+                    {pass.checked_in_at ? (
+                      <p className="mb-3 text-sm leading-6 text-neutral-500">
+                        この参加証は受付済みです。
+                      </p>
+                    ) : null}
+                    <Link
+                      href={`/my/applications?entry=${encodeURIComponent(pass.entry_id)}`}
+                      className="inline-flex rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
+                    >
+                      申込内容・条件を確認
+                    </Link>
+                  </div>
                 </details>
               );
             })}
