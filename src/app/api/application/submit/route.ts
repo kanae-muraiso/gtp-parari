@@ -74,6 +74,7 @@ export async function POST(
             formSubmissionId?: unknown;
             occurrenceId?: unknown;
             answers?: unknown;
+            sourceContext?: unknown;
           }
         | null;
 
@@ -111,6 +112,15 @@ export async function POST(
           : "",
       occurrenceId,
       answers: body?.answers,
+      sourceContext:
+        body?.sourceContext &&
+        typeof body.sourceContext === "object" &&
+        !Array.isArray(body.sourceContext)
+          ? body.sourceContext as {
+              path?: unknown;
+              title?: unknown;
+            }
+          : null,
       identity: {
         kind: "member",
         userId: user.id,
