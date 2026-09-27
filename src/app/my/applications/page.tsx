@@ -621,6 +621,47 @@ export default function MyApplicationsPage() {
     string | null
   >(null);
 
+
+  React.useEffect(() => {
+    if (
+      entries.length === 0 ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const entryId =
+      new URLSearchParams(
+        window.location.search,
+      )
+        .get("entry")
+        ?.trim() ?? "";
+
+    if (
+      !entryId ||
+      !entries.some(
+        (entry) =>
+          entry.id === entryId,
+      )
+    ) {
+      return;
+    }
+
+    setOpenEntryId(entryId);
+    setOpenMessageEntryId(null);
+
+    window.setTimeout(() => {
+      document
+        .getElementById(
+          `application-entry-${entryId}`,
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 0);
+  }, [entries]);
+
   const [
     openMessageEntryId,
     setOpenMessageEntryId,
@@ -1295,10 +1336,11 @@ export default function MyApplicationsPage() {
 
                 return (
                   <section
+                    id={`application-entry-${entry.id}`}
                     key={
                       entry.id
                     }
-                    className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm"
+                    className="scroll-mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm"
                   >
                     <div className="p-6">
                       <div className="flex flex-wrap items-start justify-between gap-4">
