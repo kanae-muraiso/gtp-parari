@@ -137,7 +137,8 @@ export type ApplicationEntryStatus =
   | "confirmed"
   | "rejected"
   | "withdrawn"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export type ApplicationEntryAnswer = {
   field_id: string;
