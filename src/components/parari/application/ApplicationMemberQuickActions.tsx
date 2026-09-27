@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
@@ -167,12 +166,12 @@ export default function ApplicationMemberQuickActions() {
                 </div>
               </div>
 
-              <Link
+              <a
                 href={`/my/applications?entry=${encodeURIComponent(entry.id)}`}
                 className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
               >
                 申込内容を確認
-              </Link>
+              </a>
             </div>
 
             {entry.status === "confirmed" &&
