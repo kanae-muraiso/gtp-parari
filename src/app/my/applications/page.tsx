@@ -62,6 +62,16 @@ type MyApplicationEntry = {
     acceptance_mode:
       | string
       | null;
+    payment_method: string;
+    payment_amount: number | null;
+    payment_currency: string;
+    cancellation_mode: string;
+    cancellation_deadline_at: string | null;
+    cancellation_cutoff_minutes: number | null;
+    source_context: {
+      path: string;
+      title: string | null;
+    } | null;
     version: number;
   };
 
@@ -260,6 +270,45 @@ function statusLabel(
     default:
       return entry.status;
   }
+}
+
+
+function paymentStatusLabel(
+  status: MyApplicationEntry["payment_status"],
+) {
+  switch (status) {
+    case "paid":
+      return "支払済み";
+    case "unpaid":
+      return "支払待ち";
+    case "reported":
+      return "支払連絡済み";
+    default:
+      return "支払なし";
+  }
+}
+
+function cancellationLabel(
+  entry: MyApplicationEntry,
+) {
+  const mode =
+    entry.application.cancellation_mode;
+
+  if (mode === "anytime") {
+    return "キャンセル可";
+  }
+
+  if (mode === "until_deadline") {
+    const deadline =
+      entry.application
+        .cancellation_deadline_at;
+
+    return deadline
+      ? `キャンセル可（期限：${formatDateTime(deadline)}）`
+      : "キャンセル可（期限あり）";
+  }
+
+  return "キャンセル不可";
 }
 
 
@@ -1368,6 +1417,14 @@ export default function MyApplicationsPage() {
                             {" "}
                             申込
                           </div>
+
+                          {entry.application.source_context ? (
+                            <div className="mt-2 text-xs leading-5 text-neutral-500">
+                              申込元：
+                              {entry.application.source_context.title ||
+                                entry.application.source_context.path}
+                            </div>
+                          ) : null}
                         </div>
 
                         <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
@@ -1443,6 +1500,67 @@ export default function MyApplicationsPage() {
 
                     {isOpen ? (
                       <div className="border-t border-neutral-100 bg-neutral-50 px-6 py-6">
+                        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                          <div className="text-xs font-bold text-neutral-400">
+                            申込元
+                          </div>
+
+                          <div className="mt-2 text-sm font-bold text-neutral-950">
+                            {entry.application.source_context?.title ||
+                              entry.application.title}
+                          </div>
+
+                          {entry.application.source_context?.path ? (
+                            <a
+                              href={
+                                entry.application.source_context.path
+                              }
+                              className="mt-3 inline-flex rounded-full bg-neutral-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-neutral-700"
+                            >
+                              元の募集ページを見る
+                            </a>
+                          ) : (
+                            <p className="mt-2 text-xs leading-6 text-neutral-500">
+                              この申込には元ページ情報が保存されていません。
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                            <div className="text-xs font-bold text-neutral-400">
+                              支払状況
+                            </div>
+                            <div className="mt-2 text-sm font-bold text-neutral-950">
+                              {paymentStatusLabel(
+                                entry.payment_status,
+                              )}
+                            </div>
+                            {entry.application.payment_amount !== null ? (
+                              <div className="mt-1 text-xs text-neutral-500">
+                                {entry.application.payment_amount.toLocaleString("ja-JP")}
+                                {entry.application.payment_currency === "JPY"
+                                  ? "円"
+                                  : ` ${entry.application.payment_currency}`}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                            <div className="text-xs font-bold text-neutral-400">
+                              キャンセル条件
+                            </div>
+                            <div className="mt-2 text-sm font-bold text-neutral-950">
+                              {cancellationLabel(
+                                entry,
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">
+                              申込時に保存された条件を表示しています。
+                            </p>
+                          </div>
+                        </div>
+
                         {entry
                           .application
                           .description ? (
