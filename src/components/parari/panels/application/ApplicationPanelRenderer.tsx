@@ -1415,6 +1415,17 @@ export default function ApplicationPanelRenderer({
                     ? submissionIdForApplication
                     : null,
 
+                sourceContext:
+                  typeof window !== "undefined"
+                    ? {
+                        path:
+                          window.location.pathname +
+                          window.location.search,
+                        title:
+                          document.title,
+                      }
+                    : null,
+
               }),
             },
           );
