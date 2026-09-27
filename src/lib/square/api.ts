@@ -244,3 +244,50 @@ export async function refundSquarePayment(input: {
     },
   });
 }
+
+
+export async function revokeSquareOAuthAuthorization(
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch(
+    `${getSquareApiBase()}/oauth2/revoke`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Square-Version": SQUARE_API_VERSION,
+        Authorization:
+          `Client ${getSquareApplicationSecret()}`,
+      },
+      body: JSON.stringify({
+        access_token: accessToken,
+        client_id: getSquareApplicationId(),
+        revoke_only_access_token: false,
+      }),
+      cache: "no-store",
+    },
+  );
+
+  const json = (await response
+    .json()
+    .catch(() => ({}))) as {
+      success?: boolean;
+      errors?: SquareApiError[];
+    };
+
+  if (!response.ok || json.success !== true) {
+    const detail =
+      json.errors
+        ?.map(
+          (error) =>
+            [error.code, error.detail]
+              .filter(Boolean)
+              .join(": "),
+        )
+        .filter(Boolean)
+        .join("; ") ||
+      `Square OAuth revoke failed with status ${response.status}`;
+
+    throw new Error(detail);
+  }
+}
