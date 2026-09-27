@@ -84,7 +84,10 @@ export default function ApplicationEntryStatusPanel({
             ? "この参加予約はキャンセル済みです。必要であれば、受付中の間は改めて申し込めます。"
             : entry.status === "expired"
               ? "15分の支払期限を過ぎたため、この申込は失効しました。受付中であれば改めてお申し込みください。"
-              : "現在、主催者の確認待ちです。";
+              : payment?.method === "parari" &&
+                  entry.payment_status === "unpaid"
+                ? "お申し込みを受け付けました。Squareでのお支払いを完了してください。"
+                : "現在、主催者の確認待ちです。";
 
   return (
     <>
