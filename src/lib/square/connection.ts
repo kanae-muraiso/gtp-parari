@@ -6,9 +6,14 @@ import {
   encryptSquareToken,
 } from "./crypto";
 import { refreshSquareOAuthToken } from "./api";
+import {
+  getSquareEnvironment,
+  type SquareEnvironment,
+} from "./config";
 
 type SquareConnectionRow = {
   owner_user_id: string;
+  environment: SquareEnvironment;
   merchant_id: string;
   location_id: string;
   access_token_enc: string;
@@ -41,9 +46,10 @@ export async function getSquareConnection(
   const { data, error } = await supabaseAdmin
     .from("square_connections")
     .select(
-      "owner_user_id,merchant_id,location_id,access_token_enc,refresh_token_enc,token_expires_at,status",
+      "owner_user_id,environment,merchant_id,location_id,access_token_enc,refresh_token_enc,token_expires_at,status",
     )
     .eq("owner_user_id", ownerUserId)
+    .eq("environment", getSquareEnvironment())
     .maybeSingle();
 
   if (error) {
@@ -68,6 +74,7 @@ export async function saveSquareConnection(input: {
     .upsert(
       {
         owner_user_id: input.ownerUserId,
+        environment: getSquareEnvironment(),
         merchant_id: input.merchantId,
         location_id: input.locationId,
         access_token_enc:
@@ -81,7 +88,7 @@ export async function saveSquareConnection(input: {
         updated_at: new Date().toISOString(),
       },
       {
-        onConflict: "owner_user_id",
+        onConflict: "owner_user_id,environment",
       },
     );
 
