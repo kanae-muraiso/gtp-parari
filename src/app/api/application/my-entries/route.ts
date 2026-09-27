@@ -44,6 +44,118 @@ function getBearerToken(
 }
 
 
+type ApplicationSourceContext = {
+  path: string;
+  title: string | null;
+};
+
+function readSnapshotSourceContext(
+  snapshot: JsonRecord,
+): ApplicationSourceContext | null {
+  const source =
+    asRecord(
+      snapshot.source_context,
+    );
+
+  const path =
+    typeof source?.path === "string"
+      ? source.path.trim()
+      : "";
+
+  if (
+    !path ||
+    !path.startsWith("/") ||
+    path.startsWith("//")
+  ) {
+    return null;
+  }
+
+  const title =
+    typeof source?.title === "string" &&
+    source.title.trim()
+      ? source.title.trim()
+      : null;
+
+  return {
+    path,
+    title,
+  };
+}
+
+async function resolveFallbackApplicationSources(
+  applicationIds: string[],
+): Promise<Map<string, ApplicationSourceContext>> {
+  const result =
+    new Map<string, ApplicationSourceContext>();
+
+  for (const applicationId of applicationIds) {
+    const {
+      data: work,
+      error: workError,
+    } = await supabaseAdmin
+      .from("parari_books")
+      .select(
+        "id,title,owner,stable_slug,slug,custom_slug",
+      )
+      .ilike(
+        "content",
+        `%${applicationId}%`,
+      )
+      .or(
+        "is_deleted.is.null,is_deleted.eq.false",
+      )
+      .limit(1)
+      .maybeSingle();
+
+    if (workError || !work) {
+      continue;
+    }
+
+    const {
+      data: profile,
+      error: profileError,
+    } = await supabaseAdmin
+      .from("profiles")
+      .select("username")
+      .eq("user_id", work.owner)
+      .maybeSingle();
+
+    if (
+      profileError ||
+      !profile?.username
+    ) {
+      continue;
+    }
+
+    const slug =
+      String(
+        work.custom_slug ||
+        work.slug ||
+        work.stable_slug ||
+        "",
+      ).trim();
+
+    if (!slug) {
+      continue;
+    }
+
+    result.set(
+      applicationId,
+      {
+        path:
+          `/${encodeURIComponent(profile.username)}/${encodeURIComponent(slug)}`,
+        title:
+          typeof work.title === "string" &&
+          work.title.trim()
+            ? work.title.trim()
+            : null,
+      },
+    );
+  }
+
+  return result;
+}
+
 function asRecord(
   value: unknown,
 ): JsonRecord | null {
@@ -611,6 +723,29 @@ export async function GET(
           ),
       );
 
+    const fallbackSources =
+      await resolveFallbackApplicationSources(
+        Array.from(
+          new Set(
+            visibleEntries
+              .filter((entry) => {
+                const snapshot =
+                  asRecord(
+                    entry.application_snapshot,
+                  ) ?? {};
+
+                return !readSnapshotSourceContext(
+                  snapshot,
+                );
+              })
+              .map(
+                (entry) =>
+                  entry.application_id,
+              ),
+          ),
+        ),
+      );
+
 
     const submissionIds =
       Array.from(
@@ -768,6 +903,55 @@ export async function GET(
                 "string"
                   ? snapshot.acceptance_mode
                   : null,
+
+              payment_method:
+                typeof snapshot.payment_method ===
+                "string"
+                  ? snapshot.payment_method
+                  : "none",
+
+              payment_amount:
+                typeof snapshot.payment_amount ===
+                  "number"
+                  ? snapshot.payment_amount
+                  : typeof snapshot.payment_amount ===
+                      "string" &&
+                      snapshot.payment_amount.trim()
+                    ? Number(snapshot.payment_amount)
+                    : null,
+
+              payment_currency:
+                typeof snapshot.payment_currency ===
+                  "string"
+                  ? snapshot.payment_currency
+                  : "JPY",
+
+              cancellation_mode:
+                typeof snapshot.cancellation_mode ===
+                  "string"
+                  ? snapshot.cancellation_mode
+                  : "not_allowed",
+
+              cancellation_deadline_at:
+                typeof snapshot.cancellation_deadline_at ===
+                  "string"
+                  ? snapshot.cancellation_deadline_at
+                  : null,
+
+              cancellation_cutoff_minutes:
+                typeof snapshot.cancellation_cutoff_minutes ===
+                  "number"
+                  ? snapshot.cancellation_cutoff_minutes
+                  : null,
+
+              source_context:
+                readSnapshotSourceContext(
+                  snapshot,
+                ) ??
+                fallbackSources.get(
+                  entry.application_id,
+                ) ??
+                null,
 
               pass_enabled:
                 passEnabledByApplicationId.get(
