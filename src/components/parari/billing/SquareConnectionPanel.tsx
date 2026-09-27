@@ -32,6 +32,10 @@ export default function SquareConnectionPanel() {
     message,
     setMessage,
   ] = React.useState("");
+  const [
+    isDisconnecting,
+    setIsDisconnecting,
+  ] = React.useState(false);
 
   async function accessToken(): Promise<string | null> {
     if (!supabase) {
@@ -180,6 +184,85 @@ export default function SquareConnectionPanel() {
     }
   }
 
+  async function disconnectSquare() {
+    if (
+      isDisconnecting ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Squareとの連携を解除しますか？\n解除すると、新しいPARARI決済を受け付けるには再接続が必要です。",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDisconnecting(true);
+    setMessage("");
+
+    try {
+      const token = await accessToken();
+
+      if (!token) {
+        throw new Error(
+          "ログイン情報を確認できませんでした。",
+        );
+      }
+
+      const response = await fetch(
+        "/api/square/connection",
+        {
+          method: "DELETE",
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        },
+      );
+
+      const result =
+        (await response
+          .json()
+          .catch(() => null)) as
+          | {
+              ok?: boolean;
+              message?: string;
+            }
+          | null;
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        throw new Error(
+          result?.message ??
+            "Square連携を解除できませんでした。",
+        );
+      }
+
+      setConnection({
+        connected: false,
+        merchantId: null,
+        locationId: null,
+        status: null,
+      });
+      setMessage(
+        "Square連携を解除しました。",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Square連携を解除できませんでした。",
+      );
+    } finally {
+      setIsDisconnecting(false);
+    }
+  }
+
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
@@ -216,6 +299,19 @@ export default function SquareConnectionPanel() {
           <p className="mt-1 text-xs leading-6 text-emerald-800">
             このアカウントでPARARI決済を受け付けられます。
           </p>
+
+          <button
+            type="button"
+            disabled={isDisconnecting}
+            onClick={() => {
+              void disconnectSquare();
+            }}
+            className="mt-4 rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-40"
+          >
+            {isDisconnecting
+              ? "解除しています..."
+              : "Square連携を解除"}
+          </button>
         </div>
       ) : (
         <button
