@@ -5,7 +5,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -580,8 +579,6 @@ function getAgreement(
 
 
 export default function MyApplicationsPage() {
-  const searchParams = useSearchParams();
-
   const [
     deviceTimezone,
     setDeviceTimezone,
@@ -642,7 +639,9 @@ export default function MyApplicationsPage() {
     }
 
     const entryId =
-      searchParams
+      new URLSearchParams(
+        window.location.search,
+      )
         .get("entry")
         ?.trim() ?? "";
 
@@ -669,7 +668,7 @@ export default function MyApplicationsPage() {
           block: "start",
         });
     }, 0);
-  }, [entries, searchParams]);
+  }, [entries]);
 
   const [
     openMessageEntryId,
