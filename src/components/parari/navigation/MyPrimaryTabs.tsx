@@ -9,9 +9,6 @@
 
 "use client";
 
-import { usePathname } from "next/navigation";
-
-import ApplicationMemberQuickActions from "@/components/parari/application/ApplicationMemberQuickActions";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
@@ -63,8 +60,6 @@ const MESSAGES_ITEM: Item = {
 };
 
 export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
-  const pathname = usePathname();
-
   const {
     hasApplications,
     hasCalendar,
@@ -86,12 +81,6 @@ export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
   }
 
   return (
-    <>
-      <ParariTabs items={items} active={active} />
-
-      {pathname === "/my/applications" ? (
-        <ApplicationMemberQuickActions />
-      ) : null}
-    </>
+    <ParariTabs items={items} active={active} />
   );
 }
