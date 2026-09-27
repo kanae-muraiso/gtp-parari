@@ -121,7 +121,7 @@ export default function ApplicationPolicySettings({
         </div>
 
         <p className="mt-1 text-xs leading-5 text-neutral-500">
-          無料または現地払いを設定できます。
+          無料、現地払い、またはPARARI決済（Square）を設定できます。
         </p>
 
         <div className="mt-4">
@@ -144,6 +144,10 @@ export default function ApplicationPolicySettings({
 
             <option value="on_site">
               現地払い
+            </option>
+
+            <option value="parari">
+              PARARI決済（Square）
             </option>
 
             {paymentMethod === "bank_transfer" ? (

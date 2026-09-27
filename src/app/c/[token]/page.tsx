@@ -12,6 +12,8 @@ import type {
 type CancellationInfo = {
   application_title: string;
   entry_status: string;
+  payment_status: string;
+  payment_method: string;
   pass_code: string | null;
   can_cancel: boolean;
   action: "withdraw" | "cancel";
@@ -73,6 +75,7 @@ export default function GuestApplicationCancellationPage() {
   const [message, setMessage] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
+  const [startingPayment, setStartingPayment] = React.useState(false);
   const [completed, setCompleted] = React.useState(false);
   const [refundNotice, setRefundNotice] = React.useState<string | null>(null);
 
@@ -121,6 +124,10 @@ export default function GuestApplicationCancellationPage() {
         setInfo({
           application_title: result.application_title,
           entry_status: result.entry_status ?? "",
+          payment_status:
+            result.payment_status ?? "not_required",
+          payment_method:
+            result.payment_method ?? "none",
           pass_code:
             typeof result.pass_code === "string"
               ? result.pass_code
@@ -172,6 +179,70 @@ export default function GuestApplicationCancellationPage() {
       cancelled = true;
     };
   }, [token]);
+
+  async function startSquarePayment() {
+    if (
+      !info ||
+      info.payment_method !== "parari" ||
+      info.payment_status !== "unpaid" ||
+      startingPayment
+    ) {
+      return;
+    }
+
+    setStartingPayment(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/application/guest-payment/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        },
+      );
+
+      const result =
+        (await response
+          .json()
+          .catch(() => null)) as
+          | {
+              ok?: boolean;
+              url?: string;
+              message?: string;
+            }
+          | null;
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.url
+      ) {
+        setMessage(
+          result?.message ??
+            "Square決済を開始できませんでした。",
+        );
+        return;
+      }
+
+      window.location.assign(
+        result.url,
+      );
+    } catch (error) {
+      console.error(
+        "[APPLICATION guest payment] start failed:",
+        error,
+      );
+      setMessage(
+        "Square決済を開始できませんでした。",
+      );
+    } finally {
+      setStartingPayment(false);
+    }
+  }
 
   async function submitCancellation() {
     if (!info?.can_cancel || submitting) return;
@@ -270,6 +341,24 @@ export default function GuestApplicationCancellationPage() {
                 </p>
               ) : null}
             </div>
+
+            {info.payment_method === "parari" &&
+            info.payment_status === "unpaid" &&
+            (info.entry_status === "submitted" ||
+              info.entry_status === "confirmed") ? (
+              <button
+                type="button"
+                disabled={startingPayment}
+                onClick={() => {
+                  void startSquarePayment();
+                }}
+                className="mt-6 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+              >
+                {startingPayment
+                  ? "Squareを開いています..."
+                  : "Squareで支払う"}
+              </button>
+            ) : null}
 
             {info.entry_status === "confirmed" && info.pass_code ? (
               <section className="mt-6">

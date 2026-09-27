@@ -833,7 +833,8 @@ export type PublicApplication = {
     | "none"
     | "on_site"
     | "bank_transfer"
-    | "payment_link";
+    | "payment_link"
+    | "parari";
 
   payment_amount:
     | number
@@ -912,7 +913,8 @@ export type SnapshotPaymentMethod =
   | "none"
   | "on_site"
   | "bank_transfer"
-  | "payment_link";
+  | "payment_link"
+  | "parari";
 
 
 export function getSnapshotPayment(
@@ -937,7 +939,9 @@ export function getSnapshotPayment(
       rawMethod ===
         "bank_transfer" ||
       rawMethod ===
-        "payment_link"
+        "payment_link" ||
+      rawMethod ===
+        "parari"
         ? rawMethod
         : "none";
 

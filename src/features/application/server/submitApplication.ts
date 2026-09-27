@@ -85,11 +85,17 @@ export type ApplicationSubmitIdentity =
       userId: string;
     };
 
+export type ApplicationSourceContext = {
+  path?: unknown;
+  title?: unknown;
+};
+
 export type SubmitApplicationInput = {
   applicationId: string;
   formSubmissionId?: string;
   occurrenceId?: string;
   answers?: unknown;
+  sourceContext?: ApplicationSourceContext | null;
   identity: ApplicationSubmitIdentity;
 };
 
@@ -123,6 +129,42 @@ function fail(
   };
 }
 
+
+function normalizeSourceContext(
+  value: ApplicationSourceContext | null | undefined,
+): {
+  path: string;
+  title: string | null;
+} | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const path =
+    typeof value.path === "string"
+      ? value.path.trim()
+      : "";
+
+  if (
+    !path ||
+    !path.startsWith("/") ||
+    path.startsWith("//") ||
+    path.length > 2000
+  ) {
+    return null;
+  }
+
+  const title =
+    typeof value.title === "string"
+      ? value.title.trim().slice(0, 300)
+      : "";
+
+  return {
+    path,
+    title: title || null,
+  };
+}
+
 export async function submitApplication(
   input: SubmitApplicationInput,
 ): Promise<SubmitApplicationResult> {
@@ -131,6 +173,10 @@ export async function submitApplication(
     input.formSubmissionId?.trim() ?? "";
   const occurrenceId =
     input.occurrenceId?.trim() ?? "";
+  const sourceContext =
+    normalizeSourceContext(
+      input.sourceContext,
+    );
 
   if (!UUID_RE.test(applicationId)) {
     return fail(
@@ -538,12 +584,18 @@ export async function submitApplication(
     const planLimits =
       getPlanLimits(effectivePlan);
 
+    const planParticipantLimit =
+      application.payment_method === "parari" &&
+      Number(application.payment_amount ?? 0) > 0
+        ? null
+        : planLimits.applicationParticipantLimit;
+
     effectiveLimit =
       resolveEffectiveCapacityLimit(
         getApplicationCapacity(
           application.definition,
         ),
-        planLimits.applicationParticipantLimit,
+        planParticipantLimit,
       );
   }
 
@@ -582,6 +634,8 @@ export async function submitApplication(
       application.cancellation_deadline_at,
     cancellation_cutoff_minutes:
       application.cancellation_cutoff_minutes,
+    source_context:
+      sourceContext,
     version: application.version,
     calendar_occurrence:
       calendarOccurrence

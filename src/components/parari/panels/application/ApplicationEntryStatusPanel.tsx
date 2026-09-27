@@ -17,7 +17,8 @@ type EntryPayment = {
     | "none"
     | "on_site"
     | "bank_transfer"
-    | "payment_link";
+    | "payment_link"
+    | "parari";
   amount: number | null;
   instructions: string | null;
   url: string | null;
@@ -31,8 +32,10 @@ type Props = {
   payment: EntryPayment | null;
   qualificationReady: boolean;
   isReportingPayment: boolean;
+  isStartingOnlinePayment: boolean;
   paymentMessage: string;
   onReportPayment: () => void;
+  onStartOnlinePayment: () => void;
   canCancel: boolean;
   isCancelling: boolean;
   cancellationMessage: string;
@@ -44,8 +47,10 @@ export default function ApplicationEntryStatusPanel({
   payment,
   qualificationReady,
   isReportingPayment,
+  isStartingOnlinePayment,
   paymentMessage,
   onReportPayment,
+  onStartOnlinePayment,
   canCancel,
   isCancelling,
   cancellationMessage,
@@ -79,7 +84,10 @@ export default function ApplicationEntryStatusPanel({
             ? "この参加予約はキャンセル済みです。必要であれば、受付中の間は改めて申し込めます。"
             : entry.status === "expired"
               ? "15分の支払期限を過ぎたため、この申込は失効しました。受付中であれば改めてお申し込みください。"
-              : "現在、主催者の確認待ちです。";
+              : payment?.method === "parari" &&
+                  entry.payment_status === "unpaid"
+                ? "お申し込みを受け付けました。Squareでのお支払いを完了してください。"
+                : "現在、主催者の確認待ちです。";
 
   return (
     <>
@@ -152,6 +160,20 @@ export default function ApplicationEntryStatusPanel({
                 </a>
               ) : null}
 
+              {payment.method === "parari" ? (
+                <button
+                  type="button"
+                  disabled={isStartingOnlinePayment}
+                  onClick={onStartOnlinePayment}
+                  className="mt-4 w-full rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+                >
+                  {isStartingOnlinePayment
+                    ? "Squareを開いています..."
+                    : "Squareで支払う"}
+                </button>
+              ) : null}
+
+              {payment.method !== "parari" ? (
               <button
                 type="button"
                 disabled={isReportingPayment}
@@ -162,11 +184,18 @@ export default function ApplicationEntryStatusPanel({
                   ? "送信中..."
                   : "支払いました"}
               </button>
+              ) : null}
 
-              <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
-                支払後にこのボタンを押してください。
-                主催者が着金を確認すると「支払確認済み」になります。
-              </p>
+              {payment.method !== "parari" ? (
+                <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
+                  支払後にこのボタンを押してください。
+                  主催者が着金を確認すると「支払確認済み」になります。
+                </p>
+              ) : (
+                <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
+                  Squareでの支払完了はPARARIへ自動反映されます。
+                </p>
+              )}
             </>
           )}
 

@@ -75,7 +75,8 @@ type ApplicationRow = {
     | "none"
     | "on_site"
     | "bank_transfer"
-    | "payment_link";
+    | "payment_link"
+    | "parari";
 
   payment_amount:
     | number
@@ -497,7 +498,10 @@ export async function GET(
       );
 
     const planParticipantLimit =
-      limits.applicationParticipantLimit;
+      application.payment_method === "parari" &&
+      Number(application.payment_amount ?? 0) > 0
+        ? null
+        : limits.applicationParticipantLimit;
 
 
     // ========================================================

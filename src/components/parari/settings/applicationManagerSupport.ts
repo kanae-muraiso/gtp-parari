@@ -129,14 +129,16 @@ export type ApplicationPaymentMethod =
   | "none"
   | "on_site"
   | "bank_transfer"
-  | "payment_link";
+  | "payment_link"
+  | "parari";
 
 export type ApplicationEntryStatus =
   | "submitted"
   | "confirmed"
   | "rejected"
   | "withdrawn"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export type ApplicationEntryAnswer = {
   field_id: string;
@@ -301,7 +303,10 @@ export function getApplicationEntryStatusLabel(
       return "取下げ";
 
     case "cancelled":
-      return "キャンセル";
+      return "キャンセル済み";
+
+    case "expired":
+      return "支払期限切れ";
 
     default:
       return status;
