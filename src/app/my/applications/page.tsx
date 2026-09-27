@@ -5,6 +5,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -231,10 +232,18 @@ function formatDateTime(
 
 
 function statusLabel(
-  status: EntryStatus,
+  entry: MyApplicationEntry,
 ) {
-  switch (status) {
+  switch (entry.status) {
     case "submitted":
+      if (
+        entry.application.acceptance_mode === "instant"
+      ) {
+        return entry.payment_status === "unpaid"
+          ? "支払待ち"
+          : "受付済み";
+      }
+
       return "承認待ち";
 
     case "confirmed":
@@ -250,7 +259,7 @@ function statusLabel(
       return "キャンセル";
 
     default:
-      return status;
+      return entry.status;
   }
 }
 
@@ -571,6 +580,8 @@ function getAgreement(
 
 
 export default function MyApplicationsPage() {
+  const searchParams = useSearchParams();
+
   const [
     deviceTimezone,
     setDeviceTimezone,
@@ -631,9 +642,7 @@ export default function MyApplicationsPage() {
     }
 
     const entryId =
-      new URLSearchParams(
-        window.location.search,
-      )
+      searchParams
         .get("entry")
         ?.trim() ?? "";
 
@@ -660,7 +669,7 @@ export default function MyApplicationsPage() {
           block: "start",
         });
     }, 0);
-  }, [entries]);
+  }, [entries, searchParams]);
 
   const [
     openMessageEntryId,
@@ -1364,7 +1373,7 @@ export default function MyApplicationsPage() {
 
                         <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
                           {statusLabel(
-                            entry.status,
+                            entry,
                           )}
                         </span>
                       </div>
