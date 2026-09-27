@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
-import ApplicationMemberCancellationButton from "@/components/parari/application/ApplicationMemberCancellationButton";
 import ApplicationPassCard from "@/components/parari/panels/application/ApplicationPassCard";
 
 type EntryStatus =
@@ -33,7 +33,6 @@ export default function ApplicationMemberQuickActions() {
   const [entries, setEntries] = React.useState<ActiveQuickEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [message, setMessage] = React.useState("");
-  const [notice, setNotice] = React.useState("");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -146,15 +145,9 @@ export default function ApplicationMemberQuickActions() {
       </div>
       <p className="mt-1 text-xs leading-6 text-neutral-500">
         {hasPasses
-          ? "確定した参加証の表示、申込の取り下げ・キャンセルができます。"
-          : "申込の取り下げ・キャンセルができます。"}
+          ? "確定した参加証の表示と、申込時の内容・条件を確認できます。"
+          : "申込時の内容・条件を確認できます。"}
       </p>
-
-      {notice ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
-          {notice}
-        </div>
-      ) : null}
 
       <div className="mt-4 space-y-3">
         {entries.map((entry) => (
@@ -174,22 +167,12 @@ export default function ApplicationMemberQuickActions() {
                 </div>
               </div>
 
-              <ApplicationMemberCancellationButton
-                applicationId={entry.application.id}
-                status={entry.status}
-                onCompleted={(result) => {
-                  setEntries((current) =>
-                    current.filter(
-                      (item) => item.id !== entry.id,
-                    ),
-                  );
-                  setNotice(
-                    result === "withdrawn"
-                      ? "申込を取り下げました。"
-                      : "参加をキャンセルしました。",
-                  );
-                }}
-              />
+              <Link
+                href={`/my/applications?entry=${encodeURIComponent(entry.id)}`}
+                className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
+              >
+                申込内容を確認
+              </Link>
             </div>
 
             {entry.status === "confirmed" &&
