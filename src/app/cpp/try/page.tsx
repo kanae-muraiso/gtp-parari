@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -12,6 +13,7 @@ type ParariIdentity = {
 };
 
 export default function CppTryPage() {
+  const router = useRouter();
   const supabase = useMemo(() => sharedSupabase, []);
   const [identity, setIdentity] = useState<ParariIdentity | null>(null);
   const [registered, setRegistered] = useState(false);
@@ -140,8 +142,8 @@ export default function CppTryPage() {
     setSaving(false);
   };
 
-  const saveEvidence = async () => {
-    if (!supabase || !identity || saving || (!deferred && !evidence.trim())) return;
+  const saveEvidence = async (): Promise<boolean> => {
+    if (!supabase || !identity || saving || (!deferred && !evidence.trim())) return false;
     setSaving(true);
     setErrorMessage("");
     setEvidenceSaved(false);
@@ -151,8 +153,16 @@ export default function CppTryPage() {
       research_evidence_updated_at: new Date().toISOString(),
     }).eq("user_id", identity.userId);
     setSaving(false);
-    if (error) setErrorMessage(`研究活動の情報を保存できませんでした: ${error.message}`);
-    else setEvidenceSaved(true);
+    if (error) {
+      setErrorMessage(`研究活動の情報を保存できませんでした: ${error.message}`);
+      return false;
+    }
+    setEvidenceSaved(true);
+    return true;
+  };
+
+  const openWorkbook = async () => {
+    if (await saveEvidence()) router.push("/cpp/try/workbook");
   };
 
   const evidenceForm = (
@@ -169,6 +179,15 @@ export default function CppTryPage() {
         今は用意できないので、後で入力する
       </label>
       {deferred ? <p className="mt-2 text-amber-800">後で入力する方には、CPPから確認のご連絡をする場合があります。</p> : null}
+      {registered ? (
+        <div className="mt-5 border-t border-sky-200 pt-4">
+          <button type="button" onClick={() => void saveEvidence()} disabled={saving || (!deferred && !evidence.trim())}
+            className="rounded-full bg-sky-700 px-5 py-2.5 font-bold text-white disabled:opacity-40">
+            {saving ? "保存しています…" : "この内容を保存する"}
+          </button>
+          {evidenceSaved ? <p className="mt-2 text-sm text-emerald-800">保存しました。</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -192,7 +211,7 @@ export default function CppTryPage() {
             PARARIにログインして続ける
           </Link>
           <div className="mt-5">
-            <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">← CPP登録入口へ</Link>
+            <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">← CPPの案内ページに戻る</Link>
           </div>
         </div>
       </main>
@@ -206,25 +225,17 @@ export default function CppTryPage() {
           <Header identity={identity} />
           <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
             <div className="text-xs font-bold tracking-[0.18em] text-emerald-700">CPP RESEARCHER</div>
-            <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者プロフィールがあります</h1>
+            <h1 className="mt-3 text-2xl font-bold text-neutral-950">研究者登録は完了しています</h1>
             {errorMessage ? <p className="mt-4 text-sm text-red-700">{errorMessage}</p> : null}
             <p className="mt-3 text-sm leading-7 text-neutral-600">
-              CPP WORKBOOKで入力を続けるか、現在のプロフィールを企業から見た画面で確認できます。
+              研究歴がわかるページを入力してください。今は用意できない場合は「後で入力する」を選んで、ワークブックへ進めます。
             </p>
             {evidenceForm}
-            <button type="button" onClick={() => void saveEvidence()} disabled={saving || (!deferred && !evidence.trim())}
-              className="mt-4 rounded-full border border-sky-700 px-5 py-2.5 text-sm font-bold text-sky-800 disabled:opacity-40">
-              {saving ? "保存しています…" : "研究活動の情報を保存する"}
+            <button type="button" onClick={() => void openWorkbook()}
+              disabled={saving || (!deferred && !evidence.trim())}
+              className="mt-7 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
+              {saving ? "保存して移動しています…" : "保存してワークブックを開く"}
             </button>
-            {evidenceSaved ? <p className="mt-2 text-sm text-emerald-800">保存しました。</p> : null}
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/cpp/try/workbook" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
-                CPP WORKBOOKを開く
-              </Link>
-              <Link href="/my/cpp/preview" className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-800">
-                企業から見る
-              </Link>
-            </div>
           </section>
         </div>
       </main>
@@ -299,7 +310,7 @@ function Header({ identity }: { identity: ParariIdentity }) {
           {identity.displayName} <span className="font-normal text-neutral-400">@{identity.username}</span>
         </div>
       </div>
-      <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">CPP登録入口へ</Link>
+      <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">CPPの案内ページに戻る</Link>
     </header>
   );
 }
