@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const navigation = [
   { label: "CPPについて", href: "https://cppweb.jp/", external: true },
-  { label: "研究者の方", href: "/cpp/try" },
+  { label: "研究者の方", href: "/cpp/researchers" },
   { label: "企業の方", href: "/cpp/company/try" },
   { label: "CPP Alumni（同窓生の方）", href: "/cpp/alumni" },
   { label: "イベント・お知らせ", href: "https://cppweb.jp/", external: true },
