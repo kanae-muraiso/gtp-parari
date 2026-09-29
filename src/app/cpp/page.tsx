@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -23,9 +24,15 @@ export default function CppEntryPage() {
           <p className="mt-0.5 text-lg font-medium">Career Planning Program</p>
         </header>
 
-        <div aria-hidden="true" className="relative mt-5 h-32 overflow-hidden rounded-xl bg-gradient-to-b from-sky-100 via-sky-200 to-slate-300">
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-[#7a93a7] [clip-path:polygon(0_75%,25%_24%,39%_63%,63%_12%,100%_72%,100%_100%,0_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-[#385878] [clip-path:polygon(0_68%,22%_35%,43%_80%,70%_20%,100%_60%,100%_100%,0_100%)]" />
+        <div className="relative mt-5 h-32 overflow-hidden rounded-xl">
+          <Image
+            src="/cpp-landscape.webp"
+            alt="静かな湖面と、その向こうに連なる山並み"
+            fill
+            priority
+            sizes="(max-width: 640px) 100vw, 448px"
+            className="object-cover"
+          />
         </div>
 
         <p className="my-6 text-center text-lg font-bold leading-relaxed">
