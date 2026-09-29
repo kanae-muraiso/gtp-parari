@@ -14,8 +14,6 @@ type ProfileRow = {
   degree_level: string | null;
   degree_text: string | null;
   self_appeal: string | null;
-  orcid_id: string | null;
-  orcid_verified_at: string | null;
 };
 
 type KeywordRow = { id: string; keyword: string };
@@ -36,7 +34,7 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
       const [profileResult, keywordsResult, summariesResult] = await Promise.all([
         supabase
           .from("cpp_profiles")
-          .select("user_id, public_name, photo_path, affiliation, position_title, degree_level, degree_text, self_appeal, orcid_id, orcid_verified_at")
+          .select("user_id, public_name, photo_path, affiliation, position_title, degree_level, degree_text, self_appeal")
           .eq("user_id", userId)
           .eq("visibility", "published")
           .maybeSingle<ProfileRow>(),
@@ -89,11 +87,6 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
             <div>
               <div className="text-xs font-black tracking-[0.17em] text-neutral-400">MATCHING PROFILE</div>
               <h1 className="mt-2 text-3xl font-black text-neutral-950">{profile.public_name || "氏名未設定"}</h1>
-              {profile.orcid_id && profile.orcid_verified_at ? (
-                <a href={`https://orcid.org/${profile.orcid_id}`} className="mt-2 inline-block text-sm font-semibold text-emerald-800 underline">
-                  ORCID認証済み · {profile.orcid_id}
-                </a>
-              ) : null}
               <p className="mt-3 text-sm leading-7 text-neutral-600">{[profile.affiliation, profile.position_title].filter(Boolean).join(" · ")}</p>
               {(profile.degree_text || profile.degree_level) ? <p className="mt-1 text-sm text-neutral-500">{profile.degree_text || profile.degree_level}</p> : null}
               {keywords.length > 0 ? (
