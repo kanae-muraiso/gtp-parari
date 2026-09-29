@@ -61,7 +61,7 @@ export default function CppEntryPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li>登録・編集にはPARARIアカウントを使用します。</li>
               <li>企業・団体の登録にはCPPが発行する招待コードが必要です。</li>
-              <li>研究者登録ではORCID認証を使用し、研究歴や業績は別途確認します。</li>
+              <li>研究者登録では研究活動を示す公開情報を伺います。後日提出も選べます。</li>
             </ul>
           </div>
         </details>
