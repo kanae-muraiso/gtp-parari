@@ -157,18 +157,18 @@ export default function CppTryPage() {
 
   const evidenceForm = (
     <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-7 text-neutral-700">
-      <div className="font-bold text-neutral-950">研究活動を確認できる情報</div>
-      <p className="mt-1">所属機関の公開プロフィールや代表論文のDOIなどを入力してください。CPPが必要に応じて内容を確認します。今は用意できない場合、後から提出できます。</p>
+      <div className="font-bold text-neutral-950">研究歴がわかるページ</div>
+      <p className="mt-1">大学・研究機関の紹介ページ、researchmap、論文の掲載ページなど、ご自身の研究歴がわかるものを1つ教えてください。現在、研究機関に所属していなくても大丈夫です。</p>
       <label className="mt-4 block">
-        <span className="mb-2 block text-xs font-semibold">公開プロフィールのURL・代表論文のDOIなど</span>
+        <span className="mb-2 block text-xs font-semibold">ページのURL、または論文のDOI</span>
         <textarea value={evidence} onChange={(event) => { setEvidence(event.target.value); setEvidenceSaved(false); }} disabled={deferred} maxLength={2000} rows={3}
-          className={`${inputClassName} disabled:bg-neutral-100`} placeholder="https://... または DOI: 10...." />
+          className={`${inputClassName} disabled:bg-neutral-100`} placeholder="https://... または 10...." />
       </label>
       <label className="mt-3 flex items-center gap-2">
         <input type="checkbox" checked={deferred} onChange={(event) => { setDeferred(event.target.checked); setEvidenceSaved(false); }} />
-        今は用意できないので後日提出する
+        今は用意できないので、後で入力する
       </label>
-      {deferred ? <p className="mt-2 text-amber-800">後日提出を選んだ方には、CPPから優先して確認のご連絡をする場合があります。</p> : null}
+      {deferred ? <p className="mt-2 text-amber-800">後で入力する方には、CPPから確認のご連絡をする場合があります。</p> : null}
     </div>
   );
 
