@@ -32,7 +32,7 @@ const topics = [
     title: "登録の流れ",
     paragraphs: [
       "PARARIにログインし、氏名と登録時の確認事項を入力します。登録後はCPP WORKBOOKでプロフィールを作成し、公開する項目を確認してから公開できます。",
-      "現行の登録画面はORCID認証に対応していません。ORCIDを用いた確認の導入は準備中です。現在の登録だけで研究歴や本人性が確認済みになるわけではありません。",
+      "登録時にはPARARIアカウントに加えてORCIDで認証します。ORCID iDを入力するだけでなく、ORCIDの画面でログインし、CPPとの接続を許可していただきます。研究歴や業績は別途プロフィールで確認します。",
     ],
   },
   {
@@ -40,7 +40,7 @@ const topics = [
     paragraphs: [
       "Q. 現在は研究職ではありません。参加できますか？\nA. 過去に研究に携わった方も対象として想定しています。現在の所属先がないことだけで対象外にはなりません。",
       "Q. メールアドレスは公開されますか？\nA. 連絡先として登録するメールアドレスは非公開情報として扱います。一方、公開プロフィールに自分で書いた内容は閲覧者に見えるため、連絡先を書き込まないよう確認してください。",
-      "Q. ORCIDは必須ですか？\nA. 現在の登録画面では使用しません。導入時には登録方法を改めてご案内します。",
+      "Q. ORCIDは必須ですか？\nA. 研究者登録ではORCID認証を標準とします。ORCIDを利用できない場合の確認方法は、CPPから別途ご案内します。",
     ],
   },
 ] as const;
@@ -78,7 +78,7 @@ export default function CppResearchersPage() {
 
         <section className="mt-6 rounded-2xl border border-sky-200 bg-white p-6 text-center shadow-sm sm:p-8">
           <p className="text-sm leading-7 text-slate-700">
-            登録にはPARARIアカウントを使います。現在の登録にはORCIDによる本人確認は含まれません。
+            なりすましを抑えるため、研究者登録ではPARARIアカウントに加えてORCIDで認証します。ORCIDアカウントの操作を確認したうえで、研究歴や業績も確認します。
           </p>
           <Link
             href="/cpp/try"
