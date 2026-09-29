@@ -21,6 +21,9 @@ export default function CppTryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [orcidId, setOrcidId] = useState<string | null>(null);
+  const [orcidChecked, setOrcidChecked] = useState(false);
+  const [connectingOrcid, setConnectingOrcid] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -75,6 +78,35 @@ export default function CppTryPage() {
       });
       setName(displayName);
       setRegistered(Boolean(cppResult.data));
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        setErrorMessage("ログイン情報を確認できませんでした。再度ログインしてください。");
+        setLoading(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/cpp/orcid/status", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("status unavailable");
+        const status: { verified: boolean; orcidId: string | null } = await response.json();
+        if (!active) return;
+        setOrcidId(status.verified ? status.orcidId : null);
+        setOrcidChecked(true);
+      } catch {
+        if (!active) return;
+        setErrorMessage("ORCID認証の状態を確認できませんでした。しばらくしてから再読み込みしてください。");
+      }
+      const result = new URLSearchParams(window.location.search).get("orcid");
+      if (result && result !== "connected") {
+        setErrorMessage(result === "already-linked"
+          ? "このORCID iDは別のPARARIアカウントに接続されています。"
+          : result === "different-account"
+            ? "このPARARIアカウントには別のORCID iDが接続されています。"
+            : "ORCID認証を完了できませんでした。もう一度お試しください。");
+      }
       setLoading(false);
     };
 
@@ -84,8 +116,29 @@ export default function CppTryPage() {
     };
   }, [supabase]);
 
+  const startOrcid = async () => {
+    if (!supabase || connectingOrcid) return;
+    setConnectingOrcid(true);
+    setErrorMessage("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("No session");
+      const response = await fetch("/api/cpp/orcid/start", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("OAuth start failed");
+      const result: { url: string } = await response.json();
+      window.location.assign(result.url);
+    } catch {
+      setErrorMessage("ORCID認証を開始できませんでした。しばらくしてから再度お試しください。");
+      setConnectingOrcid(false);
+    }
+  };
+
   const register = async () => {
-    if (!supabase || !identity || saving) return;
+    if (!supabase || !identity || saving || !orcidId || !orcidChecked) return;
     const publicName = name.trim();
     if (!publicName || !agreeTruth || !agreePublic) return;
 
@@ -166,9 +219,20 @@ export default function CppTryPage() {
           <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
             <div className="text-xs font-bold tracking-[0.18em] text-emerald-700">CPP RESEARCHER</div>
             <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者プロフィールがあります</h1>
+            {errorMessage ? <p className="mt-4 text-sm text-red-700">{errorMessage}</p> : null}
             <p className="mt-3 text-sm leading-7 text-neutral-600">
               CPP WORKBOOKで入力を続けるか、現在のプロフィールを企業から見た画面で確認できます。
             </p>
+            <div className="mt-5 text-sm text-neutral-700">
+              {orcidId ? (
+                <>ORCID認証済み: <a className="underline" href={`https://orcid.org/${orcidId}`}>{orcidId}</a></>
+              ) : (
+                <button type="button" onClick={() => void startOrcid()} disabled={connectingOrcid || !orcidChecked}
+                  className="rounded-full border border-neutral-300 px-5 py-2.5 font-bold disabled:opacity-50">
+                  {connectingOrcid ? "ORCIDへ移動しています…" : "ORCIDで認証する"}
+                </button>
+              )}
+            </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/cpp/try/workbook" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
                 CPP WORKBOOKを開く
@@ -194,6 +258,19 @@ export default function CppTryPage() {
           <p className="mt-3 text-sm leading-7 text-neutral-600">
             登録後、CPP WORKBOOKで研究内容や経歴を少しずつ作成できます。入力内容は保存され、公開するタイミングは自分で決められます。
           </p>
+
+          <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-7 text-neutral-700">
+            <div className="font-bold text-neutral-950">最初にORCIDで認証してください</div>
+            <p className="mt-1">ORCIDの画面でログインし、CPPとの接続を許可します。認証されたORCID iDは研究者プロフィールに自動記録されます。</p>
+            {orcidId ? (
+              <p className="mt-3 font-bold text-emerald-800">認証済み: {orcidId}</p>
+            ) : (
+              <button type="button" onClick={() => void startOrcid()} disabled={connectingOrcid || !orcidChecked}
+                className="mt-4 rounded-full bg-sky-700 px-5 py-2.5 font-bold text-white disabled:opacity-50">
+                {connectingOrcid ? "ORCIDへ移動しています…" : "ORCIDで認証する"}
+              </button>
+            )}
+          </div>
 
           {errorMessage ? (
             <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -229,7 +306,7 @@ export default function CppTryPage() {
           <button
             type="button"
             onClick={() => void register()}
-            disabled={!name.trim() || !agreeTruth || !agreePublic || saving}
+            disabled={!orcidId || !orcidChecked || !name.trim() || !agreeTruth || !agreePublic || saving}
             className="mt-7 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             {saving ? "登録しています…" : "CPP研究者として登録する"}

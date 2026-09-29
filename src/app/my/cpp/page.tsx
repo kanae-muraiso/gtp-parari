@@ -18,6 +18,8 @@ type ProfileBootstrap = {
   public_name: string | null;
   visibility: Visibility;
   published_at: string | null;
+  orcid_id: string | null;
+  orcid_verified_at: string | null;
 };
 
 type PublishProfileCheck = {
@@ -40,6 +42,7 @@ export default function CppWorkbookPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<Visibility>("draft");
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [orcidId, setOrcidId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -68,7 +71,7 @@ export default function CppWorkbookPage() {
     const [profileResult, parariResult] = await Promise.all([
       supabase
         .from("cpp_profiles")
-        .select("user_id, public_name, visibility, published_at")
+        .select("user_id, public_name, visibility, published_at, orcid_id, orcid_verified_at")
         .eq("user_id", user.id)
         .maybeSingle<ProfileBootstrap>(),
       supabase
@@ -92,11 +95,13 @@ export default function CppWorkbookPage() {
           user_id: user.id,
           public_name: parariResult.data?.display_name ?? null,
         })
-        .select("user_id, public_name, visibility, published_at")
+        .select("user_id, public_name, visibility, published_at, orcid_id, orcid_verified_at")
         .single<ProfileBootstrap>();
 
       if (error || !data) {
-        setErrorMessage(`CPPプロフィール作成に失敗しました: ${error?.message ?? "unknown error"}`);
+        setErrorMessage(error?.message?.includes("cpp_orcid_verification_required")
+          ? "先にORCID認証を含むCPP研究者登録を完了してください。"
+          : `CPPプロフィール作成に失敗しました: ${error?.message ?? "unknown error"}`);
         setLoading(false);
         return;
       }
@@ -105,6 +110,7 @@ export default function CppWorkbookPage() {
 
     setVisibility(profile.visibility);
     setPublishedAt(profile.published_at);
+    setOrcidId(profile.orcid_id);
     setLoading(false);
   }, [supabase]);
 
@@ -218,12 +224,22 @@ export default function CppWorkbookPage() {
             <p className="mt-2 text-sm leading-6 text-neutral-500">
               完成を待つ必要はありません。書いたところから保存し、途中でも公開できます。
             </p>
+            {orcidId ? (
+              <p className="mt-2 text-sm text-emerald-800">
+                ORCID認証済み: <a href={`https://orcid.org/${orcidId}`} className="underline">{orcidId}</a>
+              </p>
+            ) : null}
           </div>
 
           {errorMessage ? (
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
               {errorMessage}
             </div>
+          ) : null}
+          {errorMessage.includes("ORCID認証") ? (
+            <Link href="/cpp/try" className="mt-3 inline-block text-sm font-bold text-sky-800 underline">
+              研究者登録へ進む
+            </Link>
           ) : null}
 
           {loading ? (
