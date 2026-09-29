@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import useParariExperience, {
   notifyParariExperienceChanged,
@@ -8,6 +9,7 @@ import useParariExperience, {
 import { supabase } from "@/lib/supabaseClient";
 
 export default function StudioAccessPanel() {
+  const router = useRouter();
   const { studioEnabled, loading, reload } = useParariExperience();
   const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +53,7 @@ export default function StudioAccessPanel() {
     notifyParariExperienceChanged();
     await reload();
     setActivating(false);
+    router.push("/my/works");
   }
 
   // STUDIOを有効にした後は、この「入口」は役目を終える。
