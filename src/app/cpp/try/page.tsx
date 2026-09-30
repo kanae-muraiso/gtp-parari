@@ -99,6 +99,13 @@ export default function CppTryPage() {
     setSaving(true);
     setErrorMessage("");
 
+    const { error: participationError } = await supabase.rpc("cpp_begin_researcher_registration");
+    if (participationError) {
+      setSaving(false);
+      setErrorMessage(participationError.message);
+      return;
+    }
+
     const { error: profileError } = await supabase.from("cpp_profiles").insert({
       user_id: identity.userId,
       public_name: publicName,
@@ -147,6 +154,12 @@ export default function CppTryPage() {
     setSaving(true);
     setErrorMessage("");
     setEvidenceSaved(false);
+    const { error: participationError } = await supabase.rpc("cpp_begin_researcher_registration");
+    if (participationError) {
+      setSaving(false);
+      setErrorMessage(participationError.message);
+      return false;
+    }
     const { error } = await supabase.from("cpp_profiles").update({
       research_evidence: deferred ? null : evidence.trim(),
       research_evidence_deferred: deferred,
@@ -225,7 +238,7 @@ export default function CppTryPage() {
           <Header identity={identity} />
           <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
             <div className="text-xs font-bold tracking-[0.18em] text-emerald-700">CPP RESEARCHER</div>
-            <h1 className="mt-3 text-2xl font-bold text-neutral-950">研究者登録は完了しています</h1>
+            <h1 className="mt-3 text-2xl font-bold text-neutral-950">研究者プロフィールの記入へ</h1>
             {errorMessage ? <p className="mt-4 text-sm text-red-700">{errorMessage}</p> : null}
             <p className="mt-3 text-sm leading-7 text-neutral-600">
               研究歴がわかるページを入力してください。今は用意できない場合は「後で入力する」を選んで、ワークブックへ進めます。
@@ -251,7 +264,7 @@ export default function CppTryPage() {
           <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">CPP REGISTRATION</div>
           <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者として登録</h1>
           <p className="mt-3 text-sm leading-7 text-neutral-600">
-            登録後、CPP WORKBOOKで研究内容や経歴を少しずつ作成できます。入力内容は保存され、公開するタイミングは自分で決められます。
+            氏名・非公開の連絡先・学位情報の必須事項を保存すると、研究者としてCPPに入室できます。同窓会の登録や入力済みの内容はそのまま残ります。研究内容は少しずつ作成でき、プロフィールを公開するタイミングは自分で決められます。
           </p>
 
           {evidenceForm}

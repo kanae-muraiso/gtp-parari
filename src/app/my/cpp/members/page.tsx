@@ -98,13 +98,12 @@ export default function CppMembersPage() {
     return (
       <CenteredCard>
         <div className="text-xs font-black tracking-[0.16em] text-neutral-400">CPP MATCHING</div>
-        <h1 className="mt-3 text-xl font-black text-neutral-950">まだCPPへの入室許可がありません</h1>
+        <h1 className="mt-3 text-xl font-black text-neutral-950">CPPへの入室準備を進めてください</h1>
         <p className="mt-3 text-sm leading-7 text-neutral-600">
-          CPP-R または CPP-C のメンバーシップが発行されると、ここに相手側の参加メンバーが表示されます。
+          研究者はプロフィールの必須事項を保存すると利用できます。同窓会のみで参加している方は、参加設定も変更してください。企業は企業会員の利用条件を満たす必要があります。
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/my/cpp/home" className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white">CPPホームへ</Link>
-          <Link href="/my/cpp/social-profile" className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-bold text-neutral-800">SOCIAL PROFILE</Link>
         </div>
       </CenteredCard>
     );

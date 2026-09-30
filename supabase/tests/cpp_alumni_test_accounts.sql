@@ -50,7 +50,7 @@ do $$ begin
  if not exists(select 1 from public.cpp_matching_context() where organization_key='CPP-R' and view_organization_key='CPP-C') then raise exception 'Approved researcher denied'; end if;
  if cpp_security.can_read_researcher(current_setting('cpp.test_other')::uuid) then raise exception 'Researcher can read another researcher'; end if;
 end $$;
-insert into public.cpp_profiles(user_id,visibility) values(current_setting('cpp.test_user')::uuid,'published');
+update public.cpp_profiles set visibility='published' where user_id=auth.uid();
 select public.cpp_set_alumni_participation('alumni');
 do $$ begin
  if not exists(select 1 from public.cpp_profiles where user_id=auth.uid() and visibility='draft') then raise exception 'Profile not retained as draft'; end if;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import CppResearcherEntryStatus from "@/components/parari/cpp/CppResearcherEntryStatus";
 import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -62,7 +63,7 @@ export default function CppHomePage() {
 
       if (!active) return;
       const firstError =
-        profileResult.error || researcherResult.error || companyResult.error;
+        profileResult.error || researcherResult.error || companyResult.error || contextResult.error || participationResult.error;
       if (firstError) {
         setErrorMessage(`CPPの登録状況を確認できませんでした: ${firstError.message}`);
         return;
@@ -184,7 +185,7 @@ export default function CppHomePage() {
               </div>
             ) : !access.admitted ? (
               <div className="mt-7 rounded-2xl bg-amber-50 p-5 text-sm leading-7 text-amber-950">
-                登録内容を準備できます。閲覧とCPP LIVEは、CPP-RまたはCPP-Cの入室許可後に利用できます。
+                {access.hasResearcherProfile ? <CppResearcherEntryStatus /> : "企業会員の利用条件を確認後、BROWSEとLIVEを利用できます。"}
               </div>
             ) : null}
             {settingsLinks.length ? (
@@ -240,7 +241,7 @@ function HomeCard({
       <h2 className="mt-3 text-2xl font-black text-neutral-950">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-neutral-600">{children}</p>
       <div className="mt-auto pt-7 text-sm font-black text-neutral-950">
-        {disabled ? "入室許可後に利用できます" : "開く →"}
+        {disabled ? "入室条件を満たすと利用できます" : "開く →"}
       </div>
     </>
   );

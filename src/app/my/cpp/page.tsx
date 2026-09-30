@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppProfileBasicsEditor from "@/components/parari/cpp/CppProfileBasicsEditor";
+import CppResearcherEntryStatus from "@/components/parari/cpp/CppResearcherEntryStatus";
 import CppHistoryEditor from "@/components/parari/cpp/CppHistoryEditor";
 
 type Visibility = "draft" | "published";
@@ -20,20 +21,6 @@ type ProfileBootstrap = {
   public_name: string | null;
   visibility: Visibility;
   published_at: string | null;
-};
-
-type PublishProfileCheck = {
-  public_name: string | null;
-  degree_level: string | null;
-  degree_status: string | null;
-  degree_institution: string | null;
-  degree_date: string | null;
-};
-
-type ContactCheck = {
-  email: string | null;
-  phone: string | null;
-  address: string | null;
 };
 
 export default function CppWorkbookPage() {
@@ -113,40 +100,13 @@ function CppWorkbookContent() {
     setStatusMessage("公開条件を確認しています...");
     setErrorMessage("");
 
-    const [profileResult, contactResult] = await Promise.all([
-      supabase
-        .from("cpp_profiles")
-        .select(
-          "public_name, degree_level, degree_status, degree_institution, degree_date",
-        )
-        .eq("user_id", userId)
-        .single<PublishProfileCheck>(),
-      supabase
-        .from("cpp_private_contacts")
-        .select("email, phone, address")
-        .eq("user_id", userId)
-        .maybeSingle<ContactCheck>(),
-    ]);
-
-    const firstError = profileResult.error || contactResult.error;
-    if (firstError) {
+    const result = await supabase.rpc("cpp_researcher_registration_status");
+    if (result.error || !result.data?.[0]) {
       setStatusMessage("");
-      setErrorMessage(`公開条件の確認に失敗しました: ${firstError.message}`);
+      setErrorMessage(`公開条件の確認に失敗しました: ${result.error?.message ?? "ログインを確認してください。"}`);
       return;
     }
-
-    const profile = profileResult.data;
-    const contact = contactResult.data;
-    const missing: string[] = [];
-
-    if (!profile.public_name?.trim()) missing.push("氏名");
-    if (!contact?.email?.trim()) missing.push("メールアドレス");
-    if (!contact?.phone?.trim()) missing.push("電話番号");
-    if (!contact?.address?.trim()) missing.push("住所");
-    if (!profile.degree_status) missing.push("学位の取得状況");
-    if (!profile.degree_level) missing.push("最終学位");
-    if (!profile.degree_institution?.trim()) missing.push("学位の取得場所");
-    if (!profile.degree_date) missing.push("学位の取得・取得予定日");
+    const missing = result.data[0].missing_fields as string[];
 
     if (missing.length > 0) {
       setStatusMessage("");
@@ -227,20 +187,20 @@ function CppWorkbookContent() {
             </div>
           ) : !userId ? (
             <div className="mt-5 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2 className="text-lg font-bold text-neutral-950">Preview側でログインしてください</h2>
+              <h2 className="text-lg font-bold text-neutral-950">ログインしてください</h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600">
-                このPreviewは parari.app とは別ドメインのため、本番サイトのログイン状態は引き継がれません。
-                一度このPreview上でPARARIにログインすると、CPP WORKBOOKを確認できます。
+                CPPに登録したPARARIアカウントでログインすると、プロフィールを編集できます。
               </p>
               <Link
                 href="/login?next=/my/cpp"
                 className="mt-5 inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
               >
-                Previewでログインする
+                ログインする
               </Link>
             </div>
           ) : (
             <div className="mt-5 space-y-5">
+              <CppResearcherEntryStatus editing />
               <CppProfileBasicsEditor userId={userId} userEmail={userEmail} />
               <CppHistoryEditor userId={userId} />
 
@@ -249,7 +209,7 @@ function CppWorkbookContent() {
                   <div>
                     <h2 className="text-base font-bold text-neutral-950">公開設定</h2>
                     <p className="mt-1 text-xs leading-5 text-neutral-500">
-                      公開先は、閲覧条件を満たす企業会員とCPP運営者に限定されます。一般公開はされません。未完成の研究概要や論文リストがあっても公開できます。ただし本人確認に必要な基本情報は公開時に必須です。
+                      公開先は、閲覧条件を満たす企業会員とCPP運営者に限定されます。一般公開はされません。未完成の研究概要や論文リストがあっても公開できます。入室と公開には、氏名・非公開の連絡先・学位情報の必須事項が必要です。
                     </p>
                   </div>
                   <span

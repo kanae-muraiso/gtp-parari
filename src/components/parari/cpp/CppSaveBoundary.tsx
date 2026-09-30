@@ -36,6 +36,7 @@ export default function CppSaveBoundary({ children }: { children: React.ReactNod
           jobs.current.delete(job);
         }
         setMessage("保存しました。");
+        window.dispatchEvent(new Event("cpp-profile-saved"));
         return true;
       } catch (error) {
         setMessage(`保存できませんでした。入力を残しています。${error instanceof Error ? error.message : "再度お試しください。"}`);

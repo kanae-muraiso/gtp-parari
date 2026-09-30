@@ -515,7 +515,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
           </div>
 
           <div className="space-y-5">
-            <Field label="氏名（プロフィール・名札共通）">
+            <Field label="氏名（必須・プロフィール・名札共通）">
               <input
                 value={publicName}
                 onChange={(event) => setPublicName(event.target.value)}
@@ -533,7 +533,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
                   </p>
                 </div>
                 <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
-                  公開時必須
+                  入室・公開に必須
                 </span>
               </div>
 
