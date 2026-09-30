@@ -323,7 +323,7 @@ export default function PublicCppProfilePage() {
   const publicName = cpp.public_name || parari.display_name || parari.username;
   const photoUrl =
     supabase && cpp.photo_path
-      ? supabase.storage.from("parari-images").getPublicUrl(cpp.photo_path).data.publicUrl
+      ? (/^https?:\/\//.test(cpp.photo_path) ? cpp.photo_path : supabase.storage.from("parari-images").getPublicUrl(cpp.photo_path).data.publicUrl)
       : null;
   const education = history.filter((row) => row.kind === "education");
   const career = history.filter((row) => row.kind === "career");

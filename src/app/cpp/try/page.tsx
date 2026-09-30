@@ -162,7 +162,7 @@ export default function CppTryPage() {
   };
 
   const openWorkbook = async () => {
-    if (await saveEvidence()) router.push("/cpp/try/workbook");
+    if (await saveEvidence()) router.push("/my/cpp");
   };
 
   const evidenceForm = (

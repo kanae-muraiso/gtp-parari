@@ -5,6 +5,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import CppSaveBoundary, { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -35,6 +37,12 @@ type ContactCheck = {
 };
 
 export default function CppWorkbookPage() {
+  return <CppSaveBoundary><CppWorkbookContent /></CppSaveBoundary>;
+}
+
+function CppWorkbookContent() {
+  const { flush } = useCppSave();
+  const router = useRouter();
   const supabase = useMemo(() => sharedSupabase, []);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -84,36 +92,23 @@ export default function CppWorkbookPage() {
       return;
     }
 
-    let profile = profileResult.data;
+    const profile = profileResult.data;
     if (!profile) {
-      const { data, error } = await supabase
-        .from("cpp_profiles")
-        .insert({
-          user_id: user.id,
-          public_name: parariResult.data?.display_name ?? null,
-        })
-        .select("user_id, public_name, visibility, published_at")
-        .single<ProfileBootstrap>();
-
-      if (error || !data) {
-        setErrorMessage(`CPPプロフィール作成に失敗しました: ${error?.message ?? "unknown error"}`);
-        setLoading(false);
-        return;
-      }
-      profile = data;
+      router.replace("/cpp/try");
+      return;
     }
 
     setVisibility(profile.visibility);
     setPublishedAt(profile.published_at);
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, router]);
 
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
 
   const publish = useCallback(async () => {
-    if (!supabase || !userId) return;
+    if (!supabase || !userId || !(await flush())) return;
 
     setStatusMessage("公開条件を確認しています...");
     setErrorMessage("");
@@ -178,7 +173,7 @@ export default function CppWorkbookPage() {
     setVisibility("published");
     setPublishedAt(nextPublishedAt);
     setStatusMessage("公開しました");
-  }, [supabase, userId]);
+  }, [supabase, userId, flush]);
 
   const returnToDraft = useCallback(async () => {
     if (!supabase || !userId) return;
@@ -216,7 +211,7 @@ export default function CppWorkbookPage() {
               研究者プロフィール
             </h1>
             <p className="mt-2 text-sm leading-6 text-neutral-500">
-              完成を待つ必要はありません。書いたところから保存し、途中でも公開できます。
+              プロフィールと交流・LIVE用の名札をここで編集します。書きかけでもCPPホームへ戻れます。
             </p>
           </div>
 

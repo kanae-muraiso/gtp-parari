@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -34,6 +35,7 @@ const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export default function CppSocialProfilePage() {
+  const router = useRouter();
   const supabase = useMemo(() => sharedSupabase, []);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -91,6 +93,8 @@ export default function CppSocialProfilePage() {
       return;
     }
 
+    if (cppResult.data) { router.replace("/my/cpp#badge"); return; }
+
     let companyName = "";
     if (!socialResult.data?.affiliation && !cppResult.data?.affiliation) {
       const { data: memberships } = await supabase
@@ -120,7 +124,7 @@ export default function CppSocialProfilePage() {
     setIntro(social?.intro || "");
     setSaved(Boolean(social));
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, router]);
 
   useEffect(() => {
     void load();

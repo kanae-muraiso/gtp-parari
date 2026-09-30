@@ -63,7 +63,7 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
   if (!profile) return <CenteredCard>この研究者プロフィールはまだ公開されていません。</CenteredCard>;
 
   const photoUrl = profile.photo_path && supabase
-    ? supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl
+    ? (/^https?:\/\//.test(profile.photo_path) ? profile.photo_path : supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl)
     : null;
 
   return (

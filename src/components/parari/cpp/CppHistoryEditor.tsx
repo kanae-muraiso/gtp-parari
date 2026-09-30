@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppResearchSummaryEditor from "@/components/parari/cpp/CppResearchSummaryEditor";
 
@@ -34,6 +35,7 @@ type Props = { userId: string | null };
 
 export default function CppHistoryEditor({ userId }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
+  const { queueSave } = useCppSave();
   const [rows, setRows] = useState<LocalHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -256,7 +258,7 @@ function HistoryCard({
   onRowsChange: React.Dispatch<React.SetStateAction<LocalHistoryRow[]>>;
 }) {
   const supabase = useMemo(() => sharedSupabase, []);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { queueSave } = useCppSave();
   const firstRenderRef = useRef(true);
 
   useEffect(() => {
@@ -265,9 +267,8 @@ function HistoryCard({
       return;
     }
     if (!supabase || row.saveState === "saving" || row.saveState === "saved") return;
-    if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id
@@ -300,12 +301,9 @@ function HistoryCard({
             : item,
         ),
       );
-    }, 600);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [row, onRowsChange, supabase]);
+      if (error) throw new Error(error.message);
+    });
+  }, [row, onRowsChange, supabase, queueSave]);
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">

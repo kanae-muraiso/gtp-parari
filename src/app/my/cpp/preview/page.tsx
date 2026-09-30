@@ -229,7 +229,7 @@ export default function CppCompanyPreviewPage() {
   const { profile, fields, keywords, summaries, publications, history } = loaded;
   const photoUrl =
     supabase && profile.photo_path
-      ? supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl
+      ? (/^https?:\/\//.test(profile.photo_path) ? profile.photo_path : supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl)
       : null;
   const education = history.filter((row) => row.kind === "education");
   const career = history.filter((row) => row.kind === "career");

@@ -175,8 +175,8 @@ export default function CppHomePage() {
             </HomeCard>
 
             {access.hasResearcherProfile ? (
-              <HomeCard href="/my/cpp" eyebrow="RESEARCHER" title="研究者プロフィール">
-                研究内容、経歴、研究成果を編集・公開します。
+              <HomeCard href="/my/cpp" eyebrow="RESEARCHER" title="プロフィール・名札を編集">
+                研究者プロフィールと交流・LIVE用の名札を編集します。
               </HomeCard>
             ) : null}
 
