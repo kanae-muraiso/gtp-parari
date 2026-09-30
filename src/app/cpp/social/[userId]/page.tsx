@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import CppMessageRecipient from "@/components/parari/cpp/messages/CppMessageRecipient";
 import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -82,12 +84,13 @@ export default function CppSocialProfileViewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-12 sm:px-6">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-xl">
         <div className="mb-4 flex items-center justify-between gap-3 px-1">
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">PARARI MATCHING</div>
           <Link href="/cpp" className="text-xs font-bold text-neutral-500">CPPへ</Link>
         </div>
+        <CppMessageRecipient userId={params.userId} />
         <SocialProfileCard
           displayName={profile.display_name || "名前未設定"}
           photoUrl={profile.photo_url}
@@ -97,16 +100,16 @@ export default function CppSocialProfileViewPage() {
           intro={profile.intro}
         />
       </div>
-    </main>
+    </main></>
   );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-16">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
       <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">
         {children}
       </div>
-    </main>
+    </main></>
   );
 }

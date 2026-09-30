@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -368,7 +369,7 @@ export default function CppAlumniPage() {
 
   if (!userId) {
     return (
-      <main className="min-h-screen bg-neutral-100 px-4 py-16">
+      <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
         <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center shadow-sm">
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">
             CPP ALUMNI × PARARI
@@ -386,12 +387,12 @@ export default function CppAlumniPage() {
             PARARIにログインして登録する
           </Link>
         </div>
-      </main>
+      </main></>
     );
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-3xl">
         <header className="rounded-[2.25rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">
@@ -641,16 +642,16 @@ export default function CppAlumniPage() {
           </div>
         </section>
       </div>
-    </main>
+    </main></>
   );
 }
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-16">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
       <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">
         {children}
       </div>
-    </main>
+    </main></>
   );
 }

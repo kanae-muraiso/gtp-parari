@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { use, useEffect, useMemo, useState } from "react";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -70,7 +71,7 @@ export default function PublishedCppCompanyPage({ params }: { params: Promise<{ 
     : null;
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Link href="/my/cpp/members" className="text-xs font-bold text-neutral-500 hover:text-neutral-900">← 参加メンバー</Link>
@@ -128,10 +129,10 @@ export default function PublishedCppCompanyPage({ params }: { params: Promise<{ 
           ) : <p className="mt-4 text-sm text-neutral-500">現在公開中の募集はありません。</p>}
         </section>
       </div>
-    </main>
+    </main></>
   );
 }
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
-  return <main className="min-h-screen bg-neutral-100 px-4 py-16"><div className="mx-auto max-w-xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div></main>;
+  return <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16"><div className="mx-auto max-w-xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div></main></>;
 }

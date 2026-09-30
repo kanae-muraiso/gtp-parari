@@ -1,0 +1,57 @@
+-- All fixtures and messages are rolled back; nothing is delivered to users.
+begin;
+do $$
+declare a uuid; b uuid; outsider uuid; conversation uuid; denied boolean; first_id bigint; unread_before bigint;
+begin
+ select user_id into a from public.profiles where username='kanae-muraiso';
+ select user_id into b from public.profiles where username='yass-mint';
+ select user_id into outsider from public.profiles where user_id not in(a,b) limit 1;
+ if a is null or b is null or outsider is null then raise exception 'Test accounts unavailable'; end if;
+ insert into public.cpp_alumni(user_id,participation_year,participation_location,cpp_memory) values(a,2015,'検証用','一時検証'),(b,2015,'検証用','一時検証') on conflict(user_id) do nothing;
+ -- Existing conversations, if any, are temporarily removed only in this transaction.
+ delete from cpp_private.message_threads where user_a=least(a,b) and user_b=greatest(a,b);
+ delete from cpp_private.message_blocks where owner_id in(a,b) and blocked_id in(a,b);
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ perform public.cpp_message_set_accepting(false);
+ unread_before:=public.cpp_message_unread();
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ denied:=false; begin perform public.cpp_message_send(a,'確認なし',false); exception when sqlstate 'P0002' then denied:=true; end;
+ if not denied then raise exception 'override confirmation bypass'; end if;
+ conversation:=public.cpp_message_send(a,'最初の1通',true);
+ denied:=false; begin perform public.cpp_message_send(a,'追加の例外送信',true); exception when others then denied:=true; end;
+ if not denied then raise exception 'second exception message allowed'; end if;
+ if (select count(*) from cpp_private.messages where thread_id=conversation)<>1 then raise exception 'exception count incorrect'; end if;
+ if not exists(select 1 from public.cpp_message_inbox() where thread_id=conversation and waiting_for_reply) then raise exception 'waiting state missing'; end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ if public.cpp_message_unread()<>unread_before+1 then raise exception 'unread failed'; end if;
+ if not exists(select 1 from public.cpp_message_history(conversation) where exception_delivery) then raise exception 'red notice flag missing'; end if;
+ select id into first_id from public.cpp_message_history(conversation) limit 1;
+ perform public.cpp_message_mark_read(conversation,first_id);
+ if public.cpp_message_unread()<>unread_before then raise exception 'mark read failed'; end if;
+ perform public.cpp_message_block(b,true);
+ denied:=false; begin perform public.cpp_message_send(b,'ブロック中の送信',false); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'owner sent while blocked'; end if;
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ denied:=false; begin perform public.cpp_message_send(a,'相手によるブロック中',true); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'blocked sender bypass'; end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ perform public.cpp_message_block(b,false);
+ perform public.cpp_message_send(b,'返信して会話を承認',false);
+ perform set_config('request.jwt.claim.sub',b::text,true);
+ perform public.cpp_message_send(a,'通常の追加送信',false);
+ if exists(select 1 from public.cpp_message_inbox() where thread_id=conversation and pending_exception) then raise exception 'reply did not unlock'; end if;
+ perform public.cpp_message_set_accepting(false);
+ perform set_config('request.jwt.claim.sub',a::text,true);
+ perform public.cpp_message_send(b,'受付停止後も既存会話',false);
+ denied:=false; begin perform public.cpp_message_send(b,repeat('x',4001),false); exception when others then denied:=true; end;
+ if not denied then raise exception 'length limit bypass'; end if;
+ perform set_config('request.jwt.claim.sub',outsider::text,true);
+ denied:=false; begin perform public.cpp_message_history(conversation); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'outsider read history'; end if;
+ denied:=false; begin perform public.cpp_message_mark_read(conversation,first_id); exception when insufficient_privilege then denied:=true; end;
+ if not denied then raise exception 'outsider marked read'; end if;
+ if exists(select 1 from public.cpp_message_inbox() where thread_id=conversation) then raise exception 'outsider saw inbox'; end if;
+ if has_schema_privilege('authenticated','cpp_private','USAGE') or has_function_privilege('anon','public.cpp_message_send(uuid,text,boolean)','EXECUTE') then raise exception 'access grants unsafe'; end if;
+end $$;
+select true as messaging_rules_and_privacy_passed;
+rollback;

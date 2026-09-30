@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CppMessageRecipient from "./messages/CppMessageRecipient";
 import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
 import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -622,6 +623,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
         <label className="mt-4 block text-sm font-semibold">話したいテーマ（名札用・最大6個）<input value={badgeTopics} onChange={(e) => setBadgeTopics(e.target.value)} className={inputClassName} placeholder="免疫学、起業、研究と社会" /></label>
         <label className="mt-4 block text-sm font-semibold">ひとこと自己紹介（名札用）<textarea value={badgeIntro} onChange={(e) => setBadgeIntro(e.target.value)} maxLength={220} rows={3} className={inputClassName} /></label>
         <p className="mt-4 mb-2 text-xs font-bold">名札の見え方</p>
+        <CppMessageRecipient userId={userId} />
         <SocialProfileCard displayName={publicName} photoUrl={photoUrl} affiliation={affiliation} roleTitle={positionTitle} intro={badgeIntro} topics={badgeTopics.split(/[、,\n]/).map((v) => v.trim()).filter(Boolean).slice(0, 6)} />
       </section>
 

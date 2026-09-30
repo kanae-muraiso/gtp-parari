@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
+import CppMessageAction, { type MessageTarget } from "@/components/parari/cpp/messages/CppMessageAction";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -34,6 +36,8 @@ type AlumniMember = {
   alumni: AlumniRow;
   social: SocialProfileRow | null;
   participations: ParticipationRow[];
+  messageTarget?: MessageTarget;
+  own?: boolean;
 };
 
 export default function CppAlumniMembersPage() {
@@ -98,6 +102,12 @@ export default function CppAlumniMembersPage() {
 
     const alumni = (alumniRows ?? []) as AlumniRow[];
     const userIds = alumni.map((row) => row.user_id);
+    const targetMap = new Map<string, MessageTarget>();
+    for (let offset = 0; offset < userIds.length; offset += 200) {
+      const { data: messageTargets, error: targetError } = await supabase.rpc("cpp_message_targets", { p_user_ids: userIds.slice(offset, offset + 200) });
+      if (targetError) { setErrorMessage(`メッセージ受付設定を取得できませんでした: ${targetError.message}`); }
+      for (const target of (messageTargets ?? []) as MessageTarget[]) targetMap.set(target.user_id, target);
+    }
 
     let socialRows: SocialProfileRow[] = [];
     let participationRows: ParticipationRow[] = [];
@@ -164,6 +174,8 @@ export default function CppAlumniMembersPage() {
 
         return {
           alumni: row,
+          messageTarget: targetMap.get(row.user_id),
+          own: row.user_id === user.id,
           social: socialByUserId.get(row.user_id) ?? null,
           participations:
             storedParticipations.length > 0
@@ -220,7 +232,7 @@ export default function CppAlumniMembersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-end justify-between gap-5">
           <div>
@@ -259,12 +271,14 @@ export default function CppAlumniMembersPage() {
 
         {members.length > 0 ? (
           <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {members.map(({ alumni, social, participations }) => (
+            {members.map(({ alumni, social, participations, messageTarget, own }) => (
               <AlumniMemberCard
                 key={alumni.user_id}
                 alumni={alumni}
                 social={social}
                 participations={participations}
+                messageTarget={messageTarget}
+                own={own}
               />
             ))}
           </div>
@@ -274,7 +288,7 @@ export default function CppAlumniMembersPage() {
           </div>
         )}
       </div>
-    </main>
+    </main></>
   );
 }
 
@@ -282,6 +296,8 @@ function AlumniMemberCard({
   alumni,
   social,
   participations,
+  messageTarget,
+  own,
 }: AlumniMember) {
   const displayName = social?.display_name || "CPP参加者";
   const topics = (social?.topics ?? []).filter(Boolean).slice(0, 6);
@@ -322,6 +338,7 @@ function AlumniMemberCard({
           </div>
         </div>
 
+        {messageTarget ? <CppMessageAction target={messageTarget} own={own} /> : null}
         {topics.length > 0 ? (
           <div className="mt-5 flex flex-wrap gap-2">
             {topics.map((topic) => (
@@ -395,10 +412,10 @@ function AlumniMemory({ text }: { text: string }) {
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-16">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
       <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">
         {children}
       </div>
-    </main>
+    </main></>
   );
 }
