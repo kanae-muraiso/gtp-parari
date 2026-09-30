@@ -10,6 +10,7 @@ type AccessState = {
   hasResearcherProfile: boolean;
   hasCompanyProfile: boolean;
   admitted: boolean;
+  alumniOnly: boolean;
 };
 
 export default function CppHomePage() {
@@ -38,7 +39,7 @@ export default function CppHomePage() {
 
       setLoggedIn(true);
       const user = authData.user;
-      const [profileResult, researcherResult, companyResult, contextResult] = await Promise.all([
+      const [profileResult, researcherResult, companyResult, contextResult, participationResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("display_name, username")
@@ -56,6 +57,7 @@ export default function CppHomePage() {
           .in("role", ["owner", "editor", "consultant"])
           .limit(1),
         supabase.rpc("cpp_matching_context"),
+        supabase.rpc("cpp_alumni_participation_status"),
       ]);
 
       if (!active) return;
@@ -74,6 +76,7 @@ export default function CppHomePage() {
           "PARARI USER",
         hasResearcherProfile: Boolean(researcherResult.data),
         hasCompanyProfile: Boolean((companyResult.data ?? []).length),
+        alumniOnly: Boolean(participationResult.data?.[0]?.is_alumni && !participationResult.data?.[0]?.is_operator && participationResult.data?.[0]?.choice === "alumni"),
         admitted: !contextResult.error && Boolean((contextResult.data ?? []).length),
       });
     };
@@ -161,11 +164,13 @@ export default function CppHomePage() {
                     : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {access.admitted ? "入室済み" : registered ? "入室準備中" : "未登録"}
+                {access.alumniOnly ? "同窓会のみ" : access.admitted ? "入室済み" : registered ? "入室準備中" : "未登録"}
               </span>
             </div>
 
-            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の表示です。管理情報の項目は今後追加します。</p> : !registered ? (
+            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の表示です。管理情報の項目は今後追加します。</p> : access.alumniOnly ? (
+              <div className="mt-7 rounded-2xl bg-blue-50 p-5 text-sm leading-7 text-blue-950">同窓会の名札とメッセージで交流できます。研究者としても参加する場合は、右上の設定から「CPPでの参加設定」を開いてください。<Link href="/cpp/alumni/members" className="mt-3 block font-bold underline">同窓会メンバーを見る</Link></div>
+            ) : !registered ? (
               <div className="mt-7 rounded-2xl bg-amber-50 p-5 text-sm leading-7 text-amber-950">
                 <div className="font-bold">CPPへの登録がまだ完了していません。</div>
                 <div className="mt-3 flex flex-wrap gap-2">

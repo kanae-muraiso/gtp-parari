@@ -32,6 +32,7 @@ export default function CppSectionNav({
   const router = useRouter();
   const save = useOptionalCppSave();
   const [mode, setMode] = useState<Mode | null>(null);
+  const [participation, setParticipation] = useState<{ is_alumni: boolean; choice: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -40,7 +41,13 @@ export default function CppSectionNav({
       const value = data?.[0]?.mode;
       if (active && value && value in modeLabels) setMode(value as Mode);
     });
-    return () => { active = false; };
+    const loadParticipation = async () => {
+      const result = await supabase?.rpc("cpp_alumni_participation_status");
+      if (active) setParticipation(result?.data?.[0] ?? null);
+    };
+    void loadParticipation();
+    window.addEventListener("cpp-participation-changed", loadParticipation);
+    return () => { active = false; window.removeEventListener("cpp-participation-changed", loadParticipation); };
   }, []);
   const switchMode = async (next: Mode) => {
     if (!supabase || busy) return;
@@ -84,12 +91,14 @@ export default function CppSectionNav({
         <CppMessageNavLink />
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
+        {!mode && participation?.is_alumni ? <span className="shrink-0 px-2 text-xs font-black text-red-600" role="status">{participation.choice === "researcher" ? "研究者モード" : "同窓会のみ"}</span> : null}
         {mode ? <span className="shrink-0 px-2 text-xs font-black text-red-600" role="status">{modeLabels[mode]}</span> : null}
         <details className="relative shrink-0">
             <summary className="cursor-pointer list-none rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-100">設定 ▾</summary>
             <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
               {mode ? <fieldset disabled={busy} className="mb-2 border-b border-neutral-100 pb-2"><legend className="px-4 py-2 text-xs text-neutral-500">表示モード</legend>{(Object.keys(modeLabels) as Mode[]).map((key) => <button type="button" key={key} aria-pressed={mode === key} onClick={() => void switchMode(key)} className={`block w-full rounded-xl px-4 py-3 text-left text-sm font-bold ${mode === key ? "bg-red-50 text-red-700" : "text-neutral-700 hover:bg-neutral-100"}`}>{modeLabels[key]}{mode === key ? " ✓" : ""}</button>)}</fieldset> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">モード利用者の設定</Link> : null}
+              {!mode && participation?.is_alumni ? <Link href="/my/cpp/participation" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">CPPでの参加設定</Link> : null}
               <Link href="/my/cpp/messages/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">メッセージ設定</Link>
               {settingsLinks.map((item) => <Link key={item.href} href={item.href} className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">{item.label}</Link>)}
             </div>
