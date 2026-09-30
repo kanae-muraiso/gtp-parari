@@ -249,7 +249,7 @@ function CppWorkbookContent() {
                   <div>
                     <h2 className="text-base font-bold text-neutral-950">公開設定</h2>
                     <p className="mt-1 text-xs leading-5 text-neutral-500">
-                      未完成の研究概要や論文リストがあっても公開できます。ただし本人確認に必要な基本情報は公開時に必須です。
+                      公開先は、閲覧条件を満たす企業会員とCPP運営者に限定されます。一般公開はされません。未完成の研究概要や論文リストがあっても公開できます。ただし本人確認に必要な基本情報は公開時に必須です。
                     </p>
                   </div>
                   <span

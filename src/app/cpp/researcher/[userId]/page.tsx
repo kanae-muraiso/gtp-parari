@@ -61,7 +61,7 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
   }, [supabase, userId]);
 
   if (loading) return <CenteredCard>研究者プロフィールを読み込んでいます…</CenteredCard>;
-  if (!profile) return <CenteredCard>この研究者プロフィールはまだ公開されていません。</CenteredCard>;
+  if (!profile) return <CenteredCard>この研究者プロフィールは未公開、または閲覧権限がありません。</CenteredCard>;
 
   const photoUrl = profile.photo_path && supabase
     ? (/^https?:\/\//.test(profile.photo_path) ? profile.photo_path : supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl)

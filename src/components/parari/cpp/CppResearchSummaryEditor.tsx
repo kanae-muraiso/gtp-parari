@@ -415,13 +415,15 @@ function ResearchSummaryCard({
     if (!supabase || !row.pdf_path) return;
     const { data, error } = await supabase.storage
       .from("cpp-documents")
-      .createSignedUrl(row.pdf_path, 60 * 10);
+      .download(row.pdf_path);
 
-    if (error || !data?.signedUrl) {
+    if (error || !data) {
       onError(`PDFを開けませんでした: ${error?.message ?? "unknown error"}`);
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    const pdfUrl = URL.createObjectURL(data);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
   }, [onError, row.pdf_path, supabase]);
 
   return (

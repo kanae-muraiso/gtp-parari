@@ -278,14 +278,16 @@ export default function PublicCppProfilePage() {
 
       const { data, error } = await supabase.storage
         .from("cpp-documents")
-        .createSignedUrl(summary.pdf_path, 60 * 10);
+        .download(summary.pdf_path);
 
       setPdfOpening(null);
-      if (error || !data?.signedUrl) {
+      if (error || !data) {
         setErrorMessage(`研究資料を開けませんでした: ${error?.message ?? "unknown error"}`);
         return;
       }
-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      const pdfUrl = URL.createObjectURL(data);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
     },
     [supabase],
   );
@@ -304,7 +306,7 @@ export default function PublicCppProfilePage() {
     return (
       <main className="min-h-screen bg-neutral-50 px-4 py-16">
         <div className="mx-auto max-w-2xl rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-bold text-neutral-900">CPPプロフィールは公開されていません</h1>
+          <h1 className="text-xl font-bold text-neutral-900">CPPプロフィールは未公開、または閲覧権限がありません</h1>
           <p className="mt-2 text-sm leading-6 text-neutral-500">
             URLが違うか、この研究者プロフィールは現在下書きです。
           </p>

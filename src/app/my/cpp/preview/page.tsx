@@ -201,13 +201,15 @@ export default function CppCompanyPreviewPage() {
   const openPdf = useCallback(async (summary: Summary) => {
     if (!supabase || !summary.pdf_path) return;
     setPdfOpening(summary.id);
-    const { data, error } = await supabase.storage.from("cpp-documents").createSignedUrl(summary.pdf_path, 600);
+    const { data, error } = await supabase.storage.from("cpp-documents").download(summary.pdf_path);
     setPdfOpening(null);
-    if (error || !data?.signedUrl) {
+    if (error || !data) {
       setErrorMessage(`研究資料を開けませんでした: ${error?.message ?? "unknown error"}`);
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    const pdfUrl = URL.createObjectURL(data);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
   }, [supabase]);
 
   if (loading) {
