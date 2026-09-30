@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { cppMessageHref } from "@/lib/cppMessageNavigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -9,6 +10,7 @@ type Message = { id: number; sender_id: string; body: string; exception_delivery
 export default function MessagesPage() { return <Suspense fallback={<p className="p-8">読み込んでいます…</p>}><Inbox /></Suspense>; }
 function Inbox() {
   const params = useSearchParams();
+  const scope = params.get("from") === "alumni" ? "alumni" : "cpp";
   const [me, setMe] = useState("");
   const [eligible, setEligible] = useState(false);
   const [ready, setReady] = useState(false);
@@ -84,10 +86,10 @@ function Inbox() {
   const blocked = thread?.blocked_by_me || target?.blocked_by_me;
   const requiresOverride = !thread && target && !target.accepting;
   return <main className="min-h-screen bg-neutral-100 px-4 py-8"><div className="mx-auto max-w-6xl">
-    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-black">メッセージ</h1><div className="flex gap-4 text-sm font-bold"><Link href="/cpp/alumni/members" className="underline">同窓会の名札から送る</Link><Link href="/my/cpp/messages/settings" className="underline">メッセージ設定</Link></div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-black">メッセージ</h1><div className="flex gap-4 text-sm font-bold"><Link href="/cpp/alumni/members" className="underline">同窓会の名札から送る</Link><Link href={cppMessageHref(scope, { settings: true })} className="underline">メッセージ設定</Link></div></header>
     <p className="mt-3 text-sm text-neutral-600">テキストの個人間メッセージです。現在は同窓会登録者同士で利用できます。</p>
     {error ? <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
-    {!ready ? <p className="mt-6">{error ? <Link href="/login?returnTo=/my/cpp/messages" className="underline">ログイン</Link> : "読み込んでいます…"}</p> : <>
+    {!ready ? <p className="mt-6">{error ? <Link href={`/login?returnTo=${encodeURIComponent(cppMessageHref(scope, { to: params.get("to") ?? undefined }))}`} className="underline">ログイン</Link> : "読み込んでいます…"}</p> : <>
     {!eligible ? <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm">送受信には<Link href="/cpp/alumni" className="font-bold underline">同窓会への登録</Link>が必要です。過去の会話は閲覧できます。</p> : null}
     <div className="mt-6 grid gap-5 lg:grid-cols-[300px_1fr]"><aside className="rounded-3xl bg-white p-4 shadow-sm"><h2 className="px-2 py-2 font-bold">受信箱</h2>{threads.length ? <ul className="divide-y">{threads.map((t) => <li key={t.thread_id}><button type="button" disabled={busy} onClick={() => setOther(t.other_id)} className={`w-full rounded-xl p-3 text-left ${other === t.other_id ? "bg-sky-50" : "hover:bg-neutral-50"}`}><div className="flex justify-between gap-2"><span className="font-bold">{t.display_name}</span>{Number(t.unread) > 0 ? <span className="rounded-full bg-red-600 px-2 text-xs text-white">{t.unread}</span> : null}</div><p className="mt-2 truncate text-xs text-neutral-500">{t.last_body}</p>{t.waiting_for_reply ? <p className="mt-2 text-xs text-amber-700">返信待ち</p> : null}</button></li>)}</ul> : <p className="p-3 text-sm text-neutral-500">まだ会話はありません。</p>}</aside>
     <section className="min-w-0 rounded-3xl bg-white p-5 shadow-sm">{other ? <>

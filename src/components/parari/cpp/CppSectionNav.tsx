@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { cppMessageHref } from "@/lib/cppMessageNavigation";
 import CppMessageNavLink from "./messages/CppMessageNavLink";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -95,7 +96,7 @@ export default function CppSectionNav({
             </Link>
           );
         })}
-        <CppMessageNavLink />
+        <CppMessageNavLink href={cppMessageHref(scope)} />
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
         {!mode && participation?.is_alumni ? <span className="shrink-0 px-2 text-xs font-black text-red-600" role="status">{participation.choice === "researcher" ? "研究者モード" : "同窓会のみ"}</span> : null}
@@ -108,7 +109,7 @@ export default function CppSectionNav({
               {mode === "admin" ? <Link href="/my/cpp/admin/announcements" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">同窓会のお知らせ管理</Link> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/research-evidence" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">研究歴の後日入力者</Link> : null}
               {!mode && participation?.is_alumni ? <Link href="/my/cpp/participation" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">CPPでの参加設定</Link> : null}
-              <Link href="/my/cpp/messages/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">メッセージ設定</Link>
+              <Link href={cppMessageHref(scope, { settings: true })} className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">メッセージ設定</Link>
               {settingsLinks.map((item) => <Link key={item.href} href={item.href} className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">{item.label}</Link>)}
             </div>
           </details>

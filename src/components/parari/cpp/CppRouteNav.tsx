@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import CppSectionNav from "./CppSectionNav";
 
 const pagesWithMenu = new Set([
@@ -10,5 +11,13 @@ const pagesWithMenu = new Set([
 ]);
 export default function CppRouteNav() {
   const pathname = usePathname();
+  if (pathname === "/my/cpp/messages" || pathname === "/my/cpp/messages/settings") {
+    return <Suspense fallback={null}><MessageRouteNav /></Suspense>;
+  }
   return pagesWithMenu.has(pathname) ? null : <CppSectionNav />;
+}
+
+function MessageRouteNav() {
+  const params = useSearchParams();
+  return <CppSectionNav scope={params.get("from") === "alumni" ? "alumni" : "cpp"} />;
 }
