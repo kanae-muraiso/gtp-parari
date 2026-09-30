@@ -106,6 +106,7 @@ export default function AlumniFeed({ userId, preview = false, composer = false }
   const limit = preview ? 5 : 20;
   const [posts, setPosts] = useState<AlumniPost[]>([]);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [moreBusy, setMoreBusy] = useState(false);
   const [error, setError] = useState("");
@@ -114,15 +115,15 @@ export default function AlumniFeed({ userId, preview = false, composer = false }
   useEffect(() => {
     let active = true; setLoading(true); setError("");
     void alumniRpc<{ posts: AlumniPost[]; total: number }>("cpp_alumni_feed", { p_user_id: userId ?? null, p_limit: limit }).then(data => {
-      if (active) { setPosts(data.posts); setTotal(data.total); }
+      if (active) { setPosts(data.posts); setTotal(data.total); setOffset(data.posts.length); }
     }).catch(e => { if (active) setError(message(e)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [userId, limit, refresh]);
   const more = async () => {
     setMoreBusy(true); setError("");
     try {
-      const data = await alumniRpc<{ posts: AlumniPost[]; total: number }>("cpp_alumni_feed", { p_user_id: userId ?? null, p_limit: limit, p_offset: posts.length });
-      setPosts(current => [...current, ...data.posts.filter(p => !current.some(c => c.id === p.id))]); setTotal(data.total);
+      const data = await alumniRpc<{ posts: AlumniPost[]; total: number }>("cpp_alumni_feed", { p_user_id: userId ?? null, p_limit: limit, p_offset: offset });
+      setPosts(current => [...current, ...data.posts.filter(p => !current.some(c => c.id === p.id))]); setTotal(data.total); setOffset(current => current + data.posts.length);
     } catch (e) { setError(message(e)); } finally { setMoreBusy(false); }
   };
   return <section className="space-y-4">
@@ -130,6 +131,6 @@ export default function AlumniFeed({ userId, preview = false, composer = false }
     {preview ? <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-bold">最近の近況報告</h2><Link href="/cpp/alumni/feed" className="text-sm font-bold text-sky-800 underline">すべて見る →</Link></div> : null}
     {loading ? <p role="status" className="text-sm text-neutral-500">近況を読み込んでいます…</p> : posts.length ? posts.map(post => <PostCard key={post.id} post={post} onChanged={reload} />) : !error ? <p className={`${panel} text-sm text-neutral-600`}>まだ近況の投稿はありません。</p> : null}
     {error ? <p role="alert" className="text-sm text-red-700">{error} <button type="button" className="underline" onClick={reload}>再読み込み</button></p> : null}
-    {!preview && !loading && posts.length < total ? <button type="button" className={button} disabled={moreBusy} onClick={() => void more()}>{moreBusy ? "読み込み中…" : "以前の近況を見る"}</button> : null}
+    {!preview && !loading && offset < total ? <button type="button" className={button} disabled={moreBusy} onClick={() => void more()}>{moreBusy ? "読み込み中…" : "以前の近況を見る"}</button> : null}
   </section>;
 }
