@@ -5,8 +5,8 @@ export const CPP_TEST_STORAGE = "cpp-test-auth-v1";
 export type CppTestScenario = "alumni" | "researcher_pending" | "researcher_approved";
 export const cppTestLabels: Record<CppTestScenario, string> = {
   alumni: "同窓会のみ",
-  researcher_pending: "同窓会＋研究者（承認前）",
-  researcher_approved: "同窓会＋研究者（承認済み）",
+  researcher_pending: "同窓会＋研究者（必須事項の入力前）",
+  researcher_approved: "同窓会＋研究者（必須事項の記入済み）",
 };
 export function isCppTestSession() {
   if (typeof window === "undefined") return false;

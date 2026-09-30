@@ -75,9 +75,9 @@ export default function CppModeSettingsPage() {
           <legend className="mb-2 text-sm font-bold">テスト開始時の参加方法</legend>
           <label className="block text-sm"><input type="radio" name="test-choice" checked={testChoice === "alumni"} onChange={() => setTestChoice("alumni")} /> 同窓会のみ</label>
           <label className="block text-sm"><input type="radio" name="test-choice" checked={testChoice === "researcher"} onChange={() => setTestChoice("researcher")} /> 同窓会＋研究者として参加</label>
-          {testChoice === "researcher" ? <label className="block pl-5 text-sm"><input type="checkbox" checked={testApproved} onChange={(event) => setTestApproved(event.target.checked)} /> 参加承認済みの状態で始める</label> : null}
+          {testChoice === "researcher" ? <label className="block pl-5 text-sm"><input type="checkbox" checked={testApproved} onChange={(event) => setTestApproved(event.target.checked)} /> 研究者の必須事項を記入済みの状態で始める</label> : null}
         </fieldset>
-        <p className="mt-4 text-xs leading-6 text-neutral-600">開始時に参加方法と承認状態を設定し直します。テスト中の入力は専用アカウントに残り、名札は「テスト会員」として表示されます。画面下のボタンで管理者に戻れます。</p>
+        <p className="mt-4 text-xs leading-6 text-neutral-600">開始時に参加方法と必須事項の入力状態を設定し直します。テスト中の入力は専用アカウントに残り、名札は「テスト会員」として表示されます。画面下のボタンで管理者に戻れます。</p>
         <button type="button" disabled={busy} onClick={() => void startTest()} className="mt-4 rounded-full bg-blue-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "処理中…" : "この立場でテストを開始"}</button>
       </section>
       <form onSubmit={(event) => { event.preventDefault(); void change(); }} className="mt-7 flex flex-wrap items-end gap-3">
