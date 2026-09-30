@@ -122,10 +122,17 @@ export default function CppHomePage() {
   }
 
   const registered = access.hasResearcherProfile || access.hasCompanyProfile;
+  const settingsLinks = [
+    ...(access.hasResearcherProfile ? [{ href: "/my/cpp", label: "プロフィール・名札編集" }] : []),
+    ...(access.hasCompanyProfile ? [
+      { href: "/my/cpp/company", label: "会社案内・募集要項編集" },
+      ...(!access.hasResearcherProfile ? [{ href: "/my/cpp/social-profile", label: "名札編集" }] : []),
+    ] : []),
+  ];
 
   return (
     <>
-      <CppSectionNav active="home" />
+      <CppSectionNav active="home" settingsLinks={settingsLinks} />
       <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-6xl">
           <header className="rounded-[2.25rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-10">
@@ -136,7 +143,7 @@ export default function CppHomePage() {
                   {access.displayName}さんのCPP
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">
-                  お知らせの確認、プロフィールの編集、参加メンバーの閲覧、CPP LIVEへの参加をここから行えます。
+                  お知らせの確認、参加メンバーの閲覧、CPP LIVEへの参加をここから行えます。
                 </p>
               </div>
               <span
@@ -167,6 +174,13 @@ export default function CppHomePage() {
                 登録内容を準備できます。閲覧とCPP LIVEは、CPP-RまたはCPP-Cの入室許可後に利用できます。
               </div>
             ) : null}
+            {settingsLinks.length ? (
+              <div className="mt-6 flex flex-wrap justify-end gap-2">
+                {settingsLinks.map((item) => (
+                  <Link key={item.href} href={item.href} className="rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-xs font-bold text-neutral-600 hover:bg-neutral-50">{item.label}</Link>
+                ))}
+              </div>
+            ) : null}
           </header>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -174,29 +188,16 @@ export default function CppHomePage() {
               CPPからの連絡や開催情報を確認します。
             </HomeCard>
 
-            {access.hasResearcherProfile ? (
-              <HomeCard href="/my/cpp" eyebrow="RESEARCHER" title="プロフィール・名札を編集">
-                研究者プロフィールと交流・LIVE用の名札を編集します。
-              </HomeCard>
-            ) : null}
-
-            {access.hasCompanyProfile ? (
-              <HomeCard href="/my/cpp/company" eyebrow="COMPANY" title="企業案内">
-                会社情報、研究・技術、求める研究者像を編集します。
-              </HomeCard>
-            ) : null}
-
             <HomeCard href="/my/cpp/members" eyebrow="BROWSE" title="閲覧" disabled={!access.admitted}>
               研究者は参加企業を、企業は参加研究者を閲覧します。
-            </HomeCard>
-
-            <HomeCard href="/my/cpp/manual" eyebrow="GUIDE" title="マニュアル">
-              CPPの利用方法とLIVE参加時の流れを確認します。
             </HomeCard>
 
             <HomeCard href="/my/cpp/live" eyebrow="LIVE" title="CPP LIVE" disabled={!access.admitted}>
               LIVE入口を開き、参加人数を確認してから入ります。
             </HomeCard>
+          </div>
+          <div className="mt-5 text-center">
+            <Link href="/my/cpp/manual" className="inline-flex rounded-full border border-neutral-300 px-5 py-2 text-xs font-bold text-neutral-600 hover:bg-white">マニュアル</Link>
           </div>
         </div>
       </main>
