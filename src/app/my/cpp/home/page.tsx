@@ -14,6 +14,7 @@ type AccessState = {
 
 export default function CppHomePage() {
   const supabase = useMemo(() => sharedSupabase, []);
+  const [adminMode, setAdminMode] = useState(false);
   const [access, setAccess] = useState<AccessState | null>(null);
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -77,9 +78,16 @@ export default function CppHomePage() {
       });
     };
 
+    const loadMode = async () => {
+      const result = await supabase?.rpc("cpp_mode_status");
+      if (active) setAdminMode(result?.data?.[0]?.mode === "admin");
+    };
+    void loadMode();
+    window.addEventListener("cpp-mode-changed", loadMode);
     void load();
     return () => {
       active = false;
+      window.removeEventListener("cpp-mode-changed", loadMode);
     };
   }, [supabase]);
 
@@ -157,7 +165,7 @@ export default function CppHomePage() {
               </span>
             </div>
 
-            {!registered ? (
+            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の表示です。管理情報の項目は今後追加します。</p> : !registered ? (
               <div className="mt-7 rounded-2xl bg-amber-50 p-5 text-sm leading-7 text-amber-950">
                 <div className="font-bold">CPPへの登録がまだ完了していません。</div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -183,7 +191,9 @@ export default function CppHomePage() {
             ) : null}
           </header>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {adminMode ? (
+            <div className="mt-6"><HomeCard href="/my/cpp/admin/settings" eyebrow="SETTINGS" title="モード利用者の設定">3つのモードを利用できる人を追加・削除します。</HomeCard></div>
+          ) : <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <HomeCard href="/my/cpp/announcements" eyebrow="NEWS" title="お知らせ">
               CPPからの連絡や開催情報を確認します。
             </HomeCard>
@@ -196,6 +206,7 @@ export default function CppHomePage() {
               LIVE入口を開き、参加人数を確認してから入ります。
             </HomeCard>
           </div>
+          }
           <div className="mt-5 text-center">
             <Link href="/my/cpp/manual" className="inline-flex rounded-full border border-neutral-300 px-5 py-2 text-xs font-bold text-neutral-600 hover:bg-white">マニュアル</Link>
           </div>

@@ -7,6 +7,8 @@ type SaveJob = () => Promise<void>;
 type SaveContext = { queueSave: (job: SaveJob) => () => void; flush: () => Promise<boolean> };
 const Context = createContext<SaveContext | null>(null);
 
+export function useOptionalCppSave() { return useContext(Context); }
+
 export function useCppSave() {
   const value = useContext(Context);
   if (!value) throw new Error("CPP editor must be inside CppSaveBoundary");
