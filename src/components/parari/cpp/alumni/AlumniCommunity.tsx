@@ -10,6 +10,7 @@ import { AlumniAccess, AlumniTitle, MemberLink, alumniRpc, button, dateLabel, me
 export function AlumniMembers({ preview = false }: { preview?: boolean }) {
   const [members, setMembers] = useState<AlumniMember[]>([]);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -18,15 +19,15 @@ export function AlumniMembers({ preview = false }: { preview?: boolean }) {
   useEffect(() => {
     let active = true; setLoading(true); setError("");
     void alumniRpc<{ members: AlumniMember[]; total: number }>("cpp_alumni_community_members", { p_limit: limit }).then(data => {
-      if (active) { setMembers(data.members); setTotal(data.total); }
+      if (active) { setMembers(data.members); setTotal(data.total); setOffset(data.members.length); }
     }).catch(e => { if (active) setError(message(e)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [limit, retry]);
   const more = async () => {
     setBusy(true); setError("");
     try {
-      const data = await alumniRpc<{ members: AlumniMember[]; total: number }>("cpp_alumni_community_members", { p_limit: limit, p_offset: members.length });
-      setMembers(current => [...current, ...data.members.filter(m => !current.some(c => c.user_id === m.user_id))]); setTotal(data.total);
+      const data = await alumniRpc<{ members: AlumniMember[]; total: number }>("cpp_alumni_community_members", { p_limit: limit, p_offset: offset });
+      setMembers(current => [...current, ...data.members.filter(m => !current.some(c => c.user_id === m.user_id))]); setTotal(data.total); setOffset(current => current + data.members.length);
     } catch (e) { setError(message(e)); } finally { setBusy(false); }
   };
   return <section className="space-y-4">
@@ -34,13 +35,14 @@ export function AlumniMembers({ preview = false }: { preview?: boolean }) {
     {loading ? <p role="status" className="text-sm text-neutral-500">参加者を読み込んでいます…</p> : <div className="grid gap-3 sm:grid-cols-2">{members.map(member => <MemberLink key={member.user_id} member={member} />)}</div>}
     {!loading && !error && !members.length ? <p className={panel}>まだ参加者はいません。</p> : null}
     {error ? <p role="alert" className="text-sm text-red-700">{error} <button type="button" className="underline" onClick={() => setRetry(n => n + 1)}>再読み込み</button></p> : null}
-    {!preview && !loading && members.length < total ? <button className={button} disabled={busy} onClick={() => void more()} type="button">{busy ? "読み込み中…" : "さらに参加者を見る"}</button> : null}
+    {!preview && !loading && offset < total ? <button className={button} disabled={busy} onClick={() => void more()} type="button">{busy ? "読み込み中…" : "さらに参加者を見る"}</button> : null}
   </section>;
 }
 
 export function AlumniAnnouncements({ preview = false }: { preview?: boolean }) {
   const [items, setItems] = useState<AlumniNews[]>([]);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -49,7 +51,7 @@ export function AlumniAnnouncements({ preview = false }: { preview?: boolean }) 
   useEffect(() => {
     let active = true; setLoading(true); setError("");
     void alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_limit: limit }).then(data => {
-      if (active) { setItems(data.items); setTotal(data.total); }
+      if (active) { setItems(data.items); setTotal(data.total); setOffset(data.items.length); }
     }).catch(e => { if (active) setError(message(e)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [limit, retry]);
@@ -59,8 +61,8 @@ export function AlumniAnnouncements({ preview = false }: { preview?: boolean }) 
   const more = async () => {
     setBusy(true); setError("");
     try {
-      const data = await alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_limit: limit, p_offset: items.length });
-      setItems(current => [...current, ...data.items.filter(x => !current.some(c => c.id === x.id))]); setTotal(data.total);
+      const data = await alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_limit: limit, p_offset: offset });
+      setItems(current => [...current, ...data.items.filter(x => !current.some(c => c.id === x.id))]); setTotal(data.total); setOffset(current => current + data.items.length);
     } catch (e) { setError(message(e)); } finally { setBusy(false); }
   };
   return <section className="space-y-4">
@@ -74,7 +76,7 @@ export function AlumniAnnouncements({ preview = false }: { preview?: boolean }) 
     </article>)}
     {!loading && !items.length && !error ? <p className={`${panel} text-sm text-neutral-600`}>現在、お知らせはありません。</p> : null}
     {error ? <p role="alert" className="text-sm text-red-700">{error} <button type="button" className="underline" onClick={() => setRetry(n => n + 1)}>再読み込み</button></p> : null}
-    {!preview && !loading && items.length < total ? <button type="button" disabled={busy} className={button} onClick={() => void more()}>{busy ? "読み込み中…" : "以前のお知らせを見る"}</button> : null}
+    {!preview && !loading && offset < total ? <button type="button" disabled={busy} className={button} onClick={() => void more()}>{busy ? "読み込み中…" : "以前のお知らせを見る"}</button> : null}
   </section>;
 }
 

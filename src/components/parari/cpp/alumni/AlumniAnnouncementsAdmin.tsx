@@ -7,6 +7,7 @@ import { AlumniAccess, AlumniTitle, alumniRpc, button, dateLabel, input, message
 function Manager() {
   const [items, setItems] = useState<AlumniNews[]>([]);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
@@ -22,7 +23,7 @@ function Manager() {
   useEffect(() => {
     let active = true; setLoading(true); setError("");
     void alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_manage: true, p_limit: 30 }).then(data => {
-      if (active) { setItems(data.items); setTotal(data.total); }
+      if (active) { setItems(data.items); setTotal(data.total); setOffset(data.items.length); }
     }).catch(e => { if (active) setError(message(e)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [refresh]);
@@ -44,8 +45,8 @@ function Manager() {
   const more = async () => {
     setBusy(true); setError("");
     try {
-      const data = await alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_manage: true, p_limit: 30, p_offset: items.length });
-      setItems(current => [...current, ...data.items.filter(x => !current.some(c => c.id === x.id))]); setTotal(data.total);
+      const data = await alumniRpc<{ items: AlumniNews[]; total: number }>("cpp_alumni_news", { p_manage: true, p_limit: 30, p_offset: offset });
+      setItems(current => [...current, ...data.items.filter(x => !current.some(c => c.id === x.id))]); setTotal(data.total); setOffset(current => current + data.items.length);
     } catch (e) { setError(message(e)); } finally { setBusy(false); }
   };
   return <>
@@ -71,7 +72,7 @@ function Manager() {
         <div className="mt-4 flex flex-wrap gap-3"><button className={button} type="button" disabled={busy} onClick={() => edit(item)}>編集</button><button className={button} type="button" disabled={busy} onClick={() => void save(item)}>{item.status === "published" ? "公開を停止" : "公開する"}</button></div>
       </article>)}
       {!loading && !items.length && !error ? <p className="text-sm text-neutral-500">まだお知らせはありません。</p> : null}
-      {!loading && items.length < total ? <button type="button" className={button} disabled={busy} onClick={() => void more()}>さらに表示</button> : null}
+      {!loading && offset < total ? <button type="button" className={button} disabled={busy} onClick={() => void more()}>さらに表示</button> : null}
     </section>
   </>;
 }
