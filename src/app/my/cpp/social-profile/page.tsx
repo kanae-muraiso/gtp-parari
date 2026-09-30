@@ -132,7 +132,7 @@ export default function CppSocialProfilePage() {
 
   useEffect(() => {
     const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo");
-    if (requestedReturnTo?.startsWith("/")) {
+    if (requestedReturnTo?.startsWith("/") && !requestedReturnTo.startsWith("//") && !requestedReturnTo.includes("\\")) {
       setReturnTo(requestedReturnTo);
     }
   }, []);
@@ -271,7 +271,7 @@ export default function CppSocialProfilePage() {
               詳しい研究者プロフィールや企業プロフィールとは別です。CPPの中で人と出会うときに、研究者同士・企業担当者同士を含め、まず全員に見える最小限のプロフィールです。
             </p>
           </div>
-          <Link href={returnTo || "/my/cpp/home"} className="text-xs font-bold text-neutral-500 hover:text-neutral-900">{returnTo ? "CPP同窓会一覧へ戻る" : "CPPホームへ戻る"}</Link>
+          <Link href={returnTo || "/my/cpp/home"} className="text-xs font-bold text-neutral-500 hover:text-neutral-900">{returnTo ? "同窓会に戻る" : "CPPホームへ戻る"}</Link>
         </header>
 
         {errorMessage ? (
@@ -363,7 +363,7 @@ export default function CppSocialProfilePage() {
                 </button>
                 {saved && returnTo ? (
                   <Link href={returnTo} className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-800">
-                    CPP同窓会一覧を見る →
+                    同窓会に戻る →
                   </Link>
                 ) : null}
               </div>

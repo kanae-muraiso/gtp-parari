@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlumniHome } from "@/components/parari/cpp/alumni/AlumniCommunity";
+import { AlumniNav } from "@/components/parari/cpp/alumni/AlumniShared";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -63,6 +65,12 @@ const emptyParticipation = (): ParticipationInput => ({
 });
 
 export default function CppAlumniPage() {
+  return <Suspense fallback={<CenteredCard>CPP同窓会を読み込んでいます…</CenteredCard>}><CppAlumniContent /></Suspense>;
+}
+
+function CppAlumniContent() {
+  const searchParams = useSearchParams();
+  const editRequested = searchParams.get("edit") === "1";
   const supabase = useMemo(() => sharedSupabase, []);
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -78,13 +86,13 @@ export default function CppAlumniPage() {
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
+  const [communityHome, setCommunityHome] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
-    const editRequested =
-      new URLSearchParams(window.location.search).get("edit") === "1";
     setEditMode(editRequested);
+    setLoading(true);
+    setCommunityHome(false);
 
     if (!supabase) {
       setErrorMessage("PARARIの接続設定を確認できませんでした。");
@@ -108,6 +116,7 @@ export default function CppAlumniPage() {
       socialResult,
       cppResult,
       parariResult,
+      communityResult,
     ] = await Promise.all([
       supabase
         .from("cpp_alumni")
@@ -139,6 +148,7 @@ export default function CppAlumniPage() {
         .select("display_name, username, avatar_url")
         .eq("user_id", user.id)
         .maybeSingle<ParariProfileRow>(),
+      supabase.rpc("cpp_alumni_community_context"),
     ]);
 
     const firstError =
@@ -146,7 +156,8 @@ export default function CppAlumniPage() {
       participationResult.error ||
       socialResult.error ||
       cppResult.error ||
-      parariResult.error;
+      parariResult.error ||
+      communityResult.error;
 
     if (firstError) {
       setErrorMessage(
@@ -161,8 +172,10 @@ export default function CppAlumniPage() {
     const parari = parariResult.data;
     const alumni = alumniResult.data;
 
-    if (alumni && !editRequested) {
-      window.location.replace("/cpp/alumni/members");
+    if ((alumni || communityResult.data?.is_admin) && !editRequested) {
+      setCommunityHome(true);
+      setRegistered(Boolean(alumni));
+      setLoading(false);
       return;
     }
 
@@ -199,7 +212,7 @@ export default function CppAlumniPage() {
     }
 
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, editRequested]);
 
   useEffect(() => {
     void load();
@@ -281,7 +294,6 @@ export default function CppAlumniPage() {
     }
 
     setSaving(true);
-    setJustSaved(false);
     setErrorMessage("");
 
     const now = new Date().toISOString();
@@ -360,16 +372,18 @@ export default function CppAlumniPage() {
       intro: current?.intro ?? null,
     }));
     setRegistered(true);
-    setJustSaved(true);
+    window.location.replace("/cpp/alumni");
   };
 
   if (loading) {
     return <CenteredCard>CPP同窓会の登録情報を読み込んでいます…</CenteredCard>;
   }
 
+  if (communityHome && !editMode) return <AlumniHome />;
+
   if (!userId) {
     return (
-      <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
+      <><AlumniNav userId={registered ? userId ?? undefined : undefined} /><main className="min-h-screen bg-neutral-100 px-4 py-16">
         <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center shadow-sm">
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">
             CPP ALUMNI × PARARI
@@ -384,7 +398,7 @@ export default function CppAlumniPage() {
             href={editMode ? "/login?returnTo=/cpp/alumni%3Fedit%3D1" : "/login?returnTo=/cpp/alumni"}
             className="mt-7 inline-flex rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white"
           >
-            PARARIにログインして登録する
+            PARARIにログインして同窓会へ
           </Link>
         </div>
       </main></>
@@ -392,7 +406,7 @@ export default function CppAlumniPage() {
   }
 
   return (
-    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+    <><AlumniNav userId={registered ? userId ?? undefined : undefined} /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-3xl">
         <header className="rounded-[2.25rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
           <div className="text-xs font-black tracking-[0.18em] text-neutral-400">
@@ -408,13 +422,13 @@ export default function CppAlumniPage() {
           {registered ? (
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
-                href="/cpp/alumni/members"
+                href="/cpp/alumni"
                 className="rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-bold text-white"
               >
-                登録者を見る →
+                同窓会ホームへ →
               </Link>
               <Link
-                href="/my/cpp/social-profile?returnTo=/cpp/alumni/members"
+                href="/my/cpp/social-profile?returnTo=/cpp/alumni"
                 className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-xs font-bold text-neutral-700"
               >
                 SOCIAL PROFILEを編集
@@ -429,33 +443,6 @@ export default function CppAlumniPage() {
           </div>
         ) : null}
 
-        {justSaved ? (
-          <section className="mt-5 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 sm:p-7">
-            <div className="text-xs font-black tracking-[0.16em] text-emerald-700">
-              REGISTERED
-            </div>
-            <h2 className="mt-2 text-2xl font-black text-emerald-950">
-              CPP同窓会に登録しました
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-emerald-900">
-              次に、ほかの参加者に見える短いSOCIAL PROFILEを確認してください。すでに登録済みの内容があればそのまま利用できます。
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/my/cpp/social-profile?returnTo=/cpp/alumni/members"
-                className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white"
-              >
-                SOCIAL PROFILEを確認する →
-              </Link>
-              <Link
-                href="/cpp/alumni/members"
-                className="rounded-full border border-emerald-300 bg-white px-6 py-3 text-sm font-bold text-emerald-950"
-              >
-                先に登録者を見る
-              </Link>
-            </div>
-          </section>
-        ) : null}
 
         <section className="mt-5 rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
           <div>
@@ -648,7 +635,7 @@ export default function CppAlumniPage() {
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
-    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
+    <><AlumniNav /><main className="min-h-screen bg-neutral-100 px-4 py-16">
       <div className="mx-auto max-w-lg rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">
         {children}
       </div>
