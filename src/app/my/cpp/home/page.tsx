@@ -169,7 +169,7 @@ export default function CppHomePage() {
               </span>
             </div>
 
-            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の表示です。管理情報の項目は今後追加します。</p> : access.alumniOnly ? (
+            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の確認一覧と設定を利用できます。</p> : access.alumniOnly ? (
               <div className="mt-7 rounded-2xl bg-blue-50 p-5 text-sm leading-7 text-blue-950">同窓会の名札とメッセージで交流できます。研究者としても参加する場合は、右上の設定から「CPPでの参加設定」を開いてください。<Link href="/cpp/alumni/members" className="mt-3 block font-bold underline">同窓会メンバーを見る</Link></div>
             ) : !registered ? (
               <div className="mt-7 rounded-2xl bg-amber-50 p-5 text-sm leading-7 text-amber-950">
@@ -198,7 +198,10 @@ export default function CppHomePage() {
           </header>
 
           {adminMode ? (
-            <div className="mt-6"><HomeCard href="/my/cpp/admin/settings" eyebrow="SETTINGS" title="モード利用者の設定">3つのモードを利用できる人を追加・削除します。</HomeCard></div>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <HomeCard href="/my/cpp/admin/research-evidence" eyebrow="RESEARCH" title="研究歴の後日入力者">研究歴がわかるページを後で入力する方の一覧を確認します。</HomeCard>
+              <HomeCard href="/my/cpp/admin/settings" eyebrow="SETTINGS" title="モード利用者の設定">3つのモードを利用できる人を追加・削除します。</HomeCard>
+            </div>
           ) : <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <HomeCard href="/my/cpp/announcements" eyebrow="NEWS" title="お知らせ">
               CPPからの連絡や開催情報を確認します。

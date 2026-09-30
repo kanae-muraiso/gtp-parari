@@ -12,6 +12,7 @@ import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppProfileBasicsEditor from "@/components/parari/cpp/CppProfileBasicsEditor";
 import CppResearcherEntryStatus from "@/components/parari/cpp/CppResearcherEntryStatus";
+import CppResearchEvidenceEditor from "@/components/parari/cpp/CppResearchEvidenceEditor";
 import CppHistoryEditor from "@/components/parari/cpp/CppHistoryEditor";
 
 type Visibility = "draft" | "published";
@@ -202,6 +203,7 @@ function CppWorkbookContent() {
             <div className="mt-5 space-y-5">
               <CppResearcherEntryStatus editing />
               <CppProfileBasicsEditor userId={userId} userEmail={userEmail} />
+              <CppResearchEvidenceEditor key={userId} userId={userId} />
               <CppHistoryEditor userId={userId} />
 
               <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
