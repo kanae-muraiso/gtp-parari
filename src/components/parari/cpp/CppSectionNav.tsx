@@ -10,7 +10,7 @@ import { useOptionalCppSave } from "./CppSaveBoundary";
 const modeLabels = { researcher: "研究者モード", company: "会社モード", admin: "管理者モード" };
 type Mode = keyof typeof modeLabels;
 
-type CppSection = "home" | "announcements" | "browse" | "manual" | "live";
+type CppSection = "home" | "announcements" | "browse" | "manual" | "live" | "feed";
 
 const items: Array<{ href: string; label: string; key: CppSection }> = [
   { href: "/my/cpp/home", label: "ホーム", key: "home" },
@@ -24,8 +24,10 @@ export default function CppSectionNav({
   active,
   floating = false,
   settingsLinks = [],
+  scope = "cpp",
 }: {
   active?: CppSection;
+  scope?: "cpp" | "alumni";
   floating?: boolean;
   settingsLinks?: Array<{ href: string; label: string }>;
 }) {
@@ -62,7 +64,7 @@ export default function CppSectionNav({
   };
   return (
     <nav
-      aria-label="CPPメニュー"
+      aria-label={scope === "alumni" ? "CPP同窓会メニュー" : "CPPメニュー"}
       className={
         floating
           ? "fixed left-3 right-3 top-3 z-[100] rounded-full border border-neutral-200 bg-white/95 p-1 shadow-lg backdrop-blur"
@@ -71,7 +73,12 @@ export default function CppSectionNav({
     >
       <div className={floating ? "mx-auto flex max-w-6xl items-center gap-2" : "mx-auto flex max-w-6xl items-center gap-2"}>
         <div className="flex min-w-0 flex-1 overflow-x-auto">
-        {items.map((item) => {
+        {(scope === "alumni" ? [
+          { href: "/cpp/alumni", label: "ホーム", key: "home" },
+          { href: "/cpp/alumni/announcements", label: "お知らせ", key: "announcements" },
+          { href: "/cpp/alumni/members", label: "参加者一覧", key: "browse" },
+          { href: "/cpp/alumni/feed", label: "近況", key: "feed" },
+        ] : items).map((item) => {
           const selected = item.key === active;
           return (
             <Link
@@ -98,6 +105,7 @@ export default function CppSectionNav({
             <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
               {mode ? <fieldset disabled={busy} className="mb-2 border-b border-neutral-100 pb-2"><legend className="px-4 py-2 text-xs text-neutral-500">表示モード</legend>{(Object.keys(modeLabels) as Mode[]).map((key) => <button type="button" key={key} aria-pressed={mode === key} onClick={() => void switchMode(key)} className={`block w-full rounded-xl px-4 py-3 text-left text-sm font-bold ${mode === key ? "bg-red-50 text-red-700" : "text-neutral-700 hover:bg-neutral-100"}`}>{modeLabels[key]}{mode === key ? " ✓" : ""}</button>)}</fieldset> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">モード利用者の設定</Link> : null}
+              {mode === "admin" ? <Link href="/my/cpp/admin/announcements" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">同窓会のお知らせ管理</Link> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/research-evidence" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">研究歴の後日入力者</Link> : null}
               {!mode && participation?.is_alumni ? <Link href="/my/cpp/participation" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">CPPでの参加設定</Link> : null}
               <Link href="/my/cpp/messages/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">メッセージ設定</Link>
