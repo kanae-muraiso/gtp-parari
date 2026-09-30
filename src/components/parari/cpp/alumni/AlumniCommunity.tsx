@@ -121,7 +121,7 @@ function MemberContent({ userId }: { userId: string }) {
   return <>
     <AlumniTitle title={`${member.display_name}さんの同窓会ページ`} />
     <SocialProfileCard displayName={member.display_name} photoUrl={member.photo_url} affiliation={member.affiliation} roleTitle={member.role_title} topics={member.topics} intro={member.intro} />
-    <div className="flex flex-wrap items-center gap-3"><CppMessageRecipient userId={userId} />{context.user_id === userId ? <><Link className={button} href="/cpp/alumni?edit=1">同窓会の登録内容を編集</Link><Link className={button} href={`/my/cpp/social-profile?returnTo=${encodeURIComponent(memberHref(userId))}`}>名札を編集</Link></> : null}</div>
+    <div className="flex flex-wrap items-center gap-3"><CppMessageRecipient userId={userId} scope="alumni" />{context.user_id === userId ? <><Link className={button} href="/cpp/alumni?edit=1">同窓会の登録内容を編集</Link><Link className={button} href={`/my/cpp/social-profile?returnTo=${encodeURIComponent(memberHref(userId))}`}>名札を編集</Link></> : null}</div>
     <section className={panel}><h2 className="text-lg font-bold">CPPでの思い出</h2>
       <div className="mt-3 flex flex-wrap gap-2">{member.participations.map(p => <span key={`${p.year}:${p.location}`} className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-900">{p.year}年 · {p.location}</span>)}</div>
       <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7">{member.cpp_memory}</p>

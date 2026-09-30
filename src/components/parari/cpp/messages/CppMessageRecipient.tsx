@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import type { CppMessageScope } from "@/lib/cppMessageNavigation";
 import CppMessageAction, { type MessageTarget } from "./CppMessageAction";
-export default function CppMessageRecipient({ userId }: { userId: string }) {
+export default function CppMessageRecipient({ userId, scope = "cpp" }: { userId: string; scope?: CppMessageScope }) {
   const [target, setTarget] = useState<MessageTarget | null>(null);
   const [own, setOwn] = useState(false);
   useEffect(() => {
@@ -12,5 +13,5 @@ export default function CppMessageRecipient({ userId }: { userId: string }) {
     });
     return () => { active = false; };
   }, [userId]);
-  return target ? <CppMessageAction target={target} own={own} /> : null;
+  return target ? <CppMessageAction target={target} own={own} scope={scope} /> : null;
 }
