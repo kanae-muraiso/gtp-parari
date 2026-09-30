@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type PublicationRow = {
@@ -37,6 +38,7 @@ type Props = { userId: string | null };
 
 export default function CppPublicationsEditor({ userId }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
+  const { queueSave } = useCppSave();
   const [publications, setPublications] = useState<LocalPublicationRow[]>([]);
   const [sectionStates, setSectionStates] = useState<SectionStates>({});
   const [loading, setLoading] = useState(true);
@@ -244,7 +246,7 @@ function PublicationCard({
   onDelete: (rowId: string) => Promise<void>;
 }) {
   const supabase = useMemo(() => sharedSupabase, []);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { queueSave } = useCppSave();
   const firstRenderRef = useRef(true);
 
   useEffect(() => {
@@ -253,9 +255,8 @@ function PublicationCard({
       return;
     }
     if (!supabase || row.saveState === "saving" || row.saveState === "saved") return;
-    if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id
@@ -293,12 +294,9 @@ function PublicationCard({
             : item,
         ),
       );
-    }, 600);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [row, onRowsChange, supabase]);
+      if (error) throw new Error(error.message);
+    });
+  }, [row, onRowsChange, supabase, queueSave]);
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">

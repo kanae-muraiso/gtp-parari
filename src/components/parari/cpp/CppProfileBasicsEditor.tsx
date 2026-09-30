@@ -5,6 +5,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CppMessageRecipient from "./messages/CppMessageRecipient";
+import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
+import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type DegreeLevel =
@@ -30,6 +33,9 @@ type ProfileRow = {
   affiliation: string | null;
   position_title: string | null;
 };
+
+type BadgeRow = { display_name: string | null; photo_url: string | null; affiliation: string | null; role_title: string | null; topics: string[] | null; intro: string | null };
+type Conflict = { field: string; label: string; profile: string; badge: string };
 
 type ContactRow = {
   user_id: string;
@@ -73,11 +79,13 @@ const DEGREE_OPTIONS: Array<{ value: DegreeLevel; label: string }> = [
 
 export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
+  const { queueSave } = useCppSave();
   const profileLoadedRef = useRef(false);
   const contactLoadedRef = useRef(false);
-  const profileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const contactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [badgeIntro, setBadgeIntro] = useState("");
+  const [badgeTopics, setBadgeTopics] = useState("");
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveMessage, setSaveMessage] = useState("");
@@ -86,6 +94,8 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
   const [publicName, setPublicName] = useState("");
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [degreeLevel, setDegreeLevel] = useState<DegreeLevel | "">("");
   const [degreeStatus, setDegreeStatus] = useState<DegreeStatus | "">("");
   const [degreeText, setDegreeText] = useState("");
@@ -109,9 +119,10 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
   const [keywordInput, setKeywordInput] = useState("");
 
   const photoUrl = useMemo(() => {
+    if (photoPreview) return photoPreview;
     if (!supabase || !photoPath) return null;
-    return supabase.storage.from("parari-images").getPublicUrl(photoPath).data.publicUrl;
-  }, [photoPath, supabase]);
+    return /^https?:\/\//.test(photoPath) ? photoPath : supabase.storage.from("parari-images").getPublicUrl(photoPath).data.publicUrl;
+  }, [photoPath, photoPreview, supabase]);
 
   const majorOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -144,7 +155,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
     setLoading(true);
     setErrorMessage("");
 
-    const [profileResult, contactResult, fieldsResult, linksResult, keywordsResult] =
+    const [profileResult, contactResult, fieldsResult, linksResult, keywordsResult, badgeResult] =
       await Promise.all([
         supabase
           .from("cpp_profiles")
@@ -173,6 +184,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
           .eq("user_id", userId)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
+        supabase.from("parari_social_profiles").select("display_name, photo_url, affiliation, role_title, topics, intro").eq("user_id", userId).maybeSingle<BadgeRow>(),
       ]);
 
     const firstError =
@@ -180,7 +192,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
       contactResult.error ||
       fieldsResult.error ||
       linksResult.error ||
-      keywordsResult.error;
+      keywordsResult.error || badgeResult.error;
 
     if (firstError) {
       setErrorMessage(`基本情報の取得に失敗しました: ${firstError.message}`);
@@ -189,8 +201,18 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
     }
 
     const profile = profileResult.data;
-    setPublicName(profile.public_name ?? "");
-    setPhotoPath(profile.photo_path ?? null);
+    const badge = badgeResult.data;
+    setPublicName(profile.public_name || badge?.display_name || "");
+    setPhotoPath(profile.photo_path || badge?.photo_url || null);
+    setBadgeIntro(badge?.intro ?? "");
+    setBadgeTopics((badge?.topics ?? []).join("、"));
+    const existingPhoto = profile.photo_path ? (/^https?:\/\//.test(profile.photo_path) ? profile.photo_path : supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl) : "";
+    setConflicts([
+      { field: "name", label: "氏名", profile: profile.public_name ?? "", badge: badge?.display_name ?? "" },
+      { field: "affiliation", label: "所属", profile: profile.affiliation ?? "", badge: badge?.affiliation ?? "" },
+      { field: "role", label: "身分・役職", profile: profile.position_title ?? "", badge: badge?.role_title ?? "" },
+      { field: "photo", label: "顔写真", profile: existingPhoto, badge: badge?.photo_url ?? "" },
+    ].filter((item) => item.profile && item.badge && item.profile !== item.badge));
 
     if (profile.degree_level === "doctoral_student") {
       setDegreeLevel("doctorate");
@@ -206,8 +228,8 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
     setDegreeText(profile.degree_text ?? "");
     setDegreeInstitution(profile.degree_institution ?? "");
     setDegreeDate(profile.degree_date ?? "");
-    setAffiliation(profile.affiliation ?? "");
-    setPositionTitle(profile.position_title ?? "");
+    setAffiliation(profile.affiliation || badge?.affiliation || "");
+    setPositionTitle(profile.position_title || badge?.role_title || "");
 
     let contact = contactResult.data;
     if (!contact) {
@@ -252,40 +274,43 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
 
   useEffect(() => {
     if (!profileLoadedRef.current || !supabase) return;
-    if (profileTimerRef.current) clearTimeout(profileTimerRef.current);
 
-    profileTimerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
+      if (conflicts.length) throw new Error("共通項目の異なる内容を選んでください。");
       setSaveState("saving");
-      setSaveMessage("基本情報を保存中...");
+      setSaveMessage("基本情報と名札を保存中...");
 
-      const { error } = await supabase
-        .from("cpp_profiles")
-        .update({
-          public_name: cleanText(publicName),
-          degree_level: degreeLevel || null,
-          degree_status: degreeStatus || null,
-          degree_text: cleanText(degreeText),
-          degree_institution: cleanText(degreeInstitution),
-          degree_date: degreeDate || null,
-          affiliation: cleanText(affiliation),
-          position_title: cleanText(positionTitle),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+      let nextPhotoPath = photoPath;
+      let nextPhotoUrl = photoUrl;
+      if (selectedPhoto) {
+        setPhotoUploading(true);
+        const path = `${userId}/cpp/profile-${crypto.randomUUID()}`;
+        const { error: uploadError } = await supabase.storage.from("parari-images").upload(path, selectedPhoto, { contentType: selectedPhoto.type });
+        setPhotoUploading(false);
+        if (uploadError) throw new Error(`顔写真を保存できませんでした: ${uploadError.message}`);
+        nextPhotoPath = path;
+        nextPhotoUrl = supabase.storage.from("parari-images").getPublicUrl(path).data.publicUrl;
+      }
+      const { error } = await supabase.rpc("cpp_save_profile_and_badge", {
+        p_profile: {
+          public_name: cleanText(publicName), photo_path: nextPhotoPath,
+          degree_level: degreeLevel || null, degree_status: degreeStatus || null,
+          degree_text: cleanText(degreeText), degree_institution: cleanText(degreeInstitution),
+          degree_date: degreeDate || null, affiliation: cleanText(affiliation), position_title: cleanText(positionTitle),
+        },
+        p_badge: { photo_url: nextPhotoUrl, intro: cleanText(badgeIntro), topics: badgeTopics.split(/[、,\n]/).map((v) => v.trim()).filter(Boolean).filter((v, i, all) => all.indexOf(v) === i).slice(0, 6) },
+      });
 
       if (error) {
-        setSaveState("error");
-        setSaveMessage(error.message);
-      } else {
-        setSaveState("saved");
-        setSaveMessage("保存しました");
+        setSaveState("error"); setSaveMessage(error.message);
+        if (selectedPhoto && nextPhotoPath) await supabase.storage.from("parari-images").remove([nextPhotoPath]);
+        throw new Error(error.message);
       }
-    }, 700);
-
-    return () => {
-      if (profileTimerRef.current) clearTimeout(profileTimerRef.current);
-    };
+      if (selectedPhoto) { setPhotoPath(nextPhotoPath); setSelectedPhoto(null); setPhotoPreview(null); }
+      setSaveState("saved"); setSaveMessage("保存しました");
+    });
   }, [
+    badgeIntro, badgeTopics, conflicts, photoPath, photoUrl, selectedPhoto, queueSave,
     affiliation,
     degreeDate,
     degreeInstitution,
@@ -300,9 +325,8 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
 
   useEffect(() => {
     if (!contactLoadedRef.current || !supabase) return;
-    if (contactTimerRef.current) clearTimeout(contactTimerRef.current);
 
-    contactTimerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
       setSaveState("saving");
       setSaveMessage("非公開連絡先を保存中...");
 
@@ -323,64 +347,17 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
         setSaveState("saved");
         setSaveMessage("保存しました");
       }
-    }, 700);
+      if (error) throw new Error(error.message);
+    });
+  }, [address, email, phone, supabase, userId, queueSave]);
 
-    return () => {
-      if (contactTimerRef.current) clearTimeout(contactTimerRef.current);
-    };
-  }, [address, email, phone, supabase, userId]);
-
-  const uploadPhoto = useCallback(
-    async (file: File) => {
-      if (!supabase) return;
-      if (!file.type.startsWith("image/")) {
-        setErrorMessage("画像ファイルを選択してください。");
-        return;
-      }
-
-      setPhotoUploading(true);
-      setErrorMessage("");
-
-      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${userId}/cpp/profile-${Date.now()}.${extension}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("parari-images")
-        .upload(path, file, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: file.type,
-        });
-
-      if (uploadError) {
-        setPhotoUploading(false);
-        setErrorMessage(`顔写真のアップロードに失敗しました: ${uploadError.message}`);
-        return;
-      }
-
-      const { error: dbError } = await supabase
-        .from("cpp_profiles")
-        .update({ photo_path: path, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-
-      if (dbError) {
-        await supabase.storage.from("parari-images").remove([path]);
-        setPhotoUploading(false);
-        setErrorMessage(`顔写真の保存に失敗しました: ${dbError.message}`);
-        return;
-      }
-
-      if (photoPath) {
-        await supabase.storage.from("parari-images").remove([photoPath]);
-      }
-
-      setPhotoPath(path);
-      setPhotoUploading(false);
-      setSaveState("saved");
-      setSaveMessage("写真を保存しました");
-    },
-    [photoPath, supabase, userId],
-  );
+  useEffect(() => () => { if (photoPreview) URL.revokeObjectURL(photoPreview); }, [photoPreview]);
+  const uploadPhoto = useCallback(async (file: File) => {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setErrorMessage("顔写真はJPEG・PNG・WebP、5MBまでです。"); return;
+    }
+    setSelectedPhoto(file); setPhotoPreview(URL.createObjectURL(file));
+  }, []);
 
   const addResearchField = useCallback(async () => {
     if (!supabase || !fieldCandidateId || selectedFieldIds.has(fieldCandidateId)) return;
@@ -483,12 +460,27 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
         </div>
       ) : null}
 
+      {conflicts.length > 0 ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <h2 className="font-bold">共通項目に異なる内容があります</h2>
+        <p className="mt-2 text-sm">両方で使う内容を選んでください。選択するまで、既存の内容は変更しません。</p>
+        {conflicts.map((item) => <div key={item.field} className="mt-4">
+          <p className="text-sm font-bold">{item.label}</p>
+          {(["profile", "badge"] as const).map((source) => <button key={source} type="button" className="mr-2 mt-2 rounded-lg border border-amber-300 bg-white p-3 text-left text-sm" onClick={() => {
+            const value = item[source];
+            if (item.field === "name") setPublicName(value);
+            if (item.field === "affiliation") setAffiliation(value);
+            if (item.field === "role") setPositionTitle(value);
+            if (item.field === "photo") setPhotoPath(value);
+            setConflicts((current) => current.filter((c) => c.field !== item.field));
+          }}>{source === "profile" ? "プロフィール" : "名札"}の内容を使う{item.field === "photo" ? <img src={item[source]} alt={source === "profile" ? "プロフィールの写真" : "名札の写真"} className="mt-2 h-16 w-16 rounded-full object-cover" /> : <span className="block">{item[source]}</span>}</button>)}
+        </div>)}
+      </section> : null}
       <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-neutral-950">基本情報</h2>
             <p className="mt-1 text-xs leading-5 text-neutral-500">
-              氏名・最終学位・現在の所属など、研究者プロフィールの基本情報です。
+              氏名・顔写真・所属・身分／役職は、研究者プロフィールと交流・LIVE用の名札に共通です。同窓会の名札にも反映されます。
             </p>
           </div>
           <SaveBadge state={saveState} message={saveMessage} />
@@ -523,7 +515,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
           </div>
 
           <div className="space-y-5">
-            <Field label="氏名（公開名）">
+            <Field label="氏名（プロフィール・名札共通）">
               <input
                 value={publicName}
                 onChange={(event) => setPublicName(event.target.value)}
@@ -604,7 +596,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
               </div>
             </div>
 
-            <Field label="現在の所属">
+            <Field label="現在の所属（共通）">
               <input
                 value={affiliation}
                 onChange={(event) => setAffiliation(event.target.value)}
@@ -613,7 +605,7 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
               />
             </Field>
 
-            <Field label="身分・役職">
+            <Field label="身分・役職（共通）">
               <input
                 value={positionTitle}
                 onChange={(event) => setPositionTitle(event.target.value)}
@@ -623,6 +615,16 @@ export default function CppProfileBasicsEditor({ userId, userEmail }: Props) {
             </Field>
           </div>
         </div>
+      </section>
+
+      <section id="badge" className="scroll-mt-20 rounded-3xl border border-sky-200 bg-sky-50 p-5 sm:p-6">
+        <h2 className="font-bold">交流・LIVE用の名札</h2>
+        <p className="mt-2 text-sm">氏名・写真・所属・役職は上の共通項目から反映されます。名札はCPPの交流・LIVEと同窓会で表示され、研究者プロフィールの公開設定とは別です。</p>
+        <label className="mt-4 block text-sm font-semibold">話したいテーマ（名札用・最大6個）<input value={badgeTopics} onChange={(e) => setBadgeTopics(e.target.value)} className={inputClassName} placeholder="免疫学、起業、研究と社会" /></label>
+        <label className="mt-4 block text-sm font-semibold">ひとこと自己紹介（名札用）<textarea value={badgeIntro} onChange={(e) => setBadgeIntro(e.target.value)} maxLength={220} rows={3} className={inputClassName} /></label>
+        <p className="mt-4 mb-2 text-xs font-bold">名札の見え方</p>
+        <CppMessageRecipient userId={userId} />
+        <SocialProfileCard displayName={publicName} photoUrl={photoUrl} affiliation={affiliation} roleTitle={positionTitle} intro={badgeIntro} topics={badgeTopics.split(/[、,\n]/).map((v) => v.trim()).filter(Boolean).slice(0, 6)} />
       </section>
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">

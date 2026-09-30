@@ -73,8 +73,11 @@ export default function CppMembersPage() {
       setLoading(false);
     };
 
+    const reloadForMode = () => { setLoading(true); setErrorMessage(""); void load(); };
+    window.addEventListener("cpp-mode-changed", reloadForMode);
     void load();
     return () => {
+      window.removeEventListener("cpp-mode-changed", reloadForMode);
       active = false;
     };
   }, [supabase]);

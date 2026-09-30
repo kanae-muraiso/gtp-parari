@@ -10,10 +10,12 @@ type AccessState = {
   hasResearcherProfile: boolean;
   hasCompanyProfile: boolean;
   admitted: boolean;
+  alumniOnly: boolean;
 };
 
 export default function CppHomePage() {
   const supabase = useMemo(() => sharedSupabase, []);
+  const [adminMode, setAdminMode] = useState(false);
   const [access, setAccess] = useState<AccessState | null>(null);
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -37,7 +39,7 @@ export default function CppHomePage() {
 
       setLoggedIn(true);
       const user = authData.user;
-      const [profileResult, researcherResult, companyResult, contextResult] = await Promise.all([
+      const [profileResult, researcherResult, companyResult, contextResult, participationResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("display_name, username")
@@ -55,6 +57,7 @@ export default function CppHomePage() {
           .in("role", ["owner", "editor", "consultant"])
           .limit(1),
         supabase.rpc("cpp_matching_context"),
+        supabase.rpc("cpp_alumni_participation_status"),
       ]);
 
       if (!active) return;
@@ -73,13 +76,21 @@ export default function CppHomePage() {
           "PARARI USER",
         hasResearcherProfile: Boolean(researcherResult.data),
         hasCompanyProfile: Boolean((companyResult.data ?? []).length),
+        alumniOnly: Boolean(participationResult.data?.[0]?.is_alumni && !participationResult.data?.[0]?.is_operator && participationResult.data?.[0]?.choice === "alumni"),
         admitted: !contextResult.error && Boolean((contextResult.data ?? []).length),
       });
     };
 
+    const loadMode = async () => {
+      const result = await supabase?.rpc("cpp_mode_status");
+      if (active) setAdminMode(result?.data?.[0]?.mode === "admin");
+    };
+    void loadMode();
+    window.addEventListener("cpp-mode-changed", loadMode);
     void load();
     return () => {
       active = false;
+      window.removeEventListener("cpp-mode-changed", loadMode);
     };
   }, [supabase]);
 
@@ -122,10 +133,17 @@ export default function CppHomePage() {
   }
 
   const registered = access.hasResearcherProfile || access.hasCompanyProfile;
+  const settingsLinks = [
+    ...(access.hasResearcherProfile ? [{ href: "/my/cpp", label: "プロフィール・名札編集" }] : []),
+    ...(access.hasCompanyProfile ? [
+      { href: "/my/cpp/company", label: "会社案内・募集要項編集" },
+      ...(!access.hasResearcherProfile ? [{ href: "/my/cpp/social-profile", label: "名札編集" }] : []),
+    ] : []),
+  ];
 
   return (
     <>
-      <CppSectionNav active="home" />
+      <CppSectionNav active="home" settingsLinks={settingsLinks} />
       <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-6xl">
           <header className="rounded-[2.25rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-10">
@@ -136,7 +154,7 @@ export default function CppHomePage() {
                   {access.displayName}さんのCPP
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">
-                  お知らせの確認、プロフィールの編集、参加メンバーの閲覧、CPP LIVEへの参加をここから行えます。
+                  お知らせの確認、参加メンバーの閲覧、CPP LIVEへの参加をここから行えます。
                 </p>
               </div>
               <span
@@ -146,11 +164,13 @@ export default function CppHomePage() {
                     : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {access.admitted ? "入室済み" : registered ? "入室準備中" : "未登録"}
+                {access.alumniOnly ? "同窓会のみ" : access.admitted ? "入室済み" : registered ? "入室準備中" : "未登録"}
               </span>
             </div>
 
-            {!registered ? (
+            {adminMode ? <p className="mt-6 text-sm text-neutral-600">管理者用の表示です。管理情報の項目は今後追加します。</p> : access.alumniOnly ? (
+              <div className="mt-7 rounded-2xl bg-blue-50 p-5 text-sm leading-7 text-blue-950">同窓会の名札とメッセージで交流できます。研究者としても参加する場合は、右上の設定から「CPPでの参加設定」を開いてください。<Link href="/cpp/alumni/members" className="mt-3 block font-bold underline">同窓会メンバーを見る</Link></div>
+            ) : !registered ? (
               <div className="mt-7 rounded-2xl bg-amber-50 p-5 text-sm leading-7 text-amber-950">
                 <div className="font-bold">CPPへの登録がまだ完了していません。</div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -167,36 +187,33 @@ export default function CppHomePage() {
                 登録内容を準備できます。閲覧とCPP LIVEは、CPP-RまたはCPP-Cの入室許可後に利用できます。
               </div>
             ) : null}
+            {settingsLinks.length ? (
+              <div className="mt-6 flex flex-wrap justify-end gap-2">
+                {settingsLinks.map((item) => (
+                  <Link key={item.href} href={item.href} className="rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-xs font-bold text-neutral-600 hover:bg-neutral-50">{item.label}</Link>
+                ))}
+              </div>
+            ) : null}
           </header>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {adminMode ? (
+            <div className="mt-6"><HomeCard href="/my/cpp/admin/settings" eyebrow="SETTINGS" title="モード利用者の設定">3つのモードを利用できる人を追加・削除します。</HomeCard></div>
+          ) : <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <HomeCard href="/my/cpp/announcements" eyebrow="NEWS" title="お知らせ">
               CPPからの連絡や開催情報を確認します。
             </HomeCard>
-
-            {access.hasResearcherProfile ? (
-              <HomeCard href="/my/cpp" eyebrow="RESEARCHER" title="研究者プロフィール">
-                研究内容、経歴、研究成果を編集・公開します。
-              </HomeCard>
-            ) : null}
-
-            {access.hasCompanyProfile ? (
-              <HomeCard href="/my/cpp/company" eyebrow="COMPANY" title="企業案内">
-                会社情報、研究・技術、求める研究者像を編集します。
-              </HomeCard>
-            ) : null}
 
             <HomeCard href="/my/cpp/members" eyebrow="BROWSE" title="閲覧" disabled={!access.admitted}>
               研究者は参加企業を、企業は参加研究者を閲覧します。
             </HomeCard>
 
-            <HomeCard href="/my/cpp/manual" eyebrow="GUIDE" title="マニュアル">
-              CPPの利用方法とLIVE参加時の流れを確認します。
-            </HomeCard>
-
             <HomeCard href="/my/cpp/live" eyebrow="LIVE" title="CPP LIVE" disabled={!access.admitted}>
               LIVE入口を開き、参加人数を確認してから入ります。
             </HomeCard>
+          </div>
+          }
+          <div className="mt-5 text-center">
+            <Link href="/my/cpp/manual" className="inline-flex rounded-full border border-neutral-300 px-5 py-2 text-xs font-bold text-neutral-600 hover:bg-white">マニュアル</Link>
           </div>
         </div>
       </main>

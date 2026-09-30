@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppRichContentEditor from "@/components/parari/cpp/CppRichContentEditor";
 import CppPublicationsAndAppealEditor from "@/components/parari/cpp/CppPublicationsAndAppealEditor";
@@ -36,6 +37,7 @@ const summarySelect =
 
 export default function CppResearchSummaryEditor({ userId }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
+  const { flush } = useCppSave();
   const [rows, setRows] = useState<LocalResearchSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -119,6 +121,7 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
   const moveSummary = useCallback(
     async (rowId: string, direction: MoveDirection) => {
       if (!supabase || !userId || movingId) return;
+      if (!(await flush())) return;
       setMovingId(rowId);
       setErrorMessage("");
 
@@ -136,12 +139,13 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
       await loadRows();
       setMovingId(null);
     },
-    [loadRows, movingId, supabase, userId],
+    [flush, loadRows, movingId, supabase, userId],
   );
 
   const deleteSummary = useCallback(
     async (row: LocalResearchSummaryRow) => {
       if (!supabase || !userId) return;
+      if (!(await flush())) return;
       const previous = rows;
       setRows((current) => current.filter((item) => item.id !== row.id));
 
@@ -162,7 +166,7 @@ export default function CppResearchSummaryEditor({ userId }: Props) {
       }
       await loadRows();
     },
-    [loadRows, rows, supabase, userId],
+    [flush, loadRows, rows, supabase, userId],
   );
 
   return (
@@ -251,7 +255,11 @@ function ResearchSummaryCard({
   onDelete: (row: LocalResearchSummaryRow) => Promise<void>;
 }) {
   const supabase = useMemo(() => sharedSupabase, []);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { queueSave } = useCppSave();
+  useEffect(() => {
+    if (!row.pdfUploading) return;
+    return queueSave(async () => { throw new Error("PDFのアップロード完了後に移動してください。"); });
+  }, [row.pdfUploading, queueSave]);
   const firstRenderRef = useRef(true);
 
   useEffect(() => {
@@ -260,9 +268,8 @@ function ResearchSummaryCard({
       return;
     }
     if (!supabase || row.saveState === "saving" || row.saveState === "saved") return;
-    if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
       onRowsChange((current) =>
         current.map((item) =>
           item.id === row.id
@@ -293,12 +300,9 @@ function ResearchSummaryCard({
             : item,
         ),
       );
-    }, 700);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [row, onRowsChange, supabase]);
+      if (error) throw new Error(error.message);
+    });
+  }, [row, onRowsChange, supabase, queueSave]);
 
   const uploadPdf = useCallback(
     async (file: File) => {
@@ -366,7 +370,7 @@ function ResearchSummaryCard({
                 pdf_path: path,
                 pdf_name: file.name,
                 pdfUploading: false,
-                saveState: "saved" as const,
+                saveState: "idle" as const,
                 saveMessage: "PDFを保存しました",
               }
             : item,
@@ -399,7 +403,7 @@ function ResearchSummaryCard({
               ...item,
               pdf_path: null,
               pdf_name: null,
-              saveState: "saved" as const,
+              saveState: "idle" as const,
               saveMessage: "PDFを削除しました",
             }
           : item,
@@ -411,13 +415,15 @@ function ResearchSummaryCard({
     if (!supabase || !row.pdf_path) return;
     const { data, error } = await supabase.storage
       .from("cpp-documents")
-      .createSignedUrl(row.pdf_path, 60 * 10);
+      .download(row.pdf_path);
 
-    if (error || !data?.signedUrl) {
+    if (error || !data) {
       onError(`PDFを開けませんでした: ${error?.message ?? "unknown error"}`);
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    const pdfUrl = URL.createObjectURL(data);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
   }, [onError, row.pdf_path, supabase]);
 
   return (

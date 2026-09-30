@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
@@ -12,15 +13,19 @@ type ParariIdentity = {
 };
 
 export default function CppTryPage() {
+  const router = useRouter();
   const supabase = useMemo(() => sharedSupabase, []);
   const [identity, setIdentity] = useState<ParariIdentity | null>(null);
   const [registered, setRegistered] = useState(false);
+  const [evidenceSaved, setEvidenceSaved] = useState(false);
   const [name, setName] = useState("");
   const [agreeTruth, setAgreeTruth] = useState(false);
   const [agreePublic, setAgreePublic] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [evidence, setEvidence] = useState("");
+  const [deferred, setDeferred] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -51,9 +56,9 @@ export default function CppTryPage() {
           .maybeSingle<{ username: string | null; display_name: string | null }>(),
         supabase
           .from("cpp_profiles")
-          .select("user_id")
+          .select("user_id, research_evidence, research_evidence_deferred")
           .eq("user_id", user.id)
-          .maybeSingle<{ user_id: string }>(),
+          .maybeSingle<{ user_id: string; research_evidence: string | null; research_evidence_deferred: boolean }>(),
       ]);
 
       if (!active) return;
@@ -75,6 +80,8 @@ export default function CppTryPage() {
       });
       setName(displayName);
       setRegistered(Boolean(cppResult.data));
+      setEvidence(cppResult.data?.research_evidence ?? "");
+      setDeferred(cppResult.data?.research_evidence_deferred ?? false);
       setLoading(false);
     };
 
@@ -87,7 +94,7 @@ export default function CppTryPage() {
   const register = async () => {
     if (!supabase || !identity || saving) return;
     const publicName = name.trim();
-    if (!publicName || !agreeTruth || !agreePublic) return;
+    if (!publicName || (!deferred && !evidence.trim()) || !agreeTruth || !agreePublic) return;
 
     setSaving(true);
     setErrorMessage("");
@@ -96,6 +103,9 @@ export default function CppTryPage() {
       user_id: identity.userId,
       public_name: publicName,
       visibility: "draft",
+      research_evidence: deferred ? null : evidence.trim(),
+      research_evidence_deferred: deferred,
+      research_evidence_updated_at: new Date().toISOString(),
     });
 
     if (profileError && profileError.code !== "23505") {
@@ -128,8 +138,58 @@ export default function CppTryPage() {
     }
 
     setRegistered(true);
+    setEvidenceSaved(true);
     setSaving(false);
   };
+
+  const saveEvidence = async (): Promise<boolean> => {
+    if (!supabase || !identity || saving || (!deferred && !evidence.trim())) return false;
+    setSaving(true);
+    setErrorMessage("");
+    setEvidenceSaved(false);
+    const { error } = await supabase.from("cpp_profiles").update({
+      research_evidence: deferred ? null : evidence.trim(),
+      research_evidence_deferred: deferred,
+      research_evidence_updated_at: new Date().toISOString(),
+    }).eq("user_id", identity.userId);
+    setSaving(false);
+    if (error) {
+      setErrorMessage(`研究活動の情報を保存できませんでした: ${error.message}`);
+      return false;
+    }
+    setEvidenceSaved(true);
+    return true;
+  };
+
+  const openWorkbook = async () => {
+    if (await saveEvidence()) router.push("/my/cpp");
+  };
+
+  const evidenceForm = (
+    <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-7 text-neutral-700">
+      <div className="font-bold text-neutral-950">研究歴がわかるページ</div>
+      <p className="mt-1">大学・研究機関の紹介ページ、researchmap、論文の掲載ページなど、ご自身の研究歴がわかるものを1つ教えてください。現在、研究機関に所属していなくても大丈夫です。</p>
+      <label className="mt-4 block">
+        <span className="mb-2 block text-xs font-semibold">ページのURL、または論文のDOI</span>
+        <textarea value={evidence} onChange={(event) => { setEvidence(event.target.value); setEvidenceSaved(false); }} disabled={deferred} maxLength={2000} rows={3}
+          className={`${inputClassName} disabled:bg-neutral-100`} placeholder="https://... または 10...." />
+      </label>
+      <label className="mt-3 flex items-center gap-2">
+        <input type="checkbox" checked={deferred} onChange={(event) => { setDeferred(event.target.checked); setEvidenceSaved(false); }} />
+        今は用意できないので、後で入力する
+      </label>
+      {deferred ? <p className="mt-2 text-amber-800">後で入力する方には、CPPから確認のご連絡をする場合があります。</p> : null}
+      {registered ? (
+        <div className="mt-5 border-t border-sky-200 pt-4">
+          <button type="button" onClick={() => void saveEvidence()} disabled={saving || (!deferred && !evidence.trim())}
+            className="rounded-full bg-sky-700 px-5 py-2.5 font-bold text-white disabled:opacity-40">
+            {saving ? "保存しています…" : "この内容を保存する"}
+          </button>
+          {evidenceSaved ? <p className="mt-2 text-sm text-emerald-800">保存しました。</p> : null}
+        </div>
+      ) : null}
+    </div>
+  );
 
   if (loading) {
     return <CenteredCard>PARARIのログイン状態を確認しています…</CenteredCard>;
@@ -151,7 +211,7 @@ export default function CppTryPage() {
             PARARIにログインして続ける
           </Link>
           <div className="mt-5">
-            <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">← CPP登録入口へ</Link>
+            <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">← CPPの案内ページに戻る</Link>
           </div>
         </div>
       </main>
@@ -165,18 +225,17 @@ export default function CppTryPage() {
           <Header identity={identity} />
           <section className="rounded-[2rem] border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
             <div className="text-xs font-bold tracking-[0.18em] text-emerald-700">CPP RESEARCHER</div>
-            <h1 className="mt-3 text-2xl font-bold text-neutral-950">CPP研究者プロフィールがあります</h1>
+            <h1 className="mt-3 text-2xl font-bold text-neutral-950">研究者登録は完了しています</h1>
+            {errorMessage ? <p className="mt-4 text-sm text-red-700">{errorMessage}</p> : null}
             <p className="mt-3 text-sm leading-7 text-neutral-600">
-              CPP WORKBOOKで入力を続けるか、現在のプロフィールを企業から見た画面で確認できます。
+              研究歴がわかるページを入力してください。今は用意できない場合は「後で入力する」を選んで、ワークブックへ進めます。
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/cpp/try/workbook" className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white">
-                CPP WORKBOOKを開く
-              </Link>
-              <Link href="/my/cpp/preview" className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-bold text-neutral-800">
-                企業から見る
-              </Link>
-            </div>
+            {evidenceForm}
+            <button type="button" onClick={() => void openWorkbook()}
+              disabled={saving || (!deferred && !evidence.trim())}
+              className="mt-7 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
+              {saving ? "保存して移動しています…" : "保存してワークブックを開く"}
+            </button>
           </section>
         </div>
       </main>
@@ -194,6 +253,8 @@ export default function CppTryPage() {
           <p className="mt-3 text-sm leading-7 text-neutral-600">
             登録後、CPP WORKBOOKで研究内容や経歴を少しずつ作成できます。入力内容は保存され、公開するタイミングは自分で決められます。
           </p>
+
+          {evidenceForm}
 
           {errorMessage ? (
             <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -222,14 +283,14 @@ export default function CppTryPage() {
               登録内容に虚偽の情報を記載しません。
             </Check>
             <Check checked={agreePublic} onChange={setAgreePublic}>
-              公開した項目は企業・一般の閲覧者から見えることを理解しています。メールアドレス・電話番号・住所など、非公開と表示された情報は一般には公開されません。
+              詳細プロフィールの公開先は、閲覧条件を満たす企業会員とCPP運営者に限定されることを理解しています。メールアドレス・電話番号・住所など、非公開と表示された情報は一般には公開されません。
             </Check>
           </div>
 
           <button
             type="button"
             onClick={() => void register()}
-            disabled={!name.trim() || !agreeTruth || !agreePublic || saving}
+            disabled={!name.trim() || (!deferred && !evidence.trim()) || !agreeTruth || !agreePublic || saving}
             className="mt-7 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             {saving ? "登録しています…" : "CPP研究者として登録する"}
@@ -249,7 +310,7 @@ function Header({ identity }: { identity: ParariIdentity }) {
           {identity.displayName} <span className="font-normal text-neutral-400">@{identity.username}</span>
         </div>
       </div>
-      <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">CPP登録入口へ</Link>
+      <Link href="/cpp" className="text-xs font-semibold text-neutral-500 hover:text-neutral-900">CPPの案内ページに戻る</Link>
     </header>
   );
 }

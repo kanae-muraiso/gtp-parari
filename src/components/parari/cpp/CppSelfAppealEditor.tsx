@@ -5,6 +5,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCppSave } from "@/components/parari/cpp/CppSaveBoundary";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import CppRichContentEditor from "@/components/parari/cpp/CppRichContentEditor";
 
@@ -22,8 +23,8 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 export default function CppSelfAppealEditor({ userId }: Props) {
   const supabase = useMemo(() => sharedSupabase, []);
+  const { queueSave } = useCppSave();
   const loadedRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selfAppeal, setSelfAppeal] = useState("");
   const [sectionStates, setSectionStates] = useState<SectionStates>({});
@@ -56,9 +57,8 @@ export default function CppSelfAppealEditor({ userId }: Props) {
 
   useEffect(() => {
     if (!loadedRef.current || !supabase || !userId) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(async () => {
+    return queueSave(async () => {
       setSaveState("saving");
       setSaveMessage("保存中...");
 
@@ -77,12 +77,9 @@ export default function CppSelfAppealEditor({ userId }: Props) {
         setSaveState("saved");
         setSaveMessage("保存しました");
       }
-    }, 700);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [selfAppeal, supabase, userId]);
+      if (error) throw new Error(error.message);
+    });
+  }, [selfAppeal, supabase, userId, queueSave]);
 
   const updateInProgress = useCallback(
     async (inProgress: boolean) => {

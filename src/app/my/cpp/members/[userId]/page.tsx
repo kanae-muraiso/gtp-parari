@@ -125,14 +125,14 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
               <div className="text-xs font-black tracking-[0.15em] text-neutral-400">MATCHING PROFILE</div>
               <h2 className="mt-2 text-xl font-black text-neutral-950">詳しいプロフィール</h2>
               <p className="mt-3 text-sm leading-7 text-neutral-600">
-                あなたの閲覧許可グループに所属する相手です。公開済みの詳細プロフィールを閲覧できます。
+                あなたの閲覧許可グループに所属する相手です。詳細プロフィールの閲覧には、対象範囲の許可が必要です。研究者の詳細は、有効な企業会員・支払い確認が条件です。
               </p>
               {deepAvailable && deepHref ? (
                 <Link href={deepHref} className="mt-5 inline-flex rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white">
                   詳しいプロフィールを見る →
                 </Link>
               ) : (
-                <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-500">詳細プロフィールはまだ公開されていません。</div>
+                <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-500">詳細プロフィールは未公開、または企業会員・支払い等の閲覧条件を満たしていません。</div>
               )}
             </>
           ) : (

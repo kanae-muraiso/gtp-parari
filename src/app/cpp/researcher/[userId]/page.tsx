@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
 import { use, useEffect, useMemo, useState } from "react";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
@@ -60,14 +61,14 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
   }, [supabase, userId]);
 
   if (loading) return <CenteredCard>研究者プロフィールを読み込んでいます…</CenteredCard>;
-  if (!profile) return <CenteredCard>この研究者プロフィールはまだ公開されていません。</CenteredCard>;
+  if (!profile) return <CenteredCard>この研究者プロフィールは未公開、または閲覧権限がありません。</CenteredCard>;
 
   const photoUrl = profile.photo_path && supabase
-    ? supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl
+    ? (/^https?:\/\//.test(profile.photo_path) ? profile.photo_path : supabase.storage.from("parari-images").getPublicUrl(profile.photo_path).data.publicUrl)
     : null;
 
   return (
-    <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
+    <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Link href="/my/cpp/members" className="text-xs font-bold text-neutral-500 hover:text-neutral-900">← 参加メンバー</Link>
@@ -120,10 +121,10 @@ export default function PublishedCppResearcherPage({ params }: { params: Promise
           {profile.self_appeal ? <div className="mt-5"><PageBodyPanelRenderer bodySsot={profile.self_appeal} /></div> : <p className="mt-4 text-sm text-neutral-500">まだ登録されていません。</p>}
         </section>
       </div>
-    </main>
+    </main></>
   );
 }
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
-  return <main className="min-h-screen bg-neutral-100 px-4 py-16"><div className="mx-auto max-w-xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div></main>;
+  return <><CppSectionNav /><main className="min-h-screen bg-neutral-100 px-4 py-16"><div className="mx-auto max-w-xl rounded-[2rem] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600 shadow-sm">{children}</div></main></>;
 }
