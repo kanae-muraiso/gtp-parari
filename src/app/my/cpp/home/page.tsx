@@ -200,6 +200,7 @@ export default function CppHomePage() {
           {adminMode ? (
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               <HomeCard href="/my/cpp/admin/researchers" eyebrow="RESEARCHERS" title="研究者一覧・作成状況">登録順に、必須項目の入力状況とプロフィールの作成・公開状況を確認します。</HomeCard>
+              <HomeCard href="/my/cpp/admin/researcher-announcements" eyebrow="NEWS" title="研究者向けお知らせ管理">研究者に向けたお知らせの作成・編集・公開を行います。</HomeCard>
               <HomeCard href="/my/cpp/admin/company-codes" eyebrow="COMPANY" title="企業招待コード">
                 <ol className="list-decimal space-y-2 pl-5">
                   <li><strong>会社・団体名</strong>を入力（管理用のメモです）。</li>

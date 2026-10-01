@@ -1,11 +1,5 @@
-import AnnouncementsPage from "@/app/my/announcements/page";
-import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
+import CppResearcherAnnouncements from "@/components/parari/cpp/CppResearcherAnnouncements";
 
 export default function CppAnnouncementsPage() {
-  return (
-    <>
-      <CppSectionNav active="announcements" />
-      <AnnouncementsPage />
-    </>
-  );
+  return <CppResearcherAnnouncements />;
 }
