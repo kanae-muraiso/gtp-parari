@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import SocialProfileCard from "@/components/parari/matching/SocialProfileCard";
+import CppMemberDetailCard from "@/components/parari/cpp/CppMemberDetailCard";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 
 type MemberProfile = {
@@ -27,9 +28,21 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
   const [deepAvailable, setDeepAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [revision, setRevision] = useState(0);
+
+  useEffect(() => {
+    const reset = () => { setProfile(null); setDeepAvailable(false); setLoading(true); setRevision((n) => n + 1); };
+    window.addEventListener("cpp-mode-changed", reset);
+    const subscription = supabase?.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") reset();
+    });
+    return () => { window.removeEventListener("cpp-mode-changed", reset); subscription?.data.subscription.unsubscribe(); };
+  }, [supabase]);
 
   useEffect(() => {
     let active = true;
+    setLoading(true); setProfile(null); setDeepAvailable(false); setErrorMessage(""); setDetailError("");
 
     const load = async () => {
       if (!supabase) {
@@ -53,21 +66,27 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
       setProfile(row);
 
       if (row?.can_view_deep && row.deep_target_id && row.deep_kind === "researcher") {
-        const { data: researcher } = await supabase
+        const { data: researcher, error: researcherError } = await supabase
           .from("cpp_profiles")
           .select("user_id")
           .eq("user_id", row.deep_target_id)
           .eq("visibility", "published")
           .maybeSingle<{ user_id: string }>();
-        if (active) setDeepAvailable(Boolean(researcher));
+        if (active) {
+          setDeepAvailable(Boolean(researcher));
+          if (researcherError) setDetailError("研究者プロフィールの公開状態を確認できませんでした。再読み込みしてください。");
+        }
       } else if (row?.can_view_deep && row.deep_target_id && row.deep_kind === "company") {
-        const { data: company } = await supabase
+        const { data: company, error: companyError } = await supabase
           .from("cpp_companies")
           .select("id")
           .eq("id", row.deep_target_id)
           .eq("visibility", "published")
           .maybeSingle<{ id: string }>();
-        if (active) setDeepAvailable(Boolean(company));
+        if (active) {
+          setDeepAvailable(Boolean(company));
+          if (companyError) setDetailError("会社案内の公開状態を確認できませんでした。再読み込みしてください。");
+        }
       }
 
       if (active) setLoading(false);
@@ -77,7 +96,7 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
     return () => {
       active = false;
     };
-  }, [supabase, userId]);
+  }, [supabase, userId, revision]);
 
   if (loading) return <CenteredCard>SOCIAL PROFILEを読み込んでいます…</CenteredCard>;
 
@@ -85,18 +104,11 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
     return (
       <CenteredCard>
         <h1 className="text-xl font-black text-neutral-950">このプロフィールは表示できません</h1>
-        <p className="mt-3 text-sm leading-7">公開範囲や閲覧条件を満たしていないため、このメンバーは表示できません。</p>
+        <p className="mt-3 text-sm leading-7">{errorMessage || "公開範囲や閲覧条件を満たしていないため、このメンバーは表示できません。"}</p>
         <Link href="/my/cpp/members" className="mt-6 inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white">一覧へ戻る</Link>
       </CenteredCard>
     );
   }
-
-  const deepHref =
-    profile.deep_kind === "researcher" && profile.deep_target_id
-      ? `/cpp/researcher/${profile.deep_target_id}`
-      : profile.deep_kind === "company" && profile.deep_target_id
-        ? `/cpp/company/${profile.deep_target_id}`
-        : null;
 
   return (
     <main className="min-h-screen bg-neutral-100 px-4 py-10 sm:px-6 sm:py-14">
@@ -119,31 +131,7 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
           intro={profile.intro}
         />
 
-        <section className="mt-5 rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm sm:p-7">
-          {profile.can_view_deep ? (
-            <>
-              <div className="text-xs font-black tracking-[0.15em] text-neutral-400">MATCHING PROFILE</div>
-              <h2 className="mt-2 text-xl font-black text-neutral-950">詳しいプロフィール</h2>
-              <p className="mt-3 text-sm leading-7 text-neutral-600">
-                あなたの閲覧許可グループに所属する相手です。詳細プロフィールの閲覧には、対象範囲の許可が必要です。研究者の詳細は、有効な企業会員・支払い確認が条件です。
-              </p>
-              {deepAvailable && deepHref ? (
-                <Link href={deepHref} className="mt-5 inline-flex rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white">
-                  詳しいプロフィールを見る →
-                </Link>
-              ) : (
-                <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-500">詳細プロフィールは未公開、または企業会員・支払い等の閲覧条件を満たしていません。</div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="text-xs font-black tracking-[0.15em] text-neutral-400">SOCIAL ONLY</div>
-              <p className="mt-2 text-sm leading-7 text-neutral-600">
-                同じ側のメンバーなので、ここでは社交用プロフィールだけが表示されます。
-              </p>
-            </>
-          )}
-        </section>
+        <CppMemberDetailCard kind={profile.deep_kind} canView={profile.can_view_deep} available={deepAvailable} targetId={profile.deep_target_id} error={detailError} />
       </div>
     </main>
   );
