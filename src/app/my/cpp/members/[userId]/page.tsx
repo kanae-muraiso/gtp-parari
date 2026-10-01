@@ -85,7 +85,7 @@ export default function CppMemberProfilePage({ params }: { params: Promise<{ use
     return (
       <CenteredCard>
         <h1 className="text-xl font-black text-neutral-950">このプロフィールは表示できません</h1>
-        <p className="mt-3 text-sm leading-7">同じCPPに所属するメンバーだけがSOCIAL PROFILEを閲覧できます。</p>
+        <p className="mt-3 text-sm leading-7">公開範囲や閲覧条件を満たしていないため、このメンバーは表示できません。</p>
         <Link href="/my/cpp/members" className="mt-6 inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white">一覧へ戻る</Link>
       </CenteredCard>
     );

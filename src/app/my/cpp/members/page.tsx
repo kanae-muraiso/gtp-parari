@@ -121,7 +121,7 @@ export default function CppMembersPage() {
             <div className="text-xs font-black tracking-[0.18em] text-neutral-400">CPP MATCHING · BROWSE</div>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-neutral-950">{counterpartLabel}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-600">
-              {viewerLabel}としてCPPに参加しています。BROWSEでは、マッチング相手側のメンバーだけが表示されます。
+              {viewerLabel}としてCPPに参加しています。BROWSEでは、マッチング相手側のメンバーだけが表示されます。研究者は、プロフィールを公開済みで、あなたが閲覧条件を満たしている方だけが表示されます。
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -145,7 +145,7 @@ export default function CppMembersPage() {
         {sortedMembers.length === 0 ? (
           <div className="mt-6 rounded-[2rem] border border-neutral-200 bg-white p-8 text-center shadow-sm">
             <div className="text-lg font-black text-neutral-950">まだ表示できるメンバーがいません</div>
-            <p className="mt-3 text-sm leading-7 text-neutral-500">相手側のCPPメンバーが参加すると、ここにSOCIAL PROFILEが並びます。</p>
+            <p className="mt-3 text-sm leading-7 text-neutral-500">公開範囲と閲覧条件を満たす相手側のCPPメンバーが、ここに表示されます。</p>
           </div>
         ) : (
           <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
