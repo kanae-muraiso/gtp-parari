@@ -199,6 +199,14 @@ export default function CppHomePage() {
 
           {adminMode ? (
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <HomeCard href="/my/cpp/admin/company-codes" eyebrow="COMPANY" title="企業招待コード">
+                <ol className="list-decimal space-y-2 pl-5">
+                  <li><strong>会社・団体名</strong>を入力（管理用のメモです）。</li>
+                  <li><strong>有効期間</strong>を選択（初期設定は30日）。</li>
+                  <li><strong>「招待コードを発行する」</strong>を押す。</li>
+                  <li><strong>「コードをコピー」</strong>して、企業担当者に伝える。</li>
+                </ol>
+              </HomeCard>
               <HomeCard href="/my/cpp/admin/research-evidence" eyebrow="RESEARCH" title="研究歴の後日入力者">研究歴がわかるページを後で入力する方の一覧を確認します。</HomeCard>
               <HomeCard href="/my/cpp/admin/announcements" eyebrow="ALUMNI" title="同窓会のお知らせ管理">お知らせの作成・公開と、同窓会の近況の確認ができます。</HomeCard>
               <HomeCard href="/my/cpp/admin/settings" eyebrow="SETTINGS" title="モード利用者の設定">3つのモードを利用できる人を追加・削除します。</HomeCard>
@@ -243,7 +251,7 @@ function HomeCard({
     <>
       <div className="text-xs font-black tracking-[0.16em] text-neutral-400">{eyebrow}</div>
       <h2 className="mt-3 text-2xl font-black text-neutral-950">{title}</h2>
-      <p className="mt-3 text-sm leading-7 text-neutral-600">{children}</p>
+      <div className="mt-3 text-sm leading-7 text-neutral-600">{children}</div>
       <div className="mt-auto pt-7 text-sm font-black text-neutral-950">
         {disabled ? "入室条件を満たすと利用できます" : "開く →"}
       </div>
