@@ -335,26 +335,32 @@ export default function CppCompanyWorkbook() {
       return;
     }
     setLogoUploading(true);
-    const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-    const path = `${identity.userId}/cpp-company/${company.id}/logo-${Date.now()}.${ext}`;
-    const oldPath = company.logo_path;
-    const { error: uploadError } = await supabase.storage.from("parari-images").upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
+    setErrorMessage("");
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+      const path = `${identity.userId}/cpp-company/${company.id}/logo-${Date.now()}.${ext}`;
+      const oldPath = company.logo_path;
+      // A binary body gives Storage an exact contentLength for its quota preflight.
+      const body = await file.arrayBuffer();
+      const { error: uploadError } = await supabase.storage.from("parari-images").upload(path, body, { contentType: file.type, upsert: false });
+      if (uploadError) {
+        setErrorMessage(`ロゴのアップロードに失敗しました: ${uploadError.message}`);
+        return;
+      }
+      const { error } = await supabase.from("cpp_companies").update({ logo_path: path }).eq("id", company.id);
+      if (error) {
+        await supabase.storage.from("parari-images").remove([path]);
+        setErrorMessage(`ロゴ情報の保存に失敗しました: ${error.message}`);
+        return;
+      }
+      if (oldPath) await supabase.storage.from("parari-images").remove([oldPath]);
+      patchCompany({ logo_path: path });
+      setCompanyMessage("ロゴを保存しました");
+    } catch (error) {
+      setErrorMessage(`ロゴのアップロードに失敗しました: ${error instanceof Error ? error.message : "画像を読み込めませんでした。"}`);
+    } finally {
       setLogoUploading(false);
-      setErrorMessage(`ロゴのアップロードに失敗しました: ${uploadError.message}`);
-      return;
     }
-    const { error } = await supabase.from("cpp_companies").update({ logo_path: path }).eq("id", company.id);
-    if (error) {
-      await supabase.storage.from("parari-images").remove([path]);
-      setLogoUploading(false);
-      setErrorMessage(`ロゴ情報の保存に失敗しました: ${error.message}`);
-      return;
-    }
-    if (oldPath) await supabase.storage.from("parari-images").remove([oldPath]);
-    patchCompany({ logo_path: path });
-    setLogoUploading(false);
-    setCompanyMessage("ロゴを保存しました");
   };
 
   const addBlock = async (kind: ContentKind) => {
