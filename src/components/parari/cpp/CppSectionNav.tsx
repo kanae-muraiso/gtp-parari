@@ -108,6 +108,7 @@ export default function CppSectionNav({
               {mode === "admin" ? <Link href="/my/cpp/admin/settings" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">モード利用者の設定</Link> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/researchers" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">研究者一覧・作成状況</Link> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/announcements" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">同窓会のお知らせ管理</Link> : null}
+              {mode === "admin" ? <Link href="/my/cpp/admin/researcher-announcements" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">研究者向けお知らせ管理</Link> : null}
               {mode === "admin" ? <Link href="/my/cpp/admin/research-evidence" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">研究歴の後日入力者</Link> : null}
               {!mode && participation?.is_alumni ? <Link href="/my/cpp/participation" className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">CPPでの参加設定</Link> : null}
               <Link href={cppMessageHref(scope, { settings: true })} className="block rounded-xl px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-100">メッセージ設定</Link>
