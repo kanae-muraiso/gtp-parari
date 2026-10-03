@@ -3,6 +3,11 @@ node_modules
 .DS_Store
 .vercel
 
+# Recover code through Git history, not tracked snapshots or build caches.
+*.tsbuildinfo
+src/**/*.backup*
+src/**/*.tmp_backup*
+
 # Local environment variables
 .env*
 !.env.example

@@ -24,5 +24,8 @@ jobs:
       - name: TypeScript check
         run: npm run typecheck
 
+      - name: Repository hygiene check
+        run: npm run check:repo-hygiene
+
       - name: CPP route regression check
         run: npm run test:cpp-routes
