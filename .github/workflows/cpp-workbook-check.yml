@@ -23,3 +23,6 @@ jobs:
 
       - name: TypeScript check
         run: npm run typecheck
+
+      - name: CPP route regression check
+        run: npm run test:cpp-routes

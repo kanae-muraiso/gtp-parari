@@ -6,6 +6,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
+    "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
     "build:english-glossary": "node scripts/build-parari-english-glossary.mjs"
   },
   "dependencies": {
