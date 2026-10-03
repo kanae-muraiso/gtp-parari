@@ -27,6 +27,15 @@ const RESERVED_SUBDOMAINS = new Set([
 ]);
 
 export function proxy(request: NextRequest) {
+  // Retired CPP mocks must not fall through to public username/work/page routes.
+  const retiredCppPath = "/cpp/prototype";
+  if (
+    request.nextUrl.pathname === retiredCppPath ||
+    request.nextUrl.pathname.startsWith(`${retiredCppPath}/`)
+  ) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const hostname = normalizeHostname(
     request.headers.get("host") ?? "",
   );
@@ -88,6 +97,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/cpp/prototype/:path*",
     "/((?!api/|_next/|favicon.ico|robots.txt|sitemap.xml|.*\\.[^/]+$).*)",
   ],
 };
