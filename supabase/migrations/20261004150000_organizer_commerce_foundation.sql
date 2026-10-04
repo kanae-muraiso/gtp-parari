@@ -101,6 +101,7 @@ create table if not exists public.commerce_subscription_checkouts (
   product_id uuid not null references public.commerce_products(id) on delete restrict,
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   buyer_user_id uuid not null references auth.users(id) on delete cascade,
+  buyer_email text,
   provider_order_id text not null unique,
   provider_payment_link_id text not null unique,
   checkout_url text,
@@ -112,6 +113,18 @@ create table if not exists public.commerce_subscription_checkouts (
 
 create index if not exists commerce_subscription_checkouts_buyer_idx
   on public.commerce_subscription_checkouts(buyer_user_id, created_at desc);
+
+create index if not exists commerce_subscription_checkouts_product_email_idx
+  on public.commerce_subscription_checkouts(
+    product_id,
+    lower(buyer_email),
+    created_at desc
+  )
+  where buyer_email is not null;
+
+create unique index if not exists commerce_products_square_plan_variation_uidx
+  on public.commerce_products(square_plan_variation_id)
+  where square_plan_variation_id is not null;
 
 alter table public.commerce_subscription_checkouts enable row level security;
 
