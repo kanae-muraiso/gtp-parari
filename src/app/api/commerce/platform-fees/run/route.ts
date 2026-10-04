@@ -146,7 +146,7 @@ export async function GET(
       } = await supabaseAdmin
         .from("user_billing")
         .select(
-          "stripe_customer_id",
+          "stripe_customer_id,stripe_subscription_id",
         )
         .eq("user_id", ownerUserId)
         .maybeSingle();
@@ -166,6 +166,35 @@ export async function GET(
         continue;
       }
 
+      let defaultPaymentMethod:
+        | string
+        | undefined;
+
+      if (
+        billing.stripe_subscription_id
+      ) {
+        const planSubscription =
+          await stripe.subscriptions.retrieve(
+            billing.stripe_subscription_id,
+          );
+
+        const source =
+          planSubscription
+            .default_payment_method;
+
+        if (typeof source === "string") {
+          defaultPaymentMethod =
+            source;
+        } else if (
+          source &&
+          typeof source === "object" &&
+          "id" in source
+        ) {
+          defaultPaymentMethod =
+            String(source.id);
+        }
+      }
+
       const invoice =
         await stripe.invoices.create({
           customer:
@@ -173,6 +202,12 @@ export async function GET(
           collection_method:
             "charge_automatically",
           auto_advance: false,
+          ...(defaultPaymentMethod
+            ? {
+                default_payment_method:
+                  defaultPaymentMethod,
+              }
+            : {}),
           metadata: {
             parari_platform_fee:
               "true",
