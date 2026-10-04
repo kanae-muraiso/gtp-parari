@@ -395,7 +395,7 @@ async function handleCommerceRefund(
   } = await supabaseAdmin
     .from("commerce_purchases")
     .select(
-      "id,product_id,buyer_user_id,amount,currency,status",
+      "id,product_id,buyer_user_id,amount,currency,status,refunded_amount",
     )
     .eq(
       "provider_payment_id",
@@ -421,26 +421,41 @@ async function handleCommerceRefund(
       currency,
     );
 
-  const isFullRefund =
-    currency ===
-      String(purchase.currency)
-        .toUpperCase() &&
-    refundedAmount >=
-      Number(purchase.amount);
-
-  if (!isFullRefund) {
+  if (
+    currency !==
+    String(purchase.currency)
+      .toUpperCase()
+  ) {
     return true;
   }
 
   const now =
     new Date().toISOString();
+  const currentRefunded =
+    Number(
+      purchase.refunded_amount ?? 0,
+    );
+  const nextRefunded =
+    currentRefunded +
+    refundedAmount;
+  const isFullRefund =
+    nextRefunded >=
+    Number(purchase.amount);
 
   const { error: purchaseUpdateError } =
     await supabaseAdmin
       .from("commerce_purchases")
       .update({
-        status: "refunded",
-        refunded_at: now,
+        refunded_amount:
+          nextRefunded,
+        status:
+          isFullRefund
+            ? "refunded"
+            : purchase.status,
+        refunded_at:
+          isFullRefund
+            ? now
+            : null,
         updated_at: now,
       })
       .eq("id", purchase.id);
@@ -449,8 +464,10 @@ async function handleCommerceRefund(
     throw purchaseUpdateError;
   }
 
-  const { error: entitlementError } =
-    await supabaseAdmin
+  if (isFullRefund) {
+    const {
+      error: entitlementError,
+    } = await supabaseAdmin
       .from("commerce_entitlements")
       .update({
         status: "revoked",
@@ -465,8 +482,9 @@ async function handleCommerceRefund(
         purchase.buyer_user_id,
       );
 
-  if (entitlementError) {
-    throw entitlementError;
+    if (entitlementError) {
+      throw entitlementError;
+    }
   }
 
   return true;
