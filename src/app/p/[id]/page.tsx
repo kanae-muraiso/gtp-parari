@@ -33,6 +33,8 @@ export default function PublicPage() {
   const [loading, setLoading] = React.useState(true);
   const [book, setBook] = React.useState<BookRow | null>(null);
   const [notFound, setNotFound] = React.useState(false);
+  const [hasPurchasedAccess, setHasPurchasedAccess] =
+    React.useState(false);
 
   React.useEffect(() => {
     const load = async () => {
@@ -75,12 +77,53 @@ export default function PublicPage() {
         data.visibility === "public" ||
         data.visibility === "unlisted";
 
+      let purchasedAccess = false;
+
       if (!isVisible) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const now =
+            new Date().toISOString();
+
+          const {
+            data: entitlement,
+            error: entitlementError,
+          } = await supabase
+            .from("commerce_entitlements")
+            .select(
+              "id,status,starts_at,expires_at,remaining_uses",
+            )
+            .eq("user_id", user.id)
+            .eq("work_id", data.id)
+            .eq("status", "active")
+            .lte("starts_at", now)
+            .or(
+              `expires_at.is.null,expires_at.gt.${now}`,
+            )
+            .maybeSingle();
+
+          if (!entitlementError && entitlement) {
+            const remainingUses =
+              entitlement.remaining_uses;
+
+            purchasedAccess =
+              remainingUses === null ||
+              remainingUses === undefined ||
+              Number(remainingUses) > 0;
+          }
+        }
+      }
+
+      if (!isVisible && !purchasedAccess) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
+      setHasPurchasedAccess(purchasedAccess);
       setBook(data);
       setLoading(false);
     };
@@ -108,6 +151,14 @@ export default function PublicPage() {
   return (
     <>
       <BookViewTracker bookId={book.id} />
+
+      {hasPurchasedAccess ? (
+        <div className="mx-auto max-w-[440px] px-2 pt-3">
+          <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+            購入済みの作品です
+          </div>
+        </div>
+      ) : null}
 
       <PublicViewerShell
         content={book.content ?? ""}
