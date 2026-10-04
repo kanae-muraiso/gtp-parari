@@ -550,6 +550,7 @@ async function ensureCommerceSubscription(
     planVariationId: string;
     status: string | null;
   },
+  checkoutOrderId?: string | null,
 ) {
   const { data: existing, error: existingError } =
     await supabaseAdmin
@@ -606,49 +607,96 @@ async function ensureCommerceSubscription(
     );
   }
 
-  const customer =
-    await retrieveSquareCustomer({
-      accessToken: connection.accessToken,
-      customerId:
-        squareSubscription.customerId,
-    });
+  let checkout:
+    | {
+        id: string;
+        product_id: string;
+        owner_user_id: string;
+        buyer_user_id: string;
+        buyer_email: string | null;
+        status: string;
+        created_at: string;
+      }
+    | null = null;
 
-  if (!customer.emailAddress) {
-    console.warn(
-      "[square/webhook] recurring customer has no email",
-      squareSubscription.id,
-    );
-    return null;
+  if (checkoutOrderId) {
+    const {
+      data: exactCheckout,
+      error: exactCheckoutError,
+    } = await supabaseAdmin
+      .from(
+        "commerce_subscription_checkouts",
+      )
+      .select(
+        "id,product_id,owner_user_id,buyer_user_id,buyer_email,status,created_at",
+      )
+      .eq("product_id", product.id)
+      .eq(
+        "provider_order_id",
+        checkoutOrderId,
+      )
+      .maybeSingle();
+
+    if (exactCheckoutError) {
+      throw exactCheckoutError;
+    }
+
+    checkout = exactCheckout;
   }
 
-  const {
-    data: checkouts,
-    error: checkoutError,
-  } = await supabaseAdmin
-    .from(
-      "commerce_subscription_checkouts",
-    )
-    .select(
-      "id,product_id,owner_user_id,buyer_user_id,buyer_email,status,created_at",
-    )
-    .eq("product_id", product.id)
-    .eq("status", "pending")
-    .eq(
-      "buyer_email",
-      customer.emailAddress,
-    )
-    .order(
-      "created_at",
-      { ascending: false },
-    )
-    .limit(1);
+  let customerEmail:
+    | string
+    | null = null;
 
-  if (checkoutError) {
-    throw checkoutError;
+  if (!checkout) {
+    const customer =
+      await retrieveSquareCustomer({
+        accessToken:
+          connection.accessToken,
+        customerId:
+          squareSubscription.customerId,
+      });
+
+    customerEmail =
+      customer.emailAddress;
+
+    if (!customerEmail) {
+      console.warn(
+        "[square/webhook] recurring customer has no email",
+        squareSubscription.id,
+      );
+      return null;
+    }
+
+    const {
+      data: checkouts,
+      error: checkoutError,
+    } = await supabaseAdmin
+      .from(
+        "commerce_subscription_checkouts",
+      )
+      .select(
+        "id,product_id,owner_user_id,buyer_user_id,buyer_email,status,created_at",
+      )
+      .eq("product_id", product.id)
+      .eq("status", "pending")
+      .eq(
+        "buyer_email",
+        customerEmail,
+      )
+      .order(
+        "created_at",
+        { ascending: false },
+      )
+      .limit(1);
+
+    if (checkoutError) {
+      throw checkoutError;
+    }
+
+    checkout =
+      checkouts?.[0] ?? null;
   }
-
-  const checkout =
-    checkouts?.[0] ?? null;
 
   if (!checkout) {
     console.warn(
@@ -657,8 +705,9 @@ async function ensureCommerceSubscription(
         subscriptionId:
           squareSubscription.id,
         productId: product.id,
-        customerEmail:
-          customer.emailAddress,
+        checkoutOrderId:
+          checkoutOrderId ?? null,
+        customerEmail,
       },
     );
     return null;
@@ -780,6 +829,7 @@ async function handleInvoicePaymentMade(
       await ensureCommerceSubscription(
         event,
         remote,
+        invoice.order_id ?? null,
       );
 
     if (!subscription) {
