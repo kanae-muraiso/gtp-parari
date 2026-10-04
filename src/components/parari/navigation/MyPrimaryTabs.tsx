@@ -15,6 +15,7 @@ import ParariTabs from "@/components/parari/navigation/ParariTabs";
 export type MyPrimaryTab =
   | "home"
   | "bookshelf"
+  | "purchases"
   | "applications"
   | "calendar"
   | "messages";
@@ -39,6 +40,12 @@ const BOOKSHELF_ITEM: Item = {
   key: "bookshelf",
   label: "本棚",
   href: "/my/bookshelf",
+};
+
+const PURCHASES_ITEM: Item = {
+  key: "purchases",
+  label: "購入済み",
+  href: "/my/purchases",
 };
 
 const APPLICATIONS_ITEM: Item = {
@@ -66,7 +73,11 @@ export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
     hasMessages,
   } = useParariExperience();
 
-  const items: Item[] = [HOME_ITEM, BOOKSHELF_ITEM];
+  const items: Item[] = [
+    HOME_ITEM,
+    BOOKSHELF_ITEM,
+    PURCHASES_ITEM,
+  ];
 
   if (hasApplications || active === "applications") {
     items.push(APPLICATIONS_ITEM);
