@@ -122,7 +122,9 @@ Before production release, verify all of the following with test-mode credential
 15. Cancellation/update events change the stored Square subscription status.
 16. Existing recurring subscriptions retain their contracted billing amount even if the seller later changes the product price.
 17. An in-flight recurring checkout retains the amount and Square plan variation shown when that checkout was created.
-18. Existing APPLICATION Square payments continue to confirm and refund correctly.
+18. New recurring checkout is blocked after the seller loses Organizer recurring-sales access.
+19. Existing recurring subscriptions remain intact after the seller loses Organizer access.
+20. Existing APPLICATION Square payments continue to confirm and refund correctly.
 
 
 ## Database verification completed
@@ -151,3 +153,16 @@ Production Stripe configuration for Organizer has been completed:
 Live Stripe identifiers and secrets are intentionally not recorded in the repository.
 
 Square production and Sandbox environment variables already exist in Vercel. Existing Square sellers must refresh OAuth authorization before using recurring sales because additional subscription, invoice, catalog, customer, and order permissions are required.
+
+
+## Seller downgrade behavior
+
+If an Organizer later downgrades or cancels the paid plan:
+
+- existing Square recurring subscriptions continue
+- existing buyers remain billed under their contracted Square subscription
+- PARARI continues to account for the configured recurring sales fee
+- new recurring checkouts are blocked until Organizer access is restored
+- the seller cannot create new recurring products without Organizer access
+
+This avoids unexpectedly canceling customers while preventing a downgraded seller from accepting new monthly subscriptions.
