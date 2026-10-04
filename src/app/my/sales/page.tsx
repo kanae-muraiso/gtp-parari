@@ -39,6 +39,8 @@ type SellerSubscription = {
   status: string;
   canceled_at: string | null;
   last_payment_at: string | null;
+  billing_amount: number | string;
+  billing_currency: string;
   created_at: string;
 };
 
@@ -108,7 +110,7 @@ export default function SalesPage() {
           supabase
             .from("commerce_subscriptions")
             .select(
-              "id,product_id,buyer_email,status,canceled_at,last_payment_at,created_at",
+              "id,product_id,buyer_email,status,canceled_at,last_payment_at,billing_amount,billing_currency,created_at",
             )
             .eq("owner_user_id", user.id)
             .order("created_at", {
@@ -699,8 +701,17 @@ export default function SalesPage() {
                         className="border-b border-slate-100"
                       >
                         <td className="px-3 py-4 font-semibold text-slate-900">
-                          {product?.name ??
-                            "定期サービス"}
+                          <div>
+                            {product?.name ??
+                              "定期サービス"}
+                          </div>
+                          <div className="mt-1 text-xs font-normal text-slate-500">
+                            ¥{Number(
+                              subscription.billing_amount,
+                            ).toLocaleString(
+                              "ja-JP",
+                            )} / 月
+                          </div>
                         </td>
                         <td className="px-3 py-4 text-slate-600">
                           {subscription.buyer_email ??
