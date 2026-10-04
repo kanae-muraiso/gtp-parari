@@ -196,6 +196,12 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      if (!product.square_plan_variation_id) {
+        throw new Error(
+          "SUBSCRIPTION_PLAN_NOT_CONFIGURED",
+        );
+      }
+
       const reusableSince =
         new Date(
           Date.now() - 24 * 60 * 60 * 1000,
@@ -213,6 +219,21 @@ export async function POST(request: NextRequest) {
         .eq("status", "pending")
         .lt("created_at", reusableSince);
 
+      await supabaseAdmin
+        .from("commerce_subscription_checkouts")
+        .update({
+          status: "expired",
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("product_id", product.id)
+        .eq("buyer_user_id", user.id)
+        .eq("status", "pending")
+        .neq(
+          "square_plan_variation_id",
+          product.square_plan_variation_id,
+        );
+
       const {
         data: pendingCheckout,
         error: pendingCheckoutError,
@@ -222,6 +243,10 @@ export async function POST(request: NextRequest) {
         .eq("product_id", product.id)
         .eq("buyer_user_id", user.id)
         .eq("status", "pending")
+        .eq(
+          "square_plan_variation_id",
+          product.square_plan_variation_id,
+        )
         .gte("created_at", reusableSince)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -238,12 +263,6 @@ export async function POST(request: NextRequest) {
           reused: true,
           url: pendingCheckout.checkout_url,
         });
-      }
-
-      if (!product.square_plan_variation_id) {
-        throw new Error(
-          "SUBSCRIPTION_PLAN_NOT_CONFIGURED",
-        );
       }
 
       const idempotencyKey = randomUUID();
@@ -272,6 +291,10 @@ export async function POST(request: NextRequest) {
             buyer_email:
               user.email?.trim().toLowerCase() ??
               null,
+            billing_amount: amount,
+            billing_currency: currency,
+            square_plan_variation_id:
+              product.square_plan_variation_id,
             provider_order_id: link.orderId,
             provider_payment_link_id: link.id,
             checkout_url: link.url,
