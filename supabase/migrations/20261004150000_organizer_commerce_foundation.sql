@@ -46,6 +46,7 @@ create table if not exists public.commerce_purchases (
   product_id uuid not null references public.commerce_products(id) on delete restrict,
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   buyer_user_id uuid not null references auth.users(id) on delete cascade,
+  buyer_email text,
   provider text not null default 'square' check (provider = 'square'),
   status text not null default 'created'
     check (status in ('created','pending','paid','failed','cancelled','refunded')),
