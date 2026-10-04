@@ -1,3 +1,12 @@
+// src/app/api/square/webhook/route.ts
+// 2026-10-05 00:25 JST
+// PART: Square webhook router
+// コメント:
+// - APPLICATION単発決済
+// - 作品等の単発販売
+// - Square Subscriptionの月謝支払い
+// を同じ署名検証・重複排除の下で処理する。
+
 import {
   createHmac,
   timingSafeEqual,
@@ -7,6 +16,7 @@ import {
   NextResponse,
 } from "next/server";
 
+import { getUserPlanAccess } from "@/lib/billing/access";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   refundSquarePayment,
@@ -31,13 +41,31 @@ type SquarePayment = {
   };
 };
 
+type SquareInvoice = {
+  id?: string;
+  order_id?: string;
+  subscription_id?: string;
+  primary_recipient?: {
+    customer_id?: string;
+  };
+};
+
+type SquareSubscription = {
+  id?: string;
+  customer_id?: string;
+  status?: string;
+};
+
 type SquareWebhookEvent = {
   event_id?: string;
   type?: string;
   merchant_id?: string;
+  created_at?: string;
   data?: {
     object?: {
       payment?: SquarePayment;
+      invoice?: SquareInvoice;
+      subscription?: SquareSubscription;
     };
   };
 };
@@ -76,6 +104,534 @@ async function markProcessed(
         new Date().toISOString(),
     })
     .eq("event_id", eventId);
+}
+
+function toMajorUnits(
+  amountMinor: number,
+  currency: string,
+): number {
+  return new Set(["JPY", "KRW", "VND"]).has(
+    currency,
+  )
+    ? amountMinor
+    : amountMinor / 100;
+}
+
+function toMinorUnits(
+  amount: number,
+  currency: string,
+): number {
+  return Math.round(
+    amount *
+      (
+        new Set(["JPY", "KRW", "VND"]).has(
+          currency,
+        )
+          ? 1
+          : 100
+      ),
+  );
+}
+
+function billingMonth(
+  value: string | undefined,
+): string {
+  const date = value
+    ? new Date(value)
+    : new Date();
+
+  const safe =
+    Number.isNaN(date.getTime())
+      ? new Date()
+      : date;
+
+  return new Date(
+    Date.UTC(
+      safe.getUTCFullYear(),
+      safe.getUTCMonth(),
+      1,
+    ),
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
+async function handleApplicationPayment(
+  input: {
+    eventId: string;
+    merchantId?: string;
+    payment: Required<
+      Pick<
+        SquarePayment,
+        "id" | "order_id" | "amount_money"
+      >
+    >;
+  },
+): Promise<boolean> {
+  const { payment } = input;
+
+  const {
+    data: paymentRecord,
+    error: paymentRecordError,
+  } = await supabaseAdmin
+    .from("application_payments")
+    .select(
+      "id,owner_user_id,merchant_id,amount,currency,status",
+    )
+    .eq(
+      "provider_order_id",
+      payment.order_id,
+    )
+    .maybeSingle();
+
+  if (paymentRecordError) {
+    throw paymentRecordError;
+  }
+
+  if (!paymentRecord) {
+    return false;
+  }
+
+  if (
+    input.merchantId &&
+    paymentRecord.merchant_id !==
+      input.merchantId
+  ) {
+    throw new Error(
+      "Square merchant mismatch",
+    );
+  }
+
+  const amountMinor =
+    payment.amount_money.amount!;
+  const currency =
+    payment.amount_money.currency!
+      .toUpperCase();
+  const amount =
+    toMajorUnits(
+      amountMinor,
+      currency,
+    );
+
+  const {
+    data: completionRows,
+    error: completionError,
+  } = await supabaseAdmin.rpc(
+    "complete_application_square_payment",
+    {
+      p_order_id:
+        payment.order_id,
+      p_payment_id:
+        payment.id,
+      p_amount:
+        amount,
+      p_currency:
+        currency,
+    },
+  );
+
+  if (completionError) {
+    throw completionError;
+  }
+
+  const completion =
+    Array.isArray(completionRows)
+      ? completionRows[0]
+      : completionRows;
+
+  if (
+    completion?.was_expired === true
+  ) {
+    const connection =
+      await getUsableSquareConnection(
+        paymentRecord.owner_user_id,
+      );
+
+    await refundSquarePayment({
+      accessToken:
+        connection.accessToken,
+      paymentId: payment.id,
+      amountMinor,
+      currency,
+      idempotencyKey:
+        `late-${input.eventId}`.slice(
+          0,
+          45,
+        ),
+      reason:
+        "PARARI APPLICATION payment hold expired",
+    });
+
+    const { error: refundUpdateError } =
+      await supabaseAdmin
+        .from("application_payments")
+        .update({
+          status: "refunded",
+          refunded_at:
+            new Date().toISOString(),
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", paymentRecord.id);
+
+    if (refundUpdateError) {
+      throw refundUpdateError;
+    }
+  }
+
+  return true;
+}
+
+async function handleCommercePayment(
+  input: {
+    merchantId?: string;
+    payment: Required<
+      Pick<
+        SquarePayment,
+        "id" | "order_id" | "amount_money"
+      >
+    >;
+  },
+): Promise<boolean> {
+  const { payment } = input;
+
+  const {
+    data: purchase,
+    error: purchaseError,
+  } = await supabaseAdmin
+    .from("commerce_purchases")
+    .select(
+      "id,owner_user_id,merchant_id,amount,currency",
+    )
+    .eq(
+      "provider_order_id",
+      payment.order_id,
+    )
+    .maybeSingle();
+
+  if (purchaseError) {
+    throw purchaseError;
+  }
+
+  if (!purchase) {
+    return false;
+  }
+
+  if (
+    input.merchantId &&
+    purchase.merchant_id !==
+      input.merchantId
+  ) {
+    throw new Error(
+      "Square commerce merchant mismatch",
+    );
+  }
+
+  const currency =
+    payment.amount_money.currency!
+      .toUpperCase();
+  const amount =
+    toMajorUnits(
+      payment.amount_money.amount!,
+      currency,
+    );
+
+  const { error } =
+    await supabaseAdmin.rpc(
+      "complete_commerce_square_payment",
+      {
+        p_order_id:
+          payment.order_id,
+        p_payment_id:
+          payment.id,
+        p_amount:
+          amount,
+        p_currency:
+          currency,
+      },
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+}
+
+async function handleInvoicePaymentMade(
+  event: SquareWebhookEvent,
+): Promise<boolean> {
+  const invoice =
+    event.data?.object?.invoice;
+
+  if (
+    !invoice?.id ||
+    !invoice.subscription_id
+  ) {
+    return false;
+  }
+
+  let {
+    data: subscription,
+    error: subscriptionError,
+  } = await supabaseAdmin
+    .from("commerce_subscriptions")
+    .select("*")
+    .eq(
+      "provider_subscription_id",
+      invoice.subscription_id,
+    )
+    .maybeSingle();
+
+  if (subscriptionError) {
+    throw subscriptionError;
+  }
+
+  if (!subscription) {
+    if (!invoice.order_id) {
+      return false;
+    }
+
+    const {
+      data: checkout,
+      error: checkoutError,
+    } = await supabaseAdmin
+      .from(
+        "commerce_subscription_checkouts",
+      )
+      .select(
+        "id,product_id,owner_user_id,buyer_user_id,status",
+      )
+      .eq(
+        "provider_order_id",
+        invoice.order_id,
+      )
+      .maybeSingle();
+
+    if (checkoutError) {
+      throw checkoutError;
+    }
+
+    if (!checkout) {
+      return false;
+    }
+
+    const connection =
+      await getUsableSquareConnection(
+        checkout.owner_user_id,
+      );
+
+    if (
+      event.merchant_id &&
+      connection.merchantId !==
+        event.merchant_id
+    ) {
+      throw new Error(
+        "Square recurring merchant mismatch",
+      );
+    }
+
+    const { entitlements } =
+      await getUserPlanAccess(
+        checkout.owner_user_id,
+      );
+
+    const { data: inserted, error } =
+      await supabaseAdmin
+        .from("commerce_subscriptions")
+        .insert({
+          product_id:
+            checkout.product_id,
+          owner_user_id:
+            checkout.owner_user_id,
+          buyer_user_id:
+            checkout.buyer_user_id,
+          provider: "square",
+          provider_customer_id:
+            invoice.primary_recipient
+              ?.customer_id ?? null,
+          provider_subscription_id:
+            invoice.subscription_id,
+          status: "ACTIVE",
+          app_fee_bps:
+            entitlements.salesFeeBps,
+          last_payment_at:
+            event.created_at ??
+            new Date().toISOString(),
+        })
+        .select("*")
+        .single();
+
+    if (error || !inserted) {
+      throw error ??
+        new Error(
+          "Failed to create commerce subscription",
+        );
+    }
+
+    subscription = inserted;
+
+    const { error: checkoutUpdateError } =
+      await supabaseAdmin
+        .from(
+          "commerce_subscription_checkouts",
+        )
+        .update({
+          status: "active",
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", checkout.id);
+
+    if (checkoutUpdateError) {
+      throw checkoutUpdateError;
+    }
+  }
+
+  const {
+    data: product,
+    error: productError,
+  } = await supabaseAdmin
+    .from("commerce_products")
+    .select(
+      "id,amount,currency,work_id",
+    )
+    .eq("id", subscription.product_id)
+    .single();
+
+  if (productError || !product) {
+    throw productError ??
+      new Error(
+        "Recurring commerce product not found",
+      );
+  }
+
+  const amount = Number(product.amount);
+  const currency =
+    String(product.currency)
+      .toUpperCase();
+  const amountMinor =
+    toMinorUnits(amount, currency);
+  const feeMinor =
+    Math.min(
+      amountMinor,
+      Math.floor(
+        (
+          amountMinor *
+          Number(
+            subscription.app_fee_bps ??
+              500,
+          )
+        ) /
+          10000,
+      ),
+    );
+  const feeAmount =
+    toMajorUnits(
+      feeMinor,
+      currency,
+    );
+
+  const { error: ledgerError } =
+    await supabaseAdmin
+      .from(
+        "commerce_platform_fee_ledger",
+      )
+      .insert({
+        owner_user_id:
+          subscription.owner_user_id,
+        subscription_id:
+          subscription.id,
+        provider_charge_id:
+          invoice.id,
+        gross_amount: amount,
+        fee_amount: feeAmount,
+        currency,
+        paid_at:
+          event.created_at ??
+          new Date().toISOString(),
+        billing_month:
+          billingMonth(
+            event.created_at,
+          ),
+        status: "open",
+      });
+
+  if (
+    ledgerError &&
+    ledgerError.code !== "23505"
+  ) {
+    throw ledgerError;
+  }
+
+  const { error: subscriptionUpdateError } =
+    await supabaseAdmin
+      .from("commerce_subscriptions")
+      .update({
+        status: "ACTIVE",
+        provider_customer_id:
+          invoice.primary_recipient
+            ?.customer_id ??
+          subscription.provider_customer_id ??
+          null,
+        last_payment_at:
+          event.created_at ??
+          new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("id", subscription.id);
+
+  if (subscriptionUpdateError) {
+    throw subscriptionUpdateError;
+  }
+
+  return true;
+}
+
+async function handleSubscriptionUpdated(
+  event: SquareWebhookEvent,
+): Promise<boolean> {
+  const subscription =
+    event.data?.object?.subscription;
+
+  if (!subscription?.id) {
+    return false;
+  }
+
+  const status =
+    String(
+      subscription.status ?? "",
+    ).toUpperCase();
+
+  const { data, error } =
+    await supabaseAdmin
+      .from("commerce_subscriptions")
+      .update({
+        status:
+          status || "UNKNOWN",
+        provider_customer_id:
+          subscription.customer_id ??
+          undefined,
+        canceled_at:
+          status === "CANCELED"
+            ? new Date().toISOString()
+            : null,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "provider_subscription_id",
+        subscription.id,
+      )
+      .select("id")
+      .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
 }
 
 export async function POST(
@@ -154,14 +710,15 @@ export async function POST(
   }
 
   if (!existingEvent) {
-    const { error } = await supabaseAdmin
-      .from("square_webhook_events")
-      .insert({
-        event_id: eventId,
-        event_type: eventType,
-        merchant_id:
-          event.merchant_id ?? null,
-      });
+    const { error } =
+      await supabaseAdmin
+        .from("square_webhook_events")
+        .insert({
+          event_id: eventId,
+          event_type: eventType,
+          merchant_id:
+            event.merchant_id ?? null,
+        });
 
     if (
       error &&
@@ -179,152 +736,72 @@ export async function POST(
   }
 
   try {
-    if (
-      eventType !== "payment.updated" &&
-      eventType !== "payment.created"
-    ) {
-      await markProcessed(eventId);
-      return NextResponse.json({
-        ok: true,
-        ignored: true,
-      });
-    }
-
-    const payment =
-      event.data?.object?.payment;
+    let handled = false;
 
     if (
-      payment?.status !== "COMPLETED" ||
-      !payment.id ||
-      !payment.order_id ||
-      !payment.amount_money?.amount ||
-      !payment.amount_money.currency
+      eventType === "payment.updated" ||
+      eventType === "payment.created"
     ) {
-      await markProcessed(eventId);
-      return NextResponse.json({
-        ok: true,
-        ignored: true,
-      });
-    }
+      const payment =
+        event.data?.object?.payment;
 
-    const {
-      data: paymentRecord,
-      error: paymentRecordError,
-    } = await supabaseAdmin
-      .from("application_payments")
-      .select(
-        "id,owner_user_id,merchant_id,amount,currency,status",
-      )
-      .eq(
-        "provider_order_id",
-        payment.order_id,
-      )
-      .maybeSingle();
+      if (
+        payment?.status === "COMPLETED" &&
+        payment.id &&
+        payment.order_id &&
+        payment.amount_money?.amount &&
+        payment.amount_money.currency
+      ) {
+        const requiredPayment = {
+          id: payment.id,
+          order_id: payment.order_id,
+          amount_money: {
+            amount:
+              payment.amount_money.amount,
+            currency:
+              payment.amount_money.currency,
+          },
+        };
 
-    if (
-      paymentRecordError ||
-      !paymentRecord
-    ) {
-      await markProcessed(eventId);
-      return NextResponse.json({
-        ok: true,
-        unknownOrder: true,
-      });
-    }
+        handled =
+          await handleApplicationPayment({
+            eventId,
+            merchantId:
+              event.merchant_id,
+            payment: requiredPayment,
+          });
 
-    if (
-      event.merchant_id &&
-      paymentRecord.merchant_id !==
-        event.merchant_id
-    ) {
-      throw new Error(
-        "Square merchant mismatch",
-      );
-    }
-
-    const amountMinor =
-      payment.amount_money.amount;
-    const currency =
-      payment.amount_money.currency
-        .toUpperCase();
-    const zeroDecimal =
-      new Set([
-        "JPY",
-        "KRW",
-        "VND",
-      ]).has(currency);
-    const amount =
-      zeroDecimal
-        ? amountMinor
-        : amountMinor / 100;
-
-    const {
-      data: completionRows,
-      error: completionError,
-    } = await supabaseAdmin.rpc(
-      "complete_application_square_payment",
-      {
-        p_order_id:
-          payment.order_id,
-        p_payment_id:
-          payment.id,
-        p_amount:
-          amount,
-        p_currency:
-          currency,
-      },
-    );
-
-    if (completionError) {
-      throw completionError;
-    }
-
-    const completion =
-      Array.isArray(completionRows)
-        ? completionRows[0]
-        : completionRows;
-
-    if (
-      completion?.was_expired === true
-    ) {
-      const connection =
-        await getUsableSquareConnection(
-          paymentRecord.owner_user_id,
-        );
-
-      await refundSquarePayment({
-        accessToken:
-          connection.accessToken,
-        paymentId: payment.id,
-        amountMinor,
-        currency,
-        idempotencyKey:
-          `late-${eventId}`.slice(0, 45),
-        reason:
-          "PARARI APPLICATION payment hold expired",
-      });
-
-      const { error: refundUpdateError } =
-        await supabaseAdmin
-          .from("application_payments")
-          .update({
-            status: "refunded",
-            refunded_at:
-              new Date().toISOString(),
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq("id", paymentRecord.id);
-
-      if (refundUpdateError) {
-        throw refundUpdateError;
+        if (!handled) {
+          handled =
+            await handleCommercePayment({
+              merchantId:
+                event.merchant_id,
+              payment: requiredPayment,
+            });
+        }
       }
+    } else if (
+      eventType === "invoice.payment_made"
+    ) {
+      handled =
+        await handleInvoicePaymentMade(
+          event,
+        );
+    } else if (
+      eventType === "subscription.updated" ||
+      eventType === "subscription.created"
+    ) {
+      handled =
+        await handleSubscriptionUpdated(
+          event,
+        );
     }
 
     await markProcessed(eventId);
 
     return NextResponse.json({
       ok: true,
+      handled,
     });
   } catch (error) {
     console.error(
