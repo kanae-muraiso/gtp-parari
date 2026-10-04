@@ -196,6 +196,23 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      const reusableSince =
+        new Date(
+          Date.now() - 24 * 60 * 60 * 1000,
+        ).toISOString();
+
+      await supabaseAdmin
+        .from("commerce_subscription_checkouts")
+        .update({
+          status: "expired",
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("product_id", product.id)
+        .eq("buyer_user_id", user.id)
+        .eq("status", "pending")
+        .lt("created_at", reusableSince);
+
       const {
         data: pendingCheckout,
         error: pendingCheckoutError,
@@ -205,6 +222,7 @@ export async function POST(request: NextRequest) {
         .eq("product_id", product.id)
         .eq("buyer_user_id", user.id)
         .eq("status", "pending")
+        .gte("created_at", reusableSince)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -271,6 +289,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const reusablePurchaseSince =
+      new Date(
+        Date.now() - 24 * 60 * 60 * 1000,
+      ).toISOString();
+
+    await supabaseAdmin
+      .from("commerce_purchases")
+      .update({
+        status: "cancelled",
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("product_id", product.id)
+      .eq("buyer_user_id", user.id)
+      .eq("status", "pending")
+      .lt(
+        "created_at",
+        reusablePurchaseSince,
+      );
+
     const {
       data: pendingPurchase,
       error: pendingPurchaseError,
@@ -280,6 +318,10 @@ export async function POST(request: NextRequest) {
       .eq("product_id", product.id)
       .eq("buyer_user_id", user.id)
       .eq("status", "pending")
+      .gte(
+        "created_at",
+        reusablePurchaseSince,
+      )
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
