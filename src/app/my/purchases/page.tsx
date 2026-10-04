@@ -1,8 +1,9 @@
 // src/app/my/purchases/page.tsx
-// 2026-10-05 01:15 JST
-// PART: Purchased works library
+// 2026-10-05 01:40 JST
+// PART: Purchased works and recurring subscriptions
 // コメント:
 // - commerce_entitlementsから購入済み作品を表示する
+// - commerce_subscriptionsから定期契約を表示・解約できる
 // - 作品本文は既存parari_booksをRLS経由で読む
 // - SSOTの複製はしない
 
@@ -43,16 +44,16 @@ type Product = {
 export default function PurchasesPage() {
   const [works, setWorks] =
     React.useState<Work[]>([]);
-  const [loading, setLoading] =
-    React.useState(true);
-  const [message, setMessage] =
-    React.useState("");
   const [subscriptions, setSubscriptions] =
     React.useState<Subscription[]>([]);
   const [productsById, setProductsById] =
     React.useState<Map<string, Product>>(
       new Map(),
     );
+  const [loading, setLoading] =
+    React.useState(true);
+  const [message, setMessage] =
+    React.useState("");
   const [cancelingId, setCancelingId] =
     React.useState<string | null>(null);
 
@@ -61,6 +62,7 @@ export default function PurchasesPage() {
 
     async function load() {
       setLoading(true);
+      setMessage("");
 
       const {
         data: { user },
@@ -110,10 +112,22 @@ export default function PurchasesPage() {
           ),
       ]);
 
+      if (cancelled) return;
+
       const {
         data: entitlements,
         error: entitlementError,
       } = entitlementResult;
+
+      if (entitlementError) {
+        console.error(
+          "[my/purchases] entitlements load failed:",
+          entitlementError,
+        );
+        setMessage(
+          "購入済み作品を確認できませんでした。",
+        );
+      }
 
       const {
         data: subscriptionRows,
@@ -154,7 +168,7 @@ export default function PurchasesPage() {
           )
           .in("id", productIds);
 
-        if (!productError) {
+        if (!cancelled && !productError) {
           setProductsById(
             new Map(
               ((productRows ?? []) as Product[]).map(
@@ -170,88 +184,27 @@ export default function PurchasesPage() {
         setProductsById(new Map());
       }
 
-      if (entitlementError) {
-        setMessage(
-          "購入済み作品を確認できませんでした。",
-        );
-        setLoading(false);
-        return;
-      }
-
       const ids =
-        Array.from(
-          new Set(
-            (
-              (entitlements ??
-                []) as Entitlement[]
-            )
-              .map(
-                (item) =>
-                  item.work_id,
-              )
-              .filter(
+        entitlementError
+          ? []
+          : Array.from(
+              new Set(
                 (
-                  id,
-                ): id is string =>
-                  Boolean(id),
+                  (entitlements ??
+                    []) as Entitlement[]
+                )
+                  .map(
+                    (item) =>
+                      item.work_id,
+                  )
+                  .filter(
+                    (
+                      id,
+                    ): id is string =>
+                      Boolean(id),
+                  ),
               ),
-          ),
-        );
-
-      if (ids.length === 0) {
-        setWorks([]);
-        setLoading(false);
-        return;
-      }
-
-      const {
-        data: workRows,
-        error: workError,
-      } = await supabase
-        .from("parari_books")
-        .select(
-          "work_id,created_at",
-        )
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .lte("starts_at", now)
-        .or(
-          `expires_at.is.null,expires_at.gt.${now}`,
-        )
-        .order(
-          "created_at",
-          { ascending: false },
-        );
-
-      if (cancelled) return;
-
-      if (entitlementError) {
-        setMessage(
-          "購入済み作品を確認できませんでした。",
-        );
-        setLoading(false);
-        return;
-      }
-
-      const ids =
-        Array.from(
-          new Set(
-            (
-              (entitlements ??
-                []) as Entitlement[]
-            )
-              .map(
-                (item) =>
-                  item.work_id,
-              )
-              .filter(
-                (
-                  id,
-                ): id is string =>
-                  Boolean(id),
-              ),
-          ),
-        );
+            );
 
       if (ids.length === 0) {
         setWorks([]);
@@ -273,6 +226,10 @@ export default function PurchasesPage() {
       if (cancelled) return;
 
       if (workError) {
+        console.error(
+          "[my/purchases] works load failed:",
+          workError,
+        );
         setMessage(
           "購入済み作品を読み込めませんでした。",
         );
@@ -420,10 +377,6 @@ export default function PurchasesPage() {
             <p className="mt-8 text-sm text-neutral-500">
               読み込んでいます…
             </p>
-          ) : message ? (
-            <p className="mt-8 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600">
-              {message}
-            </p>
           ) : works.length === 0 ? (
             <p className="mt-8 rounded-2xl bg-neutral-50 p-6 text-sm text-neutral-500">
               まだ購入した作品はありません。
@@ -456,7 +409,11 @@ export default function PurchasesPage() {
               定期契約
             </h2>
 
-            {subscriptions.length === 0 ? (
+            {loading ? (
+              <p className="mt-5 text-sm text-neutral-500">
+                読み込んでいます…
+              </p>
+            ) : subscriptions.length === 0 ? (
               <p className="mt-5 rounded-2xl bg-neutral-50 p-5 text-sm text-neutral-500">
                 現在、定期契約はありません。
               </p>
@@ -487,6 +444,7 @@ export default function PurchasesPage() {
                             {product?.name ??
                               "定期サービス"}
                           </div>
+
                           {product ? (
                             <div className="mt-1 text-sm text-neutral-500">
                               ¥{Number(
@@ -537,6 +495,12 @@ export default function PurchasesPage() {
               </div>
             )}
           </div>
+
+          {message ? (
+            <p className="mt-6 rounded-2xl bg-neutral-50 p-4 text-sm leading-7 text-neutral-700">
+              {message}
+            </p>
+          ) : null}
         </section>
       </div>
     </main>
