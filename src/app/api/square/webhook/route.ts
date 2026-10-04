@@ -52,6 +52,17 @@ type SquareInvoice = {
   };
 };
 
+type SquareRefund = {
+  id?: string;
+  payment_id?: string;
+  order_id?: string;
+  status?: string;
+  amount_money?: {
+    amount?: number;
+    currency?: string;
+  };
+};
+
 type SquareSubscription = {
   id?: string;
   customer_id?: string;
@@ -68,6 +79,7 @@ type SquareWebhookEvent = {
     object?: {
       payment?: SquarePayment;
       invoice?: SquareInvoice;
+      refund?: SquareRefund;
       subscription?: SquareSubscription;
     };
   };
@@ -359,6 +371,138 @@ async function handleCommercePayment(
   }
 
   return true;
+}
+
+async function handleCommerceRefund(
+  event: SquareWebhookEvent,
+): Promise<boolean> {
+  const refund =
+    event.data?.object?.refund;
+
+  if (
+    !refund?.payment_id ||
+    String(refund.status ?? "").toUpperCase() !==
+      "COMPLETED" ||
+    !refund.amount_money?.amount ||
+    !refund.amount_money.currency
+  ) {
+    return false;
+  }
+
+  const {
+    data: purchase,
+    error: purchaseError,
+  } = await supabaseAdmin
+    .from("commerce_purchases")
+    .select(
+      "id,product_id,buyer_user_id,amount,currency,status",
+    )
+    .eq(
+      "provider_payment_id",
+      refund.payment_id,
+    )
+    .maybeSingle();
+
+  if (purchaseError) {
+    throw purchaseError;
+  }
+
+  if (!purchase) {
+    return false;
+  }
+
+  const currency =
+    String(
+      refund.amount_money.currency,
+    ).toUpperCase();
+  const refundedAmount =
+    toMajorUnits(
+      refund.amount_money.amount,
+      currency,
+    );
+
+  const isFullRefund =
+    currency ===
+      String(purchase.currency)
+        .toUpperCase() &&
+    refundedAmount >=
+      Number(purchase.amount);
+
+  if (!isFullRefund) {
+    return true;
+  }
+
+  const now =
+    new Date().toISOString();
+
+  const { error: purchaseUpdateError } =
+    await supabaseAdmin
+      .from("commerce_purchases")
+      .update({
+        status: "refunded",
+        refunded_at: now,
+        updated_at: now,
+      })
+      .eq("id", purchase.id);
+
+  if (purchaseUpdateError) {
+    throw purchaseUpdateError;
+  }
+
+  const { error: entitlementError } =
+    await supabaseAdmin
+      .from("commerce_entitlements")
+      .update({
+        status: "revoked",
+        updated_at: now,
+      })
+      .eq(
+        "source_purchase_id",
+        purchase.id,
+      )
+      .eq(
+        "user_id",
+        purchase.buyer_user_id,
+      );
+
+  if (entitlementError) {
+    throw entitlementError;
+  }
+
+  return true;
+}
+
+async function handleRecurringChargeFailure(
+  event: SquareWebhookEvent,
+): Promise<boolean> {
+  const invoice =
+    event.data?.object?.invoice;
+
+  if (!invoice?.subscription_id) {
+    return false;
+  }
+
+  const { data, error } =
+    await supabaseAdmin
+      .from("commerce_subscriptions")
+      .update({
+        status:
+          "PAYMENT_FAILED",
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "provider_subscription_id",
+        invoice.subscription_id,
+      )
+      .select("id")
+      .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
 }
 
 async function getSquareOwnerUserId(
@@ -962,10 +1106,25 @@ export async function POST(
         }
       }
     } else if (
+      eventType === "refund.updated"
+    ) {
+      handled =
+        await handleCommerceRefund(
+          event,
+        );
+    } else if (
       eventType === "invoice.payment_made"
     ) {
       handled =
         await handleInvoicePaymentMade(
+          event,
+        );
+    } else if (
+      eventType ===
+      "invoice.scheduled_charge_failed"
+    ) {
+      handled =
+        await handleRecurringChargeFailure(
           event,
         );
     } else if (
