@@ -121,7 +121,7 @@ create table if not exists public.commerce_subscriptions (
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   buyer_user_id uuid not null references auth.users(id) on delete cascade,
   provider text not null default 'square' check (provider = 'square'),
-  provider_customer_id text not null,
+  provider_customer_id text,
   provider_subscription_id text not null unique,
   status text not null default 'PENDING',
   app_fee_bps integer not null default 500
