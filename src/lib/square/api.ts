@@ -556,3 +556,41 @@ export async function retrieveSquareSubscription(input: {
       subscription.status ?? null,
   };
 }
+
+
+export async function cancelSquareSubscription(input: {
+  accessToken: string;
+  subscriptionId: string;
+}): Promise<{
+  id: string;
+  status: string | null;
+  canceledDate: string | null;
+}> {
+  const result = await squareRequest<{
+    subscription?: {
+      id?: string;
+      status?: string;
+      canceled_date?: string;
+    };
+  }>(
+    `/v2/subscriptions/${encodeURIComponent(input.subscriptionId)}/cancel`,
+    {
+      accessToken: input.accessToken,
+      method: "POST",
+    },
+  );
+
+  if (!result.subscription?.id) {
+    throw new Error(
+      "Square did not return the cancelled subscription",
+    );
+  }
+
+  return {
+    id: result.subscription.id,
+    status:
+      result.subscription.status ?? null,
+    canceledDate:
+      result.subscription.canceled_date ?? null,
+  };
+}
