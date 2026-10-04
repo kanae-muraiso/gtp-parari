@@ -519,6 +519,8 @@ async function ensureCommerceSubscription(
         checkout.owner_user_id,
       buyer_user_id:
         checkout.buyer_user_id,
+      buyer_email:
+        checkout.buyer_email,
       provider: "square",
       provider_customer_id:
         squareSubscription.customerId,
