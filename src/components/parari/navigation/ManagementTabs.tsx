@@ -55,9 +55,7 @@ export default function ManagementTabs({ active }: ManagementTabsProps) {
     items.push(MANAGE_ITEM);
   }
 
-  if (studioEnabled || active === "sales") {
-    items.push(SALES_ITEM);
-  }
+  items.push(SALES_ITEM);
 
   return <ParariTabs items={items} active={active} />;
 }
