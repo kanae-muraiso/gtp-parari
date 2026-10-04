@@ -585,15 +585,17 @@ async function ensureCommerceSubscription(
   },
   checkoutOrderId?: string | null,
 ) {
-  const { data: existing, error: existingError } =
-    await supabaseAdmin
-      .from("commerce_subscriptions")
-      .select("*")
-      .eq(
-        "provider_subscription_id",
-        squareSubscription.id,
-      )
-      .maybeSingle();
+  const {
+    data: existing,
+    error: existingError,
+  } = await supabaseAdmin
+    .from("commerce_subscriptions")
+    .select("*")
+    .eq(
+      "provider_subscription_id",
+      squareSubscription.id,
+    )
+    .maybeSingle();
 
   if (existingError) {
     throw existingError;
@@ -603,53 +605,21 @@ async function ensureCommerceSubscription(
     return existing;
   }
 
-  const {
-    data: product,
-    error: productError,
-  } = await supabaseAdmin
-    .from("commerce_products")
-    .select(
-      "id,owner_user_id,amount,currency,square_plan_variation_id",
-    )
-    .eq(
-      "square_plan_variation_id",
-      squareSubscription.planVariationId,
-    )
-    .maybeSingle();
-
-  if (productError) {
-    throw productError;
-  }
-
-  if (!product) {
-    return null;
-  }
-
-  const connection =
-    await getUsableSquareConnection(
-      product.owner_user_id,
-    );
-
-  if (
-    event.merchant_id &&
-    connection.merchantId !==
-      event.merchant_id
-  ) {
-    throw new Error(
-      "Square recurring merchant mismatch",
-    );
-  }
+  type CheckoutRow = {
+    id: string;
+    product_id: string;
+    owner_user_id: string;
+    buyer_user_id: string;
+    buyer_email: string | null;
+    billing_amount: number | string;
+    billing_currency: string;
+    square_plan_variation_id: string;
+    status: string;
+    created_at: string;
+  };
 
   let checkout:
-    | {
-        id: string;
-        product_id: string;
-        owner_user_id: string;
-        buyer_user_id: string;
-        buyer_email: string | null;
-        status: string;
-        created_at: string;
-      }
+    | CheckoutRow
     | null = null;
 
   if (checkoutOrderId) {
@@ -661,9 +631,8 @@ async function ensureCommerceSubscription(
         "commerce_subscription_checkouts",
       )
       .select(
-        "id,product_id,owner_user_id,buyer_user_id,buyer_email,status,created_at",
+        "id,product_id,owner_user_id,buyer_user_id,buyer_email,billing_amount,billing_currency,square_plan_variation_id,status,created_at",
       )
-      .eq("product_id", product.id)
       .eq(
         "provider_order_id",
         checkoutOrderId,
@@ -674,14 +643,50 @@ async function ensureCommerceSubscription(
       throw exactCheckoutError;
     }
 
-    checkout = exactCheckout;
+    checkout =
+      exactCheckout as
+        | CheckoutRow
+        | null;
   }
 
-  let customerEmail:
-    | string
-    | null = null;
-
   if (!checkout) {
+    const {
+      data: product,
+      error: productError,
+    } = await supabaseAdmin
+      .from("commerce_products")
+      .select(
+        "id,owner_user_id",
+      )
+      .eq(
+        "square_plan_variation_id",
+        squareSubscription.planVariationId,
+      )
+      .maybeSingle();
+
+    if (productError) {
+      throw productError;
+    }
+
+    if (!product) {
+      return null;
+    }
+
+    const connection =
+      await getUsableSquareConnection(
+        product.owner_user_id,
+      );
+
+    if (
+      event.merchant_id &&
+      connection.merchantId !==
+        event.merchant_id
+    ) {
+      throw new Error(
+        "Square recurring merchant mismatch",
+      );
+    }
+
     const customer =
       await retrieveSquareCustomer({
         accessToken:
@@ -690,7 +695,7 @@ async function ensureCommerceSubscription(
           squareSubscription.customerId,
       });
 
-    customerEmail =
+    const customerEmail =
       customer.emailAddress;
 
     if (!customerEmail) {
@@ -698,6 +703,7 @@ async function ensureCommerceSubscription(
         "[square/webhook] recurring customer has no email",
         squareSubscription.id,
       );
+
       return null;
     }
 
@@ -709,9 +715,16 @@ async function ensureCommerceSubscription(
         "commerce_subscription_checkouts",
       )
       .select(
-        "id,product_id,owner_user_id,buyer_user_id,buyer_email,status,created_at",
+        "id,product_id,owner_user_id,buyer_user_id,buyer_email,billing_amount,billing_currency,square_plan_variation_id,status,created_at",
       )
-      .eq("product_id", product.id)
+      .eq(
+        "product_id",
+        product.id,
+      )
+      .eq(
+        "square_plan_variation_id",
+        squareSubscription.planVariationId,
+      )
       .eq("status", "pending")
       .eq(
         "buyer_email",
@@ -728,7 +741,10 @@ async function ensureCommerceSubscription(
     }
 
     checkout =
-      checkouts?.[0] ?? null;
+      ((checkouts?.[0] ??
+        null) as
+        | CheckoutRow
+        | null);
   }
 
   if (!checkout) {
@@ -737,13 +753,60 @@ async function ensureCommerceSubscription(
       {
         subscriptionId:
           squareSubscription.id,
-        productId: product.id,
         checkoutOrderId:
-          checkoutOrderId ?? null,
-        customerEmail,
+          checkoutOrderId ??
+          null,
       },
     );
+
     return null;
+  }
+
+  if (
+    checkout.square_plan_variation_id !==
+    squareSubscription.planVariationId
+  ) {
+    throw new Error(
+      "Square recurring plan variation mismatch",
+    );
+  }
+
+  const connection =
+    await getUsableSquareConnection(
+      checkout.owner_user_id,
+    );
+
+  if (
+    event.merchant_id &&
+    connection.merchantId !==
+      event.merchant_id
+  ) {
+    throw new Error(
+      "Square recurring merchant mismatch",
+    );
+  }
+
+  const billingAmount =
+    Number(
+      checkout.billing_amount,
+    );
+  const billingCurrency =
+    String(
+      checkout.billing_currency,
+    )
+      .trim()
+      .toUpperCase();
+
+  if (
+    !Number.isFinite(
+      billingAmount,
+    ) ||
+    billingAmount <= 0 ||
+    !billingCurrency
+  ) {
+    throw new Error(
+      "Recurring checkout billing snapshot is invalid",
+    );
   }
 
   const { entitlements } =
@@ -771,10 +834,9 @@ async function ensureCommerceSubscription(
       provider_subscription_id:
         squareSubscription.id,
       billing_amount:
-        Number(product.amount),
+        billingAmount,
       billing_currency:
-        String(product.currency)
-          .toUpperCase(),
+        billingCurrency,
       status:
         String(
           squareSubscription.status ??
@@ -786,24 +848,31 @@ async function ensureCommerceSubscription(
     .select("*")
     .single();
 
-  if (insertError || !inserted) {
+  if (
+    insertError ||
+    !inserted
+  ) {
     throw insertError ??
       new Error(
         "Failed to create commerce subscription",
       );
   }
 
-  const { error: checkoutUpdateError } =
-    await supabaseAdmin
-      .from(
-        "commerce_subscription_checkouts",
-      )
-      .update({
-        status: "active",
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq("id", checkout.id);
+  const {
+    error: checkoutUpdateError,
+  } = await supabaseAdmin
+    .from(
+      "commerce_subscription_checkouts",
+    )
+    .update({
+      status: "active",
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      "id",
+      checkout.id,
+    );
 
   if (checkoutUpdateError) {
     throw checkoutUpdateError;
