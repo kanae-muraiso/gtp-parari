@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ParticipationMenu } from "./ParticipationNav";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import useParariStaff from "@/components/parari/hooks/useParariStaff";
@@ -58,6 +59,8 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
           OPERATIONS
         </Link>
       ) : null}
+
+      <ParticipationMenu />
 
       {area !== "settings" ? (
         <Link

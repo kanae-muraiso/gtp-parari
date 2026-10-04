@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import PublicViewerShell from "../../../components/parari/PublicViewerShell";
 import { supabase } from "../../../lib/supabaseClient";
 import BookViewTracker from "../../../components/parari/BookViewTracker";
+import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -94,6 +95,7 @@ export default function PublicPage() {
   if (notFound || !book) {
     return (
       <main className="min-h-screen bg-white">
+        <ParariBrandTopBar href="/mypage" />
         <div className="flex flex-col items-center px-2 py-10">
           <div className="w-full max-w-[440px] text-sm text-gray-600">
             作品が見つかりませんでした。

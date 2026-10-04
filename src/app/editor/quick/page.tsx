@@ -4,6 +4,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
@@ -40,6 +41,10 @@ export default function QuickEditorPage() {
     
   const saveLockRef = useRef(false);
   const createRequestIdRef = useRef<string | null>(null);
+  const savedWorkRef = useRef<{ id: string; revision: number; content: string } | null>(null);
+  const savedInputRef = useRef("");
+  const currentInputRef = useRef("");
+  currentInputRef.current = JSON.stringify([title, body, mainImageUrl]);
     
   const fallbackTitle = useMemo(() => createFallbackTitle(), []);
 
@@ -117,7 +122,7 @@ export default function QuickEditorPage() {
     }
   };
 
-    const handleSave = async () => {
+    const handleSave = async (copyUrl = true) => {
       if (saveLockRef.current) {
         return;
       }
@@ -177,6 +182,9 @@ export default function QuickEditorPage() {
         body: cleanBody,
       });
 
+      const inputAtSave = JSON.stringify([title, body, mainImageUrl]);
+      let result: CreateWorkResponse | null = savedWorkRef.current ? { ok: true, id: savedWorkRef.current.id } : null;
+      if (!result) {
       const response = await fetch("/api/works/create", {
         method: "POST",
         headers: {
@@ -194,7 +202,7 @@ export default function QuickEditorPage() {
           }),
       });
 
-      const result = (await response.json().catch(() => null)) as
+      result = (await response.json().catch(() => null)) as
         | CreateWorkResponse
         | null;
 
@@ -208,15 +216,31 @@ export default function QuickEditorPage() {
         return;
       }
 
-        const url = `${window.location.origin}/p/${result.id}`;
-
-      await copyToClipboard(url);
-
-      setStatus({
-        type: "success",
-        message: "保存しました。URLをコピーしました。",
-        url,
-      });
+      }
+      if (!result?.id) return false;
+      // A retry may return the work created by an earlier request. Confirm its saved revision.
+      if (!savedWorkRef.current) {
+        const { data: saved, error: readError } = await supabase.from("parari_books")
+          .select("id,revision,content").eq("id", result.id).eq("owner", userData.user.id).single();
+        if (readError || !saved) throw new Error("保存状態を確認できませんでした。もう一度保存してください。");
+        savedWorkRef.current = saved;
+      }
+      const saved = savedWorkRef.current!;
+      if (saved.content !== content) {
+        const update = await fetch("/api/works/update", {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ workId: saved.id, title: effectiveTitle, content, expectedRevision: saved.revision }),
+        });
+        const updated = await update.json();
+        if (!update.ok || !updated.ok) throw new Error(updated.message || "作品を保存できませんでした。");
+        savedWorkRef.current = { id: saved.id, revision: updated.revision, content };
+      }
+      savedInputRef.current = inputAtSave;
+      const url = `${window.location.origin}/p/${result.id}`;
+      let copied = false;
+      if (copyUrl) { try { await copyToClipboard(url); copied = true; } catch { /* The work is still saved. */ } }
+      setStatus({ type: "success", message: copied ? "保存しました。URLをコピーしました。" : "保存しました。", url });
+      return true;
     } catch (error) {
       setStatus({
         type: "error",
@@ -230,6 +254,14 @@ export default function QuickEditorPage() {
     }
   };
 
+  useParticipationLeaveGuard(async () => {
+    if (status.type === "saving" || saveLockRef.current) return false;
+    const input = currentInputRef.current;
+    if (input === savedInputRef.current || (!title && !body && !mainImageUrl)) return true;
+    const saved = await handleSave(false);
+    return saved === true && currentInputRef.current === savedInputRef.current;
+  });
+
   return (
     <main className="min-h-screen bg-neutral-100">
       <ParariOwnerTopBar
@@ -237,7 +269,7 @@ export default function QuickEditorPage() {
         leftHref="/my/works"
         leftLabel="作品リストへ"
         actions={
-          <ParariTopBarButton onClick={handleSave} disabled={status.type === "saving"}>
+          <ParariTopBarButton onClick={() => void handleSave()} disabled={status.type === "saving"}>
             保存してURLコピー
           </ParariTopBarButton>
         }
@@ -360,7 +392,7 @@ export default function QuickEditorPage() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 disabled={status.type === "saving"}
                 className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               >

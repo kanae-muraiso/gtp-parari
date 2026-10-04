@@ -1,5 +1,7 @@
 "use client";
 
+import { withParticipation } from "@/lib/participation";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { alumniRpc, button, dateLabel, input, memberHref, message, panel, primary, useAlumni, type AlumniPost } from "./AlumniShared";
@@ -59,7 +61,7 @@ export function AlumniComposer({ post, onSaved, onCancel }: { post?: AlumniPost;
       <p className="text-xs leading-6 text-neutral-500">近況は同窓会内に表示されます。リンク先の作品には、PARARI側の公開設定が適用されます。</p>
       <div className="flex flex-wrap items-center gap-3">
         <button className={primary} disabled={busy || count < 1 || count > 200} type="submit">{busy ? "保存中…" : post ? "変更を保存" : "投稿する"}</button>
-        {onCancel ? <button type="button" className={button} onClick={onCancel}>キャンセル</button> : <Link href="/editor/quick" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-sky-800 underline">長文はPARARIで書く ↗</Link>}
+        {onCancel ? <button type="button" className={button} onClick={onCancel}>キャンセル</button> : <Link href={withParticipation("/editor/quick", "cpp-alumni")} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-sky-800 underline">長文はPARARIで書く ↗</Link>}
       </div>
     </fieldset>
     {!post ? <p className="text-xs leading-6 text-neutral-500">「投稿する」を押すまで公開されません。書きかけはこのタブに保持されます。</p> : null}
@@ -91,7 +93,7 @@ function PostCard({ post, onChanged }: { post: AlumniPost; onChanged: () => void
     {post.hidden_at ? <p className="mt-2 text-xs font-bold text-red-700">非表示中（管理者にのみ表示）</p> : null}
     {editing ? <div className="mt-4"><AlumniComposer post={post} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onChanged(); }} /></div> : <>
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-neutral-800">{post.body}</p>
-      {post.work_url ? <a className="mt-3 inline-block text-sm font-bold text-sky-800 underline" href={post.work_url} target="_blank" rel="noopener noreferrer">PARARIで続きを読む ↗</a> : null}
+      {post.work_url ? <a className="mt-3 inline-block text-sm font-bold text-sky-800 underline" href={withParticipation(post.work_url, "cpp-alumni")} target="_blank" rel="noopener noreferrer">PARARIで続きを読む ↗</a> : null}
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-neutral-600">
         {context.user_id === post.user_id ? <><button type="button" disabled={busy} onClick={() => setEditing(true)} className="underline">編集</button><button type="button" disabled={busy} onClick={() => void action("delete")} className="underline">削除</button></> : null}
         {context.is_admin ? <button type="button" disabled={busy} onClick={() => void action("moderate")} className="text-red-700 underline">{post.hidden_at ? "再表示する" : "管理者として非表示にする"}</button> : null}

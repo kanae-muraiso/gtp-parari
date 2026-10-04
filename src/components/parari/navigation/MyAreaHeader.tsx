@@ -47,7 +47,7 @@ export default function MyAreaHeader({
 
       <div
         className={[
-          "flex items-start justify-between gap-4 rounded-2xl border px-4 py-3",
+          "flex flex-wrap items-start justify-between gap-4 rounded-2xl border px-4 py-3",
           isStudio
             ? "border-neutral-300 bg-neutral-100"
             : "border-neutral-200 bg-white",
@@ -70,7 +70,7 @@ export default function MyAreaHeader({
           </h1>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <WorkspaceLinks area={resolvedArea} />
           <LogoutButton />
         </div>

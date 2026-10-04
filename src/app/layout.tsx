@@ -6,6 +6,7 @@ import "./globals.css";
 import React from "react";
 import type { Metadata } from "next";
 import CppTestBanner from "@/components/parari/cpp/CppTestBanner";
+import { ParticipationProvider } from "@/components/parari/navigation/ParticipationProvider";
 
 /**
  * PART: site metadata
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body>{children}<CppTestBanner /></body>
+      <body><ParticipationProvider>{children}<CppTestBanner /></ParticipationProvider></body>
     </html>
   );
 }

@@ -1,4 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { ParticipationMenu, ParticipationReturn } from "./navigation/ParticipationNav";
+import { useParticipations } from "./navigation/ParticipationProvider";
 
 type OwnerBarProps = {
   title?: string;
@@ -17,6 +21,7 @@ export function ParariOwnerTopBar({
   fixed = false,
   actions,
 }: OwnerBarProps) {
+  const { origin } = useParticipations();
   const shouldShowLeftButton =
     !hideLeftButton && Boolean(leftHref) && Boolean(leftLabel);
 
@@ -29,8 +34,8 @@ export function ParariOwnerTopBar({
         "border-b border-black bg-black px-4 py-2 text-white shadow-sm",
       ].join(" ")}
     >
-      <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3">
-        {shouldShowLeftButton ? (
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
+        {origin ? <ParticipationReturn dark /> : shouldShowLeftButton ? (
           <a
             href={leftHref}
             className="rounded-lg border border-white/25 px-3 py-1 text-sm font-semibold hover:bg-white/10"
@@ -41,11 +46,12 @@ export function ParariOwnerTopBar({
           <div />
         )}
 
-        <div className="min-w-0 flex-1 text-center text-sm font-semibold text-white/80">
+        <div className="hidden min-w-0 flex-1 text-center text-sm font-semibold text-white/80 sm:block">
           {title}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <ParticipationMenu dark />
           {actions}
         </div>
       </div>
@@ -104,7 +110,8 @@ export function ParariBrandTopBar({
 }: BrandTopBarProps) {
   return (
     <div className="sticky top-0 z-[9999] border-b border-black bg-black px-4 py-2 text-white shadow-sm">
-      <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+        <ParticipationReturn dark />
         {href ? (
           <a
             href={href}
@@ -119,6 +126,7 @@ export function ParariBrandTopBar({
         )}
 
         <div className="flex items-center gap-2">
+          <ParticipationMenu dark />
           {actions}
         </div>
       </div>

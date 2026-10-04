@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { useParams } from "next/navigation";
+import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
@@ -1057,7 +1058,16 @@ export default function BookPanelSequenceEditorPage() {
           ? "BOOK作品を保存し、編集を終了しました。"
           : "BOOK作品を保存しました。",
       });
+      return latestSsotRef.current === saveSsot;
   };
+
+  useParticipationLeaveGuard(async () => {
+    if (status.type === "loading" || status.type === "saving") return false;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
+    if (latestSsotRef.current === initialSsot && !isDirty) return true;
+    return (await handleSave()) === true;
+  });
 
  const webWarnings = getWebStructureWarnings(ssot);
     
@@ -1065,7 +1075,6 @@ export default function BookPanelSequenceEditorPage() {
           
           <>
             <ParariOwnerTopBar
-              fixed
   title="STUDIO · 編集中"
               leftHref="/my/works"
               leftLabel="作品リストへ"
@@ -1117,7 +1126,7 @@ export default function BookPanelSequenceEditorPage() {
             />
 
           
-    <main className="min-h-screen bg-neutral-100 pt-11">
+    <main className="min-h-screen bg-neutral-100">
       {status.type === "error" ? (
         <div className="mx-auto max-w-6xl px-4 py-6">
           <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-rose-800">

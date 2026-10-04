@@ -10,6 +10,8 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { ParticipationMenu, ParticipationReturn } from "@/components/parari/navigation/ParticipationNav";
+import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import {
   defaultParariTemplates,
   getDefaultParariTemplate,
@@ -51,6 +53,7 @@ export default function EditorNewPage() {
   const [webUsername, setWebUsername] = React.useState("");
   const [webSlug, setWebSlug] = React.useState("web");
   const [webSlugError, setWebSlugError] = React.useState("");
+  useParticipationLeaveGuard(async () => state.type !== "creating");
 
   const submitCreate = async (
     template: ParariTemplate,
@@ -212,13 +215,15 @@ export default function EditorNewPage() {
   return (
     <main className="min-h-screen bg-neutral-100 px-4 py-8">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <a
             href="/my/works"
             className="text-xs font-bold text-neutral-400 transition hover:text-neutral-700"
           >
             ← 作品リストへ
           </a>
+          <ParticipationReturn />
+          <ParticipationMenu />
         </div>
 
         <section className="rounded-3xl bg-white p-6 shadow-sm">

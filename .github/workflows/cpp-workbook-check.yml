@@ -29,3 +29,6 @@ jobs:
 
       - name: CPP route regression check
         run: npm run test:cpp-routes
+
+      - name: Participation navigation regression check
+        run: npm run test:participation-navigation
