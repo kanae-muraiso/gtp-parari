@@ -186,6 +186,48 @@ export async function POST(request: NextRequest) {
     const wasPublic = isPublicWork(currentWork);
     const willBePublic = visibility === "public";
 
+    if (visibility !== "private") {
+      const {
+        data: activeSale,
+        error: activeSaleError,
+      } = await supabaseAdmin
+        .from("commerce_products")
+        .select("id")
+        .eq("work_id", workId)
+        .eq("product_type", "work")
+        .eq("active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSaleError) {
+        console.error(
+          "[api/works/visibility] active sale check failed:",
+          activeSaleError,
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "作品の販売状態を確認できませんでした。",
+          },
+          { status: 500 },
+        );
+      }
+
+      if (activeSale) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "SOLD_WORK_MUST_STAY_PRIVATE",
+            message:
+              "販売中の作品は購入者限定のため一般公開・限定公開には変更できません。販売を停止してから公開設定を変更してください。",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     // ----------------------------------------------------
     // 新たにpublicへ変更するときだけ公開作品数制限を確認する。
     // すでにpublicの作品の再設定や、
