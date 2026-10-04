@@ -167,6 +167,27 @@ export async function POST(request: NextRequest) {
         : `${appUrl()}/buy/${product.id}?purchase=return`;
 
     if (product.billing_interval === "monthly") {
+      const sellerAccess =
+        await getUserPlanAccess(
+          product.owner_user_id,
+        );
+
+      if (
+        !sellerAccess.entitlements
+          .canUseRecurringSales
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code:
+              "SELLER_ORGANIZER_REQUIRED",
+            message:
+              "この定期サービスは現在、新規申込を受け付けていません。",
+          },
+          { status: 409 },
+        );
+      }
+
       const {
         data: activeSubscription,
         error: activeSubscriptionError,
