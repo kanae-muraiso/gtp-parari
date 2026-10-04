@@ -16,6 +16,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   ensureUserBillingRow,
   saveStripeCustomerIdForUser,
+  updateBillingFromSubscription,
 } from "@/lib/billing/supabaseBilling";
 import {
   getEffectivePlan,
@@ -148,12 +149,68 @@ export async function POST(request: NextRequest) {
     const billing = await ensureUserBillingRow(user.id);
     const effectivePlan = getEffectivePlan(billing);
 
+    if (
+      effectivePlan === "plus" &&
+      requestedPlan === "organizer" &&
+      billing.stripe_subscription_id
+    ) {
+      const subscription =
+        await stripe.subscriptions.retrieve(
+          billing.stripe_subscription_id,
+        );
+      const subscriptionItem =
+        subscription.items.data[0];
+
+      if (!subscriptionItem) {
+        return NextResponse.json(
+          {
+            error: "SUBSCRIPTION_ITEM_NOT_FOUND",
+            message:
+              "現在の契約情報を確認できませんでした。",
+          },
+          { status: 409 },
+        );
+      }
+
+      const updatedSubscription =
+        await stripe.subscriptions.update(
+          subscription.id,
+          {
+            items: [
+              {
+                id: subscriptionItem.id,
+                price: priceId,
+              },
+            ],
+            proration_behavior:
+              "create_prorations",
+            metadata: {
+              ...subscription.metadata,
+              supabase_user_id: user.id,
+              plan: "organizer",
+            },
+          },
+        );
+
+      await updateBillingFromSubscription({
+        subscription:
+          updatedSubscription,
+        userId: user.id,
+      });
+
+      return NextResponse.json({
+        upgraded: true,
+        url:
+          `${appUrl}/billing?upgrade=organizer`,
+      });
+    }
+
     if (effectivePlan !== "free") {
       return NextResponse.json(
         {
           error: "ALREADY_SUBSCRIBED",
           message:
-            "すでに有料プランをご利用中です。変更や解約は請求管理から行ってください。",
+            "すでに同等以上の有料プランをご利用中です。",
         },
         { status: 409 },
       );
