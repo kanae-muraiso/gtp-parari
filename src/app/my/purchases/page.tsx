@@ -31,6 +31,8 @@ type Subscription = {
   product_id: string;
   status: string;
   canceled_at: string | null;
+  billing_amount: number | string;
+  billing_currency: string;
   created_at: string;
 };
 
@@ -103,7 +105,7 @@ export default function PurchasesPage() {
         supabase
           .from("commerce_subscriptions")
           .select(
-            "id,product_id,status,canceled_at,created_at",
+            "id,product_id,status,canceled_at,billing_amount,billing_currency,created_at",
           )
           .eq("buyer_user_id", user.id)
           .order(
@@ -445,15 +447,13 @@ export default function PurchasesPage() {
                               "定期サービス"}
                           </div>
 
-                          {product ? (
-                            <div className="mt-1 text-sm text-neutral-500">
-                              ¥{Number(
-                                product.amount,
-                              ).toLocaleString(
-                                "ja-JP",
-                              )} / 月
-                            </div>
-                          ) : null}
+                          <div className="mt-1 text-sm text-neutral-500">
+                            ¥{Number(
+                              subscription.billing_amount,
+                            ).toLocaleString(
+                              "ja-JP",
+                            )} / 月
+                          </div>
                         </div>
 
                         <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
