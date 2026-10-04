@@ -54,6 +54,8 @@ export default function SalesPage() {
   const [saving, setSaving] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [updatingProductId, setUpdatingProductId] =
+    React.useState<string | null>(null);
 
   const [mode, setMode] =
     React.useState<"work" | "monthly">("work");
@@ -270,6 +272,97 @@ export default function SalesPage() {
     }
   }
 
+  async function toggleProductActive(
+    product: Product,
+  ) {
+    const nextActive = !product.active;
+    const confirmed =
+      nextActive ||
+      window.confirm(
+        product.billing_interval === "monthly"
+          ? "新規の月謝・定期申込を停止しますか？\n既存の定期契約者への自動課金は継続します。"
+          : "この商品の新規販売を停止しますか？\n購入済みの方の閲覧権は維持されます。",
+      );
+
+    if (!confirmed) return;
+
+    setUpdatingProductId(product.id);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          "ログイン情報を確認できませんでした。",
+        );
+      }
+
+      const response = await fetch(
+        "/api/commerce/products",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            productId: product.id,
+            workId: product.work_id,
+            name: product.name,
+            description:
+              product.description,
+            amount:
+              Number(product.amount),
+            currency:
+              product.currency,
+            billingInterval:
+              product.billing_interval,
+            active: nextActive,
+          }),
+        },
+      );
+
+      const result =
+        await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(
+          result?.message ??
+            "販売状態を変更できませんでした。",
+        );
+      }
+
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                active: nextActive,
+              }
+            : item,
+        ),
+      );
+
+      setMessage(
+        nextActive
+          ? "販売を再開しました。"
+          : "新規販売を停止しました。",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "販売状態を変更できませんでした。",
+      );
+    } finally {
+      setUpdatingProductId(null);
+    }
+  }
+
   async function copyUrl(productId: string) {
     const url =
       `${window.location.origin}/buy/${productId}`;
@@ -455,7 +548,7 @@ export default function SalesPage() {
               PRODUCTS
             </p>
             <h2 className="mt-2 text-2xl font-bold">
-              販売中
+              商品
             </h2>
 
             {loading ? (
@@ -485,20 +578,35 @@ export default function SalesPage() {
                             : ""}
                         </div>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
-                        {product.billing_interval === "monthly"
-                          ? "定期"
-                          : "単発"}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                          {product.billing_interval === "monthly"
+                            ? "定期"
+                            : "単発"}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                            product.active
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {product.active
+                            ? "販売中"
+                            : "停止中"}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Link
-                        href={`/buy/${product.id}`}
-                        className="rounded-full border border-slate-300 px-3 py-2 text-xs font-bold"
-                      >
-                        購入ページを見る
-                      </Link>
+                      {product.active ? (
+                        <Link
+                          href={`/buy/${product.id}`}
+                          className="rounded-full border border-slate-300 px-3 py-2 text-xs font-bold"
+                        >
+                          購入ページを見る
+                        </Link>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => {
@@ -509,6 +617,26 @@ export default function SalesPage() {
                         {copiedId === product.id
                           ? "コピーしました"
                           : "URLをコピー"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          updatingProductId ===
+                          product.id
+                        }
+                        onClick={() => {
+                          void toggleProductActive(
+                            product,
+                          );
+                        }}
+                        className="rounded-full border border-slate-300 px-3 py-2 text-xs font-bold disabled:opacity-40"
+                      >
+                        {updatingProductId ===
+                        product.id
+                          ? "変更中…"
+                          : product.active
+                            ? "販売を停止"
+                            : "販売を再開"}
                       </button>
                     </div>
                   </article>
