@@ -274,7 +274,7 @@ export default function SquareConnectionPanel() {
       </h2>
 
       <p className="mt-3 text-sm leading-7 text-slate-600">
-        APPLICATIONでPARARI決済を使う場合、あなた自身のSquareアカウントへ売上を受け取ります。
+        PARARIで作品・イベント・月謝などを販売する場合、あなた自身のSquareアカウントへ売上を受け取ります。
         PARARIがカード番号を保存することはありません。
       </p>
 
@@ -297,7 +297,7 @@ export default function SquareConnectionPanel() {
             Square接続済み
           </div>
           <p className="mt-1 text-xs leading-6 text-emerald-800">
-            このアカウントでPARARI決済を受け付けられます。
+            このアカウントでPARARI決済を受け付けられます。月謝・定期販売を初めて使う場合は、新しい権限を反映するため一度再接続してください。
           </p>
 
           <button
