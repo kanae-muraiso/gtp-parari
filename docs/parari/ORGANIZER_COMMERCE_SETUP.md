@@ -80,9 +80,12 @@ Vercel sends `Authorization: Bearer <CRON_SECRET>`. The endpoint rejects request
 
 ## Database migration
 
-Apply:
+Production migrations applied on 2026-10-05:
 
 - `supabase/migrations/20261004150000_organizer_commerce_foundation.sql`
+- `supabase/migrations/20261004154800_commerce_subscription_buyer_email.sql`
+- `supabase/migrations/20261004155500_commerce_purchase_refunded_amount.sql`
+- `supabase/migrations/20261004160200_fix_commerce_entitlement_upsert.sql`
 
 The migration creates:
 
@@ -112,6 +115,19 @@ Before production release, verify all of the following with test-mode credential
 11. `invoice.paid` marks those ledger rows paid.
 12. A failed PARARI platform-fee invoice does not mark the seller's plan `past_due`.
 13. A failed Square recurring charge marks the recurring contract as payment failed.
-14. A completed full refund revokes the purchased work entitlement.
+14. Completed refunds are accumulated; once cumulative refunds reach the full purchase amount, the purchased work entitlement is revoked.
 15. Cancellation/update events change the stored Square subscription status.
 16. Existing APPLICATION Square payments continue to confirm and refund correctly.
+
+
+## Database verification completed
+
+The production schema was verified after migration:
+
+- all six commerce tables exist with RLS enabled
+- purchase completion creates an entitlement
+- an entitled buyer can read a private purchased work
+- an unrelated authenticated user cannot read that work
+- revoking the entitlement removes buyer access
+- the verification data was executed inside a transaction and rolled back
+
