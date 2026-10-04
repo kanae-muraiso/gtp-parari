@@ -12,6 +12,7 @@ import ParariTabs from "@/components/parari/navigation/ParariTabs";
 export type ManagementTab =
   | "works"
   | "manage"
+  | "sales"
   | "settings";
 
 type ManagementTabsProps = {
@@ -36,6 +37,12 @@ const MANAGE_ITEM: Item = {
   href: "/my/manage",
 };
 
+const SALES_ITEM: Item = {
+  key: "sales",
+  label: "販売",
+  href: "/my/sales",
+};
+
 export default function ManagementTabs({ active }: ManagementTabsProps) {
   const { studioEnabled } = useParariExperience();
   const items: Item[] = [];
@@ -46,6 +53,10 @@ export default function ManagementTabs({ active }: ManagementTabsProps) {
 
   if (studioEnabled || active === "manage") {
     items.push(MANAGE_ITEM);
+  }
+
+  if (studioEnabled || active === "sales") {
+    items.push(SALES_ITEM);
   }
 
   return <ParariTabs items={items} active={active} />;
