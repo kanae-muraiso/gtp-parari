@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 export const runtime = "nodejs";
 
-const REQUIRED_EVENT_TYPES = [
+const REQUIRED_EVENT_TYPES: string[] = [
   "payment.created",
   "payment.updated",
   "refund.updated",
@@ -17,10 +17,29 @@ const REQUIRED_EVENT_TYPES = [
   "invoice.scheduled_charge_failed",
   "subscription.created",
   "subscription.updated",
-] as const;
+];
 
-export async function GET(request: NextRequest) {
-  const auth = await authenticateInternalAdmin(request);
+type WebhookEventRow = {
+  event_type: string;
+  received_at: string;
+  processed_at: string | null;
+};
+
+type EventSummary = {
+  eventType: string;
+  receivedCount: number;
+  processedCount: number;
+  lastReceivedAt: string | null;
+  lastProcessedAt: string | null;
+};
+
+export async function GET(
+  request: NextRequest,
+) {
+  const auth =
+    await authenticateInternalAdmin(
+      request,
+    );
 
   if (!auth.ok) {
     return NextResponse.json(
@@ -37,53 +56,45 @@ export async function GET(request: NextRequest) {
     "unknown";
 
   const envChecks = {
-    applicationId:
-      Boolean(
-        process.env.SQUARE_APPLICATION_ID?.trim(),
-      ),
-    applicationSecret:
-      Boolean(
-        process.env.SQUARE_APPLICATION_SECRET?.trim(),
-      ),
-    oauthRedirectUrl:
-      Boolean(
-        process.env.SQUARE_OAUTH_REDIRECT_URL?.trim(),
-      ),
-    webhookNotificationUrl:
-      Boolean(
-        process.env.SQUARE_WEBHOOK_NOTIFICATION_URL?.trim(),
-      ),
-    webhookSignatureKey:
-      Boolean(
-        process.env.SQUARE_WEBHOOK_SIGNATURE_KEY?.trim(),
-      ),
-    tokenEncryptionKey:
-      Boolean(
-        process.env.SQUARE_TOKEN_ENCRYPTION_KEY?.trim(),
-      ),
+    applicationId: Boolean(
+      process.env.SQUARE_APPLICATION_ID?.trim(),
+    ),
+    applicationSecret: Boolean(
+      process.env.SQUARE_APPLICATION_SECRET?.trim(),
+    ),
+    oauthRedirectUrl: Boolean(
+      process.env.SQUARE_OAUTH_REDIRECT_URL?.trim(),
+    ),
+    webhookNotificationUrl: Boolean(
+      process.env.SQUARE_WEBHOOK_NOTIFICATION_URL?.trim(),
+    ),
+    webhookSignatureKey: Boolean(
+      process.env.SQUARE_WEBHOOK_SIGNATURE_KEY?.trim(),
+    ),
+    tokenEncryptionKey: Boolean(
+      process.env.SQUARE_TOKEN_ENCRYPTION_KEY?.trim(),
+    ),
   };
 
-  const {
-    data: eventRows,
-    error: eventError,
-  } = await supabaseAdmin
-    .from("square_webhook_events")
-    .select(
-      "event_type,received_at,processed_at",
-    )
-    .in(
-      "event_type",
-      [...REQUIRED_EVENT_TYPES],
-    )
-    .order("received_at", {
-      ascending: false,
-    })
-    .limit(250);
+  const { data, error } =
+    await supabaseAdmin
+      .from("square_webhook_events")
+      .select(
+        "event_type,received_at,processed_at",
+      )
+      .in(
+        "event_type",
+        REQUIRED_EVENT_TYPES,
+      )
+      .order("received_at", {
+        ascending: false,
+      })
+      .limit(250);
 
-  if (eventError) {
+  if (error) {
     console.error(
-      "[square-webhook-diagnostics] events",
-      eventError,
+      "[square-webhook-diagnostics]",
+      error,
     );
 
     return NextResponse.json(
@@ -96,82 +107,50 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const byType =
-    new Map<
-      string,
-      {
-        receivedCount: number;
-        processedCount: number;
-        lastReceivedAt: string | null;
-        lastProcessedAt: string | null;
-      }
-    >();
+  const rows =
+    (data ?? []) as WebhookEventRow[];
 
-  for (const type of REQUIRED_EVENT_TYPES) {
-    byType.set(type, {
-      receivedCount: 0,
-      processedCount: 0,
-      lastReceivedAt: null,
-      lastProcessedAt: null,
-    });
-  }
+  const events: EventSummary[] =
+    REQUIRED_EVENT_TYPES.map(
+      (eventType) => {
+        const matching =
+          rows.filter(
+            (row) =>
+              row.event_type ===
+              eventType,
+          );
 
-  for (const row of eventRows ?? []) {
-    const state =
-      byType.get(row.event_type);
+        const processed =
+          matching.filter(
+            (row) =>
+              Boolean(
+                row.processed_at,
+              ),
+          );
 
-    if (!state) continue;
-
-    state.receivedCount += 1;
-
-    if (!state.lastReceivedAt) {
-      state.lastReceivedAt =
-        row.received_at ?? null;
-    }
-
-    if (row.processed_at) {
-      state.processedCount += 1;
-
-      if (!state.lastProcessedAt) {
-        state.lastProcessedAt =
-          row.processed_at;
-      }
-    }
-  }
-
-  const {
-    count: activeConnectionCount,
-    error: connectionError,
-  } = await supabaseAdmin
-    .from("square_connections")
-    .select("owner_user_id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("environment", environment)
-    .eq("status", "active");
-
-  if (connectionError) {
-    console.warn(
-      "[square-webhook-diagnostics] connections",
-      connectionError,
+        return {
+          eventType,
+          receivedCount:
+            matching.length,
+          processedCount:
+            processed.length,
+          lastReceivedAt:
+            matching[0]
+              ?.received_at ??
+            null,
+          lastProcessedAt:
+            processed[0]
+              ?.processed_at ??
+            null,
+        };
+      },
     );
-  }
 
   return NextResponse.json({
     ok: true,
     environment,
     envChecks,
-    activeConnectionCount:
-      connectionError
-        ? null
-        : activeConnectionCount ?? 0,
-    events:
-      REQUIRED_EVENT_TYPES.map(
-        (eventType) => ({
-          eventType,
-          ...byType.get(eventType)!,
-        }),
-      ),
+    activeConnectionCount: null,
+    events,
   });
 }
