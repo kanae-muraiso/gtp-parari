@@ -609,7 +609,7 @@ async function ensureCommerceSubscription(
   } = await supabaseAdmin
     .from("commerce_products")
     .select(
-      "id,owner_user_id,square_plan_variation_id",
+      "id,owner_user_id,amount,currency,square_plan_variation_id",
     )
     .eq(
       "square_plan_variation_id",
@@ -770,6 +770,11 @@ async function ensureCommerceSubscription(
         squareSubscription.customerId,
       provider_subscription_id:
         squareSubscription.id,
+      billing_amount:
+        Number(product.amount),
+      billing_currency:
+        String(product.currency)
+          .toUpperCase(),
       status:
         String(
           squareSubscription.status ??
@@ -870,28 +875,24 @@ async function handleInvoicePaymentMade(
     }
   }
 
-  const {
-    data: product,
-    error: productError,
-  } = await supabaseAdmin
-    .from("commerce_products")
-    .select(
-      "id,amount,currency,work_id",
-    )
-    .eq("id", subscription.product_id)
-    .single();
-
-  if (productError || !product) {
-    throw productError ??
-      new Error(
-        "Recurring commerce product not found",
-      );
-  }
-
-  const amount = Number(product.amount);
+  const amount =
+    Number(
+      subscription.billing_amount,
+    );
   const currency =
-    String(product.currency)
-      .toUpperCase();
+    String(
+      subscription.billing_currency,
+    ).toUpperCase();
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    !currency
+  ) {
+    throw new Error(
+      "Recurring subscription billing snapshot is invalid",
+    );
+  }
   const amountMinor =
     toMinorUnits(amount, currency);
   const feeMinor =
