@@ -197,21 +197,12 @@ export default function OperationsAdminPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/my/operations/admin/square"
-              className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
-            >
-              Square診断
-            </Link>
-
-            <Link
-              href="/my/operations"
-              className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
-            >
-              OPERATIONSへ戻る
-            </Link>
-          </div>
+          <Link
+            href="/my/operations"
+            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+          >
+            OPERATIONSへ戻る
+          </Link>
         </div>
 
         <div className="mx-auto mt-8 max-w-2xl">
