@@ -380,7 +380,8 @@ async function handleCommerceRefund(
     event.data?.object?.refund;
 
   if (
-    !refund?.payment_id ||
+    !refund?.id ||
+    !refund.payment_id ||
     String(refund.status ?? "").toUpperCase() !==
       "COMPLETED" ||
     !refund.amount_money?.amount ||
@@ -395,7 +396,7 @@ async function handleCommerceRefund(
   } = await supabaseAdmin
     .from("commerce_purchases")
     .select(
-      "id,product_id,buyer_user_id,amount,currency,status,refunded_amount",
+      "id,product_id,owner_user_id,buyer_user_id,amount,currency,status,refunded_amount",
     )
     .eq(
       "provider_payment_id",
@@ -431,6 +432,38 @@ async function handleCommerceRefund(
 
   const now =
     new Date().toISOString();
+
+  const {
+    error: refundLedgerError,
+  } = await supabaseAdmin
+    .from("commerce_refunds")
+    .insert({
+      purchase_id:
+        purchase.id,
+      owner_user_id:
+        purchase.owner_user_id,
+      buyer_user_id:
+        purchase.buyer_user_id,
+      provider_refund_id:
+        refund.id,
+      amount:
+        refundedAmount,
+      currency,
+      status: "completed",
+      completed_at: now,
+    });
+
+  if (refundLedgerError) {
+    if (
+      refundLedgerError.code ===
+      "23505"
+    ) {
+      return true;
+    }
+
+    throw refundLedgerError;
+  }
+
   const currentRefunded =
     Number(
       purchase.refunded_amount ?? 0,
