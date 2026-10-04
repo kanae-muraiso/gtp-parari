@@ -87,6 +87,8 @@ Production migrations applied on 2026-10-05:
 - `supabase/migrations/20261004155500_commerce_purchase_refunded_amount.sql`
 - `supabase/migrations/20261004160200_fix_commerce_entitlement_upsert.sql`
 - `supabase/migrations/20261004162500_commerce_refund_ledger.sql`
+- `supabase/migrations/20261004164000_subscription_billing_snapshot.sql`
+- `supabase/migrations/20261004165000_subscription_checkout_snapshot.sql`
 
 The migration creates:
 
@@ -118,7 +120,9 @@ Before production release, verify all of the following with test-mode credential
 13. A failed Square recurring charge marks the recurring contract as payment failed.
 14. Completed refunds are deduplicated by Square refund ID, accumulated, and once cumulative refunds reach the full purchase amount, the purchased work entitlement is revoked.
 15. Cancellation/update events change the stored Square subscription status.
-16. Existing APPLICATION Square payments continue to confirm and refund correctly.
+16. Existing recurring subscriptions retain their contracted billing amount even if the seller later changes the product price.
+17. An in-flight recurring checkout retains the amount and Square plan variation shown when that checkout was created.
+18. Existing APPLICATION Square payments continue to confirm and refund correctly.
 
 
 ## Database verification completed
