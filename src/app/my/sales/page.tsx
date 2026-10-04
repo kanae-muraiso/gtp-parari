@@ -32,9 +32,21 @@ type Product = {
   active: boolean;
 };
 
+type SellerSubscription = {
+  id: string;
+  product_id: string;
+  buyer_email: string | null;
+  status: string;
+  canceled_at: string | null;
+  last_payment_at: string | null;
+  created_at: string;
+};
+
 export default function SalesPage() {
   const [works, setWorks] = React.useState<Work[]>([]);
   const [products, setProducts] = React.useState<Product[]>([]);
+  const [subscriptions, setSubscriptions] =
+    React.useState<SellerSubscription[]>([]);
   const [plan, setPlan] = React.useState("free");
   const [feeBps, setFeeBps] = React.useState(1000);
   const [canRecurring, setCanRecurring] = React.useState(false);
@@ -68,8 +80,13 @@ export default function SalesPage() {
         return;
       }
 
-      const [worksResult, billingResult, profileResult, productResponse] =
-        await Promise.all([
+      const [
+        worksResult,
+        billingResult,
+        profileResult,
+        subscriptionResult,
+        productResponse,
+      ] = await Promise.all([
           supabase
             .from("parari_books")
             .select("id,title")
@@ -86,6 +103,15 @@ export default function SalesPage() {
             .select("is_monitor")
             .eq("user_id", user.id)
             .maybeSingle(),
+          supabase
+            .from("commerce_subscriptions")
+            .select(
+              "id,product_id,buyer_email,status,canceled_at,last_payment_at,created_at",
+            )
+            .eq("owner_user_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            }),
           fetch("/api/commerce/products", {
             headers: {
               Authorization:
@@ -128,6 +154,18 @@ export default function SalesPage() {
       setProducts(
         (productResult.products ?? []) as Product[],
       );
+
+      if (subscriptionResult.error) {
+        console.warn(
+          "[my/sales] subscriptions load failed:",
+          subscriptionResult.error,
+        );
+        setSubscriptions([]);
+      } else {
+        setSubscriptions(
+          (subscriptionResult.data ?? []) as SellerSubscription[],
+        );
+      }
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -479,6 +517,91 @@ export default function SalesPage() {
             )}
           </section>
         </div>
+
+        <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+            RECURRING CUSTOMERS
+          </p>
+          <h2 className="mt-2 text-2xl font-bold">
+            定期契約者
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-slate-500">
+            月謝・定期サービスの契約者と現在の状態を確認できます。
+          </p>
+
+          {subscriptions.length === 0 ? (
+            <p className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500">
+              まだ定期契約者はいません。
+            </p>
+          ) : (
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b border-slate-200 text-xs text-slate-400">
+                  <tr>
+                    <th className="px-3 py-3 font-semibold">
+                      サービス
+                    </th>
+                    <th className="px-3 py-3 font-semibold">
+                      契約者
+                    </th>
+                    <th className="px-3 py-3 font-semibold">
+                      状態
+                    </th>
+                    <th className="px-3 py-3 font-semibold">
+                      最終決済
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscriptions.map((subscription) => {
+                    const product =
+                      products.find(
+                        (item) =>
+                          item.id ===
+                          subscription.product_id,
+                      );
+                    const status =
+                      String(
+                        subscription.status ?? "",
+                      ).toUpperCase();
+
+                    return (
+                      <tr
+                        key={subscription.id}
+                        className="border-b border-slate-100"
+                      >
+                        <td className="px-3 py-4 font-semibold text-slate-900">
+                          {product?.name ??
+                            "定期サービス"}
+                        </td>
+                        <td className="px-3 py-4 text-slate-600">
+                          {subscription.buyer_email ??
+                            "メール未確認"}
+                        </td>
+                        <td className="px-3 py-4 text-slate-600">
+                          {subscription.canceled_at
+                            ? "解約予定"
+                            : status === "ACTIVE"
+                              ? "継続中"
+                              : status || "確認中"}
+                        </td>
+                        <td className="px-3 py-4 text-slate-500">
+                          {subscription.last_payment_at
+                            ? new Date(
+                                subscription.last_payment_at,
+                              ).toLocaleDateString(
+                                "ja-JP",
+                              )
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {message ? (
           <p className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
