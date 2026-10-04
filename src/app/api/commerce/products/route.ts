@@ -294,6 +294,22 @@ export async function POST(request: NextRequest) {
         plan.variationId;
     }
 
+    if (productType === "work" && workId) {
+      const { error: privacyError } =
+        await supabaseAdmin
+          .from("parari_books")
+          .update({
+            visibility: "private",
+            is_public: false,
+          })
+          .eq("id", workId)
+          .eq("owner", user.id);
+
+      if (privacyError) {
+        throw privacyError;
+      }
+    }
+
     const payload = {
       owner_user_id: user.id,
       product_type: productType,
