@@ -481,3 +481,78 @@ export async function retrieveSquareInvoice(input: {
       invoice.primary_recipient?.customer_id ?? null,
   };
 }
+
+
+export async function retrieveSquareCustomer(input: {
+  accessToken: string;
+  customerId: string;
+}): Promise<{
+  id: string;
+  emailAddress: string | null;
+}> {
+  const result = await squareRequest<{
+    customer?: {
+      id?: string;
+      email_address?: string;
+    };
+  }>(
+    `/v2/customers/${encodeURIComponent(input.customerId)}`,
+    {
+      accessToken: input.accessToken,
+    },
+  );
+
+  if (!result.customer?.id) {
+    throw new Error("Square customer was not found");
+  }
+
+  return {
+    id: result.customer.id,
+    emailAddress:
+      result.customer.email_address?.trim().toLowerCase() ??
+      null,
+  };
+}
+
+export async function retrieveSquareSubscription(input: {
+  accessToken: string;
+  subscriptionId: string;
+}): Promise<{
+  id: string;
+  customerId: string;
+  planVariationId: string;
+  status: string | null;
+}> {
+  const result = await squareRequest<{
+    subscription?: {
+      id?: string;
+      customer_id?: string;
+      plan_variation_id?: string;
+      status?: string;
+    };
+  }>(
+    `/v2/subscriptions/${encodeURIComponent(input.subscriptionId)}`,
+    {
+      accessToken: input.accessToken,
+    },
+  );
+
+  const subscription = result.subscription;
+
+  if (
+    !subscription?.id ||
+    !subscription.customer_id ||
+    !subscription.plan_variation_id
+  ) {
+    throw new Error("Square subscription was not found");
+  }
+
+  return {
+    id: subscription.id,
+    customerId: subscription.customer_id,
+    planVariationId:
+      subscription.plan_variation_id,
+    status:
+      subscription.status ?? null,
+  };
+}
