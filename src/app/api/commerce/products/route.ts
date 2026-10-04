@@ -221,6 +221,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!productId && workId) {
+      const {
+        data: priorProduct,
+        error: priorProductError,
+      } = await supabaseAdmin
+        .from("commerce_products")
+        .select("id,active")
+        .eq("owner_user_id", user.id)
+        .eq("work_id", workId)
+        .eq("product_type", "work")
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
+
+      if (priorProductError) {
+        throw priorProductError;
+      }
+
+      if (priorProduct) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code:
+              "WORK_PRODUCT_ALREADY_EXISTS",
+            productId:
+              priorProduct.id,
+            active:
+              priorProduct.active,
+            message:
+              priorProduct.active
+                ? "この作品はすでに販売商品として登録されています。"
+                : "この作品には販売履歴があります。新しい商品を作らず、既存商品の「販売を再開」を使ってください。",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     let existing:
       | {
           id: string;
