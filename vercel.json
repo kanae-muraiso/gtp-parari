@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/commerce/platform-fees/run",
+      "schedule": "15 0 1 * *"
+    }
+  ]
+}\n
