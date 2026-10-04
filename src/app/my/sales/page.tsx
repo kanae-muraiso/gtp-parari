@@ -68,7 +68,7 @@ export default function SalesPage() {
         return;
       }
 
-      const [worksResult, billingResult, productResponse] =
+      const [worksResult, billingResult, profileResult, productResponse] =
         await Promise.all([
           supabase
             .from("parari_books")
@@ -79,6 +79,11 @@ export default function SalesPage() {
           supabase
             .from("user_billing")
             .select("plan,billing_status")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("profiles")
+            .select("is_monitor")
             .eq("user_id", user.id)
             .maybeSingle(),
           fetch("/api/commerce/products", {
@@ -99,7 +104,10 @@ export default function SalesPage() {
       const effectivePlan =
         getEffectivePlan(billingResult.data);
       const entitlements =
-        getPlanEntitlements(effectivePlan);
+        getPlanEntitlements(
+          effectivePlan,
+          profileResult.data?.is_monitor === true,
+        );
 
       setPlan(effectivePlan);
       setFeeBps(entitlements.salesFeeBps);
