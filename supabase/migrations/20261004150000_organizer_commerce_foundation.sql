@@ -96,6 +96,25 @@ create index if not exists commerce_entitlements_work_user_idx
 
 alter table public.commerce_entitlements enable row level security;
 
+create table if not exists public.commerce_subscription_checkouts (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.commerce_products(id) on delete restrict,
+  owner_user_id uuid not null references auth.users(id) on delete cascade,
+  buyer_user_id uuid not null references auth.users(id) on delete cascade,
+  provider_order_id text not null unique,
+  provider_payment_link_id text not null unique,
+  checkout_url text,
+  status text not null default 'pending'
+    check (status in ('pending','active','expired','cancelled')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists commerce_subscription_checkouts_buyer_idx
+  on public.commerce_subscription_checkouts(buyer_user_id, created_at desc);
+
+alter table public.commerce_subscription_checkouts enable row level security;
+
 create table if not exists public.commerce_subscriptions (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null references public.commerce_products(id) on delete restrict,
@@ -126,7 +145,7 @@ create table if not exists public.commerce_platform_fee_ledger (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   subscription_id uuid references public.commerce_subscriptions(id) on delete set null,
-  provider_payment_id text not null unique,
+  provider_charge_id text not null unique,
   gross_amount numeric not null check (gross_amount > 0),
   fee_amount numeric not null check (fee_amount >= 0),
   currency text not null,
@@ -203,6 +222,17 @@ create policy "owner_select_commerce_entitlements"
     )
   );
 
+drop policy if exists "party_select_commerce_subscription_checkouts"
+  on public.commerce_subscription_checkouts;
+create policy "party_select_commerce_subscription_checkouts"
+  on public.commerce_subscription_checkouts
+  for select
+  to authenticated
+  using (
+    (select auth.uid()) = buyer_user_id
+    or (select auth.uid()) = owner_user_id
+  );
+
 drop policy if exists "party_select_commerce_subscriptions"
   on public.commerce_subscriptions;
 create policy "party_select_commerce_subscriptions"
@@ -245,12 +275,14 @@ create policy "commerce_entitlement_select_work"
 grant select on public.commerce_products to anon, authenticated;
 grant select on public.commerce_purchases to authenticated;
 grant select on public.commerce_entitlements to authenticated;
+grant select on public.commerce_subscription_checkouts to authenticated;
 grant select on public.commerce_subscriptions to authenticated;
 grant select on public.commerce_platform_fee_ledger to authenticated;
 
 grant select, insert, update, delete on public.commerce_products to service_role;
 grant select, insert, update, delete on public.commerce_purchases to service_role;
 grant select, insert, update, delete on public.commerce_entitlements to service_role;
+grant select, insert, update, delete on public.commerce_subscription_checkouts to service_role;
 grant select, insert, update, delete on public.commerce_subscriptions to service_role;
 grant select, insert, update, delete on public.commerce_platform_fee_ledger to service_role;
 
