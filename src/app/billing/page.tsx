@@ -58,12 +58,30 @@ export default function BillingPage() {
                 </h2>
 
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                  現在のプラン確認、Plusへの申込、カード情報の変更や解約を
-                  このページから行えます。
+                  現在のプラン確認、有料プランへの申込、カード情報の変更や解約を
+                  このページから行えます。販売を始める場合はSquareもここで接続します。
                 </p>
               </header>
 
               <CurrentPlanPanel />
+
+              <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                  SALES
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                  販売管理
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  作品の販売、イベント決済、Organizerの月謝・定期サービスを管理します。
+                </p>
+                <a
+                  href="/my/sales"
+                  className="mt-5 inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+                >
+                  販売管理を開く
+                </a>
+              </section>
 
               <SquareConnectionPanel />
 
@@ -220,12 +238,12 @@ export default function BillingPage() {
           </h2>
 
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            カード情報の変更、請求履歴の確認、Plusの解約は、
+            カード情報の変更、請求履歴の確認、有料プランの解約は、
             Stripeの安全な管理画面で行います。
           </p>
 
           <p className="mt-2 text-xs leading-6 text-slate-500">
-            請求管理は、Plusをご契約中、または過去にPlusへお申し込み済みの場合に利用できます。
+            請求管理は、有料プランをご契約中、または過去にお申し込み済みの場合に利用できます。
             未契約の場合、請求管理画面は表示されません。
           </p>
 
