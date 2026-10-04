@@ -25,6 +25,21 @@ type Work = {
   title: string | null;
 };
 
+type Subscription = {
+  id: string;
+  product_id: string;
+  status: string;
+  canceled_at: string | null;
+  created_at: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  amount: number | string;
+  currency: string;
+};
+
 export default function PurchasesPage() {
   const [works, setWorks] =
     React.useState<Work[]>([]);
@@ -32,6 +47,14 @@ export default function PurchasesPage() {
     React.useState(true);
   const [message, setMessage] =
     React.useState("");
+  const [subscriptions, setSubscriptions] =
+    React.useState<Subscription[]>([]);
+  const [productsById, setProductsById] =
+    React.useState<Map<string, Product>>(
+      new Map(),
+    );
+  const [cancelingId, setCancelingId] =
+    React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -56,11 +79,136 @@ export default function PurchasesPage() {
       const now =
         new Date().toISOString();
 
+      const [
+        entitlementResult,
+        subscriptionResult,
+      ] = await Promise.all([
+        supabase
+          .from("commerce_entitlements")
+          .select(
+            "work_id,created_at",
+          )
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .lte("starts_at", now)
+          .or(
+            `expires_at.is.null,expires_at.gt.${now}`,
+          )
+          .order(
+            "created_at",
+            { ascending: false },
+          ),
+        supabase
+          .from("commerce_subscriptions")
+          .select(
+            "id,product_id,status,canceled_at,created_at",
+          )
+          .eq("buyer_user_id", user.id)
+          .order(
+            "created_at",
+            { ascending: false },
+          ),
+      ]);
+
       const {
         data: entitlements,
         error: entitlementError,
+      } = entitlementResult;
+
+      const {
+        data: subscriptionRows,
+        error: subscriptionError,
+      } = subscriptionResult;
+
+      if (subscriptionError) {
+        console.warn(
+          "[my/purchases] subscriptions load failed:",
+          subscriptionError,
+        );
+      }
+
+      const nextSubscriptions =
+        subscriptionError
+          ? []
+          : ((subscriptionRows ?? []) as Subscription[]);
+
+      setSubscriptions(nextSubscriptions);
+
+      if (nextSubscriptions.length > 0) {
+        const productIds =
+          Array.from(
+            new Set(
+              nextSubscriptions.map(
+                (item) => item.product_id,
+              ),
+            ),
+          );
+
+        const {
+          data: productRows,
+          error: productError,
+        } = await supabase
+          .from("commerce_products")
+          .select(
+            "id,name,amount,currency",
+          )
+          .in("id", productIds);
+
+        if (!productError) {
+          setProductsById(
+            new Map(
+              ((productRows ?? []) as Product[]).map(
+                (product) => [
+                  product.id,
+                  product,
+                ],
+              ),
+            ),
+          );
+        }
+      } else {
+        setProductsById(new Map());
+      }
+
+      if (entitlementError) {
+        setMessage(
+          "購入済み作品を確認できませんでした。",
+        );
+        setLoading(false);
+        return;
+      }
+
+      const ids =
+        Array.from(
+          new Set(
+            (
+              (entitlements ??
+                []) as Entitlement[]
+            )
+              .map(
+                (item) =>
+                  item.work_id,
+              )
+              .filter(
+                (
+                  id,
+                ): id is string =>
+                  Boolean(id),
+              ),
+          ),
+        );
+
+      if (ids.length === 0) {
+        setWorks([]);
+        setLoading(false);
+        return;
+      }
+
+      const {
+        data: workRows,
+        error: workError,
       } = await supabase
-        .from("commerce_entitlements")
+        .from("parari_books")
         .select(
           "work_id,created_at",
         )
@@ -165,6 +313,89 @@ export default function PurchasesPage() {
     };
   }, []);
 
+  async function cancelSubscription(
+    subscriptionId: string,
+  ) {
+    const confirmed =
+      window.confirm(
+        "この定期契約を解約しますか？\n現在の請求期間の終了までは利用できます。",
+      );
+
+    if (!confirmed) return;
+
+    setCancelingId(subscriptionId);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          "ログイン情報を確認できませんでした。",
+        );
+      }
+
+      const response = await fetch(
+        "/api/commerce/subscriptions/cancel",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            subscriptionId,
+          }),
+        },
+      );
+
+      const result =
+        await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(
+          result?.message ??
+            "解約手続きを開始できませんでした。",
+        );
+      }
+
+      setSubscriptions((current) =>
+        current.map((item) =>
+          item.id === subscriptionId
+            ? {
+                ...item,
+                status:
+                  result.status ??
+                  item.status,
+                canceled_at:
+                  result.canceledDate
+                    ? `${result.canceledDate}T23:59:59Z`
+                    : item.canceled_at,
+              }
+            : item,
+        ),
+      );
+
+      setMessage(
+        result.canceledDate
+          ? `${result.canceledDate}で解約予定です。`
+          : "解約手続きを受け付けました。",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "解約手続きを開始できませんでした。",
+      );
+    } finally {
+      setCancelingId(null);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-white">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
@@ -216,6 +447,96 @@ export default function PurchasesPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-12 border-t border-neutral-200 pt-8">
+            <p className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+              SUBSCRIPTIONS
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-neutral-950">
+              定期契約
+            </h2>
+
+            {subscriptions.length === 0 ? (
+              <p className="mt-5 rounded-2xl bg-neutral-50 p-5 text-sm text-neutral-500">
+                現在、定期契約はありません。
+              </p>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {subscriptions.map((subscription) => {
+                  const product =
+                    productsById.get(
+                      subscription.product_id,
+                    );
+                  const status =
+                    String(
+                      subscription.status ?? "",
+                    ).toUpperCase();
+                  const cancelScheduled =
+                    Boolean(
+                      subscription.canceled_at,
+                    );
+
+                  return (
+                    <article
+                      key={subscription.id}
+                      className="rounded-2xl border border-neutral-200 p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <div className="font-bold text-neutral-950">
+                            {product?.name ??
+                              "定期サービス"}
+                          </div>
+                          {product ? (
+                            <div className="mt-1 text-sm text-neutral-500">
+                              ¥{Number(
+                                product.amount,
+                              ).toLocaleString(
+                                "ja-JP",
+                              )} / 月
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
+                          {cancelScheduled
+                            ? "解約予定"
+                            : status === "ACTIVE"
+                              ? "継続中"
+                              : status || "確認中"}
+                        </span>
+                      </div>
+
+                      {cancelScheduled ? (
+                        <p className="mt-3 text-xs leading-6 text-neutral-500">
+                          現在の請求期間の終了後に自動課金が停止します。
+                        </p>
+                      ) : status === "ACTIVE" ? (
+                        <button
+                          type="button"
+                          disabled={
+                            cancelingId ===
+                            subscription.id
+                          }
+                          onClick={() => {
+                            void cancelSubscription(
+                              subscription.id,
+                            );
+                          }}
+                          className="mt-4 rounded-full border border-neutral-300 px-4 py-2 text-xs font-bold text-neutral-700 disabled:opacity-40"
+                        >
+                          {cancelingId ===
+                          subscription.id
+                            ? "手続き中…"
+                            : "解約手続きをする"}
+                        </button>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </main>
