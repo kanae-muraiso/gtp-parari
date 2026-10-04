@@ -1,5 +1,7 @@
 "use client";
 
+import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
+
 import * as React from "react";
 import {
   useParams,
@@ -202,6 +204,7 @@ export default function ApplicationWorkAccessPage() {
   ) {
     return (
       <main className="min-h-screen bg-white">
+        <ParariBrandTopBar href="/mypage" />
         <div className="mx-auto max-w-xl px-5 py-12">
           <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-sm leading-7 text-neutral-700">
             {message ||

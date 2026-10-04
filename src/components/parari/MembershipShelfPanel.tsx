@@ -4,6 +4,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { membershipShelfHref, withParticipation } from "@/lib/participation";
+import { useParticipations } from "./navigation/ParticipationProvider";
 import {
   useEffect,
   useMemo,
@@ -88,18 +91,18 @@ function formatDateJa(
 
 export default function MembershipShelfPanel({
   previewMembershipId = null,
+  selectedId = null,
 }: {
   previewMembershipId?: string | null;
+  selectedId?: string | null;
 }) {
+  const router = useRouter();
+  const { userId, items } = useParticipations();
   const [
     memberships,
     setMemberships,
   ] = useState<MembershipRow[]>([]);
 
-  const [
-    selectedMembershipId,
-    setSelectedMembershipId,
-  ] = useState<string | null>(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -112,6 +115,7 @@ export default function MembershipShelfPanel({
         
         async function load() {
             setLoading(true);
+            setMemberships([]);
             setErrorMessage("");
             
             if (!supabase) {
@@ -134,7 +138,7 @@ export default function MembershipShelfPanel({
                 return;
             }
             
-            if (!session?.access_token) {
+            if (!session?.access_token || session.user.id !== userId) {
                 setLoading(false);
                 setErrorMessage(
                                 "Membershipの確認にはログインが必要です。",
@@ -196,13 +200,6 @@ export default function MembershipShelfPanel({
                                nextMemberships,
                                );
                 
-                if (
-                    nextMemberships.length > 0
-                    ) {
-                        setSelectedMembershipId(
-                                                nextMemberships[0].id,
-                                                );
-                    }
             } catch (error) {
                 console.error(
                               "load memberships failed:",
@@ -226,21 +223,11 @@ export default function MembershipShelfPanel({
         return () => {
             mounted = false;
         };
-    }, [previewMembershipId]);
+    }, [previewMembershipId, userId]);
 
-  const selectedMembership =
-    useMemo(
-      () =>
-        memberships.find(
-          (membership) =>
-            membership.id ===
-            selectedMembershipId,
-        ) ?? null,
-      [
-        memberships,
-        selectedMembershipId,
-      ],
-    );
+  const available = useMemo(() => previewMembershipId ? memberships : memberships.filter(membership => items.some(item => item.key === `membership:${membership.id}`)), [memberships, items, previewMembershipId]);
+  const selectedMembershipId = previewMembershipId ?? selectedId ?? available[0]?.id;
+  const selectedMembership = available.find(item => item.id === selectedMembershipId) ?? null;
 
   if (loading) {
     return (
@@ -258,7 +245,7 @@ export default function MembershipShelfPanel({
     );
   }
 
-  if (memberships.length === 0) {
+  if (available.length === 0) {
     return (
       <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-8 text-sm text-neutral-500">
         現在参加しているMembershipはありません。
@@ -270,10 +257,17 @@ export default function MembershipShelfPanel({
     <div className="space-y-5">
           {!previewMembershipId ? (
             <section className="rounded-2xl border border-neutral-200 bg-white p-4">
-              ...
+              <label className="block text-xs font-bold text-neutral-600">
+                メンバーシップを選ぶ
+                <select value={selectedMembership?.id ?? ""} onChange={event => router.replace(membershipShelfHref(event.target.value), { scroll: false })} className="mt-2 block w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900">
+                  {!selectedMembership ? <option value="" disabled>参加先を選択してください</option> : null}
+                  {available.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </label>
             </section>
           ) : null}
 
+      {!selectedMembership ? <p role="alert" className="text-sm text-neutral-600">指定されたメンバーシップを閲覧できません。参加先を選び直してください。</p> : null}
       {/* 選択したMembership */}
       {selectedMembership ? (
         <section className="min-h-[40vh] rounded-2xl border border-neutral-200 bg-white p-4">
@@ -323,7 +317,7 @@ export default function MembershipShelfPanel({
                   return (
                     <Link
                       key={work.id}
-                      href={`/p/${work.id}`}
+                      href={previewMembershipId ? `/p/${work.id}` : withParticipation(`/p/${work.id}`, `membership:${selectedMembership.id}`)}
                       className="block"
                     >
                       <div className="group cursor-pointer">

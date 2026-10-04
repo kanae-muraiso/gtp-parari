@@ -11,6 +11,7 @@ import {
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import { ParticipationHomePanel } from "@/components/parari/navigation/ParticipationNav";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -152,6 +153,8 @@ export default function MyPage() {
         <div className="mt-6">
           <MyPrimaryTabs active="home" />
         </div>
+
+        <ParticipationHomePanel />
 
         {notices.length > 0 ? (
           <div className="mt-5 space-y-2">

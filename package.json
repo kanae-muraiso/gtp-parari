@@ -7,6 +7,7 @@
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
+    "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "build:english-glossary": "node scripts/build-parari-english-glossary.mjs"

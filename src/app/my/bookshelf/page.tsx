@@ -3,7 +3,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
 
 import BookShelfPanel from "@/components/parari/BookShelfPanel";
 import MembershipShelfPanel from "@/components/parari/MembershipShelfPanel";
@@ -11,7 +13,7 @@ import BookshelfAnnouncements from "@/components/parari/announcements/BookshelfA
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import { supabase } from "@/lib/supabaseClient";
+
 
 type BookshelfMode = "mine" | "membership";
 
@@ -25,82 +27,22 @@ const MEMBERSHIP_TAB = {
 } as const;
 
 export default function MyBookshelfPage() {
-  const [bookshelfMode, setBookshelfMode] = useState<BookshelfMode>("mine");
-  const [hasMemberships, setHasMemberships] = useState(false);
+  return <Suspense fallback={<main className="p-6" role="status">本棚を読み込んでいます…</main>}><MyBookshelfContent /></Suspense>;
+}
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadMembershipAvailability() {
-      if (!supabase) {
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (
-        cancelled ||
-        !session?.access_token
-      ) {
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          "/api/my-memberships?summary=1",
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-            },
-            cache: "no-store",
-          },
-        );
-
-        const result = (await response
-          .json()
-          .catch(() => null)) as
-          | {
-              ok?: boolean;
-              hasMemberships?: boolean;
-            }
-          | null;
-
-        if (
-          cancelled ||
-          !response.ok ||
-          !result?.ok
-        ) {
-          return;
-        }
-
-        const nextHasMemberships =
-          result.hasMemberships === true;
-
-        setHasMemberships(
-          nextHasMemberships,
-        );
-
-        if (!nextHasMemberships) {
-          setBookshelfMode("mine");
-        }
-      } catch (error) {
-        console.error(
-          "[bookshelf] Membership availability load failed:",
-          error,
-        );
-      }
-    }
-
-    void loadMembershipAvailability();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+function MyBookshelfContent() {
+  const router = useRouter();
+  const search = useSearchParams();
+  const { items, userId, loading, error, refresh } = useParticipations();
+  const hasMemberships = items.some(item => item.key.startsWith("membership:"));
+  const bookshelfMode: BookshelfMode = search.get("tab") === "membership" ? "membership" : "mine";
+  const selectedId = search.get("membership");
+  const selectTab = (key: string) => {
+    const params = new URLSearchParams(search.toString());
+    if (key === "membership") params.set("tab", "membership");
+    else { params.delete("tab"); params.delete("membership"); }
+    router.replace(`/my/bookshelf${params.size ? `?${params}` : ""}`, { scroll: false });
+  };
 
   const bookshelfTabs =
     hasMemberships
@@ -135,16 +77,20 @@ export default function MyBookshelfPage() {
             <ParariTabs
               items={bookshelfTabs}
               active={bookshelfMode}
-              onChange={(key) => setBookshelfMode(key as BookshelfMode)}
+              onChange={selectTab}
             />
           </div>
 
           {bookshelfMode === "mine" ? (
             <BookShelfPanel />
+          ) : loading ? (
+            <p role="status">参加先を確認しています…</p>
+          ) : error ? (
+            <p role="alert">{error} <button type="button" onClick={refresh} className="underline">再読み込み</button></p>
           ) : hasMemberships ? (
-            <MembershipShelfPanel />
+            <MembershipShelfPanel key={userId} selectedId={selectedId} />
           ) : (
-            <BookShelfPanel />
+            <p className="py-6 text-sm text-neutral-500">現在閲覧できるメンバーシップの本棚はありません。参加先メニューからホームをご確認ください。</p>
           )}
         </div>
       </div>
