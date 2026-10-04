@@ -196,6 +196,9 @@ export async function POST(request: NextRequest) {
             owner_user_id:
               product.owner_user_id,
             buyer_user_id: user.id,
+            buyer_email:
+              user.email?.trim().toLowerCase() ??
+              null,
             provider_order_id: link.orderId,
             provider_payment_link_id: link.id,
             checkout_url: link.url,
