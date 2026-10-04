@@ -304,6 +304,10 @@ export default function SalesPage() {
 
             <div className="mt-5 space-y-4">
               {mode === "work" ? (
+                <>
+                <div className="rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
+                  作品の販売を開始すると、その作品は一般公開から外れ、購入者だけが読める状態になります。作品本文そのものは変更されません。
+                </div>
                 <label className="block">
                   <span className="text-sm font-bold">
                     販売する作品
@@ -328,6 +332,7 @@ export default function SalesPage() {
                     ))}
                   </select>
                 </label>
+                </>
               ) : null}
 
               <label className="block">
