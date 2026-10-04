@@ -300,18 +300,33 @@ export default function SquareConnectionPanel() {
             このアカウントでPARARI決済を受け付けられます。月謝・定期販売を初めて使う場合は、新しい権限を反映するため一度再接続してください。
           </p>
 
-          <button
-            type="button"
-            disabled={isDisconnecting}
-            onClick={() => {
-              void disconnectSquare();
-            }}
-            className="mt-4 rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-40"
-          >
-            {isDisconnecting
-              ? "解除しています..."
-              : "Square連携を解除"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={isConnecting}
+              onClick={() => {
+                void connectSquare();
+              }}
+              className="rounded-xl bg-emerald-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-40"
+            >
+              {isConnecting
+                ? "Squareを開いています..."
+                : "Square権限を更新"}
+            </button>
+
+            <button
+              type="button"
+              disabled={isDisconnecting}
+              onClick={() => {
+                void disconnectSquare();
+              }}
+              className="rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-40"
+            >
+              {isDisconnecting
+                ? "解除しています..."
+                : "Square連携を解除"}
+            </button>
+          </div>
         </div>
       ) : (
         <button
