@@ -167,6 +167,61 @@ export async function POST(request: NextRequest) {
         : `${appUrl()}/buy/${product.id}?purchase=return`;
 
     if (product.billing_interval === "monthly") {
+      const {
+        data: activeSubscription,
+        error: activeSubscriptionError,
+      } = await supabaseAdmin
+        .from("commerce_subscriptions")
+        .select("id,status,canceled_at")
+        .eq("product_id", product.id)
+        .eq("buyer_user_id", user.id)
+        .in("status", ["ACTIVE", "PENDING", "PAYMENT_FAILED"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSubscriptionError) {
+        throw activeSubscriptionError;
+      }
+
+      if (
+        activeSubscription &&
+        !activeSubscription.canceled_at
+      ) {
+        return NextResponse.json({
+          ok: true,
+          recurring: true,
+          alreadySubscribed: true,
+          url: `${appUrl()}/my/purchases`,
+        });
+      }
+
+      const {
+        data: pendingCheckout,
+        error: pendingCheckoutError,
+      } = await supabaseAdmin
+        .from("commerce_subscription_checkouts")
+        .select("id,checkout_url,status")
+        .eq("product_id", product.id)
+        .eq("buyer_user_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingCheckoutError) {
+        throw pendingCheckoutError;
+      }
+
+      if (pendingCheckout?.checkout_url) {
+        return NextResponse.json({
+          ok: true,
+          recurring: true,
+          reused: true,
+          url: pendingCheckout.checkout_url,
+        });
+      }
+
       if (!product.square_plan_variation_id) {
         throw new Error(
           "SUBSCRIPTION_PLAN_NOT_CONFIGURED",
@@ -213,6 +268,32 @@ export async function POST(request: NextRequest) {
         ok: true,
         recurring: true,
         url: link.url,
+      });
+    }
+
+    const {
+      data: pendingPurchase,
+      error: pendingPurchaseError,
+    } = await supabaseAdmin
+      .from("commerce_purchases")
+      .select("id,checkout_url,status")
+      .eq("product_id", product.id)
+      .eq("buyer_user_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pendingPurchaseError) {
+      throw pendingPurchaseError;
+    }
+
+    if (pendingPurchase?.checkout_url) {
+      return NextResponse.json({
+        ok: true,
+        recurring: false,
+        reused: true,
+        url: pendingPurchase.checkout_url,
       });
     }
 
