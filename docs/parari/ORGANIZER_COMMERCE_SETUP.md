@@ -62,6 +62,8 @@ Square webhook events needed:
 - `payment.created`
 - `payment.updated`
 - `invoice.payment_made`
+- `invoice.scheduled_charge_failed`
+- `refund.updated`
 - `subscription.created`
 - `subscription.updated`
 
@@ -109,5 +111,7 @@ Before production release, verify all of the following with test-mode credential
 10. The monthly settlement endpoint groups previous-month rows and creates a Stripe automatic-charge invoice.
 11. `invoice.paid` marks those ledger rows paid.
 12. A failed PARARI platform-fee invoice does not mark the seller's plan `past_due`.
-13. Cancellation/update events change the stored Square subscription status.
-14. Existing APPLICATION Square payments continue to confirm and refund correctly.
+13. A failed Square recurring charge marks the recurring contract as payment failed.
+14. A completed full refund revokes the purchased work entitlement.
+15. Cancellation/update events change the stored Square subscription status.
+16. Existing APPLICATION Square payments continue to confirm and refund correctly.
