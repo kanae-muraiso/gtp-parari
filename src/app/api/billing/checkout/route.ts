@@ -82,19 +82,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const requestedPlan = body?.plan ?? "plus";
 
-    if (requestedPlan !== "plus") {
+    if (requestedPlan !== "plus" && requestedPlan !== "organizer") {
       return NextResponse.json(
-        { error: "Only plus plan is available in MVP" },
+        { error: "Unsupported billing plan" },
         { status: 400 }
       );
     }
 
-    const plusPriceId = process.env.STRIPE_PLUS_PRICE_ID;
+    const priceId =
+      requestedPlan === "organizer"
+        ? process.env.STRIPE_ORGANIZER_PRICE_ID
+        : process.env.STRIPE_PLUS_PRICE_ID;
     const appUrl = getAppUrl();
 
-    if (!plusPriceId) {
+    if (!priceId) {
       return NextResponse.json(
-        { error: "STRIPE_PLUS_PRICE_ID is not set" },
+        {
+          error:
+            requestedPlan === "organizer"
+              ? "STRIPE_ORGANIZER_PRICE_ID is not set"
+              : "STRIPE_PLUS_PRICE_ID is not set",
+        },
         { status: 500 }
       );
     }
@@ -106,32 +114,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const plusPrice = await stripe.prices.retrieve(plusPriceId);
+    const planPrice = await stripe.prices.retrieve(priceId);
     const expectedUnitAmount =
-      PLAN_ENTITLEMENTS.plus.monthlyPriceUsd * 100;
-    const isExpectedPlusPrice =
-      plusPrice.active &&
-      plusPrice.currency === "usd" &&
-      plusPrice.unit_amount === expectedUnitAmount &&
-      plusPrice.type === "recurring" &&
-      plusPrice.recurring?.interval === "month" &&
-      plusPrice.recurring.interval_count === 1;
+      PLAN_ENTITLEMENTS[requestedPlan].monthlyPriceUsd * 100;
+    const isExpectedPrice =
+      planPrice.active &&
+      planPrice.currency === "usd" &&
+      planPrice.unit_amount === expectedUnitAmount &&
+      planPrice.type === "recurring" &&
+      planPrice.recurring?.interval === "month" &&
+      planPrice.recurring.interval_count === 1;
 
-    if (!isExpectedPlusPrice) {
+    if (!isExpectedPrice) {
       console.error(
-        "[billing/checkout] STRIPE_PLUS_PRICE_ID does not match the Plus plan SSOT",
+        "[billing/checkout] Stripe price does not match plan SSOT",
         {
-          priceId: plusPrice.id,
-          currency: plusPrice.currency,
-          unitAmount: plusPrice.unit_amount,
-          type: plusPrice.type,
-          interval: plusPrice.recurring?.interval ?? null,
-          intervalCount: plusPrice.recurring?.interval_count ?? null,
+          plan: requestedPlan,
+          priceId: planPrice.id,
+          currency: planPrice.currency,
+          unitAmount: planPrice.unit_amount,
+          type: planPrice.type,
+          interval: planPrice.recurring?.interval ?? null,
+          intervalCount: planPrice.recurring?.interval_count ?? null,
         },
       );
 
       return NextResponse.json(
-        { error: "Plus price configuration is invalid" },
+        { error: "Plan price configuration is invalid" },
         { status: 500 },
       );
     }
@@ -139,7 +148,7 @@ export async function POST(request: NextRequest) {
     const billing = await ensureUserBillingRow(user.id);
     const effectivePlan = getEffectivePlan(billing);
 
-    if (effectivePlan === "plus" || effectivePlan === "pro") {
+    if (effectivePlan !== "free") {
       return NextResponse.json(
         {
           error: "ALREADY_SUBSCRIBED",
@@ -202,7 +211,7 @@ export async function POST(request: NextRequest) {
       customer: stripeCustomerId,
       line_items: [
         {
-          price: plusPriceId,
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -211,12 +220,12 @@ export async function POST(request: NextRequest) {
       client_reference_id: user.id,
       metadata: {
         supabase_user_id: user.id,
-        plan: "plus",
+        plan: requestedPlan,
       },
       subscription_data: {
         metadata: {
           supabase_user_id: user.id,
-          plan: "plus",
+          plan: requestedPlan,
         },
       },
       allow_promotion_codes: false,
