@@ -3,7 +3,6 @@ import "server-only";
 import {
   getSquareApiBase,
   getSquareApplicationId,
-  getSquareEnvironment,
   getSquareApplicationSecret,
   getSquareOAuthRedirectUrl,
   SQUARE_API_VERSION,
@@ -93,12 +92,8 @@ export async function exchangeSquareOAuthCode(
         client_secret: getSquareApplicationSecret(),
         code,
         grant_type: "authorization_code",
-        ...(getSquareEnvironment() === "production"
-          ? {
-              redirect_uri:
-                getSquareOAuthRedirectUrl(),
-            }
-          : {}),
+        redirect_uri:
+          getSquareOAuthRedirectUrl(),
       },
     },
   );
