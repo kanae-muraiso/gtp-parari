@@ -3,6 +3,7 @@ import "server-only";
 import {
   getSquareApiBase,
   getSquareApplicationId,
+  getSquareEnvironment,
   getSquareApplicationSecret,
   getSquareOAuthRedirectUrl,
   SQUARE_API_VERSION,
