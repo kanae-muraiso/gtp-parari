@@ -25,6 +25,8 @@ export default function SquareSandboxSmokePanel() {
   const [running, setRunning] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [checkoutUrl, setCheckoutUrl] = React.useState<string | null>(null);
+  const [subscriptionRunning, setSubscriptionRunning] = React.useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = React.useState("");
 
   async function token(): Promise<string | null> {
     if (!supabase) return null;
@@ -134,6 +136,67 @@ export default function SquareSandboxSmokePanel() {
     }
   }
 
+
+  async function runSubscriptionTest() {
+    setSubscriptionRunning(true);
+    setSubscriptionMessage("");
+
+    try {
+      const accessToken = await token();
+
+      if (!accessToken) {
+        throw new Error(
+          "ログイン情報を確認できませんでした。",
+        );
+      }
+
+      const response = await fetch(
+        "/api/internal/square-sandbox-subscription-create",
+        {
+          method: "POST",
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      const result = (await response
+        .json()
+        .catch(() => null)) as
+        | {
+            ok?: boolean;
+            subscriptionId?: string;
+            status?: string | null;
+            message?: string;
+          }
+        | null;
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.subscriptionId
+      ) {
+        throw new Error(
+          result?.message ??
+            "Sandbox月謝契約の作成に失敗しました。",
+        );
+      }
+
+      setSubscriptionMessage(
+        `成功: Sandbox月謝契約を作成しました（status: ${result.status ?? "unknown"}）。`,
+      );
+    } catch (error) {
+      setSubscriptionMessage(
+        error instanceof Error
+          ? error.message
+          : "Sandbox月謝契約の作成に失敗しました。",
+      );
+    } finally {
+      setSubscriptionRunning(false);
+    }
+  }
+
   if (loading || !isAdmin) {
     return null;
   }
@@ -183,6 +246,32 @@ export default function SquareSandboxSmokePanel() {
           作成したSandbox Checkoutを開く
         </a>
       ) : null}
+
+      <div className="mt-6 border-t border-amber-200 pt-5">
+        <p className="text-sm leading-7 text-slate-700">
+          次に、Sandbox上でテスト顧客・テストカード・月謝契約まで作成します。
+          これはSandbox内だけのテストで、本番請求は発生しません。
+        </p>
+
+        <button
+          type="button"
+          disabled={subscriptionRunning}
+          onClick={() => {
+            void runSubscriptionTest();
+          }}
+          className="mt-4 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+        >
+          {subscriptionRunning
+            ? "Sandbox月謝契約を作成しています..."
+            : "Sandbox月謝契約まで確認"}
+        </button>
+
+        {subscriptionMessage ? (
+          <p className="mt-4 text-sm leading-6 text-slate-800">
+            {subscriptionMessage}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }
