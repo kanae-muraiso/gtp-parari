@@ -166,3 +166,11 @@ If an Organizer later downgrades or cancels the paid plan:
 - the seller cannot create new recurring products without Organizer access
 
 This avoids unexpectedly canceling customers while preventing a downgraded seller from accepting new monthly subscriptions.
+
+## Preview OAuth callback
+
+For the `feature/organizer-commerce` Preview environment, Square Sandbox OAuth must use the stable branch alias rather than a one-off deployment URL:
+
+`https://gtp-parari-git-feature-organizer-62c6ac-kanae-muraisos-projects.vercel.app/api/square/oauth/callback`
+
+Vercel has a branch-scoped `SQUARE_OAUTH_REDIRECT_URL` override for this value. The Square Sandbox application must register the exact same redirect URL.
