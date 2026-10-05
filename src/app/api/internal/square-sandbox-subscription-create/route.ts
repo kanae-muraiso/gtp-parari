@@ -102,11 +102,13 @@ export async function POST(request: NextRequest) {
       await getSquareMainLocation(accessToken);
 
     const testId = randomUUID();
+    const compactId = testId.replace(/-/g, "");
+    const shortId = compactId.slice(0, 24);
     const plan =
       await createSquareMonthlySubscriptionPlan({
         accessToken,
         idempotencyKey:
-          `parari-sub-smoke-${testId}`,
+          `ps-${shortId}`,
         name:
           `PARARI Sandbox Subscription ${testId.slice(0, 8)}`,
         amountMinor: 100,
@@ -121,13 +123,13 @@ export async function POST(request: NextRequest) {
         "/v2/customers",
         {
           idempotency_key:
-            `parari-customer-${testId}`,
+            `pc-${shortId}`,
           given_name: "PARARI",
           family_name: "Sandbox",
           email_address:
-            `parari-sandbox-${testId.slice(0, 8)}@example.com`,
+            `ps-${shortId.slice(0, 12)}@example.com`,
           reference_id:
-            `parari-sandbox-${testId}`,
+            `ps-${shortId}`,
         },
       );
 
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
         "/v2/cards",
         {
           idempotency_key:
-            `parari-card-${testId}`,
+            `pd-${shortId}`,
           source_id: "cnon:card-nonce-ok",
           card: {
             customer_id: customerId,
@@ -181,7 +183,7 @@ export async function POST(request: NextRequest) {
         "/v2/subscriptions",
         {
           idempotency_key:
-            `parari-subscription-${testId}`,
+            `pu-${shortId}`,
           location_id: location.id,
           customer_id: customerId,
           plan_variation_id:
