@@ -92,8 +92,12 @@ export async function exchangeSquareOAuthCode(
         client_secret: getSquareApplicationSecret(),
         code,
         grant_type: "authorization_code",
-        redirect_uri:
-          getSquareOAuthRedirectUrl(),
+        ...(getSquareEnvironment() === "production"
+          ? {
+              redirect_uri:
+                getSquareOAuthRedirectUrl(),
+            }
+          : {}),
       },
     },
   );
