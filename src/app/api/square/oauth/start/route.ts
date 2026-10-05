@@ -77,21 +77,31 @@ export async function POST(
       throw stateError;
     }
 
-    const scopes = [
-      "MERCHANT_PROFILE_READ",
-      "PAYMENTS_READ",
-      "PAYMENTS_WRITE",
-      "PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS",
-      "ORDERS_READ",
-      "ORDERS_WRITE",
-      "CUSTOMERS_READ",
-      "ITEMS_READ",
-      "ITEMS_WRITE",
-      "INVOICES_READ",
-      "INVOICES_WRITE",
-      "SUBSCRIPTIONS_READ",
-      "SUBSCRIPTIONS_WRITE",
-    ].join(" ");
+    const scopes =
+      getSquareEnvironment() === "sandbox"
+        ? [
+            "MERCHANT_PROFILE_READ",
+            "PAYMENTS_READ",
+            "PAYMENTS_WRITE",
+            "PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS",
+            "ORDERS_READ",
+            "ORDERS_WRITE",
+          ].join(" ")
+        : [
+            "MERCHANT_PROFILE_READ",
+            "PAYMENTS_READ",
+            "PAYMENTS_WRITE",
+            "PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS",
+            "ORDERS_READ",
+            "ORDERS_WRITE",
+            "CUSTOMERS_READ",
+            "ITEMS_READ",
+            "ITEMS_WRITE",
+            "INVOICES_READ",
+            "INVOICES_WRITE",
+            "SUBSCRIPTIONS_READ",
+            "SUBSCRIPTIONS_WRITE",
+          ].join(" ");
 
     const authorizeUrl = new URL(
       "/oauth2/authorize",
