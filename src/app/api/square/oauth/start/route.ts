@@ -126,12 +126,10 @@ export async function POST(
         "false",
       );
     }
-    if (getSquareEnvironment() === "production") {
-      authorizeUrl.searchParams.set(
-        "redirect_uri",
-        getSquareOAuthRedirectUrl(),
-      );
-    }
+    authorizeUrl.searchParams.set(
+      "redirect_uri",
+      getSquareOAuthRedirectUrl(),
+    );
 
     return NextResponse.json({
       ok: true,
