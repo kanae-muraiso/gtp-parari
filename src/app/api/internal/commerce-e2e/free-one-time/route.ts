@@ -120,6 +120,8 @@ export async function POST(request: NextRequest) {
       (amountMinor * planAccess.entitlements.salesFeeBps) / 10000,
     );
     const idempotencyKey = randomUUID();
+    const compactId =
+      idempotencyKey.replace(/-/g, "").slice(0, 24);
 
     const orderResult =
       await squarePost<{
@@ -128,10 +130,10 @@ export async function POST(request: NextRequest) {
         connection.accessToken,
         "/v2/orders",
         {
-          idempotency_key: `order-${idempotencyKey}`,
+          idempotency_key: `ord-${compactId}`,
           order: {
             location_id: connection.locationId,
-            reference_id: `parari-e2e-${idempotencyKey}`,
+            reference_id: `e2e-${compactId}`,
             line_items: [
               {
                 name: PRODUCT_NAME,
@@ -189,7 +191,7 @@ export async function POST(request: NextRequest) {
         "/v2/payments",
         {
           source_id: "cnon:card-nonce-ok",
-          idempotency_key: `pay-${idempotencyKey}`,
+          idempotency_key: `pay-${compactId}`,
           amount_money: {
             amount: amountMinor,
             currency,
