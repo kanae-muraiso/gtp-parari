@@ -112,6 +112,15 @@ export async function getUsableSquareConnection(
   let accessToken =
     decryptSquareToken(connection.access_token_enc);
 
+  const sandboxTestToken =
+    getSquareEnvironment() === "sandbox"
+      ? process.env.SQUARE_SANDBOX_TEST_ACCESS_TOKEN?.trim()
+      : "";
+
+  if (sandboxTestToken) {
+    accessToken = sandboxTestToken;
+  }
+
   if (
     tokenNeedsRefresh(connection.token_expires_at)
   ) {
