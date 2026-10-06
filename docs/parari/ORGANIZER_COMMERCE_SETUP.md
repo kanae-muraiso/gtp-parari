@@ -179,3 +179,5 @@ Vercel has a branch-scoped `SQUARE_OAUTH_REDIRECT_URL` override for this value. 
 ## Square Sandbox smoke test
 
 For the Organizer commerce acceptance test, Preview may temporarily define `SQUARE_SANDBOX_TEST_ACCESS_TOKEN`. It is used only by the internal-admin Sandbox smoke-test endpoint to verify Catalog and subscription checkout access without depending on Sandbox OAuth. Do not configure this variable in Production.
+
+- 2026-10-06: Preview Sandbox test access token aligned to the OAuth-authorized PARARI Seller Test account for merchant-consistent subscription smoke testing.
