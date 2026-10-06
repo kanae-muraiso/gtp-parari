@@ -48,6 +48,8 @@ export type PlanEntitlements = {
   applicationMode: ApplicationMode;
   canUseLinkTreeBackgroundImage: boolean;
   canUseIntegratedSales: boolean;
+  canUseRecurringSales: boolean;
+  salesFeeBps: number;
   canExportEpub: boolean;
   canCollaborate: boolean;
   canManageForms: boolean;
@@ -80,7 +82,9 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     imageStorageLimitBytes: 100 * MEBIBYTE,
     applicationMode: "lite",
     canUseLinkTreeBackgroundImage: false,
-    canUseIntegratedSales: false,
+    canUseIntegratedSales: true,
+    canUseRecurringSales: false,
+    salesFeeBps: 1000,
     canExportEpub: false,
     canCollaborate: false,
     canManageForms: false,
@@ -103,6 +107,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationMode: "lite",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
+    canUseRecurringSales: false,
+    salesFeeBps: 500,
     canExportEpub: true,
     canCollaborate: true,
     canManageForms: false,
@@ -125,6 +131,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
+    canUseRecurringSales: true,
+    salesFeeBps: 500,
     canExportEpub: true,
     canCollaborate: true,
     canManageForms: true,
@@ -147,6 +155,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
+    canUseRecurringSales: true,
+    salesFeeBps: 500,
     canExportEpub: true,
     canCollaborate: true,
     canManageForms: true,
@@ -169,6 +179,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     applicationMode: "builder",
     canUseLinkTreeBackgroundImage: true,
     canUseIntegratedSales: true,
+    canUseRecurringSales: true,
+    salesFeeBps: 500,
     canExportEpub: true,
     canCollaborate: true,
     canManageForms: true,

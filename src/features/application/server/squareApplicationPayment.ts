@@ -6,9 +6,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   createSquarePaymentLink,
 } from "@/lib/square/api";
-import {
-  getParariSquareApplicationFeeBps,
-} from "@/lib/square/config";
+import { getUserPlanAccess } from "@/lib/billing/access";
 import {
   getUsableSquareConnection,
 } from "@/lib/square/connection";
@@ -199,8 +197,13 @@ export async function createSquareCheckoutForEntry(
     throw new Error("APPLICATION_PAYMENT_AMOUNT_INVALID");
   }
 
+  const { entitlements } =
+    await getUserPlanAccess(
+      application.owner_user_id,
+    );
+
   const feeBps =
-    getParariSquareApplicationFeeBps();
+    entitlements.salesFeeBps;
 
   const appFeeMinor =
     feeBps > 0

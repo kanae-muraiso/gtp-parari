@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 export default function PlusCheckoutButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingPlan, setCheckingPlan] = useState(true);
-  const [isCurrentPlus, setIsCurrentPlus] = useState(false);
+  const [hasPaidPlan, setHasPaidPlan] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function PlusCheckoutButton() {
         return;
       }
 
-      setIsCurrentPlus(getEffectivePlan(data) === "plus");
+      setHasPaidPlan(getEffectivePlan(data) !== "free");
       setCheckingPlan(false);
     }
 
@@ -113,14 +113,14 @@ export default function PlusCheckoutButton() {
     }
   }
 
-  const disabled = isLoading || checkingPlan || isCurrentPlus;
+  const disabled = isLoading || checkingPlan || hasPaidPlan;
 
   let buttonLabel = "Plusに申し込む";
 
   if (checkingPlan) {
     buttonLabel = "プランを確認中…";
-  } else if (isCurrentPlus) {
-    buttonLabel = "Plus利用中";
+  } else if (hasPaidPlan) {
+    buttonLabel = "有料プラン利用中";
   } else if (isLoading) {
     buttonLabel = "Stripe Checkoutを準備中…";
   }

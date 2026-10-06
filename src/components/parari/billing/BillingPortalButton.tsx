@@ -46,7 +46,7 @@ export default function BillingPortalButton() {
             "Stripe customer is not found for this user"
         ) {
           setMessage(
-            "請求管理画面は、Plusをご契約中または過去にお申し込み済みの場合に利用できます。",
+            "請求管理画面は、有料プランをご契約中または過去にお申し込み済みの場合に利用できます。",
           );
           return;
         }

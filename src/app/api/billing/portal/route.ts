@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         {
           code: "portal_unavailable",
           error:
-            "請求管理画面は、Plusのお申し込み後に利用できます。",
+            "請求管理画面は、有料プランのお申し込み後に利用できます。",
         },
         { status: 400 }
       );
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         {
           code: "portal_unavailable",
           error:
-            "請求管理画面は、Plusのお申し込み後に利用できます。",
+            "請求管理画面は、有料プランのお申し込み後に利用できます。",
         },
         { status: 400 }
       );

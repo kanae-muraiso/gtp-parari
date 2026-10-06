@@ -112,6 +112,7 @@ export async function getUsableSquareConnection(
   let accessToken =
     decryptSquareToken(connection.access_token_enc);
 
+
   if (
     tokenNeedsRefresh(connection.token_expires_at)
   ) {

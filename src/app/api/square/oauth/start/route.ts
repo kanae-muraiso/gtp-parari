@@ -84,6 +84,14 @@ export async function POST(
       "PAYMENTS_WRITE_ADDITIONAL_RECIPIENTS",
       "ORDERS_READ",
       "ORDERS_WRITE",
+      "CUSTOMERS_READ",
+      "CUSTOMERS_WRITE",
+      "ITEMS_READ",
+      "ITEMS_WRITE",
+      "INVOICES_READ",
+      "INVOICES_WRITE",
+      "SUBSCRIPTIONS_READ",
+      "SUBSCRIPTIONS_WRITE",
     ].join(" ");
 
     const authorizeUrl = new URL(
@@ -109,10 +117,12 @@ export async function POST(
         "false",
       );
     }
-    authorizeUrl.searchParams.set(
-      "redirect_uri",
-      getSquareOAuthRedirectUrl(),
-    );
+    if (getSquareEnvironment() === "production") {
+      authorizeUrl.searchParams.set(
+        "redirect_uri",
+        getSquareOAuthRedirectUrl(),
+      );
+    }
 
     return NextResponse.json({
       ok: true,

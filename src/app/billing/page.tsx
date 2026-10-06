@@ -4,6 +4,7 @@
 import BillingPortalButton from "@/components/parari/billing/BillingPortalButton";
 import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
 import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
+import OrganizerCheckoutButton from "@/components/parari/billing/OrganizerCheckoutButton";
 import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
@@ -12,6 +13,8 @@ import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
 
 const PLUS_MONTHLY_PRICE_USD = PLAN_ENTITLEMENTS.plus.monthlyPriceUsd;
+const ORGANIZER_MONTHLY_PRICE_USD =
+  PLAN_ENTITLEMENTS.organizer.monthlyPriceUsd;
 
 function LimitItem({ children }: { children: React.ReactNode }) {
   return (
@@ -55,14 +58,33 @@ export default function BillingPage() {
                 </h2>
 
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                  現在のプラン確認、Plusへの申込、カード情報の変更や解約を
-                  このページから行えます。
+                  現在のプラン確認、有料プランへの申込、カード情報の変更や解約を
+                  このページから行えます。販売を始める場合はSquareもここで接続します。
                 </p>
               </header>
 
               <CurrentPlanPanel />
 
+              <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                  SALES
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-slate-950">
+                  販売管理
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  作品の販売、イベント決済、Organizerの月謝・定期サービスを管理します。
+                </p>
+                <a
+                  href="/my/sales"
+                  className="mt-5 inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+                >
+                  販売管理を開く
+                </a>
+              </section>
+
               <SquareConnectionPanel />
+
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">
@@ -75,12 +97,12 @@ export default function BillingPage() {
             </h2>
 
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              PARARIはFreeから始められます。作品数やページ数を増やしたい場合は、
-              月額{PLUS_MONTHLY_PRICE_USD}ドルのPlusをご利用ください。
+              PARARIはFreeから販売を始められます。Plusでは販売手数料が下がり、
+              Organizerではフォーム・カレンダー・月謝などの継続運営が使えます。
             </p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-3">
             <article className="rounded-3xl border border-slate-200 bg-white p-6">
               <p className="text-sm font-semibold text-slate-500">
                 Free
@@ -91,7 +113,7 @@ export default function BillingPage() {
               </p>
 
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                PARARIの基本機能を無料で利用できます。
+                PARARIの基本機能を無料で利用できます。販売手数料は10%です。
               </p>
 
               <ul className="mt-6 space-y-3">
@@ -163,10 +185,45 @@ export default function BillingPage() {
                   />
                   <span>保存容量には上限があります</span>
                 </li>
+                <li className="flex gap-3 text-sm leading-6 text-slate-100">
+                  <span
+                    aria-hidden="true"
+                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
+                  />
+                  <span>販売手数料：5%</span>
+                </li>
               </ul>
 
               <div className="mt-7">
                 <PlusCheckoutButton />
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
+              <p className="text-sm font-semibold text-slate-500">
+                Organizer
+              </p>
+
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                ${ORGANIZER_MONTHLY_PRICE_USD}
+                <span className="ml-1 text-sm font-medium text-slate-500">
+                  / month
+                </span>
+              </p>
+
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                教室・講座・イベントなどを継続して運営するためのプランです。
+              </p>
+
+              <ul className="mt-6 space-y-3">
+                <LimitItem>販売手数料：5%</LimitItem>
+                <LimitItem>有料イベント・申込受付</LimitItem>
+                <LimitItem>フォーム・カレンダー</LimitItem>
+                <LimitItem>月謝・定期サービス</LimitItem>
+              </ul>
+
+              <div className="mt-7">
+                <OrganizerCheckoutButton />
               </div>
             </article>
           </div>
@@ -182,12 +239,12 @@ export default function BillingPage() {
           </h2>
 
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            カード情報の変更、請求履歴の確認、Plusの解約は、
+            カード情報の変更、請求履歴の確認、有料プランの解約は、
             Stripeの安全な管理画面で行います。
           </p>
 
           <p className="mt-2 text-xs leading-6 text-slate-500">
-            請求管理は、Plusをご契約中、または過去にPlusへお申し込み済みの場合に利用できます。
+            請求管理は、有料プランをご契約中、または過去にお申し込み済みの場合に利用できます。
             未契約の場合、請求管理画面は表示されません。
           </p>
 

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/billing/stripe";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   markBillingCanceledBySubscriptionId,
   markBillingPastDueByCustomerId,
@@ -62,7 +63,37 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await markBillingCanceledBySubscriptionId(subscription.id);
 }
 
+function isParariPlatformFeeInvoice(
+  invoice: Stripe.Invoice,
+): boolean {
+  return invoice.metadata?.parari_platform_fee === "true";
+}
+
+async function handlePlatformFeeInvoicePaid(
+  invoice: Stripe.Invoice,
+) {
+  const { error } = await supabaseAdmin
+    .from("commerce_platform_fee_ledger")
+    .update({
+      status: "paid",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_invoice_id", invoice.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  if (isParariPlatformFeeInvoice(invoice)) {
+    console.warn(
+      "[stripe/webhook] PARARI platform fee invoice payment failed",
+      invoice.id,
+    );
+    return;
+  }
+
   const stripeCustomerId = getStripeCustomerId(invoice.customer);
 
   if (!stripeCustomerId) {
@@ -130,6 +161,16 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionDeleted(subscription);
+        break;
+      }
+
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+
+        if (isParariPlatformFeeInvoice(invoice)) {
+          await handlePlatformFeeInvoicePaid(invoice);
+        }
+
         break;
       }
 

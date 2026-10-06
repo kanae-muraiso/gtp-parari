@@ -82,6 +82,13 @@ export function getPlanFromPriceId(priceId: string | null | undefined): BillingP
     return "plus";
   }
 
+  if (
+    process.env.STRIPE_ORGANIZER_PRICE_ID &&
+    priceId === process.env.STRIPE_ORGANIZER_PRICE_ID
+  ) {
+    return "organizer";
+  }
+
   // ProはMVPでは未実装。
   // 将来 STRIPE_PRO_PRICE_ID を追加したときのために残す。
   if (
