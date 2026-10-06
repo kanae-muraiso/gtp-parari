@@ -85,6 +85,7 @@ export async function POST(
       "ORDERS_READ",
       "ORDERS_WRITE",
       "CUSTOMERS_READ",
+      "CUSTOMERS_WRITE",
       "ITEMS_READ",
       "ITEMS_WRITE",
       "INVOICES_READ",
