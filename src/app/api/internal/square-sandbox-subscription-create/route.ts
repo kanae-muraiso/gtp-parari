@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateInternalAdmin } from "@/lib/auth/internalAdmin";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   createSquareMonthlySubscriptionPlan,
   getSquareMainLocation,
@@ -115,6 +116,62 @@ export async function POST(request: NextRequest) {
         currency: location.currency ?? "JPY",
       });
 
+    const {
+      data: userData,
+      error: userLookupError,
+    } = await supabaseAdmin.auth.admin.getUserById(
+      auth.userId,
+    );
+
+    if (
+      userLookupError ||
+      !userData.user?.email
+    ) {
+      throw new Error(
+        "Sandbox診断ユーザーのメールアドレスを確認できませんでした。",
+      );
+    }
+
+    const buyerEmail =
+      userData.user.email
+        .trim()
+        .toLowerCase();
+
+    const {
+      data: product,
+      error: productError,
+    } = await supabaseAdmin
+      .from("commerce_products")
+      .insert({
+        owner_user_id: auth.userId,
+        product_type: "service",
+        name:
+          `[SANDBOX TEST] ${shortId.slice(0, 8)}`,
+        description:
+          "Temporary Organizer commerce Sandbox diagnostic product",
+        amount: 100,
+        currency:
+          location.currency ?? "JPY",
+        billing_interval: "monthly",
+        active: false,
+        square_plan_id:
+          plan.planId,
+        square_plan_variation_id:
+          plan.variationId,
+      })
+      .select("id")
+      .single();
+
+    if (
+      productError ||
+      !product?.id
+    ) {
+      throw productError ??
+        new Error(
+          "PARARIテスト商品を作成できませんでした。",
+        );
+    }
+
     const customerResult =
       await squareSandboxRequest<{
         customer?: { id?: string };
@@ -127,7 +184,7 @@ export async function POST(request: NextRequest) {
           given_name: "PARARI",
           family_name: "Sandbox",
           email_address:
-            `ps-${shortId.slice(0, 12)}@example.com`,
+            buyerEmail,
           reference_id:
             `ps-${shortId}`,
         },
@@ -140,6 +197,43 @@ export async function POST(request: NextRequest) {
       throw new Error(
         "Square did not return a customer ID",
       );
+    }
+
+    const {
+      data: checkout,
+      error: checkoutError,
+    } = await supabaseAdmin
+      .from(
+        "commerce_subscription_checkouts",
+      )
+      .insert({
+        product_id: product.id,
+        owner_user_id: auth.userId,
+        buyer_user_id: auth.userId,
+        buyer_email: buyerEmail,
+        billing_amount: 100,
+        billing_currency:
+          location.currency ?? "JPY",
+        square_plan_variation_id:
+          plan.variationId,
+        provider_order_id:
+          `sandbox-smoke-order-${shortId}`,
+        provider_payment_link_id:
+          `sandbox-smoke-link-${shortId}`,
+        checkout_url: null,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (
+      checkoutError ||
+      !checkout?.id
+    ) {
+      throw checkoutError ??
+        new Error(
+          "PARARI pending checkoutを作成できませんでした。",
+        );
     }
 
     const cardResult =
@@ -210,6 +304,8 @@ export async function POST(request: NextRequest) {
       subscriptionId: subscription.id,
       status: subscription.status ?? null,
       currency: location.currency ?? "JPY",
+      productId: product.id,
+      checkoutId: checkout.id,
     });
   } catch (error) {
     console.error(
