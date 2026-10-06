@@ -60,14 +60,6 @@ export async function GET(
     ok: true,
     configured:
       squarePlatformConfigured(),
-    diagnostic: {
-      userId: user.id,
-      userEmail: user.email ?? null,
-      environment:
-        getSquareEnvironment(),
-      connectionFound:
-        Boolean(connection),
-    },
     connection: connection
       ? {
           connected:
