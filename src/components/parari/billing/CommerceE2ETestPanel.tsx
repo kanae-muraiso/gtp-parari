@@ -37,18 +37,18 @@ export default function CommerceE2ETestPanel() {
       if (!response.ok || !result?.ok) {
         throw new Error(
           result?.message ??
-            "テスト①を実行できませんでした。",
+            "テスト②を実行できませんでした。",
         );
       }
 
       setMessage(
-        `成功: FREE単発100円を実行しました（Square: ${result.paymentStatus ?? "unknown"} / 手数料予定 ¥${result.expectedAppFee ?? "?"}）。`,
+        `成功: PLUS単発100円を実行しました（Square: ${result.paymentStatus ?? "unknown"} / 手数料予定 ¥${result.expectedAppFee ?? "?"}）。`,
       );
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "テスト①を実行できませんでした。",
+          : "テスト②を実行できませんでした。",
       );
     } finally {
       setRunning(false);
@@ -61,10 +61,10 @@ export default function CommerceE2ETestPanel() {
         PR #82 E2E
       </p>
       <h2 className="mt-1 text-xl font-bold text-slate-950">
-        テスト① FREE 単発売上
+        テスト② PLUS 単発売上
       </h2>
       <p className="mt-3 text-sm leading-7 text-slate-700">
-        売り手 kanae@muraiso.jp をFREE扱い、買い手 muraiso02@muraiso.jp として、Square Sandboxで100円の単発決済を自動実行します。Stripeは使用しません。
+        売り手 kanae@muraiso.jp をPLUS扱い、買い手 muraiso02@muraiso.jp として、Square Sandboxで100円の単発決済を自動実行します。Stripeは使用しません。
       </p>
       <button
         type="button"
@@ -72,7 +72,7 @@ export default function CommerceE2ETestPanel() {
         onClick={() => void run()}
         className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
       >
-        {running ? "実行しています..." : "テスト①を実行"}
+        {running ? "実行しています..." : "テスト②を実行"}
       </button>
       {message ? (
         <p className="mt-4 text-sm font-semibold text-slate-800">
