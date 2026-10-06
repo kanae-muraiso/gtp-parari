@@ -21,24 +21,13 @@ export default function CommerceE2ETestPanel() {
       }
 
       const response = await fetch(
-        "/api/commerce/products",
+        "/api/internal/commerce-e2e/monthly-subscription",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization:
               `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({
-            workId: null,
-            name: "[E2E TEST] 月謝 100円",
-            description:
-              "PR #82 Sandbox Organizer E2E monthly product",
-            amount: 100,
-            currency: "JPY",
-            billingInterval: "monthly",
-            active: true,
-          }),
         },
       );
 
@@ -48,18 +37,18 @@ export default function CommerceE2ETestPanel() {
       if (!response.ok || !result?.ok) {
         throw new Error(
           result?.message ??
-            "テスト③を実行できませんでした。",
+            "テスト④を実行できませんでした。",
         );
       }
 
       setMessage(
-        "成功: ORGANIZERとして通常の商品作成APIから月謝100円の商品を作成しました。",
+        `成功: muraiso02@muraiso.jp の月謝100円契約をSquare Sandboxで作成しました（status: ${result.status ?? "unknown"}）。`,
       );
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "テスト③を実行できませんでした。",
+          : "テスト④を実行できませんでした。",
       );
     } finally {
       setRunning(false);
@@ -72,10 +61,10 @@ export default function CommerceE2ETestPanel() {
         PR #82 E2E
       </p>
       <h2 className="mt-1 text-xl font-bold text-slate-950">
-        テスト③ ORGANIZER 月謝商品作成
+        テスト④ 別ユーザーの月謝契約
       </h2>
       <p className="mt-3 text-sm leading-7 text-slate-700">
-        売り手 kanae@muraiso.jp をORGANIZER扱いにし、通常の商品作成APIからSquare Sandboxの月謝100円商品を作成します。Stripeは使用しません。
+        売り手 kanae@muraiso.jp、買い手 muraiso02@muraiso.jp として、Square Sandboxで月謝100円の契約を自動作成します。カード入力もStripeもありません。
       </p>
       <button
         type="button"
@@ -83,7 +72,7 @@ export default function CommerceE2ETestPanel() {
         onClick={() => void run()}
         className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
       >
-        {running ? "実行しています..." : "テスト③を実行"}
+        {running ? "実行しています..." : "テスト④を実行"}
       </button>
       {message ? (
         <p className="mt-4 text-sm font-semibold text-slate-800">
