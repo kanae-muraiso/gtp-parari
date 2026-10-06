@@ -85,35 +85,6 @@ type SquareWebhookEvent = {
   };
 };
 
-async function recordWebhookAttempt(input: {
-  rawBody: string;
-  signaturePresent: boolean;
-  signatureValid: boolean | null;
-}): Promise<void> {
-  let eventType: string | null = null;
-  let merchantId: string | null = null;
-
-  try {
-    const parsed = JSON.parse(input.rawBody) as SquareWebhookEvent;
-    eventType =
-      String(parsed.type ?? "").trim() || null;
-    merchantId =
-      String(parsed.merchant_id ?? "").trim() || null;
-  } catch {
-    // Keep the diagnostic record even if the body is not JSON.
-  }
-
-  await supabaseAdmin
-    .from("square_webhook_attempts")
-    .insert({
-      event_type: eventType,
-      merchant_id: merchantId,
-      signature_present: input.signaturePresent,
-      signature_valid: input.signatureValid,
-      body_length: Buffer.byteLength(input.rawBody, "utf8"),
-    });
-}
-
 function validSignature(
   rawBody: string,
   signature: string,
@@ -1169,21 +1140,13 @@ export async function POST(
     ) ?? "";
 
   try {
-    const signatureValid =
-      Boolean(signature) &&
-      validSignature(
+    if (
+      !signature ||
+      !validSignature(
         rawBody,
         signature,
-      );
-
-    await recordWebhookAttempt({
-      rawBody,
-      signaturePresent:
-        Boolean(signature),
-      signatureValid,
-    });
-
-    if (!signatureValid) {
+      )
+    ) {
       return NextResponse.json(
         { ok: false },
         { status: 403 },
@@ -1194,17 +1157,6 @@ export async function POST(
       "[square/webhook] signature configuration error",
       error,
     );
-
-    try {
-      await recordWebhookAttempt({
-        rawBody,
-        signaturePresent:
-          Boolean(signature),
-        signatureValid: null,
-      });
-    } catch {
-      // Diagnostics must not mask the original webhook error.
-    }
 
     return NextResponse.json(
       { ok: false },
