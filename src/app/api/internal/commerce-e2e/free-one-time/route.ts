@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
+import { authenticateInternalAdmin } from "@/lib/auth/internalAdmin";
 import { getUserPlanAccess } from "@/lib/billing/access";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { SQUARE_API_VERSION, getSquareEnvironment } from "@/lib/square/config";
@@ -53,7 +54,7 @@ async function squarePost<T>(
   return json;
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   if (
     process.env.VERCEL_ENV !== "preview" ||
     getSquareEnvironment() !== "sandbox"
@@ -64,16 +65,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const secret =
-    request.nextUrl.searchParams.get("secret") ?? "";
+  const auth =
+    await authenticateInternalAdmin(request);
 
-  if (
-    !process.env.COMMERCE_E2E_SECRET ||
-    secret !== process.env.COMMERCE_E2E_SECRET
-  ) {
+  if (auth.ok === false) {
     return NextResponse.json(
-      { ok: false, message: "Forbidden" },
-      { status: 403 },
+      { ok: false, message: auth.message },
+      { status: auth.status },
     );
   }
 
