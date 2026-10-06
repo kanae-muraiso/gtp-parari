@@ -5,9 +5,11 @@ import { authenticateInternalAdmin } from "@/lib/auth/internalAdmin";
 import {
   createSquareMonthlySubscriptionPlan,
   getSquareMainLocation,
-  SQUARE_API_VERSION,
 } from "@/lib/square/api";
-import { getSquareEnvironment } from "@/lib/square/config";
+import {
+  getSquareEnvironment,
+  SQUARE_API_VERSION,
+} from "@/lib/square/config";
 import { getUsableSquareConnection } from "@/lib/square/connection";
 
 export const runtime = "nodejs";
