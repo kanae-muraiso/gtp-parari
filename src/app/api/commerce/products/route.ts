@@ -88,9 +88,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const planAccess =
+    await getUserPlanAccess(user.id);
+
   return NextResponse.json({
     ok: true,
     products: data ?? [],
+    plan: {
+      effectivePlan:
+        planAccess.effectivePlan,
+      salesFeeBps:
+        planAccess.entitlements.salesFeeBps,
+      canUseRecurringSales:
+        planAccess.entitlements.canUseRecurringSales,
+    },
   });
 }
 
