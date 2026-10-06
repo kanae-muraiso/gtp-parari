@@ -22,27 +22,13 @@ export type UserPlanAccess = {
 export async function getUserPlanAccess(
   userId: string,
 ): Promise<UserPlanAccess> {
-  const [billing, profileResult, overrideResult] = await Promise.all([
+  const [billing, profileResult] = await Promise.all([
     getUserBillingByUserId(userId),
     supabaseAdmin
       .from("profiles")
       .select("is_monitor")
       .eq("user_id", userId)
       .maybeSingle<{ is_monitor: boolean | null }>(),
-    process.env.VERCEL_ENV === "preview" &&
-    process.env.SQUARE_ENVIRONMENT !== "production"
-      ? supabaseAdmin
-          .from("commerce_test_plan_overrides")
-          .select("plan,enabled")
-          .eq("user_id", userId)
-          .maybeSingle<{
-            plan: EffectivePlan;
-            enabled: boolean;
-          }>()
-      : Promise.resolve({
-          data: null,
-          error: null,
-        }),
   ]);
 
   if (profileResult.error) {
@@ -51,23 +37,8 @@ export async function getUserPlanAccess(
     );
   }
 
-  if (overrideResult.error) {
-    throw new Error(
-      `Failed to load commerce test plan override: ${overrideResult.error.message}`,
-    );
-  }
-
-  const overridePlan =
-    overrideResult.data?.enabled === true
-      ? overrideResult.data.plan
-      : null;
-
-  const isMonitor =
-    overridePlan
-      ? false
-      : profileResult.data?.is_monitor === true;
-  const effectivePlan =
-    overridePlan ?? getEffectivePlan(billing);
+  const isMonitor = profileResult.data?.is_monitor === true;
+  const effectivePlan = getEffectivePlan(billing);
 
   return {
     effectivePlan,
