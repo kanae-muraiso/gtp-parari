@@ -13,7 +13,6 @@ import Link from "next/link";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
-import { getEffectivePlan, getPlanEntitlements } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
 
 type Work = {
@@ -86,8 +85,6 @@ export default function SalesPage() {
 
       const [
         worksResult,
-        billingResult,
-        profileResult,
         subscriptionResult,
         productResponse,
       ] = await Promise.all([
@@ -97,16 +94,6 @@ export default function SalesPage() {
             .eq("owner", user.id)
             .or("is_deleted.is.null,is_deleted.eq.false")
             .order("updated_at", { ascending: false }),
-          supabase
-            .from("user_billing")
-            .select("plan,billing_status")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("is_monitor")
-            .eq("user_id", user.id)
-            .maybeSingle(),
           supabase
             .from("commerce_subscriptions")
             .select(
@@ -131,20 +118,6 @@ export default function SalesPage() {
 
       setWorks((worksResult.data ?? []) as Work[]);
 
-      const effectivePlan =
-        getEffectivePlan(billingResult.data);
-      const entitlements =
-        getPlanEntitlements(
-          effectivePlan,
-          profileResult.data?.is_monitor === true,
-        );
-
-      setPlan(effectivePlan);
-      setFeeBps(entitlements.salesFeeBps);
-      setCanRecurring(
-        entitlements.canUseRecurringSales,
-      );
-
       const productResult =
         await productResponse.json().catch(() => null);
 
@@ -157,6 +130,21 @@ export default function SalesPage() {
 
       setProducts(
         (productResult.products ?? []) as Product[],
+      );
+
+      setPlan(
+        productResult.plan?.effectivePlan ??
+          "free",
+      );
+      setFeeBps(
+        Number(
+          productResult.plan?.salesFeeBps ??
+            1000,
+        ),
+      );
+      setCanRecurring(
+        productResult.plan
+          ?.canUseRecurringSales === true,
       );
 
       if (subscriptionResult.error) {
