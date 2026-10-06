@@ -93,11 +93,11 @@ export async function POST(request: NextRequest) {
       await getUserPlanAccess(SELLER_USER_ID);
 
     if (
-      planAccess.effectivePlan !== "free" ||
-      planAccess.entitlements.salesFeeBps !== 1000
+      planAccess.effectivePlan !== "plus" ||
+      planAccess.entitlements.salesFeeBps !== 500
     ) {
       throw new Error(
-        `Expected FREE/1000bps, got ${planAccess.effectivePlan}/${planAccess.entitlements.salesFeeBps}`,
+        `Expected PLUS/500bps, got ${planAccess.effectivePlan}/${planAccess.entitlements.salesFeeBps}`,
       );
     }
 
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
           autocomplete: true,
           buyer_email_address:
             buyerData.user.email ?? undefined,
-          note: `PARARI PR82 FREE E2E ${purchase.id}`,
+          note: `PARARI PR82 PLUS E2E ${purchase.id}`,
         },
       );
 
