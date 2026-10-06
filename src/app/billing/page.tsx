@@ -6,7 +6,6 @@ import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
 import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
 import OrganizerCheckoutButton from "@/components/parari/billing/OrganizerCheckoutButton";
 import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
-import SquareSandboxSmokePanel from "@/components/parari/billing/SquareSandboxSmokePanel";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -86,7 +85,6 @@ export default function BillingPage() {
 
               <SquareConnectionPanel />
 
-              <SquareSandboxSmokePanel />
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">
