@@ -21,15 +21,6 @@ export default function SquareConnectionPanel() {
     setConfigured,
   ] = React.useState(false);
   const [
-    diagnostic,
-    setDiagnostic,
-  ] = React.useState<{
-    userId: string;
-    userEmail: string | null;
-    environment: string;
-    connectionFound: boolean;
-  } | null>(null);
-  const [
     isLoading,
     setIsLoading,
   ] = React.useState(true);
@@ -90,12 +81,6 @@ export default function SquareConnectionPanel() {
             | {
                 ok?: boolean;
                 configured?: boolean;
-                diagnostic?: {
-                  userId: string;
-                  userEmail: string | null;
-                  environment: string;
-                  connectionFound: boolean;
-                };
                 connection?: SquareConnectionState;
               }
             | null;
@@ -116,9 +101,6 @@ export default function SquareConnectionPanel() {
           );
           setConnection(
             result.connection,
-          );
-          setDiagnostic(
-            result.diagnostic ?? null,
           );
         }
       } catch (error) {
@@ -360,14 +342,6 @@ export default function SquareConnectionPanel() {
             : "Squareを接続"}
         </button>
       )}
-
-      {diagnostic ? (
-        <div className="mt-4 rounded-xl bg-slate-100 px-4 py-3 text-xs leading-6 text-slate-700">
-          <div>診断: {diagnostic.userEmail ?? diagnostic.userId}</div>
-          <div>Square環境: {diagnostic.environment}</div>
-          <div>接続レコード: {diagnostic.connectionFound ? "あり" : "なし"}</div>
-        </div>
-      ) : null}
 
       {message ? (
         <p className="mt-4 text-sm text-rose-700">
