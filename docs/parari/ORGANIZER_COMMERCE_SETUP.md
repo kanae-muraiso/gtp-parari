@@ -177,3 +177,6 @@ Vercel has a branch-scoped `SQUARE_OAUTH_REDIRECT_URL` override for this value. 
 
 
 
+
+
+- 2026-10-06: Square Sandbox OAuth reauthorization succeeded after clearing the prior test authorization/session state. Added the missing `CUSTOMERS_WRITE` scope. Verified that the persisted OAuth connection token alone can create Catalog subscription objects, Customer, Card, and an ACTIVE Subscription. Temporary diagnostics were then removed.
