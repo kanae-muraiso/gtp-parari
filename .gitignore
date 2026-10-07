@@ -11,3 +11,7 @@ src/**/*.tmp_backup*
 # Local environment variables
 .env*
 !.env.example
+
+# Supabase local CLI state and ad-hoc migration snapshots
+supabase/.temp/
+supabase/migrations.backup*/
