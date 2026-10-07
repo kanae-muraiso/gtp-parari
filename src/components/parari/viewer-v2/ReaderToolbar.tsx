@@ -1,3 +1,4 @@
+// src/components/parari/viewer-v2/ReaderToolbar.tsx
 // 2026-10-07 20:15 JST
 // PART: One navigation and reading settings menu for every work format
 "use client";

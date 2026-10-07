@@ -59,6 +59,16 @@ for (const [content, format] of [[bookSource, "book"], [pageSource, "page"], [we
   assert.match(html, /読書設定を開く/);
   assert.doesNotMatch(html, /\[BOOK\]|\[WEBPAGE\]|\[PAGEINFO\]/, "Do not add raw structure to rendered HTML");
 }
+const bookHtml = renderToStaticMarkup(React.createElement(ParariViewer, { content: bookSource }));
+assert.match(bookHtml, /src="https:\/\/example.com\/legacy.png"/);
+const headingsBook = bookSource.replace("Second original body.", "[T]\n## Second sheet heading\n\nSecond original body.");
+const headingsHtml = renderToStaticMarkup(React.createElement(ParariViewer, { content: headingsBook }));
+const bookHeadingIds = [...headingsHtml.matchAll(/id="(parari-page-heading-[^"]+)"/g)].map(match => match[1]);
+assert.equal(bookHeadingIds.length, 2);
+assert.equal(new Set(bookHeadingIds).size, 2, "Separate BOOK sheets must have distinct heading IDs");
+const missingHtml = renderToStaticMarkup(React.createElement(ParariViewer, { content: webSource, pageSlug: "missing" }));
+assert.match(missingHtml, /見つかりませんでした/);
+assert.doesNotMatch(missingHtml, /Home text/);
 const pageHtml = renderToStaticMarkup(React.createElement(ParariViewer, { content: pageSource }));
 assert.match(pageHtml, /First heading/);
 assert.match(pageHtml, /Second heading/);

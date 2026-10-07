@@ -1,6 +1,7 @@
+// src/components/parari/viewer-v2/readerProgress.ts
 // 2026-10-07 20:15 JST
 // PART: Shared display mode and reading progress with legacy BOOK restoration
-import type { ReadingMode, BookSheet, ViewerBook } from "./book/buildBookSheets";
+import type { ReadingMode, BookSheet } from "./book/buildBookSheets";
 import type { ReaderBook } from "./buildViewerDocument";
 export type ReaderDisplayMode = "full-scroll" | "page-scroll" | "page-turn";
 export type StoredReadingProgress = {

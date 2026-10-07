@@ -11,7 +11,7 @@
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
-    "test:unified-viewer": "node scripts/test-unified-viewer.cjs"
+    "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
@@ -37,6 +37,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
+    "jsdom": "27.0.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.3"

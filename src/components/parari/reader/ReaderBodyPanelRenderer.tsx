@@ -22,6 +22,7 @@ export type ReaderTextBlockRenderer = (args: {
   text: string;
   index: number;
   tocHeadingStartIndex: number;
+  tocHeadingIdPrefix: string;
 }) => React.ReactNode;
 
 type ReaderBodyPanelRendererProps = {
@@ -40,6 +41,8 @@ export function ReaderBodyPanelRenderer({
   renderTextBlock,
   emptyFallback = null,
 }: ReaderBodyPanelRendererProps) {
+  const instanceId = React.useId();
+  const tocHeadingIdPrefix = `parari-page-heading-${instanceId}`;
   const blocks = React.useMemo(() => {
     return parseBlocks(normalizeReaderTocTags(bodySsot));
   }, [bodySsot]);
@@ -55,8 +58,8 @@ export function ReaderBodyPanelRenderer({
   }, [blocks]);
 
   const tocState = React.useMemo(() => {
-    return createPageTocState(meaningfulBlocks);
-  }, [meaningfulBlocks]);
+    return createPageTocState(meaningfulBlocks, tocHeadingIdPrefix);
+  }, [meaningfulBlocks, tocHeadingIdPrefix]);
 
   if (meaningfulBlocks.length === 0) {
     return emptyFallback ? <>{emptyFallback}</> : null;
@@ -72,6 +75,7 @@ export function ReaderBodyPanelRenderer({
           renderTextBlock={renderTextBlock}
           tocEntries={tocState.entries}
           headingStartIndexByBlockId={tocState.headingStartIndexByBlockId}
+          tocHeadingIdPrefix={tocHeadingIdPrefix}
         />
       ))}
     </div>
@@ -84,12 +88,14 @@ function BlockView({
   renderTextBlock,
   tocEntries,
   headingStartIndexByBlockId,
+  tocHeadingIdPrefix,
 }: {
   block: SsotBlock;
   index: number;
   renderTextBlock: ReaderTextBlockRenderer;
   tocEntries: PageTocEntry[];
   headingStartIndexByBlockId: Record<string, number>;
+  tocHeadingIdPrefix: string;
 }) {
   if (block.kind === "text") {
     return (
@@ -98,6 +104,7 @@ function BlockView({
         index={index}
         renderTextBlock={renderTextBlock}
         tocHeadingStartIndex={headingStartIndexByBlockId[block.id] ?? 0}
+        tocHeadingIdPrefix={tocHeadingIdPrefix}
       />
     );
   }
@@ -116,11 +123,13 @@ function TextBlockView({
   index,
   renderTextBlock,
   tocHeadingStartIndex,
+  tocHeadingIdPrefix,
 }: {
   block: TextBlock;
   index: number;
   renderTextBlock: ReaderTextBlockRenderer;
   tocHeadingStartIndex: number;
+  tocHeadingIdPrefix: string;
 }) {
   const text = String(block.raw ?? "");
 
@@ -135,6 +144,7 @@ function TextBlockView({
         text,
         index,
         tocHeadingStartIndex,
+        tocHeadingIdPrefix,
       })}
     </React.Fragment>
   );
@@ -228,7 +238,7 @@ function normalizeReaderTocTags(ssot: string): string {
   return output.join("\n");
 }
 
-function createPageTocState(blocks: SsotBlock[]): PageTocState {
+function createPageTocState(blocks: SsotBlock[], headingIdPrefix: string): PageTocState {
   const entries: PageTocEntry[] = [];
   const headingStartIndexByBlockId: Record<string, number> = {};
 
@@ -243,7 +253,7 @@ function createPageTocState(blocks: SsotBlock[]): PageTocState {
 
     headings.forEach((heading) => {
       entries.push({
-        id: `parari-page-heading-${entries.length}`,
+        id: `${headingIdPrefix}-${entries.length}`,
         level: heading.level,
         title: heading.title,
       });

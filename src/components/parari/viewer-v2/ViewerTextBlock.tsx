@@ -16,6 +16,7 @@ type ViewerTextBlockProps = {
   dictionaryMode?: ReaderDictionaryMode;
   rubyMode?: ReaderRubyMode;
   headingStartIndex?: number;
+  headingIdPrefix?: string;
 };
 
 type InlineToken =
@@ -63,6 +64,7 @@ export function ViewerTextBlock({
   dictionaryMode = "off",
   rubyMode = "click",
   headingStartIndex,
+  headingIdPrefix = "parari-page-heading",
 }: ViewerTextBlockProps) {
   const source = String(text ?? "");
   const rootRef = React.useRef<HTMLDivElement | null>(null);
@@ -160,6 +162,7 @@ export function ViewerTextBlock({
         },
         dictionaryLookup,
         headingStartIndex,
+        headingIdPrefix,
       )}
     </div>
   );
@@ -172,6 +175,7 @@ function renderBlockText(
   noteState: NoteState,
   dictionaryLookup: Record<string, ReaderDictionaryLookup>,
   headingStartIndex?: number,
+  headingIdPrefix = "parari-page-heading",
 ): React.ReactNode {
   const normalized = String(source ?? "").replace(/\r\n/g, "\n");
   const blocks = normalized.split(/\n{2,}/);
@@ -189,7 +193,7 @@ function renderBlockText(
     if (heading) {
       const headingId =
         typeof headingStartIndex === "number"
-          ? `parari-page-heading-${headingStartIndex + headingOffset}`
+          ? `${headingIdPrefix}-${headingStartIndex + headingOffset}`
           : undefined;
 
       headingOffset += 1;

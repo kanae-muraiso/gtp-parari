@@ -1,3 +1,4 @@
+// src/components/parari/viewer-v2/web/WebPageFrame.tsx
 // 2026-10-07 20:15 JST
 // PART: WEB site header, navigation and footer around the shared reader
 "use client";

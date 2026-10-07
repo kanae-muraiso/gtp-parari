@@ -61,9 +61,11 @@ export function ParariViewer(props: ViewerDocumentInput) {
   const [pageMaxHeight, setPageMaxHeight] = React.useState(0);
   const [measureWidth, setMeasureWidth] = React.useState(0);
   const [measureReady, setMeasureReady] = React.useState(false);
-  const [pagedItems, setPagedItems] = React.useState<ReadingItem[]>(() =>
-    createFallbackReadingItems(book),
-  );
+  const [pagination, setPagination] = React.useState(() => ({
+    items: createFallbackReadingItems(book),
+    ready: false,
+  }));
+  const pagedItems = pagination.items;
   const [currentItemIndex, setCurrentItemIndex] = React.useState(0);
 
   const pagedItemsRef = React.useRef<ReadingItem[]>(pagedItems);
@@ -202,7 +204,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
     const measureBox = measureBoxRef.current;
 
     if (!measureReady || !measureBox || pageMaxHeight <= 0) {
-      setPagedItems(createFallbackReadingItems(book));
+      setPagination({ items: createFallbackReadingItems(book), ready: false });
       return;
     }
 
@@ -324,7 +326,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
     pagedItemsRef.current = nextItems;
     currentItemIndexRef.current = nextIndex;
 
-    setPagedItems(nextItems);
+    setPagination({ items: nextItems, ready: true });
     setCurrentItemIndex(nextIndex);
   }, [
     book,
@@ -350,7 +352,9 @@ export function ParariViewer(props: ViewerDocumentInput) {
     }
 
     if (readingMode === "paged") {
-      if (!measureReady || pageMaxHeight <= 0 || pagedItems.length === 0) {
+      // Wait for the measured items to render; fallback sheet indexes differ
+      // from physical page indexes when a long sheet spans multiple pages.
+      if (!pagination.ready || !measureReady || pageMaxHeight <= 0 || pagedItems.length === 0) {
         return;
       }
 
@@ -427,7 +431,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
         });
       });
     });
-  }, [book, loadedBook, measureReady, pageMaxHeight, pagedItems, readingMode]);
+  }, [book, loadedBook, measureReady, pageMaxHeight, pagedItems, pagination.ready, readingMode]);
 
   React.useEffect(() => {
     if (readingMode !== "scroll") {
@@ -464,6 +468,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
     if (
       loadedBook !== book || !progressRestoredRef.current ||
       readingMode !== "paged" ||
+      !pagination.ready ||
       pagedItems.length === 0
     ) {
       return;
@@ -496,7 +501,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
       progressRatio,
       updatedAt: new Date().toISOString(),
     });
-  }, [book, loadedBook, currentItemIndex, pagedItems, readingMode]);
+  }, [book, loadedBook, currentItemIndex, pagedItems, pagination.ready, readingMode]);
 
   React.useEffect(() => {
     if (
@@ -1229,10 +1234,11 @@ function ChapterSheet({
         <div className="mt-8 text-left">
           <ReaderBodyPanelRenderer
             bodySsot={sheet.bodySsot}
-            renderTextBlock={({ text, tocHeadingStartIndex }) => (
+            renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
               <ViewerTextBlock
                 text={text}
                 headingStartIndex={tocHeadingStartIndex}
+                headingIdPrefix={tocHeadingIdPrefix}
                 className={textClassName}
                 dictionaryMode={dictionaryMode}
                 rubyMode={rubyMode}
@@ -1297,10 +1303,11 @@ function PageSheet({
 
       <ReaderBodyPanelRenderer
         bodySsot={sheet.bodySsot}
-        renderTextBlock={({ text, tocHeadingStartIndex }) => (
+        renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
           <ViewerTextBlock
             text={text}
             headingStartIndex={tocHeadingStartIndex}
+                headingIdPrefix={tocHeadingIdPrefix}
             className={textClassName}
             dictionaryMode={dictionaryMode}
             rubyMode={rubyMode}

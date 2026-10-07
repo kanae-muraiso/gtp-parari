@@ -1,3 +1,4 @@
+// src/components/parari/viewer-v2/buildViewerDocument.ts
 // 2026-10-07 20:15 JST
 // PART: Derive one reading document from existing BOOK, PAGE and WEB SSOT
 // No serialization or persistence: the supplied SSOT remains the work's source.
