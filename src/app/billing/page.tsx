@@ -192,6 +192,10 @@ export default function BillingPage() {
                   />
                   <span>販売手数料：5%</span>
                 </li>
+                <li className="flex gap-3 text-sm leading-6 text-slate-100">
+                  <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white" />
+                  <span>英語教材支援：設定でONにして利用</span>
+                </li>
               </ul>
 
               <div className="mt-7">
@@ -220,6 +224,7 @@ export default function BillingPage() {
                 <LimitItem>有料イベント・申込受付</LimitItem>
                 <LimitItem>フォーム・カレンダー</LimitItem>
                 <LimitItem>月謝・定期サービス</LimitItem>
+                <LimitItem>英語教材支援</LimitItem>
               </ul>
 
               <div className="mt-7">

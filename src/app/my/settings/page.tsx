@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
 import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
 import StudioAccessPanel from "@/components/parari/settings/StudioAccessPanel";
 
@@ -73,6 +74,7 @@ export default function SettingsHomePage() {
               <SectionTitle>STUDIO</SectionTitle>
 
               <StartDestinationPanel />
+              <EnglishAuthoringSettings />
 
               <SettingsCard
                 title="公開トップページ"

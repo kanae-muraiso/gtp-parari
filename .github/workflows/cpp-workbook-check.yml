@@ -38,3 +38,6 @@ jobs:
 
       - name: Unified reader compatibility and progress check
         run: npm run test:unified-viewer
+
+      - name: English authoring entitlement and interaction check
+        run: npm run test:english-authoring

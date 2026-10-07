@@ -8,6 +8,7 @@
 
 "use client";
 
+import { EnglishAuthoringProvider } from "@/components/parari/english/EnglishAuthoringProvider";
 import {
   useCallback,
   useEffect,
@@ -1073,13 +1074,16 @@ export default function BookPanelSequenceEditorPage() {
     
   return (
           
-          <>
+          <EnglishAuthoringProvider>
             <ParariOwnerTopBar
   title="STUDIO · 編集中"
               leftHref="/my/works"
               leftLabel="作品リストへ"
               actions={
                 <div className="flex items-center gap-2">
+                  <a href="/my/settings#english-authoring" target="_blank" rel="noopener noreferrer" className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600">
+                    編集設定
+                  </a>
                   <ParariTopBarButton href={publicPath}>
                     表示確認
                   </ParariTopBarButton>
@@ -1307,7 +1311,7 @@ export default function BookPanelSequenceEditorPage() {
         </>
       )}
     </main>
-          </>
+          </EnglishAuthoringProvider>
   );
 }
 

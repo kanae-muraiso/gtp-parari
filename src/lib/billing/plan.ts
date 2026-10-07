@@ -51,6 +51,7 @@ export type PlanEntitlements = {
   canUseRecurringSales: boolean;
   salesFeeBps: number;
   canExportEpub: boolean;
+  canUseEnglishAuthoring: boolean;
   canCollaborate: boolean;
   canManageForms: boolean;
   canManageCalendar: boolean;
@@ -86,6 +87,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canUseRecurringSales: false,
     salesFeeBps: 1000,
     canExportEpub: false,
+    canUseEnglishAuthoring: false,
     canCollaborate: false,
     canManageForms: false,
     canManageCalendar: false,
@@ -110,6 +112,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canUseRecurringSales: false,
     salesFeeBps: 500,
     canExportEpub: true,
+    canUseEnglishAuthoring: true,
     canCollaborate: true,
     canManageForms: false,
     canManageCalendar: false,
@@ -134,6 +137,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canUseRecurringSales: true,
     salesFeeBps: 500,
     canExportEpub: true,
+    canUseEnglishAuthoring: true,
     canCollaborate: true,
     canManageForms: true,
     canManageCalendar: true,
@@ -158,6 +162,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canUseRecurringSales: true,
     salesFeeBps: 500,
     canExportEpub: true,
+    canUseEnglishAuthoring: true,
     canCollaborate: true,
     canManageForms: true,
     canManageCalendar: true,
@@ -182,6 +187,7 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
     canUseRecurringSales: true,
     salesFeeBps: 500,
     canExportEpub: true,
+    canUseEnglishAuthoring: true,
     canCollaborate: true,
     canManageForms: true,
     canManageCalendar: true,

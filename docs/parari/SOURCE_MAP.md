@@ -23,6 +23,12 @@ Despite its directory name, the retained `mvp` code is used in production. Do no
 
 The runtime English dictionary is the database table `parari_english_dictionary`, accessed through `/api/english/dictionary`. Administration uses `/my/operations/dictionary` and `/api/internal/english-dictionary`.
 
+Editor tools are one optional **英語教材支援** menu. Enable it under `/my/settings#english-authoring`; the account preference `english_authoring_enabled` in Auth user metadata defaults to OFF. This preference never grants an entitlement. `/api/english/authoring` verifies the authenticated editor's current `getUserPlanAccess` (Plus/Organizer/Host/Pro, retaining the existing monitor override) and opt-in before querying. Billing/profile errors fail closed. Public reader dictionary access remains independent.
+
+`EnglishAuthoringProvider` scopes all editor dictionary menus and support previews, including nested panels. `RichTextField` uses real lookup results and display-only CSS highlights. The old always-unregistered stub and separate “読む支援” menu are retired. TEXT reading-support attributes keep their existing serialization and are never cleared by opt-out or downgrade. Their current scope is editor confirmation; the public unified viewer still uses reader menu choices. Long-text fallback exposes the same confirmation options without offering Lexical-only selection tools.
+
+`test:english-authoring` checks real route handlers, shared plan rules, React settings, Lexical selection, lookup failure/cancellation, highlights, opt-out/downgrade and preservation of saved TEXT content/attributes against simulated Auth/database responses and DOM geometry. It does not claim signed-in production or visual browser verification.
+
 The old CSV master was already removed in PR #94. Its remaining comparison/batch scripts and 22 derived CSV reports were retired in this cleanup. The three original input lists (`center_exam_words.csv`, `中学英単語.csv`, `高校英単語.csv`) remain as source material for future dictionary coverage work. They are not runtime masters; database coverage of every source word has not been assumed. Database migrations and database contents are unchanged.
 
 ## Verification and recovery

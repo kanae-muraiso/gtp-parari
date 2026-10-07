@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
+import type { DictionaryEntry as LookupEntry, DictionaryResults, DictionaryResult as LookupResult } from "@/lib/parari/english/dictionary";
 import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
 import type {
   RichDocument,
@@ -11,28 +13,6 @@ import {
   isEikenAtOrAboveThreshold,
   type TextReadingSupportOptions,
 } from "@/lib/parari/richText/textReadingSupport";
-
-type LookupEntry = {
-  word: string;
-  lemma: string;
-  pos: string;
-  formType: string;
-  senseId: string;
-  meaningJa: string;
-  eikenLevel: string | null;
-  eikenLevels: string[];
-  entryKind: string;
-};
-
-type LookupResult = {
-  found: boolean;
-  matched: string | null;
-  best: LookupEntry | null;
-};
-
-type BatchResponse = {
-  results?: Record<string, LookupResult>;
-};
 
 type Props = {
   document: RichDocument;
@@ -45,6 +25,9 @@ export default function RichTextReadingSupportRenderer({
   document,
   options,
 }: Props) {
+  const authoring = useEnglishAuthoring();
+  const authoringEnabled = authoring?.enabled;
+  const authoringLookup = authoring?.lookupWords;
   const [lookupMap, setLookupMap] = React.useState<Record<string, LookupResult>>(
     {},
   );
@@ -54,6 +37,7 @@ export default function RichTextReadingSupportRenderer({
 
   React.useEffect(() => {
     if (
+      authoringEnabled === false ||
       words.length === 0 ||
       (!options.dictionary && !options.eikenLevel && !options.notes)
     ) {
@@ -62,24 +46,24 @@ export default function RichTextReadingSupportRenderer({
     }
 
     const controller = new AbortController();
+    setLookupMap({});
 
     async function load() {
       try {
-        const response = await fetch("/api/english/dictionary", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ words }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          return;
+        let results: DictionaryResults;
+        if (authoringLookup) {
+          results = await authoringLookup(words, controller.signal);
+        } else {
+          const response = await fetch("/api/english/dictionary", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ words }),
+            signal: controller.signal,
+          });
+          if (!response.ok) return;
+          results = (await response.json()).results ?? {};
         }
-
-        const json = (await response.json()) as BatchResponse;
-        if (!controller.signal.aborted) {
-          setLookupMap(json.results ?? {});
-        }
+        if (!controller.signal.aborted) setLookupMap(results);
       } catch {
         // 読む支援が取得できなくても本文表示は壊さない。
       }
@@ -90,6 +74,8 @@ export default function RichTextReadingSupportRenderer({
     return () => controller.abort();
   }, [
     wordKey,
+    authoringEnabled,
+    authoringLookup,
     options.dictionary,
     options.eikenLevel,
     options.notes,
@@ -100,7 +86,7 @@ export default function RichTextReadingSupportRenderer({
     [document, lookupMap, options],
   );
 
-  return <RichTextRenderer document={transformed} />;
+  return <RichTextRenderer document={authoringEnabled === false ? document : transformed} />;
 }
 
 function collectWords(document: RichDocument): string[] {
@@ -255,7 +241,7 @@ function SupportedWord({
       {options.dictionary ? (
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }}
           className="inline border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-4 hover:bg-amber-50"
           style={{ font: "inherit" }}
         >
