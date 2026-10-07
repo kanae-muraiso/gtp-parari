@@ -1,9 +1,96 @@
 import "server-only";
 
-import {
-  PARARI_ENGLISH_DICTIONARY_V2_SERVER_ENTRIES,
-  type ParariEnglishDictionaryV2ServerEntry,
-} from "./parariEnglishDictionaryV2.server.generated";
+import fs from "node:fs";
+import path from "node:path";
+
+export type ParariEnglishDictionaryV2ServerEntry = {
+  word: string;
+  lemma: string;
+  pos: string;
+  formType: string;
+  senseId: string;
+  meaningJa: string;
+  eikenLevel: string | null;
+  eikenLevels: string[];
+  level: string;
+  importance: number;
+  entryKind: string;
+  source: string;
+  category: string | null;
+};
+
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  result.push(current);
+  return result;
+}
+
+function loadEntries(): ParariEnglishDictionaryV2ServerEntry[] {
+  const filePath = path.join(
+    process.cwd(),
+    "data",
+    "parari_english_dictionary_master_v2.csv",
+  );
+
+  const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+  const lines = raw.split(/\r?\n/).filter((line) => line.trim() !== "");
+
+  if (lines.length === 0) return [];
+
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line);
+    const row: Record<string, string> = {};
+
+    headers.forEach((header, index) => {
+      row[header] = String(values[index] ?? "").trim();
+    });
+
+    return {
+      word: row.word,
+      lemma: row.lemma,
+      pos: row.pos,
+      formType: row.form_type,
+      senseId: row.sense_id,
+      meaningJa: row.meaning_ja,
+      eikenLevel: row.eiken_level || null,
+      eikenLevels: String(row.eiken_levels || "").split(";").filter(Boolean),
+      level: row.level,
+      importance: Number(row.importance || 1),
+      entryKind: row.entry_kind || "word",
+      source: row.source || "legacy",
+      category: row.category || null,
+    };
+  });
+}
 
 function normalize(value: string): string {
   return String(value ?? "")
@@ -17,7 +104,7 @@ function normalize(value: string): string {
 
 const index = new Map<string, ParariEnglishDictionaryV2ServerEntry[]>();
 
-for (const entry of PARARI_ENGLISH_DICTIONARY_V2_SERVER_ENTRIES) {
+for (const entry of loadEntries()) {
   const key = normalize(entry.word);
   const existing = index.get(key);
 
