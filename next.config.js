@@ -7,13 +7,6 @@ const nextConfig = {
     "kanae-muraiso.lvh.me",
   ],
 
-  transpilePackages: [
-    "gtp-io",
-    "gtp-lint",
-    "gtp-text",
-    "gtp-schema",
-  ],
 };
 
 module.exports = nextConfig;
-

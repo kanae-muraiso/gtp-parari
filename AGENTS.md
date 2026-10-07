@@ -1,6 +1,7 @@
 # PARARI repository workflow
 
 Read `docs/parari/AI_CODE_GUARDRAILS.md` before implementation. Its SSOT and compatibility principles apply to product code.
+Read `docs/parari/SOURCE_MAP.md` before changing editor/viewer entrypoints; extend the active implementation instead of resurrecting retired copies.
 
 ## Source of truth and starting work
 

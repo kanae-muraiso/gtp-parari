@@ -1,22 +1,13 @@
 // src/app/[username]/pages/[workId]/view/page.tsx
-// 2026-06-23 JST
-// PARARI MVP: 本番URL PAGE表示確認画面
+// 2026-10-07 19:30 JST
+// PART: Preserve legacy PAGE URLs and authorization using the canonical viewer
 
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { PagePublicView } from "@/components/parari/mvp/PagePublicView";
-import {
-  createEmptyParariPageDraft,
-  type ParariPageDraft,
-  type ParariPageVisibility,
-} from "@/lib/parari/mvp/pageDocumentTypes";
-import {
-  detectParariDocumentFormat,
-  parsePageDocument,
-} from "@/lib/parari/mvp/pageDocument";
+import PublicViewerShell from "@/components/parari/PublicViewerShell";
 
 type LoadStatus =
   | { type: "loading"; message: string }
@@ -50,10 +41,7 @@ export default function UserPageViewPage() {
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const [draft, setDraft] = useState<ParariPageDraft>(() =>
-    createEmptyParariPageDraft(),
-  );
-  const [isOwner, setIsOwner] = useState(false);
+  const [work, setWork] = useState<PageWorkRow | null>(null);
   const [status, setStatus] = useState<LoadStatus>({
     type: "loading",
     message: "PAGEを読み込んでいます...",
@@ -101,7 +89,6 @@ export default function UserPageViewPage() {
       }
 
       const isOwner = Boolean(user && profile.user_id === user.id);
-      setIsOwner(isOwner);
       const { data, error } = await supabase
         .from("parari_books")
         .select(
@@ -148,25 +135,7 @@ export default function UserPageViewPage() {
         return;
       }
 
-      const content = data.content ?? "";
-      const format = detectParariDocumentFormat(content);
-
-      if (format !== "page") {
-        setStatus({
-          type: "error",
-          message:
-            "この作品は新PAGEフォーマットではありません。旧BOOK作品は従来の表示画面で確認してください。",
-        });
-        return;
-      }
-
-      const parsed = parsePageDocument(content);
-
-      setDraft({
-        ...parsed,
-        title: parsed.title || data.title || "",
-        visibility,
-      });
+      setWork(data);
 
       setStatus({
         type: "ready",
@@ -211,12 +180,14 @@ export default function UserPageViewPage() {
     );
   }
 
+  if (!work) return null;
+
   return (
-          <PagePublicView
-            draft={draft}
-            backHref={`/${routeUsername}/works`}
-            editHref={isOwner ? `/${routeUsername}/pages/${workId}/edit` : undefined}
-          />
+    <PublicViewerShell
+      content={work.content ?? ""}
+      bookId={work.id}
+      ownerId={work.owner}
+    />
   );
 }
 
@@ -236,7 +207,7 @@ function createSupabaseBrowserClient(): SupabaseClient {
 function normalizeVisibility(
   visibility: string | null,
   isPublic: boolean | null,
-): ParariPageVisibility {
+): "private" | "unlisted" | "public" {
   if (visibility === "public") {
     return "public";
   }
