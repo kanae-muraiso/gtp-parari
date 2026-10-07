@@ -5,6 +5,8 @@
 
 "use client";
 
+import { createPortal } from "react-dom";
+import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
   useCallback,
   useEffect,
@@ -68,8 +70,8 @@ import {
 } from "@lexical/selection";
 
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
-import DictionaryUnderlinePlugin from "@/components/parari/english/DictionaryUnderlinePlugin";
-import { dictionaryStatus, normalizeEnglishWord, type DictionaryEntry } from "@/lib/parari/english/dictionary";
+import DictionaryHighlightPlugin from "@/components/parari/english/DictionaryHighlightPlugin";
+import { dictionaryStatus, normalizeEnglishWord, DICTIONARY_MISSING_BACKGROUND, type DictionaryEntry } from "@/lib/parari/english/dictionary";
 import { formatEikenLevelJa, type TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 import { EIKEN_BACKGROUNDS } from "@/lib/parari/english/eikenBackground";
 
@@ -97,6 +99,7 @@ type RichTextFieldProps = {
   panelizeActions?: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
   showDebugLabel?: boolean;
+  englishMenuContainer?: HTMLElement | null;
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
 };
@@ -125,6 +128,7 @@ export function RichTextField({
   panelizeActions = [],
   onPanelizeSelection,
   showDebugLabel = false,
+  englishMenuContainer,
   readingSupport,
   onChangeReadingSupport,
 }: RichTextFieldProps) {
@@ -141,7 +145,7 @@ export function RichTextField({
       const editorShellRef = useRef<HTMLDivElement | null>(null);
     const [richTextActive, setRichTextActive] = useState(false);
     
-    const [dictionaryUnderlineEnabled, setDictionaryUnderlineEnabled] =
+    const [dictionaryMarksEnabled, setDictionaryMarksEnabled] =
       useState(true);
 
     const initialConfig = useMemo(
@@ -200,16 +204,15 @@ export function RichTextField({
                 text-underline-offset: 4px;
               }
               ::highlight(parari-dictionary-missing) {
-                text-decoration: underline solid #f43f5e 2px;
-                text-underline-offset: 4px;
+                background-color: ${DICTIONARY_MISSING_BACKGROUND};
               }
               ${EIKEN_BACKGROUNDS.map(item => `::highlight(parari-eiken-${item.level}) { background-color: ${item.color}; }`).join("\n")}
             `}</style>
             <LexicalComposer initialConfig={initialConfig}>
               <ForceEditablePlugin />
               <SoftReturnPlugin />
-            <DictionaryUnderlinePlugin
-              enabled={dictionaryUnderlineEnabled}
+            <DictionaryHighlightPlugin
+              enabled={dictionaryMarksEnabled}
               colorEnabled={readingSupport?.eikenLevel ?? false}
             />
           <LinkPlugin />
@@ -221,6 +224,7 @@ export function RichTextField({
           />
 
             <RichTextToolbar
+              englishMenuContainer={englishMenuContainer}
               visible={richTextActive}
               readingSupport={readingSupport}
               onChangeReadingSupport={onChangeReadingSupport}
@@ -229,9 +233,9 @@ export function RichTextField({
               onPanelizeSelection={onPanelizeSelection}
               showDebugLabel={showDebugLabel}
               editorShellRef={editorShellRef}
-              dictionaryUnderlineEnabled={dictionaryUnderlineEnabled}
-              onToggleDictionaryUnderline={() =>
-                setDictionaryUnderlineEnabled((current) => !current)
+              dictionaryMarksEnabled={dictionaryMarksEnabled}
+              onToggleDictionaryMarks={() =>
+                setDictionaryMarksEnabled((current) => !current)
               }
             />
             
@@ -349,8 +353,9 @@ function RichTextToolbar({
   onPanelizeSelection,
   showDebugLabel,
   editorShellRef,
-      dictionaryUnderlineEnabled,
-      onToggleDictionaryUnderline,
+      dictionaryMarksEnabled,
+      onToggleDictionaryMarks,
+  englishMenuContainer,
   readingSupport,
   onChangeReadingSupport,
 }: {
@@ -360,8 +365,9 @@ function RichTextToolbar({
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
   showDebugLabel: boolean;
   editorShellRef: MutableRefObject<HTMLDivElement | null>;
-    dictionaryUnderlineEnabled: boolean;
-    onToggleDictionaryUnderline: () => void;
+    dictionaryMarksEnabled: boolean;
+    onToggleDictionaryMarks: () => void;
+  englishMenuContainer?: HTMLElement | null;
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
 }) {
@@ -532,11 +538,6 @@ function RichTextToolbar({
         kind: "link",
         label: "リンク",
         title: "リンク / 注釈",
-      },
-      {
-        kind: "dictionary",
-        label: "辞書",
-        title: "選択した英単語をPARARI辞書で確認",
       },
     ];
 
@@ -758,10 +759,6 @@ function RichTextToolbar({
         return;
       }
 
-      if (action.kind === "dictionary") {
-        handleDictionaryLookup();
-        return;
-      }
       
     if (action.kind === "divider") {
       window.alert("区切り線は次の段階で既存仕様に接続します。");
@@ -790,18 +787,24 @@ function RichTextToolbar({
 
   return (
     <>
+          {englishAuthoring?.enabled && englishMenuContainer ? createPortal(
+            <EnglishAuthoringMenu
+              readingSupport={readingSupport}
+              onChangeReadingSupport={onChangeReadingSupport}
+              marksEnabled={dictionaryMarksEnabled}
+              onToggleMarks={onToggleDictionaryMarks}
+              onLookup={handleDictionaryLookup}
+            />,
+            englishMenuContainer,
+          ) : null}
           <RichTextInlineInsertMenu
             visible={visible}
-            textActions={englishAuthoring?.enabled ? textActions : textActions.filter(action => action.kind !== "dictionary")}
-            readingSupport={readingSupport}
-            onChangeReadingSupport={onChangeReadingSupport}
+            textActions={textActions}
             panelActions={panelActions}
             position={menuPosition}
             onSelect={handleAction}
-            dictionaryUnderlineEnabled={dictionaryUnderlineEnabled}
-            onToggleDictionaryUnderline={onToggleDictionaryUnderline}
           />
-          
+
           {englishAuthoring?.enabled && dictionaryLookup ? (
             <div role="region" aria-label="辞書の確認結果" aria-live="polite" className="fixed bottom-4 right-4 z-[100] max-h-[40vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 shadow-xl">
               <div className="flex items-start justify-between gap-3">

@@ -13,8 +13,6 @@
 "use client";
 
 import { useState } from "react";
-import type { TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
-import { EIKEN_BACKGROUNDS } from "@/lib/parari/english/eikenBackground";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
 
 export type RichTextInlineMenuAction =
@@ -35,11 +33,6 @@ export type RichTextInlineMenuAction =
       label: string;
       title?: string;
     }
-| {
-  kind: "dictionary";
-  label: string;
-  title?: string;
-}
   | {
       kind: "link";
       label: string;
@@ -89,15 +82,10 @@ type RichTextInlineInsertMenuProps = {
   position?: RichTextInlineMenuPosition | null;
   onSelect: (action: RichTextInlineMenuAction) => void;
 
-  readingSupport?: TextReadingSupportOptions;
-  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
-  dictionaryUnderlineEnabled?: boolean;
-  onToggleDictionaryUnderline?: () => void;
 };
 
 type OpenMenu =
   | "link"
-  | "dictionary"
   | "media"
   | "panel"
   | "structure"
@@ -129,10 +117,6 @@ export function RichTextInlineInsertMenu({
   panelActions,
   position,
   onSelect,
-  readingSupport,
-  onChangeReadingSupport,
-  dictionaryUnderlineEnabled = false,
-  onToggleDictionaryUnderline,
 }: RichTextInlineInsertMenuProps) {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
 
@@ -158,16 +142,6 @@ export function RichTextInlineInsertMenu({
     STRUCTURE_TAGS,
   );
 
-    const dictionaryAction =
-      textActions.find(
-        (action) => action.kind === "dictionary",
-      ) ?? null;
-
-    const directTextActions =
-      textActions.filter(
-        (action) => action.kind !== "dictionary",
-      );
-    
   const closeMenu = () => {
     setOpenMenu(null);
   };
@@ -200,7 +174,7 @@ export function RichTextInlineInsertMenu({
   return (
     <div className="sticky top-[56px] z-40 -mx-3 mb-2 border-b border-neutral-200 bg-neutral-100/95 px-3 py-1 shadow-sm backdrop-blur">
       <div className="flex max-w-full flex-wrap items-center gap-1 overflow-visible">
-          {directTextActions.map((action) => (
+          {textActions.map((action) => (
           <ToolbarButton
             key={getActionKey(action)}
             action={action}
@@ -212,23 +186,6 @@ export function RichTextInlineInsertMenu({
           />
         ))}
 
-          {dictionaryAction ? (
-            <EnglishAuthoringMenu
-              readingSupport={readingSupport}
-              onChangeReadingSupport={onChangeReadingSupport}
-              open={openMenu === "dictionary"}
-              underlineEnabled={dictionaryUnderlineEnabled}
-              onToggle={() => toggleMenu("dictionary")}
-              onLookup={() => {
-                closeMenu();
-                onSelect(dictionaryAction);
-              }}
-              onToggleUnderline={() => {
-                onToggleDictionaryUnderline?.();
-              }}
-            />
-          ) : null}
-          
         {mediaActions.length > 0 ? (
           <ToolbarDropdown
             label="メディア"
@@ -293,89 +250,6 @@ export function RichTextInlineInsertMenu({
         </div>
       ) : null}
     </div>
-  );
-}
-
-export function EnglishAuthoringMenu({
-  open, underlineEnabled = false, onToggle, onLookup, onToggleUnderline,
-  readingSupport, onChangeReadingSupport,
-}: {
-  open: boolean;
-  underlineEnabled?: boolean;
-  onToggle: () => void;
-  onLookup?: () => void;
-  onToggleUnderline?: () => void;
-  readingSupport?: TextReadingSupportOptions;
-  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
-}) {
-  return (
-    <div className="sm:relative" onKeyDown={event => { if (open && event.key === "Escape") { event.stopPropagation(); onToggle(); } }}>
-      <button type="button" onMouseDown={event => event.preventDefault()} onClick={onToggle}
-        className="rounded-full border border-neutral-300 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-100"
-        aria-expanded={open}>
-        英語教材支援 ▾
-      </button>
-      {open ? (
-        <div role="group" aria-label="英語教材支援" className="absolute inset-x-2 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto sm:inset-x-auto sm:right-0 sm:w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
-          {onLookup ? <p className="mb-2 text-[11px] leading-5 text-neutral-600">編集中も単語をクリックすると辞書が開きます。灰色の点線は登録語、赤い実線は未登録語です。</p> : null}
-          {onLookup ? <button type="button" onMouseDown={event => event.preventDefault()} onClick={onLookup}
-            className="block w-full rounded-lg py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-neutral-100">選択語を辞書で確認</button> : null}
-          {onToggleUnderline ? <ReadingSupportToggle label="辞書の下線を表示（編集中）" checked={underlineEnabled} onChange={onToggleUnderline} /> : null}
-          {readingSupport && onChangeReadingSupport ? (
-            <div className="mt-3 border-t border-neutral-200 pt-3">
-              <ReadingSupportToggle label="英検級で色分け" checked={readingSupport.eikenLevel} onChange={checked => onChangeReadingSupport({ ...readingSupport, eikenLevel: checked })} />
-              {readingSupport.eikenLevel ? <div aria-label="英検級の色分け凡例" className="my-2 text-[11px] leading-5 text-neutral-700">
-                <div className="flex flex-wrap gap-1">
-                  {EIKEN_BACKGROUNDS.map(item => <span key={item.level} className="rounded px-2 text-neutral-900" style={{ backgroundColor: item.color }}>{item.label}</span>)}
-                </div>
-                <p className="mt-1">3〜5級・級不明は背景色なし。赤い下線は辞書未登録です。</p>
-              </div> : null}
-              <ReadingSupportToggle label="単語をクリックして意味を表示（完了後）" checked={readingSupport.dictionary} onChange={checked => onChangeReadingSupport({ ...readingSupport, dictionary: checked })} />
-              <p className="mt-3 text-[10px] leading-4 text-neutral-500">{onLookup ? "色分けは編集中と「完了」後の本文に表示されます。" : "色分けは「完了」後の本文で確認できます。"}公開画面の表示は読者メニューで切り替えます。</p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ReadingSupportToggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onMouseDown={event => event.preventDefault()}
-      onClick={(event) => {
-        event.stopPropagation();
-        onChange(!checked);
-      }}
-      className="flex w-full items-center justify-between gap-3 border-b border-neutral-100 py-2 text-left text-xs text-neutral-700 last:border-b-0"
-    >
-      <span>{label}</span>
-      <span
-        className={[
-          "inline-flex h-5 w-9 items-center rounded-full p-0.5 transition",
-          checked ? "bg-neutral-900" : "bg-neutral-200",
-        ].join(" ")}
-      >
-        <span
-          className={[
-            "h-4 w-4 rounded-full bg-white shadow-sm transition",
-            checked ? "translate-x-4" : "translate-x-0",
-          ].join(" ")}
-        />
-      </span>
-    </button>
   );
 }
 

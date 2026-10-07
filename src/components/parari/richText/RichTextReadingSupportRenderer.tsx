@@ -237,7 +237,7 @@ function SupportedWord({
         <button
           type="button"
           onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }}
-          className={`inline border-0 bg-transparent p-0 text-inherit underline underline-offset-4 ${entry ? DICTIONARY_MARK_CLASSES.known : DICTIONARY_MARK_CLASSES.missing} hover:bg-neutral-50`}
+          className={`inline border-0 p-0 text-inherit underline-offset-4 ${entry ? `${DICTIONARY_MARK_CLASSES.known} hover:bg-neutral-50` : DICTIONARY_MARK_CLASSES.missing}`}
           style={{ font: "inherit", backgroundColor }}
           title={options.eikenLevel ? formatEikenLevelJa(entry?.eikenLevel) || undefined : undefined}
         >

@@ -13,7 +13,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
-import { EnglishAuthoringMenu } from "./RichTextInlineInsertMenu";
+import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
   hasTextReadingSupport,
   type TextReadingSupportOptions,
@@ -82,7 +82,7 @@ export function RichTextPanelEditor({
   panelizeActions = DEFAULT_PANELIZE_ACTIONS,
 }: RichTextPanelEditorProps) {
   const [mode, setMode] = useState<RichTextPanelMode>("view");
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [englishMenuContainer, setEnglishMenuContainer] = useState<HTMLDivElement | null>(null);
   const englishAuthoring = useEnglishAuthoring();
 
   const handlePanelizeSelection = (payload: RichTextPanelizePayload) => {
@@ -175,8 +175,10 @@ export function RichTextPanelEditor({
         </div>
 
         <div className="relative flex shrink-0 items-center gap-1.5">
-          {englishAuthoring?.enabled && ssotText.length > LONG_TEXT_THRESHOLD ? (
-            <EnglishAuthoringMenu open={settingsOpen} onToggle={() => setSettingsOpen(value => !value)} readingSupport={readingSupport} onChangeReadingSupport={onChangeReadingSupport} />
+          {englishAuthoring?.enabled ? (
+            ssotText.length > LONG_TEXT_THRESHOLD ? (
+              <EnglishAuthoringMenu readingSupport={readingSupport} onChangeReadingSupport={onChangeReadingSupport} />
+            ) : <div ref={setEnglishMenuContainer} />
           ) : null}
 
           <button
@@ -209,6 +211,7 @@ export function RichTextPanelEditor({
           />
         ) : (
           <RichTextField
+            englishMenuContainer={englishMenuContainer}
             readingSupport={readingSupport}
             onChangeReadingSupport={onChangeReadingSupport}
             value={ssotText}

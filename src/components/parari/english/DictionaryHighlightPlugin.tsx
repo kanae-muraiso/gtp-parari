@@ -5,20 +5,20 @@ import { useEffect, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useEnglishAuthoring } from "./EnglishAuthoringProvider";
 import { dictionaryStatus, normalizeEnglishWord, type DictionaryResults } from "@/lib/parari/english/dictionary";
-import { EIKEN_BACKGROUNDS } from "@/lib/parari/english/eikenBackground";
+import { EIKEN_BACKGROUNDS, eikenBackgroundLevel } from "@/lib/parari/english/eikenBackground";
 
 const KNOWN_NAME = "parari-dictionary-known";
 const MISSING_NAME = "parari-dictionary-missing";
 const WORDS = /[A-Za-z]+(?:[’'][A-Za-z]+)*/g;
 const COLOR_NAMES = EIKEN_BACKGROUNDS.map(item => `parari-eiken-${item.level}`);
-const roots = new Map<HTMLElement, { results: DictionaryResults; underline: boolean; colors: boolean }>();
+const roots = new Map<HTMLElement, { results: DictionaryResults; marks: boolean; colors: boolean }>();
 
 function rebuild() {
   const registry = (globalThis.CSS as unknown as { highlights?: Map<string, unknown> } | undefined)?.highlights;
   const Highlight = (window as unknown as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
   if (!registry || !Highlight) return false;
   const ranges = new Map<string, Range[]>([KNOWN_NAME, MISSING_NAME, ...COLOR_NAMES].map(name => [name, []]));
-  for (const [root, { results, underline, colors }] of roots) {
+  for (const [root, { results, marks, colors }] of roots) {
     if (!root.isConnected) continue;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node: Node | null;
@@ -31,8 +31,8 @@ function rebuild() {
         const range = document.createRange();
         range.setStart(node, match.index);
         range.setEnd(node, match.index + match[0].length);
-        if (underline) ranges.get(status === "known" ? KNOWN_NAME : MISSING_NAME)!.push(range);
-        if (colors && status === "known") ranges.get(`parari-eiken-${result.best?.eikenLevel}`)?.push(range);
+        if (marks) ranges.get(status === "known" ? KNOWN_NAME : MISSING_NAME)!.push(range);
+        if (colors && status === "known") ranges.get(`parari-eiken-${eikenBackgroundLevel(result.best?.eikenLevel)}`)?.push(range);
       }
     }
   }
@@ -43,7 +43,7 @@ function rebuild() {
   return true;
 }
 
-export default function DictionaryUnderlinePlugin({ enabled, colorEnabled = false }: { enabled: boolean; colorEnabled?: boolean }) {
+export default function DictionaryHighlightPlugin({ enabled, colorEnabled = false }: { enabled: boolean; colorEnabled?: boolean }) {
   const [editor] = useLexicalComposerContext();
   const support = useEnglishAuthoring();
   const lookup = support?.lookupWords;
@@ -54,7 +54,7 @@ export default function DictionaryUnderlinePlugin({ enabled, colorEnabled = fals
     setError("");
     if (!active || !lookup) return;
     if (!rebuild()) {
-      setError("このブラウザーは編集中の下線・色分けに対応していません。色分けは「完了」後に確認できます。単語のクリックや選択語の辞書確認は利用できます。");
+      setError("このブラウザーは編集中の目印・色分けに対応していません。色分けは「完了」後に確認できます。単語のクリックや選択語の辞書確認は利用できます。");
       return;
     }
     let timer: ReturnType<typeof setTimeout>;
@@ -77,7 +77,7 @@ export default function DictionaryUnderlinePlugin({ enabled, colorEnabled = fals
         try {
           const results = words.length ? await lookup(words, request.signal) : {};
           if (request.signal.aborted) return;
-          roots.set(root, { results, underline: enabled, colors: colorEnabled });
+          roots.set(root, { results, marks: enabled, colors: colorEnabled });
           rebuild();
           setError("");
         } catch {

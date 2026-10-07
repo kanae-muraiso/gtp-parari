@@ -35,6 +35,8 @@ export function dictionaryStatus(result: DictionaryResult | undefined): "known" 
 }
 
 export const DICTIONARY_MARK_CLASSES = {
-  known: "decoration-dotted decoration-neutral-400",
-  missing: "decoration-solid decoration-rose-500 decoration-2",
+  known: "underline decoration-dotted decoration-neutral-400",
+  missing: "bg-red-200 hover:bg-red-300",
 } as const;
+
+export const DICTIONARY_MISSING_BACKGROUND = "#fecaca";

@@ -734,11 +734,11 @@ function NoteInline({
           setActiveNoteKey((current) => (current === noteKey ? null : noteKey));
         }}
         className={[
-          "inline rounded px-0.5 text-inherit underline underline-offset-4",
+          "inline rounded px-0.5 text-inherit underline-offset-4",
           tone === "ruby"
-            ? "decoration-dotted decoration-neutral-400 hover:bg-sky-50"
+            ? "underline decoration-dotted decoration-neutral-400 hover:bg-sky-50"
             : tone === "missing"
-              ? `${DICTIONARY_MARK_CLASSES.missing} hover:bg-rose-50`
+              ? DICTIONARY_MARK_CLASSES.missing
               : `${DICTIONARY_MARK_CLASSES.known} hover:bg-amber-50`,
         ].join(" ")}
       >
