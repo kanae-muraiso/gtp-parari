@@ -27,6 +27,46 @@ type DictionaryRow = {
   updated_at: string;
 };
 
+type DictionaryBatchItem = {
+  found: boolean;
+  matched: string | null;
+  best: {
+    word: string;
+    lemma: string;
+    meaningJa: string;
+    eikenLevel: string | null;
+  } | null;
+};
+
+type CheckedWord = {
+  word: string;
+  count: number;
+  found: boolean;
+  entry: DictionaryBatchItem["best"];
+};
+
+const ENGLISH_WORD_PATTERN = /[A-Za-z]+(?:[’'][A-Za-z]+)*/g;
+
+function normalizeCheckedWord(value: string): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/[’‘`]/g, "'")
+    .toLowerCase();
+}
+
+function extractCheckedWords(text: string): Array<{ word: string; count: number }> {
+  const matches = String(text ?? "").match(ENGLISH_WORD_PATTERN) ?? [];
+  const counts = new Map<string, number>();
+
+  for (const raw of matches) {
+    const word = normalizeCheckedWord(raw);
+    if (!word) continue;
+    counts.set(word, (counts.get(word) ?? 0) + 1);
+  }
+
+  return Array.from(counts, ([word, count]) => ({ word, count }));
+}
+
 const EMPTY_ROW: Omit<DictionaryRow, "id" | "updated_at"> = {
   word: "",
   lemma: "",
@@ -68,8 +108,14 @@ export default function EnglishDictionaryAdminPage() {
   const [draft, setDraft] = useState<DictionaryRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState("");
+  const [checkText, setCheckText] = useState("");
+  const [checkedWords, setCheckedWords] = useState<CheckedWord[]>([]);
+  const [checkingWords, setCheckingWords] = useState(false);
+  const [checkMessage, setCheckMessage] = useState("");
 
   const totalPages = Math.max(1, Math.ceil(count / 50));
+  const missingWords = checkedWords.filter((item) => !item.found);
+  const registeredWords = checkedWords.filter((item) => item.found);
 
   async function load(nextPage = page, nextQuery = query) {
     setLoading(true);
@@ -116,6 +162,78 @@ export default function EnglishDictionaryAdminPage() {
     setDraft(row);
     setCreating(true);
     setMessage("");
+  }
+
+  function startCreateWithWord(word: string) {
+    const now = new Date().toISOString();
+    const row = {
+      id: 0,
+      updated_at: now,
+      ...EMPTY_ROW,
+      word,
+      lemma: word,
+    } as DictionaryRow;
+    setSelected(null);
+    setDraft(row);
+    setCreating(true);
+    setMessage(`${word} を新規登録します。`);
+  }
+
+  async function checkDictionaryCoverage() {
+    const words = extractCheckedWords(checkText);
+
+    if (words.length === 0) {
+      setCheckedWords([]);
+      setCheckMessage("英単語が見つかりませんでした。");
+      return;
+    }
+
+    setCheckingWords(true);
+    setCheckMessage("");
+
+    try {
+      const response = await fetch("/api/english/dictionary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ words: words.map((item) => item.word) }),
+      });
+      const json = (await response.json()) as {
+        results?: Record<string, DictionaryBatchItem>;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(json.error || "辞書照合に失敗しました。");
+      }
+
+      const results = json.results ?? {};
+      const next = words.map((item) => {
+        const result = results[item.word];
+        return {
+          word: item.word,
+          count: item.count,
+          found: Boolean(result?.found),
+          entry: result?.best ?? null,
+        };
+      });
+
+      next.sort((a, b) => {
+        if (a.found !== b.found) return a.found ? 1 : -1;
+        return a.word.localeCompare(b.word);
+      });
+
+      setCheckedWords(next);
+      setCheckMessage(
+        `全${words.length}語中、未登録${next.filter((item) => !item.found).length}語です。`,
+      );
+    } catch (error) {
+      setCheckedWords([]);
+      setCheckMessage(
+        error instanceof Error ? error.message : "辞書照合に失敗しました。",
+      );
+    } finally {
+      setCheckingWords(false);
+    }
   }
 
   async function save() {
@@ -208,6 +326,102 @@ export default function EnglishDictionaryAdminPage() {
             検索
           </button>
         </form>
+
+        <section className="mt-6 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold text-neutral-950">未登録語チェック</div>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">
+                英文を貼ると、PARARI辞書にない単語を先頭にまとめます。
+              </p>
+            </div>
+            {checkedWords.length > 0 ? (
+              <div className="flex gap-2 text-[11px]">
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-600">
+                  登録済み {registeredWords.length}
+                </span>
+                <span className="rounded-full bg-rose-50 px-2.5 py-1 font-bold text-rose-700">
+                  未登録 {missingWords.length}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <textarea
+            value={checkText}
+            onChange={(event) => setCheckText(event.target.value)}
+            placeholder="ここに英文を貼り付けます"
+            rows={6}
+            className="mt-4 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm leading-6 outline-none focus:border-neutral-400"
+          />
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void checkDictionaryCoverage()}
+              disabled={checkingWords}
+              className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {checkingWords ? "照合中…" : "辞書と照合"}
+            </button>
+            {checkMessage ? (
+              <span className="text-xs text-neutral-500">{checkMessage}</span>
+            ) : null}
+          </div>
+
+          {checkedWords.length > 0 ? (
+            <div className="mt-5 border-t border-neutral-100 pt-4">
+              {missingWords.length > 0 ? (
+                <>
+                  <div className="mb-2 text-[11px] font-bold tracking-[0.08em] text-rose-700">
+                    未登録語
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {missingWords.map((item) => (
+                      <button
+                        key={item.word}
+                        type="button"
+                        onClick={() => startCreateWithWord(item.word)}
+                        title="クリックして辞書へ追加"
+                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition hover:bg-rose-100"
+                      >
+                        {item.word}
+                        {item.count > 1 ? ` ×${item.count}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
+                  未登録語はありません。
+                </div>
+              )}
+
+              {registeredWords.length > 0 ? (
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-[11px] font-bold text-neutral-400">
+                    登録済み {registeredWords.length}語も表示
+                  </summary>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {registeredWords.map((item) => (
+                      <span
+                        key={item.word}
+                        title={[
+                          item.entry?.lemma ? `lemma: ${item.entry.lemma}` : "",
+                          item.entry?.meaningJa ?? "",
+                        ].filter(Boolean).join(" / ")}
+                        className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs text-neutral-500"
+                      >
+                        {item.word}
+                        {item.count > 1 ? ` ×${item.count}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
 
         {message ? (
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-xs text-neutral-600">
