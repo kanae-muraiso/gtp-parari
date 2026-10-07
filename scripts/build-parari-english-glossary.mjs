@@ -119,7 +119,7 @@ function shouldUseRow(row) {
 function makeEntry(row) {
   const word = String(row.word ?? "").trim();
   const lemma = String(row.lemma ?? "").trim() || word;
-  const pos = String(row.pos ?? "").trim() || "noun";
+  const pos = String(row.pos ?? "").trim() || "unknown";
   const formType = String(row.form_type ?? "").trim() || "base";
   const senseId = String(row.sense_id ?? "").trim() || "1";
   const meaningJa = String(row.meaning_ja ?? "").trim();

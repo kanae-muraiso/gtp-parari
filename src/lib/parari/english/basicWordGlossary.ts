@@ -28,7 +28,8 @@ export type ParariEnglishGlossaryEntry = {
     | "noun"
     | "verb"
     | "adjective"
-    | "adverb";
+    | "adverb"
+    | "unknown";
   formType:
     | "base"
     | "variant"
