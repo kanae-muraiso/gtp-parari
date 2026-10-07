@@ -94,12 +94,20 @@ export default function OperationsPage() {
           </div>
 
           {isSuperuser ? (
-            <Link
-              href="/my/operations/admin"
-              className="shrink-0 rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
-            >
-              運営資格管理
-            </Link>
+            <div className="flex shrink-0 gap-2">
+              <Link
+                href="/my/operations/dictionary"
+                className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+              >
+                英語辞書
+              </Link>
+              <Link
+                href="/my/operations/admin"
+                className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+              >
+                運営資格管理
+              </Link>
+            </div>
           ) : null}
         </div>
 
