@@ -12,7 +12,10 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import type { TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
+import {
+  hasTextReadingSupport,
+  type TextReadingSupportOptions,
+} from "@/lib/parari/richText/textReadingSupport";
 import {
   panelizeMarkedText,
   type PanelizeTag,
@@ -23,6 +26,7 @@ import {
 } from "./RichTextField";
 import type { RichTextPanelReplaceResult } from "./richTextPanelTypes";
 import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
+import RichTextReadingSupportRenderer from "@/components/parari/richText/RichTextReadingSupportRenderer";
 import { parseRichText } from "@/lib/parari/richText/parseRichText";
 
 type RichTextPanelMode = "view" | "edit";
@@ -135,7 +139,16 @@ export function RichTextPanelEditor({
       >
         {hasVisibleRichText(ssotText) ? (
           <div className="px-0 py-0">
-            <RichTextRenderer document={parseRichText(normalizeRichTextPreviewSource(ssotText))} />
+            {readingSupport && hasTextReadingSupport(readingSupport) ? (
+              <RichTextReadingSupportRenderer
+                document={parseRichText(normalizeRichTextPreviewSource(ssotText))}
+                options={readingSupport}
+              />
+            ) : (
+              <RichTextRenderer
+                document={parseRichText(normalizeRichTextPreviewSource(ssotText))}
+              />
+            )}
           </div>
         ) : (
           <div className="text-neutral-300">{placeholder}</div>
