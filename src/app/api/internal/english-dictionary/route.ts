@@ -71,7 +71,7 @@ async function recordHistory(args: {
 
 export async function GET(request: NextRequest) {
   const auth = await authenticateInternalAdmin(request);
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json({ error: auth.message }, { status: auth.status });
   }
 
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateInternalAdmin(request);
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json({ error: auth.message }, { status: auth.status });
   }
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const auth = await authenticateInternalAdmin(request);
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json({ error: auth.message }, { status: auth.status });
   }
 
