@@ -1,6 +1,7 @@
 export type TextReadingSupportOptions = {
   dictionary: boolean;
   eikenLevel: boolean;
+  // Retain legacy attributes for SSOT compatibility; inline notes are no longer displayed.
   notes: boolean;
   noteFrom: "all" | "5" | "4" | "3" | "pre2" | "2" | "pre1" | "1";
 };
@@ -69,21 +70,7 @@ export function serializeTextReadingSupportAttrs(
 export function hasTextReadingSupport(
   options: TextReadingSupportOptions,
 ): boolean {
-  return options.dictionary || options.eikenLevel || options.notes;
-}
-
-export function isEikenAtOrAboveThreshold(
-  level: string | null | undefined,
-  threshold: TextReadingSupportOptions["noteFrom"],
-): boolean {
-  if (!level) return false;
-  if (threshold === "all") return true;
-
-  const order = ["5", "4", "3", "pre2", "2", "pre1", "1"];
-  const levelIndex = order.indexOf(level);
-  const thresholdIndex = order.indexOf(threshold);
-
-  return levelIndex >= 0 && thresholdIndex >= 0 && levelIndex >= thresholdIndex;
+  return options.dictionary || options.eikenLevel;
 }
 
 export function formatEikenLevelJa(level: string | null | undefined): string {

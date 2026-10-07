@@ -3,6 +3,7 @@
 import React from "react";
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
 import { dictionaryStatus, DICTIONARY_MARK_CLASSES, type DictionaryEntry as LookupEntry, type DictionaryResults, type DictionaryResult as LookupResult } from "@/lib/parari/english/dictionary";
+import { eikenBackgroundColor } from "@/lib/parari/english/eikenBackground";
 import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
 import type {
   RichDocument,
@@ -10,7 +11,6 @@ import type {
 } from "@/lib/parari/richText/types";
 import {
   formatEikenLevelJa,
-  isEikenAtOrAboveThreshold,
   type TextReadingSupportOptions,
 } from "@/lib/parari/richText/textReadingSupport";
 
@@ -39,7 +39,7 @@ export default function RichTextReadingSupportRenderer({
     if (
       authoringEnabled === false ||
       words.length === 0 ||
-      (!options.dictionary && !options.eikenLevel && !options.notes)
+      (!options.dictionary && !options.eikenLevel)
     ) {
       setLookupMap({});
       return;
@@ -78,7 +78,6 @@ export default function RichTextReadingSupportRenderer({
     authoringLookup,
     options.dictionary,
     options.eikenLevel,
-    options.notes,
   ]);
 
   const transformed = React.useMemo(
@@ -230,12 +229,7 @@ function SupportedWord({
   options: TextReadingSupportOptions;
 }) {
   const [open, setOpen] = React.useState(false);
-  const showNote =
-    options.notes &&
-    !!entry && isEikenAtOrAboveThreshold(entry.eikenLevel, options.noteFrom);
-  const eikenLabel = options.eikenLevel
-    ? formatEikenLevelJa(entry?.eikenLevel)
-    : "";
+  const backgroundColor = options.eikenLevel ? eikenBackgroundColor(entry?.eikenLevel) : undefined;
 
   return (
     <span className="relative inline">
@@ -244,25 +238,14 @@ function SupportedWord({
           type="button"
           onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }}
           className={`inline border-0 bg-transparent p-0 text-inherit underline underline-offset-4 ${entry ? DICTIONARY_MARK_CLASSES.known : DICTIONARY_MARK_CLASSES.missing} hover:bg-neutral-50`}
-          style={{ font: "inherit" }}
+          style={{ font: "inherit", backgroundColor }}
+          title={options.eikenLevel ? formatEikenLevelJa(entry?.eikenLevel) || undefined : undefined}
         >
           {surface}
         </button>
       ) : (
-        <span>{surface}</span>
+        <span style={{ backgroundColor }} title={options.eikenLevel ? formatEikenLevelJa(entry?.eikenLevel) || undefined : undefined}>{surface}</span>
       )}
-
-      {eikenLabel ? (
-        <span className="ml-0.5 align-super text-[9px] font-semibold text-neutral-400">
-          {eikenLabel.replace("英検", "")}
-        </span>
-      ) : null}
-
-      {showNote ? (
-        <span className="ml-1 text-[10px] text-neutral-500">
-          （{entry?.meaningJa}）
-        </span>
-      ) : null}
 
       {open ? (
         <span className="absolute left-0 top-[1.6em] z-50 w-64 rounded-xl border border-neutral-200 bg-white p-3 text-left text-xs font-normal leading-5 text-neutral-700 shadow-xl">

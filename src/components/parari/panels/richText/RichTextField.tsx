@@ -71,6 +71,7 @@ import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthorin
 import DictionaryUnderlinePlugin from "@/components/parari/english/DictionaryUnderlinePlugin";
 import { dictionaryStatus, normalizeEnglishWord, type DictionaryEntry } from "@/lib/parari/english/dictionary";
 import { formatEikenLevelJa, type TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
+import { EIKEN_BACKGROUNDS } from "@/lib/parari/english/eikenBackground";
 
 type DictionaryLookupState =
   | { kind: "result"; word: string; entry: DictionaryEntry | null }
@@ -187,7 +188,7 @@ export function RichTextField({
           setRichTextActive(true);
         }}
         onBlurCapture={event => {
-          // Keep the toolbar mounted while its switches or level selector have focus.
+          // Keep the toolbar mounted while its controls have focus.
           if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
           isRichTextEditingRef.current = false;
           setRichTextActive(false);
@@ -202,12 +203,14 @@ export function RichTextField({
                 text-decoration: underline solid #f43f5e 2px;
                 text-underline-offset: 4px;
               }
+              ${EIKEN_BACKGROUNDS.map(item => `::highlight(parari-eiken-${item.level}) { background-color: ${item.color}; }`).join("\n")}
             `}</style>
             <LexicalComposer initialConfig={initialConfig}>
               <ForceEditablePlugin />
               <SoftReturnPlugin />
             <DictionaryUnderlinePlugin
               enabled={dictionaryUnderlineEnabled}
+              colorEnabled={readingSupport?.eikenLevel ?? false}
             />
           <LinkPlugin />
 
