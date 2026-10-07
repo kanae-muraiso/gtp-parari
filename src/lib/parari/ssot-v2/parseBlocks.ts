@@ -291,7 +291,12 @@ export function parseBlocks(
 
     if (openBlock.kind === "text") {
       if (tagInfo) {
-        flushTextBlock(openBlock.start, line.start, openBlock.explicit);
+        flushTextBlock(
+          openBlock.start,
+          line.start,
+          openBlock.explicit,
+          openBlock.attrs,
+        );
 
         if (isSingleLinePanelTag(tagInfo)) {
           flushPanelBlock(line.start, line.end, tagInfo);
