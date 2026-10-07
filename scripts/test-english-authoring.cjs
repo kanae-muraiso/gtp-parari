@@ -28,6 +28,8 @@ let saveFails = false;
 let pendingLookup = null;
 const authListeners = new Set();
 const row = { word: 'acquire', normalized_word: 'acquire', lemma: 'acquire', pos: 'verb', form_type: 'base', sense_id: '1', meaning_ja: '獲得する', eiken_level: '2', eiken_levels: ['2'], entry_kind: 'word', importance: 1, active: true };
+// Fixture grades cover the full palette, lower grades and a registered word without a grade.
+const extraRows = [['apex', '1'], ['advanced', 'pre1'], ['ready', 'pre2'], ['simple', '3'], ['easy', '4'], ['basic', '5'], ['unrated', null]].map(([word, level]) => ({ ...row, word, normalized_word: word, lemma: word, eiken_level: level, eiken_levels: level ? [level] : [] }));
 const admin = {
   auth: { getUser: async token => ({ data: { user: token === 'test-token' ? user : null }, error: null }) },
   from(table) {
@@ -40,7 +42,7 @@ const admin = {
       then(resolve, reject) {
         if (table === 'parari_english_dictionary') dictionaryReads++;
         if (table !== 'parari_english_dictionary') assert.deepEqual(filters, [['user_id', 'editor-user']], 'Use authenticated editor, not work owner or request body');
-        let data = table === 'user_billing' ? billing : table === 'profiles' ? { is_monitor: monitor } : [row].filter(r => filters.every(([key, value]) => Array.isArray(value) ? value.includes(r[key]) : r[key] === value));
+        let data = table === 'user_billing' ? billing : table === 'profiles' ? { is_monitor: monitor } : [row, ...extraRows].filter(r => filters.every(([key, value]) => Array.isArray(value) ? value.includes(r[key]) : r[key] === value));
         return Promise.resolve({ data: failTable === table ? null : data, error: failTable === table ? { message: 'fixture failure' } : null }).then(resolve, reject);
       },
     };
@@ -219,8 +221,44 @@ async function edit() {
   assert.equal(user.user_metadata.display_name, 'Keep me');
   assert.equal(button('英語教材支援を有効にする').getAttribute('aria-checked'), 'true');
 
+  const paletteText = 'Apex Advanced Acquire Ready Simple Easy Basic Unrated unknown.';
+  const palette = [
+    ['Apex', '1', 'rgb(251, 146, 60)', '#fb923c'],
+    ['Advanced', 'pre1', 'rgb(253, 186, 116)', '#fdba74'],
+    ['Acquire', '2', 'rgb(252, 211, 77)', '#fcd34d'],
+    ['Ready', 'pre2', 'rgb(254, 240, 138)', '#fef08a'],
+  ];
+  await mount(panel(paletteText));
+  assert.equal(document.body.textContent, paletteText, 'Legacy notes and grade labels must not lengthen the body');
+  for (const [word, , background] of palette) assert.equal(button(word).style.backgroundColor, background);
+  for (const word of ['Simple', 'Easy', 'Basic', 'Unrated', 'unknown']) assert.equal(button(word).style.backgroundColor, '');
+  assert.equal(button('Apex').title, '英検1級', 'Grade remains available without relying on color alone');
+  await edit(); await settle(300);
+  for (const [word, grade, , hex] of palette) {
+    assert.deepEqual(CSS.highlights.get(`parari-eiken-${grade}`)?.ranges.map(range => range.toString()), [word]);
+    assert.ok(document.querySelector('style').textContent.includes(`::highlight(parari-eiken-${grade}) { background-color: ${hex}; }`));
+  }
+  assert.equal(CSS.highlights.size, 6, 'Only four grade backgrounds and the two dictionary marks');
+  await clickEditorWord('Apex');
+  assert.match(document.querySelector('[aria-label="辞書の確認結果"]').textContent, /英検1級/);
+  await click('辞書確認を閉じる');
+  await click('英語教材支援 ▾');
+  assert.doesNotMatch(document.body.textContent, /語注|英検級を表示/);
+  assert.equal(document.querySelector('select'), null, 'No annotation threshold selector');
+  assert.ok(document.querySelector('[aria-label="英検級の色分け凡例"]'));
+  await click('英検級で色分け'); await settle(300);
+  assert.equal([...CSS.highlights.keys()].some(name => name.startsWith('parari-eiken-')), false);
+  assert.ok(CSS.highlights.has('parari-dictionary-missing'), 'Turning colors off keeps missing-word marks');
+  await click('英検級で色分け'); await settle(300);
+  assert.equal([...CSS.highlights.keys()].filter(name => name.startsWith('parari-eiken-')).length, 4);
+  assert.match(attrs, /notes:on noteFrom:3/, 'Retired annotation attributes remain intact');
+  await click('完了');
+  assert.equal(document.body.textContent, paletteText, 'Completing editing adds no translations or grade labels');
+  for (const [word, , background] of palette) assert.equal(button(word).style.backgroundColor, background);
+  assert.deepEqual(textChanges, [], 'Display toggles never rewrite the text');
+
   await mount(panel());
-  assert.match(document.body.textContent, /獲得する/);
+  assert.equal(document.body.textContent, 'Acquire unknown.');
   assert.ok(button('Acquire').classList.contains('decoration-neutral-400'));
   assert.ok(button('unknown').classList.contains('decoration-rose-500'));
   await click('unknown');
@@ -267,22 +305,23 @@ async function edit() {
   assert.equal(document.querySelector('[aria-label="辞書確認を閉じる"]'), null, 'Closing cancels stale lookup result');
 
   await click('英語教材支援 ▾'); await click('辞書の下線を表示（編集中）');
+  await settle(300);
   assert.equal(CSS.highlights.has('parari-dictionary-known'), false);
   assert.equal(CSS.highlights.has('parari-dictionary-missing'), false);
+  assert.deepEqual(CSS.highlights.get('parari-eiken-2')?.ranges.map(range => range.toString()), ['Acquire'], 'Colors work independently of underlines');
   failTable = 'parari_english_dictionary';
   await click('辞書の下線を表示（編集中）'); await settle(300);
   assert.equal(CSS.highlights.has('parari-dictionary-missing'), false, 'Failed lookup must not paint words red');
+  assert.equal([...CSS.highlights.keys()].some(name => name.startsWith('parari-eiken-')), false, 'Failed lookup must clear stale grade colors');
   await click('辞書の下線を表示（編集中）');
   failTable = '';
   await click('辞書の下線を表示（編集中）'); await settle(300);
   assertMarks();
-  const level = document.querySelector('select');
-  await React.act(async () => level.focus());
+  await React.act(async () => button('英検級で色分け').focus());
   await settle(150);
-  assert.ok(document.querySelector('[aria-label="英語教材支援"]'), 'Focusing the level selector must keep the toolbar open');
-  await React.act(async () => { level.value = '2'; level.dispatchEvent(new Event('change', { bubbles: true })); });
-  assert.match(attrs, /noteFrom:2/);
-  await click('英検級を表示');
+  assert.ok(document.querySelector('[aria-label="英語教材支援"]'), 'Focusing the color toggle must keep the toolbar open');
+  await click('英検級で色分け');
+  assert.match(attrs, /noteFrom:3/);
   assert.match(attrs, /custom:keep/);
   assert.doesNotMatch(attrs, /eiken:on/);
   assert.deepEqual(textChanges, [], 'Dictionary and support changes never rewrite the body');
@@ -292,13 +331,15 @@ async function edit() {
   assert.doesNotMatch(document.body.textContent, /英語教材支援|読む支援|選択語/);
   assert.equal(CSS.highlights.has('parari-dictionary-known'), false);
   assert.equal(CSS.highlights.has('parari-dictionary-missing'), false);
+  assert.equal([...CSS.highlights.keys()].some(name => name.startsWith('parari-eiken-')), false);
   assert.equal(attrs, savedAttrs, 'Downgrading preserves saved attributes');
   assert.deepEqual(textChanges, []);
   billing = { plan: 'plus', billing_status: 'active' };
   await mount(panel('Acquire '.repeat(4000)));
   await React.act(async () => document.querySelector('[title="クリックして本文を編集"]').click());
   await click('英語教材支援 ▾');
-  assert.match(document.body.textContent, /本文の確認表示/);
+  assert.match(document.body.textContent, /英検級で色分け/);
+  assert.match(document.body.textContent, /色分けは「完了」後の本文で確認できます/);
   assert.doesNotMatch(document.body.textContent, /選択語を辞書で確認/);
   await mount(React.createElement(Settings));
   await click('英語教材支援を有効にする');
@@ -321,6 +362,6 @@ async function edit() {
   assert.equal(document.querySelector('.decoration-rose-500'), null, 'Lookup failure is not a missing dictionary entry');
   failTable = '';
   await React.act(async () => root.unmount());
-  console.log('PASS: Plus opt-in, authenticated dictionary, editor click/caret/lookup, shared known/missing marks, cancellation, downgrade and SSOT preservation. DOM geometry and database are fixtures; no visual or live-data claim.');
+  console.log('PASS: Plus opt-in, authenticated dictionary, editor click/caret/lookup, four grade backgrounds in editing and confirmation, no inline notes, shared known/missing marks, cancellation, downgrade and SSOT preservation. DOM geometry and database are fixtures; no visual or live-data claim.');
   dom.window.close();
 })().catch(error => { console.error(error); process.exitCode = 1; dom.window.close(); });
