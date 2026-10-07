@@ -26,6 +26,12 @@ const PRE1_1_HOLD_PATH = path.join(
   "parari_english_v2_word_candidates_pre1_1_hold.csv",
 );
 
+const MANUAL_SEED_PATH = path.join(
+  ROOT_DIR,
+  "data",
+  "parari_english_dictionary_manual_seed.csv",
+);
+
 const OUTPUT_PATH = path.join(
   ROOT_DIR,
   "data",
@@ -200,9 +206,14 @@ function main() {
     throw new Error(`Missing pre1/1 hold source: ${PRE1_1_HOLD_PATH}`);
   }
 
+  if (!fs.existsSync(MANUAL_SEED_PATH)) {
+    throw new Error(`Missing manual seed source: ${MANUAL_SEED_PATH}`);
+  }
+
   const provisionalRows = readCsv(PROVISIONAL_PATH);
   const eikenRows = readCsv(EIKEN_PATH);
   const holdRows = readCsv(PRE1_1_HOLD_PATH);
+  const manualRows = readCsv(MANUAL_SEED_PATH);
 
   const eikenIndex = new Map();
 
@@ -300,6 +311,43 @@ function main() {
       });
     }
   }
+
+  for (const row of manualRows) {
+    const word = String(row.word ?? "").trim();
+    if (!word) continue;
+
+    const duplicate = outputRows.some((existing) =>
+      normalizeLookup(existing.word) === normalizeLookup(word) &&
+      String(existing.pos ?? "") === String(row.pos ?? "") &&
+      String(existing.sense_id ?? "1") === String(row.sense_id ?? "1")
+    );
+
+    if (duplicate) {
+      continue;
+    }
+
+    outputRows.push({
+      action: row.action || "add",
+      source_rank: String(nextRank++),
+      word,
+      lemma: row.lemma || word,
+      pos: row.pos || "unknown",
+      form_type: row.form_type || "base",
+      sense_id: row.sense_id || "1",
+      meaning_ja: row.meaning_ja || "",
+      eiken_level: normalizeEikenLevel(row.eiken_level),
+      eiken_levels: normalizeEikenLevels(row.eiken_levels),
+      level: row.level || "junior_high",
+      importance: row.importance || "1",
+      entry_kind: row.entry_kind || "word",
+      source: row.source || "author",
+      category: row.category || "manual",
+      note: row.note || "",
+      note2: row.note2 || "",
+    });
+  }
+
+  outputRows.sort((a, b) => normalizeLookup(a.word).localeCompare(normalizeLookup(b.word)));
 
   writeCsv(OUTPUT_PATH, outputRows, FORMAL_HEADERS);
   writeCsv(REVIEW_PATH, reviewRows, ["word", "lemma", "reason"]);
