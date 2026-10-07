@@ -9,6 +9,7 @@ export type TextBlock = {
   raw: string;
   start: number;
   end: number;
+  attrs?: string;
 };
 
 export type PanelBlock = {
