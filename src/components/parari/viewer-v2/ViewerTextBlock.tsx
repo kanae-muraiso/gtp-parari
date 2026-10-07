@@ -497,7 +497,20 @@ function renderWordToken(
   const entry = dictionaryLookup[cleanWord]?.best ?? null;
 
   if (!entry) {
-    return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
+    if (dictionaryMode !== "study") {
+      return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
+    }
+
+    return (
+      <NoteInline
+        key={`word-missing-${noteKey}`}
+        noteKey={`word-missing-${noteKey}`}
+        label={word}
+        note="PARARI辞書にまだ登録されていません。"
+        activeNoteKey={noteState.activeNoteKey}
+        setActiveNoteKey={noteState.setActiveNoteKey}
+      />
+    );
   }
 
   if (
@@ -513,27 +526,18 @@ function renderWordToken(
     return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
   }
 
-  const eikenLabel =
-    dictionaryMode === "study"
-      ? formatReaderEikenLevel(entry.eikenLevel)
-      : "";
+  const eikenLabel = formatReaderEikenLevel(entry.eikenLevel);
 
   return (
-    <span key={`word-note-${noteKey}`} className="inline">
-      <NoteInline
-        noteKey={`word-note-${noteKey}`}
-        label={word}
-        note={meaning}
-        badge={eikenLabel || undefined}
-        activeNoteKey={noteState.activeNoteKey}
-        setActiveNoteKey={noteState.setActiveNoteKey}
-      />
-      {eikenLabel ? (
-        <span className="ml-0.5 align-super text-[9px] font-semibold text-neutral-400">
-          {eikenLabel.replace("英検", "")}
-        </span>
-      ) : null}
-    </span>
+    <NoteInline
+      key={`word-note-${noteKey}`}
+      noteKey={`word-note-${noteKey}`}
+      label={word}
+      note={meaning}
+      badge={eikenLabel || undefined}
+      activeNoteKey={noteState.activeNoteKey}
+      setActiveNoteKey={noteState.setActiveNoteKey}
+    />
   );
 }
 
