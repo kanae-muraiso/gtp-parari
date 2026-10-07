@@ -25,3 +25,45 @@ export async function GET(request: Request) {
     entries: result.entries,
   });
 }
+
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as
+    | { words?: unknown }
+    | null;
+
+  const inputWords = Array.isArray(body?.words)
+    ? body.words
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .slice(0, 500)
+    : [];
+
+  const uniqueWords = Array.from(
+    new Set(inputWords.map((word) => word.toLowerCase())),
+  );
+
+  const results: Record<
+    string,
+    {
+      found: boolean;
+      matched: string | null;
+      best: ReturnType<typeof lookupParariEnglishDictionaryV2>["entries"][number] | null;
+    }
+  > = {};
+
+  for (const word of uniqueWords) {
+    const lookup = lookupParariEnglishDictionaryV2(word);
+    results[word] = {
+      found: lookup.entries.length > 0,
+      matched: lookup.matched,
+      best: lookup.entries[0] ?? null,
+    };
+  }
+
+  return NextResponse.json({
+    count: uniqueWords.length,
+    results,
+  });
+}

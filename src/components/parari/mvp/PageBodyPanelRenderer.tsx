@@ -13,10 +13,15 @@
 
 import React from "react";
 import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
+import RichTextReadingSupportRenderer from "@/components/parari/richText/RichTextReadingSupportRenderer";
 import { getPanelDefinition } from "@/components/parari/panels/registry";
 import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { resolvePanelGap } from "@/components/parari/panels/shared/panelGap";
 import { parseRichText } from "@/lib/parari/richText/parseRichText";
+import {
+  hasTextReadingSupport,
+  parseTextReadingSupportAttrs,
+} from "@/lib/parari/richText/textReadingSupport";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import type {
   PanelBlock,
@@ -63,9 +68,19 @@ function TextBlockView({ block }: { block: TextBlock }) {
     return null;
   }
 
+  const document = parseRichText(text);
+  const readingSupport = parseTextReadingSupportAttrs(block.attrs);
+
   return (
     <div className="mb-6 text-neutral-800">
-      <RichTextRenderer document={parseRichText(text)} />
+      {hasTextReadingSupport(readingSupport) ? (
+        <RichTextReadingSupportRenderer
+          document={document}
+          options={readingSupport}
+        />
+      ) : (
+        <RichTextRenderer document={document} />
+      )}
     </div>
   );
 }

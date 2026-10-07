@@ -86,7 +86,10 @@ function normalizeBlockRaw(block: SsotBlock): string {
       return raw;
     }
 
-    return `[T]\n${raw}`;
+    const attrs = String(block.attrs ?? "").trim();
+    const header = attrs ? `[T ${attrs}]` : "[T]";
+
+    return `${header}\n${raw}`;
   }
 
   return raw;

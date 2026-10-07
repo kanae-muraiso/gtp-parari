@@ -12,6 +12,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import type { TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 import {
   panelizeMarkedText,
   type PanelizeTag,
@@ -37,6 +38,8 @@ type RichTextPanelEditorProps = {
   onChangeSsotText: (nextSsotText: string) => void;
   onReplacePanel?: (result: RichTextPanelReplaceResult) => void;
   onDelete?: () => void;
+  readingSupport?: TextReadingSupportOptions;
+  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   panelizeActions?: Array<{
     tag: PanelizeTag;
     label: string;
@@ -68,9 +71,12 @@ export function RichTextPanelEditor({
   onChangeSsotText,
   onReplacePanel,
   onDelete,
+  readingSupport,
+  onChangeReadingSupport,
   panelizeActions = DEFAULT_PANELIZE_ACTIONS,
 }: RichTextPanelEditorProps) {
   const [mode, setMode] = useState<RichTextPanelMode>("view");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handlePanelizeSelection = (payload: RichTextPanelizePayload) => {
     if (payload.selected.trim().length === 0) {
@@ -151,7 +157,75 @@ export function RichTextPanelEditor({
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="relative flex shrink-0 items-center gap-1.5">
+          {readingSupport && onChangeReadingSupport ? (
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((value) => !value)}
+              className="rounded-full bg-white px-2.5 py-1 text-[12px] font-bold text-neutral-500 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
+              title="TEXTの設定"
+              aria-label="TEXTの設定"
+            >
+              …
+            </button>
+          ) : null}
+
+          {settingsOpen && readingSupport && onChangeReadingSupport ? (
+            <div className="absolute right-0 top-8 z-50 w-72 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-xl">
+              <div className="mb-2 text-xs font-bold text-neutral-700">読む支援</div>
+              <ReadingSupportToggle
+                label="辞書"
+                checked={readingSupport.dictionary}
+                onChange={(checked) =>
+                  onChangeReadingSupport({ ...readingSupport, dictionary: checked })
+                }
+              />
+              <ReadingSupportToggle
+                label="英検級を表示"
+                checked={readingSupport.eikenLevel}
+                onChange={(checked) =>
+                  onChangeReadingSupport({ ...readingSupport, eikenLevel: checked })
+                }
+              />
+              <ReadingSupportToggle
+                label="語注を表示"
+                checked={readingSupport.notes}
+                onChange={(checked) =>
+                  onChangeReadingSupport({ ...readingSupport, notes: checked })
+                }
+              />
+
+              {readingSupport.notes ? (
+                <label className="mt-3 block text-[11px] text-neutral-600">
+                  語注を付けるレベル
+                  <select
+                    value={readingSupport.noteFrom}
+                    onChange={(event) =>
+                      onChangeReadingSupport({
+                        ...readingSupport,
+                        noteFrom: event.target.value as TextReadingSupportOptions["noteFrom"],
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="5">5級以上</option>
+                    <option value="4">4級以上</option>
+                    <option value="3">3級以上</option>
+                    <option value="pre2">準2級以上</option>
+                    <option value="2">2級以上</option>
+                    <option value="pre1">準1級以上</option>
+                    <option value="1">1級</option>
+                  </select>
+                </label>
+              ) : null}
+
+              <p className="mt-3 text-[10px] leading-4 text-neutral-400">
+                読む支援はFREEでも利用できます。
+              </p>
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={() => setMode("view")}
@@ -388,5 +462,28 @@ function LongTextFallbackEditor({
         spellCheck={false}
       />
     </div>
+  );
+}
+
+
+function ReadingSupportToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-xs text-neutral-700 last:border-b-0">
+      <span>{label}</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-4 w-4"
+      />
+    </label>
   );
 }
