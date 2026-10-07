@@ -67,153 +67,14 @@ import {
   $setBlocksType,
 } from "@lexical/selection";
 
-type EditorDictionaryCheck = {
-  word: string;
-  entry: { lemma: string } | null;
-  meaning: string;
-  visibleInStandard: boolean;
-  visibleInStudy: boolean;
-};
-
-function checkParariEnglishDictionaryWord(word: string): EditorDictionaryCheck {
-  return {
-    word: String(word ?? "").trim(),
-    entry: null,
-    meaning: "",
-    visibleInStandard: false,
-    visibleInStudy: false,
-  };
-}
+import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
+import DictionaryUnderlinePlugin from "@/components/parari/english/DictionaryUnderlinePlugin";
+import { normalizeEnglishWord, type DictionaryEntry } from "@/lib/parari/english/dictionary";
+import { formatEikenLevelJa, type TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 
 type DictionaryLookupState =
-  | {
-      kind: "result";
-      result: ReturnType<typeof checkParariEnglishDictionaryWord>;
-    }
-  | {
-      kind: "message";
-      message: string;
-    };
-
-const PARARI_DICTIONARY_HIGHLIGHT_NAME =
-  "parari-dictionary-editor";
-
-const PARARI_ENGLISH_WORD_PATTERN =
-  /[A-Za-z]+(?:[’'][A-Za-z]+)*/g;
-
-type CssHighlightRegistry = {
-  set: (name: string, highlight: unknown) => void;
-  delete: (name: string) => boolean;
-};
-
-type HighlightConstructor = new (
-  ...ranges: Range[]
-) => unknown;
-
-function getCssHighlightRegistry():
-  | CssHighlightRegistry
-  | null {
-  if (typeof CSS === "undefined") {
-    return null;
-  }
-
-  return (
-    (
-      CSS as unknown as {
-        highlights?: CssHighlightRegistry;
-      }
-    ).highlights ?? null
-  );
-}
-
-function rebuildParariDictionaryHighlights() {
-  if (
-    typeof window === "undefined" ||
-    typeof document === "undefined"
-  ) {
-    return;
-  }
-
-  const registry = getCssHighlightRegistry();
-
-  const HighlightCtor = (
-    window as unknown as {
-      Highlight?: HighlightConstructor;
-    }
-  ).Highlight;
-
-  if (!registry || !HighlightCtor) {
-    return;
-  }
-
-  const ranges: Range[] = [];
-
-  const roots =
-    document.querySelectorAll<HTMLElement>(
-      '[data-parari-rich-text-dictionary-root="true"]',
-    );
-
-  roots.forEach((root) => {
-    const walker = document.createTreeWalker(
-      root,
-      NodeFilter.SHOW_TEXT,
-    );
-
-    let currentNode = walker.nextNode();
-
-    while (currentNode) {
-      const textNode = currentNode as Text;
-      const text = textNode.data;
-
-      PARARI_ENGLISH_WORD_PATTERN.lastIndex = 0;
-
-      let match: RegExpExecArray | null;
-
-      while (
-        (match =
-          PARARI_ENGLISH_WORD_PATTERN.exec(text)) !==
-        null
-      ) {
-        const word = match[0];
-
-        const dictionaryResult =
-          checkParariEnglishDictionaryWord(word);
-
-        if (
-          dictionaryResult.visibleInStandard
-        ) {
-          const range = document.createRange();
-
-          range.setStart(
-            textNode,
-            match.index,
-          );
-
-          range.setEnd(
-            textNode,
-            match.index + word.length,
-          );
-
-          ranges.push(range);
-        }
-      }
-
-      currentNode = walker.nextNode();
-    }
-  });
-
-  if (ranges.length === 0) {
-    registry.delete(
-      PARARI_DICTIONARY_HIGHLIGHT_NAME,
-    );
-    return;
-  }
-
-  registry.set(
-    PARARI_DICTIONARY_HIGHLIGHT_NAME,
-    new HighlightCtor(...ranges),
-  );
-}
+  | { kind: "result"; word: string; entry: DictionaryEntry | null }
+  | { kind: "message"; message: string };
 
 export type RichTextPanelizeAction = {
   tag: PanelizeTag;
@@ -235,6 +96,8 @@ type RichTextFieldProps = {
   panelizeActions?: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
   showDebugLabel?: boolean;
+  readingSupport?: TextReadingSupportOptions;
+  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
 };
 
 const PARARI_NOTE_URL_PREFIX = "parari-note:";
@@ -261,6 +124,8 @@ export function RichTextField({
   panelizeActions = [],
   onPanelizeSelection,
   showDebugLabel = false,
+  readingSupport,
+  onChangeReadingSupport,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
   const lastEmittedValueRef = useRef(value);
@@ -316,7 +181,18 @@ export function RichTextField({
     };
     
     return (
-      <div ref={editorShellRef} className="rounded-xl border border-neutral-200 bg-white">
+      <div ref={editorShellRef} className="rounded-xl border border-neutral-200 bg-white"
+        onFocusCapture={() => {
+          isRichTextEditingRef.current = true;
+          setRichTextActive(true);
+        }}
+        onBlurCapture={event => {
+          // Keep the toolbar mounted while its switches or level selector have focus.
+          if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+          isRichTextEditingRef.current = false;
+          setRichTextActive(false);
+        }}
+      >
             <style>{`
               ::highlight(parari-dictionary-editor) {
                 text-decoration-line: underline;
@@ -342,6 +218,8 @@ export function RichTextField({
 
             <RichTextToolbar
               visible={richTextActive}
+              readingSupport={readingSupport}
+              onChangeReadingSupport={onChangeReadingSupport}
               suppressNextChangeRef={suppressNextChangeRef}
               panelizeActions={panelizeActions}
               onPanelizeSelection={onPanelizeSelection}
@@ -357,9 +235,6 @@ export function RichTextField({
           <RichTextPlugin
             contentEditable={
                 <ContentEditable
-                  data-parari-rich-text-dictionary-root={
-                    dictionaryUnderlineEnabled ? "true" : undefined
-                  }
                   className={`${minHeightClassName} w-full cursor-text px-3 py-2 text-sm leading-7 text-neutral-900 outline-none`}
                   spellCheck={false}
                   aria-placeholder={placeholder}
@@ -368,16 +243,6 @@ export function RichTextField({
                       {placeholder}
                     </div>
                   }
-                  onFocus={() => {
-                    isRichTextEditingRef.current = true;
-                    setRichTextActive(true);
-                  }}
-                  onBlur={() => {
-                    window.setTimeout(() => {
-                      isRichTextEditingRef.current = false;
-                      setRichTextActive(false);
-                    }, 120);
-                  }}
                 />
             }
             placeholder={null}
@@ -402,63 +267,6 @@ function ForceEditablePlugin() {
   return null;
 }
 
-                 function DictionaryUnderlinePlugin({
-                   enabled,
-                 }: {
-                   enabled: boolean;
-                 }) {
-                   const [editor] = useLexicalComposerContext();
-
-                   useEffect(() => {
-                     let timerId: number | null = null;
-
-                     const scheduleRebuild = () => {
-                       if (timerId !== null) {
-                         window.clearTimeout(timerId);
-                       }
-
-                       timerId = window.setTimeout(() => {
-                         rebuildParariDictionaryHighlights();
-                         timerId = null;
-                       }, 120);
-                     };
-
-                     // ON/OFF切替直後にも再構築
-                     scheduleRebuild();
-
-                     if (!enabled) {
-                       return () => {
-                         if (timerId !== null) {
-                           window.clearTimeout(timerId);
-                         }
-
-                         window.setTimeout(() => {
-                           rebuildParariDictionaryHighlights();
-                         }, 0);
-                       };
-                     }
-
-                     const unregister =
-                       editor.registerUpdateListener(() => {
-                         scheduleRebuild();
-                       });
-
-                     return () => {
-                       unregister();
-
-                       if (timerId !== null) {
-                         window.clearTimeout(timerId);
-                       }
-
-                       window.setTimeout(() => {
-                         rebuildParariDictionaryHighlights();
-                       }, 0);
-                     };
-                   }, [editor, enabled]);
-
-                   return null;
-                 }
-                 
 function SoftReturnPlugin() {
   const [editor] = useLexicalComposerContext();
 
@@ -539,6 +347,8 @@ function RichTextToolbar({
   editorShellRef,
       dictionaryUnderlineEnabled,
       onToggleDictionaryUnderline,
+  readingSupport,
+  onChangeReadingSupport,
 }: {
   visible: boolean;
   suppressNextChangeRef: MutableRefObject<boolean>;
@@ -548,8 +358,17 @@ function RichTextToolbar({
   editorShellRef: MutableRefObject<HTMLDivElement | null>;
     dictionaryUnderlineEnabled: boolean;
     onToggleDictionaryUnderline: () => void;
+  readingSupport?: TextReadingSupportOptions;
+  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
 }) {
   const [editor] = useLexicalComposerContext();
+  const englishAuthoring = useEnglishAuthoring();
+  const lookupController = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setDictionaryLookup(null);
+    lookupController.current?.abort();
+    return () => lookupController.current?.abort();
+  }, [englishAuthoring?.enabled]);
 
   const [menuPosition, setMenuPosition] = useState<{
     left: number;
@@ -749,7 +568,9 @@ function RichTextToolbar({
       });
     };
     
-    const handleDictionaryLookup = () => {
+    const handleDictionaryLookup = async () => {
+      if (!englishAuthoring?.enabled) return;
+      lookupController.current?.abort();
       let selectedText = "";
 
       editor.getEditorState().read(() => {
@@ -781,15 +602,21 @@ function RichTextToolbar({
       if (!match) {
         setDictionaryLookup({
           kind: "message",
-          message: "第1段階では英単語を1語だけ選択してください。",
+          message: "英単語を1語だけ選択してください。",
         });
         return;
       }
 
-      setDictionaryLookup({
-        kind: "result",
-        result: checkParariEnglishDictionaryWord(match[1]),
-      });
+      const controller = new AbortController();
+      lookupController.current = controller;
+      setDictionaryLookup({ kind: "message", message: "辞書を確認中…" });
+      try {
+        const word = normalizeEnglishWord(match[1]);
+        const results = await englishAuthoring.lookupWords([word], controller.signal);
+        if (!controller.signal.aborted) setDictionaryLookup({ kind: "result", word: match[1], entry: results[word]?.best ?? null });
+      } catch (cause) {
+        if (!controller.signal.aborted) setDictionaryLookup({ kind: "message", message: cause instanceof Error ? cause.message : "辞書を取得できませんでした。" });
+      }
     };
     
   const handlePanelize = (tag: PanelizeTag) => {
@@ -908,7 +735,9 @@ function RichTextToolbar({
     <>
           <RichTextInlineInsertMenu
             visible={visible}
-            textActions={textActions}
+            textActions={englishAuthoring?.enabled ? textActions : textActions.filter(action => action.kind !== "dictionary")}
+            readingSupport={readingSupport}
+            onChangeReadingSupport={onChangeReadingSupport}
             panelActions={panelActions}
             position={menuPosition}
             onSelect={handleAction}
@@ -916,7 +745,7 @@ function RichTextToolbar({
             onToggleDictionaryUnderline={onToggleDictionaryUnderline}
           />
           
-          {dictionaryLookup ? (
+          {englishAuthoring?.enabled && dictionaryLookup ? (
             <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-neutral-700">
               <div className="flex items-start justify-between gap-3">
                 <div className="font-semibold text-amber-800">
@@ -926,7 +755,7 @@ function RichTextToolbar({
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => setDictionaryLookup(null)}
+                  onClick={() => { lookupController.current?.abort(); setDictionaryLookup(null); }}
                   className="text-neutral-400 hover:text-neutral-700"
                   aria-label="辞書確認を閉じる"
                 >
@@ -938,40 +767,26 @@ function RichTextToolbar({
                 <div className="mt-1">
                   {dictionaryLookup.message}
                 </div>
-              ) : dictionaryLookup.result.entry ? (
+              ) : dictionaryLookup.entry ? (
                 <div className="mt-1 space-y-1">
                   <div className="text-sm font-semibold text-neutral-900">
-                    {dictionaryLookup.result.word}
+                    {dictionaryLookup.word}
                   </div>
 
                   <div>
-                    {dictionaryLookup.result.meaning}
+                    {dictionaryLookup.entry.meaningJa}
                   </div>
 
                   <div className="text-neutral-500">
-                    lemma: {dictionaryLookup.result.entry.lemma}
+                    原形: {dictionaryLookup.entry.lemma}
                   </div>
 
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                    <span>
-                      標準：
-                      {dictionaryLookup.result.visibleInStandard
-                        ? "● 表示されます"
-                        : "― 表示されません"}
-                    </span>
-
-                    <span>
-                      学習：
-                      {dictionaryLookup.result.visibleInStudy
-                        ? "● 表示されます"
-                        : "― 表示されません"}
-                    </span>
-                  </div>
+                  {dictionaryLookup.entry.eikenLevel ? <div>{formatEikenLevelJa(dictionaryLookup.entry.eikenLevel)}</div> : null}
                 </div>
               ) : (
                 <div className="mt-1">
                   <div className="font-semibold text-neutral-900">
-                    {dictionaryLookup.result.word}
+                    {dictionaryLookup.word}
                   </div>
                   <div className="mt-1">
                     PARARI辞書には登録されていません。

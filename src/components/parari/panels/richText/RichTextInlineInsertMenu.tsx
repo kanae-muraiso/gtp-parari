@@ -13,6 +13,7 @@
 "use client";
 
 import { useState } from "react";
+import type { TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
 
 export type RichTextInlineMenuAction =
@@ -87,6 +88,8 @@ type RichTextInlineInsertMenuProps = {
   position?: RichTextInlineMenuPosition | null;
   onSelect: (action: RichTextInlineMenuAction) => void;
 
+  readingSupport?: TextReadingSupportOptions;
+  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   dictionaryUnderlineEnabled?: boolean;
   onToggleDictionaryUnderline?: () => void;
 };
@@ -125,6 +128,8 @@ export function RichTextInlineInsertMenu({
   panelActions,
   position,
   onSelect,
+  readingSupport,
+  onChangeReadingSupport,
   dictionaryUnderlineEnabled = false,
   onToggleDictionaryUnderline,
 }: RichTextInlineInsertMenuProps) {
@@ -207,7 +212,9 @@ export function RichTextInlineInsertMenu({
         ))}
 
           {dictionaryAction ? (
-            <DictionaryToolbarDropdown
+            <EnglishAuthoringMenu
+              readingSupport={readingSupport}
+              onChangeReadingSupport={onChangeReadingSupport}
               open={openMenu === "dictionary"}
               underlineEnabled={dictionaryUnderlineEnabled}
               onToggle={() => toggleMenu("dictionary")}
@@ -288,67 +295,88 @@ export function RichTextInlineInsertMenu({
   );
 }
 
-function DictionaryToolbarDropdown({
-  open,
-  underlineEnabled,
-  onToggle,
-  onLookup,
-  onToggleUnderline,
+export function EnglishAuthoringMenu({
+  open, underlineEnabled = false, onToggle, onLookup, onToggleUnderline,
+  readingSupport, onChangeReadingSupport,
 }: {
   open: boolean;
-  underlineEnabled: boolean;
+  underlineEnabled?: boolean;
   onToggle: () => void;
-  onLookup: () => void;
-  onToggleUnderline: () => void;
+  onLookup?: () => void;
+  onToggleUnderline?: () => void;
+  readingSupport?: TextReadingSupportOptions;
+  onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
 }) {
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onMouseDown={(event) => {
-          event.preventDefault();
-          onToggle();
-        }}
-        className={[
-          "rounded-full border px-2 py-1 text-[10px] font-semibold shadow-sm transition",
-          open
-            ? "border-neutral-400 bg-neutral-800 text-white"
-            : underlineEnabled
-              ? "border-amber-400 bg-amber-50 text-amber-800"
-              : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100",
-        ].join(" ")}
-        aria-expanded={open}
-      >
-        {underlineEnabled ? "辞書 ● ▾" : "辞書 ▾"}
+    <div className="sm:relative" onKeyDown={event => { if (open && event.key === "Escape") { event.stopPropagation(); onToggle(); } }}>
+      <button type="button" onMouseDown={event => event.preventDefault()} onClick={onToggle}
+        className="rounded-full border border-neutral-300 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-100"
+        aria-expanded={open}>
+        英語教材支援 ▾
       </button>
-
       {open ? (
-        <div className="absolute left-1/2 top-full z-50 mt-1 min-w-40 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
-          <button
-            type="button"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              onLookup();
-            }}
-            className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-          >
-            選択語を確認
-          </button>
-
-          <button
-            type="button"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              onToggleUnderline();
-            }}
-            className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-          >
-            {underlineEnabled ? "✓ " : ""}
-            語注下線を表示
-          </button>
+        <div role="group" aria-label="英語教材支援" className="absolute inset-x-2 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto sm:inset-x-auto sm:right-0 sm:w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+          {onLookup ? <button type="button" onMouseDown={event => event.preventDefault()} onClick={onLookup}
+            className="block w-full rounded-lg py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-neutral-100">選択語を辞書で確認</button> : null}
+          {onToggleUnderline ? <ReadingSupportToggle label="辞書登録語に下線（編集中）" checked={underlineEnabled} onChange={onToggleUnderline} /> : null}
+          {readingSupport && onChangeReadingSupport ? (
+            <div className="mt-3 border-t border-neutral-200 pt-3">
+              <p className="mb-1 text-[11px] font-bold text-neutral-500">本文の確認表示</p>
+              <ReadingSupportToggle label="単語をクリックして意味を表示" checked={readingSupport.dictionary} onChange={checked => onChangeReadingSupport({ ...readingSupport, dictionary: checked })} />
+              <ReadingSupportToggle label="英検級を表示" checked={readingSupport.eikenLevel} onChange={checked => onChangeReadingSupport({ ...readingSupport, eikenLevel: checked })} />
+              <ReadingSupportToggle label="語注を表示" checked={readingSupport.notes} onChange={checked => onChangeReadingSupport({ ...readingSupport, notes: checked })} />
+              {readingSupport.notes ? <label className="mt-3 block text-[11px] text-neutral-600">
+                語注を付けるレベル
+                <select value={readingSupport.noteFrom} onChange={event => onChangeReadingSupport({ ...readingSupport, noteFrom: event.target.value as TextReadingSupportOptions["noteFrom"] })}
+                  className="mt-1 w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs">
+                  <option value="all">すべて</option><option value="5">5級以上</option><option value="4">4級以上</option><option value="3">3級以上</option><option value="pre2">準2級以上</option><option value="2">2級以上</option><option value="pre1">準1級以上</option><option value="1">1級</option>
+                </select>
+              </label> : null}
+              <p className="mt-3 text-[10px] leading-4 text-neutral-500">「完了」後の本文で確認できます。公開画面の表示は読者メニューで切り替えます。</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ReadingSupportToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onMouseDown={event => event.preventDefault()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onChange(!checked);
+      }}
+      className="flex w-full items-center justify-between gap-3 border-b border-neutral-100 py-2 text-left text-xs text-neutral-700 last:border-b-0"
+    >
+      <span>{label}</span>
+      <span
+        className={[
+          "inline-flex h-5 w-9 items-center rounded-full p-0.5 transition",
+          checked ? "bg-neutral-900" : "bg-neutral-200",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "h-4 w-4 rounded-full bg-white shadow-sm transition",
+            checked ? "translate-x-4" : "translate-x-0",
+          ].join(" ")}
+        />
+      </span>
+    </button>
   );
 }
 
