@@ -69,7 +69,7 @@ import {
 
 type EditorDictionaryCheck = {
   word: string;
-  entry: null;
+  entry: { lemma: string } | null;
   meaning: string;
   visibleInStandard: boolean;
   visibleInStudy: boolean;
