@@ -5,6 +5,12 @@
 
 export type ParariEnglishLevel = "junior_high" | "high_school" | "exam";
 
+export type ParariEnglishEikenLevel = "5" | "4" | "3" | "pre2" | "2" | "pre1" | "1";
+
+export type ParariEnglishEntryKind = "word" | "phrase" | "conversation" | "proper_noun";
+
+export type ParariEnglishSource = "eiken" | "school" | "manual" | "author" | "legacy";
+
 export type ParariEnglishImportance = 1 | 2 | 3;
 
 export type ParariEnglishGlossaryEntry = {
@@ -39,6 +45,10 @@ export type ParariEnglishGlossaryEntry = {
   meaningJa: string;
   level: ParariEnglishLevel;
   importance: ParariEnglishImportance;
+  eikenLevel?: ParariEnglishEikenLevel;
+  eikenLevels?: ParariEnglishEikenLevel[];
+  entryKind?: ParariEnglishEntryKind;
+  source?: ParariEnglishSource;
   category?: string;
   note?: string;
   note2?: string;
@@ -56,6 +66,10 @@ export type ParariEnglishPhraseGlossaryEntry = {
   meaningJa: string;
   level: ParariEnglishLevel;
   importance: ParariEnglishImportance;
+  eikenLevel?: ParariEnglishEikenLevel;
+  eikenLevels?: ParariEnglishEikenLevel[];
+  entryKind?: ParariEnglishEntryKind;
+  source?: ParariEnglishSource;
   category?: string;
   note?: string;
   note2?: string;

@@ -125,6 +125,10 @@ function makeEntry(row) {
   const meaningJa = String(row.meaning_ja ?? "").trim();
   const level = normalizeLevel(row.level);
   const importance = normalizeImportance(row.importance);
+  const eikenLevel = String(row.eiken_level ?? "").trim();
+  const eikenLevels = String(row.eiken_levels ?? "").trim();
+  const entryKind = String(row.entry_kind ?? "").trim();
+  const source = String(row.source ?? "").trim();
   const category = String(row.category ?? "").trim();
   const note = String(row.note ?? "").trim();
   const note2 = String(row.note2 ?? "").trim();
@@ -138,6 +142,10 @@ function makeEntry(row) {
       meaningJa,
       level,
       importance,
+      eikenLevel,
+      eikenLevels,
+      entryKind,
+      source,
       category,
       note,
       note2,
@@ -781,6 +789,23 @@ function entryToTs(entry) {
     `    level: ${escapeTsString(entry.level)} as ParariEnglishLevel,`,
     `    importance: ${entry.importance} as ParariEnglishImportance,`,
   ];
+
+  if (entry.eikenLevel) {
+    lines.push(`    eikenLevel: ${escapeTsString(entry.eikenLevel)} as ParariEnglishGlossaryEntry["eikenLevel"],`);
+  }
+
+  if (entry.eikenLevels) {
+    const levels = entry.eikenLevels.split(";").map((level) => level.trim()).filter(Boolean);
+    lines.push(`    eikenLevels: ${JSON.stringify(levels)} as ParariEnglishGlossaryEntry["eikenLevels"],`);
+  }
+
+  if (entry.entryKind) {
+    lines.push(`    entryKind: ${escapeTsString(entry.entryKind)} as ParariEnglishGlossaryEntry["entryKind"],`);
+  }
+
+  if (entry.source) {
+    lines.push(`    source: ${escapeTsString(entry.source)} as ParariEnglishGlossaryEntry["source"],`);
+  }
 
   if (entry.category) {
     lines.push(`    category: ${escapeTsString(entry.category)},`);
