@@ -5,8 +5,8 @@ node_modules
 
 # Recover code through Git history, not tracked snapshots or build caches.
 *.tsbuildinfo
-src/**/*.backup*
-src/**/*.tmp_backup*
+*.backup*
+*.tmp_backup*
 
 # Local environment variables
 .env*

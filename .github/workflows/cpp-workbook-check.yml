@@ -32,3 +32,6 @@ jobs:
 
       - name: Participation navigation regression check
         run: npm run test:participation-navigation
+
+      - name: Legacy PAGE URL and authorization check
+        run: npm run test:legacy-page-routes

@@ -118,12 +118,3 @@ mainImage:
   },
   
 ];
-
-export function getDefaultParariTemplate(
-  templateId: string,
-): ParariTemplate | null {
-  return (
-    defaultParariTemplates.find((template) => template.id === templateId) ??
-    null
-  );
-}

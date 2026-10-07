@@ -14,7 +14,6 @@ import { ParticipationMenu, ParticipationReturn } from "@/components/parari/navi
 import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import {
   defaultParariTemplates,
-  getDefaultParariTemplate,
   type ParariTemplate,
 } from "@/lib/parari/templates/defaultTemplates";
 
@@ -550,6 +549,3 @@ function createStableSlug(kind: string): string {
     .toString(36)
     .slice(2, 8)}`;
 }
-
-// 将来テンプレート一覧画面を作る時に使うため、importが消えないように残す。
-void getDefaultParariTemplate;
