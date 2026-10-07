@@ -507,6 +507,7 @@ function renderWordToken(
         noteKey={`word-missing-${noteKey}`}
         label={word}
         note="PARARI辞書にまだ登録されていません。"
+        tone="missing"
         activeNoteKey={noteState.activeNoteKey}
         setActiveNoteKey={noteState.setActiveNoteKey}
       />
@@ -601,7 +602,7 @@ function NoteInline({
   note: string;
   activeNoteKey: string | null;
   setActiveNoteKey: React.Dispatch<React.SetStateAction<string | null>>;
-  tone?: "note" | "ruby";
+  tone?: "note" | "ruby" | "missing";
   badge?: string;
 }) {
   const isOpen = activeNoteKey === noteKey;
@@ -696,7 +697,9 @@ function NoteInline({
               "fixed z-[100] rounded-2xl border bg-white p-3 text-left text-xs leading-5 shadow-xl",
               tone === "ruby"
                 ? "w-max max-w-64 border-sky-100 text-neutral-800"
-                : "w-64 border-neutral-200 text-neutral-700",
+                : tone === "missing"
+                  ? "w-64 border-rose-200 bg-rose-50 text-rose-800"
+                  : "w-64 border-neutral-200 text-neutral-700",
             ].join(" ")}
           >
             {badge ? (
@@ -723,10 +726,12 @@ function NoteInline({
           setActiveNoteKey((current) => (current === noteKey ? null : noteKey));
         }}
         className={[
-          "inline rounded px-0.5 text-inherit underline decoration-dotted underline-offset-4",
+          "inline rounded px-0.5 text-inherit underline underline-offset-4",
           tone === "ruby"
-            ? "decoration-neutral-400 hover:bg-sky-50"
-            : "hover:bg-amber-50",
+            ? "decoration-dotted decoration-neutral-400 hover:bg-sky-50"
+            : tone === "missing"
+              ? "decoration-solid decoration-rose-500 decoration-2 hover:bg-rose-50"
+              : "decoration-dotted hover:bg-amber-50",
         ].join(" ")}
       >
         {label}
