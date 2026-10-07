@@ -12,11 +12,7 @@ import {
   ParariTopBarButton,
 } from "./ParariTopBars";
 import BookSaveButton from "./BookSaveButton";
-import ParariPanelViewer from "./viewer-v2/ParariPanelViewer";
-import { ParariBookViewer } from "./viewer-v2/ParariBookViewer";
-import { isBookLikeSsot } from "./viewer-v2/book/buildBookSheets";
-import ParariWebViewer from "./viewer-v2/ParariWebViewer";
-import { isWebLikeSsot } from "./viewer-v2/web/webSsot";
+import { ParariViewer } from "./viewer-v2/ParariViewer";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -68,48 +64,44 @@ export default function PublicViewerShell({
 
   return (
     <div>
-          {ownerCheckDone ? (
-            <>
-              {isOwner ? (
-                <ParariOwnerTopBar
-                  title="公開表示確認"
-                  leftHref="/my/works"
-                  leftLabel="作品リストへ"
-                  actions={
-                    <ParariTopBarButton href={`/editor-v2/${bookId}`}>
-                      編集
-                    </ParariTopBarButton>
-                  }
+      {ownerCheckDone ? (
+        <>
+          {isOwner ? (
+            <ParariOwnerTopBar
+              title="公開表示確認"
+              leftHref="/my/works"
+              leftLabel="作品リストへ"
+              actions={
+                <ParariTopBarButton href={`/editor-v2/${bookId}`}>
+                  編集
+                </ParariTopBarButton>
+              }
+            />
+          ) : (
+            <ParariBrandTopBar
+              href="/"
+              actions={
+                <BookSaveButton
+                  bookId={bookId}
+                  type="shelf"
+                  idleLabel="保存"
+                  activeLabel="保存済み"
                 />
-                          ) : (
-                            <ParariBrandTopBar
-                              href="/"
-                              actions={
-                                <BookSaveButton
-                                  bookId={bookId}
-                                  type="shelf"
-                                  idleLabel="保存"
-                                  activeLabel="保存済み"
-                                />
-                              }
-                            />
-                          )}
+              }
+            />
+          )}
 
-              {isWebLikeSsot(viewerContent) ? (
-                <ParariWebViewer
-                  content={viewerContent}
-                  pageSlug={pageSlug}
-                  publicBasePath={publicBasePath}
-                  headerLogoUrl={headerLogoUrl}
-                />
-              ) : isBookLikeSsot(viewerContent) ? (
-                <ParariBookViewer content={viewerContent} />
-              ) : (
-                <ParariPanelViewer content={viewerContent} />
-              )}
-            </>
-          ) : null}
-          
+          <ParariViewer
+            key={`${bookId}:${pageSlug ?? ""}`}
+            workId={bookId}
+            content={viewerContent}
+            pageSlug={pageSlug}
+            publicBasePath={publicBasePath}
+            headerLogoUrl={headerLogoUrl}
+          />
+        </>
+      ) : null}
+
     </div>
   );
 }

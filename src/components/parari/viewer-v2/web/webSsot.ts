@@ -128,7 +128,7 @@ export type WebPageSegment = {
 
   /**
    * WEBPAGE内の通常パネル部分だけ。
-   * ParariPanelViewerへ渡す。
+   * 共通のParariViewerへ渡す。
    */
   raw: string;
 };
