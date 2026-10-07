@@ -67,9 +67,23 @@ import {
   $setBlocksType,
 } from "@lexical/selection";
 
-import {
-  checkParariEnglishDictionaryWord,
-} from "@/lib/parari/english/basicWordGlossary";
+type EditorDictionaryCheck = {
+  word: string;
+  entry: { lemma: string } | null;
+  meaning: string;
+  visibleInStandard: boolean;
+  visibleInStudy: boolean;
+};
+
+function checkParariEnglishDictionaryWord(word: string): EditorDictionaryCheck {
+  return {
+    word: String(word ?? "").trim(),
+    entry: null,
+    meaning: "",
+    visibleInStandard: false,
+    visibleInStudy: false,
+  };
+}
 
 type DictionaryLookupState =
   | {
