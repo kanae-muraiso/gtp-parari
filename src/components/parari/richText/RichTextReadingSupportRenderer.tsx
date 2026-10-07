@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
-import type { DictionaryEntry as LookupEntry, DictionaryResults, DictionaryResult as LookupResult } from "@/lib/parari/english/dictionary";
+import { dictionaryStatus, DICTIONARY_MARK_CLASSES, type DictionaryEntry as LookupEntry, type DictionaryResults, type DictionaryResult as LookupResult } from "@/lib/parari/english/dictionary";
 import RichTextRenderer from "@/components/parari/richText/RichTextRenderer";
 import type {
   RichDocument,
@@ -186,9 +186,10 @@ function renderSupportedText(
 
     const surface = match[0];
     const lookup = lookupMap[normalizeWord(surface)];
-    const entry = lookup?.best ?? null;
+    const status = dictionaryStatus(lookup);
+    const entry = status === "known" ? lookup.best : null;
 
-    if (!entry) {
+    if (!entry && !(options.dictionary && status === "missing")) {
       nodes.push(
         <React.Fragment key={`${keyPrefix}-word-${index++}`}>
           {surface}
@@ -225,15 +226,15 @@ function SupportedWord({
   options,
 }: {
   surface: string;
-  entry: LookupEntry;
+  entry: LookupEntry | null;
   options: TextReadingSupportOptions;
 }) {
   const [open, setOpen] = React.useState(false);
   const showNote =
     options.notes &&
-    isEikenAtOrAboveThreshold(entry.eikenLevel, options.noteFrom);
+    !!entry && isEikenAtOrAboveThreshold(entry.eikenLevel, options.noteFrom);
   const eikenLabel = options.eikenLevel
-    ? formatEikenLevelJa(entry.eikenLevel)
+    ? formatEikenLevelJa(entry?.eikenLevel)
     : "";
 
   return (
@@ -242,7 +243,7 @@ function SupportedWord({
         <button
           type="button"
           onClick={(event) => { event.stopPropagation(); setOpen((value) => !value); }}
-          className="inline border-0 bg-transparent p-0 text-inherit underline decoration-dotted underline-offset-4 hover:bg-amber-50"
+          className={`inline border-0 bg-transparent p-0 text-inherit underline underline-offset-4 ${entry ? DICTIONARY_MARK_CLASSES.known : DICTIONARY_MARK_CLASSES.missing} hover:bg-neutral-50`}
           style={{ font: "inherit" }}
         >
           {surface}
@@ -259,24 +260,24 @@ function SupportedWord({
 
       {showNote ? (
         <span className="ml-1 text-[10px] text-neutral-500">
-          （{entry.meaningJa}）
+          （{entry?.meaningJa}）
         </span>
       ) : null}
 
       {open ? (
         <span className="absolute left-0 top-[1.6em] z-50 w-64 rounded-xl border border-neutral-200 bg-white p-3 text-left text-xs font-normal leading-5 text-neutral-700 shadow-xl">
           <span className="block font-semibold text-neutral-900">{surface}</span>
-          {entry.lemma.toLowerCase() !== surface.toLowerCase() ? (
+          {entry && entry.lemma.toLowerCase() !== surface.toLowerCase() ? (
             <span className="block text-[10px] text-neutral-400">
               原形: {entry.lemma}
             </span>
           ) : null}
-          {entry.eikenLevel ? (
+          {entry?.eikenLevel ? (
             <span className="block text-[10px] text-amber-700">
               {formatEikenLevelJa(entry.eikenLevel)}
             </span>
           ) : null}
-          <span className="mt-1 block">{entry.meaningJa}</span>
+          <span className="mt-1 block">{entry ? entry.meaningJa : "PARARI辞書には登録されていません。"}</span>
         </span>
       ) : null}
     </span>

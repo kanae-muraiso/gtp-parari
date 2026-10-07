@@ -316,9 +316,10 @@ export function EnglishAuthoringMenu({
       </button>
       {open ? (
         <div role="group" aria-label="英語教材支援" className="absolute inset-x-2 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto sm:inset-x-auto sm:right-0 sm:w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+          {onLookup ? <p className="mb-2 text-[11px] leading-5 text-neutral-600">編集中も単語をクリックすると辞書が開きます。灰色の点線は登録語、赤い実線は未登録語です。</p> : null}
           {onLookup ? <button type="button" onMouseDown={event => event.preventDefault()} onClick={onLookup}
             className="block w-full rounded-lg py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-neutral-100">選択語を辞書で確認</button> : null}
-          {onToggleUnderline ? <ReadingSupportToggle label="辞書登録語に下線（編集中）" checked={underlineEnabled} onChange={onToggleUnderline} /> : null}
+          {onToggleUnderline ? <ReadingSupportToggle label="辞書の下線を表示（編集中）" checked={underlineEnabled} onChange={onToggleUnderline} /> : null}
           {readingSupport && onChangeReadingSupport ? (
             <div className="mt-3 border-t border-neutral-200 pt-3">
               <p className="mb-1 text-[11px] font-bold text-neutral-500">本文の確認表示</p>

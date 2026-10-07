@@ -25,3 +25,16 @@ export function normalizeEnglishWord(word: string): string {
 }
 
 export const ENGLISH_AUTHORING_PREFERENCE = "english_authoring_enabled";
+
+// 2026-10-07 JST — One meaning for dictionary marks in editor and reader.
+// A missing response (loading, failure or batch limit) is not an unregistered word.
+export function dictionaryStatus(result: DictionaryResult | undefined): "known" | "missing" | "unchecked" {
+  if (result?.found && result.best) return "known";
+  if (result?.found === false && result.best === null) return "missing";
+  return "unchecked";
+}
+
+export const DICTIONARY_MARK_CLASSES = {
+  known: "decoration-dotted decoration-neutral-400",
+  missing: "decoration-solid decoration-rose-500 decoration-2",
+} as const;

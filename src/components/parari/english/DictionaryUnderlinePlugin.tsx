@@ -4,34 +4,38 @@
 import { useEffect, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useEnglishAuthoring } from "./EnglishAuthoringProvider";
-import { normalizeEnglishWord } from "@/lib/parari/english/dictionary";
+import { dictionaryStatus, normalizeEnglishWord, type DictionaryResults } from "@/lib/parari/english/dictionary";
 
-const NAME = "parari-dictionary-editor";
+const KNOWN_NAME = "parari-dictionary-known";
+const MISSING_NAME = "parari-dictionary-missing";
 const WORDS = /[A-Za-z]+(?:[’'][A-Za-z]+)*/g;
-const roots = new Map<HTMLElement, Set<string>>();
+const roots = new Map<HTMLElement, DictionaryResults>();
 
 function rebuild() {
   const registry = (globalThis.CSS as unknown as { highlights?: Map<string, unknown> } | undefined)?.highlights;
   const Highlight = (window as unknown as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
   if (!registry || !Highlight) return false;
-  const ranges: Range[] = [];
-  for (const [root, known] of roots) {
+  const ranges: Record<"known" | "missing", Range[]> = { known: [], missing: [] };
+  for (const [root, results] of roots) {
     if (!root.isConnected) continue;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node: Node | null;
     while ((node = walker.nextNode())) {
       if (node.parentElement?.closest("a")) continue;
       for (const match of (node.textContent ?? "").matchAll(WORDS)) {
-        if (!known.has(normalizeEnglishWord(match[0]))) continue;
+        const status = dictionaryStatus(results[normalizeEnglishWord(match[0])]);
+        if (status === "unchecked") continue;
         const range = document.createRange();
         range.setStart(node, match.index);
         range.setEnd(node, match.index + match[0].length);
-        ranges.push(range);
+        ranges[status].push(range);
       }
     }
   }
-  if (ranges.length) registry.set(NAME, new Highlight(...ranges));
-  else registry.delete(NAME);
+  for (const [status, name] of [["known", KNOWN_NAME], ["missing", MISSING_NAME]] as const) {
+    if (ranges[status].length) registry.set(name, new Highlight(...ranges[status]));
+    else registry.delete(name);
+  }
   return true;
 }
 
@@ -46,7 +50,7 @@ export default function DictionaryUnderlinePlugin({ enabled }: { enabled: boolea
     setError("");
     if (!active || !lookup) return;
     if (!rebuild()) {
-      setError("このブラウザーは辞書の下線表示に対応していません。選択語の辞書確認は利用できます。");
+      setError("このブラウザーは辞書の下線表示に対応していません。単語のクリックや選択語の辞書確認は利用できます。");
       return;
     }
     let timer: ReturnType<typeof setTimeout>;
@@ -55,6 +59,9 @@ export default function DictionaryUnderlinePlugin({ enabled }: { enabled: boolea
     const schedule = () => {
       clearTimeout(timer);
       controller?.abort();
+      // Clear stale marks as soon as text changes; never label an unchecked word as missing.
+      if (currentRoot) roots.delete(currentRoot);
+      rebuild();
       timer = setTimeout(async () => {
         const root = editor.getRootElement();
         if (!root) return;
@@ -66,7 +73,7 @@ export default function DictionaryUnderlinePlugin({ enabled }: { enabled: boolea
         try {
           const results = words.length ? await lookup(words, request.signal) : {};
           if (request.signal.aborted) return;
-          roots.set(root, new Set(Object.entries(results).filter(([, result]) => result.found && result.best).map(([word]) => word)));
+          roots.set(root, results);
           rebuild();
           setError("");
         } catch {
