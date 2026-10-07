@@ -2,10 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  formatParariEnglishGlossaryMeaning,
-  getBestParariEnglishGlossaryEntry,
-} from "@/lib/parari/english/basicWordGlossary";
 import { EtTextPanelData, EtTextSegment } from "./types";
 
 type EtTextPanelRendererProps = {
@@ -64,17 +60,52 @@ function getSegmentAtTime(
 }
 
 
+type DictionaryLookupEntry = {
+  word: string;
+  lemma: string;
+  pos: string;
+  formType: string;
+  senseId: string;
+  meaningJa: string;
+  eikenLevel: string | null;
+  eikenLevels: string[];
+  entryKind: string;
+};
+
+type DictionaryLookupResponse = {
+  found: boolean;
+  query: string;
+  matched: string | null;
+  best: DictionaryLookupEntry | null;
+  entries: DictionaryLookupEntry[];
+};
+
+function formatEikenLevel(level: string | null | undefined): string {
+  switch (level) {
+    case "5":
+    case "4":
+    case "3":
+    case "2":
+    case "1":
+      return `英検${level}級`;
+    case "pre2":
+      return "英検準2級";
+    case "pre1":
+      return "英検準1級";
+    default:
+      return "";
+  }
+}
+
 function EtTextDictionaryWord({
   noteKey,
   word,
-  meaning,
   dictionaryEnabled,
   activeDictionaryKey,
   setActiveDictionaryKey,
 }: {
   noteKey: string;
   word: string;
-  meaning: string;
   dictionaryEnabled: boolean;
   activeDictionaryKey: string | null;
   setActiveDictionaryKey: React.Dispatch<
@@ -84,11 +115,61 @@ function EtTextDictionaryWord({
   const isOpen = activeDictionaryKey === noteKey;
   const buttonRef = React.useRef<HTMLButtonElement | null>(null);
   const popupRef = React.useRef<HTMLSpanElement | null>(null);
-
+  const [lookup, setLookup] = React.useState<DictionaryLookupResponse | null>(
+    null,
+  );
+  const [lookupStatus, setLookupStatus] = React.useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
   const [popupPosition, setPopupPosition] = React.useState({
     left: -10000,
     top: -10000,
   });
+
+  React.useEffect(() => {
+    if (!isOpen || lookupStatus !== "idle") {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadMeaning() {
+      setLookupStatus("loading");
+
+      try {
+        const response = await fetch(
+          `/api/english/dictionary?q=${encodeURIComponent(word)}`,
+          {
+            method: "GET",
+            cache: "force-cache",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`dictionary lookup failed: ${response.status}`);
+        }
+
+        const json = (await response.json()) as DictionaryLookupResponse;
+        setLookup(json);
+        setLookupStatus("ready");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLookupStatus("error");
+      }
+    }
+
+    void loadMeaning();
+
+    return () => {
+      controller.abort();
+    };
+  }, [isOpen, lookupStatus, word]);
+
+  React.useEffect(() => {
+    setLookup(null);
+    setLookupStatus("idle");
+  }, [word]);
 
   React.useLayoutEffect(() => {
     if (!isOpen) {
@@ -116,27 +197,18 @@ function EtTextDictionaryWord({
 
       left = Math.max(
         margin,
-        Math.min(
-          left,
-          window.innerWidth - popupRect.width - margin,
-        ),
+        Math.min(left, window.innerWidth - popupRect.width - margin),
       );
 
       let top = buttonRect.bottom + gap;
 
-      if (
-        top + popupRect.height >
-        window.innerHeight - margin
-      ) {
+      if (top + popupRect.height > window.innerHeight - margin) {
         top = buttonRect.top - popupRect.height - gap;
       }
 
       top = Math.max(
         margin,
-        Math.min(
-          top,
-          window.innerHeight - popupRect.height - margin,
-        ),
+        Math.min(top, window.innerHeight - popupRect.height - margin),
       );
 
       setPopupPosition({ left, top });
@@ -152,7 +224,10 @@ function EtTextDictionaryWord({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, meaning]);
+  }, [isOpen, lookupStatus, lookup]);
+
+  const best = lookup?.best ?? null;
+  const eikenLabel = formatEikenLevel(best?.eikenLevel);
 
   const popup =
     isOpen && typeof document !== "undefined"
@@ -167,9 +242,38 @@ function EtTextDictionaryWord({
               left: popupPosition.left,
               top: popupPosition.top,
             }}
-            className="fixed z-[100] w-64 max-w-[calc(100vw-24px)] rounded-2xl border border-neutral-200 bg-white p-3 text-left text-xs leading-5 text-neutral-700 shadow-xl"
+            className="fixed z-[100] w-72 max-w-[calc(100vw-24px)] rounded-2xl border border-neutral-200 bg-white p-3 text-left text-xs leading-5 text-neutral-700 shadow-xl"
           >
-            {meaning}
+            {lookupStatus === "loading" ? (
+              <span className="text-neutral-500">辞書を検索しています…</span>
+            ) : null}
+
+            {lookupStatus === "error" ? (
+              <span className="text-red-600">辞書を取得できませんでした。</span>
+            ) : null}
+
+            {lookupStatus === "ready" && !best ? (
+              <span className="text-neutral-500">この語はまだ辞書に登録されていません。</span>
+            ) : null}
+
+            {best ? (
+              <span className="block space-y-1">
+                <span className="flex flex-wrap items-baseline gap-2">
+                  <strong className="text-sm text-neutral-900">{word}</strong>
+                  {best.lemma && best.lemma.toLowerCase() !== word.toLowerCase() ? (
+                    <span className="text-[11px] text-neutral-500">
+                      ← {best.lemma}
+                    </span>
+                  ) : null}
+                  {eikenLabel ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                      {eikenLabel}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="block text-neutral-800">{best.meaningJa}</span>
+              </span>
+            ) : null}
           </span>,
           document.body,
         )
@@ -942,38 +1046,20 @@ export function EtTextPanelRenderer({ data }: EtTextPanelRendererProps) {
       }
 
       const word = match[0];
-      const cleanWord = word.replace(/[’']/g, "'");
-      const entry =
-        cleanWord.length >= 2
-          ? getBestParariEnglishGlossaryEntry(cleanWord)
-          : null;
-      const meaning = entry
-        ? formatParariEnglishGlossaryMeaning(entry)
-            .replace(/[{}]/g, "")
-            .replace(/\s+/g, " ")
-            .trim()
-        : "";
       const noteKey = `${keyPrefix}-word-${wordIndex}`;
       const dictionaryEnabled =
         readingInteractionMode === "dictionary";
 
-      if (!meaning) {
-        runs.push(
-          <React.Fragment key={noteKey}>{word}</React.Fragment>
-        );
-      } else {
-        runs.push(
-          <EtTextDictionaryWord
-            key={noteKey}
-            noteKey={noteKey}
-            word={word}
-            meaning={meaning}
-            dictionaryEnabled={dictionaryEnabled}
-            activeDictionaryKey={activeDictionaryKey}
-            setActiveDictionaryKey={setActiveDictionaryKey}
-          />
-        );
-      }
+      runs.push(
+        <EtTextDictionaryWord
+          key={noteKey}
+          noteKey={noteKey}
+          word={word}
+          dictionaryEnabled={dictionaryEnabled}
+          activeDictionaryKey={activeDictionaryKey}
+          setActiveDictionaryKey={setActiveDictionaryKey}
+        />,
+      );
 
       lastIndex = match.index + word.length;
       wordIndex += 1;
