@@ -69,7 +69,7 @@ import {
 
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
 import DictionaryUnderlinePlugin from "@/components/parari/english/DictionaryUnderlinePlugin";
-import { normalizeEnglishWord, type DictionaryEntry } from "@/lib/parari/english/dictionary";
+import { dictionaryStatus, normalizeEnglishWord, type DictionaryEntry } from "@/lib/parari/english/dictionary";
 import { formatEikenLevelJa, type TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 
 type DictionaryLookupState =
@@ -141,7 +141,7 @@ export function RichTextField({
     const [richTextActive, setRichTextActive] = useState(false);
     
     const [dictionaryUnderlineEnabled, setDictionaryUnderlineEnabled] =
-      useState(false);
+      useState(true);
 
     const initialConfig = useMemo(
       () => ({
@@ -194,12 +194,13 @@ export function RichTextField({
         }}
       >
             <style>{`
-              ::highlight(parari-dictionary-editor) {
-                text-decoration-line: underline;
-                text-decoration-style: solid;
-                text-decoration-color: #d97706;
-                text-decoration-thickness: 2px;
-                text-underline-offset: 3px;
+              ::highlight(parari-dictionary-known) {
+                text-decoration: underline dotted #a3a3a3;
+                text-underline-offset: 4px;
+              }
+              ::highlight(parari-dictionary-missing) {
+                text-decoration: underline solid #f43f5e 2px;
+                text-underline-offset: 4px;
               }
             `}</style>
             <LexicalComposer initialConfig={initialConfig}>
@@ -364,11 +365,76 @@ function RichTextToolbar({
   const [editor] = useLexicalComposerContext();
   const englishAuthoring = useEnglishAuthoring();
   const lookupController = useRef<AbortController | null>(null);
-  useEffect(() => {
-    setDictionaryLookup(null);
+  const [dictionaryLookup, setDictionaryLookup] = useState<DictionaryLookupState | null>(null);
+  const closeDictionary = useCallback(() => {
     lookupController.current?.abort();
+    setDictionaryLookup(null);
+  }, []);
+  useEffect(() => {
+    closeDictionary();
     return () => lookupController.current?.abort();
-  }, [englishAuthoring?.enabled]);
+  }, [englishAuthoring?.enabled, closeDictionary]);
+
+  const lookupWords = englishAuthoring?.lookupWords;
+  const authoringEnabled = englishAuthoring?.enabled;
+  const lookupWord = useCallback(async (surface: string) => {
+    if (!authoringEnabled || !lookupWords) return;
+    lookupController.current?.abort();
+    const controller = new AbortController();
+    lookupController.current = controller;
+    setDictionaryLookup({ kind: "message", message: "辞書を確認中…" });
+    try {
+      const word = normalizeEnglishWord(surface);
+      const results = await lookupWords([word], controller.signal);
+      if (dictionaryStatus(results[word]) === "unchecked") throw new Error("辞書を取得できませんでした。もう一度お試しください。");
+      if (!controller.signal.aborted) setDictionaryLookup({ kind: "result", word: surface, entry: results[word].best });
+    } catch (cause) {
+      if (!controller.signal.aborted) setDictionaryLookup({ kind: "message", message: cause instanceof Error ? cause.message : "辞書を取得できませんでした。" });
+    }
+  }, [authoringEnabled, lookupWords]);
+
+  useEffect(() => {
+    if (!authoringEnabled) return;
+    const handleClick = (event: MouseEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("a")) return;
+      const root = editor.getRootElement();
+      const selection = window.getSelection();
+      if (!root || !selection || !root.contains(selection.anchorNode)) return;
+      if (!selection.isCollapsed) { closeDictionary(); return; }
+      const node = selection.anchorNode;
+      if (!(node instanceof Text) || node.parentElement?.closest("a")) return;
+      // The browser has already placed the caret. Read it without changing selection or SSOT.
+      const word = [...node.data.matchAll(/[A-Za-z]+(?:[’'][A-Za-z]+)*/g)].find(match =>
+        selection.anchorOffset >= match.index && selection.anchorOffset <= match.index + match[0].length,
+      );
+      if (word) void lookupWord(word[0]);
+      else closeDictionary();
+    };
+    const unregister = editor.registerRootListener((root, previous) => {
+      previous?.removeEventListener("click", handleClick);
+      root?.addEventListener("click", handleClick);
+    });
+    const dismiss = (event: Event) => {
+      if (event instanceof KeyboardEvent) {
+        if (event.key === "Escape") closeDictionary();
+      } else if (event.target instanceof Node && !editorShellRef.current?.contains(event.target)) {
+        closeDictionary();
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", dismiss);
+    const unregisterUpdates = editor.registerUpdateListener(({ dirtyElements, dirtyLeaves }) => {
+      if (dirtyElements.size || dirtyLeaves.size) closeDictionary();
+    });
+    return () => {
+      unregister();
+      unregisterUpdates();
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", dismiss);
+    };
+  }, [authoringEnabled, closeDictionary, editor, editorShellRef, lookupWord]);
 
   const [menuPosition, setMenuPosition] = useState<{
     left: number;
@@ -445,9 +511,6 @@ function RichTextToolbar({
       window.removeEventListener("resize", update);
     };
   }, [visible, updateMenuPosition]);
-    
-    const [dictionaryLookup, setDictionaryLookup] =
-      useState<DictionaryLookupState | null>(null);
     
     const textActions: RichTextInlineMenuAction[] = [
       { kind: "block", block: "h2", label: "h2", title: "見出し H2" },
@@ -607,16 +670,7 @@ function RichTextToolbar({
         return;
       }
 
-      const controller = new AbortController();
-      lookupController.current = controller;
-      setDictionaryLookup({ kind: "message", message: "辞書を確認中…" });
-      try {
-        const word = normalizeEnglishWord(match[1]);
-        const results = await englishAuthoring.lookupWords([word], controller.signal);
-        if (!controller.signal.aborted) setDictionaryLookup({ kind: "result", word: match[1], entry: results[word]?.best ?? null });
-      } catch (cause) {
-        if (!controller.signal.aborted) setDictionaryLookup({ kind: "message", message: cause instanceof Error ? cause.message : "辞書を取得できませんでした。" });
-      }
+      await lookupWord(match[1]);
     };
     
   const handlePanelize = (tag: PanelizeTag) => {
@@ -746,7 +800,7 @@ function RichTextToolbar({
           />
           
           {englishAuthoring?.enabled && dictionaryLookup ? (
-            <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-neutral-700">
+            <div role="region" aria-label="辞書の確認結果" aria-live="polite" className="fixed bottom-4 right-4 z-[100] max-h-[40vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 shadow-xl">
               <div className="flex items-start justify-between gap-3">
                 <div className="font-semibold text-amber-800">
                   PARARI辞書
@@ -755,7 +809,7 @@ function RichTextToolbar({
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => { lookupController.current?.abort(); setDictionaryLookup(null); }}
+                  onClick={closeDictionary}
                   className="text-neutral-400 hover:text-neutral-700"
                   aria-label="辞書確認を閉じる"
                 >

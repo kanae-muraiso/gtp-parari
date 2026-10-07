@@ -4,6 +4,7 @@
 "use client";
 
 import React from "react";
+import { dictionaryStatus, DICTIONARY_MARK_CLASSES } from "@/lib/parari/english/dictionary";
 import { createPortal } from "react-dom";
 import type {
   ReaderDictionaryMode,
@@ -95,6 +96,7 @@ export function ViewerTextBlock({
     }
 
     const controller = new AbortController();
+    setDictionaryLookup({});
 
     async function loadDictionary() {
       try {
@@ -498,10 +500,12 @@ function renderWordToken(
   }
 
   const cleanWord = normalizeReaderDictionaryWord(word);
-  const entry = dictionaryLookup[cleanWord]?.best ?? null;
+  const lookup = dictionaryLookup[cleanWord];
+  const status = dictionaryStatus(lookup);
+  const entry = status === "known" ? lookup.best : null;
 
   if (!entry) {
-    if (dictionaryMode !== "study") {
+    if (dictionaryMode !== "study" || status !== "missing") {
       return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
     }
 
@@ -734,8 +738,8 @@ function NoteInline({
           tone === "ruby"
             ? "decoration-dotted decoration-neutral-400 hover:bg-sky-50"
             : tone === "missing"
-              ? "decoration-solid decoration-rose-500 decoration-2 hover:bg-rose-50"
-              : "decoration-dotted hover:bg-amber-50",
+              ? `${DICTIONARY_MARK_CLASSES.missing} hover:bg-rose-50`
+              : `${DICTIONARY_MARK_CLASSES.known} hover:bg-amber-50`,
         ].join(" ")}
       >
         {label}

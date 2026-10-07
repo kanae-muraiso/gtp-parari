@@ -20,7 +20,7 @@ function Settings() {
           {support.saving ? "保存中…" : support.enabled ? "ON" : "OFF"}
         </button>
       </div>
-      <p className="mt-2 text-xs leading-6 text-neutral-500">英語教材を作るときに有効にしてください。TEXTの編集メニューに辞書照会、英検級、語注の確認機能を表示します。初期状態はOFFです。</p>
+      <p className="mt-2 text-xs leading-6 text-neutral-500">英語教材を作るときに有効にしてください。TEXTの編集中に単語をクリックすると意味と英検級を確認できます。登録語は灰色の点線、未登録語は赤い実線で表示します。初期状態はOFFです。</p>
       {!support.loading && !support.allowed && !support.error ? <Link href="/billing" className="mt-2 inline-block text-xs text-blue-700 underline">Plus以上のプランを確認</Link> : null}
       {support.error ? <p role="alert" className="mt-2 text-xs text-red-700">{support.error}</p> : null}
     </section>

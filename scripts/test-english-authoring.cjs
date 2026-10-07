@@ -74,9 +74,10 @@ const publicRoute = require('../src/app/api/english/dictionary/route.ts');
 const { getEffectivePlan, getPlanEntitlements } = require('../src/lib/billing/plan.ts');
 const request = (method = 'GET', token = 'test-token', words = ['ACQUIRE', 'unknown']) => new Request('https://editor.test/api/english/authoring', { method, headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : {}, ...(method === 'POST' ? { body: JSON.stringify({ words, userId: 'work-owner', plan: 'pro' }) } : {}) });
 global.fetch = async (url, options = {}) => {
-  assert.equal(url, '/api/english/authoring', 'Editor must use authenticated dictionary endpoint');
+  assert.ok(['/api/english/authoring', '/api/english/dictionary'].includes(url));
   if (options.method === 'POST' && pendingLookup) await pendingLookup;
   const req = new Request(`https://editor.test${url}`, options);
+  if (url === '/api/english/dictionary') return publicRoute.POST(req);
   return options.method === 'POST' ? route.POST(req) : route.GET(req);
 };
 
@@ -86,6 +87,7 @@ const { $getRoot } = require('lexical');
 const { EnglishAuthoringProvider } = require('../src/components/parari/english/EnglishAuthoringProvider.tsx');
 const Settings = require('../src/components/parari/settings/EnglishAuthoringSettings.tsx').default;
 const { RichTextPanelEditor } = require('../src/components/parari/panels/richText/RichTextPanelEditor.tsx');
+const { ViewerTextBlock } = require('../src/components/parari/viewer-v2/ViewerTextBlock.tsx');
 const { parseTextReadingSupportAttrs, serializeTextReadingSupportAttrs } = require('../src/lib/parari/richText/textReadingSupport.ts');
 let root;
 async function settle(ms = 25) { await React.act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); }); }
@@ -112,6 +114,30 @@ async function chooseWord(word) {
     node.select(index, index + word.length);
   }, { discrete: true }));
   await settle();
+}
+async function clickEditorWord(word, offset = 1) {
+  const editor = await focusEditor();
+  await React.act(async () => editor.update(() => {
+    const node = $getRoot().getAllTextNodes().find(node => node.getTextContent().includes(word));
+    const index = node.getTextContent().indexOf(word) + offset;
+    node.select(index, index);
+  }, { discrete: true }));
+  const selection = window.getSelection();
+  const node = selection.anchorNode;
+  const caret = selection.anchorOffset;
+  await React.act(async () => node.parentElement.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await settle();
+  assert.equal(window.getSelection().anchorNode, node, 'Dictionary click keeps the caret in the same text node');
+  assert.equal(window.getSelection().anchorOffset, caret, 'Dictionary click does not move the caret');
+}
+function assertMarks() {
+  const known = CSS.highlights.get('parari-dictionary-known');
+  const missing = CSS.highlights.get('parari-dictionary-missing');
+  assert.deepEqual(known?.ranges.map(range => range.toString()), ['Acquire']);
+  assert.deepEqual(missing?.ranges.map(range => range.toString()), ['unknown']);
+  const style = document.querySelector('style').textContent;
+  assert.match(style, /parari-dictionary-known[\s\S]*?underline dotted #a3a3a3/);
+  assert.match(style, /parari-dictionary-missing[\s\S]*?underline solid #f43f5e 2px/);
 }
 let textChanges = [];
 let attrs = 'custom:keep dictionary:on eiken:on notes:on noteFrom:3';
@@ -175,6 +201,8 @@ async function edit() {
   assert.equal(button('英語教材支援を有効にする').disabled, true);
   assert.ok(document.querySelector('a[href="/billing"]'));
   await mount(panel()); await edit();
+  await clickEditorWord('Acquire');
+  assert.equal(document.querySelector('[aria-label="辞書の確認結果"]'), null);
   assert.doesNotMatch(document.body.textContent, /英語教材支援|読む支援|選択語/);
   billing = { plan: 'plus', billing_status: 'active' };
   user.user_metadata = { display_name: 'Keep me' };
@@ -193,11 +221,29 @@ async function edit() {
 
   await mount(panel());
   assert.match(document.body.textContent, /獲得する/);
+  assert.ok(button('Acquire').classList.contains('decoration-neutral-400'));
+  assert.ok(button('unknown').classList.contains('decoration-rose-500'));
+  await click('unknown');
+  assert.match(document.body.textContent, /登録されていません/);
+  await click('unknown');
   await click('Acquire');
   assert.equal(document.querySelector('[contenteditable]'), null, 'Dictionary popup should not switch into editing');
   await edit();
   assert.equal([...document.querySelectorAll('button')].filter(b => b.textContent === '英語教材支援 ▾').length, 1);
   assert.equal(document.querySelector('[aria-label="TEXTの設定"]'), null, 'No second reading-support menu');
+  await settle(300);
+  assertMarks();
+  await clickEditorWord('Acquire', 7);
+  assert.match(document.querySelector('[aria-label="辞書の確認結果"]').textContent, /獲得する/);
+  assert.match(document.querySelector('[aria-label="辞書の確認結果"]').textContent, /英検2級/);
+  assert.ok(document.querySelector('[aria-label="辞書の確認結果"]').classList.contains('fixed'), 'Lookup remains visible when body is scrolled');
+  await React.act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+  assert.equal(document.querySelector('[aria-label="辞書の確認結果"]'), null);
+  await clickEditorWord('unknown');
+  assert.match(document.querySelector('[aria-label="辞書の確認結果"]').textContent, /登録されていません/);
+  await React.act(async () => document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })));
+  assert.equal(document.querySelector('[aria-label="辞書の確認結果"]'), null);
+
   await chooseWord('Acquire');
   await click('英語教材支援 ▾');
   await click('選択語を辞書で確認');
@@ -220,11 +266,16 @@ async function edit() {
   await settle();
   assert.equal(document.querySelector('[aria-label="辞書確認を閉じる"]'), null, 'Closing cancels stale lookup result');
 
-  await click('英語教材支援 ▾'); await click('辞書登録語に下線（編集中）');
-  await settle(300);
-  const highlight = CSS.highlights.get('parari-dictionary-editor');
-  assert.ok(highlight);
-  assert.deepEqual(highlight.ranges.map(range => range.toString()), ['Acquire']);
+  await click('英語教材支援 ▾'); await click('辞書の下線を表示（編集中）');
+  assert.equal(CSS.highlights.has('parari-dictionary-known'), false);
+  assert.equal(CSS.highlights.has('parari-dictionary-missing'), false);
+  failTable = 'parari_english_dictionary';
+  await click('辞書の下線を表示（編集中）'); await settle(300);
+  assert.equal(CSS.highlights.has('parari-dictionary-missing'), false, 'Failed lookup must not paint words red');
+  await click('辞書の下線を表示（編集中）');
+  failTable = '';
+  await click('辞書の下線を表示（編集中）'); await settle(300);
+  assertMarks();
   const level = document.querySelector('select');
   await React.act(async () => level.focus());
   await settle(150);
@@ -239,7 +290,8 @@ async function edit() {
   billing = { plan: 'plus', billing_status: 'canceled' };
   await React.act(async () => window.dispatchEvent(new Event('focus'))); await settle();
   assert.doesNotMatch(document.body.textContent, /英語教材支援|読む支援|選択語/);
-  assert.equal(CSS.highlights.has('parari-dictionary-editor'), false);
+  assert.equal(CSS.highlights.has('parari-dictionary-known'), false);
+  assert.equal(CSS.highlights.has('parari-dictionary-missing'), false);
   assert.equal(attrs, savedAttrs, 'Downgrading preserves saved attributes');
   assert.deepEqual(textChanges, []);
   billing = { plan: 'plus', billing_status: 'active' };
@@ -254,7 +306,21 @@ async function edit() {
   await mount(panel()); await edit();
   assert.doesNotMatch(document.body.textContent, /英語教材支援/);
   assert.equal(attrs, savedAttrs);
+  // Same marks in the reader; not-yet-queried and failed requests must remain unmarked.
+  let releaseReader;
+  pendingLookup = new Promise(resolve => { releaseReader = resolve; });
+  await mount(React.createElement(ViewerTextBlock, { text: 'Acquire unknown.', dictionaryMode: 'study' }));
+  assert.equal(document.querySelector('.decoration-rose-500'), null, 'Loading is not a missing dictionary entry');
+  await React.act(async () => releaseReader()); pendingLookup = null; await settle();
+  assert.ok(button('Acquire').classList.contains('decoration-neutral-400'));
+  assert.ok(button('unknown').classList.contains('decoration-rose-500'));
+  await click('Acquire'); assert.match(document.body.textContent, /獲得する/);
+  await click('unknown'); assert.match(document.body.textContent, /まだ登録されていません/);
+  failTable = 'parari_english_dictionary';
+  await mount(React.createElement(ViewerTextBlock, { text: 'Acquire unknown.', dictionaryMode: 'study' }));
+  assert.equal(document.querySelector('.decoration-rose-500'), null, 'Lookup failure is not a missing dictionary entry');
+  failTable = '';
   await React.act(async () => root.unmount());
-  console.log('PASS: Plus opt-in, authenticated dictionary, editor menu/lookup/highlights, cancellation, downgrade and SSOT preservation. DOM geometry and database are fixtures; no visual or live-data claim.');
+  console.log('PASS: Plus opt-in, authenticated dictionary, editor click/caret/lookup, shared known/missing marks, cancellation, downgrade and SSOT preservation. DOM geometry and database are fixtures; no visual or live-data claim.');
   dom.window.close();
 })().catch(error => { console.error(error); process.exitCode = 1; dom.window.close(); });
