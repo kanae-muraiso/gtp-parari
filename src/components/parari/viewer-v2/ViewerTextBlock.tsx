@@ -5,11 +5,6 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
-import {
-  formatParariEnglishGlossaryMeaning,
-  getBestParariEnglishGlossaryEntry,
-  shouldAnnotateParariEnglishWord,
-} from "@/lib/parari/english/basicWordGlossary";
 import type {
   ReaderDictionaryMode,
   ReaderRubyMode,
@@ -38,6 +33,30 @@ type NoteState = {
   setActiveNoteKey: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
+type ReaderDictionaryEntry = {
+  word: string;
+  lemma: string;
+  pos: string;
+  formType: string;
+  senseId: string;
+  meaningJa: string;
+  eikenLevel: string | null;
+  eikenLevels: string[];
+  entryKind: string;
+};
+
+type ReaderDictionaryLookup = {
+  found: boolean;
+  matched: string | null;
+  best: ReaderDictionaryEntry | null;
+};
+
+type ReaderDictionaryBatchResponse = {
+  results?: Record<string, ReaderDictionaryLookup>;
+};
+
+const READER_WORD_PATTERN = /\b[A-Za-z][A-Za-z'’-]*\b/g;
+
 export function ViewerTextBlock({
   text,
   className = "",
@@ -48,6 +67,58 @@ export function ViewerTextBlock({
   const source = String(text ?? "");
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [activeNoteKey, setActiveNoteKey] = React.useState<string | null>(null);
+
+  const [dictionaryLookup, setDictionaryLookup] = React.useState<
+    Record<string, ReaderDictionaryLookup>
+  >({});
+
+  const dictionaryWords = React.useMemo(() => {
+    if (dictionaryMode === "off") return [] as string[];
+
+    const matches = source.match(READER_WORD_PATTERN) ?? [];
+    return Array.from(
+      new Set(matches.map((word) => normalizeReaderDictionaryWord(word))),
+    ).slice(0, 500);
+  }, [source, dictionaryMode]);
+
+  const dictionaryWordKey = React.useMemo(
+    () => dictionaryWords.join("\u0001"),
+    [dictionaryWords],
+  );
+
+  React.useEffect(() => {
+    if (dictionaryMode === "off" || dictionaryWords.length === 0) {
+      setDictionaryLookup({});
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadDictionary() {
+      try {
+        const response = await fetch("/api/english/dictionary", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ words: dictionaryWords }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) return;
+
+        const json = (await response.json()) as ReaderDictionaryBatchResponse;
+
+        if (!controller.signal.aborted) {
+          setDictionaryLookup(json.results ?? {});
+        }
+      } catch {
+        // 辞書取得に失敗しても本文は通常表示を維持する。
+      }
+    }
+
+    void loadDictionary();
+
+    return () => controller.abort();
+  }, [dictionaryMode, dictionaryWordKey]);
 
   React.useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -87,6 +158,7 @@ export function ViewerTextBlock({
           activeNoteKey,
           setActiveNoteKey,
         },
+        dictionaryLookup,
         headingStartIndex,
       )}
     </div>
@@ -98,6 +170,7 @@ function renderBlockText(
   dictionaryMode: ReaderDictionaryMode,
   rubyMode: ReaderRubyMode,
   noteState: NoteState,
+  dictionaryLookup: Record<string, ReaderDictionaryLookup>,
   headingStartIndex?: number,
 ): React.ReactNode {
   const normalized = String(source ?? "").replace(/\r\n/g, "\n");
@@ -133,6 +206,7 @@ function renderBlockText(
               dictionaryMode,
               rubyMode,
               noteState,
+              dictionaryLookup,
               `b${blockIndex}-h3`,
             )}
           </h3>
@@ -150,6 +224,7 @@ function renderBlockText(
             dictionaryMode,
             rubyMode,
             noteState,
+            dictionaryLookup,
             `b${blockIndex}-h2`,
           )}
         </h2>
@@ -168,6 +243,7 @@ function renderBlockText(
               dictionaryMode,
               rubyMode,
               noteState,
+              dictionaryLookup,
               `b${blockIndex}-l${lineIndex}`,
             )}
           </React.Fragment>
@@ -216,6 +292,7 @@ function renderInlineContent(
   dictionaryMode: ReaderDictionaryMode,
   rubyMode: ReaderRubyMode,
   noteState: NoteState,
+  dictionaryLookup: Record<string, ReaderDictionaryLookup>,
   keyPrefix: string,
 ): React.ReactNode[] {
   const tokens = tokenizeInlineContent(source);
@@ -290,6 +367,7 @@ function renderInlineContent(
             dictionaryMode,
             rubyMode,
             noteState,
+            dictionaryLookup,
             `${noteKey}-bold`,
           )}
         </strong>
@@ -304,6 +382,7 @@ function renderInlineContent(
             dictionaryMode,
             rubyMode,
             noteState,
+            dictionaryLookup,
             `${noteKey}-italic`,
           )}
         </em>
@@ -318,6 +397,7 @@ function renderInlineContent(
             dictionaryMode,
             rubyMode,
             noteState,
+            dictionaryLookup,
             `${noteKey}-red`,
           )}
         </span>
@@ -325,7 +405,13 @@ function renderInlineContent(
     }
 
     if (token.kind === "word") {
-      return renderWordToken(token.text, dictionaryMode, noteState, noteKey);
+      return renderWordToken(
+        token.text,
+        dictionaryMode,
+        noteState,
+        dictionaryLookup,
+        noteKey,
+      );
     }
 
     return null;
@@ -400,39 +486,100 @@ function renderWordToken(
   word: string,
   dictionaryMode: ReaderDictionaryMode,
   noteState: NoteState,
+  dictionaryLookup: Record<string, ReaderDictionaryLookup>,
   noteKey: string,
 ): React.ReactNode {
   if (dictionaryMode === "off") {
     return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
   }
 
-  const cleanWord = word.replace(/[’']/g, "'");
-
-   if (!shouldAnnotateParariEnglishWord(cleanWord, dictionaryMode)) {
-    return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
-  }
-
-  const entry = getBestParariEnglishGlossaryEntry(cleanWord);
+  const cleanWord = normalizeReaderDictionaryWord(word);
+  const entry = dictionaryLookup[cleanWord]?.best ?? null;
 
   if (!entry) {
     return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
   }
 
-  const meaning = sanitizeNoteText(formatParariEnglishGlossaryMeaning(entry));
+  if (
+    dictionaryMode === "standard" &&
+    !isStandardReaderDictionaryEntry(entry)
+  ) {
+    return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
+  }
+
+  const meaning = sanitizeNoteText(formatReaderDictionaryMeaning(entry));
 
   if (!meaning) {
     return <React.Fragment key={`word-${noteKey}`}>{word}</React.Fragment>;
   }
 
+  const eikenLabel =
+    dictionaryMode === "study"
+      ? formatReaderEikenLevel(entry.eikenLevel)
+      : "";
+
   return (
-    <NoteInline
-      key={`word-note-${noteKey}`}
-      noteKey={`word-note-${noteKey}`}
-      label={word}
-      note={meaning}
-      activeNoteKey={noteState.activeNoteKey}
-      setActiveNoteKey={noteState.setActiveNoteKey}
-    />
+    <span key={`word-note-${noteKey}`} className="inline">
+      <NoteInline
+        noteKey={`word-note-${noteKey}`}
+        label={word}
+        note={meaning}
+        badge={eikenLabel || undefined}
+        activeNoteKey={noteState.activeNoteKey}
+        setActiveNoteKey={noteState.setActiveNoteKey}
+      />
+      {eikenLabel ? (
+        <span className="ml-0.5 align-super text-[9px] font-semibold text-neutral-400">
+          {eikenLabel.replace("英検", "")}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function normalizeReaderDictionaryWord(value: string): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/[’‘`]/g, "'")
+    .replace(/^[^A-Za-z']+/, "")
+    .replace(/[^A-Za-z']+$/, "")
+    .toLowerCase();
+}
+
+function formatReaderDictionaryMeaning(entry: ReaderDictionaryEntry): string {
+  if (
+    !entry.lemma ||
+    entry.word.toLowerCase() === entry.lemma.toLowerCase() ||
+    entry.formType === "base"
+  ) {
+    return entry.meaningJa;
+  }
+
+  return `${entry.lemma}：${entry.meaningJa}`;
+}
+
+function formatReaderEikenLevel(level: string | null | undefined): string {
+  switch (level) {
+    case "5":
+    case "4":
+    case "3":
+    case "2":
+    case "1":
+      return `英検${level}級`;
+    case "pre2":
+      return "英検準2級";
+    case "pre1":
+      return "英検準1級";
+    default:
+      return "";
+  }
+}
+
+function isStandardReaderDictionaryEntry(
+  entry: ReaderDictionaryEntry,
+): boolean {
+  return ["pre2", "2", "pre1", "1"].includes(
+    String(entry.eikenLevel ?? ""),
   );
 }
 
@@ -443,6 +590,7 @@ function NoteInline({
   activeNoteKey,
   setActiveNoteKey,
   tone = "note",
+  badge,
 }: {
   noteKey: string;
   label: string;
@@ -450,6 +598,7 @@ function NoteInline({
   activeNoteKey: string | null;
   setActiveNoteKey: React.Dispatch<React.SetStateAction<string | null>>;
   tone?: "note" | "ruby";
+  badge?: string;
 }) {
   const isOpen = activeNoteKey === noteKey;
   const buttonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -521,7 +670,7 @@ function NoteInline({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, note]);
+  }, [isOpen, note, badge]);
 
   if (!label) {
     return null;
@@ -546,6 +695,11 @@ function NoteInline({
                 : "w-64 border-neutral-200 text-neutral-700",
             ].join(" ")}
           >
+            {badge ? (
+              <span className="mb-1 block text-[10px] font-semibold text-amber-700">
+                {badge}
+              </span>
+            ) : null}
             {note}
           </span>,
           document.body,
