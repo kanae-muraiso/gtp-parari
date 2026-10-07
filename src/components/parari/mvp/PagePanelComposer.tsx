@@ -22,6 +22,11 @@ import {
   getPlanEntitlements,
   type PlanEntitlements,
 } from "@/lib/billing/plan";
+import {
+  parseTextReadingSupportAttrs,
+  serializeTextReadingSupportAttrs,
+  type TextReadingSupportOptions,
+} from "@/lib/parari/richText/textReadingSupport";
 
 type PagePanelComposerProps = {
   value: string;
@@ -239,6 +244,28 @@ const waitForNextPaint = () =>
     });
 
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
+  };
+
+  const replaceTextReadingSupport = (
+    blockId: string,
+    next: TextReadingSupportOptions,
+  ) => {
+    const nextBlocks = blocks.map((block) => {
+      if (block.id !== blockId || block.kind !== "text") {
+        return block;
+      }
+
+      return {
+        ...block,
+        attrs: serializeTextReadingSupportAttrs(block.attrs, next),
+      } as SsotBlock;
+    });
+
+    onChange(
+      normalizePageHeadersFromTitle(
+        serializeBlocks(sanitizeBlocks(nextBlocks)),
+      ),
+    );
   };
 
   const replaceBlockWithSsot = (blockId: string, replacementSsot: string) => {
@@ -588,6 +615,10 @@ const waitForNextPaint = () =>
                                                          <RichTextPanelEditor
                                                            ssotText={block.raw}
                                                            placeholder={textPlaceholder}
+                                                           readingSupport={parseTextReadingSupportAttrs(block.attrs)}
+                                                           onChangeReadingSupport={(next) =>
+                                                             replaceTextReadingSupport(block.id, next)
+                                                           }
                                                            onChangeSsotText={(nextSsotText) =>
                                                              replaceBlockRaw(
                                                                block.id,
