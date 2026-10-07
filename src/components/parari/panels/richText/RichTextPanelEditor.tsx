@@ -184,7 +184,10 @@ export function RichTextPanelEditor({
           ) : null}
 
           {settingsOpen && readingSupport && onChangeReadingSupport ? (
-            <div className="absolute right-0 top-8 z-50 w-72 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-xl">
+            <div
+              className="absolute right-0 top-8 z-50 w-72 rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div className="mb-2 text-xs font-bold text-neutral-700">読む支援</div>
               <ReadingSupportToggle
                 label="辞書"
@@ -489,14 +492,30 @@ function ReadingSupportToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-xs text-neutral-700 last:border-b-0">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={(event) => {
+        event.stopPropagation();
+        onChange(!checked);
+      }}
+      className="flex w-full items-center justify-between gap-3 border-b border-neutral-100 py-2 text-left text-xs text-neutral-700 last:border-b-0"
+    >
       <span>{label}</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4"
-      />
-    </label>
+      <span
+        className={[
+          "inline-flex h-5 w-9 items-center rounded-full p-0.5 transition",
+          checked ? "bg-neutral-900" : "bg-neutral-200",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "h-4 w-4 rounded-full bg-white shadow-sm transition",
+            checked ? "translate-x-4" : "translate-x-0",
+          ].join(" ")}
+        />
+      </span>
+    </button>
   );
 }
