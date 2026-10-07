@@ -9,10 +9,7 @@
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "repo:status": "node scripts/repo-status.cjs",
-    "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
-    "build:english-glossary": "node scripts/build-parari-english-glossary.mjs",
-    "prepare:english-dictionary-v2": "node scripts/finalize-parari-english-master-v2.mjs",
-    "build:english-glossary-v2": "node scripts/build-parari-english-glossary-v2-provisional.mjs"
+    "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
