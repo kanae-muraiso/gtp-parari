@@ -20,6 +20,12 @@ const EIKEN_PATH = path.join(
   "eiken_canonical_expressions_all_levels.csv",
 );
 
+const PRE1_1_HOLD_PATH = path.join(
+  ROOT_DIR,
+  "data",
+  "parari_english_v2_word_candidates_pre1_1_hold.csv",
+);
+
 const OUTPUT_PATH = path.join(
   ROOT_DIR,
   "data",
@@ -155,6 +161,32 @@ function normalizeEikenLevels(value) {
   }).join(";");
 }
 
+function posFromLabel(label) {
+  const value = String(label ?? "").trim();
+
+  const mapping = new Map([
+    ["名詞", "noun"],
+    ["動詞", "verb"],
+    ["形容詞", "adjective"],
+    ["副詞", "adverb"],
+    ["前置詞", "preposition"],
+    ["接続詞", "conjunction"],
+    ["代名詞", "pronoun"],
+    ["助動詞", "auxiliary"],
+    ["間投詞", "interjection"],
+    ["冠詞", "article"],
+    ["数詞", "numeral"],
+  ]);
+
+  if (mapping.has(value)) return mapping.get(value);
+
+  for (const part of value.split(/[\/;]/).map((item) => item.trim())) {
+    if (mapping.has(part)) return mapping.get(part);
+  }
+
+  return "unknown";
+}
+
 function main() {
   if (!fs.existsSync(PROVISIONAL_PATH)) {
     throw new Error(`Missing provisional dictionary: ${PROVISIONAL_PATH}`);
@@ -164,8 +196,13 @@ function main() {
     throw new Error(`Missing EIKEN source: ${EIKEN_PATH}`);
   }
 
+  if (!fs.existsSync(PRE1_1_HOLD_PATH)) {
+    throw new Error(`Missing pre1/1 hold source: ${PRE1_1_HOLD_PATH}`);
+  }
+
   const provisionalRows = readCsv(PROVISIONAL_PATH);
   const eikenRows = readCsv(EIKEN_PATH);
+  const holdRows = readCsv(PRE1_1_HOLD_PATH);
 
   const eikenIndex = new Map();
 
@@ -213,6 +250,56 @@ function main() {
       note2: row.note2,
     };
   });
+
+  let nextRank = outputRows.reduce(
+    (max, row) => Math.max(max, Number.parseInt(row.source_rank || "0", 10) || 0),
+    0,
+  ) + 1;
+
+  const existingKeys = new Set(
+    outputRows.map((row) => normalizeLookup(row.word)),
+  );
+
+  for (const row of holdRows) {
+    const word = String(row.normalized_expression || row.expression || "").trim();
+    const key = normalizeLookup(word);
+
+    if (!key || existingKeys.has(key)) {
+      continue;
+    }
+
+    const pos = posFromLabel(row.label_raw_all);
+
+    outputRows.push({
+      action: "add",
+      source_rank: String(nextRank++),
+      word,
+      lemma: word,
+      pos,
+      form_type: "base",
+      sense_id: "1",
+      meaning_ja: row.meaning_ja_primary || row.meaning_ja_all || "",
+      eiken_level: normalizeEikenLevel(row.min_eiken_level),
+      eiken_levels: normalizeEikenLevels(row.eiken_levels),
+      level: row.parari_level || "exam",
+      importance: row.importance || "3",
+      entry_kind: row.entry_kind || "word",
+      source: "eiken",
+      category: "eiken",
+      note: "英検準1級・1級保留データからv2正式辞書へ統合",
+      note2: pos === "unknown" ? "品詞未確定" : "",
+    });
+
+    existingKeys.add(key);
+
+    if (pos === "unknown") {
+      reviewRows.push({
+        word,
+        lemma: word,
+        reason: "pos_unknown",
+      });
+    }
+  }
 
   writeCsv(OUTPUT_PATH, outputRows, FORMAL_HEADERS);
   writeCsv(REVIEW_PATH, reviewRows, ["word", "lemma", "reason"]);
