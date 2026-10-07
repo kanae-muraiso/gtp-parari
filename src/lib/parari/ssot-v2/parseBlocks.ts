@@ -59,6 +59,7 @@ type OpenTextBlock = {
   kind: "text";
   start: number;
   explicit: boolean;
+  attrs?: string;
 };
 
 type OpenPanelBlock = {
@@ -116,6 +117,7 @@ export function parseBlocks(
     start: number,
     end: number,
     explicit = false,
+    attrs?: string,
   ) => {
     const raw = ssot.slice(start, end);
 
@@ -133,6 +135,7 @@ export function parseBlocks(
       raw,
       start,
       end,
+      attrs,
     };
 
     blocks.push(block);
@@ -165,10 +168,14 @@ export function parseBlocks(
     return SINGLE_LINE_PANEL_TAGS.has(normalizeTag(tagInfo.tag));
   };
 
-  const openTextFromLineEnd = (line: SsotLine): OpenTextBlock => ({
+  const openTextFromLineEnd = (
+    line: SsotLine,
+    tagInfo?: TagInfo | null,
+  ): OpenTextBlock => ({
     kind: "text",
     start: line.end,
     explicit: true,
+    attrs: tagInfo?.attrs,
   });
 
   for (
@@ -187,6 +194,7 @@ export function parseBlocks(
             openBlock.start,
             line.start,
             openBlock.explicit,
+            openBlock.attrs,
           );
         } else {
           flushPanelBlock(
@@ -242,13 +250,18 @@ export function parseBlocks(
     if (isTextPanelTag) {
       if (openBlock) {
         if (openBlock.kind === "text") {
-          flushTextBlock(openBlock.start, line.start, openBlock.explicit);
+          flushTextBlock(
+            openBlock.start,
+            line.start,
+            openBlock.explicit,
+            openBlock.attrs,
+          );
         } else {
           flushPanelBlock(openBlock.start, line.start, openBlock.tagInfo);
         }
       }
 
-      openBlock = openTextFromLineEnd(line);
+      openBlock = openTextFromLineEnd(line, anyTagInfo);
       continue;
     }
 
@@ -422,7 +435,12 @@ export function parseBlocks(
 
   if (openBlock) {
     if (openBlock.kind === "text") {
-      flushTextBlock(openBlock.start, ssot.length, openBlock.explicit);
+      flushTextBlock(
+        openBlock.start,
+        ssot.length,
+        openBlock.explicit,
+        openBlock.attrs,
+      );
     } else {
       flushPanelBlock(openBlock.start, ssot.length, openBlock.tagInfo);
     }
