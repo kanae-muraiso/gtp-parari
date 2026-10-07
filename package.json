@@ -10,7 +10,8 @@
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "repo:status": "node scripts/repo-status.cjs",
-    "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs"
+    "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
+    "test:unified-viewer": "node scripts/test-unified-viewer.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",

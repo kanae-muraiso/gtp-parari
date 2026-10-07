@@ -11,11 +11,11 @@ Reviewed against main `fdae2874915264217a8157f04d8f0180f0e69405` on 2026-10-07 J
 | Public work reader | `/p/[id]`, `/access/[key]`, `/[username]/[workSlug]`, `/[username]/[workSlug]/[pageSlug]` → `PublicViewerShell` |
 | Old PAGE creation/edit URLs | `/[username]/pages/new` redirects to `/editor/new`; `/[username]/pages/[workId]/edit` redirects to `/editor-v2/[id]` |
 | Old PAGE reading URL | `/[username]/pages/[workId]/view` preserves its profile/owner/visibility checks, then uses `PublicViewerShell` |
-| Reader format dispatch | `PublicViewerShell` selects `viewer-v2/ParariBookViewer`, `ParariWebViewer` or `ParariPanelViewer` according to the SSOT format |
-| Shared reading content | `reader/ReaderBodyPanelRenderer` and `viewer-v2/ViewerTextBlock`; WEB delegates its page body to `ParariPanelViewer` |
+| Reader format dispatch | `PublicViewerShell` → `viewer-v2/ParariViewer` for every work; `buildViewerDocument` derives its reading sheets from existing SSOT |
+| Shared reading content | `reader/ReaderBodyPanelRenderer` and `viewer-v2/ViewerTextBlock`; `ReaderToolbar` owns the shared menu and `readerProgress` handles per-work reading position |
 | Editor/CPP content rendering | `mvp/PageBodyPanelRenderer` is used by editor previews and CPP profiles; it is still active |
 
-BOOK has pagination, cover and navigation behavior; WEB has site navigation; Panel renders PAGE content. These are active format adapters, not backup viewers. BOOK's reading menu and the Panel/WEB `ReaderSettingsBar` currently differ. This cleanup does not claim menu feature parity or change their settings.
+`ParariViewer` is the only reading controller. BOOK keeps cover/chapter/TOC composition through `book/buildBookSheets`; PAGE content stays intact as a reading sheet; WEB selects its page through `web/webSsot` and adds site chrome through `web/WebPageFrame`. Display mode, font, dictionary, ruby and reading-position reset all use one menu. Complex panels remain intact when they cannot be split safely. The three former viewers and `ReaderSettingsBar` are retired; do not restore alternate reading controllers. Existing BOOK progress is read as a compatibility fallback and new progress is keyed by work ID (and WEB page slug).
 
 Despite its directory name, the retained `mvp` code is used in production. Do not delete a component based on its name. Old standalone `PageEditor`, `PagePublicView`, development routes, unused components and old patchers have been removed. Do not restore them as alternate active paths.
 
@@ -29,6 +29,6 @@ The old CSV master was already removed in PR #94. Its remaining comparison/batch
 
 All Next.js route conventions and proxy files were treated as roots, even without inbound links. Literal imports, re-exports, `require`, dynamic imports, type imports and test-script references were checked; no computed module paths were found. After deleting the retired routes and their exclusive dependencies, no unreachable source modules remained. Public URLs were reviewed separately: old user-facing PAGE URLs remain compatible, while seven development/sample routes were retired.
 
-Run repository hygiene, typecheck, build and `test:legacy-page-routes` after entrypoint cleanup. The regression test checks real route modules with a read-only database adapter, including public/unlisted access, owner access, private rejection, username/work ownership mismatch and database errors. It does not replace a signed-in browser test.
+Run repository hygiene, typecheck, build and `test:legacy-page-routes` / `test:unified-viewer` after entrypoint cleanup. The regression test checks real route modules with a read-only database adapter, including public/unlisted access, owner access, private rejection, username/work ownership mismatch and database errors. It does not replace a signed-in browser test.
 
 Use Git history for recovery. Do not add timestamped backups, deprecated copies, generated dictionary snapshots or Supabase local CLI state to the source tree.

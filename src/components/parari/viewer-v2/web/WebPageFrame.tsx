@@ -1,110 +1,21 @@
-// src/components/parari/viewer-v2/ParariWebViewer.tsx
-// PART: WEB viewer
-// - WEBPAGEのpageTypeに応じてWEBINFOのページデザインを選ぶ
-// - sectionOrder順にトップライン・画像・メニューを表示する
-// - pageType:noneでは共通デザインを表示しない
-
+// 2026-10-07 20:15 JST
+// PART: WEB site header, navigation and footer around the shared reader
 "use client";
-
 import React from "react";
-import ParariPanelViewer from "./ParariPanelViewer";
+import type { WebPageFrameData } from "../buildViewerDocument";
+import type { WebPageDesign, WebPageSegment, WebToplineItem } from "./webSsot";
+type WebNavigationLink = { label: string; href: string; isCurrent: boolean; };
 
-import {
-  parseWebSsot,
-  resolveWebInternalLinks,
-  selectWebPage,
-  type WebPageDesign,
-  type WebPageSegment,
-  type WebToplineItem,
-} from "./web/webSsot";
-
-type ParariWebViewerProps = {
-  content?: string | null;
-  pageSlug?: string | null;
-  publicBasePath?: string;
-  headerLogoUrl?: string | null;
-};
-
-type WebNavigationLink = {
-  label: string;
-  href: string;
-  isCurrent: boolean;
-};
-
-export default function ParariWebViewer({
-  content = "",
-  pageSlug = null,
-  publicBasePath = "",
-  headerLogoUrl = null,
-}: ParariWebViewerProps) {
-  const parsed = React.useMemo(
-    () => parseWebSsot(String(content ?? "")),
-    [content],
-  );
-
-  const selectedPage = React.useMemo(
-    () => selectWebPage(parsed, pageSlug),
-    [parsed, pageSlug],
-  );
-
-  const resolvedPageSsot = React.useMemo(() => {
-    if (!selectedPage) {
-      return "";
-    }
-
-    return resolveWebInternalLinks(
-      selectedPage.raw,
-      publicBasePath,
-      parsed.webInfo.homePageSlug,
-    );
-  }, [
-    selectedPage,
-    publicBasePath,
-    parsed.webInfo.homePageSlug,
-  ]);
-
-  if (!selectedPage) {
-    return (
-      <WebPageNotFound
-        pageSlug={pageSlug}
-        publicBasePath={publicBasePath}
-      />
-    );
-  }
-
-  const design =
-    selectedPage.pageType === "none"
-      ? null
-      : parsed.webInfo.designs[selectedPage.pageType];
-
-  return (
-    <>
-      {design ? (
-        <WebPageDesignHeader
-          design={design}
-          webTitle={parsed.webInfo.title}
-          pages={parsed.pages}
-          selectedPage={selectedPage}
-          publicBasePath={publicBasePath}
-          homePageSlug={parsed.webInfo.homePageSlug}
-          logoUrl={headerLogoUrl}
-        />
-      ) : null}
-
-      <ParariPanelViewer
-        content={resolvedPageSsot}
-        displayMode="web"
-      />
-
-      {design ? (
-        <WebCommonFooter
-          title={parsed.webInfo.title}
-          footer={parsed.webInfo.footer}
-          publicBasePath={publicBasePath}
-        />
-      ) : null}
-    </>
-  );
+export function WebPageFrame({ data, children }: { data: WebPageFrameData | null; children: React.ReactNode; }) {
+  if (!data) return <>{children}</>;
+  const { parsed, selectedPage, pageSlug, publicBasePath, headerLogoUrl } = data;
+  if (!selectedPage) return <WebPageNotFound pageSlug={pageSlug} publicBasePath={publicBasePath} />;
+  const design = selectedPage.pageType === "none" ? null : parsed.webInfo.designs[selectedPage.pageType];
+  return <>
+    {design ? <WebPageDesignHeader design={design} webTitle={parsed.webInfo.title} pages={parsed.pages} selectedPage={selectedPage} publicBasePath={publicBasePath} homePageSlug={parsed.webInfo.homePageSlug} logoUrl={headerLogoUrl} /> : null}
+    {children}
+    {design ? <WebCommonFooter title={parsed.webInfo.title} footer={parsed.webInfo.footer} publicBasePath={publicBasePath} /> : null}
+  </>;
 }
 
 function WebPageNotFound({
@@ -530,7 +441,7 @@ function WebDesktopNavigation({
                 link.isCurrent,
               ),
             ].join(" ")}
-          > 
+          >
             {link.label}
           </a>
         ))}
@@ -935,7 +846,7 @@ function mergeWebPageMenuLinks({
       ) {
         return (
           left.menuOrder -
-            right.menuOrder ||
+          right.menuOrder ||
           left.index - right.index
         );
       }
@@ -966,8 +877,8 @@ function mergeWebPageMenuLinks({
       ? basePath || "#"
       : basePath
         ? `${basePath}/${encodeURIComponent(
-            page.slug,
-          )}`
+          page.slug,
+        )}`
         : `#${slug}`;
 
     const comparableHref =
