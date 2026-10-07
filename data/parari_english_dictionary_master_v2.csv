@@ -307,6 +307,7 @@ add,5101,anesthesia,anesthesia,unknown,base,1,麻酔，麻酔薬,1,1,exam,3,word
 add,5102,anew,anew,unknown,base,1,新たに,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,2043,anger,anger,noun,base,1,怒り，憤り,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:1026; row_count=1; label_raw_all=名詞
 add,2044,angle,angle,noun,base,1,"角度, 角",2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:495; row_count=1; label_raw_all=名詞
+add,7570,angrily,angrily,adverb,base,1,怒って、腹を立てて,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,571,angry,angry,adjective,base,1,怒おこった、腹はらを立たてた,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:224; row_count=1; label_raw_all=形容詞
 add,5103,angst,angst,unknown,base,1,不安,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,2751,anguish,anguish,noun,base,1,苦悩，苦悶,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -754,6 +755,7 @@ add,5256,boldly,boldly,unknown,base,1,大胆に,1,1,exam,3,word,eiken,eiken,英�
 add,606,bomb,bomb,noun,base,1,爆弾ばくだん,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:982; row_count=1; label_raw_all=名詞
 add,1095,bond,bond,noun,base,1,拘束，束縛,pre2,pre2;2;pre1,high_school,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2;pre1。pos判定=label_raw_all,source_refs=pre2:493;2:1317;pre1:616; row_count=3; label_raw_all=名詞
 add,2890,bondage,bondage,noun,base,1,緊縛，縛り,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7579,bone,bone,noun,base,1,骨,,,junior_high,1,word,author,shakespeare,bones の原形,
 add,2891,bonfire,bonfire,noun,base,1,たき火,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,31,book,book,noun,base,1,本ほん,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:noun,source_refs=5:142;4:599; row_count=2
 add,32,bookstore,bookstore,noun,base,1,本屋ほんや,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:noun,source_refs=5:578;4:420; row_count=2
@@ -1622,6 +1624,7 @@ add,5567,decrepit,decrepit,unknown,base,1,老朽化した,1,1,exam,3,word,eiken,
 add,2146,dedicate,dedicate,verb,base,1,に専念する，奉納する,2,2;pre1,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2;pre1。pos判定=label_raw_all,source_refs=2:654;pre1:1051; row_count=2; label_raw_all=動詞
 add,3179,deduct,deduct,verb,base,1,を差し引く，控除する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,3180,deem,deem,verb,base,1,考える,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7580,deeply,deeply,adverb,base,1,深く、非常に,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,5568,defamation,defamation,unknown,base,1,名誉毀損，中傷,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,1238,defeat,defeat,verb,base,1,負かす，打ち破る,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:793;2:1689; row_count=2; label_raw_all=動詞
 add,3181,defect,defect,noun,base,1,欠陥，欠点,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -2534,6 +2537,7 @@ add,3501,federation,federation,noun,base,1,連合，連盟,pre1,pre1,exam,3,word
 add,1402,fee,fee,noun,base,1,料金，手数料,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:280;2:618; row_count=2; label_raw_all=名詞
 add,3502,feeble,feeble,adjective,base,1,弱った，虚弱な,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,417,feel,feel,verb,base,1,感かんじる,4,4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=4。出現級=4;3。pos判定=label_raw_all,source_refs=4:711;3:370; row_count=2; label_raw_all=動詞
+add,7588,feeling,feeling,noun,base,1,気持ち、感情,,,junior_high,1,word,author,shakespeare,feelings の原形,
 add,5858,feign,feign,unknown,base,1,偽る，装う,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,1404,fellow,fellow,noun,base,1,仲間，友人,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:427;2:1779; row_count=2; label_raw_all=名詞
 add,5859,felon,felon,unknown,base,1,重罪犯人，凶悪犯,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -3176,6 +3180,7 @@ add,3714,hug,hug,noun,base,1,抱擁/を抱きしめる,pre1,pre1,exam,3,word,eik
 add,1468,huge,huge,adjective,base,1,巨大な，広大な,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:559;2:820; row_count=2; label_raw_all=形容詞
 add,6101,hull,hull,unknown,base,1,外皮，船体,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,6102,hum,hum,unknown,base,1,鼻歌を歌う，ブーンと鳴る,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7592,human,human,noun,base,1,人間,,,junior_high,1,word,author,shakespeare,humans の原形,
 add,3715,humane,humane,adjective,base,1,人道的な，人道に基づく,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,1469,humanity,humanity,noun,base,1,人間，人間性,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1052;2:1413; row_count=2; label_raw_all=名詞
 add,2285,humble,humble,adjective,base,1,謙虚な,2,2;pre1,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2;pre1。pos判定=label_raw_all,source_refs=2:2283;pre1:339; row_count=2; label_raw_all=形容詞
@@ -3797,6 +3802,7 @@ add,3895,lick,lick,verb,base,1,をなめる，をなめてかかる,pre1,pre1,ex
 add,3896,lieutenant,lieutenant,noun,base,1,副官,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,171,life,life,noun,base,1,生活せいかつ,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:noun,source_refs=5:228;4:679; row_count=2
 add,3897,lifelike,lifelike,adjective,base,1,生きてるような，生き写しの,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7585,lift,lift,verb,base,1,持ち上げる,,,junior_high,1,word,author,shakespeare,lifted の原形,
 add,6352,ligament,ligament,unknown,base,1,靱帯,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,3898,lighthearted,lighthearted,adjective,base,1,気軽な，気楽な,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6353,lighthouse,lighthouse,unknown,base,1,灯台，燈台,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -3860,6 +3866,7 @@ add,782,loss,loss,noun,base,1,失うしなうこと，喪失そうしつ,3,3,jun
 add,6378,lousy,lousy,unknown,base,1,ひどい，悪い,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,464,low,low,adjective,base,1,低ひくい,4,4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=4。出現級=4;3。pos判定=label_raw_all,source_refs=4:358;3:780; row_count=2; label_raw_all=形容詞
 add,2362,low-income,low-income,adjective,base,1,低収入の,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:2239; row_count=1; label_raw_all=形容詞
+add,7581,lower,lower,verb,base,1,下げる,,,junior_high,1,word,author,shakespeare,lowered の原形,
 add,3912,loyal,loyal,adjective,base,1,忠実な，信念の厳格な,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,3913,loyalty,loyalty,noun,base,1,忠誠，誠実,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6379,lubricate,lubricate,unknown,base,1,潤滑させる,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -3896,6 +3903,7 @@ add,1566,mad,mad,adjective,base,1,狂った，狂気じみた,pre2,pre2;2,high_s
 add,3924,madden,madden,verb,base,1,を発狂させる，激怒させる,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6393,maelstrom,maelstrom,unknown,base,1,大渦，混沌,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,465,magazine,magazine,noun,base,1,雑誌ざっし,4,4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=4。出現級=4;3。pos判定=label_raw_all,source_refs=4:567;3:919; row_count=2; label_raw_all=名詞
+add,7572,magic,magic,noun,base,1,魔法,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,6394,magistrate,magistrate,unknown,base,1,行政長官，行政官,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,6395,magnanimous,magnanimous,unknown,base,1,寛大な,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,6396,magnate,magnate,unknown,base,1,有力者,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -4198,6 +4206,7 @@ add,4027,mythology,mythology,noun,base,1,神話,pre1,pre1,exam,3,word,eiken,eike
 add,6505,nag,nag,unknown,base,1,小言を言う,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4028,namely,namely,adverb,base,1,すなわち，つまり,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,2390,nap,nap,noun,base,1,昼寝,2,2;pre1,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2;pre1。pos判定=label_raw_all,source_refs=2:2198;pre1:390; row_count=2; label_raw_all=名詞
+add,7595,Naples,Naples,noun,base,1,ナポリ（イタリアの都市）,,,junior_high,1,proper_noun,author,shakespeare,固有名詞,
 add,6506,narcissistic,narcissistic,unknown,base,1,自己愛的な，自己中心的,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4029,narrative,narrative,noun,base,1,物語，話,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6507,nasal,nasal,unknown,base,1,鼻の，鼻関連の,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -4286,6 +4295,7 @@ add,4051,notable,notable,adjective,base,1,注目すべき，重要な,pre1,pre1;
 add,4052,notation,notation,noun,base,1,表記，注釈,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,808,note,note,noun,base,1,紙幣しへい,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:1021; row_count=1; label_raw_all=名詞
 add,4053,noteworthy,noteworthy,adjective,base,1,注目に値する，著しい,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7591,notice,notice,verb,base,1,気づく,3,3;pre2;2,junior_high,1,word,author,shakespeare,noticed の原形,
 add,4054,noticeable,noticeable,adjective,base,1,目立つ，際立つ,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4055,notify,notify,verb,base,1,知らせる，通報する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,1615,notion,notion,noun,base,1,考え，意見,pre2,pre2;2;pre1,high_school,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2;pre1。pos判定=label_raw_all,source_refs=pre2:1148;2:987;pre1:3028; row_count=3; label_raw_all=名詞
@@ -4585,6 +4595,7 @@ add,6639,patriotism,patriotism,unknown,base,1,愛国心，忠誠心,1,1,exam,3,w
 add,4162,patron,patron,noun,base,1,常連客，保護者,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6640,patronage,patronage,unknown,base,1,後援，支援，援助,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,6641,paucity,paucity,unknown,base,1,少なさ，不足,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7590,pause,pause,verb,base,1,立ち止まる、一時止まる,,,junior_high,1,word,author,shakespeare,paused の原形,
 add,4163,pave,pave,verb,base,1,を舗装する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4164,pavement,pavement,noun,base,1,舗装路,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4165,paw,paw,noun,base,1,動物の足,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -4639,6 +4650,7 @@ add,6665,perceptual,perceptual,unknown,base,1,知覚の,1,1,exam,3,word,eiken,ei
 add,4176,perch,perch,noun,base,1,止まり木,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6666,percolate,percolate,unknown,base,1,浸透する，染みる,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,6667,perennial,perennial,unknown,base,1,一年中続く，年間を通じて,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7587,perfect,perfect,adjective,base,1,完璧な,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,6668,perforate,perforate,unknown,base,1,穴を空ける,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4177,perfume,perfume,noun,base,1,香水，芳香,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6669,perfunctory,perfunctory,unknown,base,1,形式的な（形だけの),1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -4853,6 +4865,7 @@ add,6739,pounce,pounce,unknown,base,1,飛び掛かる,1,1,exam,3,word,eiken,eike
 add,1701,pour,pour,verb,base,1,を注ぐ，激しく降る,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1384;2:341; row_count=2; label_raw_all=動詞
 add,6740,pout,pout,unknown,base,1,口をとがらせる,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,1702,poverty,poverty,noun,base,1,貧困，貧乏，困窮,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1008;2:163; row_count=2; label_raw_all=名詞
+add,7576,powerful,powerful,adjective,base,1,力強い、強力な,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,1703,practical,practical,adjective,base,1,実用的な，有用な,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:655;2:1742; row_count=2; label_raw_all=形容詞
 add,2446,practically,practically,adverb,base,1,実質的に，実用的に,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:1091; row_count=1; label_raw_all=副詞
 add,224,practice,practice,verb,base,1,練習れんしゅうする,5,5;4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4;3。pos判定=label_raw_all,source_refs=5:533;4:482;3:8; row_count=3; label_raw_all=動詞
@@ -5361,6 +5374,7 @@ add,6926,reparation,reparation,unknown,base,1,賠償,1,1,exam,3,word,eiken,eiken
 add,6927,repatriate,repatriate,unknown,base,1,送還する,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4425,repay,repay,verb,base,1,返済する，報いる,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4426,repeal,repeal,verb,base,1,廃止する，中止する,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7586,repeat,repeat,verb,base,1,繰り返す,,,junior_high,1,word,author,shakespeare,repeated の原形,
 add,6928,repeatedly,repeatedly,unknown,base,1,繰り返し，反復,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4427,repel,repel,verb,base,1,追い払う,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,6929,repellent,repellent,unknown,base,1,虫よけ,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -5547,6 +5561,7 @@ add,6990,ruffle,ruffle,unknown,base,1,波立たせる,1,1,exam,3,word,eiken,eike
 add,2513,rug,rug,noun,base,1,じゅうたん，敷き物,2,2;pre1,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2;pre1。pos判定=label_raw_all,source_refs=2:697;pre1:1780; row_count=2; label_raw_all=名詞
 add,1826,ruin,ruin,verb,base,1,を台無しにする，破滅する/破滅,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1437;2:418; row_count=2; label_raw_all=動詞
 add,865,rule,rule,noun,base,1,支配しはい、統治とうち,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:348; row_count=1; label_raw_all=名詞
+add,7596,rule,rule,verb,base,2,支配する、統治する,3,3,junior_high,1,word,author,shakespeare,既存名詞語義に動詞語義を追加,
 add,235,ruler,ruler,noun,base,1,定規じょうぎ,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:noun,source_refs=5:368;4:616; row_count=2
 add,4491,ruling,ruling,adjective,base,1,支配的な，主要な，優勢な,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4492,rumble,rumble,verb,base,1,ゴロゴロ鳴る,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -5571,6 +5586,7 @@ add,2515,sacrifice,sacrifice,noun,base,1,犠牲，捧げ物,2,2;pre1,high_school
 add,6999,sacrilegious,sacrilegious,unknown,base,1,罰当たりの,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,7000,sacrosanct,sacrosanct,unknown,base,1,神聖視される，絶対的な,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,237,sad,sad,adjective,base,1,悲かなしい,5,5;4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4;3。pos判定=label_raw_all,source_refs=5:82;4:383;3:134; row_count=3; label_raw_all=形容詞
+add,7593,sadness,sadness,noun,base,1,悲しみ,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,7001,sag,sag,unknown,base,1,たるむ，弛む,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,7002,sagacious,sagacious,unknown,base,1,賢い,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4499,sage,sage,adjective,base,1,賢明な,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -5643,6 +5659,7 @@ add,7026,scourge,scourge,unknown,base,1,むち，天罰,1,1,exam,3,word,eiken,ei
 add,7027,scowl,scowl,unknown,base,1,顔をしかめる,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4521,scramble,scramble,verb,base,1,をかき混ぜる，素早く進む,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4522,scrape,scrape,verb,base,1,を削り取る,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7571,scream,scream,verb,base,1,悲鳴を上げる、叫ぶ,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,7028,screech,screech,unknown,base,1,金切り声，高い叫び声,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4523,screw,screw,noun,base,1,ねじ,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7029,scribble,scribble,unknown,base,1,落書きする，書き散らす，いたずら書きをする,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -5662,6 +5679,7 @@ add,7037,scuttle,scuttle,unknown,base,1,急いで行く，速く走る,1,1,exam,
 add,243,sea,sea,noun,base,1,海うみ,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:noun,source_refs=5:92;4:38; row_count=2
 add,4528,seal,seal,verb,base,1,密閉する，封鎖する,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4529,seam,seam,noun,base,1,縫い目，継ぎ目,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7582,search for,search for,verb,base,1,〜を探す,4,4;3;pre2,junior_high,1,phrase,author,shakespeare,Shakespeare教材から追加,
 add,244,season,season,noun,base,1,季節きせつ,5,5;4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4;3。pos判定=label_raw_all,source_refs=5:386;4:275;3:173; row_count=3; label_raw_all=名詞
 add,4530,seasoning,seasoning,noun,base,1,調味料，薬味,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,2525,seat,seat,verb,base,1,を着席させる/座席,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:1045; row_count=1; label_raw_all=動詞
@@ -5881,6 +5899,7 @@ add,263,small,small,adjective,base,1,小ちいさい,5,5;4,junior_high,1,word,ei
 add,7107,smallpox,smallpox,unknown,base,1,天然痘,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,2540,smart,smart,adjective,base,1,頭の良い，きちんとした,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:1188; row_count=1; label_raw_all=形容詞
 add,7108,smear,smear,unknown,base,1,塗る，塗布する,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7575,smile,smile,verb,base,1,微笑む,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,7109,smirk,smirk,unknown,base,1,にやにや笑う，微笑む,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,7110,smite,smite,unknown,base,1,強打する，激打する，ぶん殴る,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,7111,smolder,smolder,unknown,base,1,燻る,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -5979,6 +5998,7 @@ add,1870,spill,spill,verb,base,1,をこぼす，溢れる,pre2,pre2;2,high_schoo
 add,4635,spine,spine,noun,base,1,脊椎，背骨,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4636,spiral,spiral,adjective,base,1,螺旋の,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7144,spire,spire,unknown,base,1,尖塔,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7578,spirit,spirit,noun,base,1,精霊、霊,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,2551,spiritual,spiritual,adjective,base,1,精神の，心の,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:1591; row_count=1; label_raw_all=形容詞
 add,2552,spiritually,spiritually,adverb,base,1,精神的に，心の中で,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:794; row_count=1; label_raw_all=副詞
 add,4637,spit,spit,verb,base,1,唾を吐く,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -6026,6 +6046,7 @@ add,4650,stability,stability,noun,base,1,安定，平穏，均衡,pre1,pre1;1,ex
 add,4651,stabilize,stabilize,verb,base,1,固定させる，安定させる,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,1873,stable,stable,adjective,base,1,安定した，安泰な,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:487;2:546; row_count=2; label_raw_all=形容詞
 add,4652,stack,stack,verb,base,1,積み重ねる，累積する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7594,staff,staff,noun,base,2,杖,,,junior_high,1,word,author,shakespeare,物語中の staff=杖 の語義,
 add,4653,stagger,stagger,verb,base,1,よろめく，よろよろ歩く,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7167,staggering,staggering,unknown,base,1,千鳥足の，ふらふらの,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4654,stagnant,stagnant,adjective,base,1,停滞している,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -6106,6 +6127,7 @@ add,4681,stony,stony,adjective,base,1,石の，石の多い,pre1,pre1,exam,3,wor
 add,4682,stool,stool,noun,base,1,腰かけ椅子,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4683,stoop,stoop,verb,base,1,かがむ,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,907,store,store,verb,base,1,を蓄たくわえる,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:920; row_count=1; label_raw_all=動詞
+add,7569,storm,storm,noun,base,1,嵐,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,4684,stout,stout,adjective,base,1,頑丈な，太った,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7193,stow,stow,unknown,base,1,詰め込む,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4685,straddle,straddle,verb,base,1,またがる，乗り越える,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -6262,6 +6284,8 @@ add,4739,surmise,surmise,verb,base,1,を推測する,pre1,pre1;1,exam,3,word,eik
 add,4740,surmount,surmount,verb,base,1,乗り越える,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4741,surpass,surpass,verb,base,1,超える，勝る,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,4742,surplus,surplus,noun,base,1,余剰，余り,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
+add,7573,surprise,surprise,verb,base,1,驚かせる,,,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
+add,7574,surprised,surprise,adjective,variant,1,驚いた,,,junior_high,1,word,author,shakespeare,教材で頻出する形容詞用法,
 add,915,surprisingly,surprisingly,adverb,base,1,驚おどろいたことには,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:718; row_count=1; label_raw_all=副詞
 add,4743,surrender,surrender,verb,base,1,降伏する，投降する,pre1,pre1;1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7241,surreptitious,surreptitious,unknown,base,1,秘密裏の，ひそかな,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
@@ -6398,6 +6422,7 @@ add,4787,termination,termination,noun,base,1,終了，終わり,pre1,pre1;1,exam
 add,7295,terminology,terminology,unknown,base,1,用語，専門用語,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4788,terrain,terrain,noun,base,1,地形,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7296,terrestrial,terrestrial,unknown,base,1,地球上の，地上の,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7568,terrible,terrible,adjective,base,1,ひどい、恐ろしい,3,3;pre2;2,junior_high,1,word,author,shakespeare,Shakespeare教材から追加,
 add,2586,terribly,terribly,adverb,base,1,ひどく，ものすごく,2,2;pre1,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2;pre1。pos判定=label_raw_all,source_refs=2:856;pre1:27; row_count=2; label_raw_all=副詞
 add,4789,terrific,terrific,adjective,base,1,すごい，ものすごい,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,1926,terror,terror,noun,base,1,恐怖，恐れ,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1165;2:1798; row_count=2; label_raw_all=名詞
@@ -6414,6 +6439,7 @@ add,4793,texture,texture,noun,base,1,生地,pre1,pre1,exam,3,word,eiken,eiken,�
 add,7302,thatch,thatch,unknown,base,1,わら,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4794,thaw,thaw,verb,base,1,雪が解ける，雪解けの陽気になる,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,299,the,the,article,base,1,その,5,5;4,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4。pos判定=v0_master_pos:article,source_refs=5:27;4:314; row_count=2
+add,7589,the others,the others,pronoun,base,1,他の人たち、残りの人たち,,,junior_high,1,phrase,author,shakespeare,Shakespeare教材から追加,
 add,926,theater,theater,noun,base,1,劇場げきじょう,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:497; row_count=1; label_raw_all=名詞
 add,7303,thee,thee,unknown,base,1,汝を，あなたを,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4795,theft,theft,noun,base,1,盗み，窃盗,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -6564,6 +6590,7 @@ add,4848,transparent,transparent,adjective,base,1,透明な，光を通す,pre1,
 add,7338,transpire,transpire,unknown,base,1,蒸発する,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4849,transplant,transplant,verb,base,1,を移植する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,2600,transportation,transportation,noun,base,1,交通，輸送,2,2,high_school,3,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=2。出現級=2。pos判定=label_raw_all,source_refs=2:611; row_count=1; label_raw_all=名詞
+add,7577,trap,trap,verb,base,1,閉じ込める,,,junior_high,1,word,author,shakespeare,trapped の原形,
 add,4850,trash,trash,noun,base,1,ごみ，価値のないもの,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,316,travel,travel,verb,base,1,旅行りょこう,5,5;4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4;3。pos判定=label_raw_all,source_refs=5:440;4:325;3:279; row_count=3; label_raw_all=動詞
 add,4851,traverse,traverse,verb,base,1,を横切る，横断する,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
@@ -6613,6 +6640,7 @@ add,7356,truce,truce,unknown,base,1,休戦,1,1,exam,3,word,eiken,eiken,英検準
 add,7357,trudge,trudge,unknown,base,1,とぼとぼ歩く，のろのろ歩く,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,1954,truly,truly,adverb,base,1,真に，正確に,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1166;2:963; row_count=2; label_raw_all=副詞
 add,7358,truncate,truncate,unknown,base,1,切り詰める，短縮する,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
+add,7583,trust,trust,verb,base,1,信頼する,3,3;pre2;2,junior_high,1,word,author,shakespeare,trusted の原形,
 add,4865,trustee,trustee,noun,base,1,受託者，保管人,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,1955,truth,truth,noun,base,1,真実，事実,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:388;2:1636; row_count=2; label_raw_all=名詞
 add,319,try,try,verb,base,1,試ためす,5,5;4;3,junior_high,1,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=5。出現級=5;4;3。pos判定=label_raw_all,source_refs=5:50;4:329;3:215; row_count=3; label_raw_all=動詞
@@ -7000,6 +7028,7 @@ add,7521,wicker,wicker,unknown,base,1,小枝,1,1,exam,3,word,eiken,eiken,英検�
 add,4975,wicket,wicket,noun,base,1,窓口,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,960,wide,wide,adjective,base,1,幅はばの広ひろい,3,3,junior_high,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=3。出現級=3。pos判定=label_raw_all,source_refs=3:296; row_count=1; label_raw_all=形容詞
 add,1999,widely,widely,adverb,base,1,広範囲に，多くの範囲に,pre2,pre2;2,high_school,2,word,eiken,eiken,英検語彙由来のv2正本候補。英検最小級=pre2。出現級=pre2;2。pos判定=label_raw_all,source_refs=pre2:1072;2:1572; row_count=2; label_raw_all=副詞
+add,7584,widen,widen,verb,base,1,広げる、広がる,,,junior_high,1,word,author,shakespeare,widened の原形,
 add,7522,widget,widget,unknown,base,1,機械装置，部品,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
 add,4976,widow,widow,noun,base,1,未亡人，夫を亡くした女性,pre1,pre1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,
 add,7523,wield,wield,unknown,base,1,振り回す，使う,1,1,exam,3,word,eiken,eiken,英検準1級・1級保留データからv2正式辞書へ統合,品詞未確定
