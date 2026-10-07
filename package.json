@@ -12,7 +12,8 @@
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "build:english-glossary": "node scripts/build-parari-english-glossary.mjs",
     "prepare:english-dictionary-v2": "node scripts/finalize-parari-english-master-v2.mjs",
-    "build:english-glossary-v2": "node scripts/build-parari-english-glossary-v2-provisional.mjs"
+    "build:english-glossary-v2": "node scripts/build-parari-english-glossary-v2-provisional.mjs",
+    "build:english-dictionary-v2-server": "node scripts/build-parari-english-dictionary-v2-server.mjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
