@@ -52,6 +52,7 @@ function countPagePanels(ssot: string): number {
 }
 
 const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
+  { tag: "PAYWALL", label: "ここから先は有料" },
   { tag: "TEXT", label: "文章" },
   { tag: "IMAGE", label: "画像" },
   { tag: "YOUTUBE", label: "YouTube" },
@@ -160,6 +161,7 @@ export function PagePanelComposer({
   const visibleContentInsertItems = useMemo(
     () =>
       CONTENT_INSERT_ITEMS.filter((item) => {
+        if (item.tag === "PAYWALL") return entitlements.canUseIntegratedSales && !/\[PAYWALL\b/i.test(value);
         switch (item.tag) {
           case "FORM":
             return entitlements.canManageForms;
@@ -171,7 +173,7 @@ export function PagePanelComposer({
             return true;
         }
       }),
-    [entitlements],
+    [entitlements, value],
   );
 const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
@@ -349,6 +351,7 @@ const waitForNextPaint = () =>
       tag: PanelInsertItem["tag"],
     ) => {
       preserveWindowScrollForNextRender();
+      if (tag === "PAYWALL" && /\[PAYWALL\b/i.test(value)) return;
       // BOOKINFOは作品内に1つだけ、先頭にのみ挿入できる。
       if (tag === "BOOK") {
         if (insertIndex !== 0 || hasBookInfo) {
@@ -457,6 +460,7 @@ const waitForNextPaint = () =>
     
     function createInitialPanelSsot(tag: PanelInsertItem["tag"]): string {
       switch (tag) {
+          case "PAYWALL": return "[PAYWALL]";
           case "TEXT":
             return "[T]\n\u200B";
               

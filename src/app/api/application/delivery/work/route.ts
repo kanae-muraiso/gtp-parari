@@ -1,3 +1,5 @@
+import { buildPublicReaderDocument } from "@/lib/parari/buildPublicReaderDocument";
+import { splitPaidContent } from "@/lib/commerce/paywall";
 import {
   NextRequest,
   NextResponse,
@@ -288,8 +290,7 @@ export async function GET(
         title:
           work.title ||
           delivery.workTitle,
-        content:
-          work.content ?? "",
+        document: buildPublicReaderDocument({content:splitPaidContent(work.content ?? "").full,workId:work.id}),
         owner:
           work.owner,
         render_mode:

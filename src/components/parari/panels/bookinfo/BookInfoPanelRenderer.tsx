@@ -17,7 +17,7 @@ import type { BookInfoPanelData } from "./BookInfoPanelEditor";
 export function BookInfoPanelRenderer({
   data,
 }: PanelRendererProps<BookInfoPanelData>) {
-  const fields = parseMetaFields(data.raw);
+  const fields = data.fields ?? parseMetaFields(data.raw);
 
   const title = getMetaValue(fields, ["title"], "");
   const subtitle = getMetaValue(fields, ["subtitle"], "");

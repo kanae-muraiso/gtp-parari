@@ -6,6 +6,7 @@
 // - 月謝はSquare Subscription Plan Checkoutを使い、PARARI手数料は月次精算する
 // - 購入者はPARARIログイン必須
 
+import { safeReturnTo,validEntitlement,validSubscription } from "@/lib/commerce/paywall";
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     const body =
       (await request.json().catch(() => null)) as
-        | { productId?: unknown }
+        | { productId?: unknown; returnTo?: unknown }
         | null;
     const productId =
       typeof body?.productId === "string"
@@ -132,21 +133,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const returnTo=safeReturnTo(body?.returnTo,product.work_id?`/p/${product.work_id}`:"/my/purchases");
+
     if (product.work_id) {
       const { data: entitlement } =
         await supabaseAdmin
           .from("commerce_entitlements")
-          .select("id,status")
+          .select("id,status,starts_at,expires_at,remaining_uses")
           .eq("user_id", user.id)
           .eq("product_id", product.id)
           .eq("status", "active")
           .maybeSingle();
 
-      if (entitlement) {
+      if (entitlement && validEntitlement(entitlement)) {
         return NextResponse.json({
           ok: true,
           alreadyOwned: true,
-          url: `${appUrl()}/p/${product.work_id}`,
+          url: new URL(returnTo,appUrl()).toString(),
         });
       }
     }
@@ -161,10 +164,7 @@ export async function POST(request: NextRequest) {
       Number(product.amount);
     const amountMinor =
       toMinorUnits(amount, currency);
-    const resultUrl =
-      product.work_id
-        ? `${appUrl()}/p/${product.work_id}?purchase=return`
-        : `${appUrl()}/buy/${product.id}?purchase=return`;
+    const resultUrl = `${appUrl()}/buy/${product.id}?purchase=return&returnTo=${encodeURIComponent(returnTo)}`;
 
     if (product.billing_interval === "monthly") {
       const sellerAccess =
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
         error: activeSubscriptionError,
       } = await supabaseAdmin
         .from("commerce_subscriptions")
-        .select("id,status,canceled_at")
+        .select("id,status,canceled_at,access_until")
         .eq("product_id", product.id)
         .eq("buyer_user_id", user.id)
         .in("status", ["ACTIVE", "PENDING", "PAYMENT_FAILED"])
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
           ok: true,
           recurring: true,
           alreadySubscribed: true,
-          url: `${appUrl()}/my/purchases`,
+          url: validSubscription(activeSubscription) ? new URL(returnTo,appUrl()).toString() : `${appUrl()}/my/purchases`,
         });
       }
 

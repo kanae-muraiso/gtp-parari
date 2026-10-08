@@ -10,6 +10,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 const React = req('react');
 const {createRoot} = req('react-dom/client');
 const {ParariViewer} = req('../src/components/parari/viewer-v2/ParariViewer.tsx');
+const {buildPublicReaderDocument}=req('../src/lib/parari/buildPublicReaderDocument.ts');
 const {buildViewerDocument} = req('../src/components/parari/viewer-v2/buildViewerDocument.ts');
 const {readingPositionStorageKey,readingModeStorageKey} = req('../src/components/parari/viewer-v2/readerProgress.ts');
 // JSDOM has no layout engine. Geometry is deterministic; visual layout is not claimed.
@@ -40,7 +41,7 @@ async function settle(ms=40){await React.act(async()=>{await new Promise(resolve
 async function mount(format,pageSlug=null){
   if(root)await React.act(async()=>root.unmount());
   root=createRoot(document.getElementById('root'));
-  await React.act(async()=>root.render(React.createElement(ParariViewer,{content:sources[format],workId:`test-${format}`,pageSlug,publicBasePath:'/author/site'})));
+  await React.act(async()=>root.render(React.createElement(ParariViewer,{content:'',preparedDocument:buildPublicReaderDocument({content:sources[format],workId:`test-${format}`,pageSlug,publicBasePath:'/author/site'})})));
   await settle();
 }
 function findButton(label,scope=document){const b=[...scope.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')===label || x.textContent.trim()===label);assert.ok(b,`Missing ${label}`);return b;}

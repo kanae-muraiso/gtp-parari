@@ -20,6 +20,8 @@ export type BookSheet = {
   mainImage?: string;
   coverTitleOverlay?: boolean;
   bodySsot: string;
+  bodyBlocks?: import("@/lib/parari/readerProjectionTypes").PreparedReaderBlock[];
+  paginationContent?: { bodyText: string; imageUrl: string } | null;
   pageNumber: number | null;
   chapterId?: string;
   chapterNumber?: string;

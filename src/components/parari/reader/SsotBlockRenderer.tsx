@@ -16,6 +16,7 @@ import { parseRichText } from "@/lib/parari/richText/parseRichText";
 
 type SsotBlockRendererProps = {
   text: string;
+  preparedBlocks?: import("@/lib/parari/parseSsotBlocks").SsotBlock[];
 
   /**
    * true ならリッチUI表示。
@@ -444,9 +445,10 @@ function renderBlock(block: SsotBlock, index: number, rich: boolean) {
 
 export function SsotBlockRenderer({
   text,
+  preparedBlocks,
   rich = true,
 }: SsotBlockRendererProps) {
-  const blocks = parseSsotBlocks(text);
+  const blocks = preparedBlocks ?? parseSsotBlocks(text);
 
   return (
     <div className="space-y-3">

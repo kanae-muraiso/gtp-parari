@@ -5,6 +5,7 @@
 // ページ数と公開作品数をサーバー側で確認し、
 // Free / Plusの上限を超える保存を拒否する。
 
+import { validatePaywall } from "@/lib/commerce/paywall";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getEffectivePlan,
@@ -223,6 +224,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const paywallError = validatePaywall(content);
+    if (paywallError) return NextResponse.json({ok:false,message:paywallError},{status:400});
+
     const { data: currentData, error: currentError } =
       await supabaseAdmin
         .from("parari_books")
@@ -249,6 +253,7 @@ export async function POST(request: NextRequest) {
 
     const currentWork = currentData as CurrentWorkRow | null;
       
+      if (!currentWork || currentWork.is_deleted) return NextResponse.json({ok:false,message:"作品が見つかりません。"},{status:404});
       const isOwner = currentWork.owner === user.id;
 
       let isEditor = false;

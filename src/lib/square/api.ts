@@ -450,6 +450,8 @@ export async function retrieveSquareInvoice(input: {
   accessToken: string;
   invoiceId: string;
 }): Promise<{
+  status: string | null;
+  paymentRequests: Array<{computed_amount_money?:{amount:number;currency:string};total_completed_amount_money?:{amount:number;currency:string}}>;
   id: string;
   orderId: string | null;
   subscriptionId: string | null;
@@ -457,6 +459,8 @@ export async function retrieveSquareInvoice(input: {
 }> {
   const result = await squareRequest<{
     invoice?: {
+      status?: string;
+      payment_requests?: Array<{computed_amount_money?:{amount:number;currency:string};total_completed_amount_money?:{amount:number;currency:string}}>;
       id?: string;
       order_id?: string;
       subscription_id?: string;
@@ -479,6 +483,8 @@ export async function retrieveSquareInvoice(input: {
 
   return {
     id: invoice.id,
+    status: invoice.status ?? null,
+    paymentRequests: invoice.payment_requests ?? [],
     orderId: invoice.order_id ?? null,
     subscriptionId:
       invoice.subscription_id ?? null,
@@ -527,6 +533,9 @@ export async function retrieveSquareSubscription(input: {
   customerId: string;
   planVariationId: string;
   status: string | null;
+  chargedThroughDate: string | null;
+  timezone: string | null;
+  invoiceIds: string[];
 }> {
   const result = await squareRequest<{
     subscription?: {
@@ -534,6 +543,9 @@ export async function retrieveSquareSubscription(input: {
       customer_id?: string;
       plan_variation_id?: string;
       status?: string;
+      charged_through_date?: string;
+      timezone?: string;
+      invoice_ids?: string[];
     };
   }>(
     `/v2/subscriptions/${encodeURIComponent(input.subscriptionId)}`,
@@ -554,6 +566,9 @@ export async function retrieveSquareSubscription(input: {
 
   return {
     id: subscription.id,
+    chargedThroughDate: subscription.charged_through_date ?? null,
+    timezone: subscription.timezone ?? null,
+    invoiceIds: subscription.invoice_ids ?? [],
     customerId: subscription.customer_id,
     planVariationId:
       subscription.plan_variation_id,

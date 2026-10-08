@@ -5,6 +5,7 @@
 "use client";
 
 import React from "react";
+import { materializeReaderBlock, type PreparedReaderBlock } from "@/lib/parari/readerProjectionTypes";
 import { getPanelDefinition } from "@/components/parari/panels/registry";
 import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { resolvePanelGap } from "@/components/parari/panels/shared/panelGap";
@@ -27,6 +28,7 @@ export type ReaderTextBlockRenderer = (args: {
 
 type ReaderBodyPanelRendererProps = {
   bodySsot: string;
+  preparedBlocks?: PreparedReaderBlock[];
   renderTextBlock: ReaderTextBlockRenderer;
   emptyFallback?: React.ReactNode;
 };
@@ -38,14 +40,17 @@ type PageTocState = {
 
 export function ReaderBodyPanelRenderer({
   bodySsot,
+  preparedBlocks,
   renderTextBlock,
   emptyFallback = null,
 }: ReaderBodyPanelRendererProps) {
   const instanceId = React.useId();
   const tocHeadingIdPrefix = `parari-page-heading-${instanceId}`;
   const blocks = React.useMemo(() => {
-    return parseBlocks(normalizeReaderTocTags(bodySsot));
-  }, [bodySsot]);
+    return preparedBlocks?.map(materializeReaderBlock) ?? parseBlocks(normalizeReaderTocTags(bodySsot));
+  }, [bodySsot, preparedBlocks]);
+
+  const preparedById = React.useMemo(() => new Map(preparedBlocks?.map(block => [block.id, block])), [preparedBlocks]);
 
   const meaningfulBlocks = React.useMemo(() => {
     return blocks.filter((block) => {
@@ -71,6 +76,7 @@ export function ReaderBodyPanelRenderer({
         <BlockView
           key={block.id}
           block={block}
+          prepared={preparedById.get(block.id)}
           index={index}
           renderTextBlock={renderTextBlock}
           tocEntries={tocState.entries}
@@ -84,6 +90,7 @@ export function ReaderBodyPanelRenderer({
 
 function BlockView({
   block,
+  prepared,
   index,
   renderTextBlock,
   tocEntries,
@@ -91,6 +98,7 @@ function BlockView({
   tocHeadingIdPrefix,
 }: {
   block: SsotBlock;
+  prepared?: PreparedReaderBlock;
   index: number;
   renderTextBlock: ReaderTextBlockRenderer;
   tocEntries: PageTocEntry[];
@@ -112,6 +120,7 @@ function BlockView({
   return (
     <PanelBlockView
       block={block}
+      prepared={prepared}
       tocEntries={tocEntries}
       renderTextBlock={renderTextBlock}
     />
@@ -152,14 +161,16 @@ function TextBlockView({
 
 function PanelBlockView({
   block,
+  prepared,
   tocEntries,
   renderTextBlock,
 }: {
   block: PanelBlock;
+  prepared?: PreparedReaderBlock;
   tocEntries: PageTocEntry[];
   renderTextBlock: ReaderTextBlockRenderer;
 }) {
-  const gap = resolvePanelGap(block);
+  const gap = prepared?.gap ?? resolvePanelGap(block);
   const width = panelFrameWidthForBlock(block);
 
   if (isTocBlock(block)) {
@@ -187,16 +198,17 @@ function PanelBlockView({
     );
   }
 
-  const data = definition.parse(block.raw, block);
+  const data = prepared ? prepared.data : definition.parse(block.raw, block);
 
   return (
     <PanelFrame gap={gap} width={width}>
       <Renderer
         block={block}
         data={data}
-        renderNestedPanelViewer={(nestedSsot) => (
+        renderNestedPanelViewer={(nestedSsot, nestedBlocks) => (
           <ReaderBodyPanelRenderer
             bodySsot={nestedSsot}
+            preparedBlocks={nestedBlocks}
             renderTextBlock={renderTextBlock}
             emptyFallback={null}
           />

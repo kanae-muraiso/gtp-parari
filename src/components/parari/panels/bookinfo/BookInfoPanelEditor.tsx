@@ -20,6 +20,7 @@ import {
 
 export type BookInfoPanelData = {
   raw: string;
+  fields?: Record<string, string>;
 };
 
 async function normalizeBookInfoCoverImageFile(file: File): Promise<File> {

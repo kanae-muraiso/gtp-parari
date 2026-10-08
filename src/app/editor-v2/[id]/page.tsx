@@ -8,6 +8,7 @@
 
 "use client";
 
+import { PaidReadingSettings } from "@/components/parari/editor-v2/PaidReadingSettings";
 import { EnglishAuthoringProvider } from "@/components/parari/english/EnglishAuthoringProvider";
 import {
   useCallback,
@@ -1281,6 +1282,7 @@ export default function BookPanelSequenceEditorPage() {
              !canEdit || status.type === "saving"
            }
            >
+             {!isWebLikeSsot(ssot) && row ? <PaidReadingSettings workId={row.id} content={ssot}/> : null}
              {isWebLikeSsot(ssot) ? (
                                      <WebPageComposer
                                        value={ssot}

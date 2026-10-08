@@ -9,7 +9,7 @@ import type { ChapterInfoPanelData } from "./ChapterInfoPanelEditor";
 export function ChapterInfoPanelRenderer({
   data,
 }: PanelRendererProps<ChapterInfoPanelData>) {
-  const fields = parseMetaFields(data.raw);
+  const fields = data.fields ?? parseMetaFields(data.raw);
   const number = getMetaValue(fields, ["number"], "");
   const title = getMetaValue(fields, ["title"], "");
   const subtitle = getMetaValue(fields, ["subtitle"], "");

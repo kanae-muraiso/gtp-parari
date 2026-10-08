@@ -18,6 +18,7 @@ type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
 type Props = {
   doc?: any;
+  preparedDocument?: import("./viewer-v2/buildViewerDocument").ViewerDocument;
   content?: string | null;
   renderMode?: RenderMode | null;
   physicalPagination?: boolean | null;
@@ -30,6 +31,7 @@ type Props = {
 
 export default function PublicViewerShell({
   doc,
+  preparedDocument,
   content = "",
   bookId,
   ownerId,
@@ -95,6 +97,7 @@ export default function PublicViewerShell({
             key={`${bookId}:${pageSlug ?? ""}`}
             workId={bookId}
             content={viewerContent}
+            preparedDocument={preparedDocument}
             pageSlug={pageSlug}
             publicBasePath={publicBasePath}
             headerLogoUrl={headerLogoUrl}

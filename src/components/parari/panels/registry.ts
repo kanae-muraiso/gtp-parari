@@ -27,8 +27,11 @@ import { webInfoDefinition } from "./webinfo/webInfoDefinition";
 import { formDefinition } from "./form/formDefinition";
 import { carouselDefinition } from "./carousel/carouselDefinition";
 
+import { paywallDefinition } from "./paywall/paywallDefinition";
+
 const panelDefinitions: Record<string, PanelDefinition<any>> = {
   ETTEXT: etTextPanelDefinition,
+  PAYWALL: paywallDefinition,
   BOOK: bookInfoDefinition,
   WEB: webInfoDefinition,
   CHAPTER: chapterInfoDefinition,
