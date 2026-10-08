@@ -12,6 +12,7 @@ import React from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
+import { safeReturnTo } from "@/lib/commerce/paywall";
 import { supabase } from "@/lib/supabaseClient";
 
 type Product = {
@@ -78,6 +79,31 @@ export default function BuyProductPage() {
     };
   }, [productId]);
 
+  const [owned,setOwned]=React.useState(false);
+  const [checkingPayment,setCheckingPayment]=React.useState(false);
+  const returnTo=safeReturnTo(searchParams.get("returnTo"),product?.work_id?`/p/${product.work_id}`:"/my/purchases");
+  const returned=searchParams.get("purchase")==="return";
+  React.useEffect(()=>{
+    if(!returned || !productId) return;
+    let cancelled=false;let timer:ReturnType<typeof setTimeout>|undefined;let attempts=0;
+    async function check() {
+      setCheckingPayment(true);
+      try {
+        const {data:{session}}=await supabase.auth.getSession();
+        if(!session) {if(!cancelled)setMessage("ログインして購入状況をご確認ください。");return;}
+        const response=await fetch(`/api/commerce/purchase-status?productId=${encodeURIComponent(productId)}`,{cache:"no-store",headers:{Authorization:`Bearer ${session.access_token}`}});
+        const result=await response.json();
+        if(cancelled)return;
+        if(!response.ok)throw new Error(result.message);
+        if(result.owned){setOwned(true);setMessage("お支払いを確認しました。");return;}
+        if(++attempts<30) timer=setTimeout(()=>void check(),2000);
+        else setMessage("まだ反映を確認できません。少し待って作品を開き直すか、購入履歴をご確認ください。");
+      } catch(e){if(!cancelled)setMessage(e instanceof Error?e.message:"確認できませんでした。");}
+      finally {if(!cancelled)setCheckingPayment(false);}
+    }
+    void check();return ()=>{cancelled=true;if(timer)clearTimeout(timer);};
+  },[returned,productId]);
+
   async function checkout() {
     setCheckingOut(true);
     setMessage("");
@@ -88,9 +114,7 @@ export default function BuyProductPage() {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        setMessage(
-          "購入にはPARARIへのログインが必要です。",
-        );
+        window.location.assign(`/login?returnTo=${encodeURIComponent(window.location.pathname+window.location.search)}`);
         return;
       }
 
@@ -106,6 +130,7 @@ export default function BuyProductPage() {
           },
           body: JSON.stringify({
             productId,
+            returnTo,
           }),
         },
       );
@@ -185,7 +210,7 @@ export default function BuyProductPage() {
 
               <button
                 type="button"
-                disabled={checkingOut}
+                disabled={checkingOut || returned}
                 onClick={() => {
                   void checkout();
                 }}
@@ -198,6 +223,7 @@ export default function BuyProductPage() {
                     : "購入する"}
               </button>
 
+              {returned?<div className="mt-4 space-y-3 text-sm"><p role="status">{owned?"購入済みです。続きへお進みください。":checkingPayment?"決済の反映を確認しています…":"作品画面でも反映を確認できます。"}</p><a className="block rounded-xl border p-3 text-center font-bold" href={returnTo}>{owned?"続きを読む":"作品へ戻る"}</a><Link className="block underline" href="/my/purchases">購入・購読履歴</Link><a className="block underline" href={`/login?returnTo=${encodeURIComponent(`/buy/${productId}?purchase=return&returnTo=${encodeURIComponent(returnTo)}`)}`}>ログインして確認</a></div>:null}
               {message ? (
                 <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                   {message}

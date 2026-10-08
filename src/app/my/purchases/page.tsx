@@ -4,7 +4,7 @@
 // コメント:
 // - commerce_entitlementsから購入済み作品を表示する
 // - commerce_subscriptionsから定期契約を表示・解約できる
-// - 作品本文は既存parari_booksをRLS経由で読む
+// - 履歴APIはタイトルと権利だけを返し、本文は閲覧APIで確認する
 // - SSOTの複製はしない
 
 "use client";
@@ -16,11 +16,6 @@ import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { supabase } from "@/lib/supabaseClient";
 
-type Entitlement = {
-  work_id: string | null;
-  created_at: string;
-};
-
 type Work = {
   id: string;
   title: string | null;
@@ -31,6 +26,7 @@ type Subscription = {
   product_id: string;
   status: string;
   canceled_at: string | null;
+  access_until: string | null;
   billing_amount: number | string;
   billing_currency: string;
   created_at: string;
@@ -46,6 +42,7 @@ type Product = {
 export default function PurchasesPage() {
   const [works, setWorks] =
     React.useState<Work[]>([]);
+  const [subscriptionWorks,setSubscriptionWorks]=React.useState<Record<string,Work[]>>({});
   const [subscriptions, setSubscriptions] =
     React.useState<Subscription[]>([]);
   const [productsById, setProductsById] =
@@ -60,216 +57,21 @@ export default function PurchasesPage() {
     React.useState<string | null>(null);
 
   React.useEffect(() => {
-    let cancelled = false;
-
+    const controller=new AbortController();
     async function load() {
-      setLoading(true);
-      setMessage("");
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        if (!cancelled) {
-          setMessage(
-            "購入済み作品を見るにはログインが必要です。",
-          );
-          setLoading(false);
-        }
-        return;
-      }
-
-      const now =
-        new Date().toISOString();
-
-      const [
-        entitlementResult,
-        subscriptionResult,
-      ] = await Promise.all([
-        supabase
-          .from("commerce_entitlements")
-          .select(
-            "work_id,created_at",
-          )
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .lte("starts_at", now)
-          .or(
-            `expires_at.is.null,expires_at.gt.${now}`,
-          )
-          .order(
-            "created_at",
-            { ascending: false },
-          ),
-        supabase
-          .from("commerce_subscriptions")
-          .select(
-            "id,product_id,status,canceled_at,billing_amount,billing_currency,created_at",
-          )
-          .eq("buyer_user_id", user.id)
-          .order(
-            "created_at",
-            { ascending: false },
-          ),
-      ]);
-
-      if (cancelled) return;
-
-      const {
-        data: entitlements,
-        error: entitlementError,
-      } = entitlementResult;
-
-      if (entitlementError) {
-        console.error(
-          "[my/purchases] entitlements load failed:",
-          entitlementError,
-        );
-        setMessage(
-          "購入済み作品を確認できませんでした。",
-        );
-      }
-
-      const {
-        data: subscriptionRows,
-        error: subscriptionError,
-      } = subscriptionResult;
-
-      if (subscriptionError) {
-        console.warn(
-          "[my/purchases] subscriptions load failed:",
-          subscriptionError,
-        );
-      }
-
-      const nextSubscriptions =
-        subscriptionError
-          ? []
-          : ((subscriptionRows ?? []) as Subscription[]);
-
-      setSubscriptions(nextSubscriptions);
-
-      if (nextSubscriptions.length > 0) {
-        const productIds =
-          Array.from(
-            new Set(
-              nextSubscriptions.map(
-                (item) => item.product_id,
-              ),
-            ),
-          );
-
-        const {
-          data: productRows,
-          error: productError,
-        } = await supabase
-          .from("commerce_products")
-          .select(
-            "id,name,amount,currency",
-          )
-          .in("id", productIds);
-
-        if (!cancelled && !productError) {
-          setProductsById(
-            new Map(
-              ((productRows ?? []) as Product[]).map(
-                (product) => [
-                  product.id,
-                  product,
-                ],
-              ),
-            ),
-          );
-        }
-      } else {
-        setProductsById(new Map());
-      }
-
-      const ids =
-        entitlementError
-          ? []
-          : Array.from(
-              new Set(
-                (
-                  (entitlements ??
-                    []) as Entitlement[]
-                )
-                  .map(
-                    (item) =>
-                      item.work_id,
-                  )
-                  .filter(
-                    (
-                      id,
-                    ): id is string =>
-                      Boolean(id),
-                  ),
-              ),
-            );
-
-      if (ids.length === 0) {
-        setWorks([]);
-        setLoading(false);
-        return;
-      }
-
-      const {
-        data: workRows,
-        error: workError,
-      } = await supabase
-        .from("parari_books")
-        .select("id,title")
-        .in("id", ids)
-        .or(
-          "is_deleted.is.null,is_deleted.eq.false",
-        );
-
-      if (cancelled) return;
-
-      if (workError) {
-        console.error(
-          "[my/purchases] works load failed:",
-          workError,
-        );
-        setMessage(
-          "購入済み作品を読み込めませんでした。",
-        );
-      } else {
-        const byId =
-          new Map(
-            ((workRows ??
-              []) as Work[]).map(
-              (work) => [
-                work.id,
-                work,
-              ],
-            ),
-          );
-
-        setWorks(
-          ids
-            .map(
-              (id) =>
-                byId.get(id),
-            )
-            .filter(
-              (
-                work,
-              ): work is Work =>
-                Boolean(work),
-            ),
-        );
-      }
-
-      setLoading(false);
+      setLoading(true);setMessage("");
+      try {
+        const {data:{session}}=await supabase.auth.getSession();
+        if(!session)throw new Error("購入済み作品を見るにはログインが必要です。");
+        const response=await fetch("/api/commerce/library",{cache:"no-store",signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`}});
+        const data=await response.json();if(!response.ok)throw new Error(data.message);
+        if(controller.signal.aborted)return;
+        setWorks(data.works);setSubscriptions(data.subscriptions);setSubscriptionWorks(data.subscriptionWorks);
+        setProductsById(new Map(data.products.map((p:Product)=>[p.id,p])));
+      } catch(error) {if(!controller.signal.aborted)setMessage(error instanceof Error?error.message:"購入済み作品を読み込めませんでした。");}
+      finally {if(!controller.signal.aborted)setLoading(false);}
     }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
+    void load();return ()=>controller.abort();
   }, []);
 
   async function cancelSubscription(
@@ -465,6 +267,8 @@ export default function PurchasesPage() {
                         </span>
                       </div>
 
+                      {subscription.access_until?<p className="mt-3 text-xs text-neutral-500">閲覧期限：{new Date(subscription.access_until).toLocaleString("ja-JP")}</p>:null}
+                      {(subscriptionWorks[subscription.product_id]??[]).map(work=><Link key={work.id} href={`/p/${work.id}`} className="mt-3 block text-sm underline">{work.title||"無題の作品"}を読む</Link>)}
                       {cancelScheduled ? (
                         <p className="mt-3 text-xs leading-6 text-neutral-500">
                           現在の請求期間の終了後に自動課金が停止します。

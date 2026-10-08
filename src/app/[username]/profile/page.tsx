@@ -348,7 +348,7 @@ export default function UserProfilePage() {
             const {
                 data: booksData, error: booksError
             } = await supabase
-            .from("parari_books")
+            .from("parari_public_works")
             .select(
                     "id, title, content, created_at, updated_at, visibility, custom_slug, stable_slug, slug, expires_at, show_in_profile_works, profile_works_order"
                     )

@@ -95,7 +95,7 @@ export default function PublicAuthorWorksPage() {
     setProfile(profileRow);
 
     const { data, error } = await supabase
-      .from("parari_books")
+      .from("parari_public_works")
       .select(
         [
           "id",
