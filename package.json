@@ -7,6 +7,7 @@
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
+    "test:cpp-ai": "node --test scripts/test-cpp-ai.cjs scripts/test-cpp-ai-ui.cjs",
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "repo:status": "node scripts/repo-status.cjs",
@@ -15,6 +16,7 @@
     "test:english-authoring": "node scripts/test-english-authoring.cjs"
   },
   "dependencies": {
+    "@ai-sdk/openai": "4.0.91",
     "@lexical/link": "^0.43.0",
     "@lexical/markdown": "^0.43.0",
     "@lexical/react": "^0.43.0",
@@ -22,6 +24,7 @@
     "@lexical/selection": "^0.43.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.95.3",
+    "ai": "7.0.136",
     "cheerio": "^1.2.0",
     "heic-to": "^1.4.2",
     "jszip": "^3.10.1",
