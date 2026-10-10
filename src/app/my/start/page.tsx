@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import { supabase } from "@/lib/supabaseClient";
+import { startManuals } from "@/components/parari/start/startManuals";
 
 type GuideId = "works" | "service" | "membership";
 type Status = "todo" | "done" | "skipped";
@@ -53,88 +54,6 @@ const guides: Array<{
   },
 ];
 
-
-// Instructions are tied to the actual STUDIO destinations, not to a profession.
-// Important limitations are surfaced instead of suggesting unsupported operations.
-const manuals: Record<string, string[]> = {
-  "works.write": [
-    "「作品」画面を開き、新しい作品の作成を選びます。",
-    "作品名を入力し、編集画面で本文や画像などを追加します。",
-    "保存して作品一覧に戻り、作品が表示されているか確認します。"
-  ],
-  "works.publish": [
-    "「作品」から対象の作品を選びます。",
-    "公開範囲を確認します。非公開・限定公開・公開は用途に合わせて選んでください。",
-    "作品の表示URLを開き、別の利用者からどのように見えるか確認します。"
-  ],
-  "works.sell": [
-    "「販売」を開き、作品販売を選びます。",
-    "「販売する作品」を選択し、タイトル・価格など必要項目を設定します。",
-    "「販売を開始」を押し、販売一覧に商品が表示されたか確認します。",
-    "有料販売開始で作品が一般公開から外れる場合があります。公開範囲を確認してください。"
-  ],
-  "works.deliver": [
-    "「販売」で対象商品が販売中になっているか確認します。",
-    "購入者の閲覧権が正しく付与されるか、テスト用アカウントで確認してください。",
-    "購入できたことと、本文を読めることは別です。両方を確認してください。"
-  ],
-  "service.intro": [
-    "教える内容・対象者・クラスの特徴を短くまとめます。",
-    "「プロフィール」で基本情報を整えます。",
-    "注意：プロフィール画面はクラス紹介ページの代わりではありません。募集ページの説明はAPPLICATIONなどで設定します。"
-  ],
-  "service.schedule": [
-    "「運営」画面で「CALENDAR」を選びます。",
-    "クラス・イベントの作成画面で名称を登録します。",
-    "日時設定で曜日・時間・場所などを指定し、保存します。",
-    "予約受付の定員・支払い条件は関連するAPPLICATION側も確認してください。"
-  ],
-  "service.apply": [
-    "「運営」→「APPLICATION」を開きます。",
-    "「新しい募集を作る」から募集名・募集案内を入力します。",
-    "定員、受付条件、キャンセル規則、必要な質問を確認して保存します。",
-    "公開ページから実際に申込できるか確認します。CALENDAR由来の募集の場合は開催回との対応も確認します。"
-  ],
-  "service.payment": [
-    "参加費の設定は販売商品とAPPLICATIONの参加費で扱いが異なります。",
-    "単発クラスの参加費は、まず「運営」→「APPLICATION」の支払い設定を確認してください。",
-    "「販売」は単品作品や継続課金商品を扱う画面です。クラス参加費と同じものとして二重に登録しないでください。",
-    "実際の決済と申込ステータスの反映は別途テストが必要です。"
-  ],
-  "service.manage": [
-    "「運営」→「APPLICATION」で対象の募集を開き、申込者を確認します。",
-    "支払状況・申込状態・当日の参加者情報を確認します。",
-    "申込者との個別メッセージが使える場合は、その画面から必要な案内を送ります。",
-    "全員への一斉通知機能があるとは限りません。利用可能な連絡方法を確認してください。"
-  ],
-  "membership.create": [
-    "「運営」画面にMembershipが表示されているか確認します。",
-    "「Membership」を開き、会員を迎える場所の名前と説明を入力します。",
-    "保存後に作成されたMembershipを確認します。",
-    "重要：現在のmainではORGANIZERにMembership開設権限がありません。このステップは権限修正まで利用できません。"
-  ],
-  "membership.recruit": [
-    "「運営」→「APPLICATION」で入会募集を作成します。",
-    "入会時に必要な項目や申込条件を整理します。",
-    "申込が成立したこととMembership会員資格が付くことは別です。現在の連携を確認してください。"
-  ],
-  "membership.fee": [
-    "「販売」で継続課金商品を作成します。",
-    "月謝・会費の価格と周期、新規受付の状態を確認します。",
-    "Squareへの接続と決済完了の反映を確認します。",
-    "支払い成功・失敗・解約がMembership会員資格へ正しく連動するかは、実地テストが必要です。"
-  ],
-  "membership.content": [
-    "「作品」で配布したい教材や資料を用意します。",
-    "「運営」→「Membership」の「メンバー限定作品を設定」から対象作品を選びます。",
-    "会員アカウントで閲覧でき、非会員からは閲覧できないことを確認します。"
-  ],
-  "membership.contact": [
-    "「メッセージ」を開き、利用できる相手と連絡方法を確認します。",
-    "現在の共通メッセージはAPPLICATION関係での利用が中心です。",
-    "Membershipの全会員に対する一斉連絡は未検証なので、対応済みとして案内しないでください。"
-  ]
-};
 
 const metadataKey = "parari_start_progress_v1";
 
@@ -230,11 +149,11 @@ export default function StartPage() {
                       <details className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                         <summary className="cursor-pointer text-sm font-semibold">使い方を見る（操作マニュアル）</summary>
                         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-700">
-                          {(manuals[key] ?? []).map((instruction, n) => <li key={n}>{instruction}</li>)}
+                          {(startManuals[key] ?? []).map((instruction, n) => <li key={n}>{instruction}</li>)}
                         </ol>
                       </details>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <Link href={step.href} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white">{step.action} →</Link>
+                        <Link href={`${step.href}?startHelp=${encodeURIComponent(key)}`} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white">{step.action} →</Link>
                         <button type="button" disabled={!signedIn || saving || loading} onClick={() => void changeStatus(key, status === "done" ? "todo" : "done")}
                           className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">{status === "done" ? "完了を戻す" : "完了にする"}</button>
                         <button type="button" disabled={!signedIn || saving || loading} onClick={() => void changeStatus(key, status === "skipped" ? "todo" : "skipped")}
