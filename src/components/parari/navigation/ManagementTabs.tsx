@@ -6,6 +6,7 @@
 
 "use client";
 
+import StartContextHelp from "@/components/parari/start/StartContextHelp";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
@@ -64,5 +65,5 @@ export default function ManagementTabs({ active }: ManagementTabsProps) {
 
   items.push(SALES_ITEM);
 
-  return <ParariTabs items={items} active={active} />;
+  return <div className="relative"><ParariTabs items={items} active={active} className="pr-36" /><StartContextHelp /></div>;
 }
