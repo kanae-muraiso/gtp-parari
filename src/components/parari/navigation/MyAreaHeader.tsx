@@ -7,7 +7,6 @@
 // - 設定は両方から使う共通領域
 // - OPERATIONS は運営スタッフ専用領域
 
-import StartContextHelp from "@/components/parari/start/StartContextHelp";
 import LogoutButton from "@/components/parari/navigation/LogoutButton";
 import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
@@ -76,7 +75,6 @@ export default function MyAreaHeader({
           <LogoutButton />
         </div>
       </div>
-      <StartContextHelp />
     </>
   );
 }
