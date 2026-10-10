@@ -28,17 +28,16 @@ export default function StartContextHelp() {
   if (!keys.length) return null;
   const active = keys.includes(selected) ? selected : keys[0];
   return (
-    <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-semibold">操作ヘルプ</span>
+    <>
+      <div className="absolute right-2 top-1 z-10">
         <button type="button" onClick={() => setOpen((value) => !value)}
           aria-expanded={open} aria-label={open ? "操作ヘルプを閉じる" : "操作ヘルプを開く"}
-          className="rounded-lg border border-neutral-300 px-3 py-1 text-sm font-semibold">
+          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-100">
           {open ? "閉じる ×" : "使い方を見る ？"}
         </button>
       </div>
       {open ? (
-        <div className="mt-3 border-t pt-3">
+        <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-4">
           <label htmlFor="parari-start-help-step" className="block text-sm font-semibold">確認したい操作</label>
           <select id="parari-start-help-step" value={active} onChange={(event) => setSelected(event.target.value)}
             className="mt-1 w-full rounded-lg border border-neutral-300 bg-white p-2 text-sm">
@@ -50,6 +49,6 @@ export default function StartContextHelp() {
           <Link href="/my/start" className="mt-4 inline-block text-sm font-semibold underline">STARTの作業一覧へ戻る</Link>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
