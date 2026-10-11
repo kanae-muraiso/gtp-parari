@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 type Thread = { thread_id: string; display_name: string | null; session_started_at: string | null; session_expires_at: string | null };
@@ -8,12 +8,9 @@ type Thread = { thread_id: string; display_name: string | null; session_started_
 export default function CppLiveAudioPilotEntry() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    async function load() {
+  const load = useCallback(async () => {
       if (!supabase) return;
       const { data, error: queryError } = await supabase.rpc("cpp_live_active_threads_timed");
-      if (!active) return;
       if (queryError) { setError("通話候補を取得できませんでした。"); return; }
       const now = Date.now();
       setThreads(((data ?? []) as Thread[]).filter(t => {
@@ -22,10 +19,12 @@ export default function CppLiveAudioPilotEntry() {
         const end = Math.min(Date.parse(t.session_expires_at), start + 600000);
         return Number.isFinite(start) && start <= now && now < end;
       }));
-    }
-    void load();
-    return () => { active = false; };
   }, []);
+  useEffect(() => {
+    void load();
+    const interval = window.setInterval(() => void load(), 2000);
+    return () => window.clearInterval(interval);
+  }, [load]);
   return (
     <aside className="mx-auto max-w-5xl px-4 py-4">
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
