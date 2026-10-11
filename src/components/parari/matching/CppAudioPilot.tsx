@@ -12,6 +12,8 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
   const [status, setStatus] = useState<"idle" | "connecting" | "active" | "ended" | "error">("idle");
   const [message, setMessage] = useState("");
   const [frameUrl, setFrameUrl] = useState("");
+  const [mode, setMode] = useState<"audio" | "video">("audio");
+  const [changingMode, setChangingMode] = useState(false);
   const [expiresAt, setExpiresAt] = useState(0);
   const [clock, setClock] = useState(Date.now());
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -38,7 +40,7 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
     };
   }, []);
 
-  async function start() {
+  async function start(nextMode: "audio" | "video" = "audio") {
     if (!supabase || status === "connecting") return;
     setStatus("connecting");
     setMessage("");
@@ -51,7 +53,7 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ threadId }),
+        body: JSON.stringify({ threadId, mode: nextMode }),
         cache: "no-store",
       });
       if (!res.ok) {
@@ -77,10 +79,25 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
       setExpiresAt(deadline);
       setClock(Date.now());
       setFrameUrl(url.toString());
+      setMode(nextMode);
       setStatus("active");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "通話を開始できませんでした。");
+    }
+  }
+
+  async function switchMode() {
+    if (status !== "active" || changingMode || remaining <= 0) return;
+    const nextMode = mode === "audio" ? "video" : "audio";
+    setChangingMode(true);
+    // Changing modes requires a new Daily transport session. The CPP clock
+    // is unchanged and the API rechecks authorization before issuing a token.
+    setFrameUrl("");
+    try {
+      await start(nextMode);
+    } finally {
+      setChangingMode(false);
     }
   }
 
@@ -92,11 +109,11 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-bold">CPP LIVE 音声テスト</h1>
+      <h1 className="text-2xl font-bold">CPP LIVE 通話テスト</h1>
       <p className="mt-2 text-sm text-neutral-600">既存のLIVEテキストチャットとは独立した、音声接続のテスト画面です。</p>
       {status === "active" && (
         <p aria-live="polite" className="mt-4 font-semibold">
-          残り {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+          {mode === "audio" ? "写真・音声モード" : "ビデオモード"} ｜ 残り {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
         </p>
       )}
       {frameUrl && remaining > 0 && (
@@ -112,6 +129,12 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
         {(status === "idle" || status === "error") && (
           <button type="button" onClick={() => void start()}
             className="rounded-full bg-neutral-900 px-5 py-3 text-white">音声通話を始める</button>
+        )}
+        {status === "active" && (
+          <button type="button" disabled={changingMode} onClick={() => void switchMode()}
+            className="rounded-full border px-5 py-3 disabled:opacity-50">
+            {changingMode ? "切替中…" : mode === "audio" ? "ビデオに切り替える" : "音声だけに切り替える"}
+          </button>
         )}
         {status === "active" && (
           <button type="button" onClick={leave}
