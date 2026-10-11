@@ -29,6 +29,8 @@ assert.match(context, /getCppHardDeadline\(candidate\.session_started_at, candid
 assert.match(audio, /getCppContext\(contextRequest\)/);
 assert.match(audio, /getOrCreateCppAudioRoom/);
 assert.match(audio, /createDailyJoinToken/);
+assert.match(audio, /const lastCheck = await getCppContext\(contextRequest\)/);
+assert.match(audio, /if \(!lastCheck\.ok\) return lastCheck/);
 assert.match(pilot, /sessionExpiresAt/);
 assert.match(pilot, /setFrameUrl\(""]?\)/);
 // Execute the actual TypeScript policy helper, not merely matching its text.
