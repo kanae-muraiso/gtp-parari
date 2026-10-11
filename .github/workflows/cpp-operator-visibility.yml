@@ -1,0 +1,32 @@
+name: CPP operator visibility guardrails
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*cpp_operator_candidate_visibility*"
+      - "scripts/sql/cpp_operator_candidate_checks.sql"
+      - ".github/workflows/cpp-operator-visibility.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sql-sanity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check exclusions in every intended path
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          sql = Path('supabase/migrations/20261011210000_cpp_operator_candidate_visibility.sql').read_text()
+          names = [
+            'cpp_matching_visible_members', 'cpp_matching_member_social_profile',
+            'cpp_matching_live_profiles', 'cpp_live_roster',
+            'cpp_live_queue_snapshot', 'cpp_live_request_conversation',
+            'cpp_live_open_direct_conversation', 'cpp_live_start_direct_internal',
+            'cpp_alumni_community_members', 'cpp_message_targets',
+          ]
+          assert all('FUNCTION public.' + n in sql for n in names)
+          assert sql.count('cpp_private.is_operator_account(') >= 12
+          print('Operator visibility SQL source guardrails passed')
+          PY
