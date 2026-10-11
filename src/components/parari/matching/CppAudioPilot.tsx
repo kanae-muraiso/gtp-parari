@@ -110,7 +110,7 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
       )}
       <div className="mt-4 flex flex-wrap gap-3">
         {(status === "idle" || status === "error") && (
-          <button type="button" disabled={status === "connecting"} onClick={() => void start()}
+          <button type="button" onClick={() => void start()}
             className="rounded-full bg-neutral-900 px-5 py-3 text-white">音声通話を始める</button>
         )}
         {status === "active" && (
