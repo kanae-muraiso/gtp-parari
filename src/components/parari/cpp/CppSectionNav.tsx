@@ -79,6 +79,7 @@ export default function CppSectionNav({
           { href: "/cpp/alumni/announcements", label: "お知らせ", key: "announcements" },
           { href: "/cpp/alumni/members", label: "参加者一覧", key: "browse" },
           { href: "/cpp/alumni/feed", label: "近況", key: "feed" },
+          { href: "/cpp/alumni/live", label: "LIVE", key: "live" },
         ] : items).map((item) => {
           const selected = item.key === active;
           return (
