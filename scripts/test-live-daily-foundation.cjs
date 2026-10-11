@@ -40,7 +40,7 @@ const transpiled = ts.transpileModule(clockSource, {
 }).outputText;
 const clockModule = { exports: {} };
 vm.runInNewContext(transpiled, { module: clockModule, exports: clockModule.exports, Date, Math, Number });
-const { getCppHardDeadline, getCppRemainingSeconds } = clockModule.exports;
+const { getCppHardDeadline, getCppRemainingSeconds, isCppSessionLive } = clockModule.exports;
 const start = "2026-10-11T10:00:00.000Z";
 assert.equal(getCppHardDeadline(start, "2026-10-11T10:20:00.000Z"), Date.parse(start) + 600000);
 assert.equal(getCppHardDeadline(start, "2026-10-11T10:06:00.000Z"), Date.parse(start) + 360000);
@@ -48,4 +48,7 @@ assert.equal(getCppHardDeadline(start, start), null);
 assert.equal(getCppHardDeadline("bad", "2026-10-11T10:20:00.000Z"), null);
 assert.equal(getCppRemainingSeconds(Date.parse(start) + 600000, Date.parse(start) + 599000), 1);
 assert.equal(getCppRemainingSeconds(Date.parse(start) + 600000, Date.parse(start) + 650000), 0);
+assert.equal(isCppSessionLive(start, Date.parse(start) + 600000, Date.parse(start) + 2000), true);
+assert.equal(isCppSessionLive(start, Date.parse(start) + 600000, Date.parse(start) - 1000), false);
+assert.equal(isCppSessionLive(start, Date.parse(start) + 600000, Date.parse(start) + 600000), false);
 console.log("PARARI LIVE source and executable CPP clock checks passed (not an integration test).");
