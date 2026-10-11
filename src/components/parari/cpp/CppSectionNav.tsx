@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useOptionalCppSave } from "./CppSaveBoundary";
 
-const modeLabels = { researcher: "研究者モード", company: "会社モード", admin: "管理者モード" };
+const modeLabels = { researcher: "研究者モード", company: "会社モード", admin: "管理者モード", alumni: "同窓会モード" };
 type Mode = keyof typeof modeLabels;
 
 type CppSection = "home" | "announcements" | "browse" | "manual" | "live" | "feed";
