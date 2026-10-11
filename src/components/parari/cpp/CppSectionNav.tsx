@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useOptionalCppSave } from "./CppSaveBoundary";
 
-const modeLabels = { researcher: "研究者モード", company: "会社モード", admin: "管理者モード" };
+const modeLabels = { researcher: "研究者モード", company: "会社モード", admin: "管理者モード", alumni: "同窓会モード" };
 type Mode = keyof typeof modeLabels;
 
 type CppSection = "home" | "announcements" | "browse" | "manual" | "live" | "feed";
@@ -59,7 +59,7 @@ export default function CppSectionNav({
     const { error } = await supabase.rpc("cpp_set_mode", { p_mode: next });
     if (error) { setError(error.message); setBusy(false); return; }
     setMode(next);
-    router.push("/my/cpp/home");
+    router.push(next === "alumni" ? "/cpp/alumni" : "/my/cpp/home");
     window.dispatchEvent(new Event("cpp-mode-changed"));
     setBusy(false);
   };
