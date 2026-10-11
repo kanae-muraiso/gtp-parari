@@ -366,3 +366,76 @@ begin
   return v_room;
 end; $function$
 ;
+
+CREATE OR REPLACE FUNCTION public.cpp_alumni_community_members(p_user_id uuid DEFAULT NULL::uuid, p_limit integer DEFAULT 30, p_offset integer DEFAULT 0)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_members jsonb; v_total bigint;
+begin
+  if not cpp_private.alumni_can_read() then raise exception '同窓会への登録が必要です。' using errcode = '42501'; end if;
+  if p_limit is null or p_limit < 1 or p_limit > 100 or p_offset is null or p_offset < 0 then raise exception 'Invalid pagination' using errcode = '22023'; end if;
+  select count(*) into v_total from public.cpp_alumni a where (p_user_id is null or a.user_id = p_user_id) and not cpp_private.is_operator_account(a.user_id);
+  select coalesce(jsonb_agg(to_jsonb(m) order by m.created_at desc,m.user_id desc),'[]'::jsonb) into v_members from (
+    select a.user_id,a.created_at,a.cpp_memory,
+      coalesce(nullif(s.display_name,''),nullif(p.display_name,''),nullif(p.username,''),'名前未設定') as display_name,
+      s.photo_url,s.affiliation,s.role_title,s.topics,s.intro,
+      coalesce((select jsonb_agg(jsonb_build_object('year',h.participation_year,'location',h.participation_location) order by h.sort_order,h.id)
+        from public.cpp_alumni_participations h where h.user_id=a.user_id),
+        case when a.participation_year is not null then jsonb_build_array(jsonb_build_object('year',a.participation_year,'location',a.participation_location)) else '[]'::jsonb end) as participations
+    from public.cpp_alumni a left join public.parari_social_profiles s on s.user_id=a.user_id
+    left join public.profiles p on p.user_id=a.user_id
+    where (p_user_id is null or a.user_id=p_user_id) and not cpp_private.is_operator_account(a.user_id)
+    order by a.created_at desc,a.user_id desc limit p_limit offset p_offset
+  ) m;
+  return jsonb_build_object('members',v_members,'total',v_total);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cpp_message_targets(p_user_ids uuid[])
+ RETURNS TABLE(user_id uuid, display_name text, accepting boolean, blocked_by_me boolean, existing boolean)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare me uuid:=cpp_private.require_message_user();
+begin
+ if not cpp_private.message_eligible(me) then return; end if;
+ return query select a.user_id,coalesce(nullif(sp.display_name,''),nullif(p.display_name,''),p.username,'CPP参加者')::text,
+ coalesce(pref.accepting,true),exists(select 1 from cpp_private.message_blocks b where b.owner_id=me and b.blocked_id=a.user_id),
+ exists(select 1 from cpp_private.message_threads t where t.user_a=least(me,a.user_id) and t.user_b=greatest(me,a.user_id))
+ from public.cpp_alumni a left join public.profiles p on p.user_id=a.user_id
+ left join public.parari_social_profiles sp on sp.user_id=a.user_id
+ left join cpp_private.message_preferences pref on pref.user_id=a.user_id
+ where a.user_id=any(p_user_ids) and cardinality(p_user_ids)<=200 and not cpp_private.is_operator_account(a.user_id);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cpp_live_start_direct_internal(p_membership_id uuid, p_user_1 uuid, p_user_2 uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_a uuid;
+  v_b uuid;
+  v_thread_id uuid;
+begin
+  if cpp_private.is_operator_account(p_user_1) or cpp_private.is_operator_account(p_user_2) then raise exception 'Operator is not a matching participant' using errcode='42501'; end if;
+  if p_user_1::text < p_user_2::text then v_a:=p_user_1; v_b:=p_user_2; else v_a:=p_user_2; v_b:=p_user_1; end if;
+  insert into public.message_threads as mt(user_a_id,user_b_id)
+  values(v_a,v_b)
+  on conflict(user_a_id,user_b_id) do update set updated_at=now()
+  returning mt.id into v_thread_id;
+
+  insert into public.message_thread_contexts(thread_id,context_type,context_id,relationship_type,status,user_a_role,user_b_role)
+  values(v_thread_id,'membership',p_membership_id,'matching_live_direct','active','member','member')
+  on conflict on constraint message_thread_contexts_unique_source do update
+    set relationship_type='matching_live_direct', status='active', ended_at=null;
+  return v_thread_id;
+end;
+$function$
+;
