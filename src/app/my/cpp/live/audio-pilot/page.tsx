@@ -5,6 +5,9 @@ export default async function CppAudioPilotPage({
 }: {
   searchParams: Promise<{ threadId?: string }>;
 }) {
+  if (process.env.VERCEL_ENV !== "preview") {
+    return <main className="mx-auto max-w-2xl px-6 py-12">この通話テストはPreview環境限定です。</main>;
+  }
   const { threadId = "" } = await searchParams;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(threadId)) {
     return (
