@@ -41,7 +41,7 @@ export function useAlumni() {
 
 export function AlumniNav({ userId }: { userId?: string }) {
   const pathname = usePathname();
-  return <CppSectionNav scope="alumni" active={pathname === "/cpp/alumni" ? "home" : pathname.includes("/feed") ? "feed" : pathname.includes("/announcements") ? "announcements" : "browse"}
+  return <CppSectionNav scope="alumni" active={pathname === "/cpp/alumni" ? "home" : pathname.includes("/feed") ? "feed" : pathname.includes("/announcements") ? "announcements" : pathname.includes("/live") ? "live" : "browse"}
     settingsLinks={[
       ...(userId ? [{ href: memberHref(userId), label: "自分の同窓会ページ" }] : []),
       { href: "/cpp/alumni?edit=1", label: "同窓会の登録内容を編集" },
