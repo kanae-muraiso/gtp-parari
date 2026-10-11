@@ -1,4 +1,5 @@
 import CppSectionNav from "@/components/parari/cpp/CppSectionNav";
+import CppLiveSchedule from "@/components/parari/cpp/CppLiveSchedule";
 import CppLiveSpace from "@/components/parari/matching/CppLiveSpace";
 import CppLiveQueueStatus from "@/components/parari/matching/CppLiveQueueStatus";
 import CppLiveRoleColors from "@/components/parari/matching/CppLiveRoleColors";
@@ -11,6 +12,7 @@ export default function CppLivePage() {
     <>
       <CppSectionNav active="live" floating />
       <CppLiveRoleColors />
+      <CppLiveSchedule />
       <CppLiveSpace />
       <CppLiveQueueStatus />
       <CppLiveStageMarker />
