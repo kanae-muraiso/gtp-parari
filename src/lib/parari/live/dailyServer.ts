@@ -117,6 +117,7 @@ export async function createDailyJoinToken(input: {
       is_owner: false,
       enable_screenshare: false,
       start_video_off: input.mode === "audio",
+      max_participants: 2,
     },
   });
 }
