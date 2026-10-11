@@ -50,3 +50,10 @@ Do not merge or enable production media access at this stage.
 - Existing CPP matching, text chat, queues and navigation remain unchanged.
 - Requires Preview deployment with `DAILY_API_KEY`. Do not add Production env secret or enable globally until approved.
 - Test and correct the remaining build/SDK/API errors before asking users to open this route.
+
+## Holiday QA notes (2026-10-11)
+- The hard deadline is now centralized in `src/lib/parari/live/cppClock.ts`: the lesser of recorded expiry and original start + 10 minutes.
+- `npm run test:live-daily` includes executable clock scenarios compiled from the actual TypeScript helper, plus source-level safety invariants.
+- These are **not** the same as a passing GitHub Actions run or a successful Daily media test. Those results must be reviewed before merge.
+- The pilot route is deliberately unlinked, so normal CPP participants do not see an unfinished call button.
+- A two-account test remains scheduled for after the holiday; do not silently count separate call reactivations as the same fixed 10-minute session without checking the legacy database trigger.
