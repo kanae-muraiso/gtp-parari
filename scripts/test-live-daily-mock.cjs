@@ -26,7 +26,7 @@ const fetchMock = async (url, init = {}) => {
     status,
     json: async () => body,
   });
-  if (path === `/v1/rooms/${roomName}`) {
+  if (path === `/v1/rooms/${roomName}` || path === `/v1/rooms/${roomName}-video`) {
     return scenario === "new" || (scenario === "race" && calls.filter(c => c.path === path).length === 1)
       ? response(404, {}) : response(200, room);
   }
@@ -36,10 +36,10 @@ const fetchMock = async (url, init = {}) => {
   }
   if (path === "/v1/meeting-tokens" && init.method === "POST") {
     const properties = JSON.parse(init.body).properties;
-    assert.equal(properties.room_name, roomName);
+    assert.ok(properties.room_name === roomName || properties.room_name === `${roomName}-video`);
     assert.equal(properties.exp, deadline);
     assert.equal(properties.eject_at_token_exp, true);
-    assert.deepEqual(Array.from(properties.permissions.canSend), ["audio"]);
+    assert.deepEqual(Array.from(properties.permissions.canSend), properties.room_name.endsWith("-video") ? ["audio", "video"] : ["audio"]);
     return response(200, { token: "mock-token" });
   }
   throw Error(`Unexpected Daily request: ${path}`);
@@ -74,6 +74,11 @@ const adapter = moduleRef.exports;
     roomName, userId: user, displayName: "CPP participant", expiresAtUnix: deadline, mode: "audio",
   });
   assert.equal(credential.token, "mock-token");
+  const videoCredential = await adapter.createDailyJoinToken({
+    roomName: `${roomName}-video`, userId: user, displayName: "CPP participant",
+    expiresAtUnix: deadline, mode: "video",
+  });
+  assert.equal(videoCredential.token, "mock-token");
   await assert.rejects(
     adapter.createDailyJoinToken({
       roomName, userId: user, displayName: "CPP participant",
