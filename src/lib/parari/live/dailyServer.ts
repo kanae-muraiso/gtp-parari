@@ -77,7 +77,7 @@ export async function createDailyLiveRoom(input: {
   }
 
   // All names are unique, non-guessable identifiers. No user's personal data.
-  const name = `parari-${input.transportId}`;
+  const name = `parari-${input.transportId}${input.mode === "video" ? "-video" : ""}`;
   return dailyRequest<DailyRoom>("/rooms", {
     name,
     privacy: "private",
@@ -107,7 +107,7 @@ export async function createDailyJoinToken(input: {
   mode: LiveMediaMode;
 }): Promise<DailyJoinCredential> {
   assertFutureExpiry(input.expiresAtUnix);
-  if (!/^parari-[0-9a-f-]{36}$/i.test(input.roomName)) throw new Error("Invalid Daily room");
+  if (!/^parari-[0-9a-f-]{36}(?:-video)?$/i.test(input.roomName)) throw new Error("Invalid Daily room");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.userId)) throw new Error("Invalid user identifier");
 
   return dailyRequest<DailyJoinCredential>("/meeting-tokens", {
@@ -136,8 +136,10 @@ export async function createDailyJoinToken(input: {
 export async function getOrCreateCppAudioRoom(input: {
   threadId: string;
   expiresAtUnix: number;
+  mode?: LiveMediaMode;
 }): Promise<DailyRoom> {
-  const name = `parari-${input.threadId}`;
+  const mode = input.mode ?? "audio";
+  const name = `parari-${input.threadId}${mode === "video" ? "-video" : ""}`;
   const check = (room: DailyRoom & { privacy?: string; properties?: { exp?: number } }) => {
     if (room.name !== name || room.privacy !== "private" ||
         room.properties?.exp !== input.expiresAtUnix) {
@@ -158,7 +160,7 @@ export async function getOrCreateCppAudioRoom(input: {
       conversationId: input.threadId,
       transportId: input.threadId,
       expiresAtUnix: input.expiresAtUnix,
-      mode: "audio",
+      mode,
     });
   } catch (error) {
     // The other party may have created the room at the same time.
