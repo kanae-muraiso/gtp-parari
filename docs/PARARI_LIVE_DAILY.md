@@ -2,7 +2,7 @@
 
 ## Status
 The server-only transport adapter exists at `src/lib/parari/live/dailyServer.ts`.
-**There is no HTTP route, client integration, billing or runnable call yet.**
+**There is an isolated, unlinked audio pilot route and CPP-authorized token endpoint. No production-ready integrated LIVE UI, video switching, billing or verified two-account call yet.**
 Do not merge or enable production media access at this stage.
 
 ## Boundary
@@ -40,3 +40,13 @@ Do not merge or enable production media access at this stage.
 - https://docs.daily.co/reference/rest-api/rooms/create-room
 - https://docs.daily.co/reference/rest-api/meeting-tokens/create-meeting-token
 - https://docs.daily.co/reference/daily-js/daily-call-client
+
+## Audio pilot (draft)
+- Browser route: `/my/cpp/live/audio-pilot?threadId=<active_CPP_thread_uuid>`.
+- The URL is intentionally not linked from CPP LIVE. A valid, currently active CPP conversation and login are required to enter.
+- The pilot uses Daily Prebuilt iframe as a disposable integration test surface, **not** the final PARARI custom audio/video/photo UI.
+- The user must explicitly press Start. The server verifies CPP membership and conversation before issuing a room-bound token.
+- A server-controlled ten-minute deadline is enforced by Daily ejection and the pilot removes the iframe locally at expiration.
+- Existing CPP matching, text chat, queues and navigation remain unchanged.
+- Requires Preview deployment with `DAILY_API_KEY`. Do not add Production env secret or enable globally until approved.
+- Test and correct the remaining build/SDK/API errors before asking users to open this route.
