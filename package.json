@@ -12,7 +12,8 @@
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs",
-    "test:english-authoring": "node scripts/test-english-authoring.cjs"
+    "test:english-authoring": "node scripts/test-english-authoring.cjs",
+    "test:live-daily": "node scripts/test-live-daily-foundation.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",

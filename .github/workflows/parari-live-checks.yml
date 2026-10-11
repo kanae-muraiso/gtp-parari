@@ -1,0 +1,45 @@
+name: PARARI LIVE checks
+
+on:
+  pull_request:
+    paths:
+      - "src/lib/parari/live/**"
+      - "src/app/api/parari/live/**"
+      - "src/components/parari/matching/CppAudioPilot.tsx"
+      - "src/components/parari/matching/CppLiveAudioPilotEntry.tsx"
+      - "src/app/my/cpp/live/page.tsx"
+      - "src/app/my/cpp/live/audio-pilot/**"
+      - "scripts/test-live-daily-foundation.cjs"
+      - "scripts/test-live-daily-mock.cjs"
+      - "package.json"
+      - ".github/workflows/parari-live-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Check CPP LIVE source invariants
+        run: npm run test:live-daily
+      - name: Offline Daily REST behavior checks
+        run: node scripts/test-live-daily-mock.cjs
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Production build (compile without production credentials)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
