@@ -84,7 +84,7 @@ export async function createDailyLiveRoom(input: {
       enable_recording: false,
       enable_screenshare: false,
       enable_chat: false,
-      start_video_off: input.mode === "audio",
+      start_with_video_off: input.mode === "audio",
     },
   });
 }
@@ -115,7 +115,7 @@ export async function createDailyJoinToken(input: {
       is_owner: false,
       enable_recording: false,
       enable_screenshare: false,
-      start_video_off: input.mode === "audio",
+      start_with_video_off: input.mode === "audio",
     },
   });
 }
