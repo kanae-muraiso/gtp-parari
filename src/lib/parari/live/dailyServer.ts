@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * PARARI LIVE / Daily transport adapter.
  *
@@ -66,10 +68,10 @@ export async function createDailyLiveRoom(input: {
   mode: LiveMediaMode;
 }): Promise<DailyRoom> {
   assertFutureExpiry(input.expiresAtUnix);
-  if (!/^[0-9a-f-]{36}$/i.test(input.conversationId)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.conversationId)) {
     throw new Error("Invalid conversation identifier");
   }
-  if (!/^[0-9a-f-]{36}$/i.test(input.transportId)) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.transportId)) {
     throw new Error("Invalid transport identifier");
   }
 
@@ -103,7 +105,7 @@ export async function createDailyJoinToken(input: {
 }): Promise<DailyJoinCredential> {
   assertFutureExpiry(input.expiresAtUnix);
   if (!/^parari-[0-9a-f-]{36}$/i.test(input.roomName)) throw new Error("Invalid Daily room");
-  if (!/^[0-9a-f-]{36}$/i.test(input.userId)) throw new Error("Invalid user identifier");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.userId)) throw new Error("Invalid user identifier");
 
   return dailyRequest<DailyJoinCredential>("/meeting-tokens", {
     properties: {
