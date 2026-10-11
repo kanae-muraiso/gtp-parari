@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const credential = await createDailyJoinToken({
       roomName: room.name,
       userId: user.id,
-      displayName: user.email?.split("@")[0] || "CPP member",
+      displayName: "CPP participant",
       expiresAtUnix,
       mode: "audio",
     });
