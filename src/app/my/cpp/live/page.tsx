@@ -12,8 +12,8 @@ export default function CppLivePage() {
     <>
       <CppSectionNav active="live" floating />
       <CppLiveRoleColors />
-      <CppLiveSpace />
       {process.env.VERCEL_ENV === "preview" ? <CppLiveAudioPilotEntry /> : null}
+      <CppLiveSpace />
       <CppLiveQueueStatus />
       <CppLiveStageMarker />
       <CppLiveStayWarning />
