@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const threadId = typeof body?.threadId === "string" ? body.threadId : "";
+  const mode = body?.mode === "video" ? "video" : "audio";
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(threadId)) {
     return NextResponse.json({ error: "Invalid conversation ID" }, { status: 400 });
   }
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const room = await getOrCreateCppAudioRoom({ threadId, expiresAtUnix });
+    const room = await getOrCreateCppAudioRoom({ threadId, expiresAtUnix, mode });
 
     // Recheck deadline after remote API calls, which can take time.
     if (expiresAtUnix <= Math.floor(Date.now() / 1000)) {
@@ -65,14 +66,14 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       displayName: "CPP participant",
       expiresAtUnix,
-      mode: "audio",
+      mode,
     });
 
     return NextResponse.json({
       roomUrl: room.url,
       token: credential.token,
       sessionExpiresAt: context.sessionExpiresAt,
-      mode: "audio",
+      mode,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Could not start audio call" }, { status: 502 });
