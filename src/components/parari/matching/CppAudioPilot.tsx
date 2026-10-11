@@ -11,6 +11,8 @@ import { supabase } from "@/lib/supabaseClient";
 export default function CppAudioPilot({ threadId }: { threadId: string }) {
   const [status, setStatus] = useState<"idle" | "connecting" | "active" | "ended" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [myPhoto, setMyPhoto] = useState<string | null>(null);
+  const [myName, setMyName] = useState("自分");
   const [frameUrl, setFrameUrl] = useState("");
   const [mode, setMode] = useState<"audio" | "video">("audio");
   const [changingMode, setChangingMode] = useState(false);
@@ -18,6 +20,23 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
   const [clock, setClock] = useState(Date.now());
   const frameRef = useRef<HTMLIFrameElement>(null);
   const remaining = Math.max(0, Math.ceil((expiresAt - clock) / 1000));
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadPhoto() {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("parari_social_profiles")
+        .select("photo_url,display_name")
+        .eq("user_id", user.id).maybeSingle();
+      if (!mounted || !data) return;
+      if (typeof data.photo_url === "string" && /^https:\/\//.test(data.photo_url)) setMyPhoto(data.photo_url);
+      if (typeof data.display_name === "string" && data.display_name.trim()) setMyName(data.display_name.trim());
+    }
+    void loadPhoto();
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     if (status !== "active") return;
@@ -115,6 +134,21 @@ export default function CppAudioPilot({ threadId }: { threadId: string }) {
         <p aria-live="polite" className="mt-4 font-semibold">
           {mode === "audio" ? "写真・音声モード" : "ビデオモード"} ｜ 残り {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
         </p>
+      )}
+      {status === "active" && mode === "audio" && (
+        <div className="mt-4 flex items-center gap-4 rounded-xl border bg-neutral-50 p-4">
+          {myPhoto ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={myPhoto} alt={myName} className="h-20 w-20 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-neutral-200 text-sm text-neutral-700">写真なし</div>
+          )}
+          <div>
+            <p className="font-semibold">{myName}</p>
+            <p className="text-sm text-neutral-500">プロフィール写真＋音声通話</p>
+            <p className="text-xs text-neutral-500">参加者の映像は送信しません。</p>
+          </div>
+        </div>
       )}
       {frameUrl && remaining > 0 && (
         <iframe
