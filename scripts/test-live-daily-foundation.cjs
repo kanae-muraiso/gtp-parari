@@ -25,10 +25,27 @@ assert.match(adapter, /canSend: input\.mode === "audio" \? \["audio"\]/);
 assert.match(context, /auth\.getUser\(bearer\)/);
 assert.match(context, /thread\.user_a_id !== user\.id && thread\.user_b_id !== user\.id/);
 assert.match(context, /\.eq\("status", "active"\)/);
-assert.match(context, /Math\.min\(storedExpiresAt, startedAt \+ 10 \* 60 \* 1000\)/);
+assert.match(context, /getCppHardDeadline\(candidate\.session_started_at, candidate\.session_expires_at\)/);
 assert.match(audio, /getCppContext\(contextRequest\)/);
 assert.match(audio, /getOrCreateCppAudioRoom/);
 assert.match(audio, /createDailyJoinToken/);
 assert.match(pilot, /sessionExpiresAt/);
 assert.match(pilot, /setFrameUrl\(""]?\)/);
-console.log("PARARI LIVE source invariant checks passed (not an integration test).");
+// Execute the actual TypeScript policy helper, not merely matching its text.
+const ts = require("typescript");
+const vm = require("node:vm");
+const clockSource = file("src/lib/parari/live/cppClock.ts");
+const transpiled = ts.transpileModule(clockSource, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const clockModule = { exports: {} };
+vm.runInNewContext(transpiled, { module: clockModule, exports: clockModule.exports, Date, Math, Number });
+const { getCppHardDeadline, getCppRemainingSeconds } = clockModule.exports;
+const start = "2026-10-11T10:00:00.000Z";
+assert.equal(getCppHardDeadline(start, "2026-10-11T10:20:00.000Z"), Date.parse(start) + 600000);
+assert.equal(getCppHardDeadline(start, "2026-10-11T10:06:00.000Z"), Date.parse(start) + 360000);
+assert.equal(getCppHardDeadline(start, start), null);
+assert.equal(getCppHardDeadline("bad", "2026-10-11T10:20:00.000Z"), null);
+assert.equal(getCppRemainingSeconds(Date.parse(start) + 600000, Date.parse(start) + 599000), 1);
+assert.equal(getCppRemainingSeconds(Date.parse(start) + 600000, Date.parse(start) + 650000), 0);
+console.log("PARARI LIVE source and executable CPP clock checks passed (not an integration test).");
