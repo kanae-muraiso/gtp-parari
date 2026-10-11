@@ -39,6 +39,7 @@ async function dailyRequest<T>(path: string, body: Record<string, unknown>): Pro
     },
     body: JSON.stringify(body),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {
