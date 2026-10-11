@@ -55,7 +55,7 @@ vm.runInNewContext(compiled, {
   exports: moduleRef.exports,
   fetch: fetchMock,
   process: { env: { DAILY_API_KEY: "test-daily-key" } },
-  Date, Math, Number, Error, URL, encodeURIComponent, JSON, console,
+  Date, Math, Number, Error, URL, encodeURIComponent, JSON, console, AbortSignal,
 });
 const adapter = moduleRef.exports;
 (async () => {
