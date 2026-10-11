@@ -12,6 +12,7 @@ const adapter = file("src/lib/parari/live/dailyServer.ts");
 const context = file("src/app/api/parari/live/cpp/context/route.ts");
 const audio = file("src/app/api/parari/live/cpp/audio/route.ts");
 const pilot = file("src/components/parari/matching/CppAudioPilot.tsx");
+const pilotPage = file("src/app/my/cpp/live/audio-pilot/page.tsx");
 
 assert.match(adapter, /import "server-only";/);
 assert.match(adapter, /process\.env\.DAILY_API_KEY/);
@@ -27,6 +28,8 @@ assert.match(context, /thread\.user_a_id !== user\.id && thread\.user_b_id !== u
 assert.match(context, /\.eq\("status", "active"\)/);
 assert.match(context, /getCppHardDeadline\(candidate\.session_started_at, candidate\.session_expires_at\)/);
 assert.match(audio, /getCppContext\(contextRequest\)/);
+assert.match(audio, /process\.env\.VERCEL_ENV !== "preview"/);
+assert.match(pilotPage, /process\.env\.VERCEL_ENV !== "preview"/);
 assert.match(audio, /getOrCreateCppAudioRoom/);
 assert.match(audio, /createDailyJoinToken/);
 assert.match(audio, /const lastCheck = await getCppContext\(contextRequest\)/);
