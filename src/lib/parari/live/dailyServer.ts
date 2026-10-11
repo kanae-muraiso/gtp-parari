@@ -121,3 +121,58 @@ export async function createDailyJoinToken(input: {
     },
   });
 }
+
+
+/**
+ * The CPP first-generation audio room uses its thread UUID as transport UUID.
+ * Two concurrent participants therefore address the same room.
+ * A 409 race is resolved by loading the created room, never by creating a second one.
+ */
+export async function getOrCreateCppAudioRoom(input: {
+  threadId: string;
+  expiresAtUnix: number;
+}): Promise<DailyRoom> {
+  const name = `parari-${input.threadId}`;
+  const check = (room: DailyRoom & { privacy?: string; properties?: { exp?: number } }) => {
+    if (room.name !== name || room.privacy !== "private" ||
+        room.properties?.exp !== input.expiresAtUnix) {
+      throw new Error("Daily room does not match CPP session");
+    }
+    return room;
+  };
+
+  assertFutureExpiry(input.expiresAtUnix);
+  const existing = await dailyGet<DailyRoom & { privacy?: string; properties?: { exp?: number } }>(
+    `/rooms/${encodeURIComponent(name)}`,
+  );
+  if (existing.status === 200 && existing.data) return check(existing.data);
+  if (existing.status !== 404) throw new Error(`Daily room lookup failed (${existing.status})`);
+
+  try {
+    return await createDailyLiveRoom({
+      conversationId: input.threadId,
+      transportId: input.threadId,
+      expiresAtUnix: input.expiresAtUnix,
+      mode: "audio",
+    });
+  } catch (error) {
+    // The other party may have created the room at the same time.
+    if (!(error instanceof Error) || !error.message.includes("(409)")) throw error;
+    const raced = await dailyGet<DailyRoom & { privacy?: string; properties?: { exp?: number } }>(
+      `/rooms/${encodeURIComponent(name)}`,
+    );
+    if (raced.status !== 200 || !raced.data) throw new Error("Daily room creation race unresolved");
+    return check(raced.data);
+  }
+}
+
+async function dailyGet<T>(path: string): Promise<{ status: number; data: T | null }> {
+  const response = await fetch(`${DAILY_API_URL}${path}`, {
+    headers: { Authorization: `Bearer ${getDailyKey()}` },
+    cache: "no-store",
+  });
+  return {
+    status: response.status,
+    data: response.ok ? (await response.json()) as T : null,
+  };
+}
