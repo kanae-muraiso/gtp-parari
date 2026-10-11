@@ -13,6 +13,9 @@ export const dynamic = "force-dynamic";
  * No arbitrary room name, user identity, or expiry is accepted from the client.
  */
 export async function POST(request: NextRequest) {
+  if (process.env.VERCEL_ENV !== "preview") {
+    return NextResponse.json({ error: "Preview only" }, { status: 404 });
+  }
   const bearer = request.headers.get("authorization");
   if (!bearer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
