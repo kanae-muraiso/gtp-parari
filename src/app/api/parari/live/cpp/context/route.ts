@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
-import { getCppHardDeadline, getCppRemainingSeconds } from "@/lib/parari/live/cppClock";
+import { getCppHardDeadline, getCppRemainingSeconds, isCppSessionLive } from "@/lib/parari/live/cppClock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     // CPP is capped at ten wall-clock minutes from the original start, even if
     // a legacy extension updates session_expires_at.
     const expiresAt = getCppHardDeadline(candidate.session_started_at, candidate.session_expires_at);
-    if (expiresAt === null || expiresAt <= Date.now()) {
+    if (!isCppSessionLive(candidate.session_started_at, expiresAt, Date.now())) {
       return NextResponse.json({ error: "Conversation expired" }, { status: 410 });
     }
 
