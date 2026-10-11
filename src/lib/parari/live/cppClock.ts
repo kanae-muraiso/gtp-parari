@@ -17,3 +17,9 @@ export function getCppHardDeadline(
 export function getCppRemainingSeconds(deadline: number | null, now: number): number {
   return deadline === null ? 0 : Math.max(0, Math.floor((deadline - now) / 1000));
 }
+
+/** Reject a future-dated session start rather than minting a fresh ten-minute window. */
+export function isCppSessionLive(startedAt: string, deadline: number | null, now: number): boolean {
+  const startedMs = Date.parse(startedAt);
+  return deadline !== null && Number.isFinite(startedMs) && startedMs <= now && now < deadline;
+}
