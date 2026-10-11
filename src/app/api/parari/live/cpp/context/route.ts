@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Conversation unavailable" }, { status: 403 });
     }
 
-    const expiresAt = Date.parse(candidate.session_expires_at);
-    const startedAt = Date.parse(candidate.session_started_at);
-    if (!Number.isFinite(expiresAt) || !Number.isFinite(startedAt) ||
+    // CPP is capped at ten wall-clock minutes from the original start, even if\n    // a legacy extension updates session_expires_at.\n    const storedExpiresAt = Date.parse(candidate.session_expires_at);
+    const startedAt = Date.parse(candidate.session_started_at);\n    const expiresAt = Math.min(storedExpiresAt, startedAt + 10 * 60 * 1000);
+    if (!Number.isFinite(storedExpiresAt) || !Number.isFinite(startedAt) ||
         expiresAt <= Date.now() || expiresAt <= startedAt) {
       return NextResponse.json({ error: "Conversation expired" }, { status: 410 });
     }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       threadId,
       sessionStartedAt: candidate.session_started_at,
-      sessionExpiresAt: candidate.session_expires_at,
+      sessionExpiresAt: new Date(expiresAt).toISOString(),
       remainingSeconds: Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
