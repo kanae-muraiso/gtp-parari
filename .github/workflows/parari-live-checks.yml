@@ -8,6 +8,7 @@ on:
       - "src/components/parari/matching/CppAudioPilot.tsx"
       - "src/app/my/cpp/live/audio-pilot/**"
       - "scripts/test-live-daily-foundation.cjs"
+      - "scripts/test-live-daily-mock.cjs"
       - "package.json"
       - ".github/workflows/parari-live-checks.yml"
   workflow_dispatch:
@@ -29,6 +30,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Check CPP LIVE source invariants
         run: npm run test:live-daily
+      - name: Offline Daily REST behavior checks
+        run: node scripts/test-live-daily-mock.cjs
       - name: TypeScript check
         run: npm run typecheck
       - name: Production build (compile without production credentials)
