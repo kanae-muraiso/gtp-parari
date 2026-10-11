@@ -83,10 +83,10 @@ export async function createDailyLiveRoom(input: {
     properties: {
       exp: input.expiresAtUnix,
       eject_at_room_exp: true,
-      enable_recording: false,
       enable_screenshare: false,
       enable_chat: false,
-      start_with_video_off: input.mode === "audio",
+      start_video_off: input.mode === "audio",
+      max_participants: 2,
     },
   });
 }
@@ -115,9 +115,8 @@ export async function createDailyJoinToken(input: {
       exp: input.expiresAtUnix,
       eject_at_token_exp: true,
       is_owner: false,
-      enable_recording: false,
       enable_screenshare: false,
-      start_with_video_off: input.mode === "audio",
+      start_video_off: input.mode === "audio",
     },
   });
 }
