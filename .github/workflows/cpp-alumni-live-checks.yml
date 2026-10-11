@@ -1,0 +1,31 @@
+name: CPP Alumni LIVE and activity checks
+on:
+  pull_request:
+    paths:
+      - "src/components/parari/cpp/CppSectionNav.tsx"
+      - "src/components/parari/cpp/alumni/**"
+      - "src/app/cpp/alumni/**"
+      - "supabase/migrations/*cpp_alumni_message_activity*"
+      - ".github/workflows/cpp-alumni-live-checks.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - name: Production build with dummy credentials
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
