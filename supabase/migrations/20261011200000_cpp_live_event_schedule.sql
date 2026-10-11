@@ -37,6 +37,11 @@ AS $$
         (identity.live_role = ANY(e.audience) AND now() >= e.starts_at AND now() < e.ends_at) can_enter
  FROM public.cpp_live_events e CROSS JOIN identity
  WHERE auth.uid() IS NOT NULL AND e.status='scheduled'
+   AND (
+     EXISTS (SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=auth.uid())
+     OR EXISTS (SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=auth.uid())
+     OR EXISTS (SELECT 1 FROM public.cpp_matching_context() c)
+   )
    AND e.ends_at >= now() AND e.starts_at < now()+ interval '90 days'
  ORDER BY e.starts_at ASC LIMIT 30
 $$;
