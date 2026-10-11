@@ -75,8 +75,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Conversation unavailable" }, { status: 403 });
     }
 
-    // CPP is capped at ten wall-clock minutes from the original start, even if\n    // a legacy extension updates session_expires_at.\n    const storedExpiresAt = Date.parse(candidate.session_expires_at);
-    const startedAt = Date.parse(candidate.session_started_at);\n    const expiresAt = Math.min(storedExpiresAt, startedAt + 10 * 60 * 1000);
+    // CPP is capped at ten wall-clock minutes from the original start, even if
+    // a legacy extension updates session_expires_at.
+    const storedExpiresAt = Date.parse(candidate.session_expires_at);
+    const startedAt = Date.parse(candidate.session_started_at);
+    const expiresAt = Math.min(storedExpiresAt, startedAt + 10 * 60 * 1000);
     if (!Number.isFinite(storedExpiresAt) || !Number.isFinite(startedAt) ||
         expiresAt <= Date.now() || expiresAt <= startedAt) {
       return NextResponse.json({ error: "Conversation expired" }, { status: 410 });
