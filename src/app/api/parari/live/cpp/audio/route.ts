@@ -55,6 +55,11 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Revalidate CPP authorization after remote Daily operations. Another
+    // participant may have ended the conversation during room provisioning.
+    const lastCheck = await getCppContext(contextRequest);
+    if (!lastCheck.ok) return lastCheck;
+
     const credential = await createDailyJoinToken({
       roomName: room.name,
       userId: user.id,
