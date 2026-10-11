@@ -87,6 +87,7 @@ export async function createDailyLiveRoom(input: {
       enable_chat: false,
       start_video_off: input.mode === "audio",
       max_participants: 2,
+      enforce_unique_user_ids: true,
     },
   });
 }
@@ -117,7 +118,7 @@ export async function createDailyJoinToken(input: {
       is_owner: false,
       enable_screenshare: false,
       start_video_off: input.mode === "audio",
-      max_participants: 2,
+      permissions: { canSend: input.mode === "audio" ? ["audio"] : ["audio", "video"] },
     },
   });
 }
