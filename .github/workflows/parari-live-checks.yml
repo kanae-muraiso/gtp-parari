@@ -6,6 +6,8 @@ on:
       - "src/lib/parari/live/**"
       - "src/app/api/parari/live/**"
       - "src/components/parari/matching/CppAudioPilot.tsx"
+      - "src/components/parari/matching/CppLiveAudioPilotEntry.tsx"
+      - "src/app/my/cpp/live/page.tsx"
       - "src/app/my/cpp/live/audio-pilot/**"
       - "scripts/test-live-daily-foundation.cjs"
       - "scripts/test-live-daily-mock.cjs"
