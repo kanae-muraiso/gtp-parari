@@ -121,7 +121,7 @@ export async function createDailyJoinToken(input: {
       enable_screenshare: false,
       enable_recording_ui: false,
       auto_start_transcription: false,
-      start_video_off: input.mode === "audio",
+      // Always begin as an audio call. Video can be enabled by each participant.\n      start_video_off: true,
       permissions: { canSend: input.mode === "audio" ? ["audio"] : ["audio", "video"] },
     },
   });
