@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import CppLiveSchedule from "@/components/parari/cpp/CppLiveSchedule";
 
@@ -14,6 +15,7 @@ export default function CppLiveAdminSchedule(){
  const [audience,setAudience]=useState<string[]>(["alumni"]);
  const [saving,setSaving]=useState(false);
  const [result,setResult]=useState("");
+ const [devEventId,setDevEventId]=useState("");
  useEffect(()=>{
    let live=true;
    async function check(){
@@ -22,6 +24,14 @@ export default function CppLiveAdminSchedule(){
    }
    void check();return()=>{live=false;};
  },[]);
+ const createDevelopmentEvent=async()=>{
+   if(!supabase||!admin||saving)return;
+   setSaving(true);setResult("");
+   const {data,error}=await supabase.rpc("cpp_live_create_development_event");
+   if(error)setResult("開発イベントを作れませんでした："+error.message);
+   else setDevEventId(String(data));
+   setSaving(false);
+ };
  const save=async()=>{
    if(!supabase||!admin||saving||!date||!title.trim()||audience.length===0)return;
    setSaving(true);setResult("");
@@ -67,6 +77,15 @@ export default function CppLiveAdminSchedule(){
        {saving?"登録中…":"開催予定を登録"}
      </button>
      {result&&<p role="status" className="text-sm">{result}</p>}
+   </section>
+   <section className="mt-6 max-w-xl space-y-3 rounded-2xl border border-dashed bg-white p-6">
+     <h2 className="text-lg font-bold">管理者専用・開発用LIVE</h2>
+     <p className="text-sm text-neutral-600">一般の開催一覧には表示されません。開発イベントIDを発行すると60分間有効になります。</p>
+     <button onClick={()=>void createDevelopmentEvent()} disabled={saving} className="rounded-full border px-5 py-3 text-sm font-bold disabled:opacity-40">開発用イベントIDを発行</button>
+     {devEventId&&<div className="space-y-2">
+       <p className="break-all text-xs">イベントID：{devEventId}</p>
+       <Link className="inline-block rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white" href={`/my/cpp/live/room/${devEventId}`}>開発用会場を開く →</Link>
+     </div>}
    </section>
    <div className="mt-8"><CppLiveSchedule/></div>
  </main>;

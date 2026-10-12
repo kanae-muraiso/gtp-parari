@@ -1,0 +1,33 @@
+name: CPP LIVE room route checks
+on:
+  pull_request:
+    paths:
+      - "src/app/my/cpp/live/room/**"
+      - "src/components/parari/cpp/CppLiveEventRoom.tsx"
+      - "src/components/parari/cpp/CppLiveSchedule.tsx"
+      - "src/components/parari/cpp/CppLiveScheduledGate.tsx"
+      - "src/components/parari/cpp/CppLiveAdminSchedule.tsx"
+      - "supabase/migrations/*cpp_live_development_events*"
+      - ".github/workflows/cpp-live-room-pages.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - name: Production build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
