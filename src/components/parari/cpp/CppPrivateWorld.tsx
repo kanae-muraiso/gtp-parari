@@ -6,11 +6,11 @@ import CppLiveNamecard from "./CppLiveNamecard";
 
 type Chat={sender_id:string;body:string;created_at:string};
 export default function CppPrivateWorld({
- callId,endsAt,selfId,messages,busy,sendMessage,now,reviewing,onExit,onReturn,eventId,partnerId,
+ callId,endsAt,selfId,messages,busy,sendMessage,now,reviewing,onExit,onReturn,eventId,partnerId,partnerName,
 }:{
  callId:string;endsAt:string;selfId:string;messages:Chat[];busy:boolean;
  sendMessage:(message:string)=>void;now:number;reviewing:boolean;
- onExit:()=>void;onReturn:()=>void;eventId:string;partnerId:string;
+ onExit:()=>void;onReturn:()=>void;eventId:string;partnerId:string;partnerName:string;
 }) {
  const [showChat,setShowChat]=useState(false);
  const [draft,setDraft]=useState("");
@@ -46,6 +46,7 @@ export default function CppPrivateWorld({
   <section className="mx-auto max-w-4xl space-y-5 rounded-2xl border bg-white p-5">
    <div className="flex items-center justify-between gap-4 border-b pb-4">
     <div><h2 className="text-xl font-bold">{reviewing?"PRIVATE TALK · 振り返り":"PRIVATE TALK"}</h2>
+     <p className="text-sm font-semibold text-neutral-700">{partnerName}さんとの{reviewing?"会話の振り返り":"10分間"}</p>
      <p className="text-xs text-neutral-500">{reviewing?"通信は終了しました。メモは時間制限なく残せます。":"会話は最大10分。終了後は振り返り画面に移ります。"}</p></div>
     {!reviewing&&<div aria-live="off" className="font-mono text-2xl font-bold tabular-nums">{clock}</div>}
    </div>
