@@ -10,6 +10,7 @@ const pagesWithMenu = new Set([
   "/my/cpp/admin/research-evidence", "/my/cpp/admin/announcements",
   "/my/cpp/admin/researchers",
   "/my/cpp/admin/researcher-announcements",
+  "/my/cpp/admin/live-schedule",
 ]);
 export default function CppRouteNav() {
   const pathname = usePathname();
