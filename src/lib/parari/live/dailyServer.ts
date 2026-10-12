@@ -87,7 +87,7 @@ export async function createDailyLiveRoom(input: {
       enable_screenshare: false,
       enable_chat: false,
       enable_prejoin_ui: true,
-      start_video_off: input.mode === "audio",
+      start_video_off: true,
       max_participants: 2,
       enforce_unique_user_ids: true,
     },
