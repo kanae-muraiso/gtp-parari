@@ -1,0 +1,45 @@
+name: CPP LIVE scheduled gate checks
+on:
+  pull_request:
+    paths:
+      - "src/components/parari/cpp/CppLiveSchedule.tsx"
+      - "src/components/parari/cpp/CppLiveScheduledGate.tsx"
+      - "src/components/parari/cpp/CppLiveAdminSchedule.tsx"
+      - "src/components/parari/cpp/CppSectionNav.tsx"
+      - "src/app/my/cpp/live/**"
+      - "src/app/cpp/live/**"
+      - "src/app/my/cpp/admin/live-schedule/**"
+      - "supabase/migrations/*cpp_live*"
+      - ".github/workflows/cpp-live-gate-checks.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - name: Check gate in critical admission paths
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          sql=Path('supabase/migrations/20261012100000_cpp_live_gate_enforcement.sql').read_text()
+          for name in ('cpp_live_enter','cpp_live_enter_as','cpp_live_operator_presence','cpp_live_request_conversation','cpp_live_start_direct_internal'):
+            assert 'FUNCTION public.'+name in sql, name
+          assert sql.count('cpp_private.cpp_live_gate_open(')>=7
+          assert 'CPP MATCHING' in Path('src/components/parari/cpp/CppLiveScheduledGate.tsx').read_text()
+          PY
+      - name: Production build (placeholder environment)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
