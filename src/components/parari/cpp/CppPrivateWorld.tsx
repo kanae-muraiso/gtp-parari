@@ -47,7 +47,7 @@ export default function CppPrivateWorld({
      <p className="text-xs text-neutral-500">{reviewing?"通信は終了しました。メモは時間制限なく残せます。":"会話は最大10分。終了後は振り返り画面に移ります。"}</p></div>
     {!reviewing&&<div aria-live="off" className="font-mono text-2xl font-bold tabular-nums">{clock}</div>}
    </div>
-   {!reviewing&&<div className="flex flex-wrap gap-2" aria-label="利用できる会話方法">
+   {!reviewing&&<><div className="flex flex-wrap gap-2" aria-label="利用できる会話方法">
      <span className="rounded-full border px-4 py-2 text-sm">ビデオ（カメラON）</span>
      <span className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white">音声（初期状態）</span>
      <button type="button" aria-expanded={showChat} onClick={()=>setShowChat(v=>!v)}
@@ -56,7 +56,7 @@ export default function CppPrivateWorld({
        {messages.length>0?`（${messages.length}件）`:""}
      </button>
    </div>
-   <CppDailyAudioTest callId={callId} endsAt={endsAt}/>}
+   <CppDailyAudioTest callId={callId} endsAt={endsAt}/></>}
    <section className="space-y-2 rounded-xl border bg-neutral-50 p-3" aria-label="自分だけの会話記録">
      <div className="flex flex-wrap items-center justify-between gap-2">
        <div><p className="text-sm font-semibold">この出会いを記録</p>
