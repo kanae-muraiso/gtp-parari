@@ -88,7 +88,7 @@ export default function CppDailyAudioTest({callId,endsAt}:{callId:string;endsAt:
      <span className="text-xs text-neutral-500">{state==="ready"?"接続画面を表示中":state==="connecting"?"接続準備中":state==="left"?"通話から退出しました":"接続待機中"}</span>
    </div>
    <p className="text-xs text-neutral-600">
-    2人は同じ通話ルームを使います。マイクとカメラはDaily画面内でそれぞれ自由にON/OFFできます。カメラは最初OFFです。
+    最初は音声のみです。映像を送りたい方だけ、下のDaily画面にあるカメラボタンをONにしてください。音声だけに戻すときはカメラボタンをOFFにします。相手のカメラ設定とは独立しています。
    </p>
    {url&&remaining>0?<iframe title="Daily通話" src={url} allow="microphone; camera; autoplay"
      className="h-[420px] w-full rounded-xl border"/>:null}
