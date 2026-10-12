@@ -3,14 +3,13 @@ import { useState } from "react";
 import CppDailyAudioTest from "./CppDailyAudioTest";
 
 type Chat={sender_id:string;body:string;created_at:string};
-type Mode="video"|"audio"|"chat";
 export default function CppPrivateWorld({
  callId,endsAt,selfId,messages,busy,sendMessage,now,
 }:{
  callId:string;endsAt:string;selfId:string;messages:Chat[];busy:boolean;
  sendMessage:(message:string)=>void;now:number;
 }) {
- const [mode,setMode]=useState<Mode>("audio");
+ const [showChat,setShowChat]=useState(false);
  const [draft,setDraft]=useState("");
  const remaining=Math.max(0,Math.ceil((Date.parse(endsAt)-now)/1000));
  const clock=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;
@@ -22,14 +21,17 @@ export default function CppPrivateWorld({
     <div aria-live="off" className="font-mono text-2xl font-bold tabular-nums">{clock}</div>
    </div>
    <nav className="flex flex-wrap gap-2" aria-label="会話の方法">
-    {(["video","audio","chat"] as const).map(m=><button type="button" key={m}
-       aria-pressed={mode===m} onClick={()=>setMode(m)}
-       className={`rounded-full px-5 py-2 text-sm font-semibold ${mode===m?"bg-neutral-900 text-white":"border"}`}>
-      {m==="video"?"ビデオ":m==="audio"?"音声":"テキスト"}</button>)}
+     <span className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white">ビデオ</span>
+     <span className="rounded-full border px-4 py-2 text-sm">音声</span>
+     <button type="button" aria-expanded={showChat} onClick={()=>setShowChat(v=>!v)}
+       className="rounded-full border px-4 py-2 text-sm font-semibold">
+       {showChat?"テキストを閉じる":"テキストを開く"}
+       {messages.length>0?`（${messages.length}件）`:""}
+     </button>
    </nav>
-   {mode!=="chat"&&<CppDailyAudioTest callId={callId} endsAt={endsAt} mode={mode}/>}
-   {mode==="chat"&&<>
-     <section className="max-h-80 min-h-48 space-y-2 overflow-y-auto rounded-xl bg-neutral-50 p-4" aria-label="会話メッセージ">
+   <CppDailyAudioTest callId={callId} endsAt={endsAt}/>
+   {showChat&&<div className="space-y-3 rounded-xl border p-4">
+     <section className="max-h-72 min-h-32 space-y-2 overflow-y-auto rounded-xl bg-neutral-50 p-4" aria-label="会話メッセージ">
        {messages.map((m,i)=><p key={i} className="text-sm">
          <b>{m.sender_id===selfId?"自分":"相手"}：</b>{m.body}
        </p>)}
@@ -42,7 +44,7 @@ export default function CppPrivateWorld({
        <button type="submit" disabled={busy||remaining===0||!draft.trim()}
          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-40">送信</button>
      </form>
-   </>}
+   </div>}
   </section>
  </main>;
 }
