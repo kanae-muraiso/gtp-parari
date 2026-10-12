@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import CppPrivateWorld from "./CppPrivateWorld";
+import CppLiveNamecard from "./CppLiveNamecard";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -104,6 +105,8 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
  if(joined && trackedCall?.ends_at) {
    return <CppPrivateWorld
      key={trackedCall.id}
+     eventId={eventId}
+     partnerId={trackedCall.requester_id===selfId?trackedCall.invited_id:trackedCall.requester_id}
      callId={trackedCall.id}
      endsAt={trackedCall.ends_at}
      selfId={selfId}
@@ -134,6 +137,7 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
            </div>
            <p className="break-words text-sm font-semibold">{p.display_name}{p.is_me?"（自分）":""}</p>
            <p className="text-xs text-neutral-500">{roleLabels[p.live_role]??p.live_role}</p>
+           {!p.is_me&&<CppLiveNamecard eventId={eventId} userId={p.user_id}/>}
            {!p.is_me&&(!latest||latest.status==="ended"||latest.status==="declined")&&
              <button disabled={busy} className="rounded-full border px-3 py-1 text-xs" onClick={()=>request(p.user_id)}>10分会話を申し込む</button>}
          </div>)}</div>
@@ -141,6 +145,7 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
      {latest&&<div className="space-y-3 rounded-xl border bg-white p-5">
        {latest.status==="pending"?
          <>{latest.invited_id===selfId?<><h3 className="font-bold">会話の申し込みがあります</h3>
+             <div className="my-3"><CppLiveNamecard eventId={eventId} userId={latest.requester_id} label="申し込んだ方の名札を見る"/></div>
              <div className="flex gap-2"><button disabled={busy} className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white" onClick={()=>respond(latest.id,true)}>承諾する</button>
              <button disabled={busy} className="rounded-full border px-4 py-2 text-sm" onClick={()=>respond(latest.id,false)}>辞退する</button></div></>
            :<p className="text-sm">相手の承諾を待っています（申し込みの有効期限は2分）。</p>}</>
