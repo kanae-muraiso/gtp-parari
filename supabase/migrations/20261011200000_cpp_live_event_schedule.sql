@@ -25,28 +25,24 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
 AS $$
  WITH identity AS (
    SELECT CASE
+     WHEN EXISTS (SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=auth.uid() AND u.mode='admin') THEN 'admin'
+     WHEN EXISTS (SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=auth.uid()) THEN 'alumni'
      WHEN EXISTS (SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=auth.uid()) THEN
        (SELECT u.mode FROM cpp_private.mode_users u WHERE u.user_id=auth.uid())
-     WHEN EXISTS (SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=auth.uid()) THEN 'alumni'
      WHEN EXISTS (SELECT 1 FROM public.cpp_matching_context() c WHERE c.organization_key='CPP-R') THEN 'researcher'
      WHEN EXISTS (SELECT 1 FROM public.cpp_matching_context() c WHERE c.organization_key='CPP-C') THEN 'company'
      ELSE 'none'
    END AS live_role
  )
  SELECT e.id,e.title,e.starts_at,e.ends_at,e.source_timezone,e.audience,
-        (identity.live_role = ANY(e.audience) AND now() >= e.starts_at AND now() < e.ends_at) can_enter
+        ((identity.live_role = ANY(e.audience) OR identity.live_role='admin') AND now() >= e.starts_at AND now() < e.ends_at) can_enter
  FROM public.cpp_live_events e CROSS JOIN identity
- WHERE auth.uid() IS NOT NULL AND e.status='scheduled'
-   AND (
-     EXISTS (SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=auth.uid())
-     OR EXISTS (SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=auth.uid())
-     OR EXISTS (SELECT 1 FROM public.cpp_matching_context() c)
-   )
+ WHERE e.status='scheduled'
    AND e.ends_at >= now() AND e.starts_at < now()+ interval '90 days'
  ORDER BY e.starts_at ASC LIMIT 30
 $$;
-REVOKE ALL ON FUNCTION public.cpp_live_upcoming_events() FROM public,anon;
-GRANT EXECUTE ON FUNCTION public.cpp_live_upcoming_events() TO authenticated;
+REVOKE ALL ON FUNCTION public.cpp_live_upcoming_events() FROM public;
+GRANT EXECUTE ON FUNCTION public.cpp_live_upcoming_events() TO anon,authenticated;
 
 CREATE OR REPLACE FUNCTION public.cpp_live_create_event(
  p_title text,p_starts_at timestamptz,p_ends_at timestamptz,
