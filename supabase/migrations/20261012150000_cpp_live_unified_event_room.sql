@@ -88,7 +88,11 @@ AS $$
  CASE WHEN EXISTS(SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=a.user_id AND u.mode='admin') THEN 'admin'
       WHEN EXISTS(SELECT 1 FROM public.cpp_alumni al WHERE al.user_id=a.user_id) THEN 'alumni'
       WHEN EXISTS(SELECT 1 FROM cpp_private.mode_users u WHERE u.user_id=a.user_id AND u.mode='company') THEN 'company'
-      WHEN EXISTS(SELECT 1 FROM public.cpp_matching_context() c WHERE c.organization_key='CPP-C' AND a.user_id=auth.uid()) THEN 'company'
+      WHEN EXISTS(
+        SELECT 1 FROM public.membership_members mm
+        JOIN public.membership_organizations org ON org.id=mm.organization_id
+        WHERE mm.user_id=a.user_id AND mm.status='active' AND org.organization_key='CPP-C'
+      ) THEN 'company'
       ELSE 'researcher' END::text,
  (a.user_id=auth.uid())
  FROM public.cpp_live_event_attendees a
@@ -140,6 +144,9 @@ BEGIN
    UPDATE public.cpp_live_event_calls SET status='declined' WHERE id=p_call_id;
    RETURN;
  END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.cpp_live_event_attendees a
+   WHERE a.event_id=c.event_id AND a.user_id=c.requester_id AND a.last_seen_at>now()-interval '90 seconds')
+ THEN RAISE EXCEPTION 'Requester left LIVE'; END IF;
  SELECT least(now()+interval '10 minutes',e.ends_at) INTO v_ends
  FROM public.cpp_live_events e WHERE e.id=c.event_id;
  UPDATE public.cpp_live_event_calls SET status='active',started_at=now(),ends_at=v_ends WHERE id=p_call_id;
