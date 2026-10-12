@@ -21,6 +21,8 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
  const [error,setError]=useState("");
  const [selfId,setSelfId]=useState("");
  const [now,setNow]=useState(Date.now());
+ const [talkId,setTalkId]=useState<string|null>(null);
+ const [reviewing,setReviewing]=useState(false);
  const latest=calls.find(x=>x.status==="active"&&(x.ends_at?Date.parse(x.ends_at)>now:false))
    ??calls.find(x=>x.status==="pending");
 
@@ -53,6 +55,22 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
    return()=>{disposed=true;window.clearInterval(interval);};
  },[eventId,joined,refresh]);
 
+ useEffect(()=>{
+   if(!joined)return;
+   const active=calls.find(c=>c.status==="active" && !!c.ends_at && Date.parse(c.ends_at)>now);
+   if(active && !talkId){setTalkId(active.id);setReviewing(false);}
+   if(talkId && !reviewing && (!active || active.id!==talkId)){setReviewing(true);}
+ },[calls,joined,now,talkId,reviewing]);
+
+ const exitTalk=()=>void act(async()=>{
+   if(!supabase||!talkId)return {error:{message:"会話を確認できません"}};
+   const res=await supabase.rpc("cpp_live_event_end_call",{p_call_id:talkId});
+   if(!res.error)setReviewing(true);
+   return res;
+ });
+ const returnToVenue=()=>{
+   setReviewing(false);setTalkId(null);setMessages([]);
+ };
  const act=async(fn:()=>Promise<{error: {message:string}|null}>)=>{
    setBusy(true);setError("");
    try{const res=await fn();if(res.error)setError(res.error.message);else await refresh();}
@@ -82,16 +100,20 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
  });
  const remaining=latest?.ends_at?Math.max(0,Math.ceil((Date.parse(latest.ends_at)-now)/1000)):0;
  const timeLabel=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;
- if(joined && latest?.status==="active" && latest.ends_at && remaining>0) {
+ const trackedCall=talkId?calls.find(c=>c.id===talkId):undefined;
+ if(joined && trackedCall?.ends_at) {
    return <CppPrivateWorld
-     key={latest.id}
-     callId={latest.id}
-     endsAt={latest.ends_at}
+     key={trackedCall.id}
+     callId={trackedCall.id}
+     endsAt={trackedCall.ends_at}
      selfId={selfId}
      messages={messages}
      busy={busy}
      now={now}
-     sendMessage={(text)=>{void act(async()=>supabase!.rpc("cpp_live_event_send",{p_call_id:latest.id,p_body:text}));}}
+     reviewing={reviewing || trackedCall.status!=="active" || Date.parse(trackedCall.ends_at)<=now}
+     onExit={exitTalk}
+     onReturn={returnToVenue}
+     sendMessage={(text)=>{void act(async()=>supabase!.rpc("cpp_live_event_send",{p_call_id:trackedCall.id,p_body:text}));}}
    />;
  }
  return <section className="mx-auto max-w-6xl space-y-5 px-4 pb-12">
