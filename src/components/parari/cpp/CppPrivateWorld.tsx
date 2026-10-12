@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import CppDailyAudioTest from "./CppDailyAudioTest";
 
 type Chat={sender_id:string;body:string;created_at:string};
@@ -11,6 +12,31 @@ export default function CppPrivateWorld({
 }) {
  const [showChat,setShowChat]=useState(false);
  const [draft,setDraft]=useState("");
+ const [starred,setStarred]=useState(false);
+ const [memo,setMemo]=useState("");
+ const [showMemo,setShowMemo]=useState(false);
+ const [noteBusy,setNoteBusy]=useState(false);
+ const [noteError,setNoteError]=useState("");
+ const [noteLoaded,setNoteLoaded]=useState(false);
+ useEffect(()=>{
+   let live=true;
+   void supabase?.rpc("cpp_live_note_get",{p_call_id:callId}).then(({data,error})=>{
+     if(!live)return;
+     if(error){setNoteError("記録を読み込めませんでした。");return;}
+     const note=(data??[])[0] as {starred:boolean;memo:string}|undefined;
+     setStarred(note?.starred??false);setMemo(note?.memo??"");setNoteLoaded(true);
+   });
+   return()=>{live=false;};
+ },[callId]);
+ const saveNote=useCallback(async(nextStarred:boolean,nextMemo:string)=>{
+   if(!supabase)return;
+   setNoteBusy(true);setNoteError("");
+   const {error}=await supabase.rpc("cpp_live_note_save",{p_call_id:callId,p_starred:nextStarred,p_memo:nextMemo});
+   if(error)setNoteError("保存できませんでした。もう一度お試しください。");
+   else{setStarred(nextStarred);setMemo(nextMemo);}
+   setNoteBusy(false);
+ },[callId]);
+
  const remaining=Math.max(0,Math.ceil((Date.parse(endsAt)-now)/1000));
  const clock=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;
  return <main className="min-h-[80vh] bg-neutral-50 px-4 py-6">
@@ -30,6 +56,29 @@ export default function CppPrivateWorld({
      </button>
    </div>
    <CppDailyAudioTest callId={callId} endsAt={endsAt}/>
+   <section className="space-y-2 rounded-xl border bg-neutral-50 p-3" aria-label="自分だけの会話記録">
+     <div className="flex flex-wrap items-center justify-between gap-2">
+       <div><p className="text-sm font-semibold">この出会いを記録</p>
+         <p className="text-xs text-neutral-500">相手には通知されません。後から変更できます。</p></div>
+       <button type="button" aria-pressed={starred} disabled={!noteLoaded||noteBusy}
+         onClick={()=>void saveNote(!starred,memo)}
+         className={`rounded-full border px-4 py-2 text-sm font-bold disabled:opacity-50 ${starred?"border-amber-400 bg-amber-100 text-amber-900":"bg-white"}`}>
+         {starred?"★ 気になる（記録済み）":"☆ 気になる"}
+       </button>
+     </div>
+     <button type="button" aria-expanded={showMemo} onClick={()=>setShowMemo(v=>!v)}
+       className="text-xs font-medium underline">{showMemo?"メモを閉じる":"メモを残す（任意）"}</button>
+     {showMemo&&<form className="space-y-2" onSubmit={e=>{e.preventDefault();void saveNote(starred,memo);}}>
+       <textarea aria-label="自分だけのメモ" value={memo} onChange={e=>setMemo(e.target.value)}
+         maxLength={2000} rows={2} placeholder="話題、次に聞きたいことなど（相手には見えません）"
+         className="w-full rounded-lg border bg-white p-2 text-sm"/>
+       <button type="submit" disabled={!noteLoaded||noteBusy}
+         className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">
+         {noteBusy?"保存中…":"メモを保存"}</button>
+     </form>}
+     {noteError&&<p role="alert" className="text-xs text-red-700">{noteError}</p>}
+   </section>
+
    {showChat&&<div className="space-y-3 rounded-xl border p-4">
      <section className="max-h-72 min-h-32 space-y-2 overflow-y-auto rounded-xl bg-neutral-50 p-4" aria-label="会話メッセージ">
        {messages.map((m,i)=><p key={i} className="text-sm">
