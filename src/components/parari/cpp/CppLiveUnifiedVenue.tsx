@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import CppDailyAudioTest from "./CppDailyAudioTest";
+import CppPrivateWorld from "./CppPrivateWorld";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -82,6 +82,18 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
  });
  const remaining=latest?.ends_at?Math.max(0,Math.ceil((Date.parse(latest.ends_at)-now)/1000)):0;
  const timeLabel=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;
+ if(joined && latest?.status==="active" && latest.ends_at && remaining>0) {
+   return <CppPrivateWorld
+     key={latest.id}
+     callId={latest.id}
+     endsAt={latest.ends_at}
+     selfId={selfId}
+     messages={messages}
+     busy={busy}
+     now={now}
+     sendMessage={(text)=>{void act(async()=>supabase!.rpc("cpp_live_event_send",{p_call_id:latest.id,p_body:text}));}}
+   />;
+ }
  return <section className="mx-auto max-w-6xl space-y-5 px-4 pb-12">
    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
      <div><h2 className="font-bold">CPP LIVE 会場</h2>
@@ -119,7 +131,7 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
            <input className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm" value={draft} maxLength={2000} onChange={e=>setDraft(e.target.value)} placeholder="メッセージを入力"/>
            <button className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white" disabled={busy||remaining<=0||!draft.trim()} type="submit">送信</button>
          </form>
-         <CppDailyAudioTest callId={latest.id} endsAt={latest.ends_at!} />
+
          <p className="text-xs text-neutral-500">10分経過後は自動終了します。音声の実機接続は検証段階です。</p>
        </>}
      </div>}

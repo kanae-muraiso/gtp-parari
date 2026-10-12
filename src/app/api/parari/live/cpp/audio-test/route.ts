@@ -23,6 +23,7 @@ export async function POST(request:NextRequest) {
  if(authError||!user)return deny("Unauthorized",401);
  const body=await request.json().catch(()=>null);
  const callId=typeof body?.callId==="string"?body.callId:"";
+ const requestedMode=body?.mode==="video"?"video":"audio";
  if(!uuid.test(callId))return deny("Invalid call",400);
  let stage = "call_lookup";
  try {
@@ -60,7 +61,7 @@ export async function POST(request:NextRequest) {
    stage = "daily_token";
    const credential=await createDailyJoinToken({
      roomName:room.name,userId:user.id,displayName:"CPP participant",
-     expiresAtUnix,mode:"audio",
+     expiresAtUnix,mode:requestedMode,
    });
    return NextResponse.json({roomUrl:room.url,token:credential.token,sessionExpiresAt:call.ends_at},
       {headers:{"Cache-Control":"no-store"}});
