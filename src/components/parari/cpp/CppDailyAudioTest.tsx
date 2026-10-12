@@ -93,7 +93,7 @@ export default function CppDailyAudioTest({callId,endsAt}:{callId:string;endsAt:
    {url&&remaining>0?<iframe title="Daily通話" src={url} allow="microphone; camera; autoplay"
      className="h-[420px] w-full rounded-xl border"/>:null}
    {url?<button type="button" onClick={disconnect} className="rounded-full border px-4 py-2 text-sm">
-       Daily通話から退出
+       音声・ビデオを終了
      </button>
      :<button type="button" disabled={state==="connecting"||remaining===0}
        onClick={()=>void connect()}
