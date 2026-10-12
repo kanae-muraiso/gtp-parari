@@ -7,9 +7,8 @@ SELECT p_user_id IS NOT NULL AND EXISTS(
  OR ('alumni'=ANY(e.audience) AND EXISTS(SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=p_user_id))
  OR (NOT EXISTS(SELECT 1 FROM public.cpp_alumni a WHERE a.user_id=p_user_id)
      AND EXISTS(SELECT 1 FROM public.cpp_matching_context() ctx
-       WHERE ctx.organization_key=CASE WHEN 'researcher'=ANY(e.audience) THEN 'CPP-R' ELSE 'CPP-C' END)
-     AND (('researcher'=ANY(e.audience) AND EXISTS(SELECT 1 FROM public.cpp_matching_context() ctx WHERE ctx.organization_key='CPP-R'))
-       OR ('company'=ANY(e.audience) AND EXISTS(SELECT 1 FROM public.cpp_matching_context() ctx WHERE ctx.organization_key='CPP-C'))))
+        WHERE (ctx.organization_key='CPP-R' AND 'researcher'=ANY(e.audience))
+           OR (ctx.organization_key='CPP-C' AND 'company'=ANY(e.audience))))
  )
 );
 $$;
