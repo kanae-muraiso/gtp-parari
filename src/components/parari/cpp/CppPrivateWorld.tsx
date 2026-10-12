@@ -30,12 +30,13 @@ export default function CppPrivateWorld({
    return()=>{live=false;};
  },[callId]);
  const saveNote=useCallback(async(nextStarred:boolean,nextMemo:string)=>{
-   if(!supabase)return;
+   if(!supabase)return false;
    setNoteBusy(true);setNoteError("");
    const {error}=await supabase.rpc("cpp_live_note_save",{p_call_id:callId,p_starred:nextStarred,p_memo:nextMemo});
    if(error)setNoteError("保存できませんでした。もう一度お試しください。");
    else{setStarred(nextStarred);setMemo(nextMemo);}
    setNoteBusy(false);
+   return !error;
  },[callId]);
 
  const remaining=Math.max(0,Math.ceil((Date.parse(endsAt)-now)/1000));
@@ -95,7 +96,7 @@ export default function CppPrivateWorld({
          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-40">送信</button>
      </form>
    </div>}
-   {reviewing?<button type="button" onClick={onReturn} disabled={noteBusy}
+   {reviewing?<button type="button" onClick={()=>{void (async()=>{if(await saveNote(starred,memo))onReturn();})();}} disabled={noteBusy||!noteLoaded}
      className="w-full rounded-lg bg-neutral-900 px-5 py-3 font-semibold text-white disabled:opacity-50">LIVE会場に戻る</button>
      :<button type="button" onClick={onExit} disabled={busy}
        className="w-full rounded-lg border px-5 py-3 font-semibold disabled:opacity-50">Talk Roomを退出</button>}
