@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 type EventRow = {
   id: string; title: string; starts_at: string; ends_at: string;
@@ -52,7 +53,7 @@ export default function CppLiveSchedule() {
           <h3 className="font-bold">{event.title}</h3>
           <p className="mt-2 text-sm">{displayTime(event.starts_at,timezone)} – {displayTime(event.ends_at,timezone)}</p>
           <p className="mt-1 text-xs text-neutral-500">参加対象：{event.audience.map(a=>labels[a]||a).join("・")}</p>
-          <p className="mt-3 text-sm font-semibold">{event.can_enter?"開催中：参加資格あり":"開催時間と参加資格を確認してください"}</p>
+          {event.can_enter ? <Link className="mt-3 inline-block rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white" href={`/my/cpp/live/room/${event.id}`}>会場に入る →</Link> : <p className="mt-3 text-sm text-neutral-500">開催前、または参加対象外です</p>}
         </article>
       )}</div>}
   </section>;
