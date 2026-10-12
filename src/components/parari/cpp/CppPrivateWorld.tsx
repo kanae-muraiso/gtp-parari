@@ -33,7 +33,7 @@ export default function CppPrivateWorld({
       placeholder="メッセージを入力" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"/>
     <button type="submit" disabled={busy||remaining===0||!draft.trim()} className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-40">送信</button>
    </form>
-   {mode!=="chat"&&<CppDailyAudioTest key={callId} callId={callId} endsAt={endsAt} initialMode={mode}/>}
+   {mode!=="chat"&&<CppDailyAudioTest key={`${callId}-${mode}`} callId={callId} endsAt={endsAt} initialMode={mode}/>}
   </section>
  </main>;
 }
