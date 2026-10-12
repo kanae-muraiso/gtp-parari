@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CppDailyAudioTest from "./CppDailyAudioTest";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -118,7 +119,8 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
            <input className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm" value={draft} maxLength={2000} onChange={e=>setDraft(e.target.value)} placeholder="メッセージを入力"/>
            <button className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white" disabled={busy||remaining<=0||!draft.trim()} type="submit">送信</button>
          </form>
-         <p className="text-xs text-neutral-500">制限時間を過ぎると会話を送信できなくなります。音声・ビデオ接続は次の工程で統合します。</p>
+         <CppDailyAudioTest callId={latest.id} endsAt={latest.ends_at!} />
+         <p className="text-xs text-neutral-500">10分経過後は自動終了します。音声の実機接続は検証段階です。</p>
        </>}
      </div>}
    </>}
