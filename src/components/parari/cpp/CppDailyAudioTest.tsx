@@ -34,7 +34,7 @@ export default function CppDailyAudioTest({callId,endsAt}:{callId:string;endsAt:
       body:JSON.stringify({callId}),cache:"no-store",
     });
     const json=await res.json();
-    if(!res.ok)throw Error(res.status===503?"音声テスト機能がまだ有効になっていません。":json.error??"接続できません。");
+    if(!res.ok)throw Error(res.status===503?"音声テスト機能がまだ有効になっていません。":res.status===502?`Daily接続エラー（段階：${typeof json.stage==="string"?json.stage:"unknown"}）`:json.error??"接続できません。");
     const daily=new URL(json.roomUrl);
     if(daily.protocol!=="https:"||!daily.hostname.endsWith(".daily.co"))throw Error("Daily接続先を確認できません。");
     if(Date.parse(json.sessionExpiresAt)<=Date.now())throw Error("10分間が終了しました。");
