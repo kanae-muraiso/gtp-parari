@@ -17,7 +17,7 @@ export default function CppRouteNav() {
   if (pathname === "/my/cpp/messages" || pathname === "/my/cpp/messages/settings") {
     return <Suspense fallback={null}><MessageRouteNav /></Suspense>;
   }
-  return pagesWithMenu.has(pathname) ? null : <CppSectionNav />;
+  return pagesWithMenu.has(pathname) || pathname.startsWith("/my/cpp/live/room/") ? null : <CppSectionNav />;
 }
 
 function MessageRouteNav() {
