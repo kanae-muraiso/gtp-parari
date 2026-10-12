@@ -20,15 +20,15 @@ export default function CppPrivateWorld({
      <p className="text-xs text-neutral-500">10分経過後、自動で会場へ戻ります。</p></div>
     <div aria-live="off" className="font-mono text-2xl font-bold tabular-nums">{clock}</div>
    </div>
-   <nav className="flex flex-wrap gap-2" aria-label="会話の方法">
-     <span className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white">ビデオ</span>
-     <span className="rounded-full border px-4 py-2 text-sm">音声</span>
+   <div className="flex flex-wrap gap-2" aria-label="利用できる会話方法">
+     <span className="rounded-full border px-4 py-2 text-sm">ビデオ（カメラON）</span>
+     <span className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white">音声（初期状態）</span>
      <button type="button" aria-expanded={showChat} onClick={()=>setShowChat(v=>!v)}
        className="rounded-full border px-4 py-2 text-sm font-semibold">
        {showChat?"テキストを閉じる":"テキストを開く"}
        {messages.length>0?`（${messages.length}件）`:""}
      </button>
-   </nav>
+   </div>
    <CppDailyAudioTest callId={callId} endsAt={endsAt}/>
    {showChat&&<div className="space-y-3 rounded-xl border p-4">
      <section className="max-h-72 min-h-32 space-y-2 overflow-y-auto rounded-xl bg-neutral-50 p-4" aria-label="会話メッセージ">
