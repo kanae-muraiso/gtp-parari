@@ -140,16 +140,16 @@ export async function getOrCreateCppAudioRoom(input: {
 }): Promise<DailyRoom> {
   const mode = input.mode ?? "audio";
   const name = `parari-${input.threadId}${mode === "video" ? "-video" : ""}`;
-  const check = (room: DailyRoom & { privacy?: string; properties?: { exp?: number } }) => {
+  const check = (room: DailyRoom & { privacy?: string; config?: { exp?: number }; properties?: { exp?: number } }) => {\n    // Daily returns stored room configuration in "config" on GET /rooms/:name.\n    // "properties" is the shape used when creating the room.
     if (room.name !== name || room.privacy !== "private" ||
-        room.properties?.exp !== input.expiresAtUnix) {
+        Number(room.config?.exp ?? room.properties?.exp) !== input.expiresAtUnix) {
       throw new Error("Daily room does not match CPP session");
     }
     return room;
   };
 
   assertFutureExpiry(input.expiresAtUnix);
-  const existing = await dailyGet<DailyRoom & { privacy?: string; properties?: { exp?: number } }>(
+  const existing = await dailyGet<DailyRoom & { privacy?: string; config?: { exp?: number }; properties?: { exp?: number } }>(
     `/rooms/${encodeURIComponent(name)}`,
   );
   if (existing.status === 200 && existing.data) return check(existing.data);
