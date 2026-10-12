@@ -1,0 +1,31 @@
+name: CPP Daily audio smoke checks
+on:
+  pull_request:
+    paths:
+      - "src/app/api/parari/live/cpp/audio-test/**"
+      - "src/components/parari/cpp/CppDailyAudioTest.tsx"
+      - "src/components/parari/cpp/CppLiveUnifiedVenue.tsx"
+      - "src/lib/parari/live/dailyServer.ts"
+      - ".github/workflows/cpp-daily-audio-smoke.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - name: Next production build with placeholder secrets
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
