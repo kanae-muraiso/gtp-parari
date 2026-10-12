@@ -107,6 +107,7 @@ export default function CppLiveUnifiedVenue({eventId}:{eventId:string}) {
      key={trackedCall.id}
      eventId={eventId}
      partnerId={trackedCall.requester_id===selfId?trackedCall.invited_id:trackedCall.requester_id}
+     partnerName={people.find(p=>p.user_id===(trackedCall.requester_id===selfId?trackedCall.invited_id:trackedCall.requester_id))?.display_name??"お相手"}
      callId={trackedCall.id}
      endsAt={trackedCall.ends_at}
      selfId={selfId}
