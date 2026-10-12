@@ -4,11 +4,20 @@ import { supabase } from "@/lib/supabaseClient";
 
 /** Small, explicitly activated audio-only proof-of-connectivity. */
 export default function CppDailyAudioTest({callId,endsAt}:{callId:string;endsAt:string}) {
+ const [enabled,setEnabled]=useState(false);
  const [url,setUrl]=useState("");
  const [error,setError]=useState("");
  const [connecting,setConnecting]=useState(false);
  const [time,setTime]=useState(Date.now());
  const remaining=Math.max(0,Math.ceil((Date.parse(endsAt)-time)/1000));
+ useEffect(()=>{
+   let current=true;
+   void fetch("/api/parari/live/cpp/audio-test",{cache:"no-store"})
+     .then(res=>res.ok?res.json():null)
+     .then(data=>{if(current)setEnabled(data?.enabled===true);})
+     .catch(()=>{if(current)setEnabled(false);});
+   return()=>{current=false;};
+ },[]);
  useEffect(()=>{
    const interval=window.setInterval(()=>setTime(Date.now()),500);
    return()=>window.clearInterval(interval);
@@ -34,6 +43,7 @@ export default function CppDailyAudioTest({callId,endsAt}:{callId:string;endsAt:
    }catch(e){setError(e instanceof Error?e.message:"接続できません。");}
    finally{setConnecting(false);}
  }
+ if(!enabled)return null;
  return <section className="rounded-xl border bg-white p-4 space-y-3">
    <h3 className="font-bold">Daily 音声接続テスト</h3>
    <p className="text-xs text-neutral-600">2人とも「音声テストを開始」を押して、マイクを許可してください。ビデオは使用しません。</p>
