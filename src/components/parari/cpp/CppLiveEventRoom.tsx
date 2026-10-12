@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import CppLiveModeGate from "@/components/parari/cpp/CppLiveModeGate";
+import CppLiveUnifiedVenue from "@/components/parari/cpp/CppLiveUnifiedVenue";
 
 type EventRow = {
   id: string;
@@ -45,6 +45,6 @@ export default function CppLiveEventRoom({ eventId }: { eventId: string }) {
         <h2 className="text-lg font-bold">この会場は現在入室できません</h2>
         <p className="mt-2 text-sm">開催日時と参加対象をご確認ください。</p>
       </section>
-      : <CppLiveModeGate />}
+      : <CppLiveUnifiedVenue eventId={eventId} />}
   </main>;
 }
