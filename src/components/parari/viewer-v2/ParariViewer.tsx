@@ -31,7 +31,7 @@ import {
   type ReaderRubyMode,
 } from "./viewerTextStyles";
 
-import { buildViewerDocument, type ReaderBook, type ViewerDocumentInput } from "./buildViewerDocument";
+import { buildViewerDocument, type ReaderBook, type ViewerDocumentInput, type ViewerDocument } from "./buildViewerDocument";
 import { ReaderToolbar } from "./ReaderToolbar";
 import { WebPageFrame } from "./web/WebPageFrame";
 import { defaultReaderDisplayMode, readStoredReaderDisplayMode, readStoredReadingProgress, writeStoredReadingProgress, storeReaderDisplayMode, clearReadingProgress, sheetCenterLabel, type StoredReadingProgress, type ReaderDisplayMode } from "./readerProgress";
@@ -43,9 +43,9 @@ type ReadingItem = {
   physicalPageNumber?: number;
 };
 
-export function ParariViewer(props: ViewerDocumentInput) {
+export function ParariViewer(props: ViewerDocumentInput & { preparedDocument?: ViewerDocument }) {
   const { content, workId, pageSlug = null, publicBasePath = "", headerLogoUrl = null } = props;
-  const documentModel = React.useMemo(() => buildViewerDocument({ content, workId, pageSlug, publicBasePath, headerLogoUrl }), [content, workId, pageSlug, publicBasePath, headerLogoUrl]);
+  const documentModel = React.useMemo(() => props.preparedDocument ?? buildViewerDocument({ content, workId, pageSlug, publicBasePath, headerLogoUrl }), [props.preparedDocument, content, workId, pageSlug, publicBasePath, headerLogoUrl]);
   const book = documentModel.book;
   const viewerRef = React.useRef<HTMLDivElement | null>(null);
   const scrollToReaderTop = React.useCallback(() => {
@@ -1230,10 +1230,11 @@ function ChapterSheet({
         />
       ) : null}
 
-      {sheet.bodySsot ? (
+      {(sheet.bodySsot || sheet.bodyBlocks?.length) ? (
         <div className="mt-8 text-left">
           <ReaderBodyPanelRenderer
             bodySsot={sheet.bodySsot}
+        preparedBlocks={sheet.bodyBlocks}
             renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
               <ViewerTextBlock
                 text={text}
@@ -1303,6 +1304,7 @@ function PageSheet({
 
       <ReaderBodyPanelRenderer
         bodySsot={sheet.bodySsot}
+        preparedBlocks={sheet.bodyBlocks}
         renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
           <ViewerTextBlock
             text={text}

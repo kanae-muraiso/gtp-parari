@@ -1,3 +1,4 @@
+import { splitPaidContent } from "@/lib/commerce/paywall";
 // apps/tools/parari/src/app/api/my-shelf/route.ts
 // apps/tools/parari/src/app/api/my-shelf/route.ts
 // 2026-04-07 JST
@@ -297,7 +298,7 @@ export async function GET(request: Request) {
       const item: ShelfBook = {
         id: book.id,
         title: book.title ?? "",
-        content: book.content ?? "",
+        content: splitPaidContent(book.content ?? "").hasPaywall ? "" : book.content ?? "",
         is_public: Boolean(book.is_public),
         updated_at: book.updated_at ?? null,
         expires_at: book.expires_at ?? null,

@@ -1,3 +1,4 @@
+import { splitPaidContent } from "@/lib/commerce/paywall";
 // src/app/api/membership/preview/route.ts
 // 2026/08/18 JST
 //
@@ -211,6 +212,7 @@ export async function GET(
 
         return {
           ...book,
+          content: splitPaidContent(book.content ?? "").hasPaywall ? "" : book.content,
           membership_added_at:
             row.created_at ?? null,
         };

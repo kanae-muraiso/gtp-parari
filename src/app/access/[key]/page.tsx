@@ -19,7 +19,7 @@ type RenderMode =
 type WorkData = {
   id: string;
   title: string;
-  content: string;
+  document: import("@/components/parari/viewer-v2/buildViewerDocument").ViewerDocument;
   owner: string;
   render_mode:
     | RenderMode
@@ -217,9 +217,7 @@ export default function ApplicationWorkAccessPage() {
 
   return (
     <PublicViewerShell
-      content={
-        work.content
-      }
+      preparedDocument={work.document}
       renderMode={
         work.render_mode
       }

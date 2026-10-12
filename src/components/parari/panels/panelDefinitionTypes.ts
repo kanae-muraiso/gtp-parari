@@ -17,6 +17,7 @@ export type NestedPanelEditorRenderer = (args: {
 
 export type NestedPanelViewerRenderer = (
   bodySsot: string,
+  preparedBlocks?: import("@/lib/parari/readerProjectionTypes").PreparedReaderBlock[],
 ) => ReactNode;
 
 export type PanelEditorProps<TData = unknown> = {
