@@ -2,14 +2,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import CppDailyAudioTest from "./CppDailyAudioTest";
+import CppLiveNamecard from "./CppLiveNamecard";
 
 type Chat={sender_id:string;body:string;created_at:string};
 export default function CppPrivateWorld({
- callId,endsAt,selfId,messages,busy,sendMessage,now,reviewing,onExit,onReturn,
+ callId,endsAt,selfId,messages,busy,sendMessage,now,reviewing,onExit,onReturn,eventId,partnerId,
 }:{
  callId:string;endsAt:string;selfId:string;messages:Chat[];busy:boolean;
  sendMessage:(message:string)=>void;now:number;reviewing:boolean;
- onExit:()=>void;onReturn:()=>void;
+ onExit:()=>void;onReturn:()=>void;eventId:string;partnerId:string;
 }) {
  const [showChat,setShowChat]=useState(false);
  const [draft,setDraft]=useState("");
@@ -48,6 +49,7 @@ export default function CppPrivateWorld({
      <p className="text-xs text-neutral-500">{reviewing?"通信は終了しました。メモは時間制限なく残せます。":"会話は最大10分。終了後は振り返り画面に移ります。"}</p></div>
     {!reviewing&&<div aria-live="off" className="font-mono text-2xl font-bold tabular-nums">{clock}</div>}
    </div>
+   <div className="flex flex-wrap gap-2 items-center"><CppLiveNamecard eventId={eventId} userId={partnerId} label="お相手の名札を見る"/></div>
    {!reviewing&&<><div className="flex flex-wrap gap-2" aria-label="利用できる会話方法">
      <span className="rounded-full border px-4 py-2 text-sm">ビデオ（カメラON）</span>
      <span className="rounded-full bg-neutral-900 px-4 py-2 text-sm text-white">音声（初期状態）</span>
