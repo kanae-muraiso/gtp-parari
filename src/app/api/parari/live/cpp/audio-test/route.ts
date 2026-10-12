@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const deny = (error:string,status:number)=>NextResponse.json({error},{status,headers:{"Cache-Control":"no-store"}});
 
+/** The UI shows its button only when the server is configured to run this test. */
+export async function GET() {
+ return NextResponse.json({enabled:process.env.CPP_DAILY_AUDIO_TEST_ENABLED==="true" && Boolean(process.env.DAILY_API_KEY)},
+  {headers:{"Cache-Control":"no-store"}});
+}
+
 /** Explicitly opted-in transport smoke test, NEVER a general-purpose room minting API. */
 export async function POST(request:NextRequest) {
  if (process.env.CPP_DAILY_AUDIO_TEST_ENABLED!=="true") return deny("Audio test is not enabled",503);
