@@ -20,7 +20,7 @@ export default function CppLiveEventRoom({ eventId }: { eventId: string }) {
 
   const check = useCallback(async () => {
     if (!supabase) { setState("error"); return; }
-    const { data, error } = await supabase.rpc("cpp_live_upcoming_events");
+    const { data, error } = await supabase.rpc("cpp_live_event_access", { p_event_id: eventId });
     if (error) { setState("error"); return; }
     const event = ((data ?? []) as EventRow[]).find(x => x.id === eventId);
     if (!event?.can_enter) { setState("denied"); return; }

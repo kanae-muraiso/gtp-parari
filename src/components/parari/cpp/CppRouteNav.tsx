@@ -10,13 +10,14 @@ const pagesWithMenu = new Set([
   "/my/cpp/admin/research-evidence", "/my/cpp/admin/announcements",
   "/my/cpp/admin/researchers",
   "/my/cpp/admin/researcher-announcements",
+  "/my/cpp/admin/live-schedule",
 ]);
 export default function CppRouteNav() {
   const pathname = usePathname();
   if (pathname === "/my/cpp/messages" || pathname === "/my/cpp/messages/settings") {
     return <Suspense fallback={null}><MessageRouteNav /></Suspense>;
   }
-  return pagesWithMenu.has(pathname) ? null : <CppSectionNav />;
+  return pagesWithMenu.has(pathname) || pathname.startsWith("/my/cpp/live/room/") ? null : <CppSectionNav />;
 }
 
 function MessageRouteNav() {
