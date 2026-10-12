@@ -80,10 +80,10 @@ export default function CppLiveAdminSchedule(){
    </section>
    <section className="mt-6 max-w-xl space-y-3 rounded-2xl border border-dashed bg-white p-6">
      <h2 className="text-lg font-bold">管理者専用・開発用LIVE</h2>
-     <p className="text-sm text-neutral-600">一般の開催一覧には表示されません。開発イベントIDを発行すると60分間有効になります。</p>
+     <p className="text-sm text-neutral-600">一般の開催一覧には表示されません。60分間、管理者とCPP登録者が共有URLから入室できます。</p>
      <button onClick={()=>void createDevelopmentEvent()} disabled={saving} className="rounded-full border px-5 py-3 text-sm font-bold disabled:opacity-40">開発用イベントIDを発行</button>
      {devEventId&&<div className="space-y-2">
-       <p className="break-all text-xs">イベントID：{devEventId}</p>
+       <p className="break-all text-xs">イベントID：{devEventId}</p><p className="break-all text-xs">共有URL：{`https://www.parari.app/my/cpp/live/room/${devEventId}`}</p>
        <Link className="inline-block rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white" href={`/my/cpp/live/room/${devEventId}`}>開発用会場を開く →</Link>
      </div>}
    </section>
