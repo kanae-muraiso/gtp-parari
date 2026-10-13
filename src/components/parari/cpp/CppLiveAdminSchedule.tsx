@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+// src/components/parari/cpp/CppLiveAdminSchedule.tsx / 2026-10-13 JST
+// PART: Full-day scheduling and separate controlled rehearsal setup.
+import CppLiveProgramSetup from "./CppLiveProgramSetup";
 import CppLiveSchedule from "@/components/parari/cpp/CppLiveSchedule";
 
 const roles=[["alumni","同窓会"],["researcher","研究者"],["company","企業"]] as const;
@@ -11,7 +14,8 @@ export default function CppLiveAdminSchedule(){
  const [title,setTitle]=useState("CPP LIVE");
  const [date,setDate]=useState("");
  const [hour,setHour]=useState("20:00");
- const [duration,setDuration]=useState(60);
+ const [endDate,setEndDate]=useState("");
+ const [endHour,setEndHour]=useState("21:00");
  const [audience,setAudience]=useState<string[]>(["alumni"]);
  const [saving,setSaving]=useState(false);
  const [result,setResult]=useState("");
@@ -37,8 +41,8 @@ export default function CppLiveAdminSchedule(){
    setSaving(true);setResult("");
    // Creator-facing scheduling is in JST, regardless of browser timezone.
    const start=new Date(`${date}T${hour}:00+09:00`);
-   const end=new Date(start.getTime()+duration*60000);
-   if(!Number.isFinite(start.valueOf())){setResult("日時を確認してください。");setSaving(false);return;}
+   const end=new Date(`${endDate||date}T${endHour}:00+09:00`);
+   if(!Number.isFinite(start.valueOf())||!Number.isFinite(end.valueOf())||end<=start||end.getTime()-start.getTime()>12*60*60*1000){setResult("終了日時は開始後、12時間以内で指定してください。");setSaving(false);return;}
    const {error}=await supabase.rpc("cpp_live_create_event",{
      p_title:title.trim(),p_starts_at:start.toISOString(),p_ends_at:end.toISOString(),
      p_audience:audience,p_timezone:"Asia/Tokyo",
@@ -56,16 +60,18 @@ export default function CppLiveAdminSchedule(){
        <input value={title} onChange={e=>setTitle(e.target.value)} maxLength={120} className="mt-2 w-full rounded-lg border p-3" />
      </label>
      <label className="block text-sm font-semibold">開催日（日本時間）
-       <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 w-full rounded-lg border p-3"/>
+       <input type="date" value={date} onChange={e=>{setDate(e.target.value);if(!endDate)setEndDate(e.target.value);}} className="mt-2 w-full rounded-lg border p-3"/>
      </label>
      <label className="block text-sm font-semibold">開始時刻（日本時間）
        <input type="time" value={hour} onChange={e=>setHour(e.target.value)} className="mt-2 w-full rounded-lg border p-3"/>
      </label>
-     <label className="block text-sm font-semibold">開催時間
-       <select value={duration} onChange={e=>setDuration(Number(e.target.value))} className="mt-2 w-full rounded-lg border p-3">
-         <option value={60}>60分</option><option value={90}>90分</option><option value={120}>120分</option>
-       </select>
+     <label className="block text-sm font-semibold">終了日（日本時間）
+       <input type="date" value={endDate||date} onChange={e=>setEndDate(e.target.value)} className="mt-2 w-full rounded-lg border p-3"/>
      </label>
+     <label className="block text-sm font-semibold">終了時刻（日本時間）
+       <input type="time" value={endHour} onChange={e=>setEndHour(e.target.value)} className="mt-2 w-full rounded-lg border p-3"/>
+     </label>
+     <p className="text-xs text-neutral-500">最大12時間。日をまたぐ場合は終了日も指定してください。</p>
      <fieldset><legend className="text-sm font-semibold">参加対象</legend>
        <div className="mt-3 flex flex-wrap gap-4">{roles.map(([key,name])=><label key={key} className="flex gap-2 text-sm">
          <input type="checkbox" checked={audience.includes(key)}
@@ -87,6 +93,7 @@ export default function CppLiveAdminSchedule(){
        <Link className="inline-block rounded-full bg-neutral-900 px-5 py-3 text-sm font-bold text-white" href={`/my/cpp/live/room/${devEventId}`}>開発用会場を開く →</Link>
      </div>}
    </section>
+   <CppLiveProgramSetup/>
    <div className="mt-8"><CppLiveSchedule/></div>
  </main>;
 }

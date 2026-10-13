@@ -85,6 +85,7 @@ await test('CPP LIVE progression SQL', async (t) => {
     '20261012200000_cpp_live_namecard.sql',
     '20261012210000_cpp_live_talk_history.sql',
     '20261013055737_cpp_live_event_progression.sql',
+    '20261013063642_cpp_live_control_ui.sql',
   ];
   for (const file of migrations) await db.exec(await read(`supabase/migrations/${file}`));
   for (const id of Object.values(users)) await root('INSERT INTO auth.users VALUES($1)', [id]);
@@ -98,6 +99,22 @@ await test('CPP LIVE progression SQL', async (t) => {
   payer = await rpc('admin', 'parari_live_account_create', ['CPP payer', 'organization']);
   await rpc('admin', 'parari_live_account_add_member', [organizer, users.host]);
   await rpc('admin', 'parari_live_account_add_member', [organizer, users.alice]);
+
+  await t.test('UI preparation is atomic, development-only and unpriced; candidates stay organizer-scoped', async () => {
+    await deny(() => rpc('alice', 'cpp_live_create_controlled_test_event', ['Forbidden', JSON.stringify(program), 7200]));
+    await deny(() => rpc('admin', 'cpp_live_create_controlled_test_event', ['Invalid', JSON.stringify([{ ...program[0], kind: 'bad' }, program.at(-1)]), 7200]), '23514');
+    assert.equal(Number((await root("SELECT count(*) AS count FROM public.cpp_live_events WHERE title='Invalid'"))[0].count), 0);
+    const id = await rpc('admin', 'cpp_live_create_controlled_test_event', ['UI First Night', JSON.stringify(program), 7200]);
+    const e = (await root('SELECT is_development,extract(epoch FROM ends_at-starts_at) AS seconds FROM public.cpp_live_events WHERE id=$1', [id]))[0];
+    assert.equal(e.is_development, true); assert.equal(Number(e.seconds), 245 * 60);
+    const c = await state(id, 'admin'); assert.equal(c.phase, 'waiting'); assert.equal(c.host_user_id, users.admin);
+    assert.equal((await rpc('admin', 'cpp_live_event_billing_context', [id])).billing_status, 'unpriced');
+    await deny(() => rpc('bob', 'cpp_live_event_host_candidates', [id]));
+    await identity('admin');
+    const candidates = await rows('SELECT * FROM public.cpp_live_event_host_candidates($1)', [id]);
+    assert.ok(candidates.some(c => c.user_id === users.admin));
+    assert.ok(!candidates.some(c => c.user_id === users.bob || c.user_id === users.outsider));
+  });
 
   await t.test('First Night program persists; reconnect reads identical phase/version', async () => {
     const id = await event();
