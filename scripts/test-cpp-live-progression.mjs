@@ -86,6 +86,7 @@ await test('CPP LIVE progression SQL', async (t) => {
     '20261012210000_cpp_live_talk_history.sql',
     '20261013055737_cpp_live_event_progression.sql',
     '20261013063642_cpp_live_control_ui.sql',
+    '20261013072254_cpp_live_stage_media.sql',
   ];
   for (const file of migrations) await db.exec(await read(`supabase/migrations/${file}`));
   for (const id of Object.values(users)) await root('INSERT INTO auth.users VALUES($1)', [id]);
@@ -318,6 +319,78 @@ await test('CPP LIVE progression SQL', async (t) => {
     assert.equal((await rows('SELECT * FROM public.cpp_live_note_get($1)', [call])).length, 0);
   });
 
+  await t.test('STAGE roles, retired identities and provider-confirmed transition barrier', async () => {
+    const id = await event();
+    await deny(() => rpc('alice', 'cpp_live_stage_ticket', [id]));
+    await transition(id, 'opening');
+    for (const user of ['host','alice','bob']) await rpc(user, 'cpp_live_event_join', [id]);
+    await deny(() => rpc('outsider', 'cpp_live_stage_ticket', [id]));
+    const host = await rpc('host', 'cpp_live_stage_ticket', [id]);
+    const alice = await rpc('alice', 'cpp_live_stage_ticket', [id]);
+    assert.equal(host.room_id, alice.room_id); assert.equal(host.role, 'host'); assert.equal(alice.role, 'viewer');
+    assert.notEqual(alice.ticket_id, users.alice);
+    assert.equal((await rpc('alice', 'cpp_live_stage_ticket', [id])).ticket_id, alice.ticket_id, 'Reconnect reuses authorized identity');
+    await rpc('alice', 'cpp_live_stage_hand', [id, true]);
+    assert.equal((await rpc('host', 'cpp_live_stage_state', [id])).people.find(p => p.user_id === users.alice).hand_raised, true);
+    assert.deepEqual((await rpc('alice', 'cpp_live_stage_state', [id])).people, [], 'Viewer does not receive host roster/requests');
+    await deny(() => rpc('alice', 'cpp_live_stage_retire', [id, (0), 'role', users.bob, 'presenter']));
+    const v = (await state(id)).version;
+    const pending = await rpc('host', 'cpp_live_stage_retire', [id, v, 'role', users.alice, 'questioner']);
+    assert.equal(pending.length, 1); assert.equal(pending[0].ticket_id, alice.ticket_id);
+    assert.equal(await rpc('alice', 'cpp_live_stage_ticket_valid', [alice.ticket_id]), false, 'Late token response cannot restore revoked authority');
+    await deny(() => rpc('alice', 'cpp_live_stage_ticket', [id]), '55000');
+    await deny(() => rpc('host', 'cpp_live_stage_retired', [[alice.ticket_id]]));
+    await deny(() => transition(id, 'lounge'), '55000');
+    await deny(async () => rpc('host', 'cpp_live_event_set_host', [id, users.admin, (await state(id)).version]), '55000');
+    await root('SET ROLE service_role');
+    await rows('SELECT public.cpp_live_stage_retired($1)', [[alice.ticket_id]]);
+    const speaker = await rpc('alice', 'cpp_live_stage_ticket', [id]);
+    assert.equal(speaker.role, 'questioner'); assert.notEqual(speaker.ticket_id, alice.ticket_id);
+    await deny(() => rpc('host', 'cpp_live_stage_retire', [id, v, 'role', users.alice, 'viewer']), '40001');
+    const roomContext = await root('SELECT organizer_account_id,billing_account_id FROM public.cpp_live_stage_rooms WHERE id=$1', [speaker.room_id]);
+    assert.equal(roomContext[0].organizer_account_id, organizer); assert.equal(roomContext[0].billing_account_id, payer);
+    const usage = { id: 'left-first-'+id, type:'participant.left', event_ts:1791877500, payload:{
+      room:'cpp-stage-'+speaker.room_id,user_id:speaker.ticket_id,session_id:'session-'+id,joined_at:1791877000,duration:500 } };
+    await deny(() => rpc('alice','cpp_live_stage_usage_record',[JSON.stringify(usage),'a'.repeat(64)]));
+    await root('SET ROLE service_role');
+    const record = async e => (await rows('SELECT public.cpp_live_stage_usage_record($1,$2) AS result',[JSON.stringify(e),'a'.repeat(64)]))[0].result;
+    assert.equal(await record(usage),'recorded');
+    assert.equal(await record({...usage,id:'duplicate-with-different-id-'+id}),'duplicate');
+    assert.equal(await record({...usage,id:'joined-later-'+id,type:'participant.joined'}),'recorded');
+    const saved = await rows('SELECT * FROM public.cpp_live_stage_usage_events WHERE room_id=$1',[speaker.room_id]);
+    assert.equal(saved.length,2); assert.equal(Number(saved.find(x=>x.event_type==='participant.left').duration_seconds),500);
+    assert.equal(saved.some(x=>'user_name' in x),false);
+    await deny(()=>record({...usage,id:'wrong-user-'+id,payload:{...usage.payload,user_id:users.bob}}),'22023');
+    await identity('alice'); await deny(()=>rows('SELECT * FROM public.cpp_live_stage_usage_events'));
+    await root("UPDATE public.cpp_live_event_attendees SET last_seen_at=clock_timestamp()-interval '5 minutes' WHERE event_id=$1 AND user_id=$2",[id,users.alice]);
+    assert.equal((await rpc('host','cpp_live_stage_state',[id])).people.find(p=>p.user_id===users.alice).present,false);
+    const offline = await rpc('host','cpp_live_stage_retire',[id,(await state(id)).version,'role',users.alice,'viewer']);
+    await root('SET ROLE service_role');await rows('SELECT public.cpp_live_stage_retired($1)',[offline.map(t=>t.ticket_id)]);
+    await rpc('alice','cpp_live_event_join',[id]);assert.equal((await rpc('alice','cpp_live_stage_ticket',[id])).role,'viewer');
+    const all = await rpc('host', 'cpp_live_stage_retire', [id, (await state(id)).version, 'close']);
+    assert.equal(all.length, 2);
+    await deny(() => rpc('bob', 'cpp_live_stage_ticket', [id]), '55000');
+    await deny(() => transition(id, 'lounge'), '55000', 'Closing is not equivalent to provider acknowledgement');
+    await root('SET ROLE service_role'); await rows('SELECT public.cpp_live_stage_retired($1)', [all.map(t => t.ticket_id)]);
+    await transition(id, 'lounge');
+    await deny(() => rpc('host', 'cpp_live_stage_ticket', [id]));
+    assert.equal((await state(id)).can_start_talk, true);
+    await transition(id, 'closing_pending'); await transition(id, 'closing');
+    const closing = await rpc('host', 'cpp_live_stage_ticket', [id]);
+    assert.notEqual(closing.room_id, host.room_id, 'Opening token cannot enter closing room');
+    assert.equal(await rpc('host', 'cpp_live_stage_ticket_valid', [host.ticket_id]), false);
+    // Returning to a previous host must use a fresh room, never a retired generation.
+    for (const [from,to] of [['host','admin'],['admin','host']]) {
+      const version = (await state(id,from)).version;
+      const retiring = await rpc(from,'cpp_live_stage_retire',[id,version,'close']);
+      await root('SET ROLE service_role');await rows('SELECT public.cpp_live_stage_retired($1)',[retiring.map(t=>t.ticket_id)]);
+      await rpc(from,'cpp_live_event_set_host',[id,users[to],version]);
+      const next = await rpc(to,'cpp_live_stage_ticket',[id]);assert.notEqual(next.room_id,closing.room_id);
+    }
+    await identity('host'); await deny(() => rows('SELECT * FROM public.cpp_live_stage_tickets'));
+    await deny(() => rows('SELECT * FROM public.cpp_live_stage_rooms'));
+  });
+
   await t.test('real PostgreSQL concurrency: phase/accept, invite/invite and phase/phase serialize', { skip: !url && 'Embedded run has one connection; CI PostgreSQL runs races' }, async () => {
     const left = new Client({ connectionString: url });
     const right = new Client({ connectionString: url });
@@ -381,6 +454,24 @@ await test('CPP LIVE progression SQL', async (t) => {
       await left.query('COMMIT');
       await retry;
       assert.equal((await state(third)).version, 1);
+
+      const stage = await event(); await transition(stage, 'opening');
+      const stageVersion = (await state(stage)).version;
+      // Ticket first: retirement must wait and include the newly issued identity.
+      await left.query('BEGIN');
+      const stageTicket = await rpc('alice', 'cpp_live_stage_ticket', [stage], left);
+      const retire = rpc('host', 'cpp_live_stage_retire', [stage, stageVersion, 'close'], right);
+      await blocked(); await left.query('COMMIT');
+      assert.equal((await retire)[0].ticket_id, stageTicket.ticket_id);
+      await deny(() => rpc('alice', 'cpp_live_stage_ticket', [stage]), '55000');
+      // Retirement first: a concurrently arriving user never gets a new identity.
+      const nextStage = await event(); await transition(nextStage, 'opening');
+      await rpc('host', 'cpp_live_stage_ticket', [nextStage]);
+      const nextVersion = (await state(nextStage)).version;
+      await left.query('BEGIN');
+      await rpc('host', 'cpp_live_stage_retire', [nextStage, nextVersion, 'close'], left);
+      const joining = deny(() => rpc('alice', 'cpp_live_stage_ticket', [nextStage], right), '55000');
+      await blocked(); await left.query('COMMIT'); await joining;
     } finally {
       await left.query('ROLLBACK');
       await right.query('ROLLBACK');

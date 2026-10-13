@@ -29,7 +29,7 @@ export default function CppLiveProgramSetup() {
   }
   return <section className="mt-6 max-w-3xl space-y-4 rounded-2xl border border-indigo-200 bg-white p-6" aria-label="進行確認用イベントの作成">
     <h2 className="text-lg font-bold">STAGE・LOUNGEの進行確認</h2>
-    <p className="text-sm text-neutral-600">開発用の会場を今から開きます。一般公開されず、共有URLを知るCPP登録者が参加できます。映像・音声配信は次の開発段階です。</p>
+    <p className="text-sm text-neutral-600">開発用の会場を今から開きます。一般公開されず、共有URLを知るCPP登録者が参加できます。STAGE配信には、この環境での配信設定が必要です。</p>
     <label className="block text-sm font-semibold">形式 <select disabled={busy} value={format} onChange={e => {
       const next = e.target.value as typeof format; setFormat(next); setItems(plannedProgram(next)); setTitle(next === "first_night" ? "CPP First Night 進行確認" : "CPP LIVE 進行確認");
     }} className="ml-3 rounded-lg border p-2"><option value="first_night">CPP First Night</option><option value="standard">通常のCPP LIVE</option></select></label>

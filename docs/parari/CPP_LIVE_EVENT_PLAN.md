@@ -82,3 +82,14 @@ Do not run fixture bootstrap against any populated or production database. Apply
 4. PRIVATE TALK中は終了時刻まで維持されること、振り返り中でもSTAGEへ切り替わること、保存失敗後もメモを再保存できることを確認する。
 5. 再読み込み、通信断・復帰、途中入室、管理者の司会引き継ぎ、アカウント切替、12時間の開催上限を確認する。
 6. STAGEの映像・音声・画面共有は②で実装・実機検証する。この画面だけで講演配信の準備完了とはしない。
+
+## 2-A STAGE pilot implementation
+
+Implementation continues from #135 on `feat/cpp-live-stage-media`. See [the STAGE test runbook](CPP_LIVE_STAGE_TEST.md) for environment gates and actual device steps.
+
+- Development-only, separate `cpp-stage-<room UUID>` rooms. Daily Prebuilt uses the same direct iframe pattern as the device-tested private call, and is loaded only on an explicit connect action. All join paths set audio/video OFF; prejoin device activation is disabled. Viewers have `canSend:false`; questioners can send audio/video; host/presenters additionally share their screen. No browser receives Daily owner/admin authority.
+- Application host controls remain server-authenticated/versioned. Provider identity UUIDs are mapped to users but never confer event or payer authority. Role changes retire the previous identity via Daily `eject` with `ban:true`, then permit a fresh identity; users explicitly reconnect and enable their own devices.
+- The event row serializes ticket issuance with retirement. Phase/host changes are blocked while any unexpired identity lacks a service-only retirement acknowledgment. Provider failure leaves a retryable state and cannot unlock LOUNGE. Host handover closes the old generation; a monotonic epoch permits a later return to the original host without resurrecting an old room.
+- Admission tokens last at most 60 seconds; ongoing connection expiry inherits the room deadline (no token ejection override). Opening/closing and handovers use distinct rooms. Late API responses are re-authorized before returning a token; UI generation guards and iframe removal prevent media resurrection after unmount.
+- Rooms snapshot organizer/payer mappings. Tickets are permission records only. Signed participant webhooks persist actual provider join/duration facts separately, deduplicate event IDs and session/type, and tolerate out-of-order delivery. No invoice/price is assigned. Reconciliation of missing deliveries and rate classification remain a billing gate.
+- Small-account physical tests, actual ban/re-entry behavior, expiry inheritance, two-hour continuity and load verification are required before public activation. The opt-in flag defaults OFF. No production migration or main merge is performed in this draft.

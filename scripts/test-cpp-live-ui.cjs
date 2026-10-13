@@ -88,6 +88,14 @@ const client = {
 };
 require.cache[require.resolve('../src/lib/supabaseClient.ts')] = { exports: { supabase: client } };
 global.fetch = async (url, options) => {
+  if (url === '/api/parari/live/cpp/stage') {
+    if (options.method !== 'POST') return { ok: true, json: async () => ({ enabled: false }) };
+    const b = JSON.parse(options.body);
+    const result = await response(b.action === 'transition' ? 'cpp_live_event_transition' : 'cpp_live_event_set_host', {
+      p_event_id: b.eventId, p_expected_version: b.version, p_phase: b.phase, p_host_user_id: b.targetId,
+    });
+    return { ok: !result.error, json: async () => result.error ? { code: result.error.code, error: '進行が更新されました。現在の状態を確認してください。' } : { ok: true } };
+  }
   assert.equal(url, '/api/parari/live/cpp/audio-test'); mediaRequests++;
   return { ok: true, json: async () => options.method === 'POST' ? { roomUrl: 'https://example.daily.co/test', token: 'fake', sessionExpiresAt: new Date(Date.now() + 600000).toISOString() } : { enabled: true } };
 };
@@ -187,7 +195,7 @@ function deferred() { let done; const promise = new Promise(resolve => { done = 
   await React.act(async()=>{button('実行する').click();button('実行する').click();});await settle();
   assert.equal(requests.filter(r=>r.name==='cpp_live_event_transition').length,1);
   assert.equal(requests.find(r=>r.name==='cpp_live_event_transition').args.p_expected_version,0);
-  await mount(Host,hostProps()); await click('自由交流を始める'); control.version++; await click('実行する'); assert.ok(document.body.textContent.includes('別の操作で進行が更新'));
+  await mount(Host,hostProps()); await click('自由交流を始める'); control.version++; await click('実行する'); assert.ok(document.body.textContent.includes('進行が更新'));
   phase('closing_pending'); control.media_drain_until=new Date(Date.now()+120000).toISOString(); await mount(Host,hostProps()); assert.equal(button('クロージングを始める').disabled,true);
   console.log('PASS MC confirmation, double-submit protection, stale version recovery and drain barrier');
 
