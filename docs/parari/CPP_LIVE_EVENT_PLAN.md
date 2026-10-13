@@ -33,8 +33,8 @@ Daily `/api/parari/live/cpp/audio-test` is still development-event-only. Its roo
 
 ## Delivery sequence
 
-1. **1-A, this PR:** append-only MC audit, shared organizer/payer identities, event-scoped program and durable/versioned phase state, MC handover, authoritative invitation/acceptance gates. Opt-in is restricted to unused development events. Existing events have no control row and retain current admission/call behavior. No phase UI, STAGE media, public-event activation, payment execution or production migration in this PR.
-2. **1-B:** MC panel, event read/synchronization hook, waiting/opening/lounge/draining/closing/ended views, intermediate join/reconnect/focus recovery, unsaved note retention. Read authoritative state after any notification; periodic polling recovers missed notifications. Do not trust browser broadcasts to authorize transitions. Verify before enabling in any live event. Support specifying start/end times beyond the current 120-minute UI limit; keep the database's 12-hour maximum initially.
+1. **1-A, PR #134:** append-only MC audit, shared organizer/payer identities, event-scoped program and durable/versioned phase state, MC handover, authoritative invitation/acceptance gates. Opt-in is restricted to unused development events. Existing events have no control row and retain current admission/call behavior. No phase UI, STAGE media, public-event activation, payment execution or production migration in this PR.
+2. **1-B, dependent UI PR:** MC panel, event read/synchronization hook, waiting/opening/lounge/draining/closing/ended views, intermediate join/reconnect/focus recovery, unsaved note retention. Read authoritative state after any notification; periodic polling recovers missed notifications. Do not trust browser broadcasts to authorize transitions. Verify before enabling in any live event. Support specifying start/end times beyond the current 120-minute UI limit; keep the database's 12-hour maximum initially.
 3. **2:** separate STAGE Daily rooms/tokens, receiving-only viewer rights, explicit local mic/camera activation for MC/presenters/questioners, stage handover, screen share, audio autoplay recovery, disconnect/reconnect, provider usage capture and provider-room → event → payer mapping. Start with small multi-account tests, then controlled load tests. A 100-person production claim requires actual evidence.
 4. **3:** event-scoped dot venue and the current private-call RPCs/nametags. Isolate presence per event; do not expose private notes or restore legacy RPCs.
 5. **4:** early/forced call termination including provider-side revocation/ejection and prevention of re-entry with already-issued credentials; cutover to STAGE without dual audio, recover drafts. This is distinct from changing a database call status.
@@ -59,3 +59,26 @@ Run the SQL suite in an isolated PostgreSQL database (CI service), with role swi
 Test anonymous/outsider denial, direct-table denial, payer isolation, invalid program input, cross-event IDs, all phase transitions, stale version retries, host handover/reconnect persistence, cutoff invitation acceptance, original-media-deadline barrier, concurrent invite/accept/phase transitions, unchanged unmanaged call limits and private note/history contracts.
 
 Do not run fixture bootstrap against any populated or production database. Apply the migration to a staging database and inspect Supabase advisors before activation. Main, production schema, Daily settings and billing remain unchanged by this draft foundation.
+
+
+## 1-B implementation and verification
+
+- New UI work is based on `feat/cpp-live-event-progression` (`812f56b`), which is still an unmerged draft. Merge/review 1-A before retargeting the dependent UI PR to main. No production migration or deployment is performed by this change.
+- `CppLiveEventRoom` is the active route boundary. It reads admission and progression together every five seconds, and on focus, visible-tab recovery and network recovery. Only a confirmed missing progression RPC supports pre-migration compatibility; network/authorization/malformed/stale state never turns a known managed event into an unmanaged lounge.
+- The server timestamp anchors the local display timer. MC commands carry the expected version and require explicit confirmation. The server remains authoritative for closing, talk admission and media drain. UI elapsed timers never advance the event.
+- Waiting/opening/closing/ended views take priority over PRIVATE TALK and review. Entering STAGE unmounts the private media surface; the new STAGE view itself constructs no media connection or microphone/camera request. It clearly states that STAGE broadcasting is not yet implemented.
+- Drafts are scoped to user + event + call, with a versioned `sessionStorage` format and memory fallback. STAGE transitions attempt a save once without delaying the transition. Failed saves remain editable/retryable beneath STAGE, including after scheduled expiry. A save response cannot erase newer typing. Drafts are cleared on observed logout/account switch and are not a replacement for permanent server notes; close the tab only after saving. Blocked browser storage is reported in the UI.
+- Note saves bind the request to the draft owner's authenticated token, rather than relying on an asynchronously changing global session. The fixture tests this boundary; no token is logged or persisted by draft storage.
+- Scheduling accepts explicit start/end dates and times in JST, including midnight crossings, while preserving the database's twelve-hour maximum.
+- The separate controlled rehearsal creator offers a standard CPP LIVE preset and a First Night preset (six 12+3 minute company sessions, 120-minute opening including instructions/buffer, 120-minute lounge, five-minute closing). Titles and planned durations are editable before creation.
+- `cpp_live_create_controlled_test_event` atomically creates a development-only event, attaches the creator's CPP organizing/paying account, leaves billing unpriced, and sets the creator as MC. Validation failure rolls everything back. `cpp_live_event_host_candidates` lists only members of the event's organizing account to its MC/admin; it does not expose paying-account members or grant membership.
+- Browser UI tests use actual React DOM components with synthetic RPC/auth and Daily responses; they do not establish real Daily connectivity or a 100-participant capacity claim. The SQL suite uses repository migrations with minimal external membership fixtures, and PostgreSQL CI covers real connection races.
+
+### 検証環境での操作確認（実機確認は後日）
+
+1. 隔離した検証DBへ①-A、①-Bの順でmigrationを適用し、Supabase advisorsと権限を確認する。本番DBへテストfixtureを実行しない。
+2. 管理者モードの「CPP LIVE開催管理」から「STAGE・LOUNGEの進行確認」を開き、プログラムを確認して会場を作る。開発用URLはCPP登録者だけに共有する。
+3. 司会者と参加者で別アカウントを使い、開会待ち→オープニング→自由交流→受付停止→クロージング→終了を確認する。次の項目・二重クリック・古いタブの操作も確認する。
+4. PRIVATE TALK中は終了時刻まで維持されること、振り返り中でもSTAGEへ切り替わること、保存失敗後もメモを再保存できることを確認する。
+5. 再読み込み、通信断・復帰、途中入室、管理者の司会引き継ぎ、アカウント切替、12時間の開催上限を確認する。
+6. STAGEの映像・音声・画面共有は②で実装・実機検証する。この画面だけで講演配信の準備完了とはしない。
