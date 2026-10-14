@@ -5,7 +5,10 @@ const dom=new JSDOM('<div id="root"></div>',{url:'https://cpp.test',pretendToBeV
 for(const k of ['window','document','HTMLElement','HTMLSelectElement','Event','Node','MutationObserver']) global[k]=dom.window[k];
 global.IS_REACT_ACT_ENVIRONMENT=true;global.self=dom.window;
 global.MediaStream=class{constructor(tracks){this.tracks=tracks;}};
-let blockAudio=false;
+let blockAudio=false,videoProcessing=true,mobile=false;
+// Canvas rendering is mocked; actual segmentation and PNG processing require device testing.
+dom.window.HTMLCanvasElement.prototype.getContext=function(){return {createLinearGradient(){return {addColorStop(){}};},fillRect(){}};};
+dom.window.HTMLCanvasElement.prototype.toBlob=function(fn){fn(new Blob([new Uint8Array([137,80,78,71])],{type:'image/png'}));};
 dom.window.HTMLMediaElement.prototype.play=function(){return this.tagName==='AUDIO'&&blockAudio?Promise.reject(new Error('gesture required')):Promise.resolve();};
 const React=require('react');const {createRoot}=require('react-dom/client');
 const intervals=new Map();let intervalId=0;window.setInterval=fn=>{intervals.set(++intervalId,fn);return intervalId;};window.clearInterval=id=>intervals.delete(id);
@@ -31,8 +34,9 @@ class FakeCall{
  stopScreenShare(){this.devices.push(['screen',false]);if(this.ps.local)this.ps.local.screen=false;}
  updateParticipants(update){this.updates.push(update);return this;}
  async updateReceiveSettings(update){this.quality=update;return update;}
+ async updateInputSettings(settings){this.inputUpdates??=[];this.inputUpdates.push(settings);if(this.inputDelay)await this.inputDelay.promise;if(this.failInput)throw new Error('background unavailable');this.inputSettings=settings;this.emit('input-settings-updated',{inputSettings:settings});return {inputSettings:settings};}
 }
-Module._load=function(n,...args){if(n==='@daily-co/daily-js')return {getCallInstance:()=>active,createCallObject:opts=>new FakeCall(opts)};return load.call(this,n,...args);};
+Module._load=function(n,...args){if(n==='@daily-co/daily-js')return {supportedBrowser:()=>({supportsVideoProcessing:videoProcessing,mobile}),getCallInstance:()=>active,createCallObject:opts=>new FakeCall(opts)};return load.call(this,n,...args);};
 const client={auth:{getSession:async()=>({data:{session:{user:{id:user},access_token:'test-'+user}}})},rpc(name,args){return {abortSignal:async()=>{
  if(name==='cpp_live_stage_state')return {data:structuredClone(state),error:failState?{message:'offline'}:null};
  assert.equal(name,'cpp_live_stage_hand');state.hand_raised=args.p_raised;return {error:null};
@@ -47,7 +51,7 @@ global.fetch=async(url,options)=>{
 };
 const Media=require('../src/components/parari/cpp/CppLiveStageMedia.tsx').default;
 let root,control;
-function reset(){user='alice';state={room_id:'room',closing:false,role:'viewer',ticket_id:null,can_speak:false,hand_raised:false,version:10,pending_count:0,display_mode:'panel',host_visible:true,lecturer_user_id:'host',people:[person('host','host'),person('alice')]};failState=false;delayJoin=null;delaySdkJoin=null;delayDestroy=null;joinCount=0;enabled=true;bodies.length=0;calls.length=0;refreshCount=0;blockAudio=false;control={event_id:'event',can_control:false,version:10};window.innerWidth=1440;}
+function reset(){user='alice';state={room_id:'room',closing:false,role:'viewer',ticket_id:null,can_speak:false,hand_raised:false,version:10,pending_count:0,display_mode:'panel',host_visible:true,lecturer_user_id:'host',people:[person('host','host'),person('alice')]};failState=false;delayJoin=null;delaySdkJoin=null;delayDestroy=null;joinCount=0;enabled=true;bodies.length=0;calls.length=0;refreshCount=0;blockAudio=false;videoProcessing=true;mobile=false;control={event_id:'event',can_control:false,version:10};window.innerWidth=1440;}
 async function settle(){await React.act(async()=>{await new Promise(r=>setTimeout(r,5));});}
 async function mount(){root=createRoot(document.getElementById('root'));await React.act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(Media,{control,userId:user,refresh:async()=>{refreshCount++;}}))));await settle();}
 async function unmount(){await React.act(async()=>root.unmount());await settle();}
@@ -56,6 +60,7 @@ async function click(text){await React.act(async()=>button(text).click());await 
 async function poll(){await React.act(async()=>{for(const fn of intervals.values())fn();});await settle();}
 function deferred(){let done;const promise=new Promise(r=>{done=r;});return {promise,done};}
 async function select(id){const el=document.querySelector('select[aria-label="操作する参加者"]');await React.act(async()=>{Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,id);el.dispatchEvent(new Event('change',{bubbles:true}));});}
+async function background(value){const el=document.querySelector('select[aria-label="カメラの背景"]');await React.act(async()=>{el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));});await settle();}
 (async()=>{
  reset();await mount();assert.equal(joinCount,0);assert.equal(calls.length,0,'No automatic device/SDK access in StrictMode');
  const b=button('STAGEに接続する');await React.act(async()=>{b.click();b.click();});await settle();assert.equal(joinCount,1);assert.equal(calls.length,1);
@@ -81,8 +86,32 @@ async function select(id){const el=document.querySelector('select[aria-label="�
  await click('質問を許可');assert.deepEqual(bodies.at(-1),{action:'question_allow',eventId:'event',version:10,targetId:'alice'});await click('パネルに追加');assert.equal(bodies.at(-1).action,'panel_add');assert.equal(refreshCount,2);assert.equal(calls.length,0);
  state.pending_count=1;state.version=11;await poll();await click('接続権限の切替を再試行');assert.equal(bodies.at(-1).action,'retry');assert.equal(bodies.at(-1).version,11);
  await click('STAGEに接続する');const host=calls[0];await click('カメラをON');await click('マイクをON');await click('画面を共有');assert.ok(host.devices.some(([k,on])=>k==='screen'&&on));
+ await React.act(async()=>host.emit('nonfatal-error',{type:'video-processor-error'}));assert.equal(host.localVideo(),false);assert.equal(host.localAudio(),true);assert.equal(host.localScreenVideo(),true);await click('カメラをON');
  state.host_visible=false;await poll();assert.equal(host.localVideo(),false);assert.equal(host.localAudio(),true);assert.equal(button('カメラをON').disabled,true);await unmount();
  console.log('PASS separate panel/Q&A actions, current-version retry, share and host visibility without mic loss');
+ reset();await mount();await click('STAGEに接続する');const bg=calls[0];
+ assert.equal(bg.inputUpdates,undefined,'Selecting/defaulting a background does not open devices');
+ bg.inputDelay=deferred();await click('カメラをON');assert.equal(bg.localVideo(),false);assert.equal(button('カメラをON').disabled,true);
+ assert.equal(bg.inputUpdates[0].video.processor.type,'background-blur');
+ bg.inputDelay.done();await settle();assert.equal(bg.localVideo(),true);
+ await background('sand');assert.equal(bg.localVideo(),false,'Changing background immediately stops video');assert.equal(bg.inputUpdates.length,1);
+ await click('カメラをON');assert.equal(bg.localVideo(),true);assert.equal(bg.inputUpdates.at(-1).video.processor.type,'background-image');assert.ok(bg.inputUpdates.at(-1).video.processor.config.source instanceof ArrayBuffer);
+ await React.act(async()=>bg.emit('nonfatal-error',{type:'video-processor-error'}));assert.equal(bg.localVideo(),false);assert.ok(document.body.textContent.includes('背景処理を続けられない'));
+ bg.failInput=true;await click('カメラをON');assert.equal(bg.localVideo(),false);bg.failInput=false;
+ await click('カメラをON');assert.equal(bg.localVideo(),true);
+ await React.act(async()=>bg.emit('input-settings-updated',{inputSettings:{video:{processor:{type:'none'}}}}));assert.equal(bg.localVideo(),false,'A reset processor never silently exposes the room');
+ await background('none');await click('カメラをON');assert.equal(bg.inputUpdates.at(-1).video.processor.type,'none');assert.equal(bg.localVideo(),true,'Raw camera requires an explicit selection');
+ await background('blue');bg.inputDelay=deferred();await click('カメラをON');await background('blur');bg.inputDelay.done();await settle();assert.equal(bg.localVideo(),false,'Stale background completion cannot turn the camera on');
+ bg.inputDelay=deferred();await click('カメラをON');await React.act(async()=>bg.emit('camera-error'));bg.inputDelay.done();await settle();assert.equal(bg.localVideo(),false,'A camera error during setup invalidates pending activation');
+ bg.inputDelay=deferred();await click('カメラをON');await unmount();bg.inputDelay.done();await settle();assert.equal(bg.localVideo(),false,'Unmount cancels pending camera activation');
+ reset();await mount();await click('STAGEに接続する');const muteFailure=calls[0];await click('カメラをON');let cameraStops=0;muteFailure.ps.local.tracks.video={state:'playable',persistentTrack:{stop(){cameraStops++;}}};const originalVideo=muteFailure.setLocalVideo.bind(muteFailure);muteFailure.setLocalVideo=()=>{throw new Error('SDK mute failed');};await React.act(async()=>muteFailure.emit('nonfatal-error',{type:'video-processor-error'}));assert.equal(cameraStops,1,'A failed SDK mute must still stop the camera track');muteFailure.setLocalVideo=originalVideo;await unmount();
+ console.log('PASS default blur, apply-before-publish, background images, changes, processor failure/reset, explicit raw camera and stale completion');
+ reset();mobile=true;await mount();await click('STAGEに接続する');const phone=calls[0];assert.equal(button('カメラをON').disabled,true);
+ assert.ok(document.body.textContent.includes('この端末では背景加工を使えません'));await background('none');await click('カメラをON');assert.equal(phone.localVideo(),true);assert.equal(phone.inputUpdates,undefined);await unmount();
+ reset();videoProcessing=false;await mount();await click('STAGEに接続する');assert.equal(button('カメラをON').disabled,true);await unmount();
+ reset();user='host';control.can_control=true;state.role='host';state.can_speak=true;await mount();await click('STAGEに接続する');const hidden=calls[0];hidden.inputDelay=deferred();await click('カメラをON');state.host_visible=false;await poll();hidden.inputDelay.done();await settle();assert.equal(hidden.localVideo(),false);assert.equal(button('カメラをON').disabled,true);await unmount();
+ reset();await mount();await click('STAGEに接続する');const revoked=calls[0];revoked.inputDelay=deferred();await click('カメラをON');state.closing=true;await poll();revoked.inputDelay.done();await settle();assert.equal(revoked.localVideo(),false);assert.equal(revoked.destroyed,true);await unmount();
+ console.log('PASS unsupported browsers, mobile, host hiding and closing during background preparation');
  reset();user='host';control.can_control=true;state.role='host';state.can_speak=true;
  const viewers=Array.from({length:100},(_,i)=>person('viewer'+i));viewers[99].hand_raised=true;viewers[70].hand_raised=true;
  // Match the RPC contract: the former page-three/page-two people raised in this order.
@@ -99,8 +128,8 @@ async function select(id){const el=document.querySelector('select[aria-label="�
  // A queue update while paging must not change the selected participant or open devices.
  await click('次のページ');const devicesBefore=many.devices.length;
  state.people=state.people.filter(p=>p.user_id!=='viewer99');viewers[99].hand_raised=false;state.people.push(viewers[99]);await poll();
- assert.equal(document.querySelector('select').value,'viewer99');assert.equal(many.destroyed,false);assert.equal(many.devices.length,devicesBefore);
- await React.act(async()=>{document.querySelector('[aria-label="viewer48を選択"]').click();});assert.equal(document.querySelector('select').value,'viewer48');
+ assert.equal(document.querySelector('select[aria-label="操作する参加者"]').value,'viewer99');assert.equal(many.destroyed,false);assert.equal(many.devices.length,devicesBefore);
+ await React.act(async()=>{document.querySelector('[aria-label="viewer48を選択"]').click();});assert.equal(document.querySelector('select[aria-label="操作する参加者"]').value,'viewer48');
  state.display_mode='lecture';state.lecturer_user_id='panel0';await poll();assert.equal(top().children.length,2);assert.equal(state.people.filter(p=>p.role==='presenter').length,6);assert.equal(gallery().firstChild.dataset.role,'questioner');
  await React.act(async()=>{window.innerWidth=390;window.dispatchEvent(new Event('resize'));});assert.ok(gallery().children.length<=6);
  await unmount();reset();enabled=false;await mount();await poll();assert.equal(calls.length,0);await unmount();

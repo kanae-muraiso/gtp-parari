@@ -21,6 +21,8 @@ export async function createStageCall() {
   await disposal;
   const { default: Daily } = await import("@daily-co/daily-js");
   if (Daily.getCallInstance()) throw new Error("前の接続を終了しています。少し待ってから再接続してください。");
-  return Daily.createCallObject({ startAudioOff: true, startVideoOff: true, subscribeToTracksAutomatically: false,
-    receiveSettings: { base: { video: { layer: 0 } } } });
+  const browser = Daily.supportedBrowser();
+  return { supportsVideoProcessing: !browser.mobile && browser.supportsVideoProcessing,
+    call: Daily.createCallObject({ startAudioOff: true, startVideoOff: true, subscribeToTracksAutomatically: false,
+      receiveSettings: { base: { video: { layer: 0 } } } }) };
 }

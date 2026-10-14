@@ -6,15 +6,21 @@ import { supabase } from "@/lib/supabaseClient";
 import type { ManagedControl } from "@/lib/parari/live/eventControl";
 import { stageRequest } from "@/lib/parari/live/stageClient";
 import { createStageCall, disposeStageCall } from "@/lib/parari/live/stageMediaClient";
+import { StageCamera, type StageBackground } from "@/lib/parari/live/stageCamera";
 import { stageLayout, stageRoleLabels, type StageState } from "@/lib/parari/live/stageLayout";
 import { StageAudio, StageTile, StageVideo } from "./CppLiveStageTiles";
 import CppLiveStageControls, { type StageAction } from "./CppLiveStageControls";
+import CppLiveStageBackground from "./CppLiveStageBackground";
 
 export default function CppLiveStageMedia({ control, userId, refresh }: {
   control: ManagedControl; userId: string; refresh: () => Promise<void>;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const call = useRef<DailyCall | null>(null);
+  const camera = useRef<StageCamera | null>(null);
+  const [background, setBackground] = useState<StageBackground>("blur");
+  const [backgroundSupported, setBackgroundSupported] = useState(false);
+  const [cameraBusy, setCameraBusy] = useState(false);
   const attempt = useRef(0);
   const reads = useRef(0); const appliedRead = useRef(0);
   const connected = useRef<{ ticketId: string; canSpeak: boolean; role: string } | null>(null);
@@ -29,9 +35,10 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
   const [network, setNetwork] = useState(""); const [screenId, setScreenId] = useState("");
   const stop = useCallback(() => {
     attempt.current++; connected.current = null; joining.current = false;
+    camera.current?.close(); camera.current = null;
     const previous = call.current; call.current = null;
     if (previous) disposeStageCall(previous);
-    if (mounted.current) { setParticipants([]); setConnection("idle"); setNetwork(""); }
+    if (mounted.current) { setParticipants([]); setConnection("idle"); setNetwork(""); setCameraBusy(false); }
   }, []);
   const loadState = useCallback(async () => {
     const readId = ++reads.current;
@@ -47,12 +54,10 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
     if (next.closing || (current && (next.ticket_id !== current.ticketId || next.role !== current.role || next.can_speak !== current.canSpeak))) {
       stop(); setError(next.closing ? "STAGEの切り替え中です。司会者の案内をお待ちください。" : "発言権限が変わりました。下のボタンで接続し直してください。");
     }
-    if (!next.host_visible && next.role === "host") {
-      try { call.current?.setLocalVideo(false); } catch { /* Teardown may already be in progress. */ }
-    }
+    camera.current?.setAllowed(next.role !== "host" || next.host_visible);
   }, [stop]);
   useEffect(() => {
-    mounted.current = true; let active = true; let loading = false; let available = false;
+    mounted.current = true; setBackground("blur"); let active = true; let loading = false; let available = false;
     const abort = new AbortController();
     async function poll() {
       if (loading) return; loading = true;
@@ -87,15 +92,18 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
       const next = await loadState(); if (!current()) return;
       acceptState(next); if (!current()) return;
       if (next.closing || next.ticket_id !== result.ticketId || next.role !== result.role || next.can_speak !== result.canSpeak) throw new Error("登壇権限が変わりました。再接続してください。");
-      const sdk = await createStageCall();
+      const { call: sdk, supportsVideoProcessing } = await createStageCall();
       if (!current()) { disposeStageCall(sdk); return; }
       call.current = sdk;
+      setBackgroundSupported(supportsVideoProcessing);
+      camera.current = new StageCamera(sdk, supportsVideoProcessing,
+        value => { if (current()) setCameraBusy(value); }, message => { if (current()) setError(message); });
+      camera.current.setAllowed(next.role !== "host" || next.host_visible);
       connected.current = { ticketId: result.ticketId, role: result.role, canSpeak: result.canSpeak };
       const sync = () => { if (current()) setParticipants(Object.values(sdk.participants()));  };
       for (const event of ["participant-joined", "participant-updated", "participant-left", "track-started", "track-stopped"] as const) sdk.on(event, sync);
       sdk.on("left-meeting", () => { if (current()) { stop(); setError("配信から切断されました。役割と接続を確認して再接続してください。"); } });
       sdk.on("error", () => { if (current()) { stop(); setError("映像・音声の接続を続けられません。再接続してください。"); } });
-      sdk.on("camera-error", () => { if (current()) setError("マイク・カメラ・画面共有を使用できません。ブラウザーとOSの許可、使用中のアプリをご確認ください。"); });
       sdk.on("network-connection", event => { if (current()) setNetwork(event?.event === "interrupted" ? "通信を再接続しています…" : ""); });
       await Promise.race([sdk.join({ url: url.toString(), token: result.token, startAudioOff: true, startVideoOff: true }),
         new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("接続に時間がかかっています。接続し直してください。")), 45000); })]);
@@ -152,11 +160,10 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
   const screenShares = participants.filter(p => { const person = known.get(p.user_id); return person?.can_speak && ["host", "presenter"].includes(person.role) && p.tracks.screenVideo.state === "playable"; });
   const screen = screenShares.find(p => p.session_id === screenId) ?? screenShares[0];
   const onBlocked = useCallback(() => setAudioBlocked(true), []);
-  function device(kind: "audio" | "video" | "screen") {
+  function device(kind: "audio" | "screen") {
     const sdk = call.current; if (!sdk || connection !== "open" || !state) return; setError("");
     try {
       if (kind === "audio" && state.can_speak) sdk.setLocalAudio(!sdk.localAudio());
-      if (kind === "video" && (state.role !== "host" || state.host_visible)) sdk.setLocalVideo(!sdk.localVideo());
       if (kind === "screen" && state.can_speak && ["host", "presenter"].includes(state.role)) {
         if (sdk.localScreenVideo()) sdk.stopScreenShare(); else sdk.startScreenShare();
       }
@@ -171,8 +178,11 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
         {connection !== "idle" && <button type="button" onClick={stop} className="rounded-full border px-4 py-2 text-sm">配信から切断する</button>}
         {!control.can_control && state && <button type="button" disabled={busy || !state.room_id || state.closing} onClick={() => void hand()} className="rounded-full border px-4 py-2 text-sm disabled:opacity-50">{state.hand_raised ? "質問の希望を取り消す" : "質問を希望する"}</button>}
       </div>
+      {connection === "open" && <CppLiveStageBackground value={background} supported={backgroundSupported} busy={cameraBusy} local={local} onChange={value => {
+        camera.current?.disable(); setBackground(value); setError("");
+      }} />}
       {connection === "open" && <div className="flex flex-wrap items-center gap-2" aria-label="自分の機器">
-        <button type="button" onClick={() => device("video")} disabled={state?.role === "host" && !state.host_visible} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">カメラを{local?.video ? "OFF" : "ON"}</button>
+        <button type="button" onClick={() => { setError(""); void camera.current?.toggle(background); }} disabled={cameraBusy || (!backgroundSupported && background !== "none") || (state?.role === "host" && !state.host_visible)} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">カメラを{local?.video ? "OFF" : "ON"}</button>
         <button type="button" onClick={() => device("audio")} disabled={!state?.can_speak} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">マイクを{local?.audio ? "OFF" : "ON"}</button>
         {state?.can_speak && ["host", "presenter"].includes(state.role) && <button type="button" onClick={() => device("screen")} className="rounded-lg border px-3 py-2 text-sm">{local?.screen ? "画面共有を終了" : "画面を共有"}</button>}
         {!state?.can_speak && <span className="text-xs text-neutral-600">マイクは司会者の許可後に使用できます。</span>}
