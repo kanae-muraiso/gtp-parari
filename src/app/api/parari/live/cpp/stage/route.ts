@@ -35,17 +35,24 @@ export async function POST(req: NextRequest) {
       const token = await issueStageToken(ticket);
       // A slow provider request must not return a ticket retired by an intervening host action.
       if (!await rpc("cpp_live_stage_ticket_valid", { p_ticket_id: ticket.ticket_id })) return json({ error: "進行または登壇権限が変わりました。再接続してください。" }, 409);
-      return json({ roomUrl: room.url, token, ticketId: ticket.ticket_id, role: ticket.role, expiresAt: ticket.expires_at });
+      return json({ roomUrl: room.url, token, ticketId: ticket.ticket_id, role: ticket.role, canSpeak: ticket.can_speak, expiresAt: ticket.expires_at });
     }
-    if (!["role", "transition", "handover"].includes(body.action) || !Number.isSafeInteger(body.version)) return json({ error: "操作を確認してください。" }, 400);
+    const stageActions = ["panel_add", "panel_remove", "question_allow", "question_end", "lecture", "panel", "host_visibility", "retry"];
+    const manage = stageActions.includes(body.action);
+    if (!["role", "transition", "handover", ...stageActions].includes(body.action) || !Number.isSafeInteger(body.version)) return json({ error: "操作を確認してください。" }, 400);
     if (body.action === "role" && (!uuid.test(body.targetId ?? "") || !["viewer", "presenter", "questioner"].includes(body.role))) return json({ error: "登壇者を確認してください。" }, 400);
     if (body.action === "handover" && !uuid.test(body.targetId ?? "")) return json({ error: "司会者を確認してください。" }, 400);
     if (body.action === "transition" && !["opening", "lounge", "closing_pending", "closing", "ended"].includes(body.phase)) return json({ error: "進行を確認してください。" }, 400);
-    const pending = await rpc("cpp_live_stage_retire", {
+    if (["panel_add", "panel_remove", "question_allow", "lecture"].includes(body.action) && !uuid.test(body.targetId ?? "")) return json({ error: "参加者を確認してください。" }, 400);
+    if (body.action === "host_visibility" && typeof body.visible !== "boolean") return json({ error: "表示を確認してください。" }, 400);
+    const pending = (manage ? await rpc("cpp_live_stage_manage", {
+      p_event_id: eventId, p_expected_version: body.version, p_action: body.action,
+      p_target_id: body.targetId ?? null, p_visible: body.visible ?? null,
+    }) : await rpc("cpp_live_stage_retire", {
       p_event_id: eventId, p_expected_version: body.version,
       p_action: body.action === "role" ? "role" : body.action === "handover" && body.targetId === auth.user.id ? "take_over" : "close",
       p_target_id: body.action === "role" ? body.targetId : null, p_role: body.action === "role" ? body.role : null,
-    }) as Pending[];
+    })) as Pending[];
     const groups = new Map<string, Pending[]>();
     for (const t of pending) groups.set(t.room_id, [...(groups.get(t.room_id) ?? []), t]);
     for (const [roomId, tickets] of groups) {

@@ -1,7 +1,7 @@
 import "server-only";
 // 2026-10-13 JST / PART: STAGE-only Daily adapter; no changes to two-person rooms.
 export type StageRole = "host" | "presenter" | "questioner" | "viewer";
-export type StageTicket = { ticket_id: string; room_id: string; role: StageRole; expires_at: string; display_name: string };
+export type StageTicket = { ticket_id: string; room_id: string; role: StageRole; can_speak: boolean; expires_at: string; display_name: string };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const api = "https://api.daily.co/v1";
 type Room = { name: string; url: string; privacy: string; config?: Record<string, unknown> };
@@ -44,14 +44,14 @@ export async function ensureStageRoom(id: string, expiresAt: string) {
   return validateRoom(await response.json(), name, exp);
 }
 export async function issueStageToken(ticket: StageTicket) {
-  if (!uuid.test(ticket.ticket_id) || !["host", "presenter", "questioner", "viewer"].includes(ticket.role)) throw new Error("Invalid STAGE ticket");
+  if (typeof ticket.can_speak !== "boolean" || (ticket.role === "viewer" && ticket.can_speak) || !uuid.test(ticket.ticket_id) || !["host", "presenter", "questioner", "viewer"].includes(ticket.role)) throw new Error("Invalid STAGE ticket");
   const roomExp = Math.floor(Date.parse(ticket.expires_at) / 1000);
   if (!Number.isFinite(roomExp) || roomExp <= Date.now() / 1000) throw new Error("STAGE expired");
   // exp restricts admission. Omit ALL token ejection properties so the room's
   // eject_at_room_exp remains authoritative for an already connected participant.
   const exp = Math.min(roomExp, Math.floor(Date.now() / 1000) + 60);
-  const screens = ticket.role === "host" || ticket.role === "presenter";
-  const canSend = ticket.role === "viewer" ? false : screens ? ["audio", "video", "screenAudio", "screenVideo"] : ["audio", "video"];
+  const screens = ticket.can_speak && (ticket.role === "host" || ticket.role === "presenter");
+  const canSend = !ticket.can_speak ? ["video"] : screens ? ["audio", "video", "screenAudio", "screenVideo"] : ["audio", "video"];
   const response = await request("/meeting-tokens", { properties: {
     room_name: stageRoomName(ticket.room_id), user_id: ticket.ticket_id, user_name: ticket.display_name.slice(0, 80),
     exp, is_owner: false, start_audio_off: true, start_video_off: true,

@@ -9,7 +9,7 @@ process.env.DAILY_API_KEY = 'test-only-key'; process.env.CPP_DAILY_STAGE_ENABLED
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'; process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-only-anon';
 const userId = randomUUID(); const eventId = randomUUID(); const roomId = randomUUID();
 const expiresAt = new Date(Date.now() + 7200000).toISOString();
-let ticket = { ticket_id: randomUUID(), room_id: roomId, role: 'viewer', expires_at: expiresAt, display_name: 'Test participant' };
+let ticket = { ticket_id: randomUUID(), room_id: roomId, role: 'viewer', can_speak: false, expires_at: expiresAt, display_name: 'Test participant' };
 let valid = true; let pending = []; let acknowledgements = []; let transitions = []; let failBan = false; let denyRpc = false;
 const rpcCalls = []; const requests = []; const rooms = new Map();
 const usageCalls = []; let failUsage = false;
@@ -19,7 +19,7 @@ const client = { rpc(name,args) {
   if (denyRpc) return result(null, { code: '42501' });
   if (name === 'cpp_live_stage_ticket') return result(ticket);
   if (name === 'cpp_live_stage_ticket_valid') return result(valid);
-  if (name === 'cpp_live_stage_retire') return result(pending);
+  if (['cpp_live_stage_retire','cpp_live_stage_manage'].includes(name)) return result(pending);
   transitions.push(name); return result(true);
 } };
 const admin = { auth: { getUser: async t => ({ data: { user: t === 'valid-user-token' ? { id: userId } : null }, error: null }) },
@@ -52,15 +52,21 @@ const webhook = require('../src/app/api/parari/live/cpp/stage/webhook/route.ts')
 const post = (body,token='valid-user-token') => route.POST({ headers:new Headers(token ? { Authorization:`Bearer ${token}` } : {}), json:async()=>body });
 (async () => {
   for (const role of ['viewer','host','presenter','questioner']) {
-    ticket = { ...ticket,role }; const r = await post({ action:'join',eventId }); assert.equal(r.status,200);
+    ticket = { ...ticket,role,can_speak:role!=='viewer' }; const r = await post({ action:'join',eventId }); assert.equal(r.status,200);
     assert.equal(r.headers.get('cache-control'),'no-store'); const b = await r.json(); assert.equal(b.role,role); assert.equal(b.ticketId,ticket.ticket_id);
     const token = requests.filter(r=>r.path==='/v1/meeting-tokens').at(-1).body.properties;
     assert.equal(token.is_owner,false); assert.equal(token.permissions.canAdmin,false); assert.equal(token.start_audio_off,true); assert.equal(token.start_video_off,true);
     assert.equal(token.enable_prejoin_ui,false); assert.equal('eject_at_token_exp' in token,false); assert.equal('eject_after_elapsed' in token,false); assert.equal(token.user_id,ticket.ticket_id);
     assert.ok(token.exp<=Math.floor(Date.now()/1000)+60 && token.exp>Date.now()/1000); assert.equal(token.start_cloud_recording,false);
-    assert.deepEqual(token.permissions.canSend,role==='viewer'?false:role==='questioner'?['audio','video']:['audio','video','screenAudio','screenVideo']);
+    assert.deepEqual(token.permissions.canSend,role==='viewer'?['video']:role==='questioner'?['audio','video']:['audio','video','screenAudio','screenVideo']);
     assert.equal(token.enable_screenshare,role==='host'||role==='presenter');
   }
+  ticket={...ticket,role:'presenter',can_speak:false};
+  assert.equal((await post({action:'join',eventId})).status,200);
+  const quiet=requests.filter(r=>r.path==='/v1/meeting-tokens').at(-1).body.properties;
+  assert.deepEqual(quiet.permissions.canSend,['video']);assert.equal(quiet.enable_screenshare,false);
+  await assert.rejects(()=>adapter.issueStageToken({...ticket,can_speak:undefined}));
+  await assert.rejects(()=>adapter.issueStageToken({...ticket,role:'viewer',can_speak:true}));
   assert.equal(requests.filter(r=>r.path==='/v1/rooms' && r.method==='POST').length,1,'Reconnect uses same stage room');
   const room = rooms.values().next().value; assert.equal(room.config.max_participants,120); assert.equal(room.config.permissions.canSend,false);
   assert.equal(room.config.sfu_switchover,0); assert.equal(room.config.enable_chat,false);
@@ -85,6 +91,19 @@ const post = (body,token='valid-user-token') => route.POST({ headers:new Headers
   assert.equal(rpcCalls.filter(r=>r.name==='cpp_live_stage_retire').at(-1).args.p_action,'take_over');
   assert.equal((await post({action:'role',eventId,version:3,targetId:randomUUID(),role:'owner'})).status,400);
   await assert.rejects(()=>adapter.retireStageIdentities(roomId,['bad']));
+  pending=[{ticket_id:ticket.ticket_id,room_id:roomId,expires_at:expiresAt}];failBan=true;
+  const priorAck=acknowledgements.length;
+  assert.equal((await post({action:'lecture',eventId,version:4,targetId:userId})).status,503);
+  assert.equal(acknowledgements.length,priorAck);
+  assert.equal(rpcCalls.filter(r=>r.name==='cpp_live_stage_manage').at(-1).args.p_action,'lecture');
+  failBan=false;assert.equal((await post({action:'retry',eventId,version:5})).status,200);
+  assert.equal(acknowledgements.length,priorAck+1);
+  assert.equal((await post({action:'host_visibility',eventId,version:6,visible:'false'})).status,400);
+  assert.equal((await post({action:'question_allow',eventId,version:6,targetId:'bad'})).status,400);
+  denyRpc=true;const priorRequests=requests.length;
+  assert.equal((await post({action:'panel_add',eventId,version:6,targetId:userId})).status,403);
+  assert.equal(requests.length,priorRequests);denyRpc=false;
+
   console.log('PASS provider failure blocks advancement; retry bans old identity before service acknowledgement');
   process.env.DAILY_STAGE_WEBHOOK_HMAC=Buffer.alloc(32,7).toString('base64');
   const delivery=(event,options={})=>{

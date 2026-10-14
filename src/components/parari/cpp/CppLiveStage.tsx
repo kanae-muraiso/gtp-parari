@@ -11,8 +11,8 @@ export default function CppLiveStage({ control, now, userId, synced, refresh }: 
   const phase = control.effective_phase;
   const item = control.program.find(p => p.id === control.current_item_id);
   const elapsed = control.item_started_at ? Math.max(0, Math.floor((now - Date.parse(control.item_started_at)) / 1000)) : 0;
-  return <section className="mx-auto max-w-6xl space-y-5 px-4 pb-8" aria-label="STAGE">
-    <div className="rounded-2xl bg-neutral-900 p-6 text-white sm:p-10">
+  return <section className="mx-auto max-w-[1600px] space-y-5 px-4 pb-8" aria-label="STAGE">
+    <div className="rounded-2xl bg-neutral-900 p-3 text-white sm:p-5">
       <p className="text-xs font-bold tracking-widest">CPP LIVE · {phase === "ended" ? "FINISHED" : "STAGE"}</p>
       <h2 tabIndex={-1} className="mt-3 text-2xl font-bold" aria-live="polite">{phaseLabels[phase]}</h2>
       {phase === "waiting" ? <p className="mt-4 text-sm text-neutral-200">司会者の開始をお待ちください。</p>

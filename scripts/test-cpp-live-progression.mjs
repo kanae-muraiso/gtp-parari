@@ -21,7 +21,7 @@ if (url) {
   db = new PGlite();
   await db.waitReady;
 }
-const users = Object.fromEntries(['admin', 'backup', 'host', 'alice', 'bob', 'carol', 'outsider'].map((name) => [name, randomUUID()]));
+const users = Object.fromEntries(['admin', 'backup', 'host', 'alice', 'bob', 'carol', 'dave', 'erin', 'frank', 'grace', 'heidi', 'outsider'].map((name) => [name, randomUUID()]));
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const rows = async (sql, args = [], conn = db) => (await conn.query(sql, args)).rows;
 async function root(sql, args = []) {
@@ -87,13 +87,14 @@ await test('CPP LIVE progression SQL', async (t) => {
     '20261013055737_cpp_live_event_progression.sql',
     '20261013063642_cpp_live_control_ui.sql',
     '20261013072254_cpp_live_stage_media.sql',
+    '20261014040755_cpp_live_stage_gallery.sql',
   ];
   for (const file of migrations) await db.exec(await read(`supabase/migrations/${file}`));
   for (const id of Object.values(users)) await root('INSERT INTO auth.users VALUES($1)', [id]);
   for (const user of ['admin', 'backup']) await root("INSERT INTO cpp_private.mode_users VALUES($1,'admin')", [users[user]]);
   const org = randomUUID();
   await root("INSERT INTO public.membership_organizations VALUES($1,'CPP-R')", [org]);
-  for (const user of ['host', 'alice', 'bob', 'carol']) {
+  for (const user of ['host', 'alice', 'bob', 'carol', 'dave', 'erin', 'frank', 'grace', 'heidi']) {
     await root("INSERT INTO public.membership_members VALUES($1,$2,'active')", [users[user], org]);
   }
   organizer = await rpc('admin', 'parari_live_account_create', ['CPP', 'cpp']);
@@ -332,7 +333,7 @@ await test('CPP LIVE progression SQL', async (t) => {
     assert.equal((await rpc('alice', 'cpp_live_stage_ticket', [id])).ticket_id, alice.ticket_id, 'Reconnect reuses authorized identity');
     await rpc('alice', 'cpp_live_stage_hand', [id, true]);
     assert.equal((await rpc('host', 'cpp_live_stage_state', [id])).people.find(p => p.user_id === users.alice).hand_raised, true);
-    assert.deepEqual((await rpc('alice', 'cpp_live_stage_state', [id])).people, [], 'Viewer does not receive host roster/requests');
+    assert.equal((await rpc('alice', 'cpp_live_stage_state', [id])).people.length, 3, 'All attendees get the safe gallery roster');
     await deny(() => rpc('alice', 'cpp_live_stage_retire', [id, (0), 'role', users.bob, 'presenter']));
     const v = (await state(id)).version;
     const pending = await rpc('host', 'cpp_live_stage_retire', [id, v, 'role', users.alice, 'questioner']);
@@ -389,6 +390,57 @@ await test('CPP LIVE progression SQL', async (t) => {
     }
     await identity('host'); await deny(() => rows('SELECT * FROM public.cpp_live_stage_tickets'));
     await deny(() => rows('SELECT * FROM public.cpp_live_stage_rooms'));
+  });
+
+  await t.test('six-seat panel, independent single questioner, lecture permissions and persistent host', async () => {
+    const id = await event(); await transition(id, 'opening');
+    const panel = ['alice','bob','carol','dave','erin','frank'];
+    for (const user of ['host',...panel,'grace','heidi']) await rpc(user,'cpp_live_event_join',[id]);
+    const host = await rpc('host','cpp_live_stage_ticket',[id]);
+    const change = async (action,target=null,visible=null) => rpc('host','cpp_live_stage_manage',[id,(await state(id)).version,action,target?users[target]:null,visible]);
+    const ack = async pending => { await root('SET ROLE service_role'); await rows('SELECT public.cpp_live_stage_retired($1)',[pending.map(t=>t.ticket_id)]); };
+    await deny(()=>rpc('alice','cpp_live_stage_manage',[id,(0),'panel_add',users.bob]));
+    await deny(()=>change('lecture','grace'),'22023');
+    await deny(()=>change('panel_add','outsider'),'22023');
+    await deny(()=>change('panel_add','host'),'22023');
+    for (const user of panel) await change('panel_add',user);
+    let st = await rpc('grace','cpp_live_stage_state',[id]);
+    assert.equal(st.people.filter(p=>p.role==='presenter').length,6);
+    assert.deepEqual(st.people.filter(p=>p.role==='presenter').map(p=>p.panel_slot).sort(),[1,2,3,4,5,6]);
+    await deny(()=>change('panel_add','grace'),'22023');
+    const alice = await rpc('alice','cpp_live_stage_ticket',[id]);
+    const bob = await rpc('bob','cpp_live_stage_ticket',[id]);
+    assert.equal(alice.can_speak,true); assert.equal(bob.can_speak,true);
+    await change('question_allow','grace');
+    const grace = await rpc('grace','cpp_live_stage_ticket',[id]); assert.equal(grace.can_speak,true);
+    await deny(()=>change('question_allow','alice'),'22023','Question role cannot remove an existing panelist');
+    let pending = await change('lecture','alice');
+    assert.equal(pending.length,1); assert.equal(pending[0].ticket_id,bob.ticket_id);
+    assert.equal(await rpc('bob','cpp_live_stage_ticket_valid',[bob.ticket_id]),false);
+    await deny(()=>rpc('bob','cpp_live_stage_ticket',[id]),'55000');
+    assert.equal((await rpc('host','cpp_live_stage_state',[id])).pending_count,1);
+    const retry = await change('retry'); assert.deepEqual(retry,pending); await ack(retry);
+    const quietBob = await rpc('bob','cpp_live_stage_ticket',[id]);assert.equal(quietBob.role,'presenter');assert.equal(quietBob.can_speak,false);
+    assert.equal((await rpc('grace','cpp_live_stage_ticket',[id])).ticket_id,grace.ticket_id,'Questioner is independent of lecture changes');
+    st=await rpc('grace','cpp_live_stage_state',[id]);assert.equal(st.display_mode,'lecture');assert.equal(st.lecturer_user_id,users.alice);
+    assert.equal(st.people.filter(p=>p.role==='presenter').length,6,'Switching mode retains panel');
+    pending=await change('question_allow','heidi');assert.equal(pending[0].ticket_id,grace.ticket_id);await ack(pending);
+    assert.equal((await rpc('grace','cpp_live_stage_ticket',[id])).can_speak,false);
+    assert.equal((await rpc('heidi','cpp_live_stage_ticket',[id])).role,'questioner');
+    st=await rpc('host','cpp_live_stage_state',[id]);assert.equal(st.people.filter(p=>p.role==='questioner').length,1);
+    pending=await change('question_end');await ack(pending);assert.equal((await rpc('heidi','cpp_live_stage_ticket',[id])).role,'viewer');
+    await change('host_visibility',null,false);st=await rpc('bob','cpp_live_stage_state',[id]);assert.equal(st.host_visible,false);
+    assert.equal((await rpc('host','cpp_live_stage_ticket',[id])).ticket_id,host.ticket_id,'Visibility does not revoke MC or mic');
+    const before=(await state(id)).version;pending=await change('lecture','bob');await ack(pending);
+    assert.equal((await rpc('alice','cpp_live_stage_ticket',[id])).can_speak,false);assert.equal((await rpc('bob','cpp_live_stage_ticket',[id])).can_speak,true);
+    await deny(()=>rpc('host','cpp_live_stage_manage',[id,before,'panel']),'40001');
+    pending=await change('panel');await ack(pending);assert.equal((await rpc('alice','cpp_live_stage_ticket',[id])).can_speak,true);
+    pending=await change('lecture','bob');await ack(pending);
+    pending=await change('panel_remove','bob');await ack(pending);
+    assert.equal((await rpc('host','cpp_live_stage_state',[id])).lecturer_user_id,users.host,'Removing lecturer falls back to persistent MC');
+    await change('panel_add','grace');
+    st=await rpc('host','cpp_live_stage_state',[id]);assert.equal(st.people.find(p=>p.user_id===users.grace).panel_slot,2,'Replacement reuses the empty panel seat');
+    await identity('alice');await deny(()=>rows('SELECT * FROM public.cpp_live_stage_grants'));
   });
 
   await t.test('real PostgreSQL concurrency: phase/accept, invite/invite and phase/phase serialize', { skip: !url && 'Embedded run has one connection; CI PostgreSQL runs races' }, async () => {
@@ -472,6 +524,16 @@ await test('CPP LIVE progression SQL', async (t) => {
       await rpc('host', 'cpp_live_stage_retire', [nextStage, nextVersion, 'close'], left);
       const joining = deny(() => rpc('alice', 'cpp_live_stage_ticket', [nextStage], right), '55000');
       await blocked(); await left.query('COMMIT'); await joining;
+      const panelStage = await event(); await transition(panelStage,'opening');
+      for (const user of ['host','alice','bob']) await rpc(user,'cpp_live_event_join',[panelStage]);
+      await rpc('host','cpp_live_stage_ticket',[panelStage]);
+      const panelVersion=(await state(panelStage)).version;
+      await left.query('BEGIN');
+      await rpc('host','cpp_live_stage_manage',[panelStage,panelVersion,'question_allow',users.alice],left);
+      const competing=deny(()=>rpc('host','cpp_live_stage_manage',[panelStage,panelVersion,'question_allow',users.bob],right),'40001');
+      await blocked(); await left.query('COMMIT'); await competing;
+      assert.equal((await rpc('host','cpp_live_stage_state',[panelStage])).people.filter(p=>p.role==='questioner').length,1);
+
     } finally {
       await left.query('ROLLBACK');
       await right.query('ROLLBACK');
