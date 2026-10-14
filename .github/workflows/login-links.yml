@@ -1,0 +1,35 @@
+name: Login link recovery
+on:
+  pull_request:
+    paths:
+      - "src/app/login/**"
+      - "src/app/auth/callback/**"
+      - "src/lib/auth/**"
+      - "src/lib/supabaseClient.ts"
+      - "src/components/parari/cpp/CppLiveEventRoom.tsx"
+      - "scripts/test-login-links.cjs"
+      - ".github/workflows/login-links.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/test-login-links.cjs
+      - run: npm run typecheck
+      - run: npm run check:repo-hygiene
+      - name: Production build with placeholder credentials
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build

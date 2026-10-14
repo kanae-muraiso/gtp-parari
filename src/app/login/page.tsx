@@ -1,6 +1,6 @@
 // apps/tools/parari/src/app/login/page.tsx
 // apps/tools/parari/src/app/login/page.tsx
-// 2026-05-30 JST
+// 2026-10-14 JST / PART: Recoverable email login and explicit browser guidance.
 
 "use client";
 
@@ -17,6 +17,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { loginReturnTo } from "@/lib/auth/loginLinks";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -35,13 +36,7 @@ export default function LoginPage() {
       if (typeof window === "undefined") return "/mypage";
 
       const params = new URLSearchParams(window.location.search);
-      const raw = params.get("returnTo") || params.get("next") || "/mypage";
-
-      if (!raw.startsWith("/") || raw.startsWith("//")) {
-        return "/mypage";
-      }
-
-      return raw;
+      return loginReturnTo(params.get("returnTo") || params.get("next"));
     }
 
   const [email, setEmail] = React.useState("");
@@ -80,16 +75,28 @@ export default function LoginPage() {
     let mounted = true;
 
     const check = async () => {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
+      if (!supabase) {
+        setStatus("ログインの設定を確認できません。時間をおいて開き直してください。");
+        setAuthChecked(true);
+        return;
+      }
+      // An invalid-link recovery must display the email form even when this
+      // browser still has a valid session for a different account.
+      if (new URLSearchParams(window.location.search).get("reauth") === "1") {
+        setAuthChecked(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!mounted) return;
         if (!error && data.session) {
-            router.replace(getReturnTo());
+          router.replace(getReturnTo());
           return;
         }
-
-      setAuthChecked(true);
+      } catch {
+        if (mounted) setStatus("ログイン状態を確認できませんでした。通信状態を確認してください。");
+      }
+      if (mounted) setAuthChecked(true);
     };
 
     void check();
@@ -126,6 +133,7 @@ export default function LoginPage() {
     if (!normalizedEmail) return;
     if (isSending) return;
     if (cooldown > 0) return;
+    if (!supabase) return;
 
     setIsSending(true);
     setStatus("送信中…");
@@ -170,7 +178,7 @@ export default function LoginPage() {
     setCooldown(0);
   };
 
-  const canSubmit = email.trim().length > 0 && !isSending && cooldown === 0;
+  const canSubmit = !!supabase && email.trim().length > 0 && !isSending && cooldown === 0;
   const maskedEmail = email.trim();
 
   /**
@@ -209,8 +217,9 @@ export default function LoginPage() {
                      </div>
 
             <form onSubmit={handleSubmit}>
-              <label className="mt-5 block text-xs opacity-70">Email</label>
+              <label htmlFor="login-email" className="mt-5 block text-xs opacity-70">Email</label>
               <input
+                id="login-email"
                 className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -247,12 +256,14 @@ export default function LoginPage() {
                  受信箱を開いて、ログイン用リンクをクリックしてください。
                </p>
                <p>
-                 リンクを開くと、PARARIにログインできます。
-                 新しいタブで開くことがあります。
+                 リンクを開いたブラウザーでログインが完了します。
+                 LIVEへの参加や申し込みも、そのブラウザーで続けてください。
                </p>
                <p>
                  ログイン後は、この画面は閉じても大丈夫です。
                </p>
+               <p>リンクには有効期限があり、使えるのは一度だけです。期限切れ・使用済みの場合は、下の「もう一度送る」から申請してください。</p>
+               <p>ログイン用リンクは他の人に転送しないでください。</p>
                <p>
                  見つからない場合は、迷惑メールフォルダもご確認ください。
                </p>
