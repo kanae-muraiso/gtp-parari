@@ -14,9 +14,11 @@
     "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs",
     "test:english-authoring": "node scripts/test-english-authoring.cjs",
     "test:cpp-live-progression": "node --test scripts/test-cpp-live-progression.mjs",
-    "test:cpp-live-ui": "node scripts/test-cpp-live-ui.cjs"
+    "test:cpp-live-ui": "node scripts/test-cpp-live-ui.cjs",
+    "test:cpp-live-stage": "node scripts/test-cpp-live-stage-server.cjs && node scripts/test-cpp-live-stage-ui.cjs"
   },
   "dependencies": {
+    "@daily-co/daily-js": "0.93.0",
     "@lexical/link": "^0.43.0",
     "@lexical/markdown": "^0.43.0",
     "@lexical/react": "^0.43.0",

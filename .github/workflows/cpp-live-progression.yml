@@ -5,6 +5,7 @@ on:
       - "supabase/migrations/*cpp_live*"
       - "scripts/test-cpp-live-progression.mjs"
       - "scripts/test-cpp-live-ui.cjs"
+      - "scripts/test-cpp-live-stage-*.cjs"
       - "src/lib/parari/live/**"
       - "scripts/fixtures/cpp-live-test.sql"
       - "src/components/parari/cpp/CppLive*.tsx"
@@ -46,6 +47,7 @@ jobs:
           CPP_LIVE_TEST_DATABASE_URL: postgresql://postgres:cpp-live-test-only@127.0.0.1:5432/cpp_live_test
         run: npm run test:cpp-live-progression
       - run: npm run test:cpp-live-ui
+      - run: npm run test:cpp-live-stage
       - run: npm run check:repo-hygiene
       - run: npm run test:cpp-routes
       - run: npm run typecheck

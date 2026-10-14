@@ -44,7 +44,7 @@ function EventSession({ userId, eventId }: { userId: string; eventId: string }) 
   const phase = expired && managed ? "ended" : managed?.effective_phase;
   const stage = !!phase && (isStage(phase) || phase === "waiting" || phase === "ended");
   const showVenue = status === "ready" && allowed && !!control && !stage;
-  // Opening/closing attendees remain present without constructing any media client.
+  // Presence is independent of the user's explicit STAGE media connection.
   useEffect(() => {
     if (!allowed || status !== "ready" || !stage || phase === "ended" || !supabase) return;
     const attend = () => { void supabase?.rpc("cpp_live_event_join", { p_event_id: eventId, p_active: true }); };
@@ -56,7 +56,7 @@ function EventSession({ userId, eventId }: { userId: string; eventId: string }) 
     {status === "loading" && <p className="mx-auto max-w-6xl px-4 py-8">会場への入室資格と進行を確認しています…</p>}
     {status === "error" && <div role="alert" className="mx-auto mb-5 max-w-6xl space-y-3 px-4"><p>進行を確認できません。接続が戻るまで新しい操作を停止しています。</p><button type="button" className="rounded-full border px-4 py-2" onClick={() => void refresh()}>再接続する</button></div>}
     {managed && <CppLiveHostPanel control={managed} userId={userId} now={now} synced={status === "ready" && allowed} refresh={refresh} />}
-    {stage && managed && <CppLiveStage control={phase === "ended" ? { ...managed, effective_phase: "ended" } : managed} now={now} />}
+    {stage && managed && <CppLiveStage control={phase === "ended" ? { ...managed, effective_phase: "ended" } : managed} now={now} userId={userId} synced={status === "ready" && allowed} refresh={refresh} />}
     {status === "ready" && !allowed && !stage && <section className="mx-auto max-w-6xl px-4 py-8"><h2 className="text-lg font-bold">この会場は現在入室できません</h2><p className="mt-2 text-sm">開催日時と参加対象をご確認ください。</p></section>}
     {showVenue && <>
       {managed && <div className="mx-auto mb-4 max-w-6xl px-4"><p className="rounded-xl border bg-white p-4 text-sm" role="status">

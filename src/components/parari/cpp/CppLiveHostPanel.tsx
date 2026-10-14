@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { phaseLabels, type LivePhase, type ManagedControl } from "@/lib/parari/live/eventControl";
+import { stageRequest } from "@/lib/parari/live/stageClient";
 
 type Action = { label: string; rpc: string; args: Record<string, unknown> };
 const nextPhases: Partial<Record<LivePhase, { phase: LivePhase; label: string }>> = {
@@ -42,11 +43,15 @@ export default function CppLiveHostPanel({ control, userId, now, synced, refresh
     if (!supabase || !pending || lock.current || !synced) return;
     lock.current = true; setBusy(true); setError("");
     try {
-      const { error: e } = await supabase.rpc(pending.rpc, pending.args).abortSignal(AbortSignal.timeout(15000));
+      let e;
+      if (pending.rpc === "cpp_live_event_transition" || pending.rpc === "cpp_live_event_set_host") {
+        await stageRequest(userId, { eventId: control.event_id, version: pending.args.p_expected_version,
+          action: pending.rpc === "cpp_live_event_transition" ? "transition" : "handover", phase: pending.args.p_phase, targetId: pending.args.p_host_user_id });
+      } else ({ error: e } = await supabase.rpc(pending.rpc, pending.args).abortSignal(AbortSignal.timeout(15000)));
       if (e) setError(e.code === "40001" ? "別の操作で進行が更新されました。現在の状態を確認してください。"
         : e.code === "55000" ? "まだ切り替えられません。会話の終了時刻と開催時間を確認してください。" : "操作できませんでした。司会者の権限と接続をご確認ください。");
       setPending(null); await refresh();
-    } catch { setPending(null); setError("操作結果を確認できません。状態を更新してから再度操作してください。"); await refresh(); }
+    } catch (e) { setPending(null); setError(e instanceof Error ? e.message : "操作結果を確認できません。状態を更新してから再度操作してください。"); await refresh(); }
     finally { lock.current = false; setBusy(false); }
   }
   return <section className="mx-auto mb-5 max-w-6xl px-4" aria-label="司会者パネル">
