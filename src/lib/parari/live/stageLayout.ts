@@ -10,7 +10,9 @@ export function stageLayout(state: StageState, requestedPage: number, pageSize =
   const host = state.people.find(p => p.role === "host");
   const panel = Array.from({ length: 6 }, (_, i) => state.people.find(p => p.role === "presenter" && p.panel_slot === i + 1));
   const questioner = state.people.find(p => p.role === "questioner");
+  // The state RPC puts hands first in raised_at/UUID order. Preserve its shared queue.
   const audience = state.people.filter(p => p.role === "viewer");
+  const waitingHands = audience.filter(p => p.hand_raised).length;
   const perPage = Math.max(1, pageSize - (questioner ? 1 : 0));
   const pages = Math.max(1, Math.ceil(audience.length / perPage));
   const page = Math.min(Math.max(0, requestedPage), pages - 1);
@@ -18,6 +20,6 @@ export function stageLayout(state: StageState, requestedPage: number, pageSize =
   const lecturer = state.people.find(p => p.user_id === state.lecturer_user_id && (p.role === "host" || p.role === "presenter"));
   const onStage = state.display_mode === "panel" ? [state.host_visible ? host : undefined, ...panel]
     : [lecturer?.role !== "host" || state.host_visible ? lecturer : undefined, ...(state.host_visible && host?.user_id !== lecturer?.user_id ? [host] : [])];
-  return { host, panel, questioner, gallery, onStage, page, pages,
+  return { host, panel, questioner, gallery, onStage, page, pages, waitingHands,
     visibleTickets: new Set([...onStage, ...gallery].flatMap(p => p?.ticket_id ? [p.ticket_id] : [])) };
 }

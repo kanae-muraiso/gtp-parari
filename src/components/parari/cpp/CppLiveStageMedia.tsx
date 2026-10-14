@@ -191,6 +191,10 @@ export default function CppLiveStageMedia({ control, userId, refresh }: {
           {layout.onStage.map((person, i) => <StageTile key={person?.user_id ?? `slot-${i}`} person={person} participant={person?.ticket_id ? byTicket.get(person.ticket_id) : undefined}
             selected={target === person?.user_id} onSelect={control.can_control ? setTarget : undefined} placeholder={i === 0 && !state.host_visible ? "司会は音声で参加" : "登壇枠"} />)}
         </div>
+        {layout.waitingHands > 0 && <div className="flex flex-wrap items-center gap-2 text-sm" aria-label="質問待ちの案内">
+          <span>質問待ち {layout.waitingHands}人 · 挙手した順に1ページ目の先頭から表示</span>
+          {layout.page > 0 && <button type="button" className="rounded border px-3 py-1" onClick={() => setPage(0)}>質問待ちの先頭へ</button>}
+        </div>}
         <div aria-label="参加者ギャラリー" className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {layout.gallery.map(person => <StageTile key={person.user_id} person={person} participant={person.ticket_id ? byTicket.get(person.ticket_id) : undefined} selected={target === person.user_id} onSelect={control.can_control ? setTarget : undefined} />)}
         </div>

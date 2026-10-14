@@ -35,7 +35,7 @@ export default function CppLiveStageControls({ state, target, setTarget, busy, a
         <button type="button" className={button} disabled={disabled || !state.people.some(p => p.role === "questioner")} onClick={() => act("question_end")}>質問を終了</button>
       </div>
       <p className="text-xs">質問者は1人。別の人を許可すると交代し、登壇枠の下の左端に赤枠で表示します。</p>
-      <div aria-label="挙手一覧" className="flex flex-wrap items-center gap-2"><span className="text-sm">挙手 {hands.length}人</span>{hands.map(p => <button type="button" key={p.user_id} className={button} onClick={() => setTarget(p.user_id)}>✋ {p.display_name}</button>)}</div>
+      <div aria-label="挙手一覧" className="flex flex-wrap items-center gap-2"><span className="text-sm">挙手 {hands.length}人（挙手順）</span>{hands.map((p, i) => <button type="button" key={p.user_id} className={button} onClick={() => setTarget(p.user_id)}>{i + 1}. ✋ {p.display_name}</button>)}</div>
     </fieldset>
     <p className="text-xs text-neutral-600">発言権限が変わった方は、接続し直してからご自身でマイクをONにしてください。司会の映像枠を隠しても、司会のマイクと操作権限は維持されます。</p>
   </div>;

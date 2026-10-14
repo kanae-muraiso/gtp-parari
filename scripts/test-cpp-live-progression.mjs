@@ -88,6 +88,7 @@ await test('CPP LIVE progression SQL', async (t) => {
     '20261013063642_cpp_live_control_ui.sql',
     '20261013072254_cpp_live_stage_media.sql',
     '20261014040755_cpp_live_stage_gallery.sql',
+    '20261014050042_cpp_live_stage_hand_order.sql',
   ];
   for (const file of migrations) await db.exec(await read(`supabase/migrations/${file}`));
   for (const id of Object.values(users)) await root('INSERT INTO auth.users VALUES($1)', [id]);
@@ -318,6 +319,38 @@ await test('CPP LIVE progression SQL', async (t) => {
     await rpc('bob', 'cpp_live_note_save', [call, true, '振り返り']);
     await identity('alice');
     assert.equal((await rows('SELECT * FROM public.cpp_live_note_get($1)', [call])).length, 0);
+  });
+
+  await t.test('STAGE hand queue survives reload, duplicate raises, withdrawal and re-raise', async () => {
+    const id = await event();
+    await transition(id, 'opening');
+    for (const user of ['host','alice','bob','carol']) await rpc(user, 'cpp_live_event_join', [id]);
+    const ticket = await rpc('host', 'cpp_live_stage_ticket', [id]);
+    const queue = async (viewer = 'host') => (await rpc(viewer, 'cpp_live_stage_state', [id])).people.filter(p => p.hand_raised).map(p => p.user_id);
+    // Inverse UUID order, within one millisecond: preserve DB microseconds, not JS clock order.
+    const [first, second] = ['alice','bob'].sort((a,b) => users[b].localeCompare(users[a]));
+    await rpc(first, 'cpp_live_stage_hand', [id, true]);
+    await rpc(second, 'cpp_live_stage_hand', [id, true]);
+    await root("UPDATE public.cpp_live_stage_hands SET raised_at='2026-10-14 00:00:00.000001+00' WHERE room_id=$1 AND user_id=$2", [ticket.room_id,users[first]]);
+    await root("UPDATE public.cpp_live_stage_hands SET raised_at='2026-10-14 00:00:00.000002+00' WHERE room_id=$1 AND user_id=$2", [ticket.room_id,users[second]]);
+    assert.deepEqual(await queue(), [users[first],users[second]]);
+    assert.deepEqual(await queue('carol'), await queue(), 'Late viewer sees the same stored order');
+    const roster = (await rpc('host','cpp_live_stage_state',[id])).people;
+    assert.deepEqual(roster.slice(0,2).map(p=>p.user_id), [users[first],users[second]], 'Raised hands precede every ordinary participant');
+    assert.deepEqual(roster.slice(2).map(p=>p.user_id), [users.host,users.carol].sort(), 'Other people retain stable UUID order');
+    await rpc(first, 'cpp_live_stage_hand', [id, true]);
+    assert.deepEqual(await queue(), [users[first],users[second]], 'A duplicate request keeps its place');
+    await rpc(first, 'cpp_live_stage_hand', [id, false]);
+    assert.deepEqual(await queue(), [users[second]]);
+    await rpc(first, 'cpp_live_stage_hand', [id, true]);
+    assert.deepEqual(await queue(), [users[second],users[first]], 'Re-raising joins the back');
+    await root("UPDATE public.cpp_live_stage_hands SET raised_at='2026-10-14 00:00:00+00' WHERE room_id=$1", [ticket.room_id]);
+    assert.deepEqual(await queue(), [users.alice,users.bob].sort(), 'Exact ties use a stable ID');
+    const status = await state(id);
+    assert.equal((await rpc('host','cpp_live_stage_manage',[id,status.version,'question_allow',users[first],null])).length,0);
+    assert.deepEqual(await queue(), [users[second]], 'An approved questioner leaves the waiting queue');
+    assert.equal((await rpc('host','cpp_live_stage_state',[id])).people.find(p=>p.user_id===users[first]).role,'questioner');
+    assert.equal(await rpc('host','cpp_live_stage_ticket_valid',[ticket.ticket_id]),true,'Ordering never retires a media connection');
   });
 
   await t.test('STAGE roles, retired identities and provider-confirmed transition barrier', async () => {

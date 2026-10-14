@@ -84,15 +84,25 @@ async function select(id){const el=document.querySelector('select[aria-label="�
  state.host_visible=false;await poll();assert.equal(host.localVideo(),false);assert.equal(host.localAudio(),true);assert.equal(button('カメラをON').disabled,true);await unmount();
  console.log('PASS separate panel/Q&A actions, current-version retry, share and host visibility without mic loss');
  reset();user='host';control.can_control=true;state.role='host';state.can_speak=true;
- state.people=[person('host','host'),...Array.from({length:6},(_,i)=>person('panel'+i,'presenter',i+1)),person('ask','questioner'),...Array.from({length:100},(_,i)=>person('viewer'+i))];state.people.at(-1).hand_raised=true;
+ const viewers=Array.from({length:100},(_,i)=>person('viewer'+i));viewers[99].hand_raised=true;viewers[70].hand_raised=true;
+ // Match the RPC contract: the former page-three/page-two people raised in this order.
+ state.people=[viewers[99],viewers[70],person('host','host'),...Array.from({length:6},(_,i)=>person('panel'+i,'presenter',i+1)),person('ask','questioner'),...viewers.filter(p=>!p.hand_raised)];
  await mount();await click('STAGEに接続する');const many=calls[0];
  const top=()=>document.querySelector('[aria-label="登壇者"]');const gallery=()=>document.querySelector('[aria-label="参加者ギャラリー"]');
  assert.equal(top().children.length,7);assert.equal(top().querySelector('[data-role="questioner"]'),null);assert.equal(gallery().children.length,49);assert.equal(gallery().firstChild.dataset.role,'questioner');assert.ok(gallery().firstChild.classList.contains('border-red-600'));
- assert.ok(document.querySelector('[aria-label="挙手一覧"]').textContent.includes('viewer99'),'Off-page hands remain visible');
+ assert.deepEqual([...gallery().children].slice(1,3).map(p=>p.getAttribute('aria-label')),['viewer99を選択','viewer70を選択'],'Server hand order follows the pinned questioner on page one');
+ assert.deepEqual([...document.querySelector('[aria-label="挙手一覧"]').querySelectorAll('button')].map(b=>b.textContent),['1. ✋ viewer99','2. ✋ viewer70']);
+ await click('1. ✋ viewer99');
  await click('次のページ');assert.equal(gallery().children.length,49);assert.equal(gallery().firstChild.dataset.role,'questioner');assert.equal(many.updates.at(-1)['session-viewer0'].setSubscribedTracks.video,false);assert.equal(many.updates.at(-1)['session-panel0'].setSubscribedTracks.audio,true);
+ await click('次のページ');assert.equal(gallery().children.length,5);assert.equal(gallery().firstChild.dataset.role,'questioner');assert.equal(button('次のページ').disabled,true);
+ await click('質問待ちの先頭へ');assert.equal(button('前のページ').disabled,true);assert.equal(gallery().children[1].getAttribute('aria-label'),'viewer99を選択');
+ // A queue update while paging must not change the selected participant or open devices.
+ await click('次のページ');const devicesBefore=many.devices.length;
+ state.people=state.people.filter(p=>p.user_id!=='viewer99');viewers[99].hand_raised=false;state.people.push(viewers[99]);await poll();
+ assert.equal(document.querySelector('select').value,'viewer99');assert.equal(many.destroyed,false);assert.equal(many.devices.length,devicesBefore);
  await React.act(async()=>{document.querySelector('[aria-label="viewer48を選択"]').click();});assert.equal(document.querySelector('select').value,'viewer48');
  state.display_mode='lecture';state.lecturer_user_id='panel0';await poll();assert.equal(top().children.length,2);assert.equal(state.people.filter(p=>p.role==='presenter').length,6);assert.equal(gallery().firstChild.dataset.role,'questioner');
  await React.act(async()=>{window.innerWidth=390;window.dispatchEvent(new Event('resize'));});assert.ok(gallery().children.length<=6);
  await unmount();reset();enabled=false;await mount();await poll();assert.equal(calls.length,0);await unmount();
- console.log('PASS seven top slots, 49-person pagination, red questioner, off-page hands/audio, lecture roster, mobile and disabled flag');
+ console.log('PASS seven top slots, three gallery pages, red questioner, shared hand queue, jump-to-first, stable target/devices, off-page audio, lecture roster and mobile');
 })().catch(e=>{console.error(e);process.exitCode=1;});
