@@ -227,6 +227,13 @@ export default function CppHomePage() {
             </HomeCard>
           </div>
           }
+          {!adminMode && access.hasResearcherProfile && !access.alumniOnly ? (
+            <div className="mt-5">
+              <HomeCard href="/my/cpp/ai" eyebrow="CPP AI" title="AIとプロフィール・キャリアを考える">
+                研究経験や関心を言葉にし、これからの可能性を考えます。プロフィールが書きかけでも始められます。現在は試行提供中です。
+              </HomeCard>
+            </div>
+          ) : null}
           <div className="mt-5 text-center">
             <Link href="/my/cpp/manual" className="inline-flex rounded-full border border-neutral-300 px-5 py-2 text-xs font-bold text-neutral-600 hover:bg-white">マニュアル</Link>
           </div>

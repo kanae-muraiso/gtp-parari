@@ -30,6 +30,9 @@ jobs:
       - name: CPP route regression check
         run: npm run test:cpp-routes
 
+      - name: CPP AI authentication and privacy check
+        run: npm run test:cpp-ai
+
       - name: Participation navigation regression check
         run: npm run test:participation-navigation
 
