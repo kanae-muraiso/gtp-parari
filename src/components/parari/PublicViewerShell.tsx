@@ -68,6 +68,7 @@ export default function PublicViewerShell({
         <>
           {isOwner ? (
             <ParariOwnerTopBar
+              readerNavigation
               title="公開表示確認"
               leftHref="/my/works"
               leftLabel="作品リストへ"
@@ -79,6 +80,7 @@ export default function PublicViewerShell({
             />
           ) : (
             <ParariBrandTopBar
+              readerNavigation
               href="/"
               actions={
                 <BookSaveButton

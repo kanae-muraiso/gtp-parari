@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import ReaderHistoryBackButton from "./navigation/ReaderHistoryBackButton";
 import { ParticipationMenu, ParticipationReturn } from "./navigation/ParticipationNav";
 import { useParticipations } from "./navigation/ParticipationProvider";
 
@@ -11,6 +12,8 @@ type OwnerBarProps = {
   hideLeftButton?: boolean;
   fixed?: boolean;
   actions?: ReactNode;
+  /** Enabled only by PublicViewerShell; editor navigation remains unchanged. */
+  readerNavigation?: boolean;
 };
 
 export function ParariOwnerTopBar({
@@ -20,6 +23,7 @@ export function ParariOwnerTopBar({
   hideLeftButton = false,
   fixed = false,
   actions,
+  readerNavigation = false,
 }: OwnerBarProps) {
   const { origin } = useParticipations();
   const shouldShowLeftButton =
@@ -34,8 +38,24 @@ export function ParariOwnerTopBar({
         "border-b border-black bg-black px-4 py-2 text-white shadow-sm",
       ].join(" ")}
     >
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
-        {origin ? <ParticipationReturn dark /> : shouldShowLeftButton ? (
+      <div className={[
+        "mx-auto flex max-w-6xl items-center justify-between gap-2",
+        readerNavigation ? "flex-nowrap" : "flex-wrap",
+      ].join(" ")}>
+        {readerNavigation ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <ReaderHistoryBackButton />
+            {origin ? <ParticipationReturn dark /> : shouldShowLeftButton ? (
+              <a
+                href={leftHref}
+                className="min-w-0 truncate rounded-lg border border-white/25 px-2 py-1 text-xs font-semibold hover:bg-white/10"
+                title={leftLabel}
+              >
+                {leftLabel}
+              </a>
+            ) : null}
+          </div>
+        ) : origin ? <ParticipationReturn dark /> : shouldShowLeftButton ? (
           <a
             href={leftHref}
             className="rounded-lg border border-white/25 px-3 py-1 text-sm font-semibold hover:bg-white/10"
@@ -50,7 +70,10 @@ export function ParariOwnerTopBar({
           {title}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={[
+          "flex items-center gap-2",
+          readerNavigation ? "shrink-0 whitespace-nowrap" : "flex-wrap",
+        ].join(" ")}>
           <ParticipationMenu dark />
           {actions}
         </div>
@@ -101,16 +124,41 @@ type BrandTopBarProps = {
   title?: string;
   href?: string;
   actions?: ReactNode;
+  /** Enabled only by PublicViewerShell; editor navigation remains unchanged. */
+  readerNavigation?: boolean;
 };
 
 export function ParariBrandTopBar({
   title = "PARARI",
   href,
   actions,
+  readerNavigation = false,
 }: BrandTopBarProps) {
   return (
     <div className="sticky top-0 z-[9999] border-b border-black bg-black px-4 py-2 text-white shadow-sm">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+      <div className={[
+        "mx-auto flex max-w-6xl items-center justify-between gap-3",
+        readerNavigation ? "flex-nowrap" : "flex-wrap",
+      ].join(" ")}>
+        {readerNavigation ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <ReaderHistoryBackButton />
+            <ParticipationReturn dark />
+            {href ? (
+              <a
+                href={href}
+                className="min-w-0 truncate text-sm font-bold tracking-[0.18em] text-white transition hover:text-white/80"
+                title={title}
+              >
+                {title}
+              </a>
+            ) : (
+              <div className="min-w-0 truncate text-sm font-bold tracking-[0.18em] text-white" title={title}>
+                {title}
+              </div>
+            )}
+          </div>
+        ) : <>
         <ParticipationReturn dark />
         {href ? (
           <a
@@ -125,7 +173,12 @@ export function ParariBrandTopBar({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        </>}
+
+        <div className={[
+          "flex items-center gap-2",
+          readerNavigation ? "shrink-0 whitespace-nowrap" : "",
+        ].join(" ")}>
           <ParticipationMenu dark />
           {actions}
         </div>
