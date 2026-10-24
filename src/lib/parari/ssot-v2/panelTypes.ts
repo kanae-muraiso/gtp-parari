@@ -44,6 +44,7 @@ export type TagInfo = {
  * ここにないタグも unknown panel として壊さず保持する。
  */
 export const DEFAULT_IMPLEMENTED_PANEL_TAGS = [
+  "PAYWALL",
   "ETTEXT",
   "BOOK",
   "CHAPTER",
@@ -120,6 +121,7 @@ export const RESERVED_CHILD_TAGS = new Set([
  * [APPLICATION id: 00000000-0000-0000-0000-000000000000]
  */
 export const SINGLE_LINE_PANEL_TAGS = new Set([
+  "PAYWALL",
   "BUTTON",
   "APPLICATION",
   "CALENDAR",

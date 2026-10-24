@@ -11,8 +11,8 @@
 import { SsotBlockRenderer } from "@/components/parari/reader/SsotBlockRenderer";
 import type { PanelRendererProps } from "../panelDefinitionTypes";
 
-export function SsotUiPanelRenderer({ block }: PanelRendererProps<unknown>) {
-  return <SsotBlockRenderer text={String(block.raw ?? "")} rich={true} />;
+export function SsotUiPanelRenderer({ block, data }: PanelRendererProps<any>) {
+  return <SsotBlockRenderer text={String(block.raw ?? "")} preparedBlocks={data?.uiBlocks} rich={true} />;
 }
 
 export function SsotUiPanelPreview({ raw }: { raw: string }) {

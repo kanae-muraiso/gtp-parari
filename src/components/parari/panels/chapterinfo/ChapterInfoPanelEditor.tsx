@@ -21,6 +21,7 @@ import { normalizeChapterInfoRaw } from "./chapterInfoRaw";
 
 export type ChapterInfoPanelData = {
   raw: string;
+  fields?: Record<string, string>;
   title?: string;
 };
 

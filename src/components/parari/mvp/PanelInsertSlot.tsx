@@ -12,6 +12,7 @@
 import { useState } from "react";
 
 export type PanelInsertTag =
+  | "PAYWALL"
   | "TEXT"
   | "BOOK"
   | "CHAPTER"
@@ -61,6 +62,7 @@ const MEDIA_TAGS: PanelInsertTag[] = [
 ];
 
 const PANEL_TAGS: PanelInsertTag[] = [
+  "PAYWALL",
   "NOTICE",
   "LIST",
   "BUTTON",

@@ -95,7 +95,7 @@ export function getPagePaginationImageUrl(sheet: BookSheet): string {
     return sheet.mainImage;
   }
 
-  return extractSplittablePageContent(sheet.bodySsot)?.imageUrl ?? "";
+  return (sheet.paginationContent !== undefined ? sheet.paginationContent : extractSplittablePageContent(sheet.bodySsot))?.imageUrl ?? "";
 }
 
 export function paginateBookPageSheet({
@@ -110,7 +110,7 @@ export function paginateBookPageSheet({
     return null;
   }
 
-  const content = extractSplittablePageContent(sheet.bodySsot);
+  const content = (sheet.paginationContent !== undefined ? sheet.paginationContent : extractSplittablePageContent(sheet.bodySsot));
 
   if (content === null) {
     return null;

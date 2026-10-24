@@ -7,6 +7,7 @@
 // - Square Subscriptionの月謝支払い
 // を同じ署名検証・重複排除の下で処理する。
 
+import { syncSubscriptionReading } from "@/lib/commerce/syncSubscriptionReading";
 import {
   createHmac,
   timingSafeEqual,
@@ -390,13 +391,13 @@ async function handleCommerceRefund(
     return false;
   }
 
-  const {
+  let {
     data: purchase,
     error: purchaseError,
   } = await supabaseAdmin
     .from("commerce_purchases")
     .select(
-      "id,product_id,owner_user_id,buyer_user_id,amount,currency,status,refunded_amount",
+      "id,product_id,owner_user_id,buyer_user_id,merchant_id,amount,currency,status,refunded_amount",
     )
     .eq(
       "provider_payment_id",
@@ -408,8 +409,16 @@ async function handleCommerceRefund(
     throw purchaseError;
   }
 
-  if (!purchase) {
-    return false;
+  if (!purchase && refund.order_id) {
+    const pending = await supabaseAdmin.from("commerce_purchases")
+      .select("id,product_id,owner_user_id,buyer_user_id,merchant_id,amount,currency,status,refunded_amount")
+      .eq("provider_order_id", refund.order_id).maybeSingle();
+    if (pending.error) throw pending.error;
+    purchase = pending.data;
+  }
+  if (!purchase) return false;
+  if (event.merchant_id && event.merchant_id !== purchase.merchant_id) {
+    throw new Error("Square refund merchant mismatch");
   }
 
   const currency =
@@ -430,95 +439,13 @@ async function handleCommerceRefund(
     return true;
   }
 
-  const now =
-    new Date().toISOString();
-
-  const {
-    error: refundLedgerError,
-  } = await supabaseAdmin
-    .from("commerce_refunds")
-    .insert({
-      purchase_id:
-        purchase.id,
-      owner_user_id:
-        purchase.owner_user_id,
-      buyer_user_id:
-        purchase.buyer_user_id,
-      provider_refund_id:
-        refund.id,
-      amount:
-        refundedAmount,
-      currency,
-      status: "completed",
-      completed_at: now,
-    });
-
-  if (refundLedgerError) {
-    if (
-      refundLedgerError.code ===
-      "23505"
-    ) {
-      return true;
-    }
-
-    throw refundLedgerError;
-  }
-
-  const currentRefunded =
-    Number(
-      purchase.refunded_amount ?? 0,
-    );
-  const nextRefunded =
-    currentRefunded +
-    refundedAmount;
-  const isFullRefund =
-    nextRefunded >=
-    Number(purchase.amount);
-
-  const { error: purchaseUpdateError } =
-    await supabaseAdmin
-      .from("commerce_purchases")
-      .update({
-        refunded_amount:
-          nextRefunded,
-        status:
-          isFullRefund
-            ? "refunded"
-            : purchase.status,
-        refunded_at:
-          isFullRefund
-            ? now
-            : null,
-        updated_at: now,
-      })
-      .eq("id", purchase.id);
-
-  if (purchaseUpdateError) {
-    throw purchaseUpdateError;
-  }
-
-  if (isFullRefund) {
-    const {
-      error: entitlementError,
-    } = await supabaseAdmin
-      .from("commerce_entitlements")
-      .update({
-        status: "revoked",
-        updated_at: now,
-      })
-      .eq(
-        "source_purchase_id",
-        purchase.id,
-      )
-      .eq(
-        "user_id",
-        purchase.buyer_user_id,
-      );
-
-    if (entitlementError) {
-      throw entitlementError;
-    }
-  }
+  const { error } = await supabaseAdmin.rpc("apply_commerce_square_refund", {
+    p_purchase_id: purchase.id,
+    p_refund_id: refund.id,
+    p_amount: refundedAmount,
+    p_currency: currency,
+  });
+  if (error) throw error;
 
   return true;
 }
@@ -944,6 +871,8 @@ async function handleInvoicePaymentMade(
     }
   }
 
+  await syncSubscriptionReading(subscription, event.merchant_id);
+
   const amount =
     Number(
       subscription.billing_amount,
@@ -1130,6 +1059,15 @@ async function handleSubscriptionUpdated(
   return true;
 }
 
+async function reconcileInvoiceReading(event: SquareWebhookEvent) {
+ const id=event.data?.object?.invoice?.subscription_id;
+ if(!id) return false;
+ const {data,error}=await supabaseAdmin.from("commerce_subscriptions").select("*").eq("provider_subscription_id",id).maybeSingle();
+ if(error) throw error;
+ if(data) await syncSubscriptionReading(data,event.merchant_id);
+ return !!data;
+}
+
 export async function POST(
   request: NextRequest,
 ) {
@@ -1283,6 +1221,8 @@ export async function POST(
         await handleCommerceRefund(
           event,
         );
+    } else if (["invoice.refunded", "invoice.updated"].includes(eventType)) {
+      handled = await reconcileInvoiceReading(event);
     } else if (
       eventType === "invoice.payment_made"
     ) {

@@ -16,7 +16,7 @@ import type { PageInfoPanelData } from "./PageInfoPanelEditor";
 export function PageInfoPanelRenderer({
   data,
 }: PanelRendererProps<PageInfoPanelData>) {
-  const fields = parseMetaFields(data.raw);
+  const fields = data.fields ?? parseMetaFields(data.raw);
 
   const title = getMetaValue(fields, ["title"], "");
   const subtitle = getMetaValue(fields, ["subtitle"], "");

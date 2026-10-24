@@ -21,6 +21,7 @@ import { viewerImageWidthClass } from "../../viewer/viewerWidthRules";
 
 export type PageInfoPanelData = {
   raw: string;
+  fields?: Record<string, string>;
 };
 
 type RenderModeValue = "page-scroll" | "page" | "book" | "plain";

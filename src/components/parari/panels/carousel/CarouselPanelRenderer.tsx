@@ -20,7 +20,7 @@ export function CarouselPanelRenderer({
             className="w-[82vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm md:w-[320px]"
           >
             {renderNestedPanelViewer ? (
-              renderNestedPanelViewer(card.bodySsot)
+              renderNestedPanelViewer(card.bodySsot ?? "", card.bodyBlocks)
             ) : (
               <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
                 {card.bodySsot}
