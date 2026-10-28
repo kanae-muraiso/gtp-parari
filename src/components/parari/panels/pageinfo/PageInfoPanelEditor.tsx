@@ -307,15 +307,16 @@ export function PageInfoPanelEditor({
 
   return (
     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-sky-700">PAGEINFO</div>
-          <div className="mt-1 text-[11px] leading-5 text-sky-700/80">
-            章名とPAGE画像を設定します。公開設定などは詳細編集から変更できます。
+      {isDetailEditing ? (
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-sky-700">PAGE設定</div>
+            <div className="mt-1 text-[11px] leading-5 text-sky-700/80">
+              画像・URL・公開期間などの詳細を設定します。
+            </div>
           </div>
         </div>
-
-      </div>
+      ) : null}
 
       {!isDetailEditing ? (
         <div className="mb-4">
