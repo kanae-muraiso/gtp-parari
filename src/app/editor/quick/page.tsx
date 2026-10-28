@@ -105,11 +105,17 @@ export default function QuickEditorPage() {
         return;
       }
 
-      const content = createQuickPageSsot({
-        title: current.title,
-        mainImageUrl: current.mainImageUrl,
-        body: cleanBody,
-      });
+      const content = editingSsot.trim()
+        ? mergeWritingIntoSsot(editingSsot, {
+            title: current.title,
+            mainImageUrl: current.mainImageUrl,
+            body: cleanBody,
+          })
+        : createQuickPageSsot({
+            title: current.title,
+            mainImageUrl: current.mainImageUrl,
+            body: cleanBody,
+          });
 
       if (!workRef.current) {
         if (!createRequestIdRef.current) {
@@ -313,6 +319,20 @@ function createQuickPageSsot({
     body.trim(),
     "",
   ].join("\n");
+}
+
+function mergeWritingIntoSsot(existing: string, { title, mainImageUrl, body }: { title: string; mainImageUrl: string; body: string }) {
+  let next = String(existing || "")
+    .replace(/^title:\s*.*$/im, `title: ${escapeMetaValue(title)}`)
+    .replace(/^mainImage:\s*.*$/im, mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:");
+  const textStart = next.search(/^\[T\]\s*$/im);
+  if (textStart < 0) return [next.trimEnd(), "[T]", body.trim(), ""].join("\n");
+  const markerLength = next.slice(textStart).match(/^\[T\]\s*\r?\n?/i)?.[0].length ?? 3;
+  const bodyStart = textStart + markerLength;
+  const rest = next.slice(bodyStart);
+  const nextPanel = rest.search(/^\[[A-Z][A-Z0-9_]*(?::[^\]]+)?\](?:\s|$)/m);
+  const bodyEnd = nextPanel >= 0 ? bodyStart + nextPanel : next.length;
+  return next.slice(0, bodyStart) + body.trim() + "\n\n" + next.slice(bodyEnd).replace(/^\s+/, "");
 }
 
 function createStableSlug() {
