@@ -131,10 +131,10 @@ export function parseRichInlines(text: string): RichInline[] {
       result.push({ type: "bold", text: inner });
     } else {
       const namedColorMatch = inner.match(/^([a-z]+)\|([\s\S]*)$/i);
-      const colorName =
-        namedColorMatch && isRichTextColorName(namedColorMatch[1].toLowerCase())
-          ? namedColorMatch[1].toLowerCase()
-          : null;
+      const candidateColor = namedColorMatch?.[1]?.toLowerCase() ?? "";
+      const colorName = isRichTextColorName(candidateColor)
+        ? candidateColor
+        : null;
 
       result.push({
         type: "color",
