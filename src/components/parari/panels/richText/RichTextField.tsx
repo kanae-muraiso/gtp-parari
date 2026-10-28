@@ -102,6 +102,7 @@ type RichTextFieldProps = {
   englishMenuContainer?: HTMLElement | null;
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
+  quiet?: boolean;
 };
 
 const PARARI_NOTE_URL_PREFIX = "parari-note:";
@@ -131,6 +132,7 @@ export function RichTextField({
   englishMenuContainer,
   readingSupport,
   onChangeReadingSupport,
+  quiet = false,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
   const lastEmittedValueRef = useRef(value);
@@ -186,7 +188,7 @@ export function RichTextField({
     };
     
     return (
-      <div ref={editorShellRef} className="rounded-xl border border-neutral-200 bg-white"
+      <div ref={editorShellRef} className={quiet ? "bg-white" : "rounded-xl border border-neutral-200 bg-white"}
         onFocusCapture={() => {
           isRichTextEditingRef.current = true;
           setRichTextActive(true);
@@ -223,7 +225,7 @@ export function RichTextField({
             isRichTextEditingRef={isRichTextEditingRef}
           />
 
-            <RichTextToolbar
+            {!quiet ? <RichTextToolbar
               englishMenuContainer={englishMenuContainer}
               visible={richTextActive}
               readingSupport={readingSupport}
@@ -237,17 +239,17 @@ export function RichTextField({
               onToggleDictionaryMarks={() =>
                 setDictionaryMarksEnabled((current) => !current)
               }
-            />
+            /> : null}
             
-        <div className="relative border-t border-neutral-100">
+        <div className={quiet ? "relative" : "relative border-t border-neutral-100"}>
           <RichTextPlugin
             contentEditable={
                 <ContentEditable
-                  className={`${minHeightClassName} w-full cursor-text px-3 py-2 text-sm leading-7 text-neutral-900 outline-none`}
+                  className={`${minHeightClassName} w-full cursor-text ${quiet ? "px-0 py-0 text-[17px] leading-8" : "px-3 py-2 text-sm leading-7"} text-neutral-900 outline-none`}
                   spellCheck={false}
                   aria-placeholder={placeholder}
                   placeholder={
-                    <div className="pointer-events-none absolute left-3 top-2 text-sm text-neutral-400">
+                    <div className={`pointer-events-none absolute ${quiet ? "left-0 top-0 text-[17px]" : "left-3 top-2 text-sm"} text-neutral-400`}>
                       {placeholder}
                     </div>
                   }
