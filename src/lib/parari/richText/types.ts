@@ -63,6 +63,8 @@ export type RichColorInline = {
   text: React.ReactNode;
   tone?: RichColorTone;
   color?: RichTextColorName;
+  bold?: boolean;
+  italic?: boolean;
 };
 
 export type RichColorTone =
