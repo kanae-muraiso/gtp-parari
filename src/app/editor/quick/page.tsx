@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
+import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
+import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -19,6 +21,10 @@ export default function QuickEditorPage() {
   const [showTitle, setShowTitle] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const [editingPinned, setEditingPinned] = useState(false);
+  const [shiftPreview, setShiftPreview] = useState(false);
+  const [editingSsot, setEditingSsot] = useState("");
+  const shiftCandidateRef = useRef(false);
 
   const workRef = useRef<{ id: string; revision: number; content: string } | null>(null);
   const createRequestIdRef = useRef<string | null>(null);
@@ -26,6 +32,40 @@ export default function QuickEditorPage() {
   const latestRef = useRef({ title: "", body: "", mainImageUrl: "" });
 
   latestRef.current = { title, body, mainImageUrl };
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (editingPinned) return;
+      if (event.key === "Shift" && !event.repeat) {
+        shiftCandidateRef.current = true;
+        window.setTimeout(() => {
+          if (shiftCandidateRef.current) setShiftPreview(true);
+        }, 180);
+        return;
+      }
+      if (event.shiftKey) {
+        shiftCandidateRef.current = false;
+        setShiftPreview(false);
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== "Shift") return;
+      shiftCandidateRef.current = false;
+      setShiftPreview(false);
+    };
+    const onBlur = () => {
+      shiftCandidateRef.current = false;
+      setShiftPreview(false);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [editingPinned]);
 
   useEffect(() => {
     const hasContent = Boolean(body.trim() || mainImageUrl.trim());
@@ -131,6 +171,7 @@ export default function QuickEditorPage() {
         workRef.current = { id: saved.id, revision: result.revision, content };
       }
 
+      setEditingSsot(content);
       setSaveState("saved");
     } catch (error) {
       setSaveState("error");
@@ -171,15 +212,25 @@ export default function QuickEditorPage() {
     <main className="min-h-screen bg-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 pt-5 sm:px-8">
         <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
-          <a href="/my/works" className="font-bold transition hover:text-neutral-700">
-            PARARI
-          </a>
-          <div aria-live="polite">
-            {saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}
+          <div className="flex items-center gap-3">
+            <a href="/mypage" className="font-bold text-neutral-700 transition hover:text-neutral-950">← HOME</a>
+            <a href="/my/works" className="font-bold transition hover:text-neutral-700">PARARI</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <span aria-live="polite">{saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}</span>
+            <button type="button" onClick={() => { setShiftPreview(false); setEditingPinned(v => !v); }}
+              className={["rounded-full px-3 py-1.5 font-bold", editingPinned ? "bg-neutral-950 text-white" : "hover:bg-neutral-100"].join(" ")}>
+              {editingPinned ? "Writing" : "Editing"}
+            </button>
           </div>
         </header>
 
-        <article className="mt-10 flex-1">
+        {(editingPinned || shiftPreview) && editingSsot ? (
+          <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
+            <div className="mb-3 text-xs font-bold tracking-[0.16em] text-neutral-400">EDITING</div>
+            <PagePanelComposer value={editingSsot} onChange={setEditingSsot} />
+          </section>
+        ) : <article className="mt-10 flex-1">
           {showTitle || title ? (
             <input
               autoFocus={showTitle && !title}
@@ -211,16 +262,16 @@ export default function QuickEditorPage() {
             </div>
           ) : null}
 
-          <textarea
-            autoFocus
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
+          <RichTextField
+            value={body ? `[T]\n${body}` : "[T]\n"}
+            onChange={(next) => setBody(next.replace(/^\s*\[T\]\s*\r?\n?/i, ""))}
             placeholder="書き始める…"
-            className="min-h-[65vh] w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-8 text-neutral-900 outline-none placeholder:text-neutral-300"
+            minHeightClassName="min-h-[65vh]"
+            quiet
           />
-        </article>
+        </article>}
 
-        <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+        {!(editingPinned || shiftPreview) ? <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
           <label className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold text-neutral-500 transition hover:bg-neutral-100">
             画像
             <input
@@ -234,7 +285,7 @@ export default function QuickEditorPage() {
               }}
             />
           </label>
-        </footer>
+        </footer> : null}
       </div>
     </main>
   );
