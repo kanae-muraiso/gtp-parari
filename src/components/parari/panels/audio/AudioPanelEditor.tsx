@@ -21,11 +21,8 @@ export function AudioPanelEditor({
   };
 
   return (
-    <div className="rounded-xl border border-yellow-200 bg-white p-3">
+    <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
       <div className="mb-3">
-        <span className="rounded-full bg-yellow-100 px-2 py-1 text-[11px] font-bold text-yellow-900">
-          AUDIO 専用エディタ
-        </span>
         <p className="mt-2 text-xs leading-5 text-neutral-600">
           mp3などの音声URLを指定して、PARARI内で再生するパネルです。
           音声ファイル自体はPARARIには保存しません。
