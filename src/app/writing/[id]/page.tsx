@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
+import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 
 type WorkRow = {
   id: string;
@@ -23,6 +24,9 @@ export default function WritingWorkPage() {
   const [showTitle, setShowTitle] = useState(false);
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [editingPinned, setEditingPinned] = useState(false);
+  const [shiftPreview, setShiftPreview] = useState(false);
+  const [editingSsot, setEditingSsot] = useState("");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef({ title: "", body: "", mainImageUrl: "" });
   const loadedRef = useRef(false);
@@ -42,6 +46,7 @@ export default function WritingWorkPage() {
       }
       const parsed = parsePageSsot(data.content ?? "");
       setWork(data);
+      setEditingSsot(data.content ?? "");
       setTitle(parsed.title || (String(data.title ?? "").toLowerCase() === "untitled" ? "" : String(data.title ?? "")));
       setBody(parsed.body);
       setMainImageUrl(parsed.mainImageUrl);
@@ -54,7 +59,28 @@ export default function WritingWorkPage() {
   }, [workId]);
 
   useEffect(() => {
-    if (!loadedRef.current || !work) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Shift" || event.repeat || editingPinned) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, [contenteditable=true]")) return;
+      setShiftPreview(true);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") setShiftPreview(false);
+    };
+    const onBlur = () => setShiftPreview(false);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [editingPinned]);
+
+  useEffect(() => {
+    if (!loadedRef.current || !work || editingPinned || shiftPreview) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     setState("idle");
     timerRef.current = setTimeout(() => void save(), 900);
@@ -82,6 +108,7 @@ export default function WritingWorkPage() {
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.ok) throw new Error(result?.message ?? "保存できませんでした。");
       setWork({ ...work, title: current.title.trim(), content: ssot, revision: result.revision });
+      setEditingSsot(ssot);
       setState("saved");
     } catch (error) {
       setState("error");
@@ -105,6 +132,34 @@ export default function WritingWorkPage() {
     }
   }
 
+  async function saveEditingSsot(nextSsot: string) {
+    if (!work) return;
+    setEditingSsot(nextSsot);
+    setState("saving");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("ログインを確認できませんでした。");
+      const response = await fetch("/api/works/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ workId: work.id, title: title.trim(), content: nextSsot, expectedRevision: work.revision }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok) throw new Error(result?.message ?? "保存できませんでした。");
+      const parsed = parsePageSsot(nextSsot);
+      setWork({ ...work, content: nextSsot, revision: result.revision });
+      setTitle(parsed.title);
+      setBody(parsed.body);
+      setMainImageUrl(parsed.mainImageUrl);
+      setState("saved");
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "保存できませんでした。");
+    }
+  }
+
+  const editingActive = editingPinned || shiftPreview;
+
   const statusText = useMemo(() => state === "saving" ? "保存中…" : state === "saved" ? "保存済み" : state === "error" ? message : "", [state, message]);
 
   if (state === "loading") return <main className="min-h-screen bg-white" />;
@@ -116,11 +171,28 @@ export default function WritingWorkPage() {
           <a href="/my/works" className="font-bold transition hover:text-neutral-700">PARARI</a>
           <div className="flex items-center gap-3">
             <span aria-live="polite">{statusText}</span>
-            <a href={`/editor-v2/${workId}`} className="font-bold transition hover:text-neutral-700">Editing</a>
+            <button type="button" onClick={() => { setShiftPreview(false); setEditingPinned(current => !current); }}
+              className={["rounded-full px-3 py-1.5 font-bold transition", editingPinned ? "bg-neutral-950 text-white" : "hover:bg-neutral-100 hover:text-neutral-700"].join(" ")}>
+              {editingPinned ? "Writing" : "Editing"}
+            </button>
           </div>
         </header>
 
-        {state === "error" && !work ? <p className="mt-12 text-sm text-red-600">{message}</p> : (
+        {state === "error" && !work ? <p className="mt-12 text-sm text-red-600">{message}</p> : editingActive && work ? (
+          <section className="mt-8 flex-1">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">EDITING</div>
+                <p className="mt-1 text-xs text-neutral-400">
+                  {shiftPreview && !editingPinned ? "Shiftを離すとWritingに戻ります" : "パネル構造を編集しています"}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 sm:p-4">
+              <PagePanelComposer value={editingSsot} onChange={(next) => void saveEditingSsot(next)} />
+            </div>
+          </section>
+        ) : (
           <article className="mt-10 flex-1">
             {showTitle || title ? (
               <input value={title} onChange={e => setTitle(e.target.value)} placeholder="タイトル"
@@ -140,7 +212,7 @@ export default function WritingWorkPage() {
           </article>
         )}
 
-        {work ? <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+        {work && !editingActive ? <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
           <label className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">
             画像
             <input type="file" accept="image/*" className="hidden" onChange={e => { const file=e.target.files?.[0]; if(file) void addImage(file); e.currentTarget.value=""; }} />
