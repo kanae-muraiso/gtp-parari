@@ -289,7 +289,7 @@ function ColorToolbarControl({
   onToggle,
   onSelect,
 }: {
-  primaryAction: Extract<RichTextInlineMenuAction, { kind: "format"; format: "red" }>;
+  primaryAction: Extract<RichTextInlineMenuAction, { kind: "format" }>;
   open: boolean;
   colorActions: Array<Extract<RichTextInlineMenuAction, { kind: "color" }>>;
   onToggle: () => void;
