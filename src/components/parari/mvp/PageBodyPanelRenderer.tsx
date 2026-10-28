@@ -23,6 +23,11 @@ import {
   parseTextReadingSupportAttrs,
 } from "@/lib/parari/richText/textReadingSupport";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
+import {
+  parsePanelVisualStyle,
+  stripPanelStyleAttrs,
+  stripPanelVisualStyleFromRaw,
+} from "@/lib/parari/ssot-v2/panelStyle";
 import type {
   PanelBlock,
   SsotBlock,
@@ -71,17 +76,21 @@ function TextBlockView({ block }: { block: TextBlock }) {
   const document = parseRichText(text);
   const readingSupport = parseTextReadingSupportAttrs(block.attrs);
 
+  const panelStyle = parsePanelVisualStyle(block.attrs);
+
   return (
-    <div className="mb-6 text-neutral-800">
-      {hasTextReadingSupport(readingSupport) ? (
-        <RichTextReadingSupportRenderer
-          document={document}
-          options={readingSupport}
-        />
-      ) : (
-        <RichTextRenderer document={document} />
-      )}
-    </div>
+    <PanelFrame style={panelStyle} defaultWidth="text">
+      <div className="text-neutral-800">
+        {hasTextReadingSupport(readingSupport) ? (
+          <RichTextReadingSupportRenderer
+            document={document}
+            options={readingSupport}
+          />
+        ) : (
+          <RichTextRenderer document={document} />
+        )}
+      </div>
+    </PanelFrame>
   );
 }
 
@@ -89,14 +98,18 @@ function PanelBlockView({ block }: { block: PanelBlock }) {
   const definition = getPanelDefinition(block.tag);
   const Renderer = definition.Renderer;
   const gap = resolvePanelGap(block);
-  const width =
-    String(block.tag ?? "").trim().toUpperCase() === "CAROUSEL"
-      ? "full"
-      : "default";
+  const panelStyle = parsePanelVisualStyle(block.attrs);
+  const contentRaw = stripPanelVisualStyleFromRaw(block.raw);
+  const contentBlock: PanelBlock = {
+    ...block,
+    raw: contentRaw,
+    attrs: stripPanelStyleAttrs(block.attrs),
+  };
+  const defaultWidth = defaultWidthForPanelTag(block.tag);
 
   if (!Renderer) {
     return (
-      <PanelFrame gap={gap} width={width}>
+      <PanelFrame gap={gap} style={panelStyle} defaultWidth={defaultWidth}>
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
           [{block.tag}] は表示用Rendererがまだありません。
         </div>
@@ -104,12 +117,12 @@ function PanelBlockView({ block }: { block: PanelBlock }) {
     );
   }
 
-  const data = definition.parse(block.raw, block);
+  const data = definition.parse(contentRaw, contentBlock);
 
   return (
-    <PanelFrame gap={gap} width={width}>
+    <PanelFrame gap={gap} style={panelStyle} defaultWidth={defaultWidth}>
       <Renderer
-        block={block}
+        block={contentBlock}
         data={data}
         renderNestedPanelViewer={(nestedSsot) => (
           <PageBodyPanelRenderer bodySsot={nestedSsot} />
@@ -117,4 +130,19 @@ function PanelBlockView({ block }: { block: PanelBlock }) {
       />
     </PanelFrame>
   );
+}
+
+
+function defaultWidthForPanelTag(tag: string): "text" | "panel" | "full" {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+
+  if (normalizedTag === "NOTICE") {
+    return "text";
+  }
+
+  if (normalizedTag === "IMAGE" || normalizedTag === "CAROUSEL") {
+    return "full";
+  }
+
+  return "panel";
 }
