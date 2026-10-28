@@ -183,7 +183,7 @@ export default function WritingWorkPage() {
     <main className="min-h-screen bg-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 pt-5 sm:px-8">
         <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
-          <a href="/my/works" className="font-bold transition hover:text-neutral-700">PARARI</a>
+          <div className="flex items-center gap-3"><a href="/mypage" className="font-bold text-neutral-700 transition hover:text-neutral-950">← HOME</a><a href="/my/works" className="font-bold transition hover:text-neutral-700">PARARI</a></div>
           <div className="flex items-center gap-3">
             <span aria-live="polite">{statusText}</span>
             <button type="button" onClick={() => { setShiftPreview(false); setEditingPinned(current => !current); }}
@@ -203,7 +203,7 @@ export default function WritingWorkPage() {
                 </p>
               </div>
             </div>
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 sm:p-4">
+            <div className="rounded-2xl bg-neutral-100 p-2 sm:p-4">
               <PagePanelComposer value={editingSsot} onChange={(next) => void saveEditingSsot(next)} />
             </div>
           </section>
