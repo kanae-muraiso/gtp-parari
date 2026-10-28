@@ -19,6 +19,15 @@ import type {
   NestedPanelViewerRenderer,
 } from "../panels/panelDefinitionTypes";
 import { getPanelDefinition, hasPanelDefinition } from "../panels/registry";
+import { PanelFrame } from "../panels/shared/PanelFrame";
+import { PanelStyleControls } from "../panels/shared/PanelStyleControls";
+import {
+  applyPanelVisualStyleToRaw,
+  parsePanelVisualStyle,
+  stripPanelStyleAttrs,
+  stripPanelVisualStyleFromRaw,
+  type PanelVisualStyle,
+} from "@/lib/parari/ssot-v2/panelStyle";
 
 type PanelCardMode = "summary" | "view" | "edit";
 
@@ -66,23 +75,55 @@ export function PanelBlockCard({
   const Editor = definition.Editor;
   const Renderer = definition.Renderer;
 
+  const panelStyle = useMemo(
+    () => parsePanelVisualStyle(block.attrs),
+    [block.attrs],
+  );
+  const contentRaw = useMemo(
+    () => stripPanelVisualStyleFromRaw(block.raw),
+    [block.raw],
+  );
+  const contentBlock = useMemo(
+    () => ({
+      ...block,
+      raw: contentRaw,
+      attrs: stripPanelStyleAttrs(block.attrs),
+    }),
+    [block, contentRaw],
+  );
+
   const data = useMemo(() => {
     try {
-      return definition.parse(block.raw, block);
+      return definition.parse(contentRaw, contentBlock);
     } catch (error) {
       return {
-        raw: block.raw,
+        raw: contentRaw,
         errorMessage:
           error instanceof Error ? error.message : "Panel parse error",
       };
     }
-  }, [block, definition]);
+  }, [contentBlock, contentRaw, definition]);
 
-    const summary = createPanelSummary(block, data);
+    const summary = createPanelSummary(contentBlock, data);
     const widthClass = panelWidthClass(block.tag);
-    const canEditPanelGap = canEditGapForPanel(block.tag);
-    const isZeroPanelGap = canEditPanelGap ? hasZeroPanelGap(block.raw) : false;
     const canCollapseToSummary = isCollapsibleMediaPanel(block.tag);
+    const canStyle = canStylePanel(block.tag);
+
+    const handleEditorChangeRaw = (
+      nextRaw: string,
+      options?: { structural?: boolean },
+    ) => {
+      onChangeRaw(
+        applyPanelVisualStyleToRaw(nextRaw, panelStyle),
+        options,
+      );
+    };
+
+    const handleStyleChange = (nextStyle: PanelVisualStyle) => {
+      onChangeRaw(
+        applyPanelVisualStyleToRaw(contentRaw, nextStyle),
+      );
+    };
 
     // apps/tools/parari/src/components/parari/editor-v2/PanelBlockCard.tsx
     // 2026-06-29 20:20 JST
@@ -179,16 +220,21 @@ export function PanelBlockCard({
                 </button>
               ) : null}
 
-              {Renderer ? (
-                <Renderer
-                  block={block}
-                  data={data as never}
-                  onInsertAfter={onInsertAfter}
-                  renderNestedPanelViewer={renderNestedPanelViewer}
-                />
-              ) : (
-                   <PanelRawPreview />
-              )}
+              <PanelFrame
+                style={panelStyle}
+                defaultWidth={defaultWidthForPanelTag(block.tag)}
+              >
+                {Renderer ? (
+                  <Renderer
+                    block={contentBlock}
+                    data={data as never}
+                    onInsertAfter={onInsertAfter}
+                    renderNestedPanelViewer={renderNestedPanelViewer}
+                  />
+                ) : (
+                  <PanelRawPreview />
+                )}
+              </PanelFrame>
             </div>
           ) : null}
 
@@ -248,22 +294,6 @@ export function PanelBlockCard({
                     </button>
                   ) : null}
 
-                              {canEditPanelGap ? (
-                                <button
-                                  type="button"
-                                  onClick={() => onChangeRaw(togglePanelGapZero(block.raw))}
-                                  className={[
-                                    "rounded-full bg-white px-2 py-0.5 text-[10px] font-bold ring-1 transition",
-                                    isZeroPanelGap
-                                      ? "text-neutral-800 ring-neutral-300 hover:bg-neutral-50"
-                                      : "text-neutral-400 ring-neutral-200 hover:bg-neutral-50",
-                                  ].join(" ")}
-                                  title="このパネルの下余白を切り替え"
-                                >
-                                  {isZeroPanelGap ? "余白0" : "余白標準"}
-                                </button>
-                              ) : null}
-                              
                   {!isRegistered ? (
                     <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 ring-1 ring-red-100">
                       unknown
@@ -294,18 +324,30 @@ export function PanelBlockCard({
               ) : null}
 
               <div className={isDirectEditPanel(block.tag) ? "" : "border-t border-yellow-200 pt-2"}>
-                              <Editor
-                                block={block}
-                                data={data as never}
-                                onChangeRaw={onChangeRaw}
-                                onInsertAfter={onInsertAfter}
-                                publicBasePath={publicBasePath}
-                                ownerUsername={ownerUsername}
-                                siteSlug={siteSlug}
-                                onSiteSlugChange={onSiteSlugChange}
-                                webPages={webPages}
-                                renderNestedPanelEditor={renderNestedPanelEditor}
-                              />
+                <PanelFrame
+                  style={panelStyle}
+                  defaultWidth={defaultWidthForPanelTag(block.tag)}
+                >
+                  <Editor
+                    block={contentBlock}
+                    data={data as never}
+                    onChangeRaw={handleEditorChangeRaw}
+                    onInsertAfter={onInsertAfter}
+                    publicBasePath={publicBasePath}
+                    ownerUsername={ownerUsername}
+                    siteSlug={siteSlug}
+                    onSiteSlugChange={onSiteSlugChange}
+                    webPages={webPages}
+                    renderNestedPanelEditor={renderNestedPanelEditor}
+                  />
+                </PanelFrame>
+
+                {canStyle ? (
+                  <PanelStyleControls
+                    value={panelStyle}
+                    onChange={handleStyleChange}
+                  />
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -341,6 +383,32 @@ function panelWidthClass(tag: string): string {
   return "w-full";
 }
 
+function canStylePanel(tag: string): boolean {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+
+  return !(
+    normalizedTag === "BOOK" ||
+    normalizedTag === "BOOKINFO" ||
+    normalizedTag === "CHAPTER" ||
+    normalizedTag === "CHAPTERINFO" ||
+    normalizedTag === "PAGE" ||
+    normalizedTag === "PAGEINFO"
+  );
+}
+
+function defaultWidthForPanelTag(tag: string): "text" | "panel" | "full" {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+
+  if (normalizedTag === "NOTICE") {
+    return "text";
+  }
+
+  if (normalizedTag === "IMAGE" || normalizedTag === "CAROUSEL") {
+    return "full";
+  }
+
+  return "panel";
+}
 
 function isDirectEditPanel(tag: string): boolean {
   const normalizedTag = tag.trim().toUpperCase();
