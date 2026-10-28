@@ -108,12 +108,9 @@ export function ListPanelEditor({
   const raw = serializeListPanel(draftData);
 
   return (
-    <div className="rounded-xl border border-yellow-200 bg-white p-3">
+    <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <span className="rounded-full bg-yellow-100 px-2 py-1 text-[11px] font-bold text-yellow-900">
-            LIST 専用エディタ
-          </span>
           <p className="mt-2 text-xs leading-5 text-neutral-600">
             持ち物・手順・注意点などをリストで表示するパネルです。
           </p>
