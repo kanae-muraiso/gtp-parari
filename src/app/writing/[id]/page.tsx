@@ -27,12 +27,12 @@ export default function WritingWorkPage() {
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
-  const [shiftPreview, setShiftPreview] = useState(false);
+  const [controlPreview, setControlPreview] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
-  const shiftCandidateRef = useRef(false);
+  const controlCandidateRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,39 +85,33 @@ export default function WritingWorkPage() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (editingPinned) return;
 
-      if (isTextEditingTarget(event.target) || isTextEditingTarget(document.activeElement)) {
-        shiftCandidateRef.current = false;
-        setShiftPreview(false);
-        return;
-      }
-
-      if (event.key === "Shift" && !event.repeat) {
-        shiftCandidateRef.current = true;
+      if (event.key === "Control" && !event.repeat) {
+        controlCandidateRef.current = true;
 
         window.setTimeout(() => {
-          if (shiftCandidateRef.current) {
-            setShiftPreview(true);
+          if (controlCandidateRef.current) {
+            setControlPreview(true);
           }
         }, 180);
 
         return;
       }
 
-      if (event.shiftKey) {
-        shiftCandidateRef.current = false;
-        setShiftPreview(false);
+      if (event.ctrlKey) {
+        controlCandidateRef.current = false;
+        setControlPreview(false);
       }
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key !== "Shift") return;
-      shiftCandidateRef.current = false;
-      setShiftPreview(false);
+      if (event.key !== "Control") return;
+      controlCandidateRef.current = false;
+      setControlPreview(false);
     };
 
     const onBlur = () => {
-      shiftCandidateRef.current = false;
-      setShiftPreview(false);
+      controlCandidateRef.current = false;
+      setControlPreview(false);
     };
 
     window.addEventListener("keydown", onKeyDown, true);
@@ -264,7 +258,7 @@ export default function WritingWorkPage() {
     }
   }
 
-  const editingActive = editingPinned || shiftPreview;
+  const editingActive = editingPinned || controlPreview;
 
   const statusText = useMemo(
     () =>
@@ -288,13 +282,13 @@ export default function WritingWorkPage() {
         <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
           <div className="flex items-center gap-3">
             <a
-              href="/mypage"
+              href="/my/works"
               className="font-bold text-neutral-700 transition hover:text-neutral-950"
             >
-              ← HOME
+              ← 作品一覧
             </a>
             <a
-              href="/my/works"
+              href="/mypage"
               className="font-bold transition hover:text-neutral-700"
             >
               PARARI
@@ -307,7 +301,7 @@ export default function WritingWorkPage() {
             <button
               type="button"
               onClick={() => {
-                setShiftPreview(false);
+                setControlPreview(false);
                 setEditingPinned((current) => !current);
               }}
               className={[
@@ -331,9 +325,9 @@ export default function WritingWorkPage() {
                 EDITING
               </div>
 
-              {shiftPreview && !editingPinned ? (
+              {controlPreview && !editingPinned ? (
                 <p className="mt-1 text-xs text-neutral-400">
-                  Shiftを離すとWritingに戻ります
+                  Controlを離すとWritingに戻ります
                 </p>
               ) : null}
             </div>
@@ -471,16 +465,3 @@ function escapeMeta(value: string) {
 }
 
 
-function isTextEditingTarget(target: EventTarget | Element | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT" ||
-    Boolean(target.closest('[contenteditable="true"]'))
-  );
-}
