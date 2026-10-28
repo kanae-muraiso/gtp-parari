@@ -1732,13 +1732,24 @@ function resolveVisibilityLabel(visibility: string | null): string {
 function resolveWorkTitle(work: WorkRow): string {
   const title = String(work.title ?? "").trim();
 
-  if (title) {
+  if (title && title.toLowerCase() !== "untitled") {
     return title;
   }
 
   const contentTitle = String(work.content ?? "").match(/^title:\s*(.+)$/im);
+  const ssotTitle = contentTitle?.[1]?.trim();
 
-  return contentTitle?.[1]?.trim() || "無題の作品";
+  if (ssotTitle) {
+    return ssotTitle;
+  }
+
+  const textBody = String(work.content ?? "")
+    .replace(/^\[[^\]]+\].*$/gm, " ")
+    .replace(/^[a-zA-Z][a-zA-Z0-9_-]*:\s*.*$/gm, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return textBody ? `${textBody.slice(0, 32)}${textBody.length > 32 ? "…" : ""}` : "無題の作品";
 }
 
 function resolveWorkKind(
