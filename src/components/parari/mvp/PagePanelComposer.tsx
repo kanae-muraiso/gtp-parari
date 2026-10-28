@@ -402,9 +402,9 @@ const waitForNextPaint = () =>
 
       if (shouldAppendWritingContinuation(tag)) {
         const continuationIndex = safeIndex + insertedBlocks.length;
-        const followingBlock = nextBlocks[continuationIndex];
+        const hasFollowingBlock = continuationIndex < nextBlocks.length;
 
-        if (!followingBlock || followingBlock.kind !== "text") {
+        if (!hasFollowingBlock) {
           nextBlocks.splice(continuationIndex, 0, createWritingContinuationBlock());
         }
       }
