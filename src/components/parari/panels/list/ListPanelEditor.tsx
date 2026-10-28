@@ -1,18 +1,7 @@
-// apps/tools/parari/src/components/parari/panels/list/ListPanelEditor.tsx
-// apps/tools/parari/src/components/parari/panels/list/ListPanelEditor.tsx
-// 2026-06-27 19:25 JST
-// PART: LIST editor with local draft state
-// コメント:
-// - 1文字入力ごとに親SSOTを更新しない
-// - タイトル/項目入力中はローカルdraftだけ更新する
-// - blur時にSSOTへ反映する
-// - 色変更/項目追加/削除/並び替えは構造変更として即commitする
-
 "use client";
 
 import { useEffect, useState } from "react";
 import type { PanelEditorProps } from "../panelDefinitionTypes";
-import { SsotUiPanelPreview } from "../shared/SsotUiPanelRenderer";
 import type { ListPanelData } from "./parseListPanel";
 import { serializeListPanel } from "./serializeListPanel";
 
@@ -32,40 +21,27 @@ export function ListPanelEditor({
   data,
   onChangeRaw,
 }: PanelEditorProps<ListPanelData>) {
-    const [draftData, setDraftData] = useState<ListPanelData>(data);
+  const [draftData, setDraftData] = useState<ListPanelData>(data);
 
-    const dataSignature = [
-      data.title,
-      data.variant ?? "",
-      ...data.items,
-    ].join("\n");
-
-    useEffect(() => {
-      setDraftData(data);
-    }, [dataSignature]);
+  useEffect(() => {
+    setDraftData(data);
+  }, [data.title, data.variant, ...data.items]);
 
   const commitData = (nextData: ListPanelData = draftData) => {
     onChangeRaw?.(serializeListPanel(nextData));
   };
 
   const updateDraftData = (partial: Partial<ListPanelData>) => {
-    setDraftData((current) => ({
-      ...current,
-      ...partial,
-    }));
+    setDraftData((current) => ({ ...current, ...partial }));
   };
 
   const updateAndCommitData = (partial: Partial<ListPanelData>) => {
-    const nextData: ListPanelData = {
-      ...draftData,
-      ...partial,
-    };
-
+    const nextData = { ...draftData, ...partial };
     setDraftData(nextData);
     commitData(nextData);
   };
 
-  const updateDraftItem = (index: number, value: string) => {
+  const updateItem = (index: number, value: string) => {
     setDraftData((current) => ({
       ...current,
       items: current.items.map((item, itemIndex) =>
@@ -74,10 +50,14 @@ export function ListPanelEditor({
     }));
   };
 
-  const addItem = () => {
-    updateAndCommitData({
-      items: [...draftData.items, ""],
-    });
+  const addItem = (afterIndex?: number) => {
+    const nextItems = [...draftData.items];
+    const insertAt =
+      typeof afterIndex === "number"
+        ? Math.min(afterIndex + 1, nextItems.length)
+        : nextItems.length;
+    nextItems.splice(insertAt, 0, "");
+    updateAndCommitData({ items: nextItems });
   };
 
   const removeItem = (index: number) => {
@@ -88,147 +68,86 @@ export function ListPanelEditor({
 
   const moveItem = (index: number, direction: "up" | "down") => {
     const nextIndex = direction === "up" ? index - 1 : index + 1;
-
-    if (nextIndex < 0 || nextIndex >= draftData.items.length) {
-      return;
-    }
-
+    if (nextIndex < 0 || nextIndex >= draftData.items.length) return;
     const nextItems = [...draftData.items];
-    const current = nextItems[index] ?? "";
-    const target = nextItems[nextIndex] ?? "";
-
-    nextItems[index] = target;
-    nextItems[nextIndex] = current;
-
-    updateAndCommitData({
-      items: nextItems,
-    });
+    [nextItems[index], nextItems[nextIndex]] = [nextItems[nextIndex], nextItems[index]];
+    updateAndCommitData({ items: nextItems });
   };
 
-  const raw = serializeListPanel(draftData);
+  const classes = listDirectEditClasses(draftData.variant);
 
   return (
-    <div className="rounded-xl border border-yellow-200 bg-white p-3">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <span className="rounded-full bg-yellow-100 px-2 py-1 text-[11px] font-bold text-yellow-900">
-            LIST 専用エディタ
-          </span>
-          <p className="mt-2 text-xs leading-5 text-neutral-600">
-            持ち物・手順・注意点などをリストで表示するパネルです。
-          </p>
-        </div>
+    <div className={["rounded-2xl border p-4 shadow-sm", classes.border, classes.bg].join(" ")}>
+      <input
+        value={draftData.title}
+        onChange={(event) => updateDraftData({ title: event.target.value })}
+        onBlur={() => commitData()}
+        className={["mb-2 w-full border-0 bg-transparent p-0 text-base font-semibold outline-none placeholder:opacity-50", classes.text].join(" ")}
+        placeholder="リストのタイトル（任意）"
+      />
 
-        <label className="flex items-center gap-2 text-xs text-neutral-600">
-          色
+      <div className="space-y-1">
+        {draftData.items.map((item, index) => (
+          <div key={`list-item-${index}`} className="group flex items-start gap-2">
+            <span className={["mt-2.5 text-sm", classes.text].join(" ")}>•</span>
+            <textarea
+              value={item}
+              rows={1}
+              onChange={(event) => updateItem(index, event.target.value)}
+              onBlur={() => commitData()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  commitData();
+                  addItem(index);
+                }
+              }}
+              className="min-h-[32px] flex-1 resize-none border-0 bg-transparent py-1.5 text-sm leading-6 text-neutral-700 outline-none placeholder:text-neutral-400"
+              placeholder={`項目 ${index + 1}`}
+            />
+            <div className="mt-1 flex opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+              <button type="button" onClick={() => moveItem(index, "up")} disabled={index === 0} className="px-1 text-xs text-neutral-400 disabled:opacity-20">↑</button>
+              <button type="button" onClick={() => moveItem(index, "down")} disabled={index === draftData.items.length - 1} className="px-1 text-xs text-neutral-400 disabled:opacity-20">↓</button>
+              <button type="button" onClick={() => removeItem(index)} className="px-1 text-xs text-neutral-400 hover:text-rose-600">×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button type="button" onClick={() => addItem()} className="mt-2 text-xs font-bold text-neutral-400 hover:text-neutral-700">
+        ＋ 項目
+      </button>
+
+      <details className="mt-3 text-xs text-neutral-500">
+        <summary className="cursor-pointer select-none font-bold">設定</summary>
+        <div className="mt-2 flex items-center gap-2">
+          <span>色</span>
           <select
             value={draftData.variant ?? ""}
             onChange={(event) =>
-              updateAndCommitData({
-                variant: event.target.value || undefined,
-              })
+              updateAndCommitData({ variant: event.target.value })
             }
-            className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs outline-none"
           >
             {LIST_VARIANTS.map((variant) => (
-              <option key={variant.value} value={variant.value}>
-                {variant.label}
-              </option>
+              <option key={variant.value} value={variant.value}>{variant.label}</option>
             ))}
           </select>
-        </label>
-      </div>
-
-      <label className="mb-3 block">
-        <span className="mb-1 block text-xs font-bold text-neutral-700">
-          タイトル 任意
-        </span>
-        <input
-          value={draftData.title}
-          onChange={(event) =>
-            updateDraftData({
-              title: event.target.value,
-            })
-          }
-          onBlur={() => commitData()}
-          placeholder="空欄なら表示しません"
-          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
-        />
-      </label>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-bold text-neutral-700">
-            項目
-          </span>
-
-          <button
-            type="button"
-            onClick={addItem}
-            className="rounded-full border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-neutral-600 hover:bg-neutral-50"
-          >
-            項目を追加
-          </button>
         </div>
-
-        {draftData.items.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 px-3 py-3 text-xs text-neutral-400">
-            項目がありません。
-          </div>
-        ) : (
-          draftData.items.map((item, index) => (
-            <div
-              key={`list-item-${index}`}
-              className="grid gap-2 md:grid-cols-[1fr_auto]"
-            >
-              <input
-                value={item}
-                onChange={(event) => updateDraftItem(index, event.target.value)}
-                onBlur={() => commitData()}
-                placeholder={`項目${index + 1}`}
-                className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
-              />
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => moveItem(index, "up")}
-                  disabled={index === 0}
-                  className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                >
-                  ↑
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => moveItem(index, "down")}
-                  disabled={index === draftData.items.length - 1}
-                  className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                >
-                  ↓
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  className="rounded-md border border-red-100 bg-red-50 px-2 py-1 text-[11px] text-red-600 hover:bg-red-100"
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-        <p className="mb-2 text-[11px] font-bold text-neutral-500">
-          公開表示プレビュー
-        </p>
-
-        <SsotUiPanelPreview raw={raw} />
-      </div>
-
+      </details>
     </div>
   );
+}
+
+function listDirectEditClasses(variant?: string) {
+  switch (variant) {
+    case "primary": return { border: "border-blue-200", bg: "bg-blue-50", text: "text-blue-800" };
+    case "success": return { border: "border-green-200", bg: "bg-green-50", text: "text-green-800" };
+    case "danger": return { border: "border-red-200", bg: "bg-red-50", text: "text-red-800" };
+    case "warning": return { border: "border-yellow-200", bg: "bg-yellow-50", text: "text-yellow-900" };
+    case "info": return { border: "border-cyan-200", bg: "bg-cyan-50", text: "text-cyan-800" };
+    case "dark": return { border: "border-neutral-300", bg: "bg-neutral-100", text: "text-neutral-900" };
+    case "light": return { border: "border-neutral-200", bg: "bg-white", text: "text-neutral-700" };
+    default: return { border: "border-neutral-200", bg: "bg-neutral-50", text: "text-neutral-700" };
+  }
 }
