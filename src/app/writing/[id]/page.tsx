@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
@@ -19,7 +19,6 @@ type WorkRow = {
 export default function WritingWorkPage() {
   const params = useParams<{ id: string }>();
   const workId = decodeURIComponent(params.id);
-  const searchParams = useSearchParams();
 
   const [work, setWork] = useState<WorkRow | null>(null);
   const [title, setTitle] = useState("");
@@ -28,13 +27,20 @@ export default function WritingWorkPage() {
   const [ssot, setSsot] = useState("");
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [editingPinned, setEditingPinned] = useState(() => searchParams.get("mode") === "editing");
+  const [editingPinned, setEditingPinned] = useState(false);
 
   const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
   const controlCandidateRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const mode = new URLSearchParams(window.location.search).get("mode");
+      setEditingPinned(mode === "editing");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
