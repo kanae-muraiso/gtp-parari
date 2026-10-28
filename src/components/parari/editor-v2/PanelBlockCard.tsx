@@ -346,6 +346,7 @@ export function PanelBlockCard({
                   <PanelStyleControls
                     value={panelStyle}
                     onChange={handleStyleChange}
+                    allowWidth={canChangeWidthForPanel(block.tag)}
                   />
                 ) : null}
               </div>
@@ -381,6 +382,11 @@ function modeLabel(mode: PanelCardMode): string {
 
 function panelWidthClass(tag: string): string {
   return "w-full";
+}
+
+function canChangeWidthForPanel(tag: string): boolean {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+  return normalizedTag !== "NOTICE";
 }
 
 function canStylePanel(tag: string): boolean {
