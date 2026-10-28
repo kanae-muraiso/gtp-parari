@@ -157,6 +157,7 @@ export function PanelBlockCard({
               }}
                               className={[
                                 "relative cursor-text rounded-xl border p-3 transition",
+                                isPageInfoPanel(block.tag) ? "min-h-[72px]" : "",
                                 panelFrameClass(block.tag, "view"),
                               ].join(" ")}
               title="クリックして編集"
@@ -326,6 +327,11 @@ function panelWidthClass(tag: string): string {
   return "w-full";
 }
 
+
+function isPageInfoPanel(tag: string): boolean {
+  const normalizedTag = tag.trim().toUpperCase();
+  return normalizedTag === "PAGE" || normalizedTag === "PAGEINFO";
+}
 
 function isInfoPanel(tag: string): boolean {
   const normalizedTag = tag.trim().toUpperCase();
