@@ -30,6 +30,12 @@ export default function QuickEditorPage() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (editingPinned) return;
+
+      if (isTextEditingTarget(event.target) || isTextEditingTarget(document.activeElement)) {
+        shiftCandidateRef.current = false;
+        setShiftPreview(false);
+        return;
+      }
       if (event.key === "Shift" && !event.repeat) {
         shiftCandidateRef.current = true;
         window.setTimeout(() => {
@@ -251,4 +257,19 @@ function createStableSlug() {
 
 function escapeMeta(value: string) {
   return value.replace(/\r?\n/g, " ").trim();
+}
+
+
+function isTextEditingTarget(target: EventTarget | Element | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT" ||
+    Boolean(target.closest('[contenteditable="true"]'))
+  );
 }
