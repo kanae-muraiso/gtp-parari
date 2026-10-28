@@ -109,7 +109,7 @@ export default function WritingWorkPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("ログインを確認できませんでした。");
-      const ssot = createPageSsot(current);
+      const ssot = mergeWritingIntoSsot(editingSsot || work.content || "", current);
       const response = await fetch("/api/works/update", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -251,9 +251,25 @@ function parsePageSsot(content: string) {
   return { title, mainImageUrl, body };
 }
 
-function createPageSsot({ title, mainImageUrl, body }: { title: string; mainImageUrl: string; body: string }) {
-  return ["[PAGE]", `title: ${escapeMeta(title)}`, "subtitle:", mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:",
-    "titleAlign: left", "visibility: unlisted", "workType: page", "", "[T]", body.trim(), ""].join("\n");
+function mergeWritingIntoSsot(existing: string, { title, mainImageUrl, body }: { title: string; mainImageUrl: string; body: string }) {
+  const source = String(existing || "");
+  if (!source.trim()) {
+    return ["[PAGE]", `title: ${escapeMeta(title)}`, "subtitle:", mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:",
+      "titleAlign: left", "visibility: unlisted", "workType: page", "", "[T]", body.trim(), ""].join("\n");
+  }
+  let next = source
+    .replace(/^title:\s*.*$/im, `title: ${escapeMeta(title)}`)
+    .replace(/^mainImage:\s*.*$/im, mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:");
+
+  const textStart = next.search(/^\[T\]\s*$/im);
+  if (textStart < 0) return [next.trimEnd(), "[T]", body.trim(), ""].join("\n");
+
+  const afterMarker = next.slice(textStart).match(/^\[T\]\s*\r?\n?/i)?.[0].length ?? 3;
+  const bodyStart = textStart + afterMarker;
+  const rest = next.slice(bodyStart);
+  const nextPanel = rest.search(/^\[[A-Z][A-Z0-9_]*(?::[^\]]+)?\](?:\s|$)/m);
+  const bodyEnd = nextPanel >= 0 ? bodyStart + nextPanel : next.length;
+  return next.slice(0, bodyStart) + body.trim() + "\n\n" + next.slice(bodyEnd).replace(/^\s+/, "");
 }
 
 function escapeMeta(value: string) { return value.replace(/\r?\n/g, " ").trim(); }
