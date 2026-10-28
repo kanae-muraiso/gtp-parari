@@ -28,9 +28,8 @@ export default function WritingSsotSurface({
   if (contentBlocks.length === 0) {
     return (
       <RichTextField
-        value="[T]\n"
-        onChange={(next) => {
-          const raw = stripTextMarker(next);
+        value=""
+        onChange={(raw) => {
           const suffix = value.trimEnd();
           onChange([suffix, "[T]", raw, ""].filter(Boolean).join("\n"));
         }}
@@ -70,9 +69,8 @@ function WritingBlock({
   if (block.kind === "text") {
     return (
       <RichTextField
-        value={`[T]\n${block.raw}`}
-        onChange={(next) => {
-          const raw = stripTextMarker(next);
+        value={block.raw}
+        onChange={(raw) => {
           const start = Math.max(0, block.start ?? 0);
           const end = Math.max(start, block.end ?? start);
           onChange(source.slice(0, start) + raw + source.slice(end));
@@ -91,6 +89,3 @@ function WritingBlock({
   );
 }
 
-function stripTextMarker(value: string) {
-  return String(value ?? "").replace(/^\s*\[T\](?::[^\]]+)?\s*\r?\n?/i, "");
-}
