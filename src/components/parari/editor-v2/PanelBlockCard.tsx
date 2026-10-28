@@ -123,16 +123,12 @@ export function PanelBlockCard({
               title={isInfoPanel(block.tag) ? `${displayPanelTag(block.tag)}を編集` : "PANELを開く"}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <span className="w-4 shrink-0 text-[11px] font-bold text-yellow-800">
+                <span className="w-4 shrink-0 text-[11px] font-bold text-neutral-500">
                   ▸
                 </span>
 
-                <span className="shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-800">
-                  {displayPanelTag(block.tag)}
-                </span>
-
                 {block.variant ? (
-                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-yellow-800 ring-1 ring-yellow-100">
+                  <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-500 ring-1 ring-neutral-200">
                     {block.variant}
                   </span>
                 ) : null}
@@ -205,16 +201,15 @@ export function PanelBlockCard({
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   title="VIEWに戻る"
                 >
-                  <span className="w-4 shrink-0 text-[11px] font-bold text-yellow-800">
+                  <span className="w-4 shrink-0 text-[11px] font-bold text-neutral-500">
                     ✎
                   </span>
-
-                  <span className="shrink-0 rounded-full bg-yellow-200 px-2 py-0.5 text-[11px] font-bold text-yellow-950">
-                    {displayPanelTag(block.tag)}
+                  <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                    編集
                   </span>
 
                   {block.variant ? (
-                    <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-yellow-800 ring-1 ring-yellow-200">
+                    <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-bold text-neutral-500 ring-1 ring-neutral-200">
                       {block.variant}
                     </span>
                   ) : null}
@@ -228,7 +223,7 @@ export function PanelBlockCard({
                   <button
                     type="button"
                     onClick={() => setMode("view")}
-                    className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-500 ring-1 ring-yellow-100 transition hover:bg-yellow-50"
+                    className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-500 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
                   >
                     完了
                   </button>
@@ -237,7 +232,7 @@ export function PanelBlockCard({
                     <button
                       type="button"
                       onClick={() => setMode("summary")}
-                      className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-400 ring-1 ring-yellow-100 transition hover:bg-yellow-50"
+                      className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-neutral-400 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
                     >
                       折りたたむ
                     </button>
@@ -278,7 +273,7 @@ export function PanelBlockCard({
                 </div>
               </div>
 
-              <div className="border-t border-yellow-200 pt-2">
+              <div className="border-t border-neutral-200 pt-2">
                               <Editor
                                 block={block}
                                 data={data as never}
@@ -339,30 +334,16 @@ function isInfoPanel(tag: string): boolean {
   );
 }
 
-function panelFrameClass(tag: string, mode: PanelCardMode): string {
-  const normalizedTag = tag.trim().toUpperCase();
-
-  if (normalizedTag === "BOOK" || normalizedTag === "BOOKINFO") {
-    return mode === "edit"
-      ? "border-red-400 bg-red-50/60"
-      : "border-red-300 bg-red-50/40 hover:border-red-400 hover:bg-red-50/70";
+function panelFrameClass(_tag: string, mode: PanelCardMode): string {
+  if (mode === "edit") {
+    return "border-neutral-300 bg-neutral-100";
   }
 
-  if (normalizedTag === "CHAPTER" || normalizedTag === "CHAPTERINFO") {
-    return mode === "edit"
-      ? "border-violet-500 bg-violet-50/70"
-      : "border-violet-300 bg-violet-50/50 hover:border-violet-500 hover:bg-violet-50/80";
+  if (mode === "summary") {
+    return "border-neutral-200 bg-neutral-100 hover:border-neutral-300 hover:bg-neutral-200/70";
   }
 
-  if (normalizedTag === "PAGE" || normalizedTag === "PAGEINFO") {
-    return mode === "edit"
-      ? "border-neutral-700 bg-neutral-50"
-      : "border-neutral-500 bg-neutral-50 hover:border-neutral-700 hover:bg-neutral-100";
-  }
-
-  return mode === "edit"
-    ? "border-neutral-300 bg-white"
-    : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/60";
+  return "border-neutral-200 bg-neutral-100 hover:border-neutral-300 hover:bg-neutral-200/60";
 }
 
 
