@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
             code: "REVISION_CONFLICT",
             currentRevision: currentWork.revision,
             message:
-              "この作品は別の共同編集者によって更新されています。",
+              "この作品は別の保存処理で更新されています。最新版を読み込んでから続けてください。",
           },
           { status: 409 },
         );
@@ -538,7 +538,7 @@ export async function POST(request: NextRequest) {
             ok: false,
             code: "REVISION_CONFLICT",
             message:
-              "この作品は別の共同編集者によって更新されています。",
+              "この作品は別の保存処理で更新されています。最新版を読み込んでから続けてください。",
           },
           { status: 409 },
         );
