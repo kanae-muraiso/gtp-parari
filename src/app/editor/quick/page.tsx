@@ -185,6 +185,51 @@ export default function QuickEditorPage() {
     }
   }
 
+  async function saveEditing(nextSsot: string) {
+    setEditingSsot(nextSsot);
+    setSaveState("saving");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!user || !session?.access_token) throw new Error("ログインを確認できませんでした。");
+
+      if (!workRef.current) {
+        if (!createRequestIdRef.current) createRequestIdRef.current = crypto.randomUUID();
+        const response = await fetch("/api/works/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            createRequestId: createRequestIdRef.current,
+            stableSlug: createStableSlug(),
+            template: { kind: "page", initialTitle: title.trim(), ssot: nextSsot },
+          }),
+        });
+        const result = await response.json().catch(() => null) as CreateWorkResponse | null;
+        if (!response.ok || !result?.ok || !result.id) throw new Error(result?.message ?? "保存できませんでした。");
+        const { data: saved, error } = await supabase.from("parari_books")
+          .select("id,revision,content").eq("id", result.id).eq("owner", user.id).single();
+        if (error || !saved) throw new Error("保存状態を確認できませんでした。");
+        workRef.current = saved;
+      }
+
+      const saved = workRef.current;
+      if (saved && saved.content !== nextSsot) {
+        const response = await fetch("/api/works/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ workId: saved.id, title: title.trim(), content: nextSsot, expectedRevision: saved.revision }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.ok) throw new Error(result?.message ?? "保存できませんでした。");
+        workRef.current = { id: saved.id, revision: result.revision, content: nextSsot };
+      }
+      setSaveState("saved");
+    } catch (error) {
+      setSaveState("error");
+      setMessage(error instanceof Error ? error.message : "保存できませんでした。");
+    }
+  }
+
   async function handlePickFile(file: File) {
     if (!file.type.startsWith("image/")) return;
     setSaveState("saving");
@@ -234,7 +279,7 @@ export default function QuickEditorPage() {
         {(editingPinned || shiftPreview) && editingSsot ? (
           <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
             <div className="mb-3 text-xs font-bold tracking-[0.16em] text-neutral-400">EDITING</div>
-            <PagePanelComposer value={editingSsot} onChange={setEditingSsot} />
+            <PagePanelComposer value={editingSsot} onChange={(next) => void saveEditing(next)} />
           </section>
         ) : <article className="mt-10 flex-1">
           {showTitle || title ? (
