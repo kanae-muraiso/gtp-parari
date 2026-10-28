@@ -9,6 +9,11 @@ import { getPanelDefinition } from "@/components/parari/panels/registry";
 import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { resolvePanelGap } from "@/components/parari/panels/shared/panelGap";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
+import {
+  parsePanelVisualStyle,
+  stripPanelStyleAttrs,
+  stripPanelVisualStyleFromRaw,
+} from "@/lib/parari/ssot-v2/panelStyle";
 import type {
   PanelBlock,
   SsotBlock,
@@ -137,8 +142,10 @@ function TextBlockView({
     return null;
   }
 
+  const panelStyle = parsePanelVisualStyle(block.attrs);
+
   return (
-    <React.Fragment>
+    <PanelFrame style={panelStyle} defaultWidth="text">
       {renderTextBlock({
         block,
         text,
@@ -146,7 +153,7 @@ function TextBlockView({
         tocHeadingStartIndex,
         tocHeadingIdPrefix,
       })}
-    </React.Fragment>
+    </PanelFrame>
   );
 }
 
@@ -160,7 +167,14 @@ function PanelBlockView({
   renderTextBlock: ReaderTextBlockRenderer;
 }) {
   const gap = resolvePanelGap(block);
-  const width = panelFrameWidthForBlock(block);
+  const panelStyle = parsePanelVisualStyle(block.attrs);
+  const defaultWidth = panelFrameDefaultWidthForBlock(block);
+  const contentRaw = stripPanelVisualStyleFromRaw(block.raw);
+  const contentBlock: PanelBlock = {
+    ...block,
+    raw: contentRaw,
+    attrs: stripPanelStyleAttrs(block.attrs),
+  };
 
   if (isTocBlock(block)) {
     if (tocEntries.length === 0) {
@@ -168,7 +182,7 @@ function PanelBlockView({
     }
 
     return (
-      <PanelFrame gap={gap} width="default">
+      <PanelFrame gap={gap} style={panelStyle} defaultWidth="panel">
         <PageTocPanel entries={tocEntries} />
       </PanelFrame>
     );
@@ -179,7 +193,7 @@ function PanelBlockView({
 
   if (!Renderer) {
     return (
-      <PanelFrame gap={gap} width={width}>
+      <PanelFrame gap={gap} style={panelStyle} defaultWidth={defaultWidth}>
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
           [{block.tag}] は表示用Rendererがまだありません。
         </div>
@@ -187,10 +201,10 @@ function PanelBlockView({
     );
   }
 
-  const data = definition.parse(block.raw, block);
+  const data = definition.parse(contentRaw, contentBlock);
 
   return (
-    <PanelFrame gap={gap} width={width}>
+    <PanelFrame gap={gap} style={panelStyle} defaultWidth={defaultWidth}>
       <Renderer
         block={block}
         data={data}
@@ -206,14 +220,20 @@ function PanelBlockView({
   );
 }
 
-function panelFrameWidthForBlock(block: PanelBlock): "default" | "full" {
+function panelFrameDefaultWidthForBlock(
+  block: PanelBlock,
+): "text" | "panel" | "full" {
   const tag = String(block.tag ?? "").trim().toUpperCase();
+
+  if (tag === "NOTICE") {
+    return "text";
+  }
 
   if (tag === "IMAGE" || tag === "CAROUSEL") {
     return "full";
   }
 
-  return "default";
+  return "panel";
 }
 
 function isTocBlock(block: PanelBlock): boolean {
