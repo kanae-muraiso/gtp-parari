@@ -1193,15 +1193,7 @@ function serializeNodeToSsot(node: LexicalNode): string {
             ? `${colorName}+${modifiers.join("+")}`
             : colorName;
 
-        if (
-          colorName === "red" &&
-          modifiers.length === 0
-        ) {
-          text = `!!${node.getTextContent()}!!`;
-        } else {
-          text = `!!${colorHeader}|${node.getTextContent()}!!`;
-        }
-
+        text = `!!${colorHeader}|${node.getTextContent()}!!`;
         return text;
       }
 
@@ -1340,14 +1332,26 @@ function parseInlineMarkdownLikeText(line: string): InlinePart[] {
           .filter(Boolean) ?? [];
         const candidate = headerTokens[0] ?? "";
         const color = isRichTextColorName(candidate) ? candidate : "red";
+        let body =
+          namedColorMatch && isRichTextColorName(candidate)
+            ? namedColorMatch[2]
+            : inner;
+        let bold = headerTokens.includes("bold");
+        let italic = headerTokens.includes("italic");
+
+        if (!bold && body.startsWith("**") && body.endsWith("**") && body.length >= 4) {
+          body = body.slice(2, -2);
+          bold = true;
+        } else if (!italic && body.startsWith("*") && body.endsWith("*") && body.length >= 2) {
+          body = body.slice(1, -1);
+          italic = true;
+        }
 
         parts.push({
-          text: namedColorMatch && isRichTextColorName(candidate)
-            ? namedColorMatch[2]
-            : inner,
+          text: body,
           color,
-          bold: headerTokens.includes("bold"),
-          italic: headerTokens.includes("italic"),
+          bold,
+          italic,
         });
         lastIndex = match.index + token.length;
         continue;
