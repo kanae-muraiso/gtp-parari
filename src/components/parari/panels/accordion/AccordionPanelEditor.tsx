@@ -53,7 +53,7 @@ export function AccordionPanelEditor({
   const bodyClasses = accordionDirectEditClasses(draftData.bodyVariant);
 
   return (
-    <div className={["overflow-hidden rounded-2xl border shadow-sm", headerClasses.border].join(" ")}>
+    <div className="shadow-sm">
       <div className={["px-4 py-3", headerClasses.bg].join(" ")}>
         <input
           value={draftData.title}
@@ -77,7 +77,7 @@ export function AccordionPanelEditor({
       </div>
 
       <details className="border-t border-neutral-200 bg-white px-4 py-2 text-xs text-neutral-500">
-        <summary className="cursor-pointer select-none font-bold">設定</summary>
+        <summary className="cursor-pointer select-none font-bold">配色</summary>
         <div className="mt-2 flex flex-wrap gap-3 pb-1">
           <label className="flex items-center gap-2">
             見出し色
