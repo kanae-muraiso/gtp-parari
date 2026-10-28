@@ -1335,7 +1335,7 @@ export default function MyWorksPage() {
                         </Link>
 
                         <Link
-                          href={`/editor-v2/${work.id}`}
+                          href={`/writing/${work.id}?mode=editing`}
                           className="inline-flex w-full justify-center rounded-full bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50 sm:w-auto"
                         >
                           Editing
@@ -1662,7 +1662,7 @@ export default function MyWorksPage() {
                           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
 
                           <Link
-                            href={`/editor-v2/${work.id}`}
+                            href={`/writing/${work.id}?mode=editing`}
                             className="inline-flex w-full justify-center rounded-full bg-neutral-900 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-neutral-700 sm:w-auto"
                           >
                             編集
