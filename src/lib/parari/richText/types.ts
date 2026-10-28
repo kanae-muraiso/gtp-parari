@@ -2,6 +2,7 @@
 // 2026-04-15 JST
 
 import type React from "react";
+import type { RichTextColorName } from "./textColors";
 
 /**
  * PART: Rich Text 型定義
@@ -61,6 +62,7 @@ export type RichColorInline = {
   type: "color";
   text: React.ReactNode;
   tone?: RichColorTone;
+  color?: RichTextColorName;
 };
 
 export type RichColorTone =
