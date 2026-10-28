@@ -3,35 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
-import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
+import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
-
-type CreateWorkResponse = {
-  ok?: boolean;
-  id?: string;
-  message?: string;
-};
+type CreateWorkResponse = { ok?: boolean; id?: string; message?: string };
 
 export default function QuickEditorPage() {
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
   const [mainImageUrl, setMainImageUrl] = useState("");
   const [showTitle, setShowTitle] = useState(false);
+  const [ssot, setSsot] = useState(() => createBlankPageSsot());
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
   const [shiftPreview, setShiftPreview] = useState(false);
-  const [editingSsot, setEditingSsot] = useState("");
-  const shiftCandidateRef = useRef(false);
 
   const workRef = useRef<{ id: string; revision: number; content: string } | null>(null);
   const createRequestIdRef = useRef<string | null>(null);
+  const stableSlugRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef({ title: "", body: "", mainImageUrl: "" });
-
-  latestRef.current = { title, body, mainImageUrl };
+  const saveLockRef = useRef(false);
+  const pendingSaveRef = useRef<string | null>(null);
+  const shiftCandidateRef = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -67,127 +61,24 @@ export default function QuickEditorPage() {
     };
   }, [editingPinned]);
 
-  useEffect(() => {
-    const hasContent = Boolean(body.trim() || mainImageUrl.trim());
-    if (!hasContent) return;
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  function scheduleSave(nextSsot: string) {
+    setSsot(nextSsot);
     setSaveState("idle");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => void saveSsot(nextSsot), 900);
+  }
 
-    saveTimerRef.current = setTimeout(() => {
-      void saveDraft();
-    }, 900);
+  async function saveSsot(nextSsot: string) {
+    if (!hasMeaningfulContent(nextSsot)) return;
+    if (saveLockRef.current) {
+      pendingSaveRef.current = nextSsot;
+      return;
+    }
 
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [title, body, mainImageUrl]);
-
-  async function saveDraft() {
-    const current = latestRef.current;
-    const cleanBody = current.body.trim();
-    if (!cleanBody && !current.mainImageUrl.trim()) return;
-
+    saveLockRef.current = true;
     setSaveState("saving");
     setMessage("");
 
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!user || !session?.access_token) {
-        setSaveState("error");
-        setMessage("ログインを確認できませんでした。");
-        return;
-      }
-
-      const content = editingSsot.trim()
-        ? mergeWritingIntoSsot(editingSsot, {
-            title: current.title,
-            mainImageUrl: current.mainImageUrl,
-            body: cleanBody,
-          })
-        : createQuickPageSsot({
-            title: current.title,
-            mainImageUrl: current.mainImageUrl,
-            body: cleanBody,
-          });
-
-      if (!workRef.current) {
-        if (!createRequestIdRef.current) {
-          createRequestIdRef.current = crypto.randomUUID();
-        }
-
-        const response = await fetch("/api/works/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            createRequestId: createRequestIdRef.current,
-            stableSlug: createStableSlug(),
-            template: {
-              kind: "page",
-              initialTitle: current.title.trim(),
-              ssot: content,
-            },
-          }),
-        });
-
-        const result = (await response.json().catch(() => null)) as CreateWorkResponse | null;
-        if (!response.ok || !result?.ok || !result.id) {
-          throw new Error(result?.message ?? "保存できませんでした。");
-        }
-
-        const { data: saved, error } = await supabase
-          .from("parari_books")
-          .select("id,revision,content")
-          .eq("id", result.id)
-          .eq("owner", user.id)
-          .single();
-
-        if (error || !saved) throw new Error("保存状態を確認できませんでした。");
-        workRef.current = saved;
-      }
-
-      const saved = workRef.current;
-      if (saved && saved.content !== content) {
-        const response = await fetch("/api/works/update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            workId: saved.id,
-            title: current.title.trim(),
-            content,
-            expectedRevision: saved.revision,
-          }),
-        });
-        const result = await response.json().catch(() => null);
-        if (!response.ok || !result?.ok) {
-          throw new Error(result?.message ?? "保存できませんでした。");
-        }
-        workRef.current = { id: saved.id, revision: result.revision, content };
-      }
-
-      setEditingSsot(content);
-      setSaveState("saved");
-    } catch (error) {
-      setSaveState("error");
-      setMessage(error instanceof Error ? error.message : "保存できませんでした。");
-    }
-  }
-
-  async function saveEditing(nextSsot: string) {
-    setEditingSsot(nextSsot);
-    setSaveState("saving");
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: { session } } = await supabase.auth.getSession();
@@ -195,17 +86,20 @@ export default function QuickEditorPage() {
 
       if (!workRef.current) {
         if (!createRequestIdRef.current) createRequestIdRef.current = crypto.randomUUID();
+        if (!stableSlugRef.current) stableSlugRef.current = createStableSlug();
+
         const response = await fetch("/api/works/create", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({
             createRequestId: createRequestIdRef.current,
-            stableSlug: createStableSlug(),
+            stableSlug: stableSlugRef.current,
             template: { kind: "page", initialTitle: title.trim(), ssot: nextSsot },
           }),
         });
         const result = await response.json().catch(() => null) as CreateWorkResponse | null;
         if (!response.ok || !result?.ok || !result.id) throw new Error(result?.message ?? "保存できませんでした。");
+
         const { data: saved, error } = await supabase.from("parari_books")
           .select("id,revision,content").eq("id", result.id).eq("owner", user.id).single();
         if (error || !saved) throw new Error("保存状態を確認できませんでした。");
@@ -217,47 +111,57 @@ export default function QuickEditorPage() {
         const response = await fetch("/api/works/update", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ workId: saved.id, title: title.trim(), content: nextSsot, expectedRevision: saved.revision }),
+          body: JSON.stringify({
+            workId: saved.id,
+            title: title.trim(),
+            content: nextSsot,
+            expectedRevision: saved.revision,
+          }),
         });
         const result = await response.json().catch(() => null);
         if (!response.ok || !result?.ok) throw new Error(result?.message ?? "保存できませんでした。");
         workRef.current = { id: saved.id, revision: result.revision, content: nextSsot };
       }
+
       setSaveState("saved");
     } catch (error) {
       setSaveState("error");
       setMessage(error instanceof Error ? error.message : "保存できませんでした。");
+    } finally {
+      saveLockRef.current = false;
+      const pending = pendingSaveRef.current;
+      pendingSaveRef.current = null;
+      if (pending && pending !== workRef.current?.content) {
+        window.setTimeout(() => void saveSsot(pending), 50);
+      }
     }
+  }
+
+  function changeTitle(nextTitle: string) {
+    setTitle(nextTitle);
+    scheduleSave(updatePageMeta(ssot, nextTitle, mainImageUrl));
   }
 
   async function handlePickFile(file: File) {
     if (!file.type.startsWith("image/")) return;
     setSaveState("saving");
-
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("ログインが必要です。");
-
-      const blob = await compressImageToJpeg(file, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.72,
-      });
-      const uploadPath = `${user.id}/quick/${Date.now()}-${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage
-        .from("parari-images")
-        .upload(uploadPath, blob, { contentType: "image/jpeg", upsert: false });
+      const blob = await compressImageToJpeg(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.72 });
+      const path = `${user.id}/quick/${Date.now()}-${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage.from("parari-images").upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (error) throw error;
-
-      const { data } = supabase.storage.from("parari-images").getPublicUrl(uploadPath);
+      const { data } = supabase.storage.from("parari-images").getPublicUrl(path);
       setMainImageUrl(data.publicUrl);
+      scheduleSave(updatePageMeta(ssot, title, data.publicUrl));
     } catch (error) {
       setSaveState("error");
       setMessage(error instanceof Error ? error.message : "画像を追加できませんでした。");
     }
   }
+
+  const editingActive = editingPinned || shiftPreview;
 
   return (
     <main className="min-h-screen bg-white">
@@ -276,114 +180,75 @@ export default function QuickEditorPage() {
           </div>
         </header>
 
-        {(editingPinned || shiftPreview) && editingSsot ? (
+        {editingActive ? (
           <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
             <div className="mb-3 text-xs font-bold tracking-[0.16em] text-neutral-400">EDITING</div>
-            <PagePanelComposer value={editingSsot} onChange={(next) => void saveEditing(next)} />
+            <PagePanelComposer value={ssot} onChange={scheduleSave} />
           </section>
-        ) : <article className="mt-10 flex-1">
-          {showTitle || title ? (
-            <input
-              autoFocus={showTitle && !title}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="タイトル"
-              className="mb-7 w-full border-0 bg-transparent p-0 text-3xl font-bold leading-tight text-neutral-950 outline-none placeholder:text-neutral-300"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowTitle(true)}
-              className="mb-5 text-xs font-bold text-neutral-300 transition hover:text-neutral-600"
-            >
-              ＋ タイトル
-            </button>
-          )}
+        ) : (
+          <article className="mt-10 flex-1">
+            {showTitle || title ? (
+              <input value={title} onChange={e => changeTitle(e.target.value)} placeholder="タイトル"
+                className="mb-7 w-full border-0 bg-transparent p-0 text-3xl font-bold leading-tight text-neutral-950 outline-none placeholder:text-neutral-300" />
+            ) : (
+              <button type="button" onClick={() => setShowTitle(true)}
+                className="mb-5 text-xs font-bold text-neutral-300 transition hover:text-neutral-600">＋ タイトル</button>
+            )}
 
-          {mainImageUrl ? (
-            <div className="mb-7">
-              <img src={mainImageUrl} alt="" className="max-h-[420px] w-full rounded-xl object-contain" />
-              <button
-                type="button"
-                onClick={() => setMainImageUrl("")}
-                className="mt-2 text-xs text-neutral-300 transition hover:text-neutral-600"
-              >
-                画像を外す
-              </button>
-            </div>
-          ) : null}
+            {mainImageUrl ? (
+              <div className="mb-7">
+                <img src={mainImageUrl} alt="" className="max-h-[420px] w-full rounded-xl object-contain" />
+                <button type="button" onClick={() => {
+                  setMainImageUrl("");
+                  scheduleSave(updatePageMeta(ssot, title, ""));
+                }} className="mt-2 text-xs text-neutral-300 hover:text-neutral-600">画像を外す</button>
+              </div>
+            ) : null}
 
-          <RichTextField
-            value={body ? `[T]\n${body}` : "[T]\n"}
-            onChange={(next) => setBody(next.replace(/^\s*\[T\]\s*\r?\n?/i, ""))}
-            placeholder="書き始める…"
-            minHeightClassName="min-h-[65vh]"
-            quiet
-          />
-        </article>}
+            <WritingSsotSurface value={ssot} onChange={scheduleSave} />
+          </article>
+        )}
 
-        {!(editingPinned || shiftPreview) ? <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
-          <label className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold text-neutral-500 transition hover:bg-neutral-100">
-            画像
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handlePickFile(file);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-        </footer> : null}
+        {!editingActive ? (
+          <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+            <label className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">
+              画像
+              <input type="file" accept="image/*" className="hidden" onChange={e => {
+                const file = e.target.files?.[0]; if (file) void handlePickFile(file); e.currentTarget.value = "";
+              }} />
+            </label>
+          </footer>
+        ) : null}
       </div>
     </main>
   );
 }
 
-function createQuickPageSsot({
-  title,
-  mainImageUrl,
-  body,
-}: {
-  title: string;
-  mainImageUrl: string;
-  body: string;
-}) {
-  return [
-    "[PAGE]",
-    `title: ${escapeMetaValue(title)}`,
-    "subtitle:",
-    mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:",
-    "titleAlign: left",
-    "visibility: unlisted",
-    "workType: page",
-    "",
-    "[T]",
-    body.trim(),
-    "",
-  ].join("\n");
+function createBlankPageSsot() {
+  return ["[PAGE]", "title:", "subtitle:", "mainImage:", "titleAlign: left", "visibility: unlisted", "workType: page", "", "[T]", ""].join("\n");
 }
 
-function mergeWritingIntoSsot(existing: string, { title, mainImageUrl, body }: { title: string; mainImageUrl: string; body: string }) {
-  let next = String(existing || "")
-    .replace(/^title:\s*.*$/im, `title: ${escapeMetaValue(title)}`)
-    .replace(/^mainImage:\s*.*$/im, mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:");
-  const textStart = next.search(/^\[T\]\s*$/im);
-  if (textStart < 0) return [next.trimEnd(), "[T]", body.trim(), ""].join("\n");
-  const markerLength = next.slice(textStart).match(/^\[T\]\s*\r?\n?/i)?.[0].length ?? 3;
-  const bodyStart = textStart + markerLength;
-  const rest = next.slice(bodyStart);
-  const nextPanel = rest.search(/^\[[A-Z][A-Z0-9_]*(?::[^\]]+)?\](?:\s|$)/m);
-  const bodyEnd = nextPanel >= 0 ? bodyStart + nextPanel : next.length;
-  return next.slice(0, bodyStart) + body.trim() + "\n\n" + next.slice(bodyEnd).replace(/^\s+/, "");
+function updatePageMeta(source: string, title: string, mainImageUrl: string) {
+  let next = String(source || createBlankPageSsot());
+  next = next.replace(/^title:\s*.*$/im, `title: ${escapeMeta(title)}`);
+  next = next.replace(/^mainImage:\s*.*$/im, mainImageUrl.trim() ? `mainImage: ${mainImageUrl.trim()}` : "mainImage:");
+  return next;
+}
+
+function hasMeaningfulContent(source: string) {
+  const stripped = String(source ?? "")
+    .replace(/^\[(PAGE|PAGEINFO)\].*$/gim, "")
+    .replace(/^(title|subtitle|mainImage|titleAlign|visibility|workType):.*$/gim, "")
+    .replace(/^\[T\]\s*$/gim, "")
+    .replace(/\s+/g, "")
+    .trim();
+  return stripped.length > 0;
 }
 
 function createStableSlug() {
   return `page-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function escapeMetaValue(value: string) {
+function escapeMeta(value: string) {
   return value.replace(/\r?\n/g, " ").trim();
 }
