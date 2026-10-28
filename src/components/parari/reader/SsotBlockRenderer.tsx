@@ -153,13 +153,7 @@ function RichCard({
   const classes = variantClasses[variant];
 
   return (
-    <div
-      className={[
-        "my-4 rounded-2xl border p-4 shadow-sm",
-        classes.border,
-        classes.softBg,
-      ].join(" ")}
-    >
+    <div className={["shadow-sm", classes.softBg].join(" ")}>
       {title ? (
         <div className={["mb-2 text-sm font-semibold", classes.text].join(" ")}>
           {title}
@@ -192,12 +186,7 @@ function RichAccordion({
   const bodyClasses = variantClasses[bodyVariant];
 
   return (
-    <div
-      className={[
-        "my-4 overflow-hidden rounded-2xl border shadow-sm",
-        headerClasses.border,
-      ].join(" ")}
-    >
+    <div className="shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
