@@ -142,7 +142,7 @@ function TextBlockView({
     return null;
   }
 
-  const panelStyle = resolvePanelVisualStyle(block.kind === "panel" ? block.tag : "TEXT", block.attrs, block.kind === "panel" ? block.variant : undefined);
+  const panelStyle = resolvePanelVisualStyle("TEXT", block.attrs);
 
   return (
     <PanelFrame style={panelStyle} defaultWidth="text">
@@ -167,7 +167,7 @@ function PanelBlockView({
   renderTextBlock: ReaderTextBlockRenderer;
 }) {
   const gap = resolvePanelGap(block);
-  const panelStyle = resolvePanelVisualStyle(block.kind === "panel" ? block.tag : "TEXT", block.attrs, block.kind === "panel" ? block.variant : undefined);
+  const panelStyle = resolvePanelVisualStyle(block.tag, block.attrs, block.variant);
   const defaultWidth = panelFrameDefaultWidthForBlock(block);
   const contentRaw = stripPanelVisualStyleFromRaw(block.raw);
   const contentBlock: PanelBlock = {
