@@ -199,7 +199,7 @@ export function ImagePanelEditor({
   const raw = serializeImagePanel(draftData);
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+    <div className="rounded-xl border border-yellow-200 bg-white p-3">
       <input
         ref={fileInputRef}
         type="file"
@@ -218,6 +218,9 @@ export function ImagePanelEditor({
 
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
+          <span className="rounded-full bg-yellow-100 px-2 py-1 text-[11px] font-bold text-yellow-900">
+            IMAGE 専用エディタ
+          </span>
           <p className="mt-2 text-xs leading-5 text-neutral-600">
             画像URL、画像幅、画像下余白、キャプションを編集します。
           </p>
