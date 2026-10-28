@@ -1,467 +1,243 @@
-// src/app/editor/quick/page.tsx
-// 2026/08/04 6:51
-
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 
-type SaveStatus =
-  | { type: "idle"; message: string }
-  | { type: "saving"; message: string }
-  | { type: "success"; message: string; url: string }
-  | { type: "error"; message: string };
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 type CreateWorkResponse = {
   ok?: boolean;
   id?: string;
   message?: string;
-  code?: string;
-  plan?: string;
-  isMonitor?: boolean;
-  currentCount?: number;
-  limit?: number | null;
 };
 
 export default function QuickEditorPage() {
-  const router = useRouter();
-
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [mainImageUrl, setMainImageUrl] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const [status, setStatus] = useState<SaveStatus>({
-    type: "idle",
-    message: "",
-  });
-    
-  const saveLockRef = useRef(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [message, setMessage] = useState("");
+
+  const workRef = useRef<{ id: string; revision: number; content: string } | null>(null);
   const createRequestIdRef = useRef<string | null>(null);
-  const savedWorkRef = useRef<{ id: string; revision: number; content: string } | null>(null);
-  const savedInputRef = useRef("");
-  const currentInputRef = useRef("");
-  currentInputRef.current = JSON.stringify([title, body, mainImageUrl]);
-    
-  const fallbackTitle = useMemo(() => createFallbackTitle(), []);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestRef = useRef({ title: "", body: "", mainImageUrl: "" });
 
-  const effectiveTitle = title.trim() || fallbackTitle;
+  latestRef.current = { title, body, mainImageUrl };
 
-  const handlePickFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setStatus({
-        type: "error",
-        message: "画像ファイルを選んでください。",
-      });
-      return;
-    }
+  useEffect(() => {
+    const hasContent = Boolean(body.trim() || mainImageUrl.trim());
+    if (!hasContent) return;
 
-    setStatus({
-      type: "saving",
-      message: "画像をアップロードしています…",
-    });
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveState("idle");
+
+    saveTimerRef.current = setTimeout(() => {
+      void saveDraft();
+    }, 900);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [title, body, mainImageUrl]);
+
+  async function saveDraft() {
+    const current = latestRef.current;
+    const cleanBody = current.body.trim();
+    if (!cleanBody && !current.mainImageUrl.trim()) return;
+
+    setSaveState("saving");
+    setMessage("");
 
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (userError || !userData.user) {
-        setStatus({
-          type: "error",
-          message: "ログインが必要です。",
-        });
+      if (!user || !session?.access_token) {
+        setSaveState("error");
+        setMessage("ログインを確認できませんでした。");
         return;
       }
+
+      const content = createQuickPageSsot({
+        title: current.title,
+        mainImageUrl: current.mainImageUrl,
+        body: cleanBody,
+      });
+
+      if (!workRef.current) {
+        if (!createRequestIdRef.current) {
+          createRequestIdRef.current = crypto.randomUUID();
+        }
+
+        const response = await fetch("/api/works/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            createRequestId: createRequestIdRef.current,
+            stableSlug: createStableSlug(),
+            template: {
+              kind: "page",
+              initialTitle: current.title.trim(),
+              ssot: content,
+            },
+          }),
+        });
+
+        const result = (await response.json().catch(() => null)) as CreateWorkResponse | null;
+        if (!response.ok || !result?.ok || !result.id) {
+          throw new Error(result?.message ?? "保存できませんでした。");
+        }
+
+        const { data: saved, error } = await supabase
+          .from("parari_books")
+          .select("id,revision,content")
+          .eq("id", result.id)
+          .eq("owner", user.id)
+          .single();
+
+        if (error || !saved) throw new Error("保存状態を確認できませんでした。");
+        workRef.current = saved;
+      }
+
+      const saved = workRef.current;
+      if (saved && saved.content !== content) {
+        const response = await fetch("/api/works/update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            workId: saved.id,
+            title: current.title.trim(),
+            content,
+            expectedRevision: saved.revision,
+          }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.ok) {
+          throw new Error(result?.message ?? "保存できませんでした。");
+        }
+        workRef.current = { id: saved.id, revision: result.revision, content };
+      }
+
+      setSaveState("saved");
+    } catch (error) {
+      setSaveState("error");
+      setMessage(error instanceof Error ? error.message : "保存できませんでした。");
+    }
+  }
+
+  async function handlePickFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    setSaveState("saving");
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("ログインが必要です。");
 
       const blob = await compressImageToJpeg(file, {
         maxWidth: 1200,
         maxHeight: 1200,
         quality: 0.72,
       });
-
-      const uploadPath = [
-        userData.user.id,
-        "quick",
-        `${Date.now()}-${crypto.randomUUID()}.jpg`,
-      ].join("/");
-
-      const { error: uploadError } = await supabase.storage
+      const uploadPath = `${user.id}/quick/${Date.now()}-${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage
         .from("parari-images")
-        .upload(uploadPath, blob, {
-          contentType: "image/jpeg",
-          upsert: false,
-        });
+        .upload(uploadPath, blob, { contentType: "image/jpeg", upsert: false });
+      if (error) throw error;
 
-      if (uploadError) {
-        setStatus({
-          type: "error",
-          message: `画像アップロード失敗: ${uploadError.message}`,
-        });
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("parari-images")
-        .getPublicUrl(uploadPath);
-
-      setMainImageUrl(publicUrlData.publicUrl);
-      setStatus({
-        type: "idle",
-        message: "画像を設定しました。",
-      });
+      const { data } = supabase.storage.from("parari-images").getPublicUrl(uploadPath);
+      setMainImageUrl(data.publicUrl);
     } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error instanceof Error
-            ? `画像処理に失敗しました: ${error.message}`
-            : "画像処理に失敗しました。",
-      });
+      setSaveState("error");
+      setMessage(error instanceof Error ? error.message : "画像を追加できませんでした。");
     }
-  };
-
-    const handleSave = async (copyUrl = true) => {
-      if (saveLockRef.current) {
-        return;
-      }
-
-      const cleanBody = body.trim();
-
-    if (!cleanBody && !mainImageUrl.trim()) {
-      setStatus({
-        type: "error",
-        message: "本文か写真を入れてください。",
-      });
-      return;
-    }
-
-    saveLockRef.current = true;
-        
-        if (!createRequestIdRef.current) {
-          createRequestIdRef.current = crypto.randomUUID();
-        }
-
-        const createRequestId = createRequestIdRef.current;
-        
-    setStatus({
-      type: "saving",
-      message: "保存しています…",
-    });
-
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !userData.user) {
-        setStatus({
-          type: "error",
-          message: "ログインが必要です。",
-        });
-        return;
-      }
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError || !session?.access_token) {
-        setStatus({
-          type: "error",
-          message: "ログインセッションを確認できませんでした。",
-        });
-        return;
-      }
-
-      const publicUsername = await resolvePublicUsername(userData.user);
-      const stableSlug = createStableSlug();
-      const content = createQuickPageSsot({
-        title: effectiveTitle,
-        mainImageUrl,
-        body: cleanBody,
-      });
-
-      const inputAtSave = JSON.stringify([title, body, mainImageUrl]);
-      let result: CreateWorkResponse | null = savedWorkRef.current ? { ok: true, id: savedWorkRef.current.id } : null;
-      if (!result) {
-      const response = await fetch("/api/works/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-          body: JSON.stringify({
-            createRequestId,
-            stableSlug,
-            template: {
-              kind: "page",
-              initialTitle: effectiveTitle,
-              ssot: content,
-            },
-          }),
-      });
-
-      result = (await response.json().catch(() => null)) as
-        | CreateWorkResponse
-        | null;
-
-      if (!response.ok || !result?.ok || !result.id) {
-        setStatus({
-          type: "error",
-          message:
-            result?.message ??
-            "作品の保存に失敗しました。",
-        });
-        return;
-      }
-
-      }
-      if (!result?.id) return false;
-      // A retry may return the work created by an earlier request. Confirm its saved revision.
-      if (!savedWorkRef.current) {
-        const { data: saved, error: readError } = await supabase.from("parari_books")
-          .select("id,revision,content").eq("id", result.id).eq("owner", userData.user.id).single();
-        if (readError || !saved) throw new Error("保存状態を確認できませんでした。もう一度保存してください。");
-        savedWorkRef.current = saved;
-      }
-      const saved = savedWorkRef.current!;
-      if (saved.content !== content) {
-        const update = await fetch("/api/works/update", {
-          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ workId: saved.id, title: effectiveTitle, content, expectedRevision: saved.revision }),
-        });
-        const updated = await update.json();
-        if (!update.ok || !updated.ok) throw new Error(updated.message || "作品を保存できませんでした。");
-        savedWorkRef.current = { id: saved.id, revision: updated.revision, content };
-      }
-      savedInputRef.current = inputAtSave;
-      const url = `${window.location.origin}/p/${result.id}`;
-      let copied = false;
-      if (copyUrl) { try { await copyToClipboard(url); copied = true; } catch { /* The work is still saved. */ } }
-      setStatus({ type: "success", message: copied ? "保存しました。URLをコピーしました。" : "保存しました。", url });
-      return true;
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error instanceof Error
-            ? `保存に失敗しました: ${error.message}`
-            : "保存に失敗しました。",
-      });
-    } finally {
-      saveLockRef.current = false;
-    }
-  };
-
-  useParticipationLeaveGuard(async () => {
-    if (status.type === "saving" || saveLockRef.current) return false;
-    const input = currentInputRef.current;
-    if (input === savedInputRef.current || (!title && !body && !mainImageUrl)) return true;
-    const saved = await handleSave(false);
-    return saved === true && currentInputRef.current === savedInputRef.current;
-  });
+  }
 
   return (
-    <main className="min-h-screen bg-neutral-100">
-      <ParariOwnerTopBar
-        title="STUDIO · 今すぐ書く"
-        leftHref="/my/works"
-        leftLabel="作品リストへ"
-        actions={
-          <ParariTopBarButton onClick={() => void handleSave()} disabled={status.type === "saving"}>
-            保存してURLコピー
-          </ParariTopBarButton>
-        }
-      />
-
-      <div className="mx-auto max-w-[720px] px-4 py-5">
-        <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <div className="mb-5">
-            <div className="text-xs font-bold tracking-[0.2em] text-neutral-400">
-              QUICK PAGE
-            </div>
-            <h1 className="mt-2 text-2xl font-bold text-neutral-950">
-              今すぐ書く
-            </h1>
-            <p className="mt-2 text-sm leading-7 text-neutral-500">
-              タイトル、写真、本文だけでPAGEを作ります。保存するとURLをコピーします。
-            </p>
+    <main className="min-h-screen bg-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 pt-5 sm:px-8">
+        <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
+          <a href="/my/works" className="font-bold transition hover:text-neutral-700">
+            PARARI
+          </a>
+          <div aria-live="polite">
+            {saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}
           </div>
+        </header>
 
-          <div className="space-y-5">
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold text-neutral-500">
-                タイトル
-              </span>
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={`空欄なら「${fallbackTitle}」になります`}
-                className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-base outline-none transition focus:border-neutral-400 focus:bg-white"
-              />
-              <p className="mt-1 text-[11px] leading-5 text-neutral-400">
-                空欄なら今の日付と時間をタイトルにします。場所は後で入れられるようにします。
-              </p>
-            </label>
+        <article className="mt-10 flex-1">
+          {showTitle || title ? (
+            <input
+              autoFocus={showTitle && !title}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="タイトル"
+              className="mb-7 w-full border-0 bg-transparent p-0 text-3xl font-bold leading-tight text-neutral-950 outline-none placeholder:text-neutral-300"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowTitle(true)}
+              className="mb-5 text-xs font-bold text-neutral-300 transition hover:text-neutral-600"
+            >
+              ＋ タイトル
+            </button>
+          )}
 
-            <div>
-              <div className="mb-1 text-xs font-bold text-neutral-500">
-                写真
-              </div>
-
-              <label
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDragging(false);
-
-                  const file = event.dataTransfer.files?.[0];
-
-                  if (file) {
-                    void handlePickFile(file);
-                  }
-                }}
-                className={[
-                  "flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-4 py-6 text-center transition",
-                  isDragging
-                    ? "border-neutral-900 bg-neutral-100"
-                    : "border-neutral-300 bg-neutral-50 hover:bg-neutral-100",
-                ].join(" ")}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-
-                    if (file) {
-                      void handlePickFile(file);
-                    }
-
-                    event.currentTarget.value = "";
-                  }}
-                />
-
-                {mainImageUrl ? (
-                  <img
-                    src={mainImageUrl}
-                    alt=""
-                    className="max-h-[260px] w-full rounded-2xl object-contain"
-                  />
-                ) : (
-                  <>
-                    <div className="text-sm font-bold text-neutral-800">
-                      写真を選ぶ
-                    </div>
-                    <div className="mt-2 text-xs leading-6 text-neutral-400">
-                      クリックして選択、またはデスクトップからドラッグ&ドロップ
-                    </div>
-                  </>
-                )}
-              </label>
-
-              {mainImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() => setMainImageUrl("")}
-                  className="mt-2 text-xs font-bold text-neutral-400 transition hover:text-neutral-700"
-                >
-                  写真を外す
-                </button>
-              ) : null}
-            </div>
-
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold text-neutral-500">
-                本文
-              </span>
-              <textarea
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-                placeholder="ここに本文を書きます。"
-                className="min-h-[320px] w-full resize-y rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-base leading-8 outline-none transition focus:border-neutral-400 focus:bg-white"
-              />
-            </label>
-
-            <div className="flex flex-wrap items-center gap-3">
+          {mainImageUrl ? (
+            <div className="mb-7">
+              <img src={mainImageUrl} alt="" className="max-h-[420px] w-full rounded-xl object-contain" />
               <button
                 type="button"
-                onClick={() => void handleSave()}
-                disabled={status.type === "saving"}
-                className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => setMainImageUrl("")}
+                className="mt-2 text-xs text-neutral-300 transition hover:text-neutral-600"
               >
-                {status.type === "saving" ? "保存中…" : "保存してURLコピー"}
+                画像を外す
               </button>
-
-              {status.message ? (
-                <span
-                  className={[
-                    "text-sm leading-6",
-                    status.type === "error"
-                      ? "text-red-600"
-                      : status.type === "success"
-                        ? "text-emerald-700"
-                        : "text-neutral-500",
-                  ].join(" ")}
-                >
-                  {status.message}
-                </span>
-              ) : null}
             </div>
+          ) : null}
 
-            {status.type === "success" ? (
-              <div className="rounded-2xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-900">
-                <div className="font-bold">URLをコピーしました</div>
-                <a
-                  href={status.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all underline underline-offset-4"
-                >
-                  {status.url}
-                </a>
-              </div>
-            ) : null}
-          </div>
-        </section>
+          <textarea
+            autoFocus
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="書き始める…"
+            className="min-h-[65vh] w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-8 text-neutral-900 outline-none placeholder:text-neutral-300"
+          />
+        </article>
+
+        <footer className="fixed bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+          <label className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold text-neutral-500 transition hover:bg-neutral-100">
+            画像
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handlePickFile(file);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </footer>
       </div>
     </main>
   );
-}
-
-
-
-
-async function resolvePublicUsername(user: {
-  id: string;
-  email?: string | null;
-  user_metadata?: Record<string, unknown>;
-}): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("user_id", user.id)
-      .maybeSingle<{ username: string | null }>();
-
-    if (!error) {
-      const username = String(data?.username ?? "").trim();
-
-      if (username) {
-        return username.replace(/^@+/, "");
-      }
-    }
-  } catch {
-    // profiles が読めない場合は /p/[id] にフォールバックする
-  }
-
-  return null;
 }
 
 function createQuickPageSsot({
@@ -472,7 +248,7 @@ function createQuickPageSsot({
   title: string;
   mainImageUrl: string;
   body: string;
-}): string {
+}) {
   return [
     "[PAGE]",
     `title: ${escapeMetaValue(title)}`,
@@ -488,54 +264,10 @@ function createQuickPageSsot({
   ].join("\n");
 }
 
-function createFallbackTitle(): string {
-  const now = new Date();
-
-  const date = new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-
-  const time = new Intl.DateTimeFormat("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(now);
-
-  return `${date} ${time}`;
+function createStableSlug() {
+  return `page-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function createStableSlug(): string {
-  const now = new Date();
-  const y = String(now.getFullYear());
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const ss = String(now.getSeconds()).padStart(2, "0");
-
-  return `page-${y}${m}${d}-${hh}${mm}${ss}-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function escapeMetaValue(value: string): string {
+function escapeMetaValue(value: string) {
   return value.replace(/\r?\n/g, " ").trim();
-}
-
-async function copyToClipboard(value: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(value);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = value;
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "-9999px";
-
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
 }
