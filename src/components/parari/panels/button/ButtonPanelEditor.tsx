@@ -72,7 +72,7 @@ export function ButtonPanelEditor({
   const raw = serializeButtonPanel(draftData);
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+    <div className="rounded-xl border border-yellow-200 bg-white p-3">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs font-bold text-yellow-800">
