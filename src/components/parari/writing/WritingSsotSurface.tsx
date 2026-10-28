@@ -5,6 +5,8 @@ import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import type { SsotBlock } from "@/lib/parari/ssot-v2/panelTypes";
 import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
+import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
+import { parsePanelVisualStyle } from "@/lib/parari/ssot-v2/panelStyle";
 
 type Props = {
   value: string;
@@ -85,8 +87,11 @@ function WritingBlock({
   autoFocus?: boolean;
 }) {
   if (block.kind === "text") {
+    const panelStyle = parsePanelVisualStyle(block.attrs);
+
     return (
-      <RichTextField
+      <PanelFrame style={panelStyle} defaultWidth="text">
+        <RichTextField
         value={normalizeWritingText(nextBlock?.kind === "panel" ? trimTextBoundary(block.raw) : block.raw)}
         onChange={(raw) => {
           const start = Math.max(0, block.start ?? 0);
@@ -103,14 +108,11 @@ function WritingBlock({
         quiet
         autoFocus={autoFocus}
       />
+      </PanelFrame>
     );
   }
 
-  return (
-    <div className="my-5">
-      <PageBodyPanelRenderer bodySsot={block.raw} />
-    </div>
-  );
+  return <PageBodyPanelRenderer bodySsot={block.raw} />;
 }
 
 
