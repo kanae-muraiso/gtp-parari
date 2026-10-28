@@ -274,35 +274,34 @@ export default function WritingWorkPage() {
 
   return (
     <main className="min-h-screen bg-white">
+      <ParariOwnerTopBar
+        title={title || "作品編集"}
+        leftHref="/my/works"
+        leftLabel="作品一覧"
+        actions={
+          <>
+            <span className="hidden text-xs text-white/60 sm:inline" aria-live="polite">
+              {statusText}
+            </span>
+            <ParariTopBarButton
+              active={!editingPinned}
+              onClick={() => setEditingPinned(false)}
+            >
+              Writing
+            </ParariTopBarButton>
+            <ParariTopBarButton
+              active={editingPinned}
+              onClick={() => setEditingPinned(true)}
+            >
+              Editing
+            </ParariTopBarButton>
+            <ParariTopBarButton href={`/p/${workId}`}>
+              表示
+            </ParariTopBarButton>
+          </>
+        }
+      />
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
-        <ParariOwnerTopBar
-          title={title || "作品編集"}
-          leftHref="/my/works"
-          leftLabel="作品一覧"
-          actions={
-            <>
-              <span className="hidden text-xs text-white/60 sm:inline" aria-live="polite">
-                {statusText}
-              </span>
-              <ParariTopBarButton
-                active={!editingPinned}
-                onClick={() => setEditingPinned(false)}
-              >
-                Writing
-              </ParariTopBarButton>
-              <ParariTopBarButton
-                active={editingPinned}
-                onClick={() => setEditingPinned(true)}
-              >
-                Editing
-              </ParariTopBarButton>
-              <ParariTopBarButton href={`/p/${workId}`}>
-                表示
-              </ParariTopBarButton>
-            </>
-          }
-        />
-
         {state === "error" && !work ? (
           <p className="mt-12 text-sm text-red-600">{message}</p>
         ) : editingActive && work ? (
