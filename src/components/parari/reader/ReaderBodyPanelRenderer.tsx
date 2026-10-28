@@ -318,7 +318,7 @@ function normalizeTocTitle(value: string): string {
     .replace(/\[\[([^\]]+)\]\]\(([^)]+)\)/g, "$1")
     .replace(/\[\[([^\]]+)\]\]\{([^}]+)\}/g, "$1")
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$1")
-    .replace(/!!([^!]+)!!/g, "$1")
+    .replace(/!!(?:[a-z]+(?:\+[a-z]+)*\|)?([^!]+)!!/gi, "$1")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/\s+/g, " ")
