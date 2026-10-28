@@ -48,7 +48,6 @@ export default function WritingSsotSurface({
         placeholder={placeholder}
         minHeightClassName="min-h-[65vh]"
         quiet
-        autoFocus={autoFocus}
       />
     );
   }
@@ -102,6 +101,7 @@ function WritingBlock({
         placeholder={placeholder}
         minHeightClassName={nextBlock?.kind === "panel" ? "min-h-0" : "min-h-[120px]"}
         quiet
+        autoFocus={autoFocus}
       />
     );
   }
