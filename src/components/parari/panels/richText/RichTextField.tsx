@@ -638,7 +638,6 @@ function RichTextToolbar({
 
         $patchStyleText(selection, {
           color: color ? RICH_TEXT_COLOR_HEX[color] : null,
-          "font-weight": null,
         });
       });
     };
@@ -1183,10 +1182,27 @@ function serializeNodeToSsot(node: LexicalNode): string {
 
       const colorName = getTextColorName(node);
 
-      if (colorName === "red") {
-        text = `!!${text}!!`;
-      } else if (colorName) {
-        text = `!!${colorName}|${text}!!`;
+      if (colorName) {
+        const modifiers = [
+          node.hasFormat("bold") ? "bold" : "",
+          node.hasFormat("italic") ? "italic" : "",
+        ].filter(Boolean);
+
+        const colorHeader =
+          modifiers.length > 0
+            ? `${colorName}+${modifiers.join("+")}`
+            : colorName;
+
+        if (
+          colorName === "red" &&
+          modifiers.length === 0
+        ) {
+          text = `!!${node.getTextContent()}!!`;
+        } else {
+          text = `!!${colorHeader}|${node.getTextContent()}!!`;
+        }
+
+        return text;
       }
 
       return text;
@@ -1317,8 +1333,12 @@ function parseInlineMarkdownLikeText(line: string): InlinePart[] {
 
       if (token.startsWith("!!") && token.endsWith("!!")) {
         const inner = token.slice(2, -2);
-        const namedColorMatch = inner.match(/^([a-z]+)\|([\s\S]*)$/i);
-        const candidate = namedColorMatch?.[1]?.toLowerCase() ?? "";
+        const namedColorMatch = inner.match(/^([a-z]+(?:\+[a-z]+)*)\|([\s\S]*)$/i);
+        const headerTokens = namedColorMatch?.[1]
+          ?.toLowerCase()
+          .split("+")
+          .filter(Boolean) ?? [];
+        const candidate = headerTokens[0] ?? "";
         const color = isRichTextColorName(candidate) ? candidate : "red";
 
         parts.push({
@@ -1326,6 +1346,8 @@ function parseInlineMarkdownLikeText(line: string): InlinePart[] {
             ? namedColorMatch[2]
             : inner,
           color,
+          bold: headerTokens.includes("bold"),
+          italic: headerTokens.includes("italic"),
         });
         lastIndex = match.index + token.length;
         continue;
