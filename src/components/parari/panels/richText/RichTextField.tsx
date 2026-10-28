@@ -47,6 +47,7 @@ import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -103,6 +104,7 @@ type RichTextFieldProps = {
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   quiet?: boolean;
+  autoFocus?: boolean;
 };
 
 const PARARI_NOTE_URL_PREFIX = "parari-note:";
@@ -133,6 +135,7 @@ export function RichTextField({
   readingSupport,
   onChangeReadingSupport,
   quiet = false,
+  autoFocus = false,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
   const lastEmittedValueRef = useRef(value);
@@ -212,6 +215,7 @@ export function RichTextField({
             `}</style>
             <LexicalComposer initialConfig={initialConfig}>
               <ForceEditablePlugin />
+              {autoFocus ? <AutoFocusPlugin /> : null}
               <SoftReturnPlugin />
             <DictionaryHighlightPlugin
               enabled={dictionaryMarksEnabled}
