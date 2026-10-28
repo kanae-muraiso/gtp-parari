@@ -77,7 +77,7 @@ export function ListPanelEditor({
   const classes = listDirectEditClasses(draftData.variant);
 
   return (
-    <div className={["rounded-2xl border p-4 shadow-sm", classes.border, classes.bg].join(" ")}>
+    <div className={["shadow-sm", classes.bg].join(" ")}>
       <input
         value={draftData.title}
         onChange={(event) => updateDraftData({ title: event.target.value })}
@@ -119,7 +119,7 @@ export function ListPanelEditor({
       </button>
 
       <details className="mt-3 text-xs text-neutral-500">
-        <summary className="cursor-pointer select-none font-bold">設定</summary>
+        <summary className="cursor-pointer select-none font-bold">背景色</summary>
         <div className="mt-2 flex items-center gap-2">
           <span>色</span>
           <select
