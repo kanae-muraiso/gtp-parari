@@ -29,6 +29,7 @@ export default function WritingWorkPage() {
   const [editingPinned, setEditingPinned] = useState(false);
   const [controlPreview, setControlPreview] = useState(false);
 
+  const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
@@ -66,6 +67,7 @@ export default function WritingWorkPage() {
           ? ""
           : String(data.title ?? ""));
 
+      workRef.current = data;
       setWork(data);
       setSsot(data.content ?? createBlankPageSsot());
       setTitle(resolvedTitle);
@@ -139,7 +141,8 @@ export default function WritingWorkPage() {
   }
 
   async function saveSsot(nextSsot: string) {
-    if (!work) return;
+    const currentWork = workRef.current;
+    if (!currentWork) return;
 
     if (saveLockRef.current) {
       pendingSaveRef.current = nextSsot;
@@ -164,10 +167,10 @@ export default function WritingWorkPage() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          workId: work.id,
+          workId: currentWork.id,
           title: title.trim(),
           content: nextSsot,
-          expectedRevision: work.revision,
+          expectedRevision: currentWork.revision,
         }),
       });
 
@@ -177,16 +180,14 @@ export default function WritingWorkPage() {
         throw new Error(result?.message ?? "保存できませんでした。");
       }
 
-      setWork((current) =>
-        current
-          ? {
-              ...current,
-              title: title.trim(),
-              content: nextSsot,
-              revision: result.revision,
-            }
-          : current,
-      );
+      const nextWork: WorkRow = {
+        ...currentWork,
+        title: title.trim(),
+        content: nextSsot,
+        revision: result.revision,
+      };
+      workRef.current = nextWork;
+      setWork(nextWork);
 
       setState("saved");
     } catch (error) {
