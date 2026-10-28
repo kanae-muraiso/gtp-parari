@@ -318,115 +318,18 @@ export function PageInfoPanelEditor({
       </div>
 
       {!isDetailEditing ? (
-        <div className="mb-4 space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <TextField
-              label="章名"
-              value={title}
-              placeholder="第1章 / はじめに など"
-              onChange={setTitleDraft}
-              onCommit={commitTitle}
-            />
-
-            <label className="flex items-center gap-2 rounded-xl border border-sky-200 bg-white px-3 py-2 md:self-end">
-              <input
-                type="checkbox"
-                checked={showTitle}
-                onChange={(event) =>
-                  updateMeta(
-                    "showTitle",
-                    String(event.currentTarget.checked),
-                  )
-                }
-                className="h-4 w-4 rounded border-sky-300"
-              />
-              <span className="text-xs font-bold text-neutral-700">
-                PAGEタイトルを表示する
-              </span>
-            </label>
-
-            <div className="mt-2 space-y-2 md:col-span-2">
-              <div className="text-[11px] font-bold text-neutral-500">
-                PAGE画像
-              </div>
-
-              <input
-              onKeyDown={stopTitleInputShortcutKeys}
-                id={mainImageInputId}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.currentTarget.files?.[0] ?? null;
-                  event.currentTarget.value = "";
-
-                  if (file) {
-                    void handlePickMainImageFile(file);
-                  }
-                }}
-              />
-
-              <div className="flex flex-wrap items-center gap-3">
-                <label
-                  htmlFor={mainImageInputId}
-                  aria-disabled={isUploadingMainImage}
-                  className={[
-                    "rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-50",
-                    isUploadingMainImage
-                      ? "pointer-events-none cursor-not-allowed opacity-50"
-                      : "cursor-pointer",
-                  ].join(" ")}
-                >
-                  {isUploadingMainImage ? "アップロード中…" : "画像を選ぶ"}
-                </label>
-
-                {mainImageUploadStatus ? (
-                  <span className="text-xs text-neutral-500">
-                    {mainImageUploadStatus}
-                  </span>
-                ) : (
-                  <span className="text-xs text-neutral-400">
-                    スマホでは写真ライブラリやカメラから選べます
-                  </span>
-                )}
-              </div>
-
-              <label className="block">
-                <span className="text-[11px] font-bold text-neutral-500">
-                  URL
-                </span>
-                <input
-              onKeyDown={stopTitleInputShortcutKeys}
-                  value={mainImage}
-                  onChange={(event) => updateMeta("mainImage", event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-sky-400"
-                  placeholder="https://..."
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-[11px] font-bold text-neutral-500">
-                  PAGE画像の表示幅
-                </span>
-
-                <select
-                  value={mainImageWidth}
-                  onChange={(event) =>
-                    updateMeta("mainImageWidth", event.target.value)
-                  }
-                  className="mt-1 w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-sky-400"
-                >
-                  <option value="100">キャンバス100%</option>
-                  <option value="90">本文幅90%</option>
-                  <option value="normal">通常75%</option>
-                  <option value="full">全幅 最大720px</option>
-                </select>
-              </label>
-            </div>
-          </div>
+        <div className="mb-4">
+          <input
+            value={title}
+            onKeyDown={stopTitleInputShortcutKeys}
+            onChange={(event) => setTitleDraft(event.target.value)}
+            onBlur={(event) => commitTitle(event.currentTarget.value)}
+            placeholder="タイトル"
+            className="w-full border-0 bg-transparent px-1 py-3 text-2xl font-bold leading-tight text-neutral-900 outline-none placeholder:text-neutral-300 md:text-3xl"
+          />
 
           {mainImage ? (
-            <div className="overflow-hidden rounded-xl bg-white p-2 ring-1 ring-sky-100">
+            <div className="mt-4 overflow-hidden rounded-xl bg-white p-2 ring-1 ring-sky-100">
               <img
                 src={mainImage}
                 alt=""
@@ -435,52 +338,81 @@ export function PageInfoPanelEditor({
             </div>
           ) : null}
 
-                           {pagePublicPath ? (
-                             <div className="rounded-xl border border-sky-200 bg-white p-3">
-                               <div className="text-[11px] font-bold text-neutral-500">
-                                 PAGE URL
-                               </div>
+          <details className="mt-4 rounded-xl border border-sky-200 bg-white px-3 py-2">
+            <summary className="cursor-pointer select-none text-xs font-bold text-sky-700">
+              設定
+            </summary>
 
-                               <div className="mt-1 break-all text-xs leading-5 text-neutral-700">
-                                 {pagePublicUrl}
-                               </div>
+            <div className="mt-3 space-y-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showTitle}
+                  onChange={(event) =>
+                    updateMeta(
+                      "showTitle",
+                      String(event.currentTarget.checked),
+                    )
+                  }
+                  className="h-4 w-4 rounded border-sky-300"
+                />
+                <span className="text-xs font-bold text-neutral-700">
+                  PAGEタイトルを表示する
+                </span>
+              </label>
 
-                               <div className="mt-3 flex flex-wrap items-center gap-2">
-                                 <a
-                                   href={pagePublicPath}
-                                   target="_blank"
-                                   rel="noreferrer"
-                                   className="rounded-full bg-sky-700 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-sky-800"
-                                 >
-                                   PAGEを開く
-                                 </a>
+              <div className="space-y-2">
+                <div className="text-[11px] font-bold text-neutral-500">
+                  PAGE画像
+                </div>
 
-                                 <button
-                                   type="button"
-                                   onClick={handleCopyPagePublicUrl}
-                                   className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-sky-700 ring-1 ring-sky-200 transition hover:bg-sky-50"
-                                 >
-                                   URLをコピー
-                                 </button>
+                <input
+                  onKeyDown={stopTitleInputShortcutKeys}
+                  id={mainImageInputId}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] ?? null;
+                    event.currentTarget.value = "";
 
-                                 {publicUrlMessage ? (
-                                   <span className="text-xs text-neutral-500">
-                                     {publicUrlMessage}
-                                   </span>
-                                 ) : null}
-                               </div>
-                             </div>
-                           ) : null}
-                           
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setIsDetailEditing(true)}
-              className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-sky-700 ring-1 ring-sky-200 transition hover:bg-sky-50"
-            >
-              詳細編集
-            </button>
-          </div>
+                    if (file) {
+                      void handlePickMainImageFile(file);
+                    }
+                  }}
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    htmlFor={mainImageInputId}
+                    aria-disabled={isUploadingMainImage}
+                    className={[
+                      "rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-50",
+                      isUploadingMainImage
+                        ? "pointer-events-none cursor-not-allowed opacity-50"
+                        : "cursor-pointer",
+                    ].join(" ")}
+                  >
+                    {isUploadingMainImage ? "アップロード中…" : "画像を選ぶ"}
+                  </label>
+
+                  {mainImageUploadStatus ? (
+                    <span className="text-xs text-neutral-500">
+                      {mainImageUploadStatus}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsDetailEditing(true)}
+                className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-sky-700 ring-1 ring-sky-200 transition hover:bg-sky-50"
+              >
+                詳細設定
+              </button>
+            </div>
+          </details>
         </div>
       ) : (
         <div className="mb-4 space-y-4">
