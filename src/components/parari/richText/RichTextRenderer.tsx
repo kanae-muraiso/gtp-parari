@@ -244,13 +244,23 @@ function renderInline(inline: RichInline, theme: RichTextTheme, key: string) {
           ? theme.colorToneClassNames[inline.tone]
           : undefined;
 
+      let content: React.ReactNode = renderInlineText(inline.text, key);
+
+      if (inline.italic) {
+        content = <em className="italic">{content}</em>;
+      }
+
+      if (inline.bold) {
+        content = <strong className={theme.boldClassName}>{content}</strong>;
+      }
+
       return (
         <span
           key={key}
           className={cx(theme.colorClassName, toneClass)}
           style={inline.color ? { color: RICH_TEXT_COLOR_HEX[inline.color] } : undefined}
         >
-          {renderInlineText(inline.text, key)}
+          {content}
         </span>
       );
     }
