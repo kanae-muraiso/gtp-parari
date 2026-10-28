@@ -54,7 +54,7 @@ export function PanelBlockCard({
   renderNestedPanelViewer,
 }: PanelBlockCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
-    const [mode, setMode] = useState<PanelCardMode>("view");
+    const [mode, setMode] = useState<PanelCardMode>(() => isDirectEditPanel(block.tag) ? "edit" : "view");
 
   useEffect(() => {
     setHasMounted(true);
@@ -327,6 +327,16 @@ function panelWidthClass(tag: string): string {
   return "w-full";
 }
 
+
+function isDirectEditPanel(tag: string): boolean {
+  const normalizedTag = tag.trim().toUpperCase();
+  return (
+    normalizedTag === "PAGE" ||
+    normalizedTag === "PAGEINFO" ||
+    normalizedTag === "NOTICE" ||
+    normalizedTag === "ACCORDION"
+  );
+}
 
 function isPageInfoPanel(tag: string): boolean {
   const normalizedTag = tag.trim().toUpperCase();
