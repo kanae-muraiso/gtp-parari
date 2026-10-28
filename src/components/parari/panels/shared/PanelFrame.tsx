@@ -37,6 +37,7 @@ export function PanelFrame({
       ? resolveBorderColorClass(style.borderColor)
       : "",
     resolveRadiusClass(style?.radius ?? "none"),
+    (style?.radius ?? "none") !== "none" ? "overflow-hidden" : "",
     resolvePaddingClass(style?.padding ?? "none"),
   ].filter(Boolean);
 
