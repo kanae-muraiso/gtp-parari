@@ -27,7 +27,6 @@ export default function WritingWorkPage() {
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
-  const [controlPreview, setControlPreview] = useState(false);
 
   const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,35 +84,29 @@ export default function WritingWorkPage() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (editingPinned) return;
-
       if (event.key === "Control" && !event.repeat) {
         controlCandidateRef.current = true;
-
-        window.setTimeout(() => {
-          if (controlCandidateRef.current) {
-            setControlPreview(true);
-          }
-        }, 180);
-
         return;
       }
 
       if (event.ctrlKey) {
         controlCandidateRef.current = false;
-        setControlPreview(false);
       }
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key !== "Control") return;
+
+      const shouldToggle = controlCandidateRef.current;
       controlCandidateRef.current = false;
-      setControlPreview(false);
+
+      if (shouldToggle) {
+        setEditingPinned((current) => !current);
+      }
     };
 
     const onBlur = () => {
       controlCandidateRef.current = false;
-      setControlPreview(false);
     };
 
     window.addEventListener("keydown", onKeyDown, true);
@@ -125,7 +118,7 @@ export default function WritingWorkPage() {
       window.removeEventListener("keyup", onKeyUp, true);
       window.removeEventListener("blur", onBlur);
     };
-  }, [editingPinned]);
+  }, []);
 
   function scheduleSave(nextSsot: string) {
     setSsot(nextSsot);
@@ -259,7 +252,7 @@ export default function WritingWorkPage() {
     }
   }
 
-  const editingActive = editingPinned || controlPreview;
+  const editingActive = editingPinned;
 
   const statusText = useMemo(
     () =>
@@ -302,7 +295,7 @@ export default function WritingWorkPage() {
             <button
               type="button"
               onClick={() => {
-                setControlPreview(false);
+                
                 setEditingPinned((current) => !current);
               }}
               className={[
@@ -326,11 +319,7 @@ export default function WritingWorkPage() {
                 EDITING
               </div>
 
-              {controlPreview && !editingPinned ? (
-                <p className="mt-1 text-xs text-neutral-400">
-                  Controlを離すとWritingに戻ります
-                </p>
-              ) : null}
+              
             </div>
 
             <PagePanelComposer
