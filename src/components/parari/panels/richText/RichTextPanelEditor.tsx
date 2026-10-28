@@ -138,7 +138,7 @@ export function RichTextPanelEditor({
             setMode("edit");
           }
         }}
-            className="cursor-text rounded-xl border border-transparent bg-neutral-100 px-4 py-3 text-base leading-8 text-neutral-900 transition hover:bg-neutral-200/60"
+            className="cursor-text rounded-xl border border-transparent bg-white px-4 py-3 text-base leading-8 text-neutral-900 transition hover:bg-neutral-50/60"
         title="クリックして本文を編集"
       >
         {hasVisibleRichText(ssotText) ? (
@@ -162,9 +162,12 @@ export function RichTextPanelEditor({
   }
 
   return (
-          <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+          <div className="rounded-xl border border-transparent bg-white p-3 shadow-sm">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
+            TEXT
+          </span>
 
           <span className="min-w-0 truncate text-[12px] font-semibold text-neutral-600">
             本文編集中
@@ -199,7 +202,7 @@ export function RichTextPanelEditor({
         </div>
       </div>
 
-      <div className="min-h-[260px] bg-neutral-100">
+      <div className="min-h-[260px] bg-white">
         {ssotText.length > LONG_TEXT_THRESHOLD ? (
           <LongTextFallbackEditor
             ssotText={ssotText}
