@@ -6,6 +6,11 @@
 import React from "react";
 import { dictionaryStatus, DICTIONARY_MARK_CLASSES } from "@/lib/parari/english/dictionary";
 import { createPortal } from "react-dom";
+import {
+  RICH_TEXT_COLOR_HEX,
+  isRichTextColorName,
+  type RichTextColorName,
+} from "@/lib/parari/richText/textColors";
 import type {
   ReaderDictionaryMode,
   ReaderRubyMode,
@@ -27,7 +32,14 @@ type InlineToken =
   | { kind: "link"; label: string; url: string }
   | { kind: "bold"; text: string }
   | { kind: "italic"; text: string }
-  | { kind: "red"; text: string }
+  | {
+      kind: "color";
+      text: string;
+      color: RichTextColorName;
+      bold?: boolean;
+      italic?: boolean;
+      legacyRed?: boolean;
+    }
   | { kind: "word"; text: string };
 
 type NoteState = {
@@ -395,17 +407,31 @@ function renderInlineContent(
       );
     }
 
-    if (token.kind === "red") {
+    if (token.kind === "color") {
+      let content: React.ReactNode = renderInlineContent(
+        token.text,
+        dictionaryMode,
+        rubyMode,
+        noteState,
+        dictionaryLookup,
+        `${noteKey}-color`,
+      );
+
+      if (token.italic) {
+        content = <em className="italic">{content}</em>;
+      }
+
+      if (token.bold) {
+        content = <strong className="font-bold">{content}</strong>;
+      }
+
       return (
-        <span key={`red-${noteKey}`} className="font-semibold text-red-600">
-          {renderInlineContent(
-            token.text,
-            dictionaryMode,
-            rubyMode,
-            noteState,
-            dictionaryLookup,
-            `${noteKey}-red`,
-          )}
+        <span
+          key={`color-${noteKey}`}
+          style={{ color: RICH_TEXT_COLOR_HEX[token.color] }}
+          className={token.legacyRed ? "font-semibold" : undefined}
+        >
+          {content}
         </span>
       );
     }
@@ -466,7 +492,35 @@ function tokenizeInlineContent(source: string): InlineToken[] {
         tokens.push({ kind: "ruby", base: left, reading: right });
       }
     } else if (match[7] !== undefined) {
-      tokens.push({ kind: "red", text: String(match[7] ?? "") });
+      const inner = String(match[7] ?? "");
+      const namedColorMatch = inner.match(/^([a-z]+(?:\+[a-z]+)*)\|([\s\S]*)$/i);
+      const headerTokens = namedColorMatch?.[1]
+        ?.toLowerCase()
+        .split("+")
+        .filter(Boolean) ?? [];
+      const candidate = headerTokens[0] ?? "";
+      const namedColor = isRichTextColorName(candidate) ? candidate : null;
+
+      let body = namedColor && namedColorMatch ? namedColorMatch[2] : inner;
+      let bold = headerTokens.includes("bold");
+      let italic = headerTokens.includes("italic");
+
+      if (!bold && body.startsWith("**") && body.endsWith("**") && body.length >= 4) {
+        body = body.slice(2, -2);
+        bold = true;
+      } else if (!italic && body.startsWith("*") && body.endsWith("*") && body.length >= 2) {
+        body = body.slice(1, -1);
+        italic = true;
+      }
+
+      tokens.push({
+        kind: "color",
+        text: body,
+        color: namedColor ?? "red",
+        bold,
+        italic,
+        legacyRed: !namedColor,
+      });
     } else if (match[8] !== undefined) {
       tokens.push({ kind: "bold", text: String(match[8] ?? "") });
     } else if (match[9] !== undefined) {
