@@ -87,6 +87,7 @@ type TopBarButtonProps = {
   children: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
+  active?: boolean;
 };
 
 export function ParariTopBarButton({
@@ -94,9 +95,13 @@ export function ParariTopBarButton({
   children,
   onClick,
   disabled = false,
+  active = false,
 }: TopBarButtonProps) {
   const className = [
-    "rounded-lg border border-white/25 px-3 py-1 text-sm font-semibold text-white transition hover:bg-white/10",
+    "rounded-lg border px-3 py-1 text-sm font-semibold transition",
+    active
+      ? "border-white bg-white text-black"
+      : "border-white/25 text-white hover:bg-white/10",
     disabled ? "cursor-not-allowed opacity-50" : "",
   ].join(" ");
 
