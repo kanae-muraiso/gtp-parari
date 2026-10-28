@@ -400,6 +400,15 @@ const waitForNextPaint = () =>
       const nextBlocks = [...baseBlocks];
       nextBlocks.splice(safeIndex, 0, ...insertedBlocks);
 
+      if (shouldAppendWritingContinuation(tag)) {
+        const continuationIndex = safeIndex + insertedBlocks.length;
+        const followingBlock = nextBlocks[continuationIndex];
+
+        if (!followingBlock || followingBlock.kind !== "text") {
+          nextBlocks.splice(continuationIndex, 0, createWritingContinuationBlock());
+        }
+      }
+
       const nextSsot = serializeBlocks(sanitizeBlocks(nextBlocks));
 
       setStructureVersion((value) => value + 1);
@@ -455,6 +464,26 @@ const waitForNextPaint = () =>
       return blocksToSanitize.filter(isMeaningfulBlock);
     }
     
+    function createWritingContinuationBlock(): TextBlock {
+      return {
+        id: `__parari_writing_continuation_${Date.now()}__`,
+        kind: "text",
+        start: 0,
+        end: 0,
+        raw: "\u200B",
+      };
+    }
+
+    function shouldAppendWritingContinuation(tag: PanelInsertItem["tag"]): boolean {
+      return !(
+        tag === "TEXT" ||
+        tag === "BOOK" ||
+        tag === "CHAPTER" ||
+        tag === "PAGE" ||
+        tag === "BLANK_PAGE"
+      );
+    }
+
     function createInitialPanelSsot(tag: PanelInsertItem["tag"]): string {
       switch (tag) {
           case "TEXT":
