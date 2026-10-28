@@ -27,8 +27,11 @@ export function YoutubePanelEditor({
     : "";
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+    <div className="rounded-xl border border-yellow-200 bg-white p-3">
       <div className="mb-3">
+        <span className="rounded-full bg-yellow-100 px-2 py-1 text-[11px] font-bold text-yellow-900">
+          YOUTUBE 専用エディタ
+        </span>
         <p className="mt-2 text-xs leading-5 text-neutral-600">
           YouTube URLを指定して、PARARI内で埋め込み表示するパネルです。
         </p>
