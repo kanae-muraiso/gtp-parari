@@ -357,7 +357,12 @@ function isDirectEditPanel(tag: string): boolean {
     normalizedTag === "AUDIO" ||
     normalizedTag === "YOUTUBE" ||
     normalizedTag === "INSTAGRAM" ||
-    normalizedTag === "QA"
+    normalizedTag === "QA" ||
+    normalizedTag === "CAROUSEL" ||
+    normalizedTag === "FORM" ||
+    normalizedTag === "APPLICATION" ||
+    normalizedTag === "CALENDAR" ||
+    normalizedTag === "MEMBERSHIP"
   );
 }
 
