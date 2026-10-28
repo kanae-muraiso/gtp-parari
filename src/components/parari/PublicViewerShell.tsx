@@ -73,9 +73,17 @@ export default function PublicViewerShell({
               leftHref="/my/works"
               leftLabel="作品リストへ"
               actions={
-                <ParariTopBarButton href={`/editor-v2/${bookId}`}>
-                  編集
-                </ParariTopBarButton>
+                <>
+                  <ParariTopBarButton href={`/writing/${bookId}`}>
+                    Writing
+                  </ParariTopBarButton>
+                  <ParariTopBarButton href={`/writing/${bookId}?mode=editing`}>
+                    Editing
+                  </ParariTopBarButton>
+                  <ParariTopBarButton active>
+                    表示
+                  </ParariTopBarButton>
+                </>
               }
             />
           ) : (
