@@ -51,10 +51,14 @@ export function resolvePanelVisualStyle(
   const normalizedTag = String(tag ?? "").trim().toUpperCase();
 
   if (normalizedTag === "NOTICE" || normalizedTag === "LIST") {
+    const semanticVariant =
+      variant ||
+      (normalizedTag === "NOTICE" ? "warning" : "light");
+
     return {
       ...DEFAULT_PANEL_VISUAL_STYLE,
       border: "thin",
-      borderColor: semanticBorderColor(variant),
+      borderColor: semanticBorderColor(semanticVariant),
       radius: "l",
       padding: "m",
     };
@@ -64,7 +68,7 @@ export function resolvePanelVisualStyle(
     return {
       ...DEFAULT_PANEL_VISUAL_STYLE,
       border: "thin",
-      borderColor: semanticBorderColor(variant),
+      borderColor: semanticBorderColor(variant || "primary"),
       radius: "l",
       padding: "none",
     };
