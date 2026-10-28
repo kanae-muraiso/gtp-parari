@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
+import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 
 type WorkRow = {
   id: string;
@@ -18,6 +19,7 @@ type WorkRow = {
 export default function WritingWorkPage() {
   const params = useParams<{ id: string }>();
   const workId = decodeURIComponent(params.id);
+  const searchParams = useSearchParams();
 
   const [work, setWork] = useState<WorkRow | null>(null);
   const [title, setTitle] = useState("");
@@ -26,7 +28,7 @@ export default function WritingWorkPage() {
   const [ssot, setSsot] = useState("");
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [editingPinned, setEditingPinned] = useState(false);
+  const [editingPinned, setEditingPinned] = useState(() => searchParams.get("mode") === "editing");
 
   const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -272,43 +274,34 @@ export default function WritingWorkPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 pt-5 sm:px-8">
-        <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
-          <div className="flex items-center gap-3">
-            <a
-              href="/my/works"
-              className="font-bold text-neutral-700 transition hover:text-neutral-950"
-            >
-              ← 作品一覧
-            </a>
-            <a
-              href="/mypage"
-              className="font-bold transition hover:text-neutral-700"
-            >
-              PARARI
-            </a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span aria-live="polite">{statusText}</span>
-
-            <button
-              type="button"
-              onClick={() => {
-                
-                setEditingPinned((current) => !current);
-              }}
-              className={[
-                "rounded-full px-3 py-1.5 font-bold transition",
-                editingPinned
-                  ? "bg-neutral-950 text-white"
-                  : "hover:bg-neutral-100 hover:text-neutral-700",
-              ].join(" ")}
-            >
-              {editingPinned ? "Writing" : "Editing"}
-            </button>
-          </div>
-        </header>
+      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
+        <ParariOwnerTopBar
+          title={title || "作品編集"}
+          leftHref="/my/works"
+          leftLabel="作品一覧"
+          actions={
+            <>
+              <span className="hidden text-xs text-white/60 sm:inline" aria-live="polite">
+                {statusText}
+              </span>
+              <ParariTopBarButton
+                active={!editingPinned}
+                onClick={() => setEditingPinned(false)}
+              >
+                Writing
+              </ParariTopBarButton>
+              <ParariTopBarButton
+                active={editingPinned}
+                onClick={() => setEditingPinned(true)}
+              >
+                Editing
+              </ParariTopBarButton>
+              <ParariTopBarButton href={`/p/${workId}`}>
+                表示
+              </ParariTopBarButton>
+            </>
+          }
+        />
 
         {state === "error" && !work ? (
           <p className="mt-12 text-sm text-red-600">{message}</p>
