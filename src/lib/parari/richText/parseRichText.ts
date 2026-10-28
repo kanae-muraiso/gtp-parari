@@ -9,6 +9,7 @@ import type {
   RichInline,
   RichColorTone,
 } from "./types";
+import { isRichTextColorName } from "./textColors";
 
 /**
  * PART: 正規化
@@ -129,10 +130,17 @@ export function parseRichInlines(text: string): RichInline[] {
     if (next.type === "bold") {
       result.push({ type: "bold", text: inner });
     } else {
+      const namedColorMatch = inner.match(/^([a-z]+)\|([\s\S]*)$/i);
+      const colorName =
+        namedColorMatch && isRichTextColorName(namedColorMatch[1].toLowerCase())
+          ? namedColorMatch[1].toLowerCase()
+          : null;
+
       result.push({
         type: "color",
-        text: inner,
-        tone: resolveColorTone(inner),
+        text: colorName && namedColorMatch ? namedColorMatch[2] : inner,
+        color: colorName ?? "red",
+        tone: colorName ? undefined : resolveColorTone(inner),
       });
     }
 
