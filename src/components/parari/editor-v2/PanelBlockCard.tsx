@@ -23,7 +23,7 @@ import { PanelFrame } from "../panels/shared/PanelFrame";
 import { PanelStyleControls } from "../panels/shared/PanelStyleControls";
 import {
   applyPanelVisualStyleToRaw,
-  parsePanelVisualStyle,
+  resolvePanelVisualStyle,
   stripPanelStyleAttrs,
   stripPanelVisualStyleFromRaw,
   type PanelVisualStyle,
@@ -76,7 +76,7 @@ export function PanelBlockCard({
   const Renderer = definition.Renderer;
 
   const panelStyle = useMemo(
-    () => parsePanelVisualStyle(block.attrs),
+    () => resolvePanelVisualStyle(block.tag, block.attrs, block.variant),
     [block.attrs],
   );
   const contentRaw = useMemo(
