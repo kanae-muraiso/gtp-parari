@@ -139,13 +139,24 @@ export function parseRichInlines(text: string): RichInline[] {
       const colorName = isRichTextColorName(candidateColor)
         ? candidateColor
         : null;
+      let body = colorName && namedColorMatch ? namedColorMatch[2] : inner;
+      let bold = headerTokens.includes("bold");
+      let italic = headerTokens.includes("italic");
+
+      if (!bold && body.startsWith("**") && body.endsWith("**") && body.length >= 4) {
+        body = body.slice(2, -2);
+        bold = true;
+      } else if (!italic && body.startsWith("*") && body.endsWith("*") && body.length >= 2) {
+        body = body.slice(1, -1);
+        italic = true;
+      }
 
       result.push({
         type: "color",
-        text: colorName && namedColorMatch ? namedColorMatch[2] : inner,
+        text: body,
         color: colorName ?? "red",
-        bold: headerTokens.includes("bold"),
-        italic: headerTokens.includes("italic"),
+        bold,
+        italic,
         tone: colorName ? undefined : resolveColorTone(inner),
       });
     }
