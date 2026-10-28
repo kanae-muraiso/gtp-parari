@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
+import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type CreateWorkResponse = { ok?: boolean; id?: string; message?: string };
@@ -165,23 +166,42 @@ export default function QuickEditorPage() {
   }
 
   const editingActive = editingPinned;
+  const currentWorkId = workRef.current?.id ?? null;
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 pt-5 sm:px-8">
-        <header className="flex min-h-10 items-center justify-between gap-4 text-xs text-neutral-400">
-          <div className="flex items-center gap-3">
-            <a href="/my/works" className="font-bold text-neutral-700 transition hover:text-neutral-950">← 作品一覧</a>
-            <a href="/mypage" className="font-bold transition hover:text-neutral-700">PARARI</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <span aria-live="polite">{saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}</span>
-            <button type="button" onClick={() => {  setEditingPinned(v => !v); }}
-              className={["rounded-full px-3 py-1.5 font-bold", editingPinned ? "bg-neutral-950 text-white" : "hover:bg-neutral-100"].join(" ")}>
-              {editingPinned ? "Writing" : "Editing"}
-            </button>
-          </div>
-        </header>
+      <ParariOwnerTopBar
+        title={title || "新しい作品"}
+        leftHref="/my/works"
+        leftLabel="作品一覧"
+        actions={
+          <>
+            <span className="hidden text-xs text-white/60 sm:inline" aria-live="polite">
+              {saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}
+            </span>
+            <ParariTopBarButton
+              active={!editingPinned}
+              onClick={() => setEditingPinned(false)}
+            >
+              Writing
+            </ParariTopBarButton>
+            <ParariTopBarButton
+              active={editingPinned}
+              onClick={() => setEditingPinned(true)}
+            >
+              Editing
+            </ParariTopBarButton>
+            <ParariTopBarButton
+              href={currentWorkId ? `/p/${currentWorkId}` : undefined}
+              disabled={!currentWorkId}
+            >
+              表示
+            </ParariTopBarButton>
+          </>
+        }
+      />
+      <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
+
 
         {editingActive ? (
           <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
