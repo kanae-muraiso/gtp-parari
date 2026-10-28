@@ -46,6 +46,7 @@ export default function WritingSsotSurface({
         <WritingBlock
           key={`${block.kind}-${index}`}
           block={block}
+          nextBlock={contentBlocks[index + 1]}
           source={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -57,11 +58,13 @@ export default function WritingSsotSurface({
 
 function WritingBlock({
   block,
+  nextBlock,
   source,
   onChange,
   placeholder,
 }: {
   block: SsotBlock;
+  nextBlock?: SsotBlock;
   source: string;
   onChange: (next: string) => void;
   placeholder: string;
@@ -69,14 +72,18 @@ function WritingBlock({
   if (block.kind === "text") {
     return (
       <RichTextField
-        value={block.raw}
+        value={trimTextBoundary(block.raw)}
         onChange={(raw) => {
           const start = Math.max(0, block.start ?? 0);
           const end = Math.max(start, block.end ?? start);
-          onChange(source.slice(0, start) + raw + source.slice(end));
+          const before = source.slice(0, start);
+          const after = source.slice(end);
+          const body = trimTextBoundary(raw);
+          const boundary = nextBlock?.kind === "panel" ? "\n\n" : "";
+          onChange(before + body + boundary + after.replace(/^\s+/, ""));
         }}
         placeholder={placeholder}
-        minHeightClassName="min-h-[120px]"
+        minHeightClassName={nextBlock?.kind === "panel" ? "min-h-0" : "min-h-[120px]"}
         quiet
       />
     );
@@ -89,3 +96,7 @@ function WritingBlock({
   );
 }
 
+
+function trimTextBoundary(value: string) {
+  return String(value ?? "").replace(/\s+$/g, "");
+}
