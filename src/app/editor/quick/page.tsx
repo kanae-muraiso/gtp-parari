@@ -17,7 +17,6 @@ export default function QuickEditorPage() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
-  const [controlPreview, setControlPreview] = useState(false);
 
   const workRef = useRef<{ id: string; revision: number; content: string } | null>(null);
   const createRequestIdRef = useRef<string | null>(null);
@@ -29,37 +28,41 @@ export default function QuickEditorPage() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (editingPinned) return;
       if (event.key === "Control" && !event.repeat) {
         controlCandidateRef.current = true;
-        window.setTimeout(() => {
-          if (controlCandidateRef.current) setControlPreview(true);
-        }, 180);
         return;
       }
+
       if (event.ctrlKey) {
         controlCandidateRef.current = false;
-        setControlPreview(false);
       }
     };
+
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key !== "Control") return;
+
+      const shouldToggle = controlCandidateRef.current;
       controlCandidateRef.current = false;
-      setControlPreview(false);
+
+      if (shouldToggle) {
+        setEditingPinned((current) => !current);
+      }
     };
+
     const onBlur = () => {
       controlCandidateRef.current = false;
-      setControlPreview(false);
     };
+
     window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("keyup", onKeyUp, true);
     window.addEventListener("blur", onBlur);
+
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("keyup", onKeyUp, true);
       window.removeEventListener("blur", onBlur);
     };
-  }, [editingPinned]);
+  }, []);
 
   function scheduleSave(nextSsot: string) {
     setSsot(nextSsot);
@@ -161,7 +164,7 @@ export default function QuickEditorPage() {
     }
   }
 
-  const editingActive = editingPinned || controlPreview;
+  const editingActive = editingPinned;
 
   return (
     <main className="min-h-screen bg-white">
@@ -173,7 +176,7 @@ export default function QuickEditorPage() {
           </div>
           <div className="flex items-center gap-3">
             <span aria-live="polite">{saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存済み" : saveState === "error" ? message : ""}</span>
-            <button type="button" onClick={() => { setControlPreview(false); setEditingPinned(v => !v); }}
+            <button type="button" onClick={() => {  setEditingPinned(v => !v); }}
               className={["rounded-full px-3 py-1.5 font-bold", editingPinned ? "bg-neutral-950 text-white" : "hover:bg-neutral-100"].join(" ")}>
               {editingPinned ? "Writing" : "Editing"}
             </button>
