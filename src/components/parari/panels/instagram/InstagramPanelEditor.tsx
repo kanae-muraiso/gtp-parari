@@ -1,5 +1,3 @@
-// Instagram panel editor
-
 "use client";
 
 import type { PanelEditorProps } from "../panelDefinitionTypes";
@@ -14,174 +12,112 @@ export function InstagramPanelEditor({
   data,
   onChangeRaw,
 }: PanelEditorProps<InstagramPanelData>) {
-  const updateData = (
-    nextData: InstagramPanelData,
-  ) => {
+  const updateData = (partial: Partial<InstagramPanelData>) => {
     onChangeRaw?.(
-      serializeInstagramPanel(nextData),
+      serializeInstagramPanel({
+        ...data,
+        ...partial,
+      }),
     );
   };
 
-  const updateField = <
-    K extends keyof InstagramPanelData
-  >(
-    key: K,
-    value: InstagramPanelData[K],
-  ) => {
-    updateData({
-      ...data,
-      [key]: value,
-    });
-  };
-
-  const setDisplayMode = (
-    displayMode: InstagramDisplayMode,
-  ) => {
-    updateField("displayMode", displayMode);
+  const setDisplayMode = (displayMode: InstagramDisplayMode) => {
+    updateData({ displayMode });
   };
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2 md:grid-cols-[1fr_160px]">
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-            Instagram URL
-          </span>
+    <div>
+      <input
+        value={data.title}
+        onChange={(event) => updateData({ title: event.target.value })}
+        className="mb-2 w-full border-0 bg-transparent p-0 text-sm font-bold text-neutral-800 outline-none placeholder:text-neutral-300"
+        placeholder="Instagramタイトル"
+      />
 
-          <input
-            value={data.url}
-            onChange={(event) =>
-              updateField(
-                "url",
-                event.target.value,
-              )
-            }
-            placeholder="https://www.instagram.com/reel/xxxx/"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-            幅 %
-          </span>
-
-          <input
-            value={data.instagramWidth}
-            onChange={(event) =>
-              updateField(
-                "instagramWidth",
-                event.target.value,
-              )
-            }
-            placeholder="100"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-      </div>
-
-      <div>
-        <div className="mb-1 text-[11px] font-bold text-neutral-500">
-          表示方法
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setDisplayMode("embed")}
-            className={[
-              "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
-              data.displayMode === "embed"
-                ? "bg-blue-50 text-blue-700 ring-blue-200"
-                : "bg-white text-neutral-500 ring-neutral-200 hover:bg-neutral-50",
-            ].join(" ")}
-          >
-            Instagram埋め込み
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDisplayMode("thumbnail")}
-            className={[
-              "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
-              data.displayMode === "thumbnail"
-                ? "bg-blue-50 text-blue-700 ring-blue-200"
-                : "bg-white text-neutral-500 ring-neutral-200 hover:bg-neutral-50",
-            ].join(" ")}
-          >
-            サムネイル表示
-          </button>
-        </div>
-
-        <p className="mt-1 text-[11px] leading-5 text-neutral-400">
-          Instagram埋め込みで表示が崩れる投稿は、
-          サムネイル表示を利用できます。
-        </p>
-      </div>
-
-      <label className="block">
-        <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-          タイトル 任意
-        </span>
-
-        <input
-          value={data.title}
-          onChange={(event) =>
-            updateField(
-              "title",
-              event.target.value,
-            )
-          }
-          placeholder="参考にしたいInstagram動画"
-          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        />
-      </label>
-
-      {data.displayMode === "thumbnail" ? (
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-            サムネイル画像URL
-          </span>
-
-          <input
-            value={data.thumbnail}
-            onChange={(event) =>
-              updateField(
-                "thumbnail",
-                event.target.value,
-              )
-            }
-            placeholder="https://example.com/thumbnail.jpg"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-      ) : null}
-
-      <label className="block">
-        <span className="mb-1 block text-[11px] font-bold text-neutral-500">
-          キャプション 任意
-        </span>
-
-        <textarea
-          value={data.caption}
-          onChange={(event) =>
-            updateField(
-              "caption",
-              event.target.value,
-            )
-          }
-          placeholder="この動画についてのメモを書きます。"
-          className="min-h-[80px] w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        />
-      </label>
-
-      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-        <div className="mb-2 text-[11px] font-bold text-neutral-400">
-          表示プレビュー
-        </div>
-
+      {data.url.trim() ? (
         <InstagramEmbed data={data} />
-      </div>
+      ) : (
+        <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm font-bold text-neutral-400">
+          Instagram URLを設定
+        </div>
+      )}
+
+      <textarea
+        value={data.caption}
+        onChange={(event) => updateData({ caption: event.target.value })}
+        rows={2}
+        className="mt-2 min-h-[44px] w-full resize-y border-0 bg-transparent px-1 py-1 text-sm leading-6 text-neutral-600 outline-none placeholder:text-neutral-300"
+        placeholder="キャプション"
+      />
+
+      <details className="mt-3 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
+        <summary className="cursor-pointer select-none font-bold">設定</summary>
+
+        <div className="mt-3 space-y-3">
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-bold">Instagram URL</span>
+            <input
+              value={data.url}
+              onChange={(event) => updateData({ url: event.target.value })}
+              placeholder="https://www.instagram.com/reel/xxxx/"
+              className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-bold">幅 %</span>
+            <input
+              value={data.instagramWidth}
+              onChange={(event) => updateData({ instagramWidth: event.target.value })}
+              placeholder="100"
+              className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none"
+            />
+          </label>
+
+          <div>
+            <div className="mb-1 text-[11px] font-bold">表示方法</div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setDisplayMode("embed")}
+                className={[
+                  "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
+                  data.displayMode === "embed"
+                    ? "bg-blue-50 text-blue-700 ring-blue-200"
+                    : "bg-white text-neutral-500 ring-neutral-200",
+                ].join(" ")}
+              >
+                Instagram埋め込み
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDisplayMode("thumbnail")}
+                className={[
+                  "rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition",
+                  data.displayMode === "thumbnail"
+                    ? "bg-blue-50 text-blue-700 ring-blue-200"
+                    : "bg-white text-neutral-500 ring-neutral-200",
+                ].join(" ")}
+              >
+                サムネイル
+              </button>
+            </div>
+          </div>
+
+          {data.displayMode === "thumbnail" ? (
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-bold">サムネイル画像URL</span>
+              <input
+                value={data.thumbnail}
+                onChange={(event) => updateData({ thumbnail: event.target.value })}
+                placeholder="https://example.com/thumbnail.jpg"
+                className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none"
+              />
+            </label>
+          ) : null}
+        </div>
+      </details>
     </div>
   );
 }
