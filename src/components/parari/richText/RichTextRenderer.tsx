@@ -23,6 +23,7 @@ import type {
   RichInline,
   RichTextTheme,
 } from "@/lib/parari/richText/types";
+import { RICH_TEXT_COLOR_HEX } from "@/lib/parari/richText/textColors";
 
 /**
  * PART: className helper
@@ -244,7 +245,11 @@ function renderInline(inline: RichInline, theme: RichTextTheme, key: string) {
           : undefined;
 
       return (
-        <span key={key} className={cx(theme.colorClassName, toneClass)}>
+        <span
+          key={key}
+          className={cx(theme.colorClassName, toneClass)}
+          style={inline.color ? { color: RICH_TEXT_COLOR_HEX[inline.color] } : undefined}
+        >
           {renderInlineText(inline.text, key)}
         </span>
       );
