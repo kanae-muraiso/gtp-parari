@@ -10,7 +10,7 @@ import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { resolvePanelGap } from "@/components/parari/panels/shared/panelGap";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import {
-  parsePanelVisualStyle,
+  resolvePanelVisualStyle,
   stripPanelStyleAttrs,
   stripPanelVisualStyleFromRaw,
 } from "@/lib/parari/ssot-v2/panelStyle";
@@ -142,7 +142,7 @@ function TextBlockView({
     return null;
   }
 
-  const panelStyle = parsePanelVisualStyle(block.attrs);
+  const panelStyle = resolvePanelVisualStyle(block.kind === "panel" ? block.tag : "TEXT", block.attrs, block.kind === "panel" ? block.variant : undefined);
 
   return (
     <PanelFrame style={panelStyle} defaultWidth="text">
@@ -167,7 +167,7 @@ function PanelBlockView({
   renderTextBlock: ReaderTextBlockRenderer;
 }) {
   const gap = resolvePanelGap(block);
-  const panelStyle = parsePanelVisualStyle(block.attrs);
+  const panelStyle = resolvePanelVisualStyle(block.kind === "panel" ? block.tag : "TEXT", block.attrs, block.kind === "panel" ? block.variant : undefined);
   const defaultWidth = panelFrameDefaultWidthForBlock(block);
   const contentRaw = stripPanelVisualStyleFromRaw(block.raw);
   const contentBlock: PanelBlock = {
