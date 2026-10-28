@@ -77,7 +77,7 @@ export function PanelBlockCard({
 
   const panelStyle = useMemo(
     () => resolvePanelVisualStyle(block.tag, block.attrs, block.variant),
-    [block.attrs],
+    [block.attrs, block.tag, block.variant],
   );
   const contentRaw = useMemo(
     () => stripPanelVisualStyleFromRaw(block.raw),
