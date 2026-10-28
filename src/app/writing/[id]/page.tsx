@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
+import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 
 type WorkRow = {
   id: string;
@@ -26,6 +27,7 @@ export default function WritingWorkPage() {
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
   const [shiftPreview, setShiftPreview] = useState(false);
+  const shiftCandidateRef = useRef(false);
   const [editingSsot, setEditingSsot] = useState("");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef({ title: "", body: "", mainImageUrl: "" });
@@ -60,21 +62,34 @@ export default function WritingWorkPage() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Shift" || event.repeat || editingPinned) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.matches("input, textarea, [contenteditable=true]")) return;
-      setShiftPreview(true);
+      if (editingPinned) return;
+      if (event.key === "Shift" && !event.repeat) {
+        shiftCandidateRef.current = true;
+        window.setTimeout(() => {
+          if (shiftCandidateRef.current) setShiftPreview(true);
+        }, 180);
+        return;
+      }
+      if (event.shiftKey) {
+        shiftCandidateRef.current = false;
+        setShiftPreview(false);
+      }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Shift") setShiftPreview(false);
+      if (event.key !== "Shift") return;
+      shiftCandidateRef.current = false;
+      setShiftPreview(false);
     };
-    const onBlur = () => setShiftPreview(false);
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
+    const onBlur = () => {
+      shiftCandidateRef.current = false;
+      setShiftPreview(false);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
     window.addEventListener("blur", onBlur);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
       window.removeEventListener("blur", onBlur);
     };
   }, [editingPinned]);
@@ -207,8 +222,13 @@ export default function WritingWorkPage() {
               <button type="button" onClick={() => setMainImageUrl("")} className="mt-2 text-xs text-neutral-300 hover:text-neutral-600">画像を外す</button>
             </div> : null}
 
-            <textarea autoFocus value={body} onChange={e => setBody(e.target.value)} placeholder="書き始める…"
-              className="min-h-[65vh] w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-8 text-neutral-900 outline-none placeholder:text-neutral-300" />
+            <RichTextField
+              value={body ? `[T]\n${body}` : "[T]\n"}
+              onChange={(next) => setBody(next.replace(/^\s*\[T\]\s*\r?\n?/i, ""))}
+              placeholder="書き始める…"
+              minHeightClassName="min-h-[65vh]"
+              quiet
+            />
           </article>
         )}
 
