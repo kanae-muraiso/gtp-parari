@@ -43,9 +43,9 @@ export default function WritingSsotSurface({
 
   return (
     <div className="min-h-[65vh]">
-      {contentBlocks.map((block) => (
+      {contentBlocks.map((block, index) => (
         <WritingBlock
-          key={block.id}
+          key={`${block.kind}-${index}`}
           block={block}
           source={value}
           onChange={onChange}
