@@ -130,8 +130,12 @@ export function parseRichInlines(text: string): RichInline[] {
     if (next.type === "bold") {
       result.push({ type: "bold", text: inner });
     } else {
-      const namedColorMatch = inner.match(/^([a-z]+)\|([\s\S]*)$/i);
-      const candidateColor = namedColorMatch?.[1]?.toLowerCase() ?? "";
+      const namedColorMatch = inner.match(/^([a-z]+(?:\+[a-z]+)*)\|([\s\S]*)$/i);
+      const headerTokens = namedColorMatch?.[1]
+        ?.toLowerCase()
+        .split("+")
+        .filter(Boolean) ?? [];
+      const candidateColor = headerTokens[0] ?? "";
       const colorName = isRichTextColorName(candidateColor)
         ? candidateColor
         : null;
@@ -140,6 +144,8 @@ export function parseRichInlines(text: string): RichInline[] {
         type: "color",
         text: colorName && namedColorMatch ? namedColorMatch[2] : inner,
         color: colorName ?? "red",
+        bold: headerTokens.includes("bold"),
+        italic: headerTokens.includes("italic"),
         tone: colorName ? undefined : resolveColorTone(inner),
       });
     }
