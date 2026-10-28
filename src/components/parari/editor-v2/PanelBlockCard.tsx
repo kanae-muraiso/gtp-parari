@@ -195,11 +195,15 @@ export function PanelBlockCard({
           {mode === "edit" ? (
                               <div
                                 className={[
-                                  "rounded-xl border p-2 shadow-sm",
-                                  panelFrameClass(block.tag, "edit"),
+                                  isDirectEditPanel(block.tag)
+                                    ? "relative"
+                                    : "rounded-xl border p-2 shadow-sm",
+                                  isDirectEditPanel(block.tag)
+                                    ? ""
+                                    : panelFrameClass(block.tag, "edit"),
                                 ].join(" ")}
                               >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className={isDirectEditPanel(block.tag) ? "hidden" : "mb-2 flex flex-wrap items-center justify-between gap-2"}>
                 <button
                   type="button"
                   onClick={() => setMode("view")}
@@ -279,7 +283,17 @@ export function PanelBlockCard({
                 </div>
               </div>
 
-              <div className="border-t border-yellow-200 pt-2">
+              {isDirectEditPanel(block.tag) && hasMounted && onDelete ? (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="absolute right-1 top-1 z-20 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-neutral-400 shadow-sm ring-1 ring-neutral-200 transition hover:bg-rose-50 hover:text-rose-600"
+                >
+                  削除
+                </button>
+              ) : null}
+
+              <div className={isDirectEditPanel(block.tag) ? "" : "border-t border-yellow-200 pt-2"}>
                               <Editor
                                 block={block}
                                 data={data as never}
