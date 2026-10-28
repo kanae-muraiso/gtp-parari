@@ -75,6 +75,13 @@ import DictionaryHighlightPlugin from "@/components/parari/english/DictionaryHig
 import { dictionaryStatus, normalizeEnglishWord, DICTIONARY_MISSING_BACKGROUND, type DictionaryEntry } from "@/lib/parari/english/dictionary";
 import { formatEikenLevelJa, type TextReadingSupportOptions } from "@/lib/parari/richText/textReadingSupport";
 import { EIKEN_BACKGROUNDS } from "@/lib/parari/english/eikenBackground";
+import {
+  RICH_TEXT_COLOR_HEX,
+  RICH_TEXT_COLOR_LABELS,
+  RICH_TEXT_COLOR_NAMES,
+  type RichTextColorName,
+  isRichTextColorName,
+} from "@/lib/parari/richText/textColors";
 
 type DictionaryLookupState =
   | { kind: "result"; word: string; entry: DictionaryEntry | null }
@@ -108,7 +115,7 @@ type RichTextFieldProps = {
 };
 
 const PARARI_NOTE_URL_PREFIX = "parari-note:";
-const RED_COLOR = "#dc2626";
+const RED_COLOR = RICH_TEXT_COLOR_HEX.red;
 
 const theme = {
   paragraph: "mb-4 last:mb-0",
@@ -533,6 +540,19 @@ function RichTextToolbar({
       { kind: "block", block: "plain", label: "plain", title: "標準" },
       { kind: "format", format: "bold", label: "B", title: "太字" },
       { kind: "format", format: "red", label: "赤", title: "赤字" },
+      ...RICH_TEXT_COLOR_NAMES.map((color) => ({
+        kind: "color" as const,
+        color,
+        label: RICH_TEXT_COLOR_LABELS[color],
+        swatch: RICH_TEXT_COLOR_HEX[color],
+        title: `${RICH_TEXT_COLOR_LABELS[color]}字`,
+      })),
+      {
+        kind: "color" as const,
+        color: null,
+        label: "標準",
+        title: "文字色を標準に戻す",
+      },
       { kind: "divider", label: "―", title: "区切り線" },
       {
         kind: "panel",
@@ -605,6 +625,23 @@ function RichTextToolbar({
       });
     };
 
+
+    const applyTextColor = (color: RichTextColorName | null) => {
+      editor.focus();
+
+      editor.update(() => {
+        const selection = $getSelection();
+
+        if (!$isRangeSelection(selection)) {
+          return;
+        }
+
+        $patchStyleText(selection, {
+          color: color ? RICH_TEXT_COLOR_HEX[color] : null,
+          "font-weight": null,
+        });
+      });
+    };
 
     const toggleRed = () => {
       editor.focus();
@@ -750,6 +787,11 @@ function RichTextToolbar({
           return;
         }
 
+        return;
+      }
+
+      if (action.kind === "color") {
+        applyTextColor(action.color);
         return;
       }
 
@@ -1139,8 +1181,12 @@ function serializeNodeToSsot(node: LexicalNode): string {
         text = `*${text}*`;
       }
 
-      if (isRedTextNode(node)) {
+      const colorName = getTextColorName(node);
+
+      if (colorName === "red") {
         text = `!!${text}!!`;
+      } else if (colorName) {
+        text = `!!${colorName}|${text}!!`;
       }
 
       return text;
@@ -1204,8 +1250,8 @@ function appendInlineMarkdownLikeText(
       textNode.toggleFormat("bold");
     }
 
-      if (part.red) {
-        textNode.setStyle(`color: ${RED_COLOR};`);
+      if (part.color) {
+        textNode.setStyle(`color: ${RICH_TEXT_COLOR_HEX[part.color]};`);
       }
       
     if (part.italic) {
@@ -1227,7 +1273,7 @@ type InlinePart = {
   text: string;
   bold?: boolean;
   italic?: boolean;
-  red?: boolean;
+  color?: RichTextColorName;
   linkUrl?: string;
 };
 
@@ -1270,9 +1316,16 @@ function parseInlineMarkdownLikeText(line: string): InlinePart[] {
     }
 
       if (token.startsWith("!!") && token.endsWith("!!")) {
+        const inner = token.slice(2, -2);
+        const namedColorMatch = inner.match(/^([a-z]+)\|([\s\S]*)$/i);
+        const candidate = namedColorMatch?.[1]?.toLowerCase() ?? "";
+        const color = isRichTextColorName(candidate) ? candidate : "red";
+
         parts.push({
-          text: token.slice(2, -2),
-          red: true,
+          text: namedColorMatch && isRichTextColorName(candidate)
+            ? namedColorMatch[2]
+            : inner,
+          color,
         });
         lastIndex = match.index + token.length;
         continue;
@@ -1302,16 +1355,28 @@ function parseInlineMarkdownLikeText(line: string): InlinePart[] {
   return parts;
 }
 
-function isRedTextNode(node: LexicalNode): boolean {
+function getTextColorName(node: LexicalNode): RichTextColorName | null {
   if (!$isTextNode(node)) {
-    return false;
+    return null;
   }
 
-  const style = node.getStyle();
+  const style = node.getStyle().toLowerCase();
 
-  return (
-    style.includes(RED_COLOR) ||
-    style.includes("rgb(220, 38, 38)") ||
-    style.includes("color: red")
-  );
+  for (const colorName of RICH_TEXT_COLOR_NAMES) {
+    const hex = RICH_TEXT_COLOR_HEX[colorName].toLowerCase();
+
+    if (style.includes(hex)) {
+      return colorName;
+    }
+  }
+
+  if (style.includes("rgb(220, 38, 38)") || style.includes("color: red")) {
+    return "red";
+  }
+
+  return null;
+}
+
+function isRedTextNode(node: LexicalNode): boolean {
+  return getTextColorName(node) === "red";
 }
