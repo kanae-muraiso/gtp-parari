@@ -14,6 +14,7 @@
 
 import { useState } from "react";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
+import type { RichTextColorName } from "@/lib/parari/richText/textColors";
 
 export type RichTextInlineMenuAction =
   | {
@@ -26,6 +27,13 @@ export type RichTextInlineMenuAction =
       kind: "format";
       format: "bold" | "red";
       label: string;
+      title?: string;
+    }
+  | {
+      kind: "color";
+      color: RichTextColorName | null;
+      label: string;
+      swatch?: string;
       title?: string;
     }
   | {
@@ -86,6 +94,7 @@ type RichTextInlineInsertMenuProps = {
 
 type OpenMenu =
   | "link"
+  | "color"
   | "media"
   | "panel"
   | "structure"
@@ -126,6 +135,15 @@ export function RichTextInlineInsertMenu({
   if (!visible) {
     return null;
   }
+
+  const colorActions = textActions.filter(
+    (action): action is Extract<RichTextInlineMenuAction, { kind: "color" }> =>
+      action.kind === "color",
+  );
+
+  const visibleTextActions = textActions.filter(
+    (action) => action.kind !== "color",
+  );
 
   const mediaActions = filterPanelActions(
     panelActions,
@@ -174,17 +192,28 @@ export function RichTextInlineInsertMenu({
   return (
     <div className="sticky top-[56px] z-40 -mx-3 mb-2 border-b border-neutral-200 bg-neutral-100/95 px-3 py-1 shadow-sm backdrop-blur">
       <div className="flex max-w-full flex-wrap items-center gap-1 overflow-visible">
-          {textActions.map((action) => (
-          <ToolbarButton
-            key={getActionKey(action)}
-            action={action}
-            active={
-              action.kind === "link" &&
-              openMenu === "link"
-            }
-            onSelect={handleAction}
-          />
-        ))}
+          {visibleTextActions.map((action) =>
+            action.kind === "format" && action.format === "red" ? (
+              <ColorToolbarControl
+                key={getActionKey(action)}
+                primaryAction={action}
+                open={openMenu === "color"}
+                colorActions={colorActions}
+                onToggle={() => toggleMenu("color")}
+                onSelect={handleAction}
+              />
+            ) : (
+              <ToolbarButton
+                key={getActionKey(action)}
+                action={action}
+                active={
+                  action.kind === "link" &&
+                  openMenu === "link"
+                }
+                onSelect={handleAction}
+              />
+            ),
+          )}
 
         {mediaActions.length > 0 ? (
           <ToolbarDropdown
@@ -247,6 +276,91 @@ export function RichTextInlineInsertMenu({
               onSelect={handleAction}
             />
           ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ColorToolbarControl({
+  primaryAction,
+  open,
+  colorActions,
+  onToggle,
+  onSelect,
+}: {
+  primaryAction: Extract<RichTextInlineMenuAction, { kind: "format"; format: "red" }>;
+  open: boolean;
+  colorActions: Array<Extract<RichTextInlineMenuAction, { kind: "color" }>>;
+  onToggle: () => void;
+  onSelect: (action: RichTextInlineMenuAction) => void;
+}) {
+  return (
+    <div className="relative flex">
+      <button
+        type="button"
+        title={primaryAction.title}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          onSelect(primaryAction);
+        }}
+        className="rounded-l-full border border-r-0 border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-red-600 shadow-sm transition hover:bg-neutral-100"
+      >
+        {primaryAction.label}
+      </button>
+
+      <button
+        type="button"
+        title="文字色"
+        onMouseDown={(event) => {
+          event.preventDefault();
+          onToggle();
+        }}
+        className={[
+          "rounded-r-full border px-1.5 py-1 text-[10px] font-semibold shadow-sm transition",
+          open
+            ? "border-neutral-400 bg-neutral-800 text-white"
+            : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-100",
+        ].join(" ")}
+        aria-expanded={open}
+      >
+        ▾
+      </button>
+
+      {open ? (
+        <div className="absolute left-0 top-full z-50 mt-1 w-40 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
+          <div className="grid grid-cols-4 gap-2">
+            {colorActions
+              .filter((action) => action.color !== null)
+              .map((action) => (
+                <button
+                  key={getActionKey(action)}
+                  type="button"
+                  title={action.title ?? action.label}
+                  aria-label={action.label}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    onSelect(action);
+                  }}
+                  className="h-7 w-7 rounded-full border border-black/10 shadow-sm ring-offset-2 hover:ring-2 hover:ring-neutral-300"
+                  style={{ backgroundColor: action.swatch }}
+                />
+              ))}
+          </div>
+
+          {colorActions.some((action) => action.color === null) ? (
+            <button
+              type="button"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                const clearAction = colorActions.find((action) => action.color === null);
+                if (clearAction) onSelect(clearAction);
+              }}
+              className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold text-neutral-500 hover:bg-neutral-100"
+            >
+              標準に戻す
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -375,6 +489,10 @@ function getActionKey(
 
   if (action.kind === "panel") {
     return `panel-${action.tag}`;
+  }
+
+  if (action.kind === "color") {
+    return `color-${action.color ?? "default"}`;
   }
 
   return action.kind;
