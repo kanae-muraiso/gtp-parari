@@ -13,6 +13,13 @@ import type {
 } from "@/lib/parari/ssot-v2/panelTypes";
 import { PanelBlockCard } from "@/components/parari/editor-v2/PanelBlockCard";
 import { RichTextPanelEditor } from "@/components/parari/panels/richText/RichTextPanelEditor";
+import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
+import { PanelStyleControls } from "@/components/parari/panels/shared/PanelStyleControls";
+import {
+  parsePanelVisualStyle,
+  withPanelVisualStyleAttrs,
+  type PanelVisualStyle,
+} from "@/lib/parari/ssot-v2/panelStyle";
 import PageBodyPanelRenderer from "./PageBodyPanelRenderer";
 import {
   PanelInsertSlot,
@@ -244,6 +251,28 @@ const waitForNextPaint = () =>
     });
 
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
+  };
+
+  const replaceTextPanelStyle = (
+    blockId: string,
+    next: PanelVisualStyle,
+  ) => {
+    const nextBlocks = blocks.map((block) => {
+      if (block.id !== blockId || block.kind !== "text") {
+        return block;
+      }
+
+      return {
+        ...block,
+        attrs: withPanelVisualStyleAttrs(block.attrs, next),
+      } as SsotBlock;
+    });
+
+    onChange(
+      normalizePageHeadersFromTitle(
+        serializeBlocks(sanitizeBlocks(nextBlocks)),
+      ),
+    );
   };
 
   const replaceTextReadingSupport = (
@@ -634,33 +663,51 @@ const waitForNextPaint = () =>
           ) : null}
                      {renderBlocks.map((block, index) => {
                          const stableKey = `${structureVersion}-${block.kind}-${index}`;
+                         const textPanelStyle =
+                           block.kind === "text"
+                             ? parsePanelVisualStyle(block.attrs)
+                             : null;
 
                        return (
                          <Fragment key={stableKey}>
 
 
                                {block.kind === "text" ? (
-                                                         <div className="w-full">
-                                                         <RichTextPanelEditor
-                                                           ssotText={block.raw}
-                                                           placeholder={textPlaceholder}
-                                                           readingSupport={parseTextReadingSupportAttrs(block.attrs)}
-                                                           onChangeReadingSupport={(next) =>
-                                                             replaceTextReadingSupport(block.id, next)
-                                                           }
-                                                           onChangeSsotText={(nextSsotText) =>
-                                                             replaceBlockRaw(
-                                                               block.id,
-                                                               nextSsotText.trim().length > 0 ? nextSsotText : "\u200B",
-                                                             )
-                                                           }
-                                                           onReplacePanel={(result) =>
-                                                             replaceBlockWithSsot(block.id, result.replacementSsot)
-                                                           }
-                                                           onDelete={
-                                                             renderBlocks.length > 1 ? () => deleteBlock(block.id) : undefined
-                                                           }
-                                                         />
+                                 <div className="w-full">
+                                   <PanelFrame
+                                     style={textPanelStyle ?? undefined}
+                                     defaultWidth="text"
+                                   >
+                                     <RichTextPanelEditor
+                                       ssotText={block.raw}
+                                       placeholder={textPlaceholder}
+                                       readingSupport={parseTextReadingSupportAttrs(block.attrs)}
+                                       onChangeReadingSupport={(next) =>
+                                         replaceTextReadingSupport(block.id, next)
+                                       }
+                                       onChangeSsotText={(nextSsotText) =>
+                                         replaceBlockRaw(
+                                           block.id,
+                                           nextSsotText.trim().length > 0 ? nextSsotText : "\u200B",
+                                         )
+                                       }
+                                       onReplacePanel={(result) =>
+                                         replaceBlockWithSsot(block.id, result.replacementSsot)
+                                       }
+                                       onDelete={
+                                         renderBlocks.length > 1 ? () => deleteBlock(block.id) : undefined
+                                       }
+                                     />
+                                   </PanelFrame>
+
+                                   {textPanelStyle ? (
+                                     <PanelStyleControls
+                                       value={textPanelStyle}
+                                       onChange={(next) =>
+                                         replaceTextPanelStyle(block.id, next)
+                                       }
+                                     />
+                                   ) : null}
                                  </div>
                                ) : (
                                     <PanelBlockCard
