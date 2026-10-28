@@ -33,6 +33,46 @@ export const DEFAULT_PANEL_VISUAL_STYLE: PanelVisualStyle = {
 
 const STYLE_PREFIX = "pstyle.";
 
+export function hasPanelVisualStyleAttrs(attrs?: string): boolean {
+  return String(attrs ?? "")
+    .split(/\s+/)
+    .some((token) => token.startsWith(STYLE_PREFIX));
+}
+
+export function resolvePanelVisualStyle(
+  tag: string,
+  attrs?: string,
+  variant?: string,
+): PanelVisualStyle {
+  if (hasPanelVisualStyleAttrs(attrs)) {
+    return parsePanelVisualStyle(attrs);
+  }
+
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+
+  if (normalizedTag === "NOTICE" || normalizedTag === "LIST") {
+    return {
+      ...DEFAULT_PANEL_VISUAL_STYLE,
+      border: "thin",
+      borderColor: semanticBorderColor(variant),
+      radius: "l",
+      padding: "m",
+    };
+  }
+
+  if (normalizedTag === "ACCORDION") {
+    return {
+      ...DEFAULT_PANEL_VISUAL_STYLE,
+      border: "thin",
+      borderColor: semanticBorderColor(variant),
+      radius: "l",
+      padding: "none",
+    };
+  }
+
+  return { ...DEFAULT_PANEL_VISUAL_STYLE };
+}
+
 export function parsePanelVisualStyle(attrs?: string): PanelVisualStyle {
   const next = { ...DEFAULT_PANEL_VISUAL_STYLE };
 
@@ -79,14 +119,12 @@ export function withPanelVisualStyleAttrs(
 ): string {
   const tokens = [
     stripPanelStyleAttrs(attrs),
-    style.width !== "default" ? `pstyle.width=${style.width}` : "",
-    style.border !== "none" ? `pstyle.border=${style.border}` : "",
-    style.border !== "none" && style.borderColor !== "gray"
-      ? `pstyle.borderColor=${style.borderColor}`
-      : "",
-    style.radius !== "none" ? `pstyle.radius=${style.radius}` : "",
-    style.padding !== "none" ? `pstyle.padding=${style.padding}` : "",
-    style.gap !== "default" ? `pstyle.gap=${style.gap}` : "",
+    `pstyle.width=${style.width}`,
+    `pstyle.border=${style.border}`,
+    `pstyle.borderColor=${style.borderColor}`,
+    `pstyle.radius=${style.radius}`,
+    `pstyle.padding=${style.padding}`,
+    `pstyle.gap=${style.gap}`,
   ].filter(Boolean);
 
   return tokens.join(" ").trim();
@@ -135,6 +173,17 @@ export function stripPanelVisualStyleFromRaw(raw: string): string {
   lines[0] = `${prefix}${attrs ? ` ${attrs}` : ""}]${tail}`;
 
   return lines.join("\n");
+}
+
+function semanticBorderColor(variant?: string): PanelStyleColor {
+  const normalized = String(variant ?? "").trim().toLowerCase().split("/")[0];
+
+  if (normalized === "primary" || normalized === "info") return "blue";
+  if (normalized === "success") return "green";
+  if (normalized === "danger") return "red";
+  if (normalized === "warning") return "yellow";
+  if (normalized === "dark") return "black";
+  return "gray";
 }
 
 function isOneOf(value: string, allowed: readonly string[]): boolean {
