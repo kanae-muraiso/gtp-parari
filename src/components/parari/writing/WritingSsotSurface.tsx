@@ -72,14 +72,15 @@ function WritingBlock({
   if (block.kind === "text") {
     return (
       <RichTextField
-        value={trimTextBoundary(block.raw)}
+        value={nextBlock?.kind === "panel" ? trimTextBoundary(block.raw) : block.raw}
         onChange={(raw) => {
           const start = Math.max(0, block.start ?? 0);
           const end = Math.max(start, block.end ?? start);
           const before = source.slice(0, start);
           const after = source.slice(end);
-          const body = trimTextBoundary(raw);
-          const boundary = nextBlock?.kind === "panel" ? "\n\n" : "";
+          const hasFollowingPanel = nextBlock?.kind === "panel";
+          const body = hasFollowingPanel ? trimTextBoundary(raw) : raw;
+          const boundary = hasFollowingPanel ? "\n\n" : "";
           onChange(before + body + boundary + after.replace(/^\s+/, ""));
         }}
         placeholder={placeholder}
