@@ -117,6 +117,36 @@ function TextBlock({ text }: { text: string }) {
   );
 }
 
+function parseRichListItems(body: string): string[] {
+  const normalized = String(body ?? "").replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+
+  if (!lines.some((line) => /^\s*\[ITEM\]\s*$/i.test(line))) {
+    return lines.map((line) => line.trim()).filter(Boolean);
+  }
+
+  const items: string[] = [];
+  let current: string[] = [];
+
+  const flush = () => {
+    const value = current.join("\n").trim();
+    if (value) items.push(value);
+    current = [];
+  };
+
+  for (const line of lines) {
+    if (/^\s*\[ITEM\]\s*$/i.test(line)) {
+      flush();
+      continue;
+    }
+
+    current.push(line);
+  }
+
+  flush();
+  return items;
+}
+
 function PlainBlock({
   title,
   body,
@@ -145,10 +175,12 @@ function RichCard({
   title,
   body,
   variant,
+  role,
 }: {
   title: string;
   body: string;
   variant: SsotVariant;
+  role: "notice" | "list" | "profile";
 }) {
   void variant;
 
@@ -161,7 +193,20 @@ function RichCard({
       ) : null}
 
       {body ? (
-        <RichTextRenderer document={parseRichText(body)} />
+        role === "list" ? (
+          <ul className="space-y-2">
+            {parseRichListItems(body).map((item, index) => (
+              <li key={`list-item-${index}`} className="flex items-start gap-2">
+                <span className="mt-[0.55em] shrink-0 text-xs">•</span>
+                <div className="min-w-0 flex-1">
+                  <RichTextRenderer document={parseRichText(item)} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <RichTextRenderer document={parseRichText(body)} />
+        )
       ) : null}
     </div>
   );
@@ -203,12 +248,12 @@ function RichAccordion({
       {open ? (
         <div
           className={[
-            "whitespace-pre-wrap border-t px-4 py-3 text-sm leading-7 text-neutral-700",
+            "border-t px-4 py-3 text-neutral-700",
             bodyClasses.softBg,
             bodyClasses.border,
           ].join(" ")}
         >
-          {body}
+          <RichTextRenderer document={parseRichText(body)} />
         </div>
       ) : null}
     </div>
@@ -347,6 +392,7 @@ function renderBlock(block: SsotBlock, index: number, rich: boolean) {
           title={block.title}
           body={block.body}
           variant={block.variant}
+          role={block.role}
         />
       );
     }
