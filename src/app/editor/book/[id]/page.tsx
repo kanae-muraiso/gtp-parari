@@ -9,9 +9,10 @@ import {
 } from "@/components/parari/ParariTopBars";
 import {
   isReferenceBookSsot,
-  parseBookPageRefs,
-  replaceBookPageRefs,
+  parseBookOutline,
+  replaceBookOutline,
   updateBookTitle,
+  type BookOutlineEntry,
 } from "@/lib/parari/book/pageRefs";
 
 type WorkRow = {
@@ -32,14 +33,17 @@ export default function ReferenceBookEditorPage() {
   const [book, setBook] = React.useState<WorkRow | null>(null);
   const [pages, setPages] = React.useState<WorkRow[]>([]);
   const [title, setTitle] = React.useState("");
-  const [pageIds, setPageIds] = React.useState<string[]>([]);
+  const [outline, setOutline] = React.useState<BookOutlineEntry[]>([]);
   const [state, setState] = React.useState<SaveState>("loading");
   const [message, setMessage] = React.useState("");
 
   const bookRef = React.useRef<WorkRow | null>(null);
   const saveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = React.useRef(false);
-  const pendingRef = React.useRef<{ title: string; pageIds: string[] } | null>(null);
+  const pendingRef = React.useRef<{
+    title: string;
+    outline: BookOutlineEntry[];
+  } | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -111,7 +115,7 @@ export default function ReferenceBookEditorPage() {
       setBook(bookData);
       setPages(nextPages);
       setTitle(nextTitle);
-      setPageIds(parseBookPageRefs(content).map((ref) => ref.id));
+      setOutline(parseBookOutline(content));
       setState("idle");
     }
 
@@ -125,21 +129,22 @@ export default function ReferenceBookEditorPage() {
     };
   }, [workId]);
 
-  const selectedPages = pageIds.map((id) => ({
-    id,
-    work: pages.find((page) => page.id === id) ?? null,
-  }));
+  const selectedPageIds = outline
+    .filter((entry): entry is Extract<BookOutlineEntry, { kind: "page" }> =>
+      entry.kind === "page",
+    )
+    .map((entry) => entry.id);
 
   const availablePages = pages.filter(
-    (page) => !pageIds.includes(page.id),
+    (page) => !selectedPageIds.includes(page.id),
   );
 
   const scheduleSave = (
     nextTitle: string,
-    nextPageIds: string[],
+    nextOutline: BookOutlineEntry[],
   ) => {
     setTitle(nextTitle);
-    setPageIds(nextPageIds);
+    setOutline(nextOutline);
     setState("idle");
     setMessage("");
 
@@ -148,13 +153,13 @@ export default function ReferenceBookEditorPage() {
     }
 
     saveTimerRef.current = setTimeout(() => {
-      void save(nextTitle, nextPageIds);
+      void save(nextTitle, nextOutline);
     }, 500);
   };
 
   const save = async (
     nextTitle: string,
-    nextPageIds: string[],
+    nextOutline: BookOutlineEntry[],
   ) => {
     const currentBook = bookRef.current;
 
@@ -163,7 +168,7 @@ export default function ReferenceBookEditorPage() {
     if (saveLockRef.current) {
       pendingRef.current = {
         title: nextTitle,
-        pageIds: nextPageIds,
+        outline: nextOutline,
       };
       return;
     }
@@ -184,9 +189,9 @@ export default function ReferenceBookEditorPage() {
         String(currentBook.content ?? ""),
         nextTitle,
       );
-      nextContent = replaceBookPageRefs(
+      nextContent = replaceBookOutline(
         nextContent,
-        nextPageIds,
+        nextOutline,
       );
 
       const response = await fetch("/api/works/update", {
@@ -237,13 +242,13 @@ export default function ReferenceBookEditorPage() {
 
       if (pending) {
         window.setTimeout(() => {
-          void save(pending.title, pending.pageIds);
+          void save(pending.title, pending.outline);
         }, 50);
       }
     }
   };
 
-  const movePage = (
+  const moveOutlineEntry = (
     index: number,
     direction: -1 | 1,
   ) => {
@@ -251,18 +256,53 @@ export default function ReferenceBookEditorPage() {
 
     if (
       nextIndex < 0 ||
-      nextIndex >= pageIds.length
+      nextIndex >= outline.length
     ) {
       return;
     }
 
-    const next = [...pageIds];
+    const next = [...outline];
     [next[index], next[nextIndex]] = [
       next[nextIndex],
       next[index],
     ];
 
     scheduleSave(title, next);
+  };
+
+  const addChapter = () => {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `chapter-${Date.now().toString(36)}`;
+
+    scheduleSave(title, [
+      ...outline,
+      {
+        kind: "chapter",
+        id,
+        title: "新しい章",
+      },
+    ]);
+  };
+
+  const renameChapter = (
+    chapterId: string,
+    nextTitle: string,
+  ) => {
+    scheduleSave(
+      title,
+      outline.map((entry) =>
+        entry.kind === "chapter" && entry.id === chapterId
+          ? {
+              ...entry,
+              title:
+                nextTitle.replace(/\r?\n/g, " ").trim() ||
+                "新しい章",
+            }
+          : entry,
+      ),
+    );
   };
 
   const statusText =
@@ -336,7 +376,7 @@ export default function ReferenceBookEditorPage() {
                 onChange={(event) => {
                   setTitle(event.target.value);
                 }}
-                onBlur={() => scheduleSave(title, pageIds)}
+                onBlur={() => scheduleSave(title, outline)}
                 className="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-neutral-950 outline-none placeholder:text-neutral-300"
                 placeholder="BOOKタイトル"
               />
@@ -353,77 +393,165 @@ export default function ReferenceBookEditorPage() {
                     BOOKに入っているPAGE
                   </h2>
                   <p className="mt-1 text-xs text-neutral-400">
-                    {pageIds.length} PAGE
+                    {selectedPageIds.length} PAGE
                   </p>
                 </div>
               </div>
 
-              {selectedPages.length === 0 ? (
+              {outline.length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-400">
                   まだPAGEがありません。下の一覧から追加してください。
                 </div>
               ) : (
                 <div className="mt-4 space-y-2">
-                  {selectedPages.map(({ id, work }, index) => (
-                    <div
-                      key={id}
-                      className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3"
-                    >
-                      <div className="w-7 shrink-0 text-center text-xs font-bold text-neutral-400">
-                        {index + 1}
-                      </div>
+                  {outline.map((entry, index) => {
+                    if (entry.kind === "chapter") {
+                      return (
+                        <div
+                          key={`chapter-${entry.id}`}
+                          className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3"
+                        >
+                          <div className="w-7 shrink-0 text-center text-xs font-bold text-violet-400">
+                            章
+                          </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-bold text-neutral-900">
-                          {work ? getWorkTitle(work) : "参照先PAGEが見つかりません"}
-                        </div>
-                        <div className="mt-0.5 truncate text-[11px] text-neutral-400">
-                          {id}
-                        </div>
-                      </div>
+                          <input
+                            defaultValue={entry.title}
+                            onBlur={(event) =>
+                              renameChapter(
+                                entry.id,
+                                event.currentTarget.value,
+                              )
+                            }
+                            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold text-violet-950 outline-none"
+                            placeholder="章タイトル"
+                          />
 
-                      <div className="flex shrink-0 items-center gap-1">
-                        {work ? (
-                          <a
-                            href={`/writing/${work.id}`}
-                            className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-500 hover:bg-neutral-100"
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveOutlineEntry(index, -1)}
+                              className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === outline.length - 1}
+                              onClick={() => moveOutlineEntry(index, 1)}
+                              className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                scheduleSave(
+                                  title,
+                                  outline.filter(
+                                    (candidate) =>
+                                      !(
+                                        candidate.kind === "chapter" &&
+                                        candidate.id === entry.id
+                                      ),
+                                  ),
+                                )
+                              }
+                              className="rounded-full px-2 py-1 text-[10px] font-bold text-violet-400 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              外す
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const work =
+                      pages.find((page) => page.id === entry.id) ?? null;
+                    const pageNumber =
+                      outline
+                        .slice(0, index + 1)
+                        .filter((candidate) => candidate.kind === "page")
+                        .length;
+
+                    return (
+                      <div
+                        key={`page-${entry.id}`}
+                        className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+                      >
+                        <div className="w-7 shrink-0 text-center text-xs font-bold text-neutral-400">
+                          {pageNumber}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold text-neutral-900">
+                            {work
+                              ? getWorkTitle(work)
+                              : "参照先PAGEが見つかりません"}
+                          </div>
+                          <div className="mt-0.5 truncate text-[11px] text-neutral-400">
+                            {entry.id}
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          {work ? (
+                            <a
+                              href={`/writing/${work.id}`}
+                              className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-500 hover:bg-neutral-100"
+                            >
+                              PAGE
+                            </a>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => moveOutlineEntry(index, -1)}
+                            className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
                           >
-                            PAGE
-                          </a>
-                        ) : null}
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => movePage(index, -1)}
-                          className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === pageIds.length - 1}
-                          onClick={() => movePage(index, 1)}
-                          className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            scheduleSave(
-                              title,
-                              pageIds.filter((pageId) => pageId !== id),
-                            )
-                          }
-                          className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
-                        >
-                          外す
-                        </button>
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === outline.length - 1}
+                            onClick={() => moveOutlineEntry(index, 1)}
+                            className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              scheduleSave(
+                                title,
+                                outline.filter(
+                                  (candidate) =>
+                                    !(
+                                      candidate.kind === "page" &&
+                                      candidate.id === entry.id
+                                    ),
+                                ),
+                              )
+                            }
+                            className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            外す
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={addChapter}
+                className="mt-4 rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-bold text-violet-700 ring-1 ring-violet-200 transition hover:bg-violet-100"
+              >
+                ＋ 章を追加
+              </button>
             </section>
 
             <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
@@ -457,7 +585,10 @@ export default function ReferenceBookEditorPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          scheduleSave(title, [...pageIds, page.id])
+                          scheduleSave(title, [
+                            ...outline,
+                            { kind: "page", id: page.id },
+                          ])
                         }
                         className="shrink-0 rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-neutral-700"
                       >
