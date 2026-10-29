@@ -151,13 +151,19 @@ function isWebContent(
 
 function countPagePanels(content: string | null | undefined): number {
   const source = String(content ?? "").replace(/\r\n/g, "\n");
+  const lines = source.split("\n");
 
-  return source
-    .split("\n")
-    .filter((line) =>
-      /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(line),
-    )
-    .length;
+  const referenceCount = lines.filter((line) =>
+    /^\s*\[PAGE_REF\s+id=[^\]\s]+\]\s*$/i.test(line),
+  ).length;
+
+  if (referenceCount > 0) {
+    return referenceCount;
+  }
+
+  return lines.filter((line) =>
+    /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(line),
+  ).length;
 }
 
 export async function POST(request: NextRequest) {
