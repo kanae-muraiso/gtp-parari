@@ -17,6 +17,7 @@ type PanelFrameProps = {
   width?: PanelFrameWidth;
   style?: PanelVisualStyle;
   defaultWidth?: PanelFrameDefaultWidth;
+  suppressGap?: boolean;
 };
 
 export function PanelFrame({
@@ -25,13 +26,15 @@ export function PanelFrame({
   width = "default",
   style,
   defaultWidth,
+  suppressGap = false,
 }: PanelFrameProps) {
   const resolvedDefaultWidth =
     defaultWidth ?? (width === "full" ? "full" : "panel");
 
   const classes = [
     resolveWidthClass(style?.width ?? "default", resolvedDefaultWidth),
-    resolveGapClass(style?.gap ?? "default", gap),
+    suppressGap ? "" : resolveGapClass(style?.gap ?? "default", gap),
+    resolveBackgroundColorClass(style?.backgroundColor ?? "none"),
     style?.border === "thin" ? "border" : "",
     style?.border === "thin"
       ? resolveBorderColorClass(style.borderColor)
@@ -70,6 +73,32 @@ function resolveGapClass(
   if (gap === "l") return "mb-8";
 
   return legacyGap === "zero" ? "mb-0" : "mb-6";
+}
+
+function resolveBackgroundColorClass(
+  color: PanelVisualStyle["backgroundColor"],
+): string {
+  switch (color) {
+    case "black":
+      return "bg-neutral-900 text-white";
+    case "gray":
+      return "bg-neutral-50";
+    case "red":
+      return "bg-red-50";
+    case "orange":
+      return "bg-orange-50";
+    case "yellow":
+      return "bg-yellow-50";
+    case "green":
+      return "bg-green-50";
+    case "blue":
+      return "bg-blue-50";
+    case "purple":
+      return "bg-purple-50";
+    case "none":
+    default:
+      return "";
+  }
 }
 
 function resolveBorderColorClass(color: PanelStyleColor): string {
