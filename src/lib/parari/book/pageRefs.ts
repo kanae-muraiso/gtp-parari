@@ -2,17 +2,60 @@ export type BookPageRef = {
   id: string;
 };
 
+export type BookChapterRef = {
+  id: string;
+  title: string;
+};
+
+export type BookOutlineEntry =
+  | { kind: "page"; id: string }
+  | { kind: "chapter"; id: string; title: string };
+
 const PAGE_REF_RE =
   /^\s*\[PAGE_REF\s+id=([^\]\s]+)\]\s*$/i;
 
+const CHAPTER_REF_RE =
+  /^\s*\[BOOK_CHAPTER\s+id=([^\]\s]+)\]\s*(.*)$/i;
+
 export function parseBookPageRefs(ssot: string): BookPageRef[] {
-  return String(ssot ?? "")
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((line) => line.match(PAGE_REF_RE))
-    .filter((match): match is RegExpMatchArray => Boolean(match))
-    .map((match) => ({ id: String(match[1] ?? "").trim() }))
-    .filter((ref) => ref.id.length > 0);
+  return parseBookOutline(ssot)
+    .filter((entry): entry is Extract<BookOutlineEntry, { kind: "page" }> =>
+      entry.kind === "page",
+    )
+    .map((entry) => ({ id: entry.id }));
+}
+
+export function parseBookOutline(ssot: string): BookOutlineEntry[] {
+  const entries: BookOutlineEntry[] = [];
+
+  for (const line of String(ssot ?? "").replace(/\r\n/g, "\n").split("\n")) {
+    const pageMatch = line.match(PAGE_REF_RE);
+
+    if (pageMatch) {
+      const id = String(pageMatch[1] ?? "").trim();
+      if (id) {
+        entries.push({ kind: "page", id });
+      }
+      continue;
+    }
+
+    const chapterMatch = line.match(CHAPTER_REF_RE);
+
+    if (chapterMatch) {
+      const id = String(chapterMatch[1] ?? "").trim();
+      const title = String(chapterMatch[2] ?? "").trim() || "新しい章";
+
+      if (id) {
+        entries.push({
+          kind: "chapter",
+          id,
+          title,
+        });
+      }
+    }
+  }
+
+  return entries;
 }
 
 export function hasBookPageRefs(ssot: string): boolean {
@@ -40,22 +83,53 @@ export function replaceBookPageRefs(
   ssot: string,
   pageIds: string[],
 ): string {
+  const existingChapters = parseBookOutline(ssot).filter(
+    (entry): entry is Extract<BookOutlineEntry, { kind: "chapter" }> =>
+      entry.kind === "chapter",
+  );
+
+  return replaceBookOutline(ssot, [
+    ...existingChapters,
+    ...pageIds
+      .map((id) => String(id ?? "").trim())
+      .filter(Boolean)
+      .map((id) => ({ kind: "page" as const, id })),
+  ]);
+}
+
+export function replaceBookOutline(
+  ssot: string,
+  outline: BookOutlineEntry[],
+): string {
   const normalized = String(ssot ?? "").replace(/\r\n/g, "\n");
   const lines = normalized
     .split("\n")
-    .filter((line) => !PAGE_REF_RE.test(line));
+    .filter(
+      (line) =>
+        !PAGE_REF_RE.test(line) &&
+        !CHAPTER_REF_RE.test(line),
+    );
 
   while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
     lines.pop();
   }
 
-  const refs = pageIds
-    .map((id) => String(id ?? "").trim())
-    .filter(Boolean)
-    .map((id) => `[PAGE_REF id=${id}]`);
+  const outlineLines = outline.flatMap((entry) => {
+    if (entry.kind === "page") {
+      const id = String(entry.id ?? "").trim();
+      return id ? [`[PAGE_REF id=${id}]`] : [];
+    }
 
-  return refs.length > 0
-    ? [...lines, "", ...refs, ""].join("\n")
+    const id = String(entry.id ?? "").trim();
+    const title = String(entry.title ?? "")
+      .replace(/\r?\n/g, " ")
+      .trim() || "新しい章";
+
+    return id ? [`[BOOK_CHAPTER id=${id}] ${title}`] : [];
+  });
+
+  return outlineLines.length > 0
+    ? [...lines, "", ...outlineLines, ""].join("\n")
     : [...lines, ""].join("\n");
 }
 
@@ -67,6 +141,21 @@ export function resolveBookPageRefs(
   const output: string[] = [];
 
   for (const line of normalized.split("\n")) {
+    const chapterMatch = line.match(CHAPTER_REF_RE);
+
+    if (chapterMatch) {
+      const id = String(chapterMatch[1] ?? "").trim();
+      const title = String(chapterMatch[2] ?? "").trim() || "新しい章";
+
+      output.push("");
+      output.push("[CHAPTER]");
+      output.push(`id: ${id}`);
+      output.push(`title: ${title}`);
+      output.push("showInToc: true");
+      output.push("");
+      continue;
+    }
+
     const match = line.match(PAGE_REF_RE);
 
     if (!match) {
