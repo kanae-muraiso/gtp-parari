@@ -150,20 +150,18 @@ function RichCard({
   body: string;
   variant: SsotVariant;
 }) {
-  const classes = variantClasses[variant];
+  void variant;
 
   return (
-    <div className={["shadow-sm", classes.softBg].join(" ")}>
+    <div>
       {title ? (
-        <div className={["mb-2 text-sm font-semibold", classes.text].join(" ")}>
+        <div className="mb-2 text-base font-semibold text-neutral-900">
           {title}
         </div>
       ) : null}
 
       {body ? (
-        <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-          {body}
-        </div>
+        <RichTextRenderer document={parseRichText(body)} />
       ) : null}
     </div>
   );
