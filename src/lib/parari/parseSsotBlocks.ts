@@ -94,7 +94,7 @@ type OpenBlock =
     };
 
 const TAG_RE =
-  /^\[(ACCORDION|NOTICE|LIST|PROFILE|BUTTON|LINKS|MENU)(?::([^\]]+))?\]\s*(.*)$/i;
+  /^\[(ACCORDION|NOTICE|LIST|PROFILE|BUTTON|LINKS|MENU)(?::([^\]\s]+))?(?:\s+([^\]]+))?\]\s*(.*)$/i;
 
 const PAGE_RE = /^\[PAGE\]\s*/i;
 
@@ -388,7 +388,7 @@ export function parseSsotBlocks(input: string): SsotBlock[] {
     if (tagMatch) {
       const tag = tagMatch[1].toUpperCase() as KnownTag;
       const variantRaw = tagMatch[2];
-      const rest = tagMatch[3] ?? "";
+      const rest = tagMatch[4] ?? "";
 
       startTag(tag, variantRaw, rest);
       continue;
