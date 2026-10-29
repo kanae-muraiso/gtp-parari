@@ -183,15 +183,16 @@ export function PanelStyleControls({
             }
             className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs outline-none"
           >
-            <option value="tight">狭い</option>
-            <option value="default">標準</option>
-            <option value="wide">広い</option>
-            <option value="extra">とても広い</option>
+            <option value="1">1.0</option>
+            <option value="1.25">1.25</option>
+            <option value="1.5">1.5</option>
+            <option value="1.75">1.75</option>
+            <option value="2">2.0</option>
           </select>
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-[11px] font-bold">段落間</span>
+          <span className="mb-1 block text-[11px] font-bold">段落後</span>
           <select
             value={value.paragraphGap}
             onChange={(event) =>
@@ -199,10 +200,11 @@ export function PanelStyleControls({
             }
             className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs outline-none"
           >
-            <option value="none">なし</option>
-            <option value="s">小</option>
-            <option value="default">標準</option>
-            <option value="l">大</option>
+            <option value="0">0行</option>
+            <option value="0.5">0.5行</option>
+            <option value="1">1.0行</option>
+            <option value="1.5">1.5行</option>
+            <option value="2">2.0行</option>
           </select>
         </label>
           </>
