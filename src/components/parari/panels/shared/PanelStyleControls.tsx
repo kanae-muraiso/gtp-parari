@@ -6,6 +6,7 @@ type Props = {
   value: PanelVisualStyle;
   onChange: (next: PanelVisualStyle) => void;
   allowWidth?: boolean;
+  allowTextSpacing?: boolean;
 };
 
 const WIDTH_OPTIONS = [
@@ -43,6 +44,7 @@ export function PanelStyleControls({
   value,
   onChange,
   allowWidth = true,
+  allowTextSpacing = true,
 }: Props) {
   const patch = <K extends keyof PanelVisualStyle>(
     key: K,
@@ -170,6 +172,8 @@ export function PanelStyleControls({
           </select>
         </label>
 
+        {allowTextSpacing ? (
+          <>
         <label className="block">
           <span className="mb-1 block text-[11px] font-bold">行間</span>
           <select
@@ -201,6 +205,8 @@ export function PanelStyleControls({
             <option value="l">大</option>
           </select>
         </label>
+          </>
+        ) : null}
 
         <label className="block">
           <span className="mb-1 block text-[11px] font-bold">下余白</span>
