@@ -112,6 +112,8 @@ type RichTextFieldProps = {
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   quiet?: boolean;
   borderless?: boolean;
+  inlineOnly?: boolean;
+  onEnter?: () => void;
   autoFocus?: boolean;
 };
 
@@ -144,6 +146,8 @@ export function RichTextField({
   onChangeReadingSupport,
   quiet = false,
   borderless = false,
+  inlineOnly = false,
+  onEnter,
   autoFocus = false,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
@@ -233,7 +237,7 @@ export function RichTextField({
             <LexicalComposer initialConfig={initialConfig}>
               <ForceEditablePlugin />
               {autoFocus ? <AutoFocusPlugin /> : null}
-              <SoftReturnPlugin />
+              <SoftReturnPlugin onEnter={onEnter} />
             <DictionaryHighlightPlugin
               enabled={dictionaryMarksEnabled}
               colorEnabled={readingSupport?.eikenLevel ?? false}
@@ -260,6 +264,7 @@ export function RichTextField({
               onToggleDictionaryMarks={() =>
                 setDictionaryMarksEnabled((current) => !current)
               }
+              inlineOnly={inlineOnly}
             /> : null}
             
         <div
@@ -304,7 +309,7 @@ function ForceEditablePlugin() {
   return null;
 }
 
-function SoftReturnPlugin() {
+function SoftReturnPlugin({ onEnter }: { onEnter?: () => void }) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -315,11 +320,17 @@ function SoftReturnPlugin() {
           return false;
         }
 
-        if (!event.shiftKey) {
+        if (event.isComposing) {
           return false;
         }
 
-        if (event.isComposing) {
+        if (!event.shiftKey && onEnter) {
+          event.preventDefault();
+          onEnter();
+          return true;
+        }
+
+        if (!event.shiftKey) {
           return false;
         }
 
@@ -387,6 +398,7 @@ function RichTextToolbar({
   englishMenuContainer,
   readingSupport,
   onChangeReadingSupport,
+  inlineOnly,
 }: {
   visible: boolean;
   suppressNextChangeRef: MutableRefObject<boolean>;
@@ -399,6 +411,7 @@ function RichTextToolbar({
   englishMenuContainer?: HTMLElement | null;
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
+  inlineOnly: boolean;
 }) {
   const [editor] = useLexicalComposerContext();
   const englishAuthoring = useEnglishAuthoring();
@@ -551,9 +564,13 @@ function RichTextToolbar({
   }, [visible, updateMenuPosition]);
     
     const textActions: RichTextInlineMenuAction[] = [
-      { kind: "block", block: "h2", label: "h2", title: "見出し H2" },
-      { kind: "block", block: "h3", label: "h3", title: "見出し H3" },
-      { kind: "block", block: "plain", label: "plain", title: "標準" },
+      ...(!inlineOnly
+        ? [
+            { kind: "block" as const, block: "h2" as const, label: "h2", title: "見出し H2" },
+            { kind: "block" as const, block: "h3" as const, label: "h3", title: "見出し H3" },
+            { kind: "block" as const, block: "plain" as const, label: "plain", title: "標準" },
+          ]
+        : []),
       { kind: "format", format: "bold", label: "B", title: "太字" },
       { kind: "format", format: "red", label: "赤", title: "赤字" },
       ...RICH_TEXT_COLOR_NAMES.map((color) => ({
@@ -569,8 +586,10 @@ function RichTextToolbar({
         label: "標準",
         title: "文字色を標準に戻す",
       },
-      { kind: "divider", label: "―", title: "区切り線" },
-      ...(onPanelizeSelection
+      ...(!inlineOnly
+        ? [{ kind: "divider" as const, label: "―", title: "区切り線" }]
+        : []),
+      ...(onPanelizeSelection && !inlineOnly
         ? [
             {
               kind: "panel" as const,
