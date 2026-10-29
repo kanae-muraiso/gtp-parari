@@ -143,35 +143,46 @@ function resolvePaddingClass(padding: PanelVisualStyle["padding"]): string {
 function resolveLineHeightClass(
   lineHeight: PanelVisualStyle["lineHeight"],
 ): string {
-  if (lineHeight === "tight") {
-    return "[&_p]:!leading-[1.55]";
+  if (lineHeight === "1") {
+    return "[&_p]:!leading-[1]";
   }
 
-  if (lineHeight === "wide") {
-    return "[&_p]:!leading-[2.1]";
+  if (lineHeight === "1.25") {
+    return "[&_p]:!leading-[1.25]";
   }
 
-  if (lineHeight === "extra") {
-    return "[&_p]:!leading-[2.35]";
+  if (lineHeight === "1.5") {
+    return "[&_p]:!leading-[1.5]";
   }
 
-  return "";
+  if (lineHeight === "1.75") {
+    return "[&_p]:!leading-[1.75]";
+  }
+
+  return "[&_p]:!leading-[2]";
 }
 
 function resolveParagraphGapClass(
   gap: PanelVisualStyle["paragraphGap"],
 ): string {
-  if (gap === "none") {
-    return "[&_p]:!mb-0 [&_.parari-rich-document]:!space-y-0";
+  const base =
+    "[&_.parari-rich-document]:!space-y-0 [&_p:last-child]:!mb-0";
+
+  if (gap === "0") {
+    return `${base} [&_p]:!mb-0`;
   }
 
-  if (gap === "s") {
-    return "[&_p]:!mb-2 [&_.parari-rich-document]:!space-y-2";
+  if (gap === "0.5") {
+    return `${base} [&_p]:!mb-[0.5em]`;
   }
 
-  if (gap === "l") {
-    return "[&_p]:!mb-8 [&_.parari-rich-document]:!space-y-8";
+  if (gap === "1.5") {
+    return `${base} [&_p]:!mb-[1.5em]`;
   }
 
-  return "";
+  if (gap === "2") {
+    return `${base} [&_p]:!mb-[2em]`;
+  }
+
+  return `${base} [&_p]:!mb-[1em]`;
 }
