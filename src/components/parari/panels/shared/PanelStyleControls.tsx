@@ -171,6 +171,38 @@ export function PanelStyleControls({
         </label>
 
         <label className="block">
+          <span className="mb-1 block text-[11px] font-bold">行間</span>
+          <select
+            value={value.lineHeight}
+            onChange={(event) =>
+              patch("lineHeight", event.target.value as PanelVisualStyle["lineHeight"])
+            }
+            className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs outline-none"
+          >
+            <option value="tight">狭い</option>
+            <option value="default">標準</option>
+            <option value="wide">広い</option>
+            <option value="extra">とても広い</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-bold">段落間</span>
+          <select
+            value={value.paragraphGap}
+            onChange={(event) =>
+              patch("paragraphGap", event.target.value as PanelVisualStyle["paragraphGap"])
+            }
+            className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs outline-none"
+          >
+            <option value="none">なし</option>
+            <option value="s">小</option>
+            <option value="default">標準</option>
+            <option value="l">大</option>
+          </select>
+        </label>
+
+        <label className="block">
           <span className="mb-1 block text-[11px] font-bold">下余白</span>
           <select
             value={value.gap}
