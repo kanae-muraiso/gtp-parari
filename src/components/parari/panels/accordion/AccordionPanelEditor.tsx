@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PanelEditorProps } from "../panelDefinitionTypes";
+import { RichTextField } from "../richText/RichTextField";
 import type { AccordionPanelData } from "./parseAccordionPanel";
 import { serializeAccordionPanel } from "./serializeAccordionPanel";
 
@@ -65,14 +66,16 @@ export function AccordionPanelEditor({
       </div>
 
       <div className={["border-t px-4 py-3", bodyClasses.border, bodyClasses.bg].join(" ")}>
-        <textarea
+        <RichTextField
           value={draftData.body}
-          onChange={(event) => updateDraftData({ body: event.target.value })}
-          onBlur={() => commitData()}
-          spellCheck={false}
-          rows={4}
-          className="min-h-[96px] w-full resize-y border-0 bg-transparent p-0 text-sm leading-7 text-neutral-700 outline-none placeholder:text-neutral-400"
+          onChange={(body) => {
+            const nextData = { ...draftData, body };
+            setDraftData(nextData);
+            commitData(nextData);
+          }}
           placeholder="本文を入力"
+          minHeightClassName="min-h-[96px]"
+          borderless
         />
       </div>
 
