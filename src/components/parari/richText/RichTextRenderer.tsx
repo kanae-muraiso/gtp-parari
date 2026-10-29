@@ -329,7 +329,7 @@ export default function RichTextRenderer({
   };
 
   return (
-    <div className={mergedTheme.documentClassName}>
+    <div className={cx("parari-rich-document", mergedTheme.documentClassName)}>
       {document.blocks.map((block, index) =>
         renderBlock(block, mergedTheme, `block-${index}`),
       )}
