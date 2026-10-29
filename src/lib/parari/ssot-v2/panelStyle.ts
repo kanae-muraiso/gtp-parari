@@ -13,6 +13,8 @@ export type PanelStyleBackground = "none" | PanelStyleColor;
 export type PanelStyleRadius = "none" | "s" | "m" | "l";
 export type PanelStylePadding = "none" | "s" | "m" | "l";
 export type PanelStyleGap = "default" | "zero" | "s" | "m" | "l";
+export type PanelStyleLineHeight = "default" | "tight" | "wide" | "extra";
+export type PanelStyleParagraphGap = "default" | "none" | "s" | "l";
 
 export type PanelVisualStyle = {
   width: PanelStyleWidth;
@@ -22,6 +24,8 @@ export type PanelVisualStyle = {
   radius: PanelStyleRadius;
   padding: PanelStylePadding;
   gap: PanelStyleGap;
+  lineHeight: PanelStyleLineHeight;
+  paragraphGap: PanelStyleParagraphGap;
 };
 
 export const DEFAULT_PANEL_VISUAL_STYLE: PanelVisualStyle = {
@@ -32,6 +36,8 @@ export const DEFAULT_PANEL_VISUAL_STYLE: PanelVisualStyle = {
   radius: "none",
   padding: "none",
   gap: "default",
+  lineHeight: "default",
+  paragraphGap: "default",
 };
 
 const STYLE_PREFIX = "pstyle.";
@@ -113,6 +119,10 @@ export function parsePanelVisualStyle(attrs?: string): PanelVisualStyle {
       next.padding = value as PanelStylePadding;
     } else if (key === "gap" && isOneOf(value, ["default", "zero", "s", "m", "l"])) {
       next.gap = value as PanelStyleGap;
+    } else if (key === "lineHeight" && isOneOf(value, ["default", "tight", "wide", "extra"])) {
+      next.lineHeight = value as PanelStyleLineHeight;
+    } else if (key === "paragraphGap" && isOneOf(value, ["default", "none", "s", "l"])) {
+      next.paragraphGap = value as PanelStyleParagraphGap;
     }
   }
 
@@ -140,6 +150,8 @@ export function withPanelVisualStyleAttrs(
     `pstyle.radius=${style.radius}`,
     `pstyle.padding=${style.padding}`,
     `pstyle.gap=${style.gap}`,
+    `pstyle.lineHeight=${style.lineHeight}`,
+    `pstyle.paragraphGap=${style.paragraphGap}`,
   ].filter(Boolean);
 
   return tokens.join(" ").trim();
