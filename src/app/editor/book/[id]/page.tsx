@@ -10,9 +10,12 @@ import {
 import {
   isReferenceBookSsot,
   parseBookOutline,
+  parseBookSettings,
   replaceBookOutline,
+  updateBookSettings,
   updateBookTitle,
   type BookOutlineEntry,
+  type BookSettings,
 } from "@/lib/parari/book/pageRefs";
 
 type WorkRow = {
@@ -33,6 +36,15 @@ export default function ReferenceBookEditorPage() {
   const [book, setBook] = React.useState<WorkRow | null>(null);
   const [pages, setPages] = React.useState<WorkRow[]>([]);
   const [title, setTitle] = React.useState("");
+  const [bookSettings, setBookSettings] = React.useState<BookSettings>({
+    subtitle: "",
+    author: "",
+    coverImage: "",
+    cover: true,
+    titlePage: true,
+    toc: true,
+    readingMode: "paged",
+  });
   const [outline, setOutline] = React.useState<BookOutlineEntry[]>([]);
   const [state, setState] = React.useState<SaveState>("loading");
   const [message, setMessage] = React.useState("");
@@ -42,6 +54,7 @@ export default function ReferenceBookEditorPage() {
   const saveLockRef = React.useRef(false);
   const pendingRef = React.useRef<{
     title: string;
+    settings: BookSettings;
     outline: BookOutlineEntry[];
   } | null>(null);
 
@@ -115,6 +128,7 @@ export default function ReferenceBookEditorPage() {
       setBook(bookData);
       setPages(nextPages);
       setTitle(nextTitle);
+      setBookSettings(parseBookSettings(content));
       setOutline(parseBookOutline(content));
       setState("idle");
     }
@@ -141,9 +155,11 @@ export default function ReferenceBookEditorPage() {
 
   const scheduleSave = (
     nextTitle: string,
+    nextSettings: BookSettings,
     nextOutline: BookOutlineEntry[],
   ) => {
     setTitle(nextTitle);
+    setBookSettings(nextSettings);
     setOutline(nextOutline);
     setState("idle");
     setMessage("");
@@ -153,12 +169,13 @@ export default function ReferenceBookEditorPage() {
     }
 
     saveTimerRef.current = setTimeout(() => {
-      void save(nextTitle, nextOutline);
+      void save(nextTitle, nextSettings, nextOutline);
     }, 500);
   };
 
   const save = async (
     nextTitle: string,
+    nextSettings: BookSettings,
     nextOutline: BookOutlineEntry[],
   ) => {
     const currentBook = bookRef.current;
@@ -168,6 +185,7 @@ export default function ReferenceBookEditorPage() {
     if (saveLockRef.current) {
       pendingRef.current = {
         title: nextTitle,
+        settings: nextSettings,
         outline: nextOutline,
       };
       return;
@@ -188,6 +206,10 @@ export default function ReferenceBookEditorPage() {
       let nextContent = updateBookTitle(
         String(currentBook.content ?? ""),
         nextTitle,
+      );
+      nextContent = updateBookSettings(
+        nextContent,
+        nextSettings,
       );
       nextContent = replaceBookOutline(
         nextContent,
@@ -242,7 +264,11 @@ export default function ReferenceBookEditorPage() {
 
       if (pending) {
         window.setTimeout(() => {
-          void save(pending.title, pending.outline);
+          void save(
+            pending.title,
+            pending.settings,
+            pending.outline,
+          );
         }, 50);
       }
     }
@@ -267,7 +293,7 @@ export default function ReferenceBookEditorPage() {
       next[index],
     ];
 
-    scheduleSave(title, next);
+    scheduleSave(title, bookSettings, next);
   };
 
   const addChapter = () => {
@@ -276,7 +302,7 @@ export default function ReferenceBookEditorPage() {
         ? crypto.randomUUID()
         : `chapter-${Date.now().toString(36)}`;
 
-    scheduleSave(title, [
+    scheduleSave(title, bookSettings, [
       ...outline,
       {
         kind: "chapter",
@@ -292,6 +318,7 @@ export default function ReferenceBookEditorPage() {
   ) => {
     scheduleSave(
       title,
+      bookSettings,
       outline.map((entry) =>
         entry.kind === "chapter" && entry.id === chapterId
           ? {
@@ -376,7 +403,9 @@ export default function ReferenceBookEditorPage() {
                 onChange={(event) => {
                   setTitle(event.target.value);
                 }}
-                onBlur={() => scheduleSave(title, outline)}
+                onBlur={() =>
+                  scheduleSave(title, bookSettings, outline)
+                }
                 className="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-neutral-950 outline-none placeholder:text-neutral-300"
                 placeholder="BOOKタイトル"
               />
@@ -384,6 +413,147 @@ export default function ReferenceBookEditorPage() {
               <p className="mt-3 text-sm leading-7 text-neutral-500">
                 PAGEの本文はBOOKへコピーしません。ここではPAGEの参照と順番だけを管理します。
               </p>
+
+              <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <summary className="cursor-pointer select-none text-xs font-bold text-neutral-700">
+                  BOOK設定
+                </summary>
+
+                <div className="mt-4 grid gap-4">
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold text-neutral-500">
+                      副題
+                    </span>
+                    <input
+                      value={bookSettings.subtitle}
+                      onChange={(event) =>
+                        setBookSettings((current) => ({
+                          ...current,
+                          subtitle: event.target.value,
+                        }))
+                      }
+                      onBlur={() =>
+                        scheduleSave(
+                          title,
+                          bookSettings,
+                          outline,
+                        )
+                      }
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                      placeholder="副題"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold text-neutral-500">
+                      著者
+                    </span>
+                    <input
+                      value={bookSettings.author}
+                      onChange={(event) =>
+                        setBookSettings((current) => ({
+                          ...current,
+                          author: event.target.value,
+                        }))
+                      }
+                      onBlur={() =>
+                        scheduleSave(
+                          title,
+                          bookSettings,
+                          outline,
+                        )
+                      }
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                      placeholder="著者名"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold text-neutral-500">
+                      表紙画像URL
+                    </span>
+                    <input
+                      value={bookSettings.coverImage}
+                      onChange={(event) =>
+                        setBookSettings((current) => ({
+                          ...current,
+                          coverImage: event.target.value,
+                        }))
+                      }
+                      onBlur={() =>
+                        scheduleSave(
+                          title,
+                          bookSettings,
+                          outline,
+                        )
+                      }
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                      placeholder="https://..."
+                    />
+                  </label>
+
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      ["cover", "表紙"],
+                      ["titlePage", "扉"],
+                      ["toc", "目次"],
+                    ].map(([key, label]) => (
+                      <label
+                        key={key}
+                        className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={Boolean(
+                            bookSettings[
+                              key as "cover" | "titlePage" | "toc"
+                            ],
+                          )}
+                          onChange={(event) => {
+                            const nextSettings = {
+                              ...bookSettings,
+                              [key]: event.target.checked,
+                            } as BookSettings;
+                            scheduleSave(
+                              title,
+                              nextSettings,
+                              outline,
+                            );
+                          }}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-bold text-neutral-500">
+                      読み方
+                    </span>
+                    <select
+                      value={bookSettings.readingMode}
+                      onChange={(event) => {
+                        const nextSettings: BookSettings = {
+                          ...bookSettings,
+                          readingMode:
+                            event.target.value === "scroll"
+                              ? "scroll"
+                              : "paged",
+                        };
+                        scheduleSave(
+                          title,
+                          nextSettings,
+                          outline,
+                        );
+                      }}
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                    >
+                      <option value="paged">ページ送り</option>
+                      <option value="scroll">スクロール</option>
+                    </select>
+                  </label>
+                </div>
+              </details>
             </section>
 
             <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
@@ -449,6 +619,7 @@ export default function ReferenceBookEditorPage() {
                               onClick={() =>
                                 scheduleSave(
                                   title,
+                                  bookSettings,
                                   outline.filter(
                                     (candidate) =>
                                       !(
@@ -585,7 +756,7 @@ export default function ReferenceBookEditorPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          scheduleSave(title, [
+                          scheduleSave(title, bookSettings, [
                             ...outline,
                             { kind: "page", id: page.id },
                           ])
