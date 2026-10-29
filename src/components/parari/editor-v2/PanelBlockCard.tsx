@@ -327,6 +327,7 @@ export function PanelBlockCard({
                 <PanelFrame
                   style={panelStyle}
                   defaultWidth={defaultWidthForPanelTag(block.tag)}
+                  suppressGap
                 >
                   <Editor
                     block={contentBlock}
