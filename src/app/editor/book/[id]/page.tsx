@@ -307,7 +307,7 @@ export default function ReferenceBookEditorPage() {
       {
         kind: "chapter",
         id,
-        title: "新しい章",
+        title: "新しい章扉",
       },
     ]);
   };
@@ -325,7 +325,7 @@ export default function ReferenceBookEditorPage() {
               ...entry,
               title:
                 nextTitle.replace(/\r?\n/g, " ").trim() ||
-                "新しい章",
+                "新しい章扉",
             }
           : entry,
       ),
@@ -581,8 +581,8 @@ export default function ReferenceBookEditorPage() {
                           key={`chapter-${entry.id}`}
                           className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3"
                         >
-                          <div className="w-7 shrink-0 text-center text-xs font-bold text-violet-400">
-                            章
+                          <div className="w-10 shrink-0 text-center text-[10px] font-bold text-violet-500">
+                            章扉
                           </div>
 
                           <input
@@ -594,7 +594,7 @@ export default function ReferenceBookEditorPage() {
                               )
                             }
                             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold text-violet-950 outline-none"
-                            placeholder="章タイトル"
+                            placeholder="章扉タイトル"
                           />
 
                           <div className="flex shrink-0 items-center gap-1">
@@ -722,7 +722,7 @@ export default function ReferenceBookEditorPage() {
                 onClick={addChapter}
                 className="mt-4 rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-bold text-violet-700 ring-1 ring-violet-200 transition hover:bg-violet-100"
               >
-                ＋ 章を追加
+                ＋ 章扉を追加
               </button>
             </section>
 
