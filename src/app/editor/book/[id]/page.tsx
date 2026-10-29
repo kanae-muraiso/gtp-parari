@@ -696,6 +696,7 @@ export default function ReferenceBookEditorPage() {
                             onClick={() =>
                               scheduleSave(
                                 title,
+                                bookSettings,
                                 outline.filter(
                                   (candidate) =>
                                     !(
