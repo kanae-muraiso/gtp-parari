@@ -350,7 +350,7 @@ function SoftReturnPlugin({ onEnter }: { onEnter?: () => void }) {
       },
       COMMAND_PRIORITY_CRITICAL,
     );
-  }, [editor]);
+  }, [editor, onEnter]);
 
   return null;
 }
