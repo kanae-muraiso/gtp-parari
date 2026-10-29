@@ -348,6 +348,7 @@ export function PanelBlockCard({
                     value={panelStyle}
                     onChange={handleStyleChange}
                     allowWidth={canChangeWidthForPanel(block.tag)}
+                    allowTextSpacing={canChangeTextSpacingForPanel(block.tag)}
                   />
                 ) : null}
               </div>
@@ -383,6 +384,16 @@ function modeLabel(mode: PanelCardMode): string {
 
 function panelWidthClass(tag: string): string {
   return "w-full";
+}
+
+function canChangeTextSpacingForPanel(tag: string): boolean {
+  const normalizedTag = String(tag ?? "").trim().toUpperCase();
+
+  return (
+    normalizedTag === "NOTICE" ||
+    normalizedTag === "ACCORDION" ||
+    normalizedTag === "LIST"
+  );
 }
 
 function canChangeWidthForPanel(tag: string): boolean {
