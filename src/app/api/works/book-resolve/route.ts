@@ -22,6 +22,32 @@ function getBearerToken(request: NextRequest): string | null {
   return matched?.[1] ?? null;
 }
 
+function ensurePageSsot(content: string, fallbackTitle: string): string {
+  const source = String(content ?? "").trim();
+
+  if (
+    source
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .some((line) =>
+        /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(line),
+      )
+  ) {
+    return source;
+  }
+
+  const safeTitle = String(fallbackTitle ?? "")
+    .replace(/\r?\n/g, " ")
+    .trim() || "無題のPAGE";
+
+  return [
+    "[PAGE]",
+    `title: ${safeTitle}`,
+    "",
+    source,
+  ].join("\n");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const workId = String(
@@ -120,7 +146,7 @@ export async function GET(request: NextRequest) {
 
     const { data: pages, error: pagesError } = await supabaseAdmin
       .from("parari_books")
-      .select("id,owner,content,is_deleted")
+      .select("id,owner,title,content,is_deleted")
       .in("id", uniqueIds)
       .eq("owner", data.owner);
 
@@ -136,9 +162,13 @@ export async function GET(request: NextRequest) {
 
     for (const page of pages ?? []) {
       if (page.is_deleted === true) continue;
+      const rawContent = String(page.content ?? "");
       pageContentById.set(
         String(page.id),
-        String(page.content ?? ""),
+        ensurePageSsot(
+          rawContent,
+          String(page.title ?? "").trim() || "無題のPAGE",
+        ),
       );
     }
 
