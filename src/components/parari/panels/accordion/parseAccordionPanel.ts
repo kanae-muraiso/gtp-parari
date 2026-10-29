@@ -21,7 +21,9 @@ export function parseAccordionPanel(
   const firstLine = lines[0] ?? "";
   const bodyLines = lines.slice(1);
 
-  const match = firstLine.match(/^\s*\[ACCORDION(?::([^\]\s]+))?\](.*)$/);
+  const match = firstLine.match(
+    /^\s*\[ACCORDION(?::([^\]\s]+))?(?:\s+[^\]]+)?\](.*)$/,
+  );
 
   const variantText = match?.[1] ?? block.variant;
   const title = match?.[2]?.trim() ?? "";
