@@ -16,6 +16,18 @@ const WIDTH_OPTIONS = [
   { value: "50", label: "50%" },
 ] as const;
 
+const BACKGROUND_COLOR_OPTIONS = [
+  { value: "none", label: "なし" },
+  { value: "gray", label: "グレー" },
+  { value: "black", label: "黒" },
+  { value: "red", label: "赤" },
+  { value: "orange", label: "オレンジ" },
+  { value: "yellow", label: "黄" },
+  { value: "green", label: "緑" },
+  { value: "blue", label: "青" },
+  { value: "purple", label: "紫" },
+] as const;
+
 const BORDER_COLOR_OPTIONS = [
   { value: "gray", label: "グレー" },
   { value: "black", label: "黒" },
@@ -43,7 +55,7 @@ export function PanelStyleControls({
   };
 
   return (
-    <details className="mt-3 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
+    <details className="mb-8 mt-1 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
       <summary className="cursor-pointer select-none font-bold">
         スタイル
       </summary>
@@ -67,6 +79,26 @@ export function PanelStyleControls({
             </select>
           </label>
         ) : null}
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-bold">背景色</span>
+          <select
+            value={value.backgroundColor}
+            onChange={(event) =>
+              patch(
+                "backgroundColor",
+                event.target.value as PanelVisualStyle["backgroundColor"],
+              )
+            }
+            className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs outline-none"
+          >
+            {BACKGROUND_COLOR_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label className="block">
           <span className="mb-1 block text-[11px] font-bold">境界線</span>
