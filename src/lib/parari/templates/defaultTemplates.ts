@@ -34,7 +34,7 @@ mainImage:
     id: "book-basic",
     kind: "book",
     title: "Book作品を作る",
-    description: "表紙・扉・目次つきのBOOK作品を作ります。",
+    description: "既存のPAGEを選んで並べ、1冊のBOOKにまとめます。",
     initialTitle: "新しいBOOK",
     ssot: `[BOOK]
 title: 新しいBOOK
@@ -49,19 +49,6 @@ renderMode: page
 defaultReadingMode: paged
 physicalPagination: true
 
-[CHAPTER] はじめに
-number: 1
-title: はじめに
-subtitle:
-mainImage:
-showInToc: true
-
-[PAGE] 最初のページ
-title: 最初のページ
-mainImage:
-
-[T]
-本文を書いてください。
 `,
   },
   
