@@ -13,8 +13,8 @@ export type PanelStyleBackground = "none" | PanelStyleColor;
 export type PanelStyleRadius = "none" | "s" | "m" | "l";
 export type PanelStylePadding = "none" | "s" | "m" | "l";
 export type PanelStyleGap = "default" | "zero" | "s" | "m" | "l";
-export type PanelStyleLineHeight = "default" | "tight" | "wide" | "extra";
-export type PanelStyleParagraphGap = "default" | "none" | "s" | "l";
+export type PanelStyleLineHeight = "1" | "1.25" | "1.5" | "1.75" | "2";
+export type PanelStyleParagraphGap = "0" | "0.5" | "1" | "1.5" | "2";
 
 export type PanelVisualStyle = {
   width: PanelStyleWidth;
@@ -36,8 +36,8 @@ export const DEFAULT_PANEL_VISUAL_STYLE: PanelVisualStyle = {
   radius: "none",
   padding: "none",
   gap: "default",
-  lineHeight: "default",
-  paragraphGap: "default",
+  lineHeight: "2",
+  paragraphGap: "1",
 };
 
 const STYLE_PREFIX = "pstyle.";
@@ -119,10 +119,18 @@ export function parsePanelVisualStyle(attrs?: string): PanelVisualStyle {
       next.padding = value as PanelStylePadding;
     } else if (key === "gap" && isOneOf(value, ["default", "zero", "s", "m", "l"])) {
       next.gap = value as PanelStyleGap;
-    } else if (key === "lineHeight" && isOneOf(value, ["default", "tight", "wide", "extra"])) {
-      next.lineHeight = value as PanelStyleLineHeight;
-    } else if (key === "paragraphGap" && isOneOf(value, ["default", "none", "s", "l"])) {
-      next.paragraphGap = value as PanelStyleParagraphGap;
+    } else if (key === "lineHeight") {
+      const normalizedLineHeight = normalizeLineHeight(value);
+
+      if (normalizedLineHeight) {
+        next.lineHeight = normalizedLineHeight;
+      }
+    } else if (key === "paragraphGap") {
+      const normalizedParagraphGap = normalizeParagraphGap(value);
+
+      if (normalizedParagraphGap) {
+        next.paragraphGap = normalizedParagraphGap;
+      }
     }
   }
 
@@ -225,6 +233,38 @@ function semanticBorderColor(variant?: string): PanelStyleColor {
   if (normalized === "warning") return "yellow";
   if (normalized === "dark") return "black";
   return "gray";
+}
+
+function normalizeLineHeight(
+  value: string,
+): PanelStyleLineHeight | null {
+  if (isOneOf(value, ["1", "1.25", "1.5", "1.75", "2"])) {
+    return value as PanelStyleLineHeight;
+  }
+
+  // 旧UIの感覚値を新しい数値へ寄せる。
+  if (value === "tight") return "1.5";
+  if (value === "default") return "2";
+  if (value === "wide") return "2";
+  if (value === "extra") return "2";
+
+  return null;
+}
+
+function normalizeParagraphGap(
+  value: string,
+): PanelStyleParagraphGap | null {
+  if (isOneOf(value, ["0", "0.5", "1", "1.5", "2"])) {
+    return value as PanelStyleParagraphGap;
+  }
+
+  // 旧UIの感覚値を新しい「行」基準へ寄せる。
+  if (value === "none") return "0";
+  if (value === "s") return "0.5";
+  if (value === "default") return "1";
+  if (value === "l") return "2";
+
+  return null;
 }
 
 function isOneOf(value: string, allowed: readonly string[]): boolean {
