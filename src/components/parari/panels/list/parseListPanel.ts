@@ -20,7 +20,9 @@ export function parseListPanel(raw: string): ListPanelData {
   const firstLine = lines[0] ?? "";
   const bodyLines = lines.slice(1);
 
-  const headerMatch = firstLine.match(/^\[LIST(?::([^\]\s]+))?\]\s*(.*)$/);
+  const headerMatch = firstLine.match(
+    /^\[LIST(?::([^\]\s]+))?(?:\s+[^\]]+)?\]\s*(.*)$/,
+  );
 
   const variant = headerMatch?.[1]?.trim() ?? "";
   const title = headerMatch?.[2]?.trim() ?? "";
