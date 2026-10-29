@@ -9,6 +9,7 @@ export type PanelStyleColor =
   | "green"
   | "blue"
   | "purple";
+export type PanelStyleBackground = "none" | PanelStyleColor;
 export type PanelStyleRadius = "none" | "s" | "m" | "l";
 export type PanelStylePadding = "none" | "s" | "m" | "l";
 export type PanelStyleGap = "default" | "zero" | "s" | "m" | "l";
@@ -17,6 +18,7 @@ export type PanelVisualStyle = {
   width: PanelStyleWidth;
   border: PanelStyleBorder;
   borderColor: PanelStyleColor;
+  backgroundColor: PanelStyleBackground;
   radius: PanelStyleRadius;
   padding: PanelStylePadding;
   gap: PanelStyleGap;
@@ -26,6 +28,7 @@ export const DEFAULT_PANEL_VISUAL_STYLE: PanelVisualStyle = {
   width: "default",
   border: "none",
   borderColor: "gray",
+  backgroundColor: "none",
   radius: "none",
   padding: "none",
   gap: "default",
@@ -59,6 +62,7 @@ export function resolvePanelVisualStyle(
       ...DEFAULT_PANEL_VISUAL_STYLE,
       border: "thin",
       borderColor: semanticBorderColor(semanticVariant),
+      backgroundColor: semanticBackgroundColor(semanticVariant),
       radius: "l",
       padding: "m",
     };
@@ -69,6 +73,7 @@ export function resolvePanelVisualStyle(
       ...DEFAULT_PANEL_VISUAL_STYLE,
       border: "thin",
       borderColor: semanticBorderColor(variant || "primary"),
+      backgroundColor: "none",
       radius: "l",
       padding: "none",
     };
@@ -97,6 +102,11 @@ export function parsePanelVisualStyle(attrs?: string): PanelVisualStyle {
       isOneOf(value, ["gray", "black", "red", "orange", "yellow", "green", "blue", "purple"])
     ) {
       next.borderColor = value as PanelStyleColor;
+    } else if (
+      key === "backgroundColor" &&
+      isOneOf(value, ["none", "gray", "black", "red", "orange", "yellow", "green", "blue", "purple"])
+    ) {
+      next.backgroundColor = value as PanelStyleBackground;
     } else if (key === "radius" && isOneOf(value, ["none", "s", "m", "l"])) {
       next.radius = value as PanelStyleRadius;
     } else if (key === "padding" && isOneOf(value, ["none", "s", "m", "l"])) {
@@ -126,6 +136,7 @@ export function withPanelVisualStyleAttrs(
     `pstyle.width=${style.width}`,
     `pstyle.border=${style.border}`,
     `pstyle.borderColor=${style.borderColor}`,
+    `pstyle.backgroundColor=${style.backgroundColor}`,
     `pstyle.radius=${style.radius}`,
     `pstyle.padding=${style.padding}`,
     `pstyle.gap=${style.gap}`,
@@ -177,6 +188,20 @@ export function stripPanelVisualStyleFromRaw(raw: string): string {
   lines[0] = `${prefix}${attrs ? ` ${attrs}` : ""}]${tail}`;
 
   return lines.join("\n");
+}
+
+function semanticBackgroundColor(variant?: string): PanelStyleBackground {
+  const normalized = String(variant ?? "").trim().toLowerCase().split("/")[0];
+
+  if (normalized === "primary") return "blue";
+  if (normalized === "info") return "blue";
+  if (normalized === "success") return "green";
+  if (normalized === "danger") return "red";
+  if (normalized === "warning") return "yellow";
+  if (normalized === "dark") return "gray";
+  if (normalized === "secondary") return "gray";
+  if (normalized === "light") return "none";
+  return "none";
 }
 
 function semanticBorderColor(variant?: string): PanelStyleColor {
