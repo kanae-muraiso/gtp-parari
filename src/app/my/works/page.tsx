@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getEffectivePlan } from "@/lib/billing/plan";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
+import { isReferenceBookSsot } from "@/lib/parari/book/pageRefs";
 
 type Visibility = "private" | "unlisted" | "public";
 
@@ -1327,19 +1328,30 @@ export default function MyWorksPage() {
                       </div>
 
                       <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
-                        <Link
-                          href={`/writing/${work.id}`}
-                          className="inline-flex w-full justify-center rounded-full bg-neutral-950 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-neutral-800 sm:w-auto"
-                        >
-                          続きを書く
-                        </Link>
+                        {isReferenceBookSsot(String(work.content ?? "")) ? (
+                          <Link
+                            href={`/editor/book/${work.id}`}
+                            className="inline-flex w-full justify-center rounded-full bg-neutral-950 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-neutral-800 sm:w-auto"
+                          >
+                            構成
+                          </Link>
+                        ) : (
+                          <>
+                            <Link
+                              href={`/writing/${work.id}`}
+                              className="inline-flex w-full justify-center rounded-full bg-neutral-950 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-neutral-800 sm:w-auto"
+                            >
+                              続きを書く
+                            </Link>
 
-                        <Link
-                          href={`/writing/${work.id}?mode=editing`}
-                          className="inline-flex w-full justify-center rounded-full bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50 sm:w-auto"
-                        >
-                          Editing
-                        </Link>
+                            <Link
+                              href={`/writing/${work.id}?mode=editing`}
+                              className="inline-flex w-full justify-center rounded-full bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50 sm:w-auto"
+                            >
+                              Editing
+                            </Link>
+                          </>
+                        )}
 
                         <Link
                           href={publicHref}
