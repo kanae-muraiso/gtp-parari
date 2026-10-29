@@ -570,12 +570,16 @@ function RichTextToolbar({
         title: "文字色を標準に戻す",
       },
       { kind: "divider", label: "―", title: "区切り線" },
-      {
-        kind: "panel",
-        tag: "IMAGE",
-        label: "画像",
-        title: "画像を挿入",
-      },
+      ...(onPanelizeSelection
+        ? [
+            {
+              kind: "panel" as const,
+              tag: "IMAGE" as const,
+              label: "画像",
+              title: "画像を挿入",
+            },
+          ]
+        : []),
       {
         kind: "link",
         label: "リンク",
