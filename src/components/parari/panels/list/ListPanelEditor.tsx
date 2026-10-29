@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PanelEditorProps } from "../panelDefinitionTypes";
+import { RichTextField } from "../richText/RichTextField";
 import type { ListPanelData } from "./parseListPanel";
 import { serializeListPanel } from "./serializeListPanel";
 
@@ -42,12 +43,15 @@ export function ListPanelEditor({
   };
 
   const updateItem = (index: number, value: string) => {
-    setDraftData((current) => ({
-      ...current,
-      items: current.items.map((item, itemIndex) =>
+    const nextData: ListPanelData = {
+      ...draftData,
+      items: draftData.items.map((item, itemIndex) =>
         itemIndex === index ? value : item,
       ),
-    }));
+    };
+
+    setDraftData(nextData);
+    commitData(nextData);
   };
 
   const addItem = (afterIndex?: number) => {
@@ -90,21 +94,17 @@ export function ListPanelEditor({
         {draftData.items.map((item, index) => (
           <div key={`list-item-${index}`} className="group flex items-start gap-2">
             <span className={["mt-2.5 text-sm", classes.text].join(" ")}>•</span>
-            <textarea
-              value={item}
-              rows={1}
-              onChange={(event) => updateItem(index, event.target.value)}
-              onBlur={() => commitData()}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  commitData();
-                  addItem(index);
-                }
-              }}
-              className="min-h-[32px] flex-1 resize-none border-0 bg-transparent py-1.5 text-sm leading-6 text-neutral-700 outline-none placeholder:text-neutral-400"
-              placeholder={`項目 ${index + 1}`}
-            />
+            <div className="min-w-0 flex-1">
+              <RichTextField
+                value={item}
+                onChange={(value) => updateItem(index, value)}
+                onEnter={() => addItem(index)}
+                placeholder={`項目 ${index + 1}`}
+                minHeightClassName="min-h-[32px]"
+                borderless
+                inlineOnly
+              />
+            </div>
             <div className="mt-1 flex opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
               <button type="button" onClick={() => moveItem(index, "up")} disabled={index === 0} className="px-1 text-xs text-neutral-400 disabled:opacity-20">↑</button>
               <button type="button" onClick={() => moveItem(index, "down")} disabled={index === draftData.items.length - 1} className="px-1 text-xs text-neutral-400 disabled:opacity-20">↓</button>
