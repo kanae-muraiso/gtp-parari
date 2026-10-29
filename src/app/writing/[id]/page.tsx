@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
@@ -17,6 +17,7 @@ type WorkRow = {
 };
 
 export default function WritingWorkPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const workId = decodeURIComponent(params.id);
 
@@ -28,6 +29,7 @@ export default function WritingWorkPage() {
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
+  const [creatingBook, setCreatingBook] = useState(false);
 
   const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -217,6 +219,75 @@ export default function WritingWorkPage() {
     scheduleSave(updatePageMeta(ssot, nextTitle, mainImageUrl));
   }
 
+  async function createBookFromPage() {
+    const currentWork = workRef.current;
+
+    if (!currentWork || creatingBook) {
+      return;
+    }
+
+    setCreatingBook(true);
+    setMessage("");
+
+    try {
+      await saveSsot(ssot);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("ログインを確認できませんでした。");
+      }
+
+      const bookTitle =
+        title.trim() || "新しいBOOK";
+
+      const response = await fetch("/api/works/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          stableSlug: createBookStableSlug(),
+          template: {
+            kind: "book",
+            initialTitle: bookTitle,
+            ssot: createReferenceBookSsot({
+              title: bookTitle,
+              pageId: currentWork.id,
+            }),
+          },
+        }),
+      });
+
+      const result = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok || !result?.ok || !result.id) {
+        throw new Error(
+          result?.message ??
+            "BOOKを作成できませんでした。",
+        );
+      }
+
+      router.push(
+        `/editor/book/${result.id}`,
+      );
+    } catch (error) {
+      setState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "BOOKを作成できませんでした。",
+      );
+    } finally {
+      setCreatingBook(false);
+    }
+  }
+
   async function addImage(file: File) {
     if (!file.type.startsWith("image/")) return;
 
@@ -312,12 +383,23 @@ export default function WritingWorkPage() {
           <p className="mt-12 text-sm text-red-600">{message}</p>
         ) : editingActive && work ? (
           <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
-            <div className="mb-3">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">
                 EDITING
               </div>
 
-              
+              <button
+                type="button"
+                disabled={creatingBook}
+                onClick={() => {
+                  void createBookFromPage();
+                }}
+                className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-neutral-600 ring-1 ring-neutral-200 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creatingBook
+                  ? "BOOKを作成中…"
+                  : "このPAGEからBOOKを作る"}
+              </button>
             </div>
 
             <PagePanelComposer
@@ -453,3 +535,50 @@ function escapeMeta(value: string) {
 }
 
 
+
+
+function createBookStableSlug(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    "randomUUID" in crypto
+  ) {
+    return `book-${crypto
+      .randomUUID()
+      .replace(/-/g, "")
+      .slice(0, 12)}`;
+  }
+
+  return `book-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
+function createReferenceBookSsot({
+  title,
+  pageId,
+}: {
+  title: string;
+  pageId: string;
+}): string {
+  const safeTitle = String(title ?? "")
+    .replace(/\r?\n/g, " ")
+    .trim() || "新しいBOOK";
+
+  return [
+    "[BOOK]",
+    `title: ${safeTitle}`,
+    "subtitle:",
+    "author:",
+    "coverImage:",
+    "cover: true",
+    "titlePage: true",
+    "toc: true",
+    "workType: book",
+    "renderMode: page",
+    "defaultReadingMode: paged",
+    "physicalPagination: true",
+    "",
+    `[PAGE_REF id=${pageId}]`,
+    "",
+  ].join("\n");
+}
