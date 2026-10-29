@@ -20,7 +20,9 @@ export function parseNoticePanel(
   const firstLine = lines[0] ?? "";
   const bodyLines = lines.slice(1);
 
-  const match = firstLine.match(/^\s*\[NOTICE(?::([^\]\s]+))?\](.*)$/);
+  const match = firstLine.match(
+    /^\s*\[NOTICE(?::([^\]\s]+))?(?:\s+[^\]]+)?\](.*)$/,
+  );
 
   const variant = match?.[1] ?? block.variant;
   const title = match?.[2]?.trim() ?? "";
