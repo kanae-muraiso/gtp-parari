@@ -1,7 +1,10 @@
 // src/components/parari/panels/shared/PanelFrame.tsx
 // Shared panel frame for viewer / writing / editing.
 
-import type { ReactNode } from "react";
+import type {
+  CSSProperties,
+  ReactNode,
+} from "react";
 import type {
   PanelVisualStyle,
   PanelStyleColor,
@@ -20,6 +23,11 @@ type PanelFrameProps = {
   suppressGap?: boolean;
 };
 
+type PanelFrameCssVariables = CSSProperties & {
+  "--parari-line-height"?: string;
+  "--parari-paragraph-gap"?: string;
+};
+
 export function PanelFrame({
   children,
   gap = "default",
@@ -30,6 +38,19 @@ export function PanelFrame({
 }: PanelFrameProps) {
   const resolvedDefaultWidth =
     defaultWidth ?? (width === "full" ? "full" : "panel");
+
+  const lineHeight = resolveLineHeightNumber(
+    style?.lineHeight ?? "2",
+  );
+  const paragraphGapRatio = resolveParagraphGapNumber(
+    style?.paragraphGap ?? "1",
+  );
+
+  const textSpacingStyle: PanelFrameCssVariables = {
+    "--parari-line-height": String(lineHeight),
+    "--parari-paragraph-gap":
+      `${lineHeight * paragraphGapRatio}em`,
+  };
 
   const classes = [
     resolveWidthClass(style?.width ?? "default", resolvedDefaultWidth),
@@ -42,11 +63,20 @@ export function PanelFrame({
     resolveRadiusClass(style?.radius ?? "none"),
     (style?.radius ?? "none") !== "none" ? "overflow-hidden" : "",
     resolvePaddingClass(style?.padding ?? "none"),
-    resolveLineHeightClass(style?.lineHeight ?? "default"),
-    resolveParagraphGapClass(style?.paragraphGap ?? "default"),
+    "[&_.parari-rich-document]:!space-y-0",
+    "[&_p]:!leading-[var(--parari-line-height)]",
+    "[&_p]:!mb-[var(--parari-paragraph-gap)]",
+    "[&_p:last-child]:!mb-0",
   ].filter(Boolean);
 
-  return <div className={classes.join(" ")}>{children}</div>;
+  return (
+    <div
+      className={classes.join(" ")}
+      style={textSpacingStyle}
+    >
+      {children}
+    </div>
+  );
 }
 
 function resolveWidthClass(
@@ -125,64 +155,54 @@ function resolveBorderColorClass(color: PanelStyleColor): string {
   }
 }
 
-function resolveRadiusClass(radius: PanelVisualStyle["radius"]): string {
+function resolveRadiusClass(
+  radius: PanelVisualStyle["radius"],
+): string {
   if (radius === "s") return "rounded-md";
   if (radius === "m") return "rounded-xl";
   if (radius === "l") return "rounded-2xl";
   return "";
 }
 
-function resolvePaddingClass(padding: PanelVisualStyle["padding"]): string {
+function resolvePaddingClass(
+  padding: PanelVisualStyle["padding"],
+): string {
   if (padding === "s") return "p-2";
   if (padding === "m") return "p-4";
   if (padding === "l") return "p-6";
   return "";
 }
 
-
-function resolveLineHeightClass(
+function resolveLineHeightNumber(
   lineHeight: PanelVisualStyle["lineHeight"],
-): string {
-  if (lineHeight === "1") {
-    return "[&_p]:!leading-[1]";
-  }
+): number {
+  if (lineHeight === "1") return 1;
+  if (lineHeight === "1.25") return 1.25;
+  if (lineHeight === "1.5") return 1.5;
+  if (lineHeight === "1.75") return 1.75;
+  if (lineHeight === "2") return 2;
 
-  if (lineHeight === "1.25") {
-    return "[&_p]:!leading-[1.25]";
-  }
+  // 旧UI値との互換
+  if (lineHeight === "tight") return 1.5;
+  if (lineHeight === "wide") return 2;
+  if (lineHeight === "extra") return 2;
 
-  if (lineHeight === "1.5") {
-    return "[&_p]:!leading-[1.5]";
-  }
-
-  if (lineHeight === "1.75") {
-    return "[&_p]:!leading-[1.75]";
-  }
-
-  return "[&_p]:!leading-[2]";
+  return 2;
 }
 
-function resolveParagraphGapClass(
+function resolveParagraphGapNumber(
   gap: PanelVisualStyle["paragraphGap"],
-): string {
-  const base =
-    "[&_.parari-rich-document]:!space-y-0 [&_p:last-child]:!mb-0";
+): number {
+  if (gap === "0") return 0;
+  if (gap === "0.5") return 0.5;
+  if (gap === "1") return 1;
+  if (gap === "1.5") return 1.5;
+  if (gap === "2") return 2;
 
-  if (gap === "0") {
-    return `${base} [&_p]:!mb-0`;
-  }
+  // 旧UI値との互換
+  if (gap === "none") return 0;
+  if (gap === "s") return 0.5;
+  if (gap === "l") return 2;
 
-  if (gap === "0.5") {
-    return `${base} [&_p]:!mb-[0.5em]`;
-  }
-
-  if (gap === "1.5") {
-    return `${base} [&_p]:!mb-[1.5em]`;
-  }
-
-  if (gap === "2") {
-    return `${base} [&_p]:!mb-[2em]`;
-  }
-
-  return `${base} [&_p]:!mb-[1em]`;
+  return 1;
 }
