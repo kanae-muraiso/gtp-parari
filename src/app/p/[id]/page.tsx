@@ -9,6 +9,7 @@ import PublicViewerShell from "../../../components/parari/PublicViewerShell";
 import { supabase } from "../../../lib/supabaseClient";
 import BookViewTracker from "../../../components/parari/BookViewTracker";
 import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
+import { hasBookPageRefs } from "@/lib/parari/book/pageRefs";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -123,8 +124,37 @@ export default function PublicPage() {
         return;
       }
 
+      let resolvedBook = data;
+
+      if (hasBookPageRefs(String(data.content ?? ""))) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const response = await fetch(
+          `/api/works/book-resolve?workId=${encodeURIComponent(data.id)}`,
+          {
+            headers: session?.access_token
+              ? {
+                  Authorization: `Bearer ${session.access_token}`,
+                }
+              : undefined,
+            cache: "no-store",
+          },
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (response.ok && result?.ok && typeof result.resolvedContent === "string") {
+          resolvedBook = {
+            ...data,
+            content: result.resolvedContent,
+          };
+        }
+      }
+
       setHasPurchasedAccess(purchasedAccess);
-      setBook(data);
+      setBook(resolvedBook);
       setLoading(false);
     };
 
