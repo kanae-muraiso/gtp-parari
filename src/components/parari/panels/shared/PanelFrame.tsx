@@ -42,6 +42,8 @@ export function PanelFrame({
     resolveRadiusClass(style?.radius ?? "none"),
     (style?.radius ?? "none") !== "none" ? "overflow-hidden" : "",
     resolvePaddingClass(style?.padding ?? "none"),
+    resolveLineHeightClass(style?.lineHeight ?? "default"),
+    resolveParagraphGapClass(style?.paragraphGap ?? "default"),
   ].filter(Boolean);
 
   return <div className={classes.join(" ")}>{children}</div>;
@@ -134,5 +136,42 @@ function resolvePaddingClass(padding: PanelVisualStyle["padding"]): string {
   if (padding === "s") return "p-2";
   if (padding === "m") return "p-4";
   if (padding === "l") return "p-6";
+  return "";
+}
+
+
+function resolveLineHeightClass(
+  lineHeight: PanelVisualStyle["lineHeight"],
+): string {
+  if (lineHeight === "tight") {
+    return "[&_p]:!leading-[1.55]";
+  }
+
+  if (lineHeight === "wide") {
+    return "[&_p]:!leading-[2.1]";
+  }
+
+  if (lineHeight === "extra") {
+    return "[&_p]:!leading-[2.35]";
+  }
+
+  return "";
+}
+
+function resolveParagraphGapClass(
+  gap: PanelVisualStyle["paragraphGap"],
+): string {
+  if (gap === "none") {
+    return "[&_p]:!mb-0 [&_.parari-rich-document]:!space-y-0";
+  }
+
+  if (gap === "s") {
+    return "[&_p]:!mb-2 [&_.parari-rich-document]:!space-y-2";
+  }
+
+  if (gap === "l") {
+    return "[&_p]:!mb-8 [&_.parari-rich-document]:!space-y-8";
+  }
+
   return "";
 }
