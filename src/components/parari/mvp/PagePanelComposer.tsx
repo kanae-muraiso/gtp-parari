@@ -677,6 +677,7 @@ const waitForNextPaint = () =>
                                    <PanelFrame
                                      style={textPanelStyle ?? undefined}
                                      defaultWidth="text"
+                                     suppressGap
                                    >
                                      <RichTextPanelEditor
                                        ssotText={block.raw}
