@@ -111,6 +111,7 @@ type RichTextFieldProps = {
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   quiet?: boolean;
+  borderless?: boolean;
   autoFocus?: boolean;
 };
 
@@ -142,6 +143,7 @@ export function RichTextField({
   readingSupport,
   onChangeReadingSupport,
   quiet = false,
+  borderless = false,
   autoFocus = false,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
@@ -198,7 +200,15 @@ export function RichTextField({
     };
     
     return (
-      <div ref={editorShellRef} className={quiet ? "bg-white" : "rounded-xl border border-neutral-200 bg-white"}
+      <div
+        ref={editorShellRef}
+        className={
+          quiet
+            ? "bg-white"
+            : borderless
+              ? "bg-transparent"
+              : "rounded-xl border border-neutral-200 bg-white"
+        }
         onFocusCapture={() => {
           isRichTextEditingRef.current = true;
           setRichTextActive(true);
@@ -252,7 +262,13 @@ export function RichTextField({
               }
             /> : null}
             
-        <div className={quiet ? "relative" : "relative border-t border-neutral-100"}>
+        <div
+          className={
+            quiet || borderless
+              ? "relative"
+              : "relative border-t border-neutral-100"
+          }
+        >
           <RichTextPlugin
             contentEditable={
                 <ContentEditable
