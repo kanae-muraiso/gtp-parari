@@ -13,6 +13,7 @@ import {
 } from "./ParariTopBars";
 import BookSaveButton from "./BookSaveButton";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
+import { isBookSsot } from "@/lib/parari/book/pageRefs";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -61,6 +62,7 @@ export default function PublicViewerShell({
   }, [ownerId]);
 
   const viewerContent = resolveViewerContent(content, doc);
+  const isBook = isBookSsot(viewerContent);
 
   return (
     <div>
@@ -74,10 +76,18 @@ export default function PublicViewerShell({
               leftLabel="作品リストへ"
               actions={
                 <>
-                  <ParariTopBarButton href={`/writing/${bookId}`}>
-                    Writing
-                  </ParariTopBarButton>
-                  <ParariTopBarButton href={`/writing/${bookId}?mode=editing`}>
+                  {!isBook ? (
+                    <ParariTopBarButton href={`/writing/${bookId}`}>
+                      Writing
+                    </ParariTopBarButton>
+                  ) : null}
+                  <ParariTopBarButton
+                    href={
+                      isBook
+                        ? `/editor/book/${bookId}`
+                        : `/writing/${bookId}?mode=editing`
+                    }
+                  >
                     Editing
                   </ParariTopBarButton>
                   <ParariTopBarButton active>
