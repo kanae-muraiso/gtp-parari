@@ -131,7 +131,11 @@ export default function EditorNewPage() {
       return;
     }
 
-    router.push(`/editor-v2/${result.id}`);
+    router.push(
+      template.kind === "book"
+        ? `/editor/book/${result.id}`
+        : `/writing/${result.id}`,
+    );
   };
 
   const createFromTemplate = async (template: ParariTemplate) => {
