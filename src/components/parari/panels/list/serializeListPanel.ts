@@ -13,13 +13,14 @@ export function serializeListPanel(data: ListPanelData): string {
 
   const header = title.length > 0 ? `${tag} ${title}` : tag;
 
-  const itemLines = data.items
+  const itemBlocks = data.items
     .map((item) => item.trim())
-    .filter((item) => item.length > 0);
+    .filter((item) => item.length > 0)
+    .map((item) => `[ITEM]\n${item}`);
 
-  if (itemLines.length === 0) {
+  if (itemBlocks.length === 0) {
     return header;
   }
 
-  return `${header}\n${itemLines.join("\n")}`;
+  return `${header}\n${itemBlocks.join("\n")}`;
 }
