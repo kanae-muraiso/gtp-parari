@@ -11,6 +11,26 @@ export type BookOutlineEntry =
   | { kind: "page"; id: string }
   | { kind: "chapter"; id: string; title: string };
 
+export type BookSettings = {
+  subtitle: string;
+  author: string;
+  coverImage: string;
+  cover: boolean;
+  titlePage: boolean;
+  toc: boolean;
+  readingMode: "paged" | "scroll";
+};
+
+export const DEFAULT_BOOK_SETTINGS: BookSettings = {
+  subtitle: "",
+  author: "",
+  coverImage: "",
+  cover: true,
+  titlePage: true,
+  toc: true,
+  readingMode: "paged",
+};
+
 const PAGE_REF_RE =
   /^\s*\[PAGE_REF\s+id=([^\]\s]+)\]\s*$/i;
 
@@ -56,6 +76,60 @@ export function parseBookOutline(ssot: string): BookOutlineEntry[] {
   }
 
   return entries;
+}
+
+export function parseBookSettings(ssot: string): BookSettings {
+  const source = String(ssot ?? "").replace(/\r\n/g, "\n");
+
+  return {
+    subtitle: getBookMeta(source, "subtitle", ""),
+    author: getBookMeta(source, "author", ""),
+    coverImage: getBookMeta(source, "coverImage", ""),
+    cover: getBookMetaBoolean(source, "cover", true),
+    titlePage: getBookMetaBoolean(source, "titlePage", true),
+    toc: getBookMetaBoolean(source, "toc", true),
+    readingMode:
+      getBookMeta(source, "defaultReadingMode", "paged")
+        .trim()
+        .toLowerCase() === "scroll"
+        ? "scroll"
+        : "paged",
+  };
+}
+
+export function updateBookSettings(
+  ssot: string,
+  settings: BookSettings,
+): string {
+  let next = String(ssot ?? "");
+
+  next = setBookMeta(next, "subtitle", settings.subtitle);
+  next = setBookMeta(next, "author", settings.author);
+  next = setBookMeta(next, "coverImage", settings.coverImage);
+  next = setBookMeta(next, "cover", settings.cover ? "true" : "false");
+  next = setBookMeta(
+    next,
+    "titlePage",
+    settings.titlePage ? "true" : "false",
+  );
+  next = setBookMeta(next, "toc", settings.toc ? "true" : "false");
+  next = setBookMeta(
+    next,
+    "defaultReadingMode",
+    settings.readingMode,
+  );
+  next = setBookMeta(
+    next,
+    "renderMode",
+    settings.readingMode === "scroll" ? "scroll" : "page",
+  );
+  next = setBookMeta(
+    next,
+    "physicalPagination",
+    settings.readingMode === "paged" ? "true" : "false",
+  );
+
+  return next;
 }
 
 export function hasBookPageRefs(ssot: string): boolean {
@@ -201,4 +275,74 @@ export function updateBookTitle(
   }
 
   return source;
+}
+
+
+function getBookMeta(
+  ssot: string,
+  key: string,
+  fallback: string,
+): string {
+  const match = String(ssot ?? "").match(
+    new RegExp(
+      `^\\s*${escapeRegExp(key)}\\s*:\\s*(.*?)\\s*$`,
+      "im",
+    ),
+  );
+
+  return match?.[1]?.trim() ?? fallback;
+}
+
+function getBookMetaBoolean(
+  ssot: string,
+  key: string,
+  fallback: boolean,
+): boolean {
+  const value = getBookMeta(ssot, key, "");
+
+  if (!value) return fallback;
+
+  const normalized = value.trim().toLowerCase();
+
+  if (["true", "1", "yes", "on"].includes(normalized)) return true;
+  if (["false", "0", "no", "off"].includes(normalized)) return false;
+
+  return fallback;
+}
+
+function setBookMeta(
+  ssot: string,
+  key: string,
+  value: string,
+): string {
+  const safeValue = String(value ?? "")
+    .replace(/\\r?\\n/g, " ")
+    .trim();
+
+  const pattern = new RegExp(
+    `^(\\s*)${escapeRegExp(key)}\\s*:\\s*.*$`,
+    "im",
+  );
+
+  if (pattern.test(ssot)) {
+    return ssot.replace(pattern, (_, indent: string) =>
+      `${indent}${key}: ${safeValue}`,
+    );
+  }
+
+  const lines = String(ssot ?? "").replace(/\\r\\n/g, "\\n").split("\\n");
+  const bookIndex = lines.findIndex((line) =>
+    /^\\s*\\[(BOOK|BOOKINFO)\\b/i.test(line),
+  );
+
+  if (bookIndex >= 0) {
+    lines.splice(bookIndex + 1, 0, `${key}: ${safeValue}`);
+    return lines.join("\\n");
+  }
+
+  return ssot;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
 }
