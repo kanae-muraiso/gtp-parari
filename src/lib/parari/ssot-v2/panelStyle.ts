@@ -13,8 +13,26 @@ export type PanelStyleBackground = "none" | PanelStyleColor;
 export type PanelStyleRadius = "none" | "s" | "m" | "l";
 export type PanelStylePadding = "none" | "s" | "m" | "l";
 export type PanelStyleGap = "default" | "zero" | "s" | "m" | "l";
-export type PanelStyleLineHeight = "1" | "1.25" | "1.5" | "1.75" | "2";
-export type PanelStyleParagraphGap = "0" | "0.5" | "1" | "1.5" | "2";
+export type PanelStyleLineHeight =
+  | "1"
+  | "1.25"
+  | "1.5"
+  | "1.75"
+  | "2"
+  | "default"
+  | "tight"
+  | "wide"
+  | "extra";
+export type PanelStyleParagraphGap =
+  | "0"
+  | "0.5"
+  | "1"
+  | "1.5"
+  | "2"
+  | "default"
+  | "none"
+  | "s"
+  | "l";
 
 export type PanelVisualStyle = {
   width: PanelStyleWidth;
