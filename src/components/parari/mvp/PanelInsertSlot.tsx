@@ -1,7 +1,6 @@
 // src/components/parari/mvp/PanelInsertSlot.tsx
-// 2026/08/04 6:16
-// src/components/parari/mvp/PanelInsertSlot.tsx
-// PART: Hover-reveal zero-gap panel insert slot
+// 2026-10-30 JST
+// PART: Spaced insert controls and viewport-aware upward menus
 // - 文章・画像は直接表示
 // - YouTube / Instagram / 音声は「メディア」へまとめる
 // - お知らせ / リスト / ボタン / 開閉 / リンク / QAは「パネル」へまとめる
@@ -9,7 +8,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type PanelInsertTag =
   | "TEXT"
@@ -121,16 +121,16 @@ export function PanelInsertSlot({
   return (
     <div
       className={[
-        "group relative z-10 flex items-center justify-center transition-all",
-        open ? "min-h-10 py-1" : "h-0 min-h-0 py-0",
+        "relative flex min-h-12 items-center justify-center py-2",
+        open ? "z-30" : "z-10",
       ].join(" ")}
     >
       <div
         className={[
-          "absolute left-0 right-0 flex items-center justify-center transition-all",
+          "flex w-full items-center justify-center",
           open
-            ? "top-0 rounded-2xl bg-neutral-50 py-1 shadow-sm"
-            : "-top-3 h-6",
+            ? "rounded-2xl bg-sky-50 py-1 shadow-sm"
+            : "h-8",
         ].join(" ")}
       >
         {!open ? (
@@ -138,10 +138,9 @@ export function PanelInsertSlot({
             type="button"
             onClick={() => setOpen(true)}
             className={[
-              "grid h-5 w-5 place-items-center rounded-full border border-neutral-200 bg-white",
-              "text-[10px] leading-none text-neutral-300 shadow-sm transition",
-              "opacity-0 hover:border-neutral-300 hover:text-neutral-500",
-              "group-hover:opacity-100",
+              "grid h-8 w-8 place-items-center rounded-full border border-sky-200 bg-sky-50",
+              "text-base leading-none text-sky-600 shadow-sm transition",
+              "hover:border-sky-400 hover:bg-sky-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500",
             ].join(" ")}
             aria-label="パネルを追加"
             title="ここにパネルを追加"
@@ -231,9 +230,49 @@ function InsertDropdown({
   onToggle,
   onSelect,
 }: InsertDropdownProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 0, ready: false });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const trigger = triggerRef.current;
+      const menu = menuRef.current;
+      if (!trigger || !menu) return;
+      const rect = trigger.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const topEdge = (viewport?.offsetTop ?? 0) + 8;
+      const leftEdge = (viewport?.offsetLeft ?? 0) + 8;
+      const rightEdge = leftEdge + (viewport?.width ?? window.innerWidth) - 16;
+      const bottomEdge = topEdge + (viewport?.height ?? window.innerHeight) - 16;
+      const above = Math.max(0, rect.top - topEdge - 6);
+      const below = Math.max(0, bottomEdge - rect.bottom - 6);
+      const height = menu.scrollHeight;
+      // Prefer above; near the top use the side with enough room.
+      const upwards = above >= Math.min(height, 160) || above >= below;
+      const maxHeight = upwards ? above : below;
+      const top = upwards ? rect.top - 6 - Math.min(height, maxHeight) : rect.bottom + 6;
+      const left = Math.max(leftEdge, Math.min(rect.left + rect.width / 2 - menu.offsetWidth / 2, rightEdge - menu.offsetWidth));
+      setPosition({ left, top: Math.max(topEdge, top), maxHeight, ready: true });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+    };
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={onToggle}
         className={[
@@ -244,11 +283,16 @@ function InsertDropdown({
         ].join(" ")}
         aria-expanded={open}
       >
-        {label} ▾
+        {label} ▴
       </button>
 
-      {open ? (
-        <div className="absolute left-1/2 top-full z-30 mt-1 min-w-32 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
+      {open ? createPortal(
+        <div
+          ref={menuRef}
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight, visibility: position.ready ? "visible" : "hidden" }}
+          className="fixed z-[100] min-w-32 max-w-[calc(100vw-16px)] overflow-y-auto overscroll-contain rounded-xl border border-sky-200 bg-white p-1 shadow-lg"
+          onKeyDown={(event) => { if (event.key === "Escape") { onToggle(); triggerRef.current?.focus(); } }}
+        >
           {items.map((item) => (
             <button
               key={item.tag}
@@ -259,7 +303,8 @@ function InsertDropdown({
               {item.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );
