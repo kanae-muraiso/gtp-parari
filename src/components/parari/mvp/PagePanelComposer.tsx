@@ -44,6 +44,9 @@ type PagePanelComposerProps = {
   publicBasePath?: string;
   mode?: "page" | "card";
   entitlements?: PlanEntitlements;
+  onExtractSelectionToPage?: (payload: {
+    selectedText: string;
+  }) => Promise<boolean>;
 };
 
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
@@ -160,6 +163,7 @@ export function PagePanelComposer({
   publicBasePath,
   mode = "page",
   entitlements = getPlanEntitlements("free"),
+  onExtractSelectionToPage,
 }: PagePanelComposerProps) {
   const [structureVersion, setStructureVersion] = useState(0);
   const [isMutating, setIsMutating] = useState(false);
@@ -694,6 +698,25 @@ const waitForNextPaint = () =>
                                        }
                                        onReplacePanel={(result) =>
                                          replaceBlockWithSsot(block.id, result.replacementSsot)
+                                       }
+                                       onExtractSelectionToPage={
+                                         mode === "page" && onExtractSelectionToPage
+                                           ? async ({ selectedText, remainingTextSsot }) => {
+                                               const created =
+                                                 await onExtractSelectionToPage({
+                                                   selectedText,
+                                                 });
+
+                                               if (created) {
+                                                 replaceBlockRaw(
+                                                   block.id,
+                                                   remainingTextSsot.trim().length > 0
+                                                     ? remainingTextSsot
+                                                     : "\u200B",
+                                                 );
+                                               }
+                                             }
+                                           : undefined
                                        }
                                        onDelete={
                                          renderBlocks.length > 1 ? () => deleteBlock(block.id) : undefined
