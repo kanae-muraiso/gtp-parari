@@ -701,20 +701,10 @@ const waitForNextPaint = () =>
                                        }
                                        onExtractSelectionToPage={
                                          mode === "page" && onExtractSelectionToPage
-                                           ? async ({ selectedText, remainingTextSsot }) => {
-                                               const created =
-                                                 await onExtractSelectionToPage({
-                                                   selectedText,
-                                                 });
-
-                                               if (created) {
-                                                 replaceBlockRaw(
-                                                   block.id,
-                                                   remainingTextSsot.trim().length > 0
-                                                     ? remainingTextSsot
-                                                     : "\u200B",
-                                                 );
-                                               }
+                                           ? async ({ selectedText }) => {
+                                               await onExtractSelectionToPage({
+                                                 selectedText,
+                                               });
                                              }
                                            : undefined
                                        }
