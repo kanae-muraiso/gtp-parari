@@ -54,12 +54,8 @@ function MyBookshelfContent() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="本棚" />
-
-        <div className="mt-6">
-          <MyPrimaryTabs active="bookshelf" />
-        </div>
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="本棚" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded />} />
 
         <div className="mt-8">
           <BookshelfAnnouncements />

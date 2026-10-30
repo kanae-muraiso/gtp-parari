@@ -357,12 +357,8 @@ export default function PurchasesPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="購入済み" />
-
-        <div className="mt-6">
-          <MyPrimaryTabs active="purchases" />
-        </div>
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="購入済み" area="library" navigation={<MyPrimaryTabs active="purchases" embedded />} />
 
         <section className="mt-8">
           <p className="text-xs font-bold tracking-[0.18em] text-neutral-400">

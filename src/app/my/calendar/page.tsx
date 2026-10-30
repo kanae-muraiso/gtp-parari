@@ -934,16 +934,10 @@ export default function MyCalendarPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="カレンダー" />
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="カレンダー" area="library" navigation={<MyPrimaryTabs active="calendar" embedded />} />
 
-
-        <div className="mt-6">
-          <MyPrimaryTabs active="calendar" />
-        </div>
-
-
-        <div className="mx-auto mt-8 max-w-2xl">
+        <div className="mt-6 w-full">
           {/* VIEW SWITCH */}
           <div className="grid grid-cols-2 rounded-2xl bg-neutral-200 p-1">
             <button

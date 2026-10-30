@@ -22,6 +22,7 @@ type ParariTabsProps = {
   active: string;
   onChange?: (key: string) => void;
   className?: string;
+  embedded?: boolean;
 };
 
 export default function ParariTabs({
@@ -29,11 +30,13 @@ export default function ParariTabs({
   active,
   onChange,
   className = "",
+  embedded = false,
 }: ParariTabsProps) {
   return (
     <nav
       className={[
-        "flex flex-wrap gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm",
+        "flex flex-wrap gap-1",
+        embedded ? "" : "rounded-2xl border border-neutral-200 bg-white p-1 shadow-sm",
         className,
       ].join(" ")}
     >
@@ -53,6 +56,7 @@ export default function ParariTabs({
             <Link
               key={item.key}
               href={item.href}
+              aria-current={selected ? "page" : undefined}
               className={tabClassName}
             >
               {item.label}

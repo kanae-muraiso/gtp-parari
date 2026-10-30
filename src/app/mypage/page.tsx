@@ -147,12 +147,8 @@ export default function MyPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="HOME" />
-
-        <div className="mt-6">
-          <MyPrimaryTabs active="home" />
-        </div>
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="HOME" area="library" navigation={<MyPrimaryTabs active="home" embedded />} />
 
         <ParticipationHomePanel />
 

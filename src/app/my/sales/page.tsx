@@ -372,12 +372,8 @@ export default function SalesPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 text-slate-900">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="販売管理" />
-
-        <div className="mt-6">
-          <ManagementTabs active="sales" />
-        </div>
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="販売管理" area="studio" navigation={<ManagementTabs active="sales" embedded />} />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.15fr]">
           <section className="rounded-3xl bg-white p-6 shadow-sm">
