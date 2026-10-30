@@ -1,0 +1,55 @@
+name: CPP LIVE progression checks
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*cpp_live*"
+      - "scripts/test-cpp-live-progression.mjs"
+      - "scripts/fixtures/cpp-live-test.sql"
+      - "src/components/parari/cpp/CppLive*.tsx"
+      - "src/components/parari/cpp/CppPrivateWorld.tsx"
+      - "src/app/api/parari/live/cpp/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/cpp-live-progression.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  progression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: cpp-live-test-only
+          POSTGRES_DB: cpp_live_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: SQL behavior and real concurrent connection tests
+        env:
+          CPP_LIVE_TEST_DATABASE_URL: postgresql://postgres:cpp-live-test-only@127.0.0.1:5432/cpp_live_test
+        run: npm run test:cpp-live-progression
+      - run: npm run check:repo-hygiene
+      - run: npm run test:cpp-routes
+      - run: npm run typecheck
+      - name: Build with placeholder environment
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+        run: npm run build
