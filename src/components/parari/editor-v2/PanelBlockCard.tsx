@@ -417,7 +417,8 @@ function canStylePanel(tag: string): boolean {
 function defaultWidthForPanelTag(tag: string): "text" | "panel" | "full" {
   const normalizedTag = String(tag ?? "").trim().toUpperCase();
 
-  if (normalizedTag === "NOTICE") {
+  // 2026-10-30 JST — PART: Align PAGE editor width with TEXT.
+  if (normalizedTag === "NOTICE" || isPageInfoPanel(normalizedTag)) {
     return "text";
   }
 
