@@ -472,6 +472,12 @@ function renderContentBlock(
     return renderText(block.text);
   }
 
+  if (block.type === "table") {
+    const cellText = (value: string) => escapeXml(value).replace(/\r\n?|\n/g, "<br/>");
+    const rowHtml = (row: string[], heading = false) => `<tr>${row.map(cell => heading ? `<th scope="col">${cellText(cell)}</th>` : `<td>${cellText(cell)}</td>`).join("")}</tr>`;
+    return `<table>${block.caption ? `<caption>${cellText(block.caption)}</caption>` : ""}${block.header ? `<thead>${rowHtml(block.rows[0], true)}</thead>` : ""}<tbody>${block.rows.slice(block.header ? 1 : 0).map(row => rowHtml(row)).join("")}</tbody></table>`;
+  }
+
   const storedImage = imageByUrl.get(block.url);
 
   if (!storedImage) {
@@ -589,6 +595,12 @@ img {
   margin: 1em auto;
   object-fit: contain;
 }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1em 0; }
+th, td { border: 1px solid #888; padding: 0.4em; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #eee; }
+caption { text-align: left; font-weight: bold; margin-bottom: 0.5em; }
+tr { break-inside: avoid; }
 
 figure {
   margin: 1.5em 0;

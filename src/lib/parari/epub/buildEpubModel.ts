@@ -7,6 +7,7 @@
 // - [PAGE]
 // - [IMAGE]
 // - [T]
+// - [TABLE]
 //
 // Other panel tags are intentionally excluded from EPUB output.
 
@@ -15,6 +16,7 @@ import {
   type BookSheet,
 } from "@/components/parari/viewer-v2/book/buildBookSheets";
 import { parseImagePanel } from "@/components/parari/panels/image/parseImagePanel";
+import { parseTablePanel, type TablePanelData } from "@/components/parari/panels/table/tableSsot";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 
 export type EpubTextBlock = {
@@ -28,7 +30,7 @@ export type EpubImageBlock = {
   caption?: string;
 };
 
-export type EpubContentBlock = EpubTextBlock | EpubImageBlock;
+export type EpubContentBlock = EpubTextBlock | EpubImageBlock | ({ type: "table" } & TablePanelData);
 
 export type EpubContentItem = {
   id: string;
@@ -113,7 +115,12 @@ function extractSupportedBlocks(sheet: BookSheet): EpubContentBlock[] {
 
     const tag = String(block.tag ?? "").trim().toUpperCase();
 
-    // EPUB v0.1ではIMAGEだけを出力対象にする。
+    if (tag === "TABLE") {
+      result.push({ type: "table", ...parseTablePanel(block.raw) });
+      continue;
+    }
+
+    // IMAGE and TABLE preserve their semantic structure.
     if (tag !== "IMAGE") {
       continue;
     }

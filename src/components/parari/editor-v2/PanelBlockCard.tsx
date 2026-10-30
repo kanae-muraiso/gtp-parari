@@ -436,6 +436,7 @@ function isDirectEditPanel(tag: string): boolean {
     normalizedTag === "NOTICE" ||
     normalizedTag === "ACCORDION" ||
     normalizedTag === "LIST" ||
+    normalizedTag === "TABLE" ||
     normalizedTag === "LINKS" ||
     normalizedTag === "BUTTON" ||
     normalizedTag === "IMAGE" ||

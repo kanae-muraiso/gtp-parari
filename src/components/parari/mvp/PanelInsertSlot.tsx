@@ -22,6 +22,7 @@ export type PanelInsertTag =
   | "INSTAGRAM"
   | "AUDIO"
   | "NOTICE"
+  | "TABLE"
   | "LIST"
   | "BUTTON"
   | "ACCORDION"
@@ -63,6 +64,7 @@ const MEDIA_TAGS: PanelInsertTag[] = [
 const PANEL_TAGS: PanelInsertTag[] = [
   "NOTICE",
   "LIST",
+  "TABLE",
   "BUTTON",
   "ACCORDION",
   "LINKS",

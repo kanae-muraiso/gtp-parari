@@ -53,6 +53,8 @@ type PagePanelComposerProps = {
   }) => Promise<boolean>;
 };
 
+import { createTablePanel } from "@/components/parari/panels/table/tableSsot";
+
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
 
 function countPagePanels(ssot: string): number {
@@ -73,6 +75,7 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
   { tag: "AUDIO", label: "音声" },
   { tag: "NOTICE", label: "お知らせ" },
   { tag: "LIST", label: "リスト" },
+  { tag: "TABLE", label: "表" },
   { tag: "BUTTON", label: "ボタン" },
   { tag: "ACCORDION", label: "開閉" },
   { tag: "LINKS", label: "リンク" },
@@ -791,6 +794,9 @@ const waitForNextPaint = () =>
         case "NOTICE":
           return "[NOTICE]\nお知らせ\n\nここに内容を書きます";
 
+        case "TABLE":
+          return createTablePanel();
+
         case "LIST":
           return "[LIST]\nリスト\n\n- 項目1\n- 項目2";
 
@@ -977,7 +983,8 @@ const waitForNextPaint = () =>
                                           : undefined
                                       }
                                       onChangeRaw={(nextRaw) => {
-                                        void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
+                                        if (block.tag === "TABLE") replaceBlockRaw(block.id, nextRaw);
+                                        else void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
                                       }}
                                       onDelete={() => {
                                         void runLockedMutation(() => deleteBlock(block.id));
