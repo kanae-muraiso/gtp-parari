@@ -54,9 +54,11 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
           }
           className={[
             "inline-flex items-center rounded-lg px-2 py-1.5 text-sm font-black tracking-[0.18em] transition",
-            area === "studio"
-              ? "bg-neutral-900 text-white hover:bg-neutral-800"
-              : "text-neutral-950 hover:bg-neutral-100",
+            area === "library"
+              ? "text-[#5B8DB8] hover:bg-[#5B8DB8]/10"
+              : area === "studio"
+                ? "bg-[#D49A3A] text-[#FFF8E8] shadow-sm hover:bg-[#C98C2F]"
+                : "text-neutral-950 hover:bg-neutral-100",
           ].join(" ")}
         >
           PARARI
