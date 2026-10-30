@@ -35,7 +35,11 @@ import {
   type TextReadingSupportOptions,
 } from "@/lib/parari/richText/textReadingSupport";
 
+import { readPanelSet, writePanelSet, panelInSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
+import { PanelSetControls } from "@/components/parari/editor-v2/PanelSetControls";
+
 type PagePanelComposerProps = {
+  authoringSet?: PanelSet;
   value: string;
   onChange: (nextValue: string) => void;
   textPlaceholder?: string;
@@ -52,6 +56,8 @@ type PagePanelComposerProps = {
     afterBodySsot: string;
   }) => Promise<boolean>;
 };
+
+import { createTablePanel } from "@/components/parari/panels/table/tableSsot";
 
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
 
@@ -73,6 +79,7 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
   { tag: "AUDIO", label: "音声" },
   { tag: "NOTICE", label: "お知らせ" },
   { tag: "LIST", label: "リスト" },
+  { tag: "TABLE", label: "表" },
   { tag: "BUTTON", label: "ボタン" },
   { tag: "ACCORDION", label: "開閉" },
   { tag: "LINKS", label: "リンク" },
@@ -164,6 +171,7 @@ function normalizePageHeadersFromTitle(ssot: string): string {
 
 export function PagePanelComposer({
   value,
+  authoringSet,
   onChange,
   textPlaceholder = "ここから本文",
   pageLimit,
@@ -174,12 +182,14 @@ export function PagePanelComposer({
   onExtractSelectionToPage,
   onSplitPageToBook,
 }: PagePanelComposerProps) {
+  const panelSet = authoringSet ?? readPanelSet(value);
   const [structureVersion, setStructureVersion] = useState(0);
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
   const visibleContentInsertItems = useMemo(
     () =>
       CONTENT_INSERT_ITEMS.filter((item) => {
+        if (!panelInSet(item.tag, panelSet)) return false;
         switch (item.tag) {
           case "FORM":
             return entitlements.canManageForms;
@@ -191,7 +201,7 @@ export function PagePanelComposer({
             return true;
         }
       }),
-    [entitlements],
+    [entitlements, panelSet],
   );
 const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
@@ -791,6 +801,9 @@ const waitForNextPaint = () =>
         case "NOTICE":
           return "[NOTICE]\nお知らせ\n\nここに内容を書きます";
 
+        case "TABLE":
+          return createTablePanel();
+
         case "LIST":
           return "[LIST]\nリスト\n\n- 項目1\n- 項目2";
 
@@ -839,6 +852,7 @@ const waitForNextPaint = () =>
 
   return (
     <div className="relative space-y-0">
+      {mode === "page" && (authoringSet || /^\s*\[(BOOK|PAGE)\b/.test(value)) ? <PanelSetControls value={panelSet} source={value} onChange={authoringSet ? undefined : next => onChange(writePanelSet(value, next))} /> : null}
                    {isMutating ? (
                      <div className="absolute inset-0 z-50 flex items-start justify-center rounded-3xl bg-white/70 pt-10 backdrop-blur-sm">
                        <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm font-bold text-neutral-700 shadow-lg">
@@ -887,6 +901,7 @@ const waitForNextPaint = () =>
                                      suppressGap
                                    >
                                      <RichTextPanelEditor
+                                       panelSet={panelSet}
                                        ssotText={block.raw}
                                        placeholder={textPlaceholder}
                                        readingSupport={parseTextReadingSupportAttrs(block.attrs)}
@@ -962,6 +977,7 @@ const waitForNextPaint = () =>
                                                 textPlaceholder="カードの内容"
                                                 publicBasePath={publicBasePath}
                                                 mode="card"
+                                                authoringSet={panelSet}
                                                 entitlements={entitlements}
                                               />
                                             )
@@ -977,7 +993,8 @@ const waitForNextPaint = () =>
                                           : undefined
                                       }
                                       onChangeRaw={(nextRaw) => {
-                                        void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
+                                        if (block.tag === "TABLE") replaceBlockRaw(block.id, nextRaw);
+                                        else void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
                                       }}
                                       onDelete={() => {
                                         void runLockedMutation(() => deleteBlock(block.id));

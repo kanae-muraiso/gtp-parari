@@ -5,6 +5,7 @@
 // Viewerの物理ページネーションは使用しない。
 
 import JSZip from "jszip";
+import { renderEpubText, renderEpubFootnotes, type EpubTextContext } from "./renderEpubText";
 
 import type {
   EpubBookModel,
@@ -30,7 +31,9 @@ export async function buildEpub(
   model: EpubBookModel,
 ): Promise<BuildEpubResult> {
   const zip = new JSZip();
-  const warnings: string[] = [];
+  const issues = model.issues ?? [];
+  if (issues.some(issue => issue.blocking)) throw new Error("EPUBに変換できないパネルがあります。");
+  const warnings: string[] = issues.map(issue => `${issue.location}（${issue.tag}）：${issue.message}`);
 
   const identifier = createIdentifier();
   const modifiedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -144,7 +147,7 @@ export async function buildEpub(
 
     zip.file(
       `EPUB/${fileName}`,
-      createContentXhtml(item, imageByUrl),
+      createContentXhtml(item, imageByUrl, warnings),
     );
 
     manifestItems.push(
@@ -309,11 +312,14 @@ function createPackageOpf(args: {
   xml:lang="ja">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="book-id">${escapeXml(identifier)}</dc:identifier>
-    <dc:title>${escapeXml(model.title || "Untitled")}</dc:title>
-    ${model.subtitle ? `<meta property="title-type">subtitle</meta>` : ""}
+    <dc:title id="main-title">${escapeXml(model.title || "Untitled")}</dc:title>
+    <meta refines="#main-title" property="title-type">main</meta>
+    <meta refines="#main-title" property="display-seq">1</meta>
     ${
       model.subtitle
-        ? `<dc:description>${escapeXml(model.subtitle)}</dc:description>`
+        ? `<dc:title id="subtitle">${escapeXml(model.subtitle)}</dc:title>
+    <meta refines="#subtitle" property="title-type">subtitle</meta>
+    <meta refines="#subtitle" property="display-seq">2</meta>`
         : ""
     }
     ${
@@ -433,9 +439,11 @@ function createTitlePageXhtml(model: EpubBookModel): string {
 function createContentXhtml(
   item: EpubContentItem,
   imageByUrl: Map<string, StoredImage>,
+  warnings: string[],
 ): string {
+  const context: EpubTextContext = { notes: [], warnings };
   const blocks = item.blocks
-    .map((block) => renderContentBlock(block, imageByUrl))
+    .map((block) => renderContentBlock(block, imageByUrl, context))
     .filter(Boolean)
     .join("\n");
 
@@ -452,10 +460,13 @@ function createContentXhtml(
 
   return createXhtmlDocument({
     title: item.title,
+    cssHref: "../styles/book.css",
+    extraNamespaces: ` xmlns:epub="http://www.idpf.org/2007/ops"`,
     body: `<section class="${item.kind}">
   ${heading}
   ${subtitle}
   ${blocks}
+  ${renderEpubFootnotes(context)}
 </section>`,
   });
 }
@@ -463,9 +474,20 @@ function createContentXhtml(
 function renderContentBlock(
   block: EpubContentBlock,
   imageByUrl: Map<string, StoredImage>,
+  context: EpubTextContext,
 ): string {
   if (block.type === "text") {
-    return renderText(block.text);
+    return renderEpubText(block.text, context);
+  }
+
+  if (block.type === "aside") return `<aside class="panel-aside">${block.title ? `<h3>${escapeXml(block.title)}</h3>` : ""}${renderEpubText(block.text, context)}</aside>`;
+  if (block.type === "list") return `<section>${block.title ? `<h3>${escapeXml(block.title)}</h3>` : ""}<ul>${block.items.map(item => `<li>${renderEpubText(item, context)}</li>`).join("")}</ul></section>`;
+  if (block.type === "link") return `<p><a href="${escapeXml(block.url)}">${escapeXml(block.label)}</a></p>`;
+
+  if (block.type === "table") {
+    const cellText = (value: string) => escapeXml(value).replace(/\r\n?|\n/g, "<br/>");
+    const rowHtml = (row: string[], heading = false) => `<tr>${row.map(cell => heading ? `<th scope="col">${cellText(cell)}</th>` : `<td>${cellText(cell)}</td>`).join("")}</tr>`;
+    return `<table>${block.caption ? `<caption>${cellText(block.caption)}</caption>` : ""}${block.header ? `<thead>${rowHtml(block.rows[0], true)}</thead>` : ""}<tbody>${block.rows.slice(block.header ? 1 : 0).map(row => rowHtml(row)).join("")}</tbody></table>`;
   }
 
   const storedImage = imageByUrl.get(block.url);
@@ -486,32 +508,11 @@ function renderContentBlock(
 </figure>`;
 }
 
-function renderText(text: string): string {
-  const normalized = String(text ?? "")
-    .replace(/\r\n?/g, "\n")
-    .trim();
-
-  if (!normalized) {
-    return "";
-  }
-
-  return normalized
-    .split(/\n{2,}/)
-    .map((paragraph) => {
-      const body = paragraph
-        .split("\n")
-        .map((line) => escapeXml(line.trim()))
-        .join("<br/>");
-
-      return `<p>${body}</p>`;
-    })
-    .join("\n");
-}
-
 function createXhtmlDocument(args: {
   title: string;
   body: string;
   extraNamespaces?: string;
+  cssHref?: string;
 }): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -521,11 +522,7 @@ function createXhtmlDocument(args: {
 <head>
   <meta charset="UTF-8"/>
   <title>${escapeXml(args.title)}</title>
-  <link rel="stylesheet" type="text/css" href="${
-    args.title === "目次" || args.body.includes("cover-page") || args.body.includes("title-page")
-      ? "styles/book.css"
-      : "../styles/book.css"
-  }"/>
+  <link rel="stylesheet" type="text/css" href="${args.cssHref ?? "styles/book.css"}"/>
 </head>
 <body>
 ${args.body}
@@ -548,7 +545,8 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   line-height: 1.4;
   text-align: left;
   break-after: avoid;
@@ -588,6 +586,19 @@ img {
   margin: 1em auto;
   object-fit: contain;
 }
+
+.panel-aside { border: 1px solid #888; padding: 0.8em; margin: 1em 0; }
+blockquote { margin: 1em 0 1em 1em; padding-left: 1em; border-left: 2px solid #888; }
+.noteref { vertical-align: super; font-size: smaller; line-height: normal; }
+.footnotes { margin-top: 2em; border-top: 1px solid #888; padding-top: 0.5em; font-size: 0.9em; }
+rt { font-size: 0.5em; }
+.page, .chapter { break-before: page; page-break-before: always; }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1em 0; }
+th, td { border: 1px solid #888; padding: 0.4em; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #eee; }
+caption { text-align: left; font-weight: bold; margin-bottom: 0.5em; }
+tr { break-inside: avoid; }
 
 figure {
   margin: 1.5em 0;

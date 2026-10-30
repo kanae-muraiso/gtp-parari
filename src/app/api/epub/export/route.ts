@@ -22,9 +22,21 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 import { buildEpubModel } from "@/lib/parari/epub/buildEpubModel";
 import { buildEpub } from "@/lib/parari/epub/buildEpub";
+import { EpubSourceError, loadEpubSource } from "@/lib/parari/epub/loadEpubSource";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Keep conversion notices within common HTTP header size limits.
+function encodeWarningHeader(warnings: string[]): string {
+  const selected: string[] = [];
+  for (const warning of warnings) {
+    if (encodeURIComponent([...selected, warning].join("\n")).length > 4500) break;
+    selected.push(warning);
+  }
+  if (selected.length < warnings.length) selected.push(`ほか${warnings.length - selected.length}件の変換があります。Kindle出版用の編集画面でも確認できます。`);
+  return encodeURIComponent(selected.join("\n"));
+}
 
 type ExportEpubBody = {
   workId?: unknown;
@@ -203,7 +215,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = buildEpubModel(ssot);
+    const resolvedSsot = await loadEpubSource(ssot, work.owner);
+    const model = buildEpubModel(resolvedSsot);
+    const blocked = model.issues?.filter(issue => issue.blocking) ?? [];
+    if (blocked.length) {
+      return NextResponse.json({ ok: false, code: "EPUB_UNSUPPORTED_PANELS", issues: blocked, message: "EPUB出力前に次の箇所を確認してください。\n" + blocked.map(issue => `${issue.location}（${issue.tag}）：${issue.message}`).join("\n") }, { status: 422 });
+    }
     const result = await buildEpub(model);
     const arrayBuffer = await result.blob.arrayBuffer();
 
@@ -213,12 +230,17 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/epub+zip",
         "Content-Disposition": createContentDisposition(result.filename),
         "Cache-Control": "no-store",
-        "X-Parari-Epub-Warnings": encodeURIComponent(
-          result.warnings.join("\n"),
-        ),
+        "X-Parari-Epub-Warnings": encodeWarningHeader(result.warnings),
       },
     });
   } catch (error) {
+    if (error instanceof EpubSourceError) {
+      return NextResponse.json(
+        { ok: false, code: error.code, message: error.message },
+        { status: error.status },
+      );
+    }
+
     console.error("[api/epub/export] unexpected error:", error);
 
     return NextResponse.json(

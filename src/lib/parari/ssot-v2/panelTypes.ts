@@ -54,6 +54,7 @@ export const DEFAULT_IMPLEMENTED_PANEL_TAGS = [
   "LINKS",
   "MENU",
   "LIST",
+  "TABLE",
   "IMAGE",
   "VIDEO",
   "AUDIO",

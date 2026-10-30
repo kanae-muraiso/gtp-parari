@@ -38,7 +38,10 @@ const LONG_TEXT_THRESHOLD = 30000;
 // 旧textarea fallbackは緊急退避用としてコードだけ残す。
 // const LONG_TEXT_THRESHOLD = Number.POSITIVE_INFINITY;
 
+import { panelInSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
+
 type RichTextPanelEditorProps = {
+  panelSet?: PanelSet;
   ssotText: string;
   placeholder?: string;
   onChangeSsotText: (nextSsotText: string) => void;
@@ -84,6 +87,7 @@ const DEFAULT_PANELIZE_ACTIONS: Array<{
 
 export function RichTextPanelEditor({
   ssotText,
+  panelSet = "standard",
   placeholder = "ここから本文",
   onChangeSsotText,
   onReplacePanel,
@@ -99,13 +103,14 @@ export function RichTextPanelEditor({
   const [englishMenuContainer, setEnglishMenuContainer] = useState<HTMLDivElement | null>(null);
   const englishAuthoring = useEnglishAuthoring();
 
+  const availablePanelizeActions = panelizeActions.filter(action => panelInSet(action.tag, panelSet));
   const resolvedPanelizeActions = onExtractSelectionToPage
-    ? panelizeActions.map((action) =>
+    ? availablePanelizeActions.map((action) =>
         action.tag === "PAGE"
           ? { ...action, label: "派生PAGE" }
           : action,
       )
-    : panelizeActions;
+    : availablePanelizeActions;
 
   const handlePanelizeSelection = (payload: RichTextPanelizePayload) => {
     if (

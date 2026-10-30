@@ -27,6 +27,8 @@ import { webInfoDefinition } from "./webinfo/webInfoDefinition";
 import { formDefinition } from "./form/formDefinition";
 import { carouselDefinition } from "./carousel/carouselDefinition";
 
+import { tableDefinition } from "./table/tableDefinition";
+
 const panelDefinitions: Record<string, PanelDefinition<any>> = {
   ETTEXT: etTextPanelDefinition,
   BOOK: bookInfoDefinition,
@@ -39,6 +41,7 @@ const panelDefinitions: Record<string, PanelDefinition<any>> = {
   LINKS: linksDefinition,
   MENU: menuDefinition,
   LIST: listDefinition,
+  TABLE: tableDefinition,
   QA: qaDefinition,
   IMAGE: imageDefinition,
   VIDEO: videoDefinition,

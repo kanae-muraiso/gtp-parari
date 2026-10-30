@@ -1,20 +1,24 @@
 // src/lib/parari/epub/buildEpubModel.ts
 // PART: PARARI SSOT -> EPUB intermediate model
 //
-// EPUB v0.1 supported SSOT tags:
+// Core SSOT tags:
 // - [BOOK]
 // - [CHAPTER]
 // - [PAGE]
 // - [IMAGE]
 // - [T]
+// - [TABLE]
 //
-// Other panel tags are intentionally excluded from EPUB output.
+// Web panel alternatives and blocking issues are defined in convertEpubPanel.
 
 import {
   buildBookSheets,
   type BookSheet,
 } from "@/components/parari/viewer-v2/book/buildBookSheets";
 import { parseImagePanel } from "@/components/parari/panels/image/parseImagePanel";
+import { parseTablePanel, type TablePanelData } from "@/components/parari/panels/table/tableSsot";
+import { convertEpubPanel } from "./convertEpubPanel";
+import type { EpubPanelIssue } from "@/lib/parari/authoring/panelSets";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 
 export type EpubTextBlock = {
@@ -28,7 +32,7 @@ export type EpubImageBlock = {
   caption?: string;
 };
 
-export type EpubContentBlock = EpubTextBlock | EpubImageBlock;
+export type EpubContentBlock = EpubTextBlock | EpubImageBlock | { type: "aside"; title: string; text: string } | { type: "list"; title: string; items: string[] } | { type: "link"; label: string; url: string } | ({ type: "table" } & TablePanelData);
 
 export type EpubContentItem = {
   id: string;
@@ -42,6 +46,7 @@ export type EpubContentItem = {
 };
 
 export type EpubBookModel = {
+  issues?: EpubPanelIssue[];
   title: string;
   subtitle: string;
   author: string;
@@ -54,15 +59,17 @@ export type EpubBookModel = {
 
 export function buildEpubModel(ssot: string): EpubBookModel {
   const viewerBook = buildBookSheets(ssot);
+  const issues: EpubPanelIssue[] = [];
 
   const items = viewerBook.sheets
     .filter(
       (sheet): sheet is BookSheet =>
         sheet.kind === "chapter" || sheet.kind === "page",
     )
-    .map(buildContentItem);
+    .map(sheet => buildContentItem(sheet, issues));
 
   return {
+    issues,
     title: viewerBook.title,
     subtitle: viewerBook.subtitle ?? "",
     author: viewerBook.author ?? "",
@@ -76,7 +83,7 @@ export function buildEpubModel(ssot: string): EpubBookModel {
   };
 }
 
-function buildContentItem(sheet: BookSheet): EpubContentItem {
+function buildContentItem(sheet: BookSheet, issues: EpubPanelIssue[]): EpubContentItem {
   return {
     id: sheet.id,
     kind: sheet.kind === "chapter" ? "chapter" : "page",
@@ -85,11 +92,11 @@ function buildContentItem(sheet: BookSheet): EpubContentItem {
     showTitle: sheet.showTitle !== false,
     showInToc: sheet.showInToc !== false,
     chapterId: sheet.chapterId,
-    blocks: extractSupportedBlocks(sheet),
+    blocks: extractSupportedBlocks(sheet, issues),
   };
 }
 
-function extractSupportedBlocks(sheet: BookSheet): EpubContentBlock[] {
+function extractSupportedBlocks(sheet: BookSheet, issues: EpubPanelIssue[]): EpubContentBlock[] {
   const result: EpubContentBlock[] = [];
 
   // PAGE / CHAPTER meta内のmainImageを本文先頭画像として扱う。
@@ -113,8 +120,14 @@ function extractSupportedBlocks(sheet: BookSheet): EpubContentBlock[] {
 
     const tag = String(block.tag ?? "").trim().toUpperCase();
 
-    // EPUB v0.1ではIMAGEだけを出力対象にする。
+    if (tag === "TABLE") {
+      result.push({ type: "table", ...parseTablePanel(block.raw) });
+      continue;
+    }
+
+    // IMAGE and TABLE preserve their semantic structure.
     if (tag !== "IMAGE") {
+      result.push(...convertEpubPanel(block, `${sheet.title || "PAGE"}・パネル${parsedBlocks.indexOf(block) + 1}`, issues));
       continue;
     }
 

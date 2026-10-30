@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { PanelSetControls } from "@/components/parari/editor-v2/PanelSetControls";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import {
   ParariOwnerTopBar,
@@ -49,6 +51,9 @@ export default function ReferenceBookEditorPage() {
   const [outline, setOutline] = React.useState<BookOutlineEntry[]>([]);
   const [state, setState] = React.useState<SaveState>("loading");
   const [message, setMessage] = React.useState("");
+  const [epubMessage, setEpubMessage] = React.useState("");
+  const draftBookRef = React.useRef<string | null>(null);
+  const savedPageContentsRef = React.useRef(new Map<string, string>());
   const [openPageId, setOpenPageId] = React.useState<string | null>(null);
   const [pageSaveState, setPageSaveState] = React.useState<
     Record<string, SaveState>
@@ -142,6 +147,7 @@ export default function ReferenceBookEditorPage() {
       pagesRef.current = new Map(
         nextPages.map((page) => [page.id, page] as const),
       );
+      savedPageContentsRef.current = new Map(nextPages.map(page => [page.id, page.content ?? ""]));
       setPages(nextPages);
       setTitle(nextTitle);
       setBookSettings(parseBookSettings(content));
@@ -179,6 +185,7 @@ export default function ReferenceBookEditorPage() {
     nextSettings: BookSettings,
     nextOutline: BookOutlineEntry[],
   ) => {
+    draftBookRef.current = replaceBookOutline(updateBookSettings(updateBookTitle(bookRef.current?.content ?? "", nextTitle), nextSettings), nextOutline);
     setTitle(nextTitle);
     setBookSettings(nextSettings);
     setOutline(nextOutline);
@@ -416,6 +423,7 @@ export default function ReferenceBookEditorPage() {
           latestPage.updated_at,
       };
 
+      savedPageContentsRef.current.set(pageId, nextContent);
       pagesRef.current.set(pageId, savedPage);
       setPages((current) =>
         current.map((page) =>
@@ -783,6 +791,18 @@ export default function ReferenceBookEditorPage() {
     );
   };
 
+  // 2026-10-30 JST — PART: Include inline PAGE drafts in export readiness.
+  const getEpubBlockedReason = () => {
+    if (!bookRef.current) return "作品を読み込み中です。";
+    if (state === "error" || Object.values(pageSaveState).includes("error")) return "保存エラーを解消してから出力してください。";
+    if (creatingPage || derivingPageId || saveLockRef.current || pendingRef.current ||
+        (draftBookRef.current !== null && draftBookRef.current !== bookRef.current.content) ||
+        pageSaveLocksRef.current.size || pendingPageContentRef.current.size || pageSaveTimersRef.current.size ||
+        [...pagesRef.current].some(([id, page]) => savedPageContentsRef.current.has(id) && savedPageContentsRef.current.get(id) !== (page.content ?? "")))
+      return "BOOKとPAGEの自動保存完了をお待ちください。";
+    return "";
+  };
+
   const statusText =
     state === "saving"
       ? "保存中…"
@@ -816,11 +836,13 @@ export default function ReferenceBookEditorPage() {
             <ParariTopBarButton href={`/p/${workId}`}>
               表示
             </ParariTopBarButton>
+            <EpubExportButton workId={workId} title={title} getBlockedReason={getEpubBlockedReason} onMessage={setEpubMessage} />
           </>
         }
       />
 
       <div className="mx-auto max-w-3xl px-4 py-8">
+        {epubMessage ? <p role="status" className="mb-4 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{epubMessage}</p> : null}
         {state === "error" && !book ? (
           <div className="rounded-3xl bg-white p-6 text-sm text-red-700 shadow-sm">
             {message}
@@ -845,6 +867,7 @@ export default function ReferenceBookEditorPage() {
         ) : (
           <>
             <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <PanelSetControls value={bookSettings.authoringSet ?? "standard"} source={String(book.content ?? "")} onChange={authoringSet => scheduleSave(title, { ...bookSettings, authoringSet }, outline)} />
               <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
                 BOOK
               </div>
@@ -1207,6 +1230,7 @@ export default function ReferenceBookEditorPage() {
 
                             <div className="rounded-2xl bg-white p-2 ring-1 ring-neutral-200 sm:p-3">
                               <PagePanelComposer
+                                authoringSet={bookSettings.authoringSet ?? "standard"}
                                 value={String(work.content ?? "")}
                                 onChange={(nextContent) =>
                                   schedulePageSave(
