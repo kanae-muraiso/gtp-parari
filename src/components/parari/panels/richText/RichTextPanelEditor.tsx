@@ -57,6 +57,10 @@ type RichTextPanelEditorProps = {
     beforeTextSsot: string;
     afterTextSsot: string;
   }) => void;
+  onSplitPageAtCursor?: (payload: {
+    beforeTextSsot: string;
+    afterTextSsot: string;
+  }) => void | Promise<void>;
 };
 
 const DEFAULT_PANELIZE_ACTIONS: Array<{
@@ -89,6 +93,7 @@ export function RichTextPanelEditor({
   panelizeActions = DEFAULT_PANELIZE_ACTIONS,
   onExtractSelectionToPage,
   onSplitText,
+  onSplitPageAtCursor,
 }: RichTextPanelEditorProps) {
   const [mode, setMode] = useState<RichTextPanelMode>("view");
   const [englishMenuContainer, setEnglishMenuContainer] = useState<HTMLDivElement | null>(null);
@@ -103,6 +108,49 @@ export function RichTextPanelEditor({
     : panelizeActions;
 
   const handlePanelizeSelection = (payload: RichTextPanelizePayload) => {
+    if (
+      payload.tag === "PAGE" &&
+      onSplitPageAtCursor &&
+      payload.selected.trim().length === 0
+    ) {
+      const markerIndex =
+        payload.markedRaw.indexOf(payload.marker);
+
+      if (markerIndex < 0) {
+        window.alert(
+          "PAGE分割位置を取得できませんでした。",
+        );
+        return;
+      }
+
+      const beforeTextSsot =
+        payload.markedRaw
+          .slice(0, markerIndex)
+          .trimEnd();
+      const afterTextSsot =
+        payload.markedRaw
+          .slice(
+            markerIndex + payload.marker.length,
+          )
+          .trimStart();
+
+      if (
+        !hasVisibleRichText(beforeTextSsot) ||
+        !hasVisibleRichText(afterTextSsot)
+      ) {
+        window.alert(
+          "PAGEを分割する位置にカーソルを置いてください。\n先頭または末尾では分割できません。",
+        );
+        return;
+      }
+
+      void onSplitPageAtCursor({
+        beforeTextSsot,
+        afterTextSsot,
+      });
+      return;
+    }
+
     if (
       payload.tag === "PAGE" &&
       onExtractSelectionToPage &&
