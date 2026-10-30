@@ -11,17 +11,10 @@ import { supabase } from "../lib/supabaseClient";
 type StartDestination = "library" | "studio" | "last";
 type Workspace = "library" | "studio";
 
-type ExperienceRow = {
-  studio_enabled: boolean | null;
-};
-
 function resolveDestination(
   startDestination: StartDestination,
   lastWorkspace: Workspace,
-  studioEnabled: boolean,
 ) {
-  if (!studioEnabled) return "/mypage";
-
   if (startDestination === "studio") return "/my/works";
   if (startDestination === "last") {
     return lastWorkspace === "studio" ? "/my/works" : "/mypage";
@@ -54,34 +47,24 @@ export default function HomePage() {
         return;
       }
 
-      const [{ data: experienceData }, { data: preferenceData }] =
-        await Promise.all([
-          supabase.rpc("get_my_parari_experience"),
-          supabase
-            .from("user_workspace_preferences")
-            .select("start_destination,last_workspace")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-        ]);
-
+      // 2026-10-31 JST — PART: Start in STUDIO unless a preference was saved.
+      const { data: preferenceData } = await supabase
+        .from("user_workspace_preferences")
+        .select("start_destination,last_workspace")
+        .eq("user_id", user.id)
+        .maybeSingle();
       if (!mounted) return;
 
-      const experience = (Array.isArray(experienceData)
-        ? experienceData[0]
-        : experienceData) as ExperienceRow | null;
-
-      const studioEnabled = Boolean(experience?.studio_enabled);
-
-      const rawStart = String(preferenceData?.start_destination ?? "library");
+      const rawStart = String(preferenceData?.start_destination ?? "studio");
       const startDestination: StartDestination =
-        rawStart === "studio" || rawStart === "last" ? rawStart : "library";
+        rawStart === "library" || rawStart === "last" ? rawStart : "studio";
 
-      const rawLast = String(preferenceData?.last_workspace ?? "library");
+      const rawLast = String(preferenceData?.last_workspace ?? "studio");
       const lastWorkspace: Workspace =
-        rawLast === "studio" ? "studio" : "library";
+        rawLast === "library" ? "library" : "studio";
 
       router.replace(
-        resolveDestination(startDestination, lastWorkspace, studioEnabled),
+        resolveDestination(startDestination, lastWorkspace),
       );
     }
 

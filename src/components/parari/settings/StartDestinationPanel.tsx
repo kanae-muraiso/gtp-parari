@@ -31,7 +31,7 @@ const OPTIONS: Array<{
 
 export default function StartDestinationPanel() {
   const { studioEnabled, loading: loadingExperience } = useParariExperience();
-  const [value, setValue] = useState<StartDestination>("library");
+  const [value, setValue] = useState<StartDestination>("studio");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -64,7 +64,7 @@ export default function StartDestinationPanel() {
 
       if (!mounted) return;
 
-      const next = String(data?.start_destination ?? "library");
+      const next = String(data?.start_destination ?? "studio");
       if (next === "library" || next === "studio" || next === "last") {
         setValue(next);
       }
