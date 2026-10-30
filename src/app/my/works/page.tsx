@@ -19,7 +19,10 @@ import {
   isReferenceBookSsot,
   parseBookOutline,
 } from "@/lib/parari/book/pageRefs";
-import { parseOriginPageId } from "@/lib/parari/page/lineage";
+import {
+  parseOriginBookId,
+  parseOriginPageId,
+} from "@/lib/parari/page/lineage";
 
 type Visibility = "private" | "unlisted" | "public";
 type WorkKind = "Page" | "Book" | "Web";
@@ -751,6 +754,59 @@ export default function MyWorksPage() {
       [works],
     );
 
+    const referencedBookPageIds = React.useMemo(() => {
+      const ids = new Set<string>();
+
+      for (const work of works) {
+        if (
+          resolveWorkKind(work.content) !== "Book" ||
+          !isReferenceBookSsot(
+            String(work.content ?? ""),
+          )
+        ) {
+          continue;
+        }
+
+        for (const entry of parseBookOutline(
+          String(work.content ?? ""),
+        )) {
+          if (entry.kind === "page") {
+            ids.add(entry.id);
+          }
+        }
+      }
+
+      return ids;
+    }, [works]);
+
+    const hiddenBookPageIds = React.useMemo(() => {
+      const ids = new Set<string>();
+
+      for (const pageId of referencedBookPageIds) {
+        const page = workById.get(pageId);
+
+        if (
+          !page ||
+          resolveWorkKind(page.content) !== "Page"
+        ) {
+          continue;
+        }
+
+        const isBookCopy =
+          Boolean(parseOriginPageId(page.content)) ||
+          Boolean(parseOriginBookId(page.content));
+
+        if (isBookCopy) {
+          ids.add(pageId);
+        }
+      }
+
+      return ids;
+    }, [
+      referencedBookPageIds,
+      workById,
+    ]);
+
     const derivedPageIdsByOrigin = React.useMemo(() => {
       const map = new Map<string, string[]>();
 
@@ -767,6 +823,10 @@ export default function MyWorksPage() {
           continue;
         }
 
+        if (hiddenBookPageIds.has(work.id)) {
+          continue;
+        }
+
         const current =
           map.get(originPageId) ?? [];
 
@@ -775,15 +835,19 @@ export default function MyWorksPage() {
       }
 
       return map;
-    }, [works]);
+    }, [works, hiddenBookPageIds]);
 
     const pageWorks = React.useMemo(
       () =>
         filteredWorks.filter(
           (work) =>
-            resolveWorkKind(work.content) === "Page",
+            resolveWorkKind(work.content) === "Page" &&
+            !hiddenBookPageIds.has(work.id),
         ),
-      [filteredWorks],
+      [
+        filteredWorks,
+        hiddenBookPageIds,
+      ],
     );
 
     const bookWorks = React.useMemo(
@@ -1163,7 +1227,11 @@ export default function MyWorksPage() {
 
                     <StatusBadge
                       status={status}
-                      count={works.length + sharedWorks.length}
+                      count={
+                        works.length -
+                        hiddenBookPageIds.size +
+                        sharedWorks.length
+                      }
                     />
                   </div>
 
@@ -1278,7 +1346,7 @@ export default function MyWorksPage() {
                         : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
                     ].join(" ")}
                   >
-                    すべて {works.length}
+                    すべて {works.length - hiddenBookPageIds.size}
                   </button>
 
                   <button
