@@ -42,6 +42,11 @@ export type RichTextInlineMenuAction =
       title?: string;
     }
   | {
+      kind: "splitText";
+      label: string;
+      title?: string;
+    }
+  | {
       kind: "link";
       label: string;
       title?: string;
@@ -142,7 +147,9 @@ export function RichTextInlineInsertMenu({
   );
 
   const visibleTextActions = textActions.filter(
-    (action) => action.kind !== "color",
+    (action) =>
+      action.kind !== "color" &&
+      action.kind !== "splitText",
   );
 
   const mediaActions = filterPanelActions(
@@ -155,10 +162,15 @@ export function RichTextInlineInsertMenu({
     PANEL_TAGS,
   );
 
-  const structureActions = filterPanelActions(
-    panelActions,
-    STRUCTURE_TAGS,
-  );
+  const structureActions: RichTextInlineMenuAction[] = [
+    ...textActions.filter(
+      (action) => action.kind === "splitText",
+    ),
+    ...filterPanelActions(
+      panelActions,
+      STRUCTURE_TAGS,
+    ),
+  ];
 
   const closeMenu = () => {
     setOpenMenu(null);
