@@ -257,6 +257,50 @@ const waitForNextPaint = () =>
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
   };
 
+  const splitTextBlock = (
+    blockId: string,
+    beforeTextSsot: string,
+    afterTextSsot: string,
+  ) => {
+    preserveWindowScrollForNextRender();
+
+    const nextBlocks: SsotBlock[] = [];
+
+    for (const block of blocks) {
+      if (
+        block.id !== blockId ||
+        block.kind !== "text"
+      ) {
+        nextBlocks.push(block);
+        continue;
+      }
+
+      nextBlocks.push(
+        {
+          ...block,
+          id: `${block.id}-before`,
+          raw: beforeTextSsot,
+        },
+        {
+          ...block,
+          id: `${block.id}-after`,
+          raw: afterTextSsot,
+        },
+      );
+    }
+
+    onChange(
+      normalizePageHeadersFromTitle(
+        serializeBlocks(
+          sanitizeBlocks(nextBlocks),
+        ),
+      ),
+    );
+    setStructureVersion(
+      (current) => current + 1,
+    );
+  };
+
   const replaceTextPanelStyle = (
     blockId: string,
     next: PanelVisualStyle,
@@ -698,6 +742,16 @@ const waitForNextPaint = () =>
                                        }
                                        onReplacePanel={(result) =>
                                          replaceBlockWithSsot(block.id, result.replacementSsot)
+                                       }
+                                       onSplitText={({
+                                         beforeTextSsot,
+                                         afterTextSsot,
+                                       }) =>
+                                         splitTextBlock(
+                                           block.id,
+                                           beforeTextSsot,
+                                           afterTextSsot,
+                                         )
                                        }
                                        onExtractSelectionToPage={
                                          mode === "page" && onExtractSelectionToPage
