@@ -32,6 +32,7 @@ export default function WritingWorkPage() {
   const [creatingBook, setCreatingBook] = useState(false);
   const [extractingPage, setExtractingPage] = useState(false);
   const [lastExtractedPageId, setLastExtractedPageId] = useState<string | null>(null);
+  const [promotingToBook, setPromotingToBook] = useState(false);
 
   const workRef = useRef<WorkRow | null>(null);
   const ssotRef = useRef("");
@@ -387,6 +388,123 @@ export default function WritingWorkPage() {
     }
   }
 
+  async function splitPageToBook({
+    beforeBodySsot,
+    afterBodySsot,
+  }: {
+    beforeBodySsot: string;
+    afterBodySsot: string;
+  }): Promise<boolean> {
+    const currentWork = workRef.current;
+
+    if (!currentWork || promotingToBook) {
+      return false;
+    }
+
+    setPromotingToBook(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          "ログインを確認できませんでした。",
+        );
+      }
+
+      const sourceTitle =
+        titleRef.current.trim() ||
+        "無題のPAGE";
+
+      const firstTitle = sourceTitle;
+      const secondTitle =
+        derivePageTitleFromBody(
+          afterBodySsot,
+          "新しいPAGE",
+        );
+
+      const firstPageId =
+        await createDerivedPageWork({
+          accessToken: session.access_token,
+          title: firstTitle,
+          bodySsot: beforeBodySsot,
+          originPageId: currentWork.id,
+        });
+
+      const secondPageId =
+        await createDerivedPageWork({
+          accessToken: session.access_token,
+          title: secondTitle,
+          bodySsot: afterBodySsot,
+          originPageId: currentWork.id,
+        });
+
+      const bookTitle =
+        sourceTitle || "新しいBOOK";
+
+      const response = await fetch("/api/works/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          stableSlug:
+            createBookStableSlug(),
+          template: {
+            kind: "book",
+            initialTitle: bookTitle,
+            ssot:
+              createReferenceBookSsotFromPages({
+                title: bookTitle,
+                pageIds: [
+                  firstPageId,
+                  secondPageId,
+                ],
+                originPageId:
+                  currentWork.id,
+              }),
+          },
+        }),
+      });
+
+      const result = await response
+        .json()
+        .catch(() => null);
+
+      if (
+        !response.ok ||
+        !result?.ok ||
+        !result.id
+      ) {
+        throw new Error(
+          result?.message ??
+            "BOOKを作成できませんでした。",
+        );
+      }
+
+      router.push(
+        `/editor/book/${result.id}`,
+      );
+
+      return true;
+    } catch (error) {
+      setState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "PAGEを分割してBOOKを作成できませんでした。",
+      );
+      return false;
+    } finally {
+      setPromotingToBook(false);
+    }
+  }
+
   async function addImage(file: File) {
     if (!file.type.startsWith("image/")) return;
 
@@ -496,7 +614,7 @@ export default function WritingWorkPage() {
 
               <button
                 type="button"
-                disabled={creatingBook}
+                disabled={creatingBook || promotingToBook}
                 onClick={() => {
                   void createBookFromPage();
                 }}
@@ -524,6 +642,7 @@ export default function WritingWorkPage() {
               value={ssot}
               onChange={scheduleSave}
               onExtractSelectionToPage={extractSelectionToPage}
+              onSplitPageToBook={splitPageToBook}
             />
           </section>
         ) : (
@@ -745,16 +864,28 @@ function createBookStableSlug(): string {
     .slice(2, 8)}`;
 }
 
-function createReferenceBookSsot({
+function createReferenceBookSsotFromPages({
   title,
-  pageId,
+  pageIds,
+  originPageId,
 }: {
   title: string;
-  pageId: string;
+  pageIds: string[];
+  originPageId?: string;
 }): string {
-  const safeTitle = String(title ?? "")
-    .replace(/\r?\n/g, " ")
-    .trim() || "新しいBOOK";
+  const safeTitle =
+    String(title ?? "")
+      .replace(/\r?\n/g, " ")
+      .trim() || "新しいBOOK";
+
+  const refs = pageIds
+    .map((id) =>
+      String(id ?? "").trim(),
+    )
+    .filter(Boolean)
+    .map(
+      (id) => `[PAGE_REF id=${id}]`,
+    );
 
   return [
     "[BOOK]",
@@ -769,12 +900,141 @@ function createReferenceBookSsot({
     "renderMode: page",
     "defaultReadingMode: paged",
     "physicalPagination: true",
+    originPageId
+      ? `originPageId: ${escapeMeta(originPageId)}`
+      : "",
     "",
-    `[PAGE_REF id=${pageId}]`,
+    ...refs,
     "",
-  ].join("\n");
+  ]
+    .filter(
+      (line, index, all) =>
+        line !== "" ||
+        index === all.length - 1 ||
+        all[index - 1] !== "",
+    )
+    .join("\n");
 }
 
+function createReferenceBookSsot({
+  title,
+  pageId,
+}: {
+  title: string;
+  pageId: string;
+}): string {
+  const safeTitle = String(title ?? "")
+    .replace(/\r?\n/g, " ")
+    .trim() || "新しいBOOK";
+
+  return createReferenceBookSsotFromPages({
+    title: safeTitle,
+    pageIds: [pageId],
+  });
+}
+
+
+async function createDerivedPageWork({
+  accessToken,
+  title,
+  bodySsot,
+  originPageId,
+}: {
+  accessToken: string;
+  title: string;
+  bodySsot: string;
+  originPageId: string;
+}): Promise<string> {
+  const safeTitle =
+    escapeMeta(title) || "新しいPAGE";
+
+  const normalizedBody =
+    String(bodySsot ?? "")
+      .replace(/\r\n/g, "\n")
+      .trim();
+
+  const ssot = [
+    "[PAGE]",
+    `title: ${safeTitle}`,
+    "subtitle:",
+    "mainImage:",
+    "titleAlign: left",
+    "visibility: unlisted",
+    "workType: page",
+    `originPageId: ${escapeMeta(originPageId)}`,
+    "",
+    normalizedBody ||
+      "[T]\n\u200B",
+    "",
+  ].join("\n");
+
+  const response = await fetch("/api/works/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization:
+        `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      stableSlug:
+        createPageStableSlug(),
+      template: {
+        kind: "page",
+        initialTitle: safeTitle,
+        ssot,
+      },
+    }),
+  });
+
+  const result = await response
+    .json()
+    .catch(() => null);
+
+  if (
+    !response.ok ||
+    !result?.ok ||
+    !result.id
+  ) {
+    throw new Error(
+      result?.message ??
+        "派生PAGEを作成できませんでした。",
+    );
+  }
+
+  return String(result.id);
+}
+
+function derivePageTitleFromBody(
+  bodySsot: string,
+  fallback: string,
+): string {
+  const visible = String(bodySsot ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(
+      (line) =>
+        line.length > 0 &&
+        !/^\[[A-Za-z][^\]]*\]/.test(line) &&
+        !/^[A-Za-z][A-Za-z0-9_-]*\s*:/.test(line),
+    )
+    .map((line) =>
+      line
+        .replace(/^#{1,6}\s+/, "")
+        .replace(/!![^|]+\|([^!]+)!!/g, "$1")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/\*([^*]+)\*/g, "$1")
+        .replace(/\[\[([^\]]+)\]\]\([^)]+\)/g, "$1")
+        .replace(/\[\[([^\]]+)\]\]\{[^}]+\}/g, "$1")
+        .trim(),
+    )
+    .find(Boolean);
+
+  return (
+    visible?.slice(0, 100) ||
+    fallback
+  );
+}
 
 function createPageStableSlug(): string {
   if (
