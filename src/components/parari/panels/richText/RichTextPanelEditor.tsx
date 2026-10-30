@@ -53,6 +53,10 @@ type RichTextPanelEditorProps = {
   onExtractSelectionToPage?: (payload: {
     selectedText: string;
   }) => void | Promise<void>;
+  onSplitText?: (payload: {
+    beforeTextSsot: string;
+    afterTextSsot: string;
+  }) => void;
 };
 
 const DEFAULT_PANELIZE_ACTIONS: Array<{
@@ -84,6 +88,7 @@ export function RichTextPanelEditor({
   onChangeReadingSupport,
   panelizeActions = DEFAULT_PANELIZE_ACTIONS,
   onExtractSelectionToPage,
+  onSplitText,
 }: RichTextPanelEditorProps) {
   const [mode, setMode] = useState<RichTextPanelMode>("view");
   const [englishMenuContainer, setEnglishMenuContainer] = useState<HTMLDivElement | null>(null);
@@ -242,6 +247,7 @@ export function RichTextPanelEditor({
             placeholder={placeholder}
             panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
+            onSplitText={onSplitText}
           />
         )}
       </div>
