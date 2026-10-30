@@ -34,6 +34,9 @@ export default function WritingWorkPage() {
   const [lastExtractedPageId, setLastExtractedPageId] = useState<string | null>(null);
 
   const workRef = useRef<WorkRow | null>(null);
+  const ssotRef = useRef("");
+  const titleRef = useRef("");
+  const mainImageUrlRef = useRef("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
@@ -78,9 +81,15 @@ export default function WritingWorkPage() {
           ? ""
           : String(data.title ?? ""));
 
+      const loadedSsot = data.content ?? createBlankPageSsot();
+
       workRef.current = data;
+      ssotRef.current = loadedSsot;
+      titleRef.current = resolvedTitle;
+      mainImageUrlRef.current = parsed.mainImageUrl;
+
       setWork(data);
-      setSsot(data.content ?? createBlankPageSsot());
+      setSsot(loadedSsot);
       setTitle(resolvedTitle);
       setMainImageUrl(parsed.mainImageUrl);
       setShowTitle(Boolean(resolvedTitle));
@@ -133,6 +142,7 @@ export default function WritingWorkPage() {
   }, []);
 
   function scheduleSave(nextSsot: string) {
+    ssotRef.current = nextSsot;
     setSsot(nextSsot);
     setState("idle");
 
@@ -173,7 +183,7 @@ export default function WritingWorkPage() {
         },
         body: JSON.stringify({
           workId: currentWork.id,
-          title: title.trim(),
+          title: titleRef.current.trim(),
           content: nextSsot,
           expectedRevision: currentWork.revision,
         }),
@@ -187,7 +197,7 @@ export default function WritingWorkPage() {
 
       const nextWork: WorkRow = {
         ...currentWork,
-        title: title.trim(),
+        title: titleRef.current.trim(),
         content: nextSsot,
         revision: result.revision,
       };
@@ -217,8 +227,16 @@ export default function WritingWorkPage() {
   }
 
   function changeTitle(nextTitle: string) {
+    titleRef.current = nextTitle;
     setTitle(nextTitle);
-    scheduleSave(updatePageMeta(ssot, nextTitle, mainImageUrl));
+
+    const nextSsot = updatePageMeta(
+      ssotRef.current,
+      nextTitle,
+      mainImageUrlRef.current,
+    );
+
+    scheduleSave(nextSsot);
   }
 
   async function createBookFromPage() {
@@ -232,7 +250,7 @@ export default function WritingWorkPage() {
     setMessage("");
 
     try {
-      await saveSsot(ssot);
+      await saveSsot(ssotRef.current);
 
       const {
         data: { session },
@@ -243,7 +261,7 @@ export default function WritingWorkPage() {
       }
 
       const bookTitle =
-        title.trim() || "新しいBOOK";
+        titleRef.current.trim() || "新しいBOOK";
 
       const response = await fetch("/api/works/create", {
         method: "POST",
@@ -397,8 +415,15 @@ export default function WritingWorkPage() {
         .from("parari-images")
         .getPublicUrl(path);
 
+      mainImageUrlRef.current = data.publicUrl;
       setMainImageUrl(data.publicUrl);
-      scheduleSave(updatePageMeta(ssot, title, data.publicUrl));
+      scheduleSave(
+        updatePageMeta(
+          ssotRef.current,
+          titleRef.current,
+          data.publicUrl,
+        ),
+      );
     } catch (error) {
       setState("error");
       setMessage(
@@ -528,8 +553,15 @@ export default function WritingWorkPage() {
                 <button
                   type="button"
                   onClick={() => {
+                    mainImageUrlRef.current = "";
                     setMainImageUrl("");
-                    scheduleSave(updatePageMeta(ssot, title, ""));
+                    scheduleSave(
+                      updatePageMeta(
+                        ssotRef.current,
+                        titleRef.current,
+                        "",
+                      ),
+                    );
                   }}
                   className="mt-2 text-xs text-neutral-300 hover:text-neutral-600"
                 >
@@ -589,21 +621,87 @@ function updatePageMeta(
   title: string,
   mainImageUrl: string,
 ) {
-  let next = String(source || createBlankPageSsot());
+  const normalized = String(
+    source || createBlankPageSsot(),
+  ).replace(/\r\n/g, "\n");
 
-  next = next.replace(
-    /^title:\s*.*$/im,
-    `title: ${escapeMeta(title)}`,
+  const lines = normalized.split("\n");
+  const pageIndex = lines.findIndex((line) =>
+    /^\s*\[(PAGE|PAGEINFO)\b/i.test(line),
   );
 
-  next = next.replace(
-    /^mainImage:\s*.*$/im,
-    mainImageUrl.trim()
-      ? `mainImage: ${mainImageUrl.trim()}`
-      : "mainImage:",
+  if (pageIndex < 0) {
+    return [
+      "[PAGE]",
+      `title: ${escapeMeta(title)}`,
+      "subtitle:",
+      mainImageUrl.trim()
+        ? `mainImage: ${mainImageUrl.trim()}`
+        : "mainImage:",
+      "titleAlign: left",
+      "visibility: unlisted",
+      "workType: page",
+      "",
+      normalized.trimStart(),
+    ].join("\n");
+  }
+
+  let metaEnd = lines.length;
+
+  for (
+    let index = pageIndex + 1;
+    index < lines.length;
+    index += 1
+  ) {
+    if (
+      /^\s*\[[A-Za-z][A-Za-z0-9_]*(?::[^\]]+)?\]/.test(
+        lines[index] ?? "",
+      )
+    ) {
+      metaEnd = index;
+      break;
+    }
+  }
+
+  const metaLines = lines.slice(
+    pageIndex + 1,
+    metaEnd,
   );
 
-  return next;
+  const upsertMeta = (
+    key: string,
+    value: string,
+  ) => {
+    const index = metaLines.findIndex((line) =>
+      new RegExp(
+        `^\\s*${key}\\s*:`,
+        "i",
+      ).test(line),
+    );
+
+    const nextLine = `${key}: ${value}`;
+
+    if (index >= 0) {
+      metaLines[index] = nextLine;
+    } else {
+      metaLines.push(nextLine);
+    }
+  };
+
+  upsertMeta(
+    "title",
+    escapeMeta(title),
+  );
+  upsertMeta(
+    "mainImage",
+    mainImageUrl.trim(),
+  );
+
+  return [
+    ...lines.slice(0, pageIndex + 1),
+    ...metaLines,
+    ...lines.slice(metaEnd),
+  ].join("\n");
 }
 
 function createBlankPageSsot() {
