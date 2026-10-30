@@ -6,6 +6,7 @@
 // - 制作環境を持つユーザーだけ、右上に常設の「作成」を表示する
 // - アカウント操作は右上のプルダウンへまとめる
 
+import type { ReactNode } from "react";
 import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
 
@@ -13,12 +14,14 @@ type WorkspaceArea = "library" | "studio" | "settings" | "operations";
 
 type MyAreaHeaderProps = {
   title: string;
+  navigation?: ReactNode;
   showManagementLinks?: boolean;
   area?: WorkspaceArea;
 };
 
 export default function MyAreaHeader({
   title,
+  navigation,
   showManagementLinks = true,
   area,
 }: MyAreaHeaderProps) {
@@ -43,9 +46,11 @@ export default function MyAreaHeader({
       >
         <WorkspaceLinks area={resolvedArea} />
 
-        <h1 className="mt-4 text-xl font-bold text-neutral-950">
+        {/* 2026-10-31 JST — PART: Integrated workspace navigation. */}
+        <h1 className={navigation ? "sr-only" : "mt-4 text-xl font-bold text-neutral-950"}>
           {title}
         </h1>
+        {navigation ? <div className="mt-3 border-t border-neutral-200 pt-3">{navigation}</div> : null}
       </div>
     </>
   );

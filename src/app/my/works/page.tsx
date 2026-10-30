@@ -1325,20 +1325,12 @@ export default function MyWorksPage() {
 
     return (
       <main className="min-h-screen bg-neutral-100">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
           {/* HEADER */}
-          <MyAreaHeader
-            title="作品"
-            showManagementLinks={false}
-          />
-
-          {/* MANAGEMENT MAIN MENU */}
-          <div className="mt-6">
-            <ManagementTabs active="works" />
-          </div>
+          <MyAreaHeader title="作品" area="studio" navigation={<ManagementTabs active="works" embedded />} />
 
           {/* WORKS CONTENT */}
-          <div className="mx-auto mt-8 w-full max-w-[720px]">
+          <div className="mt-6 w-full">
             <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

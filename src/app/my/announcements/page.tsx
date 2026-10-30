@@ -170,14 +170,10 @@ export default function AnnouncementsPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="お知らせ" />
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="お知らせ" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded />} />
 
-        <div className="mt-6">
-          <MyPrimaryTabs active="bookshelf" />
-        </div>
-
-        <div className="mx-auto mt-8 max-w-3xl">
+        <div className="mt-6 w-full">
           <div className="mb-5">
             <div className="text-sm font-bold text-neutral-950">
               PARARIからのお知らせ

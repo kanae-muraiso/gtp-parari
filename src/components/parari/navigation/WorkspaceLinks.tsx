@@ -31,7 +31,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
   };
 
   return (
-    <div className="flex w-full items-center justify-between gap-3">
+    <div className="flex w-full flex-wrap items-center justify-between gap-3">
       <div className="shrink-0">
         <Link
           href={
@@ -65,7 +65,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
         </Link>
       </div>
 
-      <div className="flex min-w-0 items-center justify-end gap-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
         <ParticipationMenu />
 
         {studioEnabled ? (

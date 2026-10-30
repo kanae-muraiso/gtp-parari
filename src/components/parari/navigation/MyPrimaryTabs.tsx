@@ -22,6 +22,7 @@ export type MyPrimaryTab =
 
 type MyPrimaryTabsProps = {
   active: MyPrimaryTab;
+  embedded?: boolean;
 };
 
 type Item = {
@@ -66,7 +67,7 @@ const MESSAGES_ITEM: Item = {
   href: "/my/messages",
 };
 
-export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
+export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTabsProps) {
   const {
     hasApplications,
     hasCalendar,
@@ -92,6 +93,6 @@ export default function MyPrimaryTabs({ active }: MyPrimaryTabsProps) {
   }
 
   return (
-    <ParariTabs items={items} active={active} />
+    <ParariTabs items={items} active={active} embedded={embedded} />
   );
 }

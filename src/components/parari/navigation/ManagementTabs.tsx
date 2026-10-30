@@ -17,6 +17,7 @@ export type ManagementTab =
 
 type ManagementTabsProps = {
   active: ManagementTab;
+  embedded?: boolean;
 };
 
 type Item = {
@@ -43,7 +44,7 @@ const SALES_ITEM: Item = {
   href: "/my/sales",
 };
 
-export default function ManagementTabs({ active }: ManagementTabsProps) {
+export default function ManagementTabs({ active, embedded = false }: ManagementTabsProps) {
   const { studioEnabled } = useParariExperience();
   const items: Item[] = [];
 
@@ -57,5 +58,5 @@ export default function ManagementTabs({ active }: ManagementTabsProps) {
 
   items.push(SALES_ITEM);
 
-  return <ParariTabs items={items} active={active} />;
+  return <ParariTabs items={items} active={active} embedded={embedded} />;
 }

@@ -225,16 +225,9 @@ export default function MyManagePage() {
 
   return (
     <main className="min-h-screen bg-neutral-100">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
 
-        <MyAreaHeader
-          title="運営"
-          showManagementLinks={false}
-        />
-
-        <div className="mt-6">
-          <ManagementTabs active="manage" />
-        </div>
+        <MyAreaHeader title="運営" area="studio" navigation={<ManagementTabs active="manage" embedded />} />
 
         <div className="mt-4">
           <ParariTabs

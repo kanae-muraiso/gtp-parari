@@ -1104,19 +1104,14 @@ export default function MyApplicationsPage() {
 
     return (
       <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
           {/* HEADER */}
-          <MyAreaHeader title="申込" />
-
-          {/* PRIMARY TABS */}
-          <div className="mt-6">
-            <MyPrimaryTabs active="applications" />
-          </div>
+          <MyAreaHeader title="申込" area="library" navigation={<MyPrimaryTabs active="applications" embedded />} />
 
           {/* PARTICIPATING CLASSES */}
           {!loading &&
           classes.length > 0 ? (
-            <div className="mx-auto mt-8 max-w-2xl">
+            <div className="mt-6 w-full">
               <div className="mb-4">
                 <div className="text-sm font-bold text-neutral-950">
                   参加中
@@ -1266,7 +1261,7 @@ export default function MyApplicationsPage() {
 
 
           {/* APPLICATIONS */}
-          <div className="mx-auto mt-8 max-w-2xl">
+          <div className="mt-6 w-full">
             <div className="mb-6">
               <div className="text-sm font-bold text-neutral-950">
                 自分の申し込み

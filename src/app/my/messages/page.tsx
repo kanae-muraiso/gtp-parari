@@ -224,14 +224,10 @@ export default function MyMessagesPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="メッセージ" />
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="メッセージ" area="library" navigation={<MyPrimaryTabs active="messages" embedded />} />
 
-        <div className="mt-6">
-          <MyPrimaryTabs active="messages" />
-        </div>
-
-        <div className="mx-auto mt-8 max-w-2xl">
+        <div className="mt-6 w-full">
           {selectedThread ? (
             <div>
               <button

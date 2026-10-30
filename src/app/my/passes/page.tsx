@@ -128,12 +128,8 @@ export default function MyPassesPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        <MyAreaHeader title="参加証" />
-
-        <div className="mt-6">
-          <MyPrimaryTabs active="applications" />
-        </div>
+      <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="参加証" area="library" navigation={<MyPrimaryTabs active="applications" embedded />} />
 
         <div className="mt-8">
           <h1 className="text-2xl font-bold text-neutral-950">参加証</h1>
