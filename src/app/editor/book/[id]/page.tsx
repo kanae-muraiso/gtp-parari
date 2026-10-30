@@ -53,6 +53,8 @@ export default function ReferenceBookEditorPage() {
   const [pageSaveState, setPageSaveState] = React.useState<
     Record<string, SaveState>
   >({});
+  const [creatingPage, setCreatingPage] = React.useState(false);
+  const [derivingPageId, setDerivingPageId] = React.useState<string | null>(null);
 
   const bookRef = React.useRef<WorkRow | null>(null);
   const pagesRef = React.useRef<Map<string, WorkRow>>(new Map());
@@ -448,6 +450,278 @@ export default function ReferenceBookEditorPage() {
           void savePage(pageId, pending);
         }, 50);
       }
+    }
+  };
+
+  const registerCreatedPage = (
+    page: WorkRow,
+  ) => {
+    pagesRef.current.set(page.id, page);
+    setPages((current) => [
+      page,
+      ...current.filter(
+        (item) => item.id !== page.id,
+      ),
+    ]);
+  };
+
+  const createPageWork = async ({
+    title: pageTitle,
+    ssot,
+  }: {
+    title: string;
+    ssot: string;
+  }): Promise<WorkRow> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error(
+        "ログイン情報を確認できませんでした。",
+      );
+    }
+
+    const response = await fetch(
+      "/api/works/create",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          stableSlug:
+            createPageStableSlug(),
+          template: {
+            kind: "page",
+            initialTitle:
+              pageTitle.trim() ||
+              "新しいPAGE",
+            ssot,
+          },
+        }),
+      },
+    );
+
+    const result = await response
+      .json()
+      .catch(() => null);
+
+    if (
+      !response.ok ||
+      !result?.ok ||
+      !result.id
+    ) {
+      throw new Error(
+        result?.message ??
+          "PAGEを作成できませんでした。",
+      );
+    }
+
+    return {
+      id: String(result.id),
+      owner: book?.owner ?? "",
+      title:
+        pageTitle.trim() ||
+        "新しいPAGE",
+      content: ssot,
+      revision: 1,
+      updated_at:
+        new Date().toISOString(),
+    };
+  };
+
+  const createBlankPageAndAppend =
+    async () => {
+      if (creatingPage) {
+        return;
+      }
+
+      setCreatingPage(true);
+      setMessage("");
+
+      try {
+        const pageTitle =
+          "新しいPAGE";
+        const page = await createPageWork({
+          title: pageTitle,
+          ssot: createBlankPageSsot(
+            pageTitle,
+            workId,
+          ),
+        });
+
+        registerCreatedPage(page);
+
+        const nextOutline: BookOutlineEntry[] = [
+          ...outline,
+          {
+            kind: "page",
+            id: page.id,
+          },
+        ];
+
+        scheduleSave(
+          title,
+          bookSettings,
+          nextOutline,
+        );
+        setOpenPageId(page.id);
+      } catch (error) {
+        setState("error");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "PAGEを作成できませんでした。",
+        );
+      } finally {
+        setCreatingPage(false);
+      }
+    };
+
+  const deriveExistingPageAndAppend =
+    async (sourcePage: WorkRow) => {
+      if (derivingPageId) {
+        return;
+      }
+
+      setDerivingPageId(sourcePage.id);
+      setMessage("");
+
+      try {
+        const pageTitle =
+          getWorkTitle(sourcePage);
+        const page = await createPageWork({
+          title: pageTitle,
+          ssot: createDerivedPageSsot(
+            String(sourcePage.content ?? ""),
+            sourcePage.id,
+            pageTitle,
+          ),
+        });
+
+        registerCreatedPage(page);
+
+        const nextOutline: BookOutlineEntry[] = [
+          ...outline,
+          {
+            kind: "page",
+            id: page.id,
+          },
+        ];
+
+        scheduleSave(
+          title,
+          bookSettings,
+          nextOutline,
+        );
+        setOpenPageId(page.id);
+      } catch (error) {
+        setState("error");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "派生PAGEを作成できませんでした。",
+        );
+      } finally {
+        setDerivingPageId(null);
+      }
+    };
+
+  const splitBookPage = async ({
+    sourcePage,
+    beforeBodySsot,
+    afterBodySsot,
+  }: {
+    sourcePage: WorkRow;
+    beforeBodySsot: string;
+    afterBodySsot: string;
+  }): Promise<boolean> => {
+    if (derivingPageId) {
+      return false;
+    }
+
+    setDerivingPageId(sourcePage.id);
+    setMessage("");
+
+    try {
+      const sourceTitle =
+        getWorkTitle(sourcePage);
+
+      const firstTitle =
+        sourceTitle;
+      const secondTitle =
+        derivePageTitleFromBody(
+          afterBodySsot,
+          "新しいPAGE",
+        );
+
+      const firstPage =
+        await createPageWork({
+          title: firstTitle,
+          ssot:
+            createPageSsotFromBody({
+              title: firstTitle,
+              bodySsot:
+                beforeBodySsot,
+              originPageId:
+                sourcePage.id,
+            }),
+        });
+
+      const secondPage =
+        await createPageWork({
+          title: secondTitle,
+          ssot:
+            createPageSsotFromBody({
+              title: secondTitle,
+              bodySsot:
+                afterBodySsot,
+              originPageId:
+                sourcePage.id,
+            }),
+        });
+
+      registerCreatedPage(firstPage);
+      registerCreatedPage(secondPage);
+
+      const nextOutline =
+        outline.flatMap((entry) =>
+          entry.kind === "page" &&
+          entry.id === sourcePage.id
+            ? [
+                {
+                  kind: "page" as const,
+                  id: firstPage.id,
+                },
+                {
+                  kind: "page" as const,
+                  id: secondPage.id,
+                },
+              ]
+            : [entry],
+        );
+
+      scheduleSave(
+        title,
+        bookSettings,
+        nextOutline,
+      );
+      setOpenPageId(firstPage.id);
+
+      return true;
+    } catch (error) {
+      setState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "PAGEを分割できませんでした。",
+      );
+      return false;
+    } finally {
+      setDerivingPageId(null);
     }
   };
 
@@ -940,6 +1214,16 @@ export default function ReferenceBookEditorPage() {
                                     nextContent,
                                   )
                                 }
+                                onSplitPageToBook={({
+                                  beforeBodySsot,
+                                  afterBodySsot,
+                                }) =>
+                                  splitBookPage({
+                                    sourcePage: work,
+                                    beforeBodySsot,
+                                    afterBodySsot,
+                                  })
+                                }
                               />
                             </div>
                           </div>
@@ -960,12 +1244,29 @@ export default function ReferenceBookEditorPage() {
             </section>
 
             <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-              <h2 className="text-base font-bold text-neutral-950">
-                PAGEを追加
-              </h2>
-              <p className="mt-1 text-xs leading-6 text-neutral-400">
-                自分の既存PAGEから選びます。元のPAGEはそのまま独立した作品として残ります。
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-950">
+                    PAGEを追加
+                  </h2>
+                  <p className="mt-1 text-xs leading-6 text-neutral-400">
+                    新しく書くか、既存PAGEから派生して追加します。元PAGEは変更しません。
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={creatingPage}
+                  onClick={() =>
+                    void createBlankPageAndAppend()
+                  }
+                  className="shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {creatingPage
+                    ? "作成中…"
+                    : "＋ 新しいPAGE"}
+                </button>
+              </div>
 
               {availablePages.length === 0 ? (
                 <div className="mt-4 text-sm text-neutral-400">
@@ -989,15 +1290,17 @@ export default function ReferenceBookEditorPage() {
 
                       <button
                         type="button"
+                        disabled={derivingPageId !== null}
                         onClick={() =>
-                          scheduleSave(title, bookSettings, [
-                            ...outline,
-                            { kind: "page", id: page.id },
-                          ])
+                          void deriveExistingPageAndAppend(
+                            page,
+                          )
                         }
-                        className="shrink-0 rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-neutral-700"
+                        className="shrink-0 rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        追加
+                        {derivingPageId === page.id
+                          ? "派生中…"
+                          : "派生して追加"}
                       </button>
                     </div>
                   ))}
@@ -1008,6 +1311,210 @@ export default function ReferenceBookEditorPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function createPageStableSlug(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    "randomUUID" in crypto
+  ) {
+    return `page-${crypto
+      .randomUUID()
+      .replace(/-/g, "")
+      .slice(0, 12)}`;
+  }
+
+  return `page-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
+function escapePageMeta(
+  value: string,
+): string {
+  return String(value ?? "")
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+function createBlankPageSsot(
+  title: string,
+  originBookId: string,
+): string {
+  const safeTitle =
+    escapePageMeta(title) ||
+    "新しいPAGE";
+
+  return [
+    "[PAGE]",
+    `title: ${safeTitle}`,
+    "subtitle:",
+    "mainImage:",
+    "titleAlign: left",
+    "visibility: unlisted",
+    "workType: page",
+    `originBookId: ${escapePageMeta(
+      originBookId,
+    )}`,
+    "",
+    "[T]",
+    "\u200B",
+    "",
+  ].join("\n");
+}
+
+function createDerivedPageSsot(
+  source: string,
+  originPageId: string,
+  fallbackTitle: string,
+): string {
+  const normalized =
+    String(source ?? "")
+      .replace(/\r\n/g, "\n");
+
+  const lines =
+    normalized.split("\n");
+
+  const pageIndex =
+    lines.findIndex((line) =>
+      /^\s*\[(PAGE|PAGEINFO)\b/i.test(
+        line,
+      ),
+    );
+
+  if (pageIndex < 0) {
+    return createPageSsotFromBody({
+      title: fallbackTitle,
+      bodySsot: normalized,
+      originPageId,
+    });
+  }
+
+  let metaEnd = lines.length;
+
+  for (
+    let index = pageIndex + 1;
+    index < lines.length;
+    index += 1
+  ) {
+    if (
+      /^\s*\[[A-Za-z][A-Za-z0-9_]*(?::[^\]]+)?\]/.test(
+        lines[index] ?? "",
+      )
+    ) {
+      metaEnd = index;
+      break;
+    }
+  }
+
+  const metaLines = lines.slice(
+    pageIndex + 1,
+    metaEnd,
+  );
+
+  const originLine =
+    `originPageId: ${escapePageMeta(
+      originPageId,
+    )}`;
+
+  const existingOriginIndex =
+    metaLines.findIndex((line) =>
+      /^\s*originPageId\s*:/i.test(line),
+    );
+
+  if (existingOriginIndex >= 0) {
+    metaLines[existingOriginIndex] =
+      originLine;
+  } else {
+    metaLines.push(originLine);
+  }
+
+  return [
+    ...lines.slice(
+      0,
+      pageIndex + 1,
+    ),
+    ...metaLines,
+    ...lines.slice(metaEnd),
+  ].join("\n");
+}
+
+function createPageSsotFromBody({
+  title,
+  bodySsot,
+  originPageId,
+}: {
+  title: string;
+  bodySsot: string;
+  originPageId: string;
+}): string {
+  const safeTitle =
+    escapePageMeta(title) ||
+    "新しいPAGE";
+  const body =
+    String(bodySsot ?? "")
+      .replace(/\r\n/g, "\n")
+      .trim();
+
+  return [
+    "[PAGE]",
+    `title: ${safeTitle}`,
+    "subtitle:",
+    "mainImage:",
+    "titleAlign: left",
+    "visibility: unlisted",
+    "workType: page",
+    `originPageId: ${escapePageMeta(
+      originPageId,
+    )}`,
+    "",
+    body || "[T]\n\u200B",
+    "",
+  ].join("\n");
+}
+
+function derivePageTitleFromBody(
+  bodySsot: string,
+  fallback: string,
+): string {
+  const visible =
+    String(bodySsot ?? "")
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(
+        (line) =>
+          line.length > 0 &&
+          !/^\[[A-Za-z][^\]]*\]/.test(
+            line,
+          ) &&
+          !/^[A-Za-z][A-Za-z0-9_-]*\s*:/.test(
+            line,
+          ),
+      )
+      .map((line) =>
+        line
+          .replace(/^#{1,6}\s+/, "")
+          .replace(
+            /!![^|]+\|([^!]+)!!/g,
+            "$1",
+          )
+          .replace(
+            /\*\*([^*]+)\*\*/g,
+            "$1",
+          )
+          .replace(
+            /\*([^*]+)\*/g,
+            "$1",
+          )
+          .trim(),
+      )
+      .find(Boolean);
+
+  return (
+    visible?.slice(0, 100) ||
+    fallback
   );
 }
 
