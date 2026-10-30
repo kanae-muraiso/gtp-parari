@@ -263,6 +263,7 @@ export function RichTextField({
               suppressNextChangeRef={suppressNextChangeRef}
               panelizeActions={panelizeActions}
               onPanelizeSelection={onPanelizeSelection}
+              onSplitText={onSplitText}
               showDebugLabel={showDebugLabel}
               editorShellRef={editorShellRef}
               dictionaryMarksEnabled={dictionaryMarksEnabled}
@@ -396,6 +397,7 @@ function RichTextToolbar({
   suppressNextChangeRef,
   panelizeActions,
   onPanelizeSelection,
+  onSplitText,
   showDebugLabel,
   editorShellRef,
       dictionaryMarksEnabled,
@@ -409,6 +411,10 @@ function RichTextToolbar({
   suppressNextChangeRef: MutableRefObject<boolean>;
   panelizeActions: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
+  onSplitText?: (payload: {
+    beforeTextSsot: string;
+    afterTextSsot: string;
+  }) => void;
   showDebugLabel: boolean;
   editorShellRef: MutableRefObject<HTMLDivElement | null>;
     dictionaryMarksEnabled: boolean;
@@ -593,11 +599,15 @@ function RichTextToolbar({
       },
       ...(!inlineOnly
         ? [
-            {
-              kind: "splitText" as const,
-              label: "TEXT分割",
-              title: "カーソル位置でTEXTパネルを分割",
-            },
+            ...(onSplitText
+              ? [
+                  {
+                    kind: "splitText" as const,
+                    label: "TEXT分割",
+                    title: "カーソル位置でTEXTパネルを分割",
+                  },
+                ]
+              : []),
             { kind: "divider" as const, label: "―", title: "区切り線" },
           ]
         : []),
