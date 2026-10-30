@@ -338,7 +338,10 @@ export default function WritingWorkPage() {
         throw new Error("ログインを確認できませんでした。");
       }
 
-      const pageDraft = createPageFromSelection(normalized);
+      const pageDraft = createPageFromSelection({
+        selectedText: normalized,
+        originPageId: workId,
+      });
 
       const response = await fetch("/api/works/create", {
         method: "POST",
@@ -369,7 +372,7 @@ export default function WritingWorkPage() {
 
       setLastExtractedPageId(result.id);
       setState("saved");
-      setMessage("選択部分から新しいPAGEを作成しました。");
+      setMessage("選択部分から派生PAGEを作成しました。");
       return true;
     } catch (error) {
       setState("error");
@@ -507,7 +510,7 @@ export default function WritingWorkPage() {
 
             {lastExtractedPageId ? (
               <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-[11px] text-neutral-500 ring-1 ring-neutral-200">
-                <span>新しいPAGEを作成しました。</span>
+                <span>派生PAGEを作成しました。元PAGEはそのまま残っています。</span>
                 <a
                   href={`/writing/${lastExtractedPageId}`}
                   className="font-bold text-neutral-800 hover:underline"
@@ -789,9 +792,13 @@ function createPageStableSlug(): string {
     .slice(2, 8)}`;
 }
 
-function createPageFromSelection(
-  selectedText: string,
-): {
+function createPageFromSelection({
+  selectedText,
+  originPageId,
+}: {
+  selectedText: string;
+  originPageId: string;
+}): {
   title: string;
   ssot: string;
 } {
@@ -836,6 +843,7 @@ function createPageFromSelection(
       "titleAlign: left",
       "visibility: unlisted",
       "workType: page",
+      `originPageId: ${escapeMeta(originPageId)}`,
       "",
       "[T]",
       body,
