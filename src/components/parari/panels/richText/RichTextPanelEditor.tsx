@@ -50,6 +50,10 @@ type RichTextPanelEditorProps = {
     tag: PanelizeTag;
     label: string;
   }>;
+  onExtractSelectionToPage?: (payload: {
+    selectedText: string;
+    remainingTextSsot: string;
+  }) => void | Promise<void>;
 };
 
 const DEFAULT_PANELIZE_ACTIONS: Array<{
@@ -80,12 +84,38 @@ export function RichTextPanelEditor({
   readingSupport,
   onChangeReadingSupport,
   panelizeActions = DEFAULT_PANELIZE_ACTIONS,
+  onExtractSelectionToPage,
 }: RichTextPanelEditorProps) {
   const [mode, setMode] = useState<RichTextPanelMode>("view");
   const [englishMenuContainer, setEnglishMenuContainer] = useState<HTMLDivElement | null>(null);
   const englishAuthoring = useEnglishAuthoring();
 
+  const resolvedPanelizeActions = onExtractSelectionToPage
+    ? panelizeActions.map((action) =>
+        action.tag === "PAGE"
+          ? { ...action, label: "新PAGE" }
+          : action,
+      )
+    : panelizeActions;
+
   const handlePanelizeSelection = (payload: RichTextPanelizePayload) => {
+    if (
+      payload.tag === "PAGE" &&
+      onExtractSelectionToPage &&
+      payload.selected.trim().length > 0
+    ) {
+      const remainingTextSsot = removeSelectionMarker(
+        payload.markedRaw,
+        payload.marker,
+      );
+
+      void onExtractSelectionToPage({
+        selectedText: payload.selected,
+        remainingTextSsot,
+      });
+      return;
+    }
+
     if (payload.selected.trim().length === 0) {
       const insertedPanelSsot = createInitialInlinePanelSsot(payload.tag);
 
@@ -217,7 +247,7 @@ export function RichTextPanelEditor({
             value={ssotText}
             onChange={onChangeSsotText}
             placeholder={placeholder}
-            panelizeActions={panelizeActions}
+            panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
           />
         )}
@@ -227,6 +257,34 @@ export function RichTextPanelEditor({
 }
 
 
+
+function removeSelectionMarker(
+  markedRaw: string,
+  marker: string,
+): string {
+  const candidates = [
+    `***${marker}***`,
+    `**${marker}**`,
+    `*${marker}*`,
+    `___${marker}___`,
+    `__${marker}__`,
+    `_${marker}_`,
+    marker,
+  ];
+
+  let next = markedRaw;
+
+  for (const candidate of candidates) {
+    if (next.includes(candidate)) {
+      next = next.replace(candidate, "");
+      break;
+    }
+  }
+
+  return removeParariPanelMarkers(next)
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 function normalizeRichTextPreviewSource(value: string): string {
   return value
