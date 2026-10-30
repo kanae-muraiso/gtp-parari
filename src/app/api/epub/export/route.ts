@@ -22,6 +22,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
 import { buildEpubModel } from "@/lib/parari/epub/buildEpubModel";
 import { buildEpub } from "@/lib/parari/epub/buildEpub";
+import { EpubSourceError, loadEpubSource } from "@/lib/parari/epub/loadEpubSource";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -203,7 +204,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = buildEpubModel(ssot);
+    const resolvedSsot = await loadEpubSource(ssot, work.owner);
+    const model = buildEpubModel(resolvedSsot);
     const result = await buildEpub(model);
     const arrayBuffer = await result.blob.arrayBuffer();
 
@@ -219,6 +221,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof EpubSourceError) {
+      return NextResponse.json(
+        { ok: false, code: error.code, message: error.message },
+        { status: error.status },
+      );
+    }
+
     console.error("[api/epub/export] unexpected error:", error);
 
     return NextResponse.json(

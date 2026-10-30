@@ -36,6 +36,9 @@ jobs:
       - name: Legacy PAGE URL and authorization check
         run: npm run test:legacy-page-routes
 
+      - name: EPUB reference BOOK export check
+        run: npm run test:epub-export
+
       - name: Unified reader compatibility and progress check
         run: npm run test:unified-viewer
 

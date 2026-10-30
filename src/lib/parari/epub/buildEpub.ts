@@ -309,11 +309,14 @@ function createPackageOpf(args: {
   xml:lang="ja">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="book-id">${escapeXml(identifier)}</dc:identifier>
-    <dc:title>${escapeXml(model.title || "Untitled")}</dc:title>
-    ${model.subtitle ? `<meta property="title-type">subtitle</meta>` : ""}
+    <dc:title id="main-title">${escapeXml(model.title || "Untitled")}</dc:title>
+    <meta refines="#main-title" property="title-type">main</meta>
+    <meta refines="#main-title" property="display-seq">1</meta>
     ${
       model.subtitle
-        ? `<dc:description>${escapeXml(model.subtitle)}</dc:description>`
+        ? `<dc:title id="subtitle">${escapeXml(model.subtitle)}</dc:title>
+    <meta refines="#subtitle" property="title-type">subtitle</meta>
+    <meta refines="#subtitle" property="display-seq">2</meta>`
         : ""
     }
     ${
@@ -452,6 +455,7 @@ function createContentXhtml(
 
   return createXhtmlDocument({
     title: item.title,
+    cssHref: "../styles/book.css",
     body: `<section class="${item.kind}">
   ${heading}
   ${subtitle}
@@ -512,6 +516,7 @@ function createXhtmlDocument(args: {
   title: string;
   body: string;
   extraNamespaces?: string;
+  cssHref?: string;
 }): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -521,11 +526,7 @@ function createXhtmlDocument(args: {
 <head>
   <meta charset="UTF-8"/>
   <title>${escapeXml(args.title)}</title>
-  <link rel="stylesheet" type="text/css" href="${
-    args.title === "目次" || args.body.includes("cover-page") || args.body.includes("title-page")
-      ? "styles/book.css"
-      : "../styles/book.css"
-  }"/>
+  <link rel="stylesheet" type="text/css" href="${args.cssHref ?? "styles/book.css"}"/>
 </head>
 <body>
 ${args.body}
