@@ -30,6 +30,8 @@ export default function WritingWorkPage() {
   const [message, setMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
   const [creatingBook, setCreatingBook] = useState(false);
+  const [extractingPage, setExtractingPage] = useState(false);
+  const [lastExtractedPageId, setLastExtractedPageId] = useState<string | null>(null);
 
   const workRef = useRef<WorkRow | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -288,6 +290,82 @@ export default function WritingWorkPage() {
     }
   }
 
+  async function extractSelectionToPage({
+    selectedText,
+  }: {
+    selectedText: string;
+  }): Promise<boolean> {
+    if (extractingPage) {
+      return false;
+    }
+
+    const normalized = String(selectedText ?? "")
+      .replace(/\r\n/g, "\n")
+      .trim();
+
+    if (!normalized) {
+      return false;
+    }
+
+    setExtractingPage(true);
+    setLastExtractedPageId(null);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("ログインを確認できませんでした。");
+      }
+
+      const pageDraft = createPageFromSelection(normalized);
+
+      const response = await fetch("/api/works/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          stableSlug: createPageStableSlug(),
+          template: {
+            kind: "page",
+            initialTitle: pageDraft.title,
+            ssot: pageDraft.ssot,
+          },
+        }),
+      });
+
+      const result = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok || !result?.ok || !result.id) {
+        throw new Error(
+          result?.message ??
+            "新しいPAGEを作成できませんでした。",
+        );
+      }
+
+      setLastExtractedPageId(result.id);
+      setState("saved");
+      setMessage("選択部分から新しいPAGEを作成しました。");
+      return true;
+    } catch (error) {
+      setState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "新しいPAGEを作成できませんでした。",
+      );
+      return false;
+    } finally {
+      setExtractingPage(false);
+    }
+  }
+
   async function addImage(file: File) {
     if (!file.type.startsWith("image/")) return;
 
@@ -402,9 +480,22 @@ export default function WritingWorkPage() {
               </button>
             </div>
 
+            {lastExtractedPageId ? (
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-[11px] text-neutral-500 ring-1 ring-neutral-200">
+                <span>新しいPAGEを作成しました。</span>
+                <a
+                  href={`/writing/${lastExtractedPageId}`}
+                  className="font-bold text-neutral-800 hover:underline"
+                >
+                  PAGEを開く
+                </a>
+              </div>
+            ) : null}
+
             <PagePanelComposer
               value={ssot}
               onChange={scheduleSave}
+              onExtractSelectionToPage={extractSelectionToPage}
             />
           </section>
         ) : (
@@ -581,4 +672,76 @@ function createReferenceBookSsot({
     `[PAGE_REF id=${pageId}]`,
     "",
   ].join("\n");
+}
+
+
+function createPageStableSlug(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    "randomUUID" in crypto
+  ) {
+    return `page-${crypto
+      .randomUUID()
+      .replace(/-/g, "")
+      .slice(0, 12)}`;
+  }
+
+  return `page-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
+function createPageFromSelection(
+  selectedText: string,
+): {
+  title: string;
+  ssot: string;
+} {
+  const normalized = String(selectedText ?? "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+
+  const lines = normalized.split("\n");
+  const firstNonEmptyIndex = lines.findIndex(
+    (line) => line.trim().length > 0,
+  );
+
+  const firstLine =
+    firstNonEmptyIndex >= 0
+      ? lines[firstNonEmptyIndex].trim()
+      : "";
+
+  const hasRemainingText =
+    firstNonEmptyIndex >= 0 &&
+    lines
+      .slice(firstNonEmptyIndex + 1)
+      .some((line) => line.trim().length > 0);
+
+  const title =
+    firstLine.slice(0, 100) ||
+    "新しいPAGE";
+
+  const body = hasRemainingText
+    ? lines
+        .slice(firstNonEmptyIndex + 1)
+        .join("\n")
+        .trim()
+    : normalized;
+
+  return {
+    title,
+    ssot: [
+      "[PAGE]",
+      `title: ${escapeMeta(title)}`,
+      "subtitle:",
+      "mainImage:",
+      "titleAlign: left",
+      "visibility: unlisted",
+      "workType: page",
+      "",
+      "[T]",
+      body,
+      "",
+    ].join("\n"),
+  };
 }
