@@ -40,3 +40,9 @@ All Next.js route conventions and proxy files were treated as roots, even withou
 Run repository hygiene, typecheck, build and `test:legacy-page-routes` / `test:unified-viewer` after entrypoint cleanup. The regression test checks real route modules with a read-only database adapter, including public/unlisted access, owner access, private rejection, username/work ownership mismatch and database errors. The unified-reader tests render real components and exercise React DOM interactions, with synthetic geometry and dictionary responses. They cover mode/font/ruby/dictionary changes, pagination content preservation, resize, progress restoration and reset. They do not replace browser layout or signed-in tests.
 
 Use Git history for recovery. Do not add timestamped backups, deprecated copies, generated dictionary snapshots or Supabase local CLI state to the source tree.
+
+## Current authoring entrypoints (2026-10-30 JST)
+
+The works list opens `/writing/[id]` (Writing/Editing) or `/editor/book/[id]` (reference BOOK). Both expose EPUB3 export through `EpubExportButton`; draft/save failures block export, including inline PAGE saves in BOOK. The existing server export route remains responsible for owner and plan authorization. Export notices appear below the toolbar. WEB export remains unsupported.
+
+`/editor-v2/[id]` remains directly accessible and is still the target of the legacy `/{username}/pages/[workId]/edit` redirect. Normal works-list edit links use the current entrypoints. Shared components under `editor-v2/` remain active; their directory name does not imply that they are retired.

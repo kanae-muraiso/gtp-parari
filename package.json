@@ -12,7 +12,7 @@
     "test:table-panel": "node scripts/test-table-panel.cjs",
     "test:epub-rich-text": "node scripts/test-epub-rich-text.cjs",
     "test:panel-sets": "node scripts/test-panel-sets.cjs",
-    "test:epub-export": "node scripts/test-epub-export.cjs",
+    "test:epub-export": "node scripts/test-epub-export.cjs && node scripts/test-epub-export-button.cjs",
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs",
