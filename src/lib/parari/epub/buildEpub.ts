@@ -5,6 +5,7 @@
 // Viewerの物理ページネーションは使用しない。
 
 import JSZip from "jszip";
+import { renderEpubText, renderEpubFootnotes, type EpubTextContext } from "./renderEpubText";
 
 import type {
   EpubBookModel,
@@ -144,7 +145,7 @@ export async function buildEpub(
 
     zip.file(
       `EPUB/${fileName}`,
-      createContentXhtml(item, imageByUrl),
+      createContentXhtml(item, imageByUrl, warnings),
     );
 
     manifestItems.push(
@@ -436,9 +437,11 @@ function createTitlePageXhtml(model: EpubBookModel): string {
 function createContentXhtml(
   item: EpubContentItem,
   imageByUrl: Map<string, StoredImage>,
+  warnings: string[],
 ): string {
+  const context: EpubTextContext = { notes: [], warnings };
   const blocks = item.blocks
-    .map((block) => renderContentBlock(block, imageByUrl))
+    .map((block) => renderContentBlock(block, imageByUrl, context))
     .filter(Boolean)
     .join("\n");
 
@@ -456,10 +459,12 @@ function createContentXhtml(
   return createXhtmlDocument({
     title: item.title,
     cssHref: "../styles/book.css",
+    extraNamespaces: ` xmlns:epub="http://www.idpf.org/2007/ops"`,
     body: `<section class="${item.kind}">
   ${heading}
   ${subtitle}
   ${blocks}
+  ${renderEpubFootnotes(context)}
 </section>`,
   });
 }
@@ -467,9 +472,10 @@ function createContentXhtml(
 function renderContentBlock(
   block: EpubContentBlock,
   imageByUrl: Map<string, StoredImage>,
+  context: EpubTextContext,
 ): string {
   if (block.type === "text") {
-    return renderText(block.text);
+    return renderEpubText(block.text, context);
   }
 
   if (block.type === "table") {
@@ -494,28 +500,6 @@ function renderContentBlock(
       : ""
   }
 </figure>`;
-}
-
-function renderText(text: string): string {
-  const normalized = String(text ?? "")
-    .replace(/\r\n?/g, "\n")
-    .trim();
-
-  if (!normalized) {
-    return "";
-  }
-
-  return normalized
-    .split(/\n{2,}/)
-    .map((paragraph) => {
-      const body = paragraph
-        .split("\n")
-        .map((line) => escapeXml(line.trim()))
-        .join("<br/>");
-
-      return `<p>${body}</p>`;
-    })
-    .join("\n");
 }
 
 function createXhtmlDocument(args: {
@@ -555,7 +539,8 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   line-height: 1.4;
   text-align: left;
   break-after: avoid;
@@ -595,6 +580,12 @@ img {
   margin: 1em auto;
   object-fit: contain;
 }
+
+blockquote { margin: 1em 0 1em 1em; padding-left: 1em; border-left: 2px solid #888; }
+.noteref { vertical-align: super; font-size: smaller; line-height: normal; }
+.footnotes { margin-top: 2em; border-top: 1px solid #888; padding-top: 0.5em; font-size: 0.9em; }
+rt { font-size: 0.5em; }
+.page, .chapter { break-before: page; page-break-before: always; }
 
 table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1em 0; }
 th, td { border: 1px solid #888; padding: 0.4em; text-align: left; vertical-align: top; overflow-wrap: anywhere; }

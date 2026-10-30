@@ -39,6 +39,9 @@ jobs:
       - name: EPUB reference BOOK export check
         run: npm run test:epub-export
 
+      - name: EPUB rich text and footnote check
+        run: npm run test:epub-rich-text
+
       - name: TABLE editing and EPUB check
         run: npm run test:table-panel
 

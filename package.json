@@ -10,6 +10,7 @@
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "test:table-panel": "node scripts/test-table-panel.cjs",
+    "test:epub-rich-text": "node scripts/test-epub-rich-text.cjs",
     "test:epub-export": "node scripts/test-epub-export.cjs",
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
