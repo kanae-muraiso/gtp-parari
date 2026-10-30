@@ -11,7 +11,7 @@
  * - 送信直後の再送事故を防ぐため cooldown を入れる
  * - email rate limit exceeded を起こしにくくする
  * - メールアドレスを修正したい場合は入力画面へ戻れる
- * - 既ログインなら login 画面を見せず /mypage へ送る
+ * - 既ログインなら login 画面を見せず / へ送る
  */
 
 import React from "react";
@@ -32,13 +32,13 @@ export default function LoginPage() {
      * - 外部URLへ飛ばされないよう、内部パスだけ許可する
      */
     function getReturnTo() {
-      if (typeof window === "undefined") return "/mypage";
+      if (typeof window === "undefined") return "/";
 
       const params = new URLSearchParams(window.location.search);
-      const raw = params.get("returnTo") || params.get("next") || "/mypage";
+      const raw = params.get("returnTo") || params.get("next") || "/";
 
       if (!raw.startsWith("/") || raw.startsWith("//")) {
-        return "/mypage";
+        return "/";
       }
 
       return raw;
@@ -73,7 +73,7 @@ export default function LoginPage() {
   /**
    * PART: existing session guard
    * コメント:
-   * - 既にログイン済みなら /mypage に送る
+   * - 既にログイン済みなら / に送る
    * - login タブを後で開いても不要なログイン画面を見せない
    */
   React.useEffect(() => {

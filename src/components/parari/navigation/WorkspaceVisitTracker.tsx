@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { notifyParariExperienceChanged } from "@/components/parari/hooks/useParariExperience";
 import { supabase } from "@/lib/supabaseClient";
 
 type WorkspaceVisitTrackerProps = {
@@ -25,32 +26,35 @@ export default function WorkspaceVisitTracker({
 
       const now = new Date().toISOString();
 
-      const { data: existing } = await supabase
+      const { data: existing, error: readError } = await supabase
         .from("user_workspace_preferences")
-        .select("user_id")
+        .select("user_id,studio_enabled")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (cancelled) return;
+      if (cancelled || readError) return;
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from("user_workspace_preferences")
           .update({
+            ...(workspace === "studio" && !existing.studio_enabled ? { studio_enabled: true, studio_enabled_at: now } : {}),
             last_workspace: workspace,
             updated_at: now,
           })
           .eq("user_id", user.id);
+        if (!error && workspace === "studio" && !existing.studio_enabled) notifyParariExperienceChanged();
         return;
       }
 
-      await supabase.from("user_workspace_preferences").insert({
+      const { error } = await supabase.from("user_workspace_preferences").insert({
         user_id: user.id,
-        studio_enabled: false,
-        start_destination: "library",
+        studio_enabled: true,
+        start_destination: "studio",
         last_workspace: workspace,
         updated_at: now,
       });
+      if (!error) notifyParariExperienceChanged();
     }
 
     void recordVisit();
