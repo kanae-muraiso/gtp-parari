@@ -3,6 +3,7 @@
 import React from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import {
   ParariOwnerTopBar,
   ParariTopBarButton,
@@ -48,9 +49,19 @@ export default function ReferenceBookEditorPage() {
   const [outline, setOutline] = React.useState<BookOutlineEntry[]>([]);
   const [state, setState] = React.useState<SaveState>("loading");
   const [message, setMessage] = React.useState("");
+  const [openPageId, setOpenPageId] = React.useState<string | null>(null);
+  const [pageSaveState, setPageSaveState] = React.useState<
+    Record<string, SaveState>
+  >({});
 
   const bookRef = React.useRef<WorkRow | null>(null);
+  const pagesRef = React.useRef<Map<string, WorkRow>>(new Map());
   const saveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageSaveTimersRef = React.useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
+  const pageSaveLocksRef = React.useRef<Set<string>>(new Set());
+  const pendingPageContentRef = React.useRef<Map<string, string>>(new Map());
   const saveLockRef = React.useRef(false);
   const pendingRef = React.useRef<{
     title: string;
@@ -126,6 +137,9 @@ export default function ReferenceBookEditorPage() {
 
       bookRef.current = bookData;
       setBook(bookData);
+      pagesRef.current = new Map(
+        nextPages.map((page) => [page.id, page] as const),
+      );
       setPages(nextPages);
       setTitle(nextTitle);
       setBookSettings(parseBookSettings(content));
@@ -140,6 +154,11 @@ export default function ReferenceBookEditorPage() {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
+
+      for (const timer of pageSaveTimersRef.current.values()) {
+        clearTimeout(timer);
+      }
+      pageSaveTimersRef.current.clear();
     };
   }, [workId]);
 
@@ -269,6 +288,164 @@ export default function ReferenceBookEditorPage() {
             pending.settings,
             pending.outline,
           );
+        }, 50);
+      }
+    }
+  };
+
+  const schedulePageSave = (
+    pageId: string,
+    nextContent: string,
+  ) => {
+    const currentPage = pagesRef.current.get(pageId);
+
+    if (!currentPage) {
+      return;
+    }
+
+    const nextPage: WorkRow = {
+      ...currentPage,
+      content: nextContent,
+    };
+
+    pagesRef.current.set(pageId, nextPage);
+    setPages((current) =>
+      current.map((page) =>
+        page.id === pageId ? nextPage : page,
+      ),
+    );
+
+    setPageSaveState((current) => ({
+      ...current,
+      [pageId]: "idle",
+    }));
+
+    const existingTimer =
+      pageSaveTimersRef.current.get(pageId);
+
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    const timer = setTimeout(() => {
+      pageSaveTimersRef.current.delete(pageId);
+      void savePage(pageId, nextContent);
+    }, 700);
+
+    pageSaveTimersRef.current.set(pageId, timer);
+  };
+
+  const savePage = async (
+    pageId: string,
+    nextContent: string,
+  ) => {
+    const currentPage =
+      pagesRef.current.get(pageId);
+
+    if (!currentPage) {
+      return;
+    }
+
+    if (pageSaveLocksRef.current.has(pageId)) {
+      pendingPageContentRef.current.set(
+        pageId,
+        nextContent,
+      );
+      return;
+    }
+
+    pageSaveLocksRef.current.add(pageId);
+    setPageSaveState((current) => ({
+      ...current,
+      [pageId]: "saving",
+    }));
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          "ログイン情報を確認できませんでした。",
+        );
+      }
+
+      const nextTitle = getWorkTitle({
+        ...currentPage,
+        content: nextContent,
+      });
+
+      const response = await fetch("/api/works/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          workId: currentPage.id,
+          title: nextTitle,
+          content: nextContent,
+          expectedRevision: currentPage.revision,
+        }),
+      });
+
+      const result = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(
+          result?.message ??
+            "PAGEを保存できませんでした。",
+        );
+      }
+
+      const latestPage =
+        pagesRef.current.get(pageId) ??
+        currentPage;
+
+      const savedPage: WorkRow = {
+        ...latestPage,
+        title: nextTitle,
+        revision: result.revision,
+        updated_at:
+          result.updatedAt ??
+          latestPage.updated_at,
+      };
+
+      pagesRef.current.set(pageId, savedPage);
+      setPages((current) =>
+        current.map((page) =>
+          page.id === pageId
+            ? savedPage
+            : page,
+        ),
+      );
+      setPageSaveState((current) => ({
+        ...current,
+        [pageId]: "saved",
+      }));
+    } catch (error) {
+      setPageSaveState((current) => ({
+        ...current,
+        [pageId]: "error",
+      }));
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "PAGEを保存できませんでした。",
+      );
+    } finally {
+      pageSaveLocksRef.current.delete(pageId);
+
+      const pending =
+        pendingPageContentRef.current.get(pageId);
+
+      if (pending !== undefined) {
+        pendingPageContentRef.current.delete(pageId);
+        window.setTimeout(() => {
+          void savePage(pageId, pending);
         }, 50);
       }
     }
@@ -411,7 +588,7 @@ export default function ReferenceBookEditorPage() {
               />
 
               <p className="mt-3 text-sm leading-7 text-neutral-500">
-                PAGEの本文はBOOKへコピーしません。ここではPAGEの参照と順番だけを管理します。
+                PAGEの順番を管理しながら、この画面のまま各PAGE本文も編集できます。
               </p>
 
               <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
@@ -646,71 +823,127 @@ export default function ReferenceBookEditorPage() {
                         .filter((candidate) => candidate.kind === "page")
                         .length;
 
+                    const isOpen =
+                      openPageId === entry.id;
+                    const pageState =
+                      pageSaveState[entry.id] ?? "idle";
+
                     return (
                       <div
                         key={`page-${entry.id}`}
-                        className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+                        className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
                       >
-                        <div className="w-7 shrink-0 text-center text-xs font-bold text-neutral-400">
-                          {pageNumber}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold text-neutral-900">
-                            {work
-                              ? getWorkTitle(work)
-                              : "参照先PAGEが見つかりません"}
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <div className="w-7 shrink-0 text-center text-xs font-bold text-neutral-400">
+                            {pageNumber}
                           </div>
-                          <div className="mt-0.5 truncate text-[11px] text-neutral-400">
-                            {entry.id}
-                          </div>
-                        </div>
 
-                        <div className="flex shrink-0 items-center gap-1">
-                          {work ? (
-                            <a
-                              href={`/writing/${work.id}`}
-                              className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-500 hover:bg-neutral-100"
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-bold text-neutral-900">
+                              {work
+                                ? getWorkTitle(work)
+                                : "参照先PAGEが見つかりません"}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2 truncate text-[11px] text-neutral-400">
+                              <span>{entry.id}</span>
+                              {work && pageState === "saving" ? (
+                                <span>保存中…</span>
+                              ) : work && pageState === "saved" ? (
+                                <span>保存済み</span>
+                              ) : work && pageState === "error" ? (
+                                <span className="text-rose-500">
+                                  保存エラー
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            {work ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenPageId((current) =>
+                                    current === entry.id
+                                      ? null
+                                      : entry.id,
+                                  )
+                                }
+                                className={[
+                                  "rounded-full px-2.5 py-1 text-[10px] font-bold transition",
+                                  isOpen
+                                    ? "bg-neutral-900 text-white"
+                                    : "text-neutral-600 hover:bg-neutral-100",
+                                ].join(" ")}
+                              >
+                                {isOpen ? "閉じる" : "編集"}
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveOutlineEntry(index, -1)}
+                              className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
                             >
-                              PAGE
-                            </a>
-                          ) : null}
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => moveOutlineEntry(index, -1)}
-                            className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === outline.length - 1}
-                            onClick={() => moveOutlineEntry(index, 1)}
-                            className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              scheduleSave(
-                                title,
-                                bookSettings,
-                                outline.filter(
-                                  (candidate) =>
-                                    !(
-                                      candidate.kind === "page" &&
-                                      candidate.id === entry.id
-                                    ),
-                                ),
-                              )
-                            }
-                            className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            外す
-                          </button>
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === outline.length - 1}
+                              onClick={() => moveOutlineEntry(index, 1)}
+                              className="rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 disabled:opacity-20"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                scheduleSave(
+                                  title,
+                                  bookSettings,
+                                  outline.filter(
+                                    (candidate) =>
+                                      !(
+                                        candidate.kind === "page" &&
+                                        candidate.id === entry.id
+                                      ),
+                                  ),
+                                )
+                              }
+                              className="rounded-full px-2 py-1 text-[10px] font-bold text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              外す
+                            </button>
+                          </div>
                         </div>
+
+                        {work && isOpen ? (
+                          <div className="border-t border-neutral-200 bg-neutral-50 p-3 sm:p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="text-[10px] font-bold tracking-[0.14em] text-neutral-400">
+                                PAGE EDITING
+                              </div>
+                              <a
+                                href={`/writing/${work.id}?mode=editing`}
+                                className="text-[10px] font-bold text-neutral-400 hover:text-neutral-700"
+                              >
+                                PAGE単独で開く
+                              </a>
+                            </div>
+
+                            <div className="rounded-2xl bg-white p-2 ring-1 ring-neutral-200 sm:p-3">
+                              <PagePanelComposer
+                                value={String(work.content ?? "")}
+                                onChange={(nextContent) =>
+                                  schedulePageSave(
+                                    work.id,
+                                    nextContent,
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
