@@ -47,6 +47,10 @@ type PagePanelComposerProps = {
   onExtractSelectionToPage?: (payload: {
     selectedText: string;
   }) => Promise<boolean>;
+  onSplitPageToBook?: (payload: {
+    beforeBodySsot: string;
+    afterBodySsot: string;
+  }) => Promise<boolean>;
 };
 
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
@@ -164,6 +168,7 @@ export function PagePanelComposer({
   mode = "page",
   entitlements = getPlanEntitlements("free"),
   onExtractSelectionToPage,
+  onSplitPageToBook,
 }: PagePanelComposerProps) {
   const [structureVersion, setStructureVersion] = useState(0);
   const [isMutating, setIsMutating] = useState(false);
@@ -255,6 +260,77 @@ const waitForNextPaint = () =>
     });
 
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
+  };
+
+  const splitPageFromTextBlock = async (
+    blockId: string,
+    beforeTextSsot: string,
+    afterTextSsot: string,
+  ) => {
+    if (!onSplitPageToBook) {
+      return;
+    }
+
+    const targetIndex = blocks.findIndex(
+      (block) =>
+        block.id === blockId &&
+        block.kind === "text",
+    );
+
+    if (targetIndex < 0) {
+      return;
+    }
+
+    const beforeBlocks = blocks
+      .slice(0, targetIndex)
+      .filter(
+        (block) =>
+          !isDocumentStructurePanel(block),
+      );
+
+    const afterBlocks = blocks
+      .slice(targetIndex + 1)
+      .filter(
+        (block) =>
+          !isDocumentStructurePanel(block),
+      );
+
+    const targetBlock = blocks[targetIndex];
+
+    if (!targetBlock || targetBlock.kind !== "text") {
+      return;
+    }
+
+    const firstHalf: TextBlock = {
+      ...targetBlock,
+      id: `${targetBlock.id}-page-before`,
+      raw: beforeTextSsot,
+    };
+    const secondHalf: TextBlock = {
+      ...targetBlock,
+      id: `${targetBlock.id}-page-after`,
+      raw: afterTextSsot,
+    };
+
+    const beforeBodySsot =
+      serializeBlocks(
+        sanitizeBlocks([
+          ...beforeBlocks,
+          firstHalf,
+        ]),
+      );
+    const afterBodySsot =
+      serializeBlocks(
+        sanitizeBlocks([
+          secondHalf,
+          ...afterBlocks,
+        ]),
+      );
+
+    await onSplitPageToBook({
+      beforeBodySsot,
+      afterBodySsot,
+    });
   };
 
   const splitTextBlock = (
@@ -517,6 +593,28 @@ const waitForNextPaint = () =>
       onChange(normalizePageHeadersFromTitle(serializeBlocks(sanitizeBlocks(nextBlocks))));
     };
     
+    function isDocumentStructurePanel(
+      block: SsotBlock,
+    ): boolean {
+      if (block.kind !== "panel") {
+        return false;
+      }
+
+      const tag =
+        block.tag.trim().toUpperCase();
+
+      return (
+        tag === "BOOK" ||
+        tag === "BOOKINFO" ||
+        tag === "CHAPTER" ||
+        tag === "CHAPTERINFO" ||
+        tag === "PAGE" ||
+        tag === "PAGEINFO" ||
+        tag === "SECTION" ||
+        tag === "SECTIONINFO"
+      );
+    }
+
     function isMeaningfulRaw(raw: string): boolean {
       return raw
         .replace(/\u200B/g, "")
@@ -752,6 +850,19 @@ const waitForNextPaint = () =>
                                            beforeTextSsot,
                                            afterTextSsot,
                                          )
+                                       }
+                                       onSplitPageAtCursor={
+                                         mode === "page" && onSplitPageToBook
+                                           ? ({
+                                               beforeTextSsot,
+                                               afterTextSsot,
+                                             }) =>
+                                               splitPageFromTextBlock(
+                                                 block.id,
+                                                 beforeTextSsot,
+                                                 afterTextSsot,
+                                               )
+                                           : undefined
                                        }
                                        onExtractSelectionToPage={
                                          mode === "page" && onExtractSelectionToPage
