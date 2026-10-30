@@ -106,6 +106,10 @@ type RichTextFieldProps = {
   minHeightClassName?: string;
   panelizeActions?: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
+  onSplitText?: (payload: {
+    beforeTextSsot: string;
+    afterTextSsot: string;
+  }) => void;
   showDebugLabel?: boolean;
   englishMenuContainer?: HTMLElement | null;
   readingSupport?: TextReadingSupportOptions;
@@ -140,6 +144,7 @@ export function RichTextField({
   minHeightClassName = "min-h-[260px]",
   panelizeActions = [],
   onPanelizeSelection,
+  onSplitText,
   showDebugLabel = false,
   englishMenuContainer,
   readingSupport,
@@ -587,7 +592,14 @@ function RichTextToolbar({
         title: "文字色を標準に戻す",
       },
       ...(!inlineOnly
-        ? [{ kind: "divider" as const, label: "―", title: "区切り線" }]
+        ? [
+            {
+              kind: "splitText" as const,
+              label: "TEXT分割",
+              title: "カーソル位置でTEXTパネルを分割",
+            },
+            { kind: "divider" as const, label: "―", title: "区切り線" },
+          ]
         : []),
       ...(onPanelizeSelection && !inlineOnly
         ? [
@@ -810,6 +822,88 @@ function RichTextToolbar({
     onPanelizeSelection(payload);
   };
 
+  const handleSplitText = () => {
+    if (!onSplitText) {
+      return;
+    }
+
+    let splitPayload:
+      | {
+          beforeTextSsot: string;
+          afterTextSsot: string;
+        }
+      | null = null;
+
+    editor.update(() => {
+      const selection = $getSelection();
+
+      if (
+        !$isRangeSelection(selection) ||
+        !selection.anchor ||
+        !selection.focus
+      ) {
+        return;
+      }
+
+      if (!selection.isCollapsed()) {
+        return;
+      }
+
+      const marker = createPanelMarker();
+
+      suppressNextChangeRef.current = true;
+
+      // 装飾中のカーソルでも境界を安全に取れるよう、
+      // marker は独立した無装飾TextNodeとして挿入する。
+      $insertNodes([$createTextNode(marker)]);
+
+      const markedRaw =
+        exportLexicalToParariSsotText();
+
+      replacePanelMarkerInCurrentEditorState(
+        marker,
+        "",
+      );
+
+      const markerIndex =
+        markedRaw.indexOf(marker);
+
+      if (markerIndex < 0) {
+        return;
+      }
+
+      const beforeTextSsot =
+        markedRaw
+          .slice(0, markerIndex)
+          .trimEnd();
+      const afterTextSsot =
+        markedRaw
+          .slice(markerIndex + marker.length)
+          .trimStart();
+
+      if (
+        !hasMeaningfulRichText(beforeTextSsot) ||
+        !hasMeaningfulRichText(afterTextSsot)
+      ) {
+        return;
+      }
+
+      splitPayload = {
+        beforeTextSsot,
+        afterTextSsot,
+      };
+    });
+
+    if (!splitPayload) {
+      window.alert(
+        "TEXTを分割する位置にカーソルを置いてください。\n先頭または末尾では分割できません。",
+      );
+      return;
+    }
+
+    onSplitText(splitPayload);
+  };
+
   const handleAction = (action: RichTextInlineMenuAction) => {
     // ここで先に editor.focus() すると、Lexical の選択位置が先頭へ戻ることがある。
     // パネル挿入・リンク操作では現在のカーソル位置を守るため、各処理側に任せる。
@@ -842,6 +936,11 @@ function RichTextToolbar({
           applyBlockKind(action.block);
         }
 
+        return;
+      }
+
+      if (action.kind === "splitText") {
+        handleSplitText();
         return;
       }
 
@@ -1044,6 +1143,16 @@ function replacePanelMarkerInCurrentEditorState(
   }
 }
 
+
+function hasMeaningfulRichText(
+  value: string,
+): boolean {
+  return String(value ?? "")
+    .replace(/\u200B/g, "")
+    .replace(/\uFEFF/g, "")
+    .replace(/[*_!#\[\](){}|]/g, "")
+    .trim().length > 0;
+}
 
 function removeParariPanelMarkers(value: string): string {
   return String(value ?? "").replace(
