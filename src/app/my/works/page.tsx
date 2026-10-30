@@ -87,6 +87,9 @@ export default function MyWorksPage() {
     const [openCollaborationWorkId, setOpenCollaborationWorkId] =
       React.useState<string | null>(null);
 
+    const [openDetailWorkId, setOpenDetailWorkId] =
+      React.useState<string | null>(null);
+
     const [removingCollaboratorKey, setRemovingCollaboratorKey] =
       React.useState<string | null>(null);
     
@@ -806,6 +809,90 @@ export default function MyWorksPage() {
       referencedBookPageIds,
       workById,
     ]);
+
+    const allDerivedPageIdsByOrigin = React.useMemo(() => {
+      const map = new Map<string, string[]>();
+
+      for (const work of works) {
+        if (resolveWorkKind(work.content) !== "Page") {
+          continue;
+        }
+
+        const originPageId =
+          parseOriginPageId(work.content);
+
+        if (!originPageId) {
+          continue;
+        }
+
+        const current =
+          map.get(originPageId) ?? [];
+
+        current.push(work.id);
+        map.set(originPageId, current);
+      }
+
+      return map;
+    }, [works]);
+
+    const bookIdsByRelatedPageId = React.useMemo(() => {
+      const map = new Map<string, Set<string>>();
+
+      const addBook = (
+        pageId: string,
+        bookId: string,
+      ) => {
+        const current =
+          map.get(pageId) ?? new Set<string>();
+        current.add(bookId);
+        map.set(pageId, current);
+      };
+
+      for (const book of works) {
+        if (
+          resolveWorkKind(book.content) !== "Book" ||
+          !isReferenceBookSsot(
+            String(book.content ?? ""),
+          )
+        ) {
+          continue;
+        }
+
+        for (const entry of parseBookOutline(
+          String(book.content ?? ""),
+        )) {
+          if (entry.kind !== "page") {
+            continue;
+          }
+
+          let currentPageId: string | null =
+            entry.id;
+          const visited = new Set<string>();
+
+          while (
+            currentPageId &&
+            !visited.has(currentPageId)
+          ) {
+            visited.add(currentPageId);
+            addBook(
+              currentPageId,
+              book.id,
+            );
+
+            const currentPage =
+              workById.get(currentPageId);
+
+            currentPageId = currentPage
+              ? parseOriginPageId(
+                  currentPage.content,
+                )
+              : null;
+          }
+        }
+      }
+
+      return map;
+    }, [works, workById]);
 
     const visibleCategoryCounts = React.useMemo(() => {
       const counts = new Map<string, number>();
@@ -1585,18 +1672,6 @@ export default function MyWorksPage() {
                   originPageId
                     ? workById.get(originPageId) ?? null
                     : null;
-                const derivedWorks =
-                  kind === "Page"
-                    ? (
-                        derivedPageIdsByOrigin.get(work.id) ?? []
-                      )
-                        .map((id) => workById.get(id))
-                        .filter(
-                          (item): item is WorkRow =>
-                            Boolean(item),
-                        )
-                    : [];
-
                 const bookOutline =
                   kind === "Book" &&
                   isReferenceBookSsot(
@@ -1634,6 +1709,41 @@ export default function MyWorksPage() {
 
                 const isCategoryPickerOpen =
                   openCategoryWorkId === work.id;
+
+                const isDetailOpen =
+                  openDetailWorkId === work.id;
+
+                const relatedBooks =
+                  kind === "Page"
+                    ? Array.from(
+                        bookIdsByRelatedPageId.get(
+                          work.id,
+                        ) ?? [],
+                      )
+                        .map((id) =>
+                          workById.get(id),
+                        )
+                        .filter(
+                          (item): item is WorkRow =>
+                            Boolean(item),
+                        )
+                    : [];
+
+                const allDerivedWorks =
+                  kind === "Page"
+                    ? (
+                        allDerivedPageIdsByOrigin.get(
+                          work.id,
+                        ) ?? []
+                      )
+                        .map((id) =>
+                          workById.get(id),
+                        )
+                        .filter(
+                          (item): item is WorkRow =>
+                            Boolean(item),
+                        )
+                    : [];
 
 
                 return (
@@ -1723,6 +1833,30 @@ export default function MyWorksPage() {
                           {copiedWorkId === work.id ? "コピー済" : "URL"}
                         </button>
 
+                        {kind === "Page" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenDetailWorkId(
+                                (current) =>
+                                  current === work.id
+                                    ? null
+                                    : work.id,
+                              )
+                            }
+                            className={[
+                              "inline-flex w-full justify-center rounded-full px-2.5 py-1.5 text-[11px] font-bold ring-1 transition sm:w-auto",
+                              isDetailOpen
+                                ? "bg-amber-100 text-amber-900 ring-amber-200"
+                                : "bg-white text-neutral-700 ring-neutral-200 hover:bg-neutral-50",
+                            ].join(" ")}
+                          >
+                            {isDetailOpen
+                              ? "詳細を閉じる"
+                              : "詳細"}
+                          </button>
+                        ) : null}
+
                         {showCollaborationButton ? (
                           <button
                             type="button"
@@ -1750,56 +1884,161 @@ export default function MyWorksPage() {
                       </div>
                     </div>
 
-                    {kind === "Page" ? (
-                      <div className="mt-3 rounded-2xl bg-amber-50/70 px-3 py-2.5 ring-1 ring-amber-100">
-                        <div className="text-[10px] font-bold tracking-[0.14em] text-amber-700/70">
-                          PAGE LINEAGE
-                        </div>
-
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-600">
-                          {originPageId ? (
-                            <>
-                              <span className="font-bold text-neutral-500">
-                                派生元
-                              </span>
-                              {originWork ? (
-                                <Link
-                                  href={`/writing/${originWork.id}?mode=editing`}
-                                  className="font-bold text-neutral-800 hover:underline"
-                                >
-                                  {resolveWorkTitle(originWork)}
-                                </Link>
-                              ) : (
-                                <span className="text-neutral-400">
-                                  元PAGEが見つかりません
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="font-bold text-amber-800">
-                              起点PAGE
-                            </span>
-                          )}
-                        </div>
-
-                        {derivedWorks.length > 0 ? (
-                          <div className="mt-2 border-t border-amber-100 pt-2">
-                            <div className="mb-1 text-[10px] font-bold text-neutral-400">
-                              派生先 {derivedWorks.length}
+                    {kind === "Page" && isDetailOpen ? (
+                      <div className="mt-3 rounded-2xl bg-amber-50/70 p-4 ring-1 ring-amber-100">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <div className="text-[10px] font-bold tracking-[0.14em] text-amber-700/70">
+                              PAGE DETAILS
                             </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {derivedWorks.map((derived) => (
-                                <Link
-                                  key={derived.id}
-                                  href={`/writing/${derived.id}?mode=editing`}
-                                  className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-neutral-700 ring-1 ring-amber-100 transition hover:bg-amber-50"
-                                >
-                                  {resolveWorkTitle(derived)}
-                                </Link>
-                              ))}
+                            <div className="mt-1 text-sm font-bold text-neutral-900">
+                              PAGE詳細
                             </div>
                           </div>
-                        ) : null}
+
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-neutral-500 ring-1 ring-amber-100">
+                            {originPageId
+                              ? "派生PAGE"
+                              : "起点PAGE"}
+                          </span>
+                        </div>
+
+                        <dl className="mt-4 grid gap-3 text-xs">
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              元PAGE
+                            </dt>
+                            <dd className="min-w-0 text-neutral-700">
+                              {originPageId ? (
+                                originWork ? (
+                                  <Link
+                                    href={`/writing/${originWork.id}?mode=editing`}
+                                    className="font-bold text-neutral-900 hover:underline"
+                                  >
+                                    {resolveWorkTitle(
+                                      originWork,
+                                    )}
+                                  </Link>
+                                ) : (
+                                  <span className="text-neutral-400">
+                                    元PAGEが見つかりません
+                                  </span>
+                                )
+                              ) : (
+                                <span>このPAGEが起点です</span>
+                              )}
+                            </dd>
+                          </div>
+
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              使用中のBOOK
+                            </dt>
+                            <dd className="min-w-0">
+                              {relatedBooks.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {relatedBooks.map(
+                                    (relatedBook) => (
+                                      <Link
+                                        key={
+                                          relatedBook.id
+                                        }
+                                        href={`/editor/book/${relatedBook.id}`}
+                                        className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-50"
+                                      >
+                                        {resolveWorkTitle(
+                                          relatedBook,
+                                        )}
+                                      </Link>
+                                    ),
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-neutral-400">
+                                  まだBOOKでは使用されていません
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              派生先
+                            </dt>
+                            <dd className="min-w-0">
+                              {allDerivedWorks.length > 0 ? (
+                                <div className="space-y-1.5">
+                                  {allDerivedWorks.map(
+                                    (derived) => {
+                                      const internal =
+                                        hiddenBookPageIds.has(
+                                          derived.id,
+                                        );
+
+                                      return (
+                                        <div
+                                          key={
+                                            derived.id
+                                          }
+                                          className="flex flex-wrap items-center gap-2"
+                                        >
+                                          <Link
+                                            href={`/writing/${derived.id}?mode=editing`}
+                                            className="font-bold text-neutral-800 hover:underline"
+                                          >
+                                            {resolveWorkTitle(
+                                              derived,
+                                            )}
+                                          </Link>
+                                          {internal ? (
+                                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-600">
+                                              BOOK内
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    },
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-neutral-400">
+                                  派生PAGEはありません
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              作成
+                            </dt>
+                            <dd className="text-neutral-700">
+                              {formatDateTime(
+                                work.created_at,
+                              )}
+                            </dd>
+                          </div>
+
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              更新
+                            </dt>
+                            <dd className="text-neutral-700">
+                              {formatDateTime(
+                                work.updated_at,
+                              )}
+                            </dd>
+                          </div>
+
+                          <div className="grid gap-1 sm:grid-cols-[96px_1fr] sm:items-start">
+                            <dt className="font-bold text-neutral-400">
+                              PAGE ID
+                            </dt>
+                            <dd className="break-all font-mono text-[10px] text-neutral-500">
+                              {work.id}
+                            </dd>
+                          </div>
+                        </dl>
                       </div>
                     ) : null}
 
@@ -2287,6 +2526,28 @@ function getCreatedTime(
   return Number.isFinite(time)
     ? time
     : 0;
+}
+
+function formatDateTime(
+  value: string | null,
+): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function formatDate(value: string | null): string {
