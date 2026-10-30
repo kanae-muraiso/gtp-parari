@@ -52,7 +52,6 @@ type RichTextPanelEditorProps = {
   }>;
   onExtractSelectionToPage?: (payload: {
     selectedText: string;
-    remainingTextSsot: string;
   }) => void | Promise<void>;
 };
 
@@ -93,7 +92,7 @@ export function RichTextPanelEditor({
   const resolvedPanelizeActions = onExtractSelectionToPage
     ? panelizeActions.map((action) =>
         action.tag === "PAGE"
-          ? { ...action, label: "新PAGE" }
+          ? { ...action, label: "派生PAGE" }
           : action,
       )
     : panelizeActions;
@@ -104,14 +103,8 @@ export function RichTextPanelEditor({
       onExtractSelectionToPage &&
       payload.selected.trim().length > 0
     ) {
-      const remainingTextSsot = removeSelectionMarker(
-        payload.markedRaw,
-        payload.marker,
-      );
-
       void onExtractSelectionToPage({
         selectedText: payload.selected,
-        remainingTextSsot,
       });
       return;
     }
@@ -257,34 +250,6 @@ export function RichTextPanelEditor({
 }
 
 
-
-function removeSelectionMarker(
-  markedRaw: string,
-  marker: string,
-): string {
-  const candidates = [
-    `***${marker}***`,
-    `**${marker}**`,
-    `*${marker}*`,
-    `___${marker}___`,
-    `__${marker}__`,
-    `_${marker}_`,
-    marker,
-  ];
-
-  let next = markedRaw;
-
-  for (const candidate of candidates) {
-    if (next.includes(candidate)) {
-      next = next.replace(candidate, "");
-      break;
-    }
-  }
-
-  return removeParariPanelMarkers(next)
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
 
 function normalizeRichTextPreviewSource(value: string): string {
   return value
