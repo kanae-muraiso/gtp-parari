@@ -102,6 +102,10 @@ const FIRST_STRUCTURE_INSERT_ITEMS: PanelInsertItem[] = [
   ...STRUCTURE_INSERT_ITEMS,
 ];
 
+const STANDALONE_PAGE_STRUCTURE_ITEMS: PanelInsertItem[] = [
+  { tag: "PAGE", label: "PAGE分割" },
+];
+
 function createEmptyTextBlock(): TextBlock {
   return {
     id: EMPTY_TEXT_BLOCK_ID,
@@ -497,11 +501,66 @@ const waitForNextPaint = () =>
     const hasBookInfo = renderBlocks.some((block) => isBookInfoBlock(block));
     const firstBlockIsBookInfo = isBookInfoBlock(renderBlocks[0]);
     
-    const insertPanelAt = (
+    const insertPanelAt = async (
       insertIndex: number,
       tag: PanelInsertItem["tag"],
     ) => {
       preserveWindowScrollForNextRender();
+
+      if (
+        mode === "page" &&
+        onSplitPageToBook &&
+        tag === "PAGE"
+      ) {
+        const baseBlocks =
+          meaningfulBlocks.length > 0
+            ? meaningfulBlocks
+            : [];
+
+        const safeIndex = Math.min(
+          Math.max(insertIndex, 0),
+          baseBlocks.length,
+        );
+
+        const beforeBodySsot =
+          serializeBlocks(
+            sanitizeBlocks(
+              baseBlocks
+                .slice(0, safeIndex)
+                .filter(
+                  (block) =>
+                    !isDocumentStructurePanel(block),
+                ),
+            ),
+          );
+
+        const afterBodySsot =
+          serializeBlocks(
+            sanitizeBlocks(
+              baseBlocks
+                .slice(safeIndex)
+                .filter(
+                  (block) =>
+                    !isDocumentStructurePanel(block),
+                ),
+            ),
+          );
+
+        if (
+          !isMeaningfulRaw(beforeBodySsot)
+        ) {
+          window.alert(
+            "PAGEの先頭では分割できません。",
+          );
+          return;
+        }
+
+        await onSplitPageToBook({
+          beforeBodySsot,
+          afterBodySsot,
+        });
+        return;
+      }
       // BOOKINFOは作品内に1つだけ、先頭にのみ挿入できる。
       if (tag === "BOOK") {
         if (insertIndex !== 0 || hasBookInfo) {
@@ -798,9 +857,11 @@ const waitForNextPaint = () =>
               structureItems={
                 mode === "card"
                   ? []
-                  : hasBookInfo
-                    ? STRUCTURE_INSERT_ITEMS
-                    : FIRST_STRUCTURE_INSERT_ITEMS
+                  : onSplitPageToBook
+                    ? []
+                    : hasBookInfo
+                      ? STRUCTURE_INSERT_ITEMS
+                      : FIRST_STRUCTURE_INSERT_ITEMS
               }
               onSelect={(tag) => {
                 void runLockedMutation(() => insertPanelAt(0, tag));
@@ -936,7 +997,9 @@ const waitForNextPaint = () =>
                                  structureItems={
                                   mode === "card"
                                     ? []
-                                    : STRUCTURE_INSERT_ITEMS
+                                    : onSplitPageToBook
+                                      ? STANDALONE_PAGE_STRUCTURE_ITEMS
+                                      : STRUCTURE_INSERT_ITEMS
                                 }
                                  onSelect={(tag) => {
                                    void runLockedMutation(() => insertPanelAt(index + 1, tag));
