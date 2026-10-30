@@ -121,6 +121,22 @@ async function readEpub(response) {
 }
 
 async function main() {
+  const unsupported = setup({ source: "[BOOK]\ntitle: export\n\n[PAGE] 問題のPAGE\n[T]\n本文\n[FORM] フォーム" });
+  const blocked = await unsupported.export();
+  assert.equal(blocked.status, 422);
+  const error = await blocked.json();
+  assert.equal(error.code, "EPUB_UNSUPPORTED_PANELS");
+  assert.match(error.message, /問題のPAGE/);
+  assert.equal(error.issues[0].tag, "FORM");
+  unsupported.sourceUnchanged();
+  const referenceBlocked = setup({ pages: samplePages.map(page => page.id === "page-a" ? { ...page, content: page.content + "\n[FORM] 申込" } : page) });
+  assert.equal((await referenceBlocked.export()).status, 422, "referenced PAGEs receive the same preflight");
+  referenceBlocked.sourceUnchanged();
+  const missingLink = setup({ source: "[PAGE] 動画のPAGE\n[VIDEO] javascript:alert" });
+  assert.equal((await missingLink.export()).status, 422);
+  const media = setup({ source: "[PAGE] 動画のPAGE\n[VIDEO] https://example.com/movie\n[TITLE] 動画を見る" });
+  const mediaOutput = await readEpub(await media.export());
+  assert.equal(mediaOutput.documents.get("EPUB/text/0001.xhtml").querySelector('a[href="https://example.com/movie"]').textContent, "動画を見る");
   const good = setup();
   const output = await readEpub(await good.export());
   good.sourceUnchanged();

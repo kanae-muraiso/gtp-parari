@@ -31,7 +31,9 @@ export async function buildEpub(
   model: EpubBookModel,
 ): Promise<BuildEpubResult> {
   const zip = new JSZip();
-  const warnings: string[] = [];
+  const issues = model.issues ?? [];
+  if (issues.some(issue => issue.blocking)) throw new Error("EPUBに変換できないパネルがあります。");
+  const warnings: string[] = issues.map(issue => `${issue.location}（${issue.tag}）：${issue.message}`);
 
   const identifier = createIdentifier();
   const modifiedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -478,6 +480,10 @@ function renderContentBlock(
     return renderEpubText(block.text, context);
   }
 
+  if (block.type === "aside") return `<aside class="panel-aside">${block.title ? `<h3>${escapeXml(block.title)}</h3>` : ""}${renderEpubText(block.text, context)}</aside>`;
+  if (block.type === "list") return `<section>${block.title ? `<h3>${escapeXml(block.title)}</h3>` : ""}<ul>${block.items.map(item => `<li>${renderEpubText(item, context)}</li>`).join("")}</ul></section>`;
+  if (block.type === "link") return `<p><a href="${escapeXml(block.url)}">${escapeXml(block.label)}</a></p>`;
+
   if (block.type === "table") {
     const cellText = (value: string) => escapeXml(value).replace(/\r\n?|\n/g, "<br/>");
     const rowHtml = (row: string[], heading = false) => `<tr>${row.map(cell => heading ? `<th scope="col">${cellText(cell)}</th>` : `<td>${cellText(cell)}</td>`).join("")}</tr>`;
@@ -581,6 +587,7 @@ img {
   object-fit: contain;
 }
 
+.panel-aside { border: 1px solid #888; padding: 0.8em; margin: 1em 0; }
 blockquote { margin: 1em 0 1em 1em; padding-left: 1em; border-left: 2px solid #888; }
 .noteref { vertical-align: super; font-size: smaller; line-height: normal; }
 .footnotes { margin-top: 2em; border-top: 1px solid #888; padding-top: 0.5em; font-size: 0.9em; }

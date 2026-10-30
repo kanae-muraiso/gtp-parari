@@ -14,7 +14,7 @@ function looksLikeUrl(value: string): boolean {
   return /^(?:[a-z][a-z\d+.-]*:|\/|[a-z\d.-]+\.[a-z]{2,}(?:[/:?#]|$))/i.test(value.trim());
 }
 
-function safeLink(value: string): string | null {
+export function safeEpubLink(value: string): string | null {
   const text = value.trim().replace(/^https\/\//i, "https://").replace(/^http\/\//i, "http://");
   if (/[\u0000-\u0020\u007f]/.test(text)) return null;
   try {
@@ -29,7 +29,7 @@ export function renderEpubInlines(text: string, context: EpubTextContext, depth 
   const pattern = /\[\[([^\]]+)\]\]\(([^)]+)\)|\[\[([^\]]+)\]\]\{([^}]+)\}|\[\[([^\]|｜]+)[|｜]([^\]]+)\]\]|⟦lk:([^|⟧]+)\|([^⟧]+)⟧|\[([^\]]+)\]\(([^)]+)\)|!!([^!]+)!!|！！([^！]+)！！|\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
   const inline = (value: string) => renderEpubInlines(value, context, depth + 1);
   const link = (label: string, value: string) => {
-    const url = safeLink(value);
+    const url = safeEpubLink(value);
     if (!url) {
       const warning = "EPUBで使用できないリンクは表示文字だけを残しました。";
       if (!context.warnings.includes(warning)) context.warnings.push(warning);

@@ -42,6 +42,9 @@ jobs:
       - name: EPUB rich text and footnote check
         run: npm run test:epub-rich-text
 
+      - name: Authoring panel sets and export policy
+        run: npm run test:panel-sets
+
       - name: TABLE editing and EPUB check
         run: npm run test:table-panel
 

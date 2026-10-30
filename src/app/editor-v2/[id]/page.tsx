@@ -1212,7 +1212,7 @@ export default function BookPanelSequenceEditorPage() {
              ) : null}
 
            {epubMessage ? (
-             <div className="mb-5 rounded-3xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
+             <div className="mb-5 whitespace-pre-wrap rounded-3xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
                {epubMessage}
              </div>
            ) : null}

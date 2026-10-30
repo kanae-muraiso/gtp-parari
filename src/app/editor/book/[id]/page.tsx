@@ -3,6 +3,7 @@
 import React from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { PanelSetControls } from "@/components/parari/editor-v2/PanelSetControls";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import {
   ParariOwnerTopBar,
@@ -845,6 +846,7 @@ export default function ReferenceBookEditorPage() {
         ) : (
           <>
             <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <PanelSetControls value={bookSettings.authoringSet ?? "standard"} source={String(book.content ?? "")} onChange={authoringSet => scheduleSave(title, { ...bookSettings, authoringSet }, outline)} />
               <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
                 BOOK
               </div>
@@ -1207,6 +1209,7 @@ export default function ReferenceBookEditorPage() {
 
                             <div className="rounded-2xl bg-white p-2 ring-1 ring-neutral-200 sm:p-3">
                               <PagePanelComposer
+                                authoringSet={bookSettings.authoringSet ?? "standard"}
                                 value={String(work.content ?? "")}
                                 onChange={(nextContent) =>
                                   schedulePageSave(

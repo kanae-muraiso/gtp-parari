@@ -1,3 +1,8 @@
+// src/lib/parari/book/pageRefs.ts
+// 2026-10-30 JST
+// PART: Keep authoring preferences with reference BOOK settings.
+import { readPanelSet, writePanelSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
+
 export type BookPageRef = {
   id: string;
 };
@@ -12,6 +17,7 @@ export type BookOutlineEntry =
   | { kind: "chapter"; id: string; title: string };
 
 export type BookSettings = {
+  authoringSet?: PanelSet;
   subtitle: string;
   author: string;
   coverImage: string;
@@ -109,6 +115,7 @@ export function parseBookSettings(
     .replace(/\r\n/g, "\n");
 
   return {
+    authoringSet: readPanelSet(ssot),
     subtitle: getBookMeta(
       source,
       "subtitle",
@@ -432,7 +439,7 @@ export function updateBookSettings(
       : "false",
   );
 
-  return next;
+  return settings.authoringSet ? writePanelSet(next, settings.authoringSet) : next;
 }
 
 function getBookMeta(
