@@ -805,15 +805,22 @@ function RichTextToolbar({
 
       suppressNextChangeRef.current = true;
 
-      // 選択範囲があれば選択範囲をmarkerに置換。
-      // 選択範囲がなくカーソルだけなら、その位置にmarkerを挿入。
-      selection.insertText(marker);
+      // PAGE分割のカーソル位置は、太字や文字色の途中でも
+      // SSOT境界を正確に取れるよう無装飾markerを挿入する。
+      if (
+        tag === "PAGE" &&
+        selection.isCollapsed()
+      ) {
+        $insertNodes([$createTextNode(marker)]);
+      } else {
+        // 選択範囲があれば選択範囲をmarkerに置換。
+        // 選択範囲がなくカーソルだけなら、その位置にmarkerを挿入。
+        selection.insertText(marker);
+      }
 
       const markedRaw = exportLexicalToParariSsotText();
 
       // export用に一時挿入したmarkerは、Lexical本文から即座に取り除く。
-      // ここを消さないと @@PARARI_PANEL_MARKER... が本文へ漏れたり、
-      // 以後の入力位置が壊れることがある。
       replacePanelMarkerInCurrentEditorState(marker, selected);
 
       payload = {
