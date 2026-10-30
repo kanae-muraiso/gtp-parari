@@ -15,7 +15,11 @@ import { supabase } from "@/lib/supabaseClient";
 import { getEffectivePlan } from "@/lib/billing/plan";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
-import { isReferenceBookSsot } from "@/lib/parari/book/pageRefs";
+import {
+  isReferenceBookSsot,
+  parseBookOutline,
+} from "@/lib/parari/book/pageRefs";
+import { parseOriginPageId } from "@/lib/parari/page/lineage";
 
 type Visibility = "private" | "unlisted" | "public";
 
@@ -725,6 +729,76 @@ export default function MyWorksPage() {
       categoryIdsByWork,
     ]);
 
+    const workById = React.useMemo(
+      () =>
+        new Map(
+          works.map((work) => [work.id, work] as const),
+        ),
+      [works],
+    );
+
+    const derivedPageIdsByOrigin = React.useMemo(() => {
+      const map = new Map<string, string[]>();
+
+      for (const work of works) {
+        if (resolveWorkKind(work.content) !== "Page") {
+          continue;
+        }
+
+        const originPageId = parseOriginPageId(
+          work.content,
+        );
+
+        if (!originPageId) {
+          continue;
+        }
+
+        const current =
+          map.get(originPageId) ?? [];
+
+        current.push(work.id);
+        map.set(originPageId, current);
+      }
+
+      return map;
+    }, [works]);
+
+    const pageWorks = React.useMemo(
+      () =>
+        filteredWorks.filter(
+          (work) =>
+            resolveWorkKind(work.content) === "Page",
+        ),
+      [filteredWorks],
+    );
+
+    const bookWorks = React.useMemo(
+      () =>
+        filteredWorks.filter(
+          (work) =>
+            resolveWorkKind(work.content) === "Book",
+        ),
+      [filteredWorks],
+    );
+
+    const webWorks = React.useMemo(
+      () =>
+        filteredWorks.filter(
+          (work) =>
+            resolveWorkKind(work.content) === "Web",
+        ),
+      [filteredWorks],
+    );
+
+    const groupedFilteredWorks = React.useMemo(
+      () => [
+        ...pageWorks,
+        ...bookWorks,
+        ...webWorks,
+      ],
+      [pageWorks, bookWorks, webWorks],
+    );
+
     const onCreateCategory = async () => {
       if (!currentUserId) {
         window.alert(
@@ -1245,7 +1319,7 @@ export default function MyWorksPage() {
 
           {status === "ready" && works.length > 0 ? (
             <div className="grid gap-3">
-              {filteredWorks.map((work) => {
+              {groupedFilteredWorks.map((work, index) => {
                   
                   const workCollaborators = ownerCollaborators.filter(
                     (collaborator) => collaborator.workId === work.id,
@@ -1259,6 +1333,56 @@ export default function MyWorksPage() {
                   
                 const title = resolveWorkTitle(work);
                 const kind = resolveWorkKind(work.content);
+                const previousKind =
+                  index > 0
+                    ? resolveWorkKind(
+                        groupedFilteredWorks[index - 1]?.content ?? null,
+                      )
+                    : null;
+                const showGroupHeading =
+                  kind !== previousKind;
+                const groupCount =
+                  kind === "Page"
+                    ? pageWorks.length
+                    : kind === "Book"
+                      ? bookWorks.length
+                      : webWorks.length;
+
+                const originPageId =
+                  kind === "Page"
+                    ? parseOriginPageId(work.content)
+                    : null;
+                const originWork =
+                  originPageId
+                    ? workById.get(originPageId) ?? null
+                    : null;
+                const derivedWorks =
+                  kind === "Page"
+                    ? (
+                        derivedPageIdsByOrigin.get(work.id) ?? []
+                      )
+                        .map((id) => workById.get(id))
+                        .filter(
+                          (item): item is WorkRow =>
+                            Boolean(item),
+                        )
+                    : [];
+
+                const bookOutline =
+                  kind === "Book" &&
+                  isReferenceBookSsot(
+                    String(work.content ?? ""),
+                  )
+                    ? parseBookOutline(
+                        String(work.content ?? ""),
+                      )
+                    : [];
+
+                const bookPageCount =
+                  bookOutline.filter(
+                    (entry) => entry.kind === "page",
+                  ).length;
+
                 const isDeleting = deletingWorkIds.includes(work.id);
                 const publicHref = `/p/${work.id}`;
                 const workCategoryIds =
@@ -1284,8 +1408,32 @@ export default function MyWorksPage() {
 
 
                 return (
+                  <React.Fragment key={work.id}>
+                    {showGroupHeading ? (
+                      <div className="mb-2 mt-5 flex items-end justify-between gap-3 first:mt-0">
+                        <div>
+                          <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+                            {kind === "Page"
+                              ? "PAGES"
+                              : kind === "Book"
+                                ? "BOOKS"
+                                : "WEB"}
+                          </div>
+                          <div className="mt-1 text-sm font-bold text-neutral-800">
+                            {kind === "Page"
+                              ? "PAGE"
+                              : kind === "Book"
+                                ? "BOOK"
+                                : "WEB"}
+                          </div>
+                        </div>
+                        <span className="rounded-full bg-neutral-200 px-2.5 py-1 text-[11px] font-bold text-neutral-600">
+                          {groupCount}件
+                        </span>
+                      </div>
+                    ) : null}
+
                   <article
-                    key={work.id}
                     className="overflow-hidden rounded-3xl bg-white p-4 shadow-sm sm:p-5"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1396,6 +1544,131 @@ export default function MyWorksPage() {
                         </button>
                       </div>
                     </div>
+
+                    {kind === "Page" ? (
+                      <div className="mt-3 rounded-2xl bg-amber-50/70 px-3 py-2.5 ring-1 ring-amber-100">
+                        <div className="text-[10px] font-bold tracking-[0.14em] text-amber-700/70">
+                          PAGE LINEAGE
+                        </div>
+
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-600">
+                          {originPageId ? (
+                            <>
+                              <span className="font-bold text-neutral-500">
+                                派生元
+                              </span>
+                              {originWork ? (
+                                <Link
+                                  href={`/writing/${originWork.id}?mode=editing`}
+                                  className="font-bold text-neutral-800 hover:underline"
+                                >
+                                  {resolveWorkTitle(originWork)}
+                                </Link>
+                              ) : (
+                                <span className="text-neutral-400">
+                                  元PAGEが見つかりません
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="font-bold text-amber-800">
+                              起点PAGE
+                            </span>
+                          )}
+                        </div>
+
+                        {derivedWorks.length > 0 ? (
+                          <div className="mt-2 border-t border-amber-100 pt-2">
+                            <div className="mb-1 text-[10px] font-bold text-neutral-400">
+                              派生先 {derivedWorks.length}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {derivedWorks.map((derived) => (
+                                <Link
+                                  key={derived.id}
+                                  href={`/writing/${derived.id}?mode=editing`}
+                                  className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-neutral-700 ring-1 ring-amber-100 transition hover:bg-amber-50"
+                                >
+                                  {resolveWorkTitle(derived)}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {kind === "Book" ? (
+                      <div className="mt-3 rounded-2xl bg-blue-50/70 px-3 py-2.5 ring-1 ring-blue-100">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-[10px] font-bold tracking-[0.14em] text-blue-700/70">
+                            BOOK ASSEMBLY
+                          </div>
+                          <span className="text-[10px] font-bold text-blue-700">
+                            {isReferenceBookSsot(
+                              String(work.content ?? ""),
+                            )
+                              ? `${bookPageCount} PAGE`
+                              : "従来形式"}
+                          </span>
+                        </div>
+
+                        {isReferenceBookSsot(
+                          String(work.content ?? ""),
+                        ) ? (
+                          bookOutline.length > 0 ? (
+                            <div className="mt-2 space-y-1.5">
+                              {bookOutline.map((entry, outlineIndex) =>
+                                entry.kind === "chapter" ? (
+                                  <div
+                                    key={`chapter-${entry.id}-${outlineIndex}`}
+                                    className="text-[10px] font-bold text-violet-700"
+                                  >
+                                    章扉 · {entry.title}
+                                  </div>
+                                ) : (
+                                  <div
+                                    key={`page-${entry.id}-${outlineIndex}`}
+                                    className="flex min-w-0 items-center gap-2 text-[11px]"
+                                  >
+                                    <span className="w-5 shrink-0 text-right font-bold text-neutral-300">
+                                      {bookOutline
+                                        .slice(0, outlineIndex + 1)
+                                        .filter(
+                                          (candidate) =>
+                                            candidate.kind === "page",
+                                        ).length}
+                                    </span>
+                                    {workById.get(entry.id) ? (
+                                      <Link
+                                        href={`/writing/${entry.id}?mode=editing`}
+                                        className="truncate font-bold text-neutral-700 hover:underline"
+                                      >
+                                        {resolveWorkTitle(
+                                          workById.get(entry.id) as WorkRow,
+                                        )}
+                                      </Link>
+                                    ) : (
+                                      <span className="truncate text-neutral-400">
+                                        PAGEが見つかりません
+                                      </span>
+                                    )}
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-2 text-[11px] text-neutral-400">
+                              まだPAGEが組み込まれていません。
+                            </div>
+                          )
+                        ) : (
+                          <div className="mt-2 text-[11px] leading-5 text-neutral-500">
+                            従来形式：BOOK内部にPAGEを保持しています。
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                         
                         {/* WORK CATEGORY */}
                         {categories.length > 0 ? (
@@ -1593,6 +1866,7 @@ export default function MyWorksPage() {
                         ) : null}
                         
                   </article>
+                  </React.Fragment>
                 );
               })}
             </div>
