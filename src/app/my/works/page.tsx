@@ -22,6 +22,11 @@ import {
 import { parseOriginPageId } from "@/lib/parari/page/lineage";
 
 type Visibility = "private" | "unlisted" | "public";
+type WorkKind = "Page" | "Book" | "Web";
+type WorkSortMode =
+  | "created-desc"
+  | "created-asc"
+  | "title-asc";
 
 type WorkRow = {
   id: string;
@@ -29,6 +34,7 @@ type WorkRow = {
   content: string | null;
   visibility: string | null;
   is_public: boolean | null;
+  created_at: string | null;
   updated_at: string | null;
   stable_slug: string | null;
 };
@@ -89,6 +95,14 @@ export default function MyWorksPage() {
       React.useState<WorkCategoryLinkRow[]>([]);
     const [activeCategoryId, setActiveCategoryId] =
       React.useState<string>("all");
+    const [activeWorkKind, setActiveWorkKind] =
+      React.useState<WorkKind>("Page");
+    const [sortModeByKind, setSortModeByKind] =
+      React.useState<Record<WorkKind, WorkSortMode>>({
+        Page: "created-desc",
+        Book: "created-desc",
+        Web: "created-desc",
+      });
 
     const [openCategoryWorkId, setOpenCategoryWorkId] =
       React.useState<string | null>(null);
@@ -173,7 +187,7 @@ export default function MyWorksPage() {
         const { data: ownerData, error: ownerError } = await supabase
           .from("parari_books")
           .select(
-            "id,title,content,visibility,is_public,updated_at,stable_slug",
+            "id,title,content,visibility,is_public,created_at,updated_at,stable_slug",
           )
           .eq("owner", user.id)
           .order("updated_at", { ascending: false });
@@ -274,7 +288,7 @@ export default function MyWorksPage() {
             } = await supabase
               .from("parari_books")
               .select(
-                "id,title,content,visibility,is_public,updated_at,stable_slug",
+                "id,title,content,visibility,is_public,created_at,updated_at,stable_slug",
               )
               .in("id", sharedWorkIds)
               .order("updated_at", { ascending: false });
@@ -790,14 +804,49 @@ export default function MyWorksPage() {
       [filteredWorks],
     );
 
-    const groupedFilteredWorks = React.useMemo(
-      () => [
-        ...pageWorks,
-        ...bookWorks,
-        ...webWorks,
-      ],
+    const worksByKind = React.useMemo(
+      () => ({
+        Page: pageWorks,
+        Book: bookWorks,
+        Web: webWorks,
+      }),
       [pageWorks, bookWorks, webWorks],
     );
+
+    const visibleWorks = React.useMemo(() => {
+      const source = [
+        ...worksByKind[activeWorkKind],
+      ];
+
+      const sortMode =
+        sortModeByKind[activeWorkKind];
+
+      if (sortMode === "title-asc") {
+        return source.sort((a, b) =>
+          resolveWorkTitle(a).localeCompare(
+            resolveWorkTitle(b),
+            "ja",
+            {
+              numeric: true,
+              sensitivity: "base",
+            },
+          ),
+        );
+      }
+
+      return source.sort((a, b) => {
+        const aTime = getCreatedTime(a);
+        const bTime = getCreatedTime(b);
+
+        return sortMode === "created-asc"
+          ? aTime - bTime
+          : bTime - aTime;
+      });
+    }, [
+      worksByKind,
+      activeWorkKind,
+      sortModeByKind,
+    ]);
 
     const onCreateCategory = async () => {
       if (!currentUserId) {
@@ -1269,6 +1318,85 @@ export default function MyWorksPage() {
               </div>
             ) : null}
 
+            {status === "ready" && works.length > 0 ? (
+              <div className="mt-4 border-t border-neutral-100 pt-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    className="inline-flex w-full rounded-2xl bg-neutral-100 p-1 sm:w-auto"
+                    role="tablist"
+                    aria-label="作品タイプ"
+                  >
+                    {(["Page", "Book", "Web"] as WorkKind[]).map(
+                      (kind) => {
+                        const count =
+                          worksByKind[kind].length;
+                        const active =
+                          activeWorkKind === kind;
+
+                        return (
+                          <button
+                            key={kind}
+                            type="button"
+                            role="tab"
+                            aria-selected={active}
+                            onClick={() =>
+                              setActiveWorkKind(kind)
+                            }
+                            className={[
+                              "flex-1 rounded-xl px-4 py-2 text-xs font-bold transition sm:flex-none",
+                              active
+                                ? kind === "Page"
+                                  ? "bg-amber-100 text-amber-900 shadow-sm"
+                                  : kind === "Book"
+                                    ? "bg-blue-100 text-blue-900 shadow-sm"
+                                    : "bg-emerald-100 text-emerald-900 shadow-sm"
+                                : "text-neutral-500 hover:bg-white",
+                            ].join(" ")}
+                          >
+                            {kind.toUpperCase()}{" "}
+                            <span className="opacity-60">
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+
+                  <label className="flex items-center justify-between gap-2 sm:justify-end">
+                    <span className="text-[11px] font-bold text-neutral-400">
+                      並べ替え
+                    </span>
+                    <select
+                      value={
+                        sortModeByKind[activeWorkKind]
+                      }
+                      onChange={(event) => {
+                        const nextMode =
+                          event.target.value as WorkSortMode;
+
+                        setSortModeByKind((current) => ({
+                          ...current,
+                          [activeWorkKind]: nextMode,
+                        }));
+                      }}
+                      className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-600 outline-none"
+                    >
+                      <option value="created-desc">
+                        作成：新しい順
+                      </option>
+                      <option value="created-asc">
+                        作成：古い順
+                      </option>
+                      <option value="title-asc">
+                        タイトル順
+                      </option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
             {message ? (
               <div
                 className={[
@@ -1317,9 +1445,18 @@ export default function MyWorksPage() {
             </div>
           ) : null}
 
-          {status === "ready" && works.length > 0 ? (
+          {status === "ready" &&
+          works.length > 0 &&
+          visibleWorks.length === 0 ? (
+            <div className="rounded-3xl bg-white p-8 text-center text-sm text-neutral-400 shadow-sm">
+              このカテゴリーには
+              {activeWorkKind.toUpperCase()}がありません。
+            </div>
+          ) : null}
+
+          {status === "ready" && works.length > 0 && visibleWorks.length > 0 ? (
             <div className="grid gap-3">
-              {groupedFilteredWorks.map((work, index) => {
+              {visibleWorks.map((work) => {
                   
                   const workCollaborators = ownerCollaborators.filter(
                     (collaborator) => collaborator.workId === work.id,
@@ -1333,21 +1470,6 @@ export default function MyWorksPage() {
                   
                 const title = resolveWorkTitle(work);
                 const kind = resolveWorkKind(work.content);
-                const previousKind =
-                  index > 0
-                    ? resolveWorkKind(
-                        groupedFilteredWorks[index - 1]?.content ?? null,
-                      )
-                    : null;
-                const showGroupHeading =
-                  kind !== previousKind;
-                const groupCount =
-                  kind === "Page"
-                    ? pageWorks.length
-                    : kind === "Book"
-                      ? bookWorks.length
-                      : webWorks.length;
-
                 const originPageId =
                   kind === "Page"
                     ? parseOriginPageId(work.content)
@@ -1408,32 +1530,8 @@ export default function MyWorksPage() {
 
 
                 return (
-                  <React.Fragment key={work.id}>
-                    {showGroupHeading ? (
-                      <div className="mb-2 mt-5 flex items-end justify-between gap-3 first:mt-0">
-                        <div>
-                          <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-                            {kind === "Page"
-                              ? "PAGES"
-                              : kind === "Book"
-                                ? "BOOKS"
-                                : "WEB"}
-                          </div>
-                          <div className="mt-1 text-sm font-bold text-neutral-800">
-                            {kind === "Page"
-                              ? "PAGE"
-                              : kind === "Book"
-                                ? "BOOK"
-                                : "WEB"}
-                          </div>
-                        </div>
-                        <span className="rounded-full bg-neutral-200 px-2.5 py-1 text-[11px] font-bold text-neutral-600">
-                          {groupCount}件
-                        </span>
-                      </div>
-                    ) : null}
-
                   <article
+                    key={work.id}
                     className="overflow-hidden rounded-3xl bg-white p-4 shadow-sm sm:p-5"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1866,7 +1964,6 @@ export default function MyWorksPage() {
                         ) : null}
                         
                   </article>
-                  </React.Fragment>
                 );
               })}
             </div>
@@ -2067,6 +2164,22 @@ function createPublicUrl(workId: string): string {
   }
 
   return `${window.location.origin}/p/${workId}`;
+}
+
+function getCreatedTime(
+  work: WorkRow,
+): number {
+  const value =
+    work.created_at ||
+    work.updated_at;
+
+  const time = value
+    ? new Date(value).getTime()
+    : 0;
+
+  return Number.isFinite(time)
+    ? time
+    : 0;
 }
 
 function formatDate(value: string | null): string {
