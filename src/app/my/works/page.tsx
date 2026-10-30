@@ -807,6 +807,45 @@ export default function MyWorksPage() {
       workById,
     ]);
 
+    const visibleCategoryCounts = React.useMemo(() => {
+      const counts = new Map<string, number>();
+
+      for (const link of categoryLinks) {
+        if (hiddenBookPageIds.has(link.work_id)) {
+          continue;
+        }
+
+        if (!workById.has(link.work_id)) {
+          continue;
+        }
+
+        counts.set(
+          link.category_id,
+          (counts.get(link.category_id) ?? 0) + 1,
+        );
+      }
+
+      return counts;
+    }, [
+      categoryLinks,
+      hiddenBookPageIds,
+      workById,
+    ]);
+
+    const visibleUncategorizedCount = React.useMemo(
+      () =>
+        works.filter(
+          (work) =>
+            !hiddenBookPageIds.has(work.id) &&
+            (categoryIdsByWork.get(work.id) ?? []).length === 0,
+        ).length,
+      [
+        works,
+        hiddenBookPageIds,
+        categoryIdsByWork,
+      ],
+    );
+
     const derivedPageIdsByOrigin = React.useMemo(() => {
       const map = new Map<string, string[]>();
 
@@ -1361,7 +1400,7 @@ export default function MyWorksPage() {
                         : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
                     ].join(" ")}
                   >
-                    未分類 {uncategorizedCount}
+                    未分類 {visibleUncategorizedCount}
                   </button>
 
                   {categories.map((category) => (
@@ -1379,7 +1418,7 @@ export default function MyWorksPage() {
                       ].join(" ")}
                     >
                       {category.name}{" "}
-                      {categoryCounts.get(category.id) ?? 0}
+                      {visibleCategoryCounts.get(category.id) ?? 0}
                     </button>
                   ))}
                 </div>
