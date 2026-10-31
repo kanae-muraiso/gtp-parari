@@ -1,3 +1,5 @@
+import { workKind, workUsage, contentIssues } from "@/lib/parari/limits/workLimits";
+import { loadOwnedWorks } from "@/lib/parari/limits/loadOwnedWorks";
 // src/app/api/works/create/route.ts
 // 2026-07-11 JST
 //
@@ -18,6 +20,8 @@ export const runtime = "nodejs";
 
 type CreateWorkBody = {
   createRequestId?: unknown;
+  parentBookId?: unknown;
+  sourcePageId?: unknown;
   stableSlug?: unknown;
   template?: {
     kind?: unknown;
@@ -400,29 +404,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { count: workCount, error: countError } = await supabaseAdmin
-      .from("parari_books")
-      .select("id", {
-        count: "exact",
-        head: true,
-      })
-      .eq("owner", user.id)
-      .or("is_deleted.is.null,is_deleted.eq.false");
-
-    if (countError) {
-      console.error("[api/works/create] count failed:", countError);
-
-      return NextResponse.json(
-        {
-          ok: false,
-          message: "現在の作品数を確認できませんでした。",
-        },
-        { status: 500 },
-      );
-    }
-
-    const currentWorkCount = workCount ?? 0;
-
+    // 2026-10-31 JST — PART: Books and contained PAGEs have independent quotas.
+    const owned = await loadOwnedWorks(user.id);
+    const usage = workUsage(owned);
+    const currentWorkCount = usage.standaloneCount;
+    const actualKind = workKind(ssot);
+    if (actualKind !== kind) return NextResponse.json({ok:false,message:"作品形式が本文と一致しません。"},{status:400});
       if (createRequestId) {
         const {
           data: existingWork,
@@ -463,24 +450,24 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (isAtOrOverLimit(currentWorkCount, workLimit)) {
-        return NextResponse.json(
-          {
-            ok: false,
-            code: "WORK_LIMIT_REACHED",
-            plan: effectivePlan,
-            currentCount: currentWorkCount,
-            limit: workLimit,
-            message:
-              effectivePlan === "free"
-                ? "Freeプランでは作品を10作品まで作成できます。続けて作成するにはPlusをご利用ください。"
-                : "Plusプランの作品作成上限に達しています。",
-          },
-          { status: 403 },
-        );
+      if (!isMonitor) {
+        const issues = contentIssues(ssot, limits);
+        if (issues.length) return NextResponse.json({ok:false,code:"CONTENT_LIMIT_REACHED",message:issues.join("\n")},{status:403});
+        const parent = typeof body?.parentBookId === "string" ? owned.find(w => w.id === body.parentBookId && workKind(w.content) === "book") : undefined;
+        const source = typeof body?.sourcePageId === "string" ? owned.find(w => w.id === body.sourcePageId && workKind(w.content) === "page") : undefined;
+        if ((body?.parentBookId && !parent) || (body?.sourcePageId && !source)) return NextResponse.json({ok:false,message:"元の作品を確認できませんでした。"},{status:403});
+        const internalPage = kind === "page" && !!(parent || source);
+        // Finite account-wide PAGE pool also bounds interrupted/unattached split results.
+        const pool = limits.bookLimit === null || limits.pageLimitPerWork === null || workLimit === null ? null : limits.bookLimit * limits.pageLimitPerWork + workLimit;
+        if (kind === "book" && isAtOrOverLimit(usage.bookCount, limits.bookLimit))
+          return NextResponse.json({ok:false,code:"BOOK_LIMIT_REACHED",message:`BOOKは${limits.bookLimit}冊まで作成できます。既存のBOOKはそのまま保持されます。`},{status:403});
+        if (kind !== "book" && !internalPage && isAtOrOverLimit(currentWorkCount, workLimit))
+          return NextResponse.json({ok:false,code:"WORK_LIMIT_REACHED",message:`独立したPAGE・WEBは合計${workLimit}作品までです。BOOK内のPAGEは含みません。`},{status:403});
+        if (kind === "page" && isAtOrOverLimit(usage.pageCount, pool))
+          return NextResponse.json({ok:false,code:"PAGE_POOL_LIMIT_REACHED",message:"保存できるPAGEの総数に達しました。不要な独立PAGEを整理してください。"},{status:403});
       }
 
-      const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
         .from("parari_books")
         .insert({
           owner: user.id,

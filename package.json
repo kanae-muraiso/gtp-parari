@@ -11,6 +11,7 @@
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "test:table-panel": "node scripts/test-table-panel.cjs",
     "test:epub-rich-text": "node scripts/test-epub-rich-text.cjs",
+    "test:book-page-limits": "node scripts/test-book-page-limits.cjs && node scripts/test-book-page-db.cjs",
     "test:panel-sets": "node scripts/test-panel-sets.cjs",
     "test:epub-export": "node scripts/test-epub-export.cjs && node scripts/test-epub-export-button.cjs",
     "repo:status": "node scripts/repo-status.cjs",
@@ -38,6 +39,7 @@
     "stripe": "^19.3.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "@types/node": "^20.19.33",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

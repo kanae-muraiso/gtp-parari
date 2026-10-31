@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import React from "react";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { useParams } from "next/navigation";
@@ -490,6 +491,13 @@ export default function ReferenceBookEditorPage() {
       );
     }
 
+    const quotaResponse = await fetch("/api/works/limits", {headers:{Authorization:`Bearer ${session.access_token}`}});
+    const quota = await quotaResponse.json();
+    if (!quotaResponse.ok || !quota.ok) throw new Error("利用上限を確認できませんでした。");
+    const nextPageCount = outline.filter(entry => entry.kind === "page").length + 1;
+    if (quota.limits.pageLimitPerWork !== null && nextPageCount > quota.limits.pageLimitPerWork)
+      throw new Error(`1 BOOKは${quota.limits.pageLimitPerWork} PAGEまでです。元のBOOKと本文はそのまま保持されています。`);
+
     const response = await fetch(
       "/api/works/create",
       {
@@ -500,6 +508,7 @@ export default function ReferenceBookEditorPage() {
             `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          parentBookId: workId,
           stableSlug:
             createPageStableSlug(),
           template: {
@@ -842,6 +851,9 @@ export default function ReferenceBookEditorPage() {
       />
 
       <div className="mx-auto max-w-3xl px-4 py-8">
+        <WorkLimitsNotice source={draftBookRef.current ?? book?.content ?? ""} />
+        <DraftRecovery workId={workId} source={state === "error" ? draftBookRef.current ?? "" : ""} />
+        {pages.filter(page => pageSaveState[page.id] === "error").map(page => <DraftRecovery key={page.id} workId={page.id} source={page.content ?? ""} />)}
         {epubMessage ? <p role="status" className="mb-4 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{epubMessage}</p> : null}
         {state === "error" && !book ? (
           <div className="rounded-3xl bg-white p-6 text-sm text-red-700 shadow-sm">
@@ -1229,6 +1241,7 @@ export default function ReferenceBookEditorPage() {
                             </div>
 
                             <div className="rounded-2xl bg-white p-2 ring-1 ring-neutral-200 sm:p-3">
+                              <WorkLimitsNotice source={String(work.content ?? "")} />
                               <PagePanelComposer
                                 authoringSet={bookSettings.authoringSet ?? "standard"}
                                 value={String(work.content ?? "")}

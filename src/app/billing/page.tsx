@@ -102,6 +102,7 @@ export default function BillingPage() {
             </p>
           </div>
 
+          <p className="mb-5 text-sm leading-7 text-slate-600">PAGEは内容のひとまとまりです。画面に表示する紙面枚数とは異なります。BOOK内のPAGEは作品数に重複して数えません。文字数は空白・改行・構造設定を除いて数えます。独立したPAGE・WEBの作成上限はFree 10作品、Plus 100作品です。</p>
           <div className="grid gap-5 lg:grid-cols-3">
             <article className="rounded-3xl border border-slate-200 bg-white p-6">
               <p className="text-sm font-semibold text-slate-500">
@@ -118,14 +119,17 @@ export default function BillingPage() {
 
               <ul className="mt-6 space-y-3">
                 <LimitItem>
-                  作品作成：10作品まで
+                  BOOK：{PLAN_ENTITLEMENTS.free.bookLimit}冊まで
                 </LimitItem>
                 <LimitItem>
                   公開作品：3作品まで
                 </LimitItem>
                 <LimitItem>
-                  1作品：10ページまで
+                  1 BOOK：{PLAN_ENTITLEMENTS.free.pageLimitPerWork} PAGEまで
                 </LimitItem>
+                <LimitItem>1 PAGE：{PLAN_ENTITLEMENTS.free.charactersPerPage?.toLocaleString()}字まで ／ 画像保存：100MB</LimitItem>
+                <LimitItem>単独PAGE・WEB：合計10作品まで</LimitItem>
+                <LimitItem>EPUB出力：なし</LimitItem>
               </ul>
             </article>
 
@@ -159,7 +163,7 @@ export default function BillingPage() {
                     aria-hidden="true"
                     className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
                   />
-                  <span>作品作成：100作品まで</span>
+                  <span>BOOK：{PLAN_ENTITLEMENTS.plus.bookLimit}冊まで</span>
                 </li>
 
                 <li className="flex gap-3 text-sm leading-6 text-slate-100">
@@ -175,7 +179,7 @@ export default function BillingPage() {
                     aria-hidden="true"
                     className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
                   />
-                  <span>1作品：100ページまで</span>
+                  <span>1 BOOK：{PLAN_ENTITLEMENTS.plus.pageLimitPerWork} PAGEまで</span>
                 </li>
 
                 <li className="flex gap-3 text-sm leading-6 text-slate-100">
@@ -183,14 +187,14 @@ export default function BillingPage() {
                     aria-hidden="true"
                     className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
                   />
-                  <span>保存容量には上限があります</span>
+                  <span>画像保存：1GB ／ 1 PAGE：{PLAN_ENTITLEMENTS.plus.charactersPerPage?.toLocaleString()}字まで</span>
                 </li>
                 <li className="flex gap-3 text-sm leading-6 text-slate-100">
                   <span
                     aria-hidden="true"
                     className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
                   />
-                  <span>販売手数料：5%</span>
+                  <span>販売手数料：5% ／ EPUB3出力・共同編集</span>
                 </li>
                 <li className="flex gap-3 text-sm leading-6 text-slate-100">
                   <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white" />

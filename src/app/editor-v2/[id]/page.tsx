@@ -8,6 +8,7 @@
 
 "use client";
 
+import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import { EnglishAuthoringProvider } from "@/components/parari/english/EnglishAuthoringProvider";
 import {
   useCallback,
@@ -1134,7 +1135,8 @@ export default function BookPanelSequenceEditorPage() {
       {status.type === "error" ? (
         <div className="mx-auto max-w-6xl px-4 py-6">
           <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-rose-800">
-            {status.message}
+            <DraftRecovery workId={String(row?.id ?? "")} source={ssot} />
+          {status.message}
           </div>
 
           <div className="mt-4">
@@ -1211,6 +1213,8 @@ export default function BookPanelSequenceEditorPage() {
                </div>
              ) : null}
 
+           <WorkLimitsNotice source={ssot} />
+           <DraftRecovery workId={String(row?.id ?? "")} source="" />
            {epubMessage ? (
              <div className="mb-5 whitespace-pre-wrap rounded-3xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
                {epubMessage}
