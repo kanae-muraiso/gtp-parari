@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -284,6 +285,7 @@ export default function WritingWorkPage() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          sourcePageId: workId,
           stableSlug: createPageStableSlug(),
           template: {
             kind: "page",
@@ -347,6 +349,12 @@ export default function WritingWorkPage() {
           "ログインを確認できませんでした。",
         );
       }
+
+      const quotaResponse = await fetch("/api/works/limits", {headers:{Authorization:`Bearer ${session.access_token}`}});
+      const quota = await quotaResponse.json();
+      if (!quotaResponse.ok || !quota.ok) throw new Error("利用上限を確認できませんでした。");
+      if (quota.limits.bookLimit !== null && quota.usage.bookCount >= quota.limits.bookLimit)
+        throw new Error(`BOOKは${quota.limits.bookLimit}冊までです。元のPAGEはそのまま保持されています。`);
 
       const sourceTitle =
         titleRef.current.trim() ||
@@ -546,6 +554,8 @@ export default function WritingWorkPage() {
         }
       />
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
+        <WorkLimitsNotice source={ssot} />
+        <DraftRecovery workId={workId} source={state === "error" && work ? ssot : ""} />
         {epubMessage ? <p role="status" className="mt-4 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{epubMessage}</p> : null}
         {state === "error" && !work ? (
           <p className="mt-12 text-sm text-red-600">{message}</p>
@@ -889,6 +899,7 @@ async function createDerivedPageWork({
         `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
+      sourcePageId: originPageId,
       stableSlug:
         createPageStableSlug(),
       template: {

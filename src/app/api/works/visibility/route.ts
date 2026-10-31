@@ -1,3 +1,6 @@
+import { workUsage } from "@/lib/parari/limits/workLimits";
+import { loadOwnedWorks } from "@/lib/parari/limits/loadOwnedWorks";
+import { checkSavedWork } from "@/lib/parari/limits/checkSavedWork";
 // src/app/api/works/visibility/route.ts
 // 2026-08-19 JST
 //
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
     const { data: currentData, error: currentError } =
       await supabaseAdmin
         .from("parari_books")
-        .select("id,owner,visibility,is_public,is_deleted")
+        .select("id,owner,content,visibility,is_public,is_deleted")
         .eq("id", workId)
         .maybeSingle();
 
@@ -240,42 +243,22 @@ export async function POST(request: NextRequest) {
       const billing = await getUserBillingByUserId(currentWork.owner);
       const effectivePlan = getEffectivePlan(billing);
       const limits = getPlanLimits(effectivePlan);
+      if (!isMonitor) {
+        const issues = await checkSavedWork({id:currentWork.id,owner:currentWork.owner,content:(currentData as {content?:string|null}).content ?? ""}, limits);
+        if (issues.length) return NextResponse.json({ok:false,code:"CONTENT_LIMIT_REACHED",message:issues.join("\n")},{status:403});
+      }
 
       const publishedWorkLimit = isMonitor
         ? null
         : limits.publishedWorkLimit;
 
       if (publishedWorkLimit !== null) {
-        const { count: publishedCount, error: countError } =
-          await supabaseAdmin
-            .from("parari_books")
-            .select("id", {
-              count: "exact",
-              head: true,
-            })
-            .eq("owner", currentWork.owner)
-            .or("is_deleted.is.null,is_deleted.eq.false")
-            .or("visibility.eq.public,is_public.eq.true");
-
-        if (countError) {
-          console.error(
-            "[api/works/visibility] published count failed:",
-            countError,
-          );
-
-          return NextResponse.json(
-            {
-              ok: false,
-              message: "現在の公開作品数を確認できませんでした。",
-            },
-            { status: 500 },
-          );
-        }
-
-        const currentPublishedCount = publishedCount ?? 0;
+        const owned = await loadOwnedWorks(currentWork.owner);
+        const currentPublishedCount = workUsage(owned).publishedCount;
+        const nextPublishedCount = workUsage(owned.map(w => w.id === workId ? {...w,visibility:"public",is_public:true} : w)).publishedCount;
 
         if (
-          isAtOrOverLimit(
+          nextPublishedCount > currentPublishedCount && isAtOrOverLimit(
             currentPublishedCount,
             publishedWorkLimit,
           )

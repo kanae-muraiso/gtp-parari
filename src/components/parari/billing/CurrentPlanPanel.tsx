@@ -317,7 +317,7 @@ export default function CurrentPlanPanel() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
               <p className="text-xs font-semibold text-slate-400">
-                作品作成
+                単独PAGE・WEB
               </p>
 
               <p className="mt-1 text-lg font-bold text-slate-900">
@@ -343,17 +343,25 @@ export default function CurrentPlanPanel() {
 
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
               <p className="text-xs font-semibold text-slate-400">
-                1作品のページ数
+                1 BOOKのPAGE数
               </p>
 
               <p className="mt-1 text-lg font-bold text-slate-900">
                 {formatLimit(limits.pageLimitPerWork)}
                 <span className="ml-1 text-xs font-medium text-slate-500">
-                  ページ
+                  PAGE
                 </span>
               </p>
             </div>
 
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+              <p className="text-xs font-semibold text-slate-400">BOOK数</p>
+              <p className="mt-1 text-lg font-bold">{formatLimit(limits.bookLimit)}冊</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+              <p className="text-xs font-semibold text-slate-400">1 PAGEの本文文字数</p>
+              <p className="mt-1 text-lg font-bold">{formatLimit(limits.charactersPerPage)}字</p>
+            </div>
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
               <p className="text-xs font-semibold text-slate-400">
                 画像容量

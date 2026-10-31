@@ -45,6 +45,9 @@ jobs:
       - name: Authoring panel sets and export policy
         run: npm run test:panel-sets
 
+      - name: BOOK and PAGE plan limits
+        run: npm run test:book-page-limits
+
       - name: TABLE editing and EPUB check
         run: npm run test:table-panel
 

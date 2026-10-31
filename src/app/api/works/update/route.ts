@@ -1,3 +1,5 @@
+import { characterGrowthIssue, workKind, workUsage, pageCount as countPagePanels } from "@/lib/parari/limits/workLimits";
+import { loadOwnedWorks } from "@/lib/parari/limits/loadOwnedWorks";
 // src/app/api/works/update/route.ts
 // 2026-07-11 JST
 //
@@ -147,23 +149,6 @@ function isWebContent(
   return /^\s*\[(WEB|WEBINFO)\b/i.test(
     String(content ?? ""),
   );
-}
-
-function countPagePanels(content: string | null | undefined): number {
-  const source = String(content ?? "").replace(/\r\n/g, "\n");
-  const lines = source.split("\n");
-
-  const referenceCount = lines.filter((line) =>
-    /^\s*\[PAGE_REF\s+id=[^\]\s]+\]\s*$/i.test(line),
-  ).length;
-
-  if (referenceCount > 0) {
-    return referenceCount;
-  }
-
-  return lines.filter((line) =>
-    /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(line),
-  ).length;
 }
 
 export async function POST(request: NextRequest) {
@@ -392,6 +377,17 @@ export async function POST(request: NextRequest) {
       const billing = await getUserBillingByUserId(ownerUserId);
     const effectivePlan = getEffectivePlan(billing);
     const limits = getPlanLimits(effectivePlan);
+    // 2026-10-31 JST — PART: Preserve existing oversize content; block only growth.
+    if (!isMonitor) {
+      const issue = characterGrowthIssue(currentWork.content ?? "", content, limits);
+      if (issue) return NextResponse.json({ok:false,code:"PAGE_CHARACTER_LIMIT_REACHED",message:issue + " 原稿は切り詰めていません。分割するか、原稿をダウンロードして保管してください。"},{status:403});
+      if (workKind(currentWork.content) !== "book" && workKind(content) === "book") {
+        const usage = workUsage(await loadOwnedWorks(ownerUserId));
+        if (limits.bookLimit !== null && usage.bookCount >= limits.bookLimit)
+          return NextResponse.json({ok:false,code:"BOOK_LIMIT_REACHED",message:`BOOKは${limits.bookLimit}冊までです。元の作品は保持されています。`},{status:403});
+      }
+    }
+
 
     // ----------------------------------------------------
     // WEBサイト数制限
@@ -484,8 +480,8 @@ export async function POST(request: NextRequest) {
           limit: pageLimit,
           message:
             effectivePlan === "free"
-              ? "Freeプランでは、1作品につき10ページまで作成できます。ページを追加するにはPlusをご利用ください。"
-              : "Plusプランでは、1作品につき100ページまで作成できます。",
+              ? `無料プランでは、1 BOOKにつき${pageLimit} PAGEまでです。元のBOOKと本文は保持されています。`
+              : `現在のプランでは、1 BOOKにつき${pageLimit} PAGEまでです。元のBOOKと本文は保持されています。`,
         },
         { status: 403 },
       );

@@ -36,6 +36,8 @@ export type PlanEntitlements = {
 
   /** nullは無制限 */
   workLimit: number | null;
+  bookLimit: number | null;
+  charactersPerPage: number | null;
   publishedWorkLimit: number | null;
   pageLimitPerWork: number | null;
   webWorkLimit: number | null;
@@ -71,10 +73,12 @@ const GIBIBYTE = 1024 * MEBIBYTE;
  */
 export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   free: {
+    bookLimit: 3,
+    charactersPerPage: 20_000,
     monthlyPriceUsd: 0,
     workLimit: 10,
     publishedWorkLimit: 3,
-    pageLimitPerWork: 10,
+    pageLimitPerWork: 20,
     webWorkLimit: 1,
     applicationPanelLimit: 1,
     applicationParticipantLimit: 10,
@@ -96,6 +100,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   },
 
   plus: {
+    bookLimit: 100,
+    charactersPerPage: 50_000,
     monthlyPriceUsd: 3,
     workLimit: 100,
     publishedWorkLimit: 100,
@@ -121,6 +127,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   },
 
   organizer: {
+    bookLimit: 100,
+    charactersPerPage: 50_000,
     monthlyPriceUsd: 10,
     workLimit: 100,
     publishedWorkLimit: 100,
@@ -146,6 +154,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   },
 
   host: {
+    bookLimit: 100,
+    charactersPerPage: 50_000,
     monthlyPriceUsd: 30,
     workLimit: 100,
     publishedWorkLimit: 100,
@@ -171,6 +181,8 @@ export const PLAN_ENTITLEMENTS: Record<EffectivePlan, PlanEntitlements> = {
   },
 
   pro: {
+    bookLimit: null,
+    charactersPerPage: null,
     monthlyPriceUsd: 100,
     workLimit: null,
     publishedWorkLimit: null,

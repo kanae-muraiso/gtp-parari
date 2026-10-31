@@ -46,3 +46,5 @@ Use Git history for recovery. Do not add timestamped backups, deprecated copies,
 The works list opens `/writing/[id]` (Writing/Editing) or `/editor/book/[id]` (reference BOOK). Both expose EPUB3 export through `EpubExportButton`; draft/save failures block export, including inline PAGE saves in BOOK. The existing server export route remains responsible for owner and plan authorization. Export notices appear below the toolbar. WEB export remains unsupported.
 
 `/editor-v2/[id]` remains directly accessible and is still the target of the legacy `/{username}/pages/[workId]/edit` redirect. Normal works-list edit links use the current entrypoints. Shared components under `editor-v2/` remain active; their directory name does not imply that they are retired.
+
+BOOK/PAGE authoring quotas are defined in `billing/plan.ts` and enforced in work APIs using `parari/limits/`. `WorkLimitsNotice` explains logical PAGE/character limits; `DraftRecovery` preserves rejected manuscripts locally and offers an exact text download. See `BOOK_PAGE_PLAN_LIMITS.md` for counting, grandfathering and coordinated database rollout.
