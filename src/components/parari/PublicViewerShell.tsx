@@ -12,6 +12,7 @@ import {
   ParariTopBarButton,
 } from "./ParariTopBars";
 import BookSaveButton from "./BookSaveButton";
+import ReaderLibraryActions from "./ReaderLibraryActions";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
 import { isBookSsot } from "@/lib/parari/book/pageRefs";
 
@@ -119,6 +120,7 @@ export default function PublicViewerShell({
             publicBasePath={publicBasePath}
             headerLogoUrl={headerLogoUrl}
           />
+          <ReaderLibraryActions workId={bookId} ownerId={ownerId} />
         </>
       ) : null}
 
