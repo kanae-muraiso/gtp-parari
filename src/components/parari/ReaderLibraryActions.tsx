@@ -4,12 +4,11 @@ import React from "react";
 import Link from "next/link";
 import BookSaveButton from "./BookSaveButton";
 import { supabase } from "@/lib/supabaseClient";
-import {useSearchParams,useRouter} from "next/navigation";
+import {useRouter} from "next/navigation";
 
 type Props = {workId:string;ownerId:string|null};
 export default function ReaderLibraryActions({workId,ownerId}:Props){
  const [userId,setUserId]=React.useState<string|null>(null);
- const params=useSearchParams();
  const router=useRouter();
  const completedIntent=React.useRef(false);
  const [starred,setStarred]=React.useState(false);
@@ -62,7 +61,7 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
   }finally{setBusy(false);}
  }
  React.useEffect(()=>{
-  if(completedIntent.current||!userId||!ownerId||params.get("followAuthor")!==ownerId||!supabase)return;
+  if(completedIntent.current||!userId||!ownerId||new URLSearchParams(window.location.search).get("followAuthor")!==ownerId||!supabase)return;
   completedIntent.current=true;
   let alive=true;
   async function complete(){
@@ -78,7 +77,7 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
    router.replace(window.location.pathname,{scroll:false});
   }
   void complete();return()=>{alive=false;};
- },[userId,ownerId,params,router]);
+ },[userId,ownerId,router]);
  const button="rounded-full border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 disabled:opacity-50";
  return <div className="mx-auto w-full max-w-[620px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-6">
   <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3">
