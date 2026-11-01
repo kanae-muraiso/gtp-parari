@@ -92,7 +92,7 @@ export default function LibraryV2Page() {
     <div className="mx-auto max-w-4xl px-4 py-6">
       <MyAreaHeader title="書棚" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded/>}/>
       <div className="mt-6">
-        <h1 className="text-xl font-bold">書棚</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-bold">書棚</h1><Link href="/my/authors" className="rounded-full border border-neutral-300 px-4 py-2 text-sm">作者を探す・作者図鑑</Link></div>
         <p className="mt-1 text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>
         <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
           {tabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
