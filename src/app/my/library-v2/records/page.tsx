@@ -4,6 +4,7 @@ import Link from "next/link";
 import {supabase} from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 
 type Purchase={id:string;kind:"commerce"|"application";title:string;status:string|null;amount:number|null;currency:string|null;createdAt:string};
 type Application={id:string;title:string;status:string;paymentStatus:string|null;startsAt:string;timezone:string;location:string|null};
@@ -14,6 +15,11 @@ const tabs=[{key:"purchases",label:"購入"},{key:"applications",label:"申込"}
 type Tab=typeof tabs[number]["key"];
 export default function LibraryRecordsPage(){
  const [tab,setTab]=useState<Tab>("purchases");
+ useEffect(()=>{
+  const sync=()=>{const value=new URLSearchParams(window.location.search).get("tab");setTab(value==="applications"||value==="memberships"?value:"purchases");};
+  sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);
+ },[]);
+ function selectTab(value:Tab){setTab(value);window.history.replaceState(null,"","/my/library-v2/records?tab="+value);}
  const [records,setRecords]=useState<Records|null>(null);
  const [message,setMessage]=useState("記録を読み込んでいます…");
  useEffect(()=>{
@@ -34,8 +40,9 @@ export default function LibraryRecordsPage(){
  const date=(value:string)=>new Date(value).toLocaleString("ja-JP");
  return <main className="min-h-screen bg-white"><div className="mx-auto max-w-4xl px-4 py-6">
   <MyAreaHeader title="LIBRARYの記録" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded/>}/>
+  <LibraryV2Menu active={tab}/>
   <div className="mt-6 flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-bold">記録</h1><Link href="/my/library-v2" className="text-sm underline">書棚に戻る</Link></div>
-  <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="記録の種類">{tabs.map(t=><button key={t.key} type="button" role="tab" aria-selected={tab===t.key} onClick={()=>setTab(t.key)} className={"rounded-full border px-4 py-2 text-sm "+(tab===t.key?"bg-neutral-900 text-white":"bg-white")}>{t.label}</button>)}</div>
+  <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="記録の種類">{tabs.map(t=><button key={t.key} type="button" role="tab" aria-selected={tab===t.key} onClick={()=>selectTab(t.key)} className={"rounded-full border px-4 py-2 text-sm "+(tab===t.key?"bg-neutral-900 text-white":"bg-white")}>{t.label}</button>)}</div>
   {message&&<p role="status" className="mt-5 text-sm">{message}</p>}
   <div className="mt-5 space-y-3">
    {tab==="purchases"&&records&&<>
