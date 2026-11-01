@@ -97,6 +97,19 @@ export default function BookSaveButton({
         };
     }, [bookId, type]);
     
+    useEffect(() => {
+        if (!supabase) return;
+        const refresh = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase.from("user_bookshelf").select("id")
+                .eq("user_id", user.id).eq("book_id", bookId).eq("type", type).maybeSingle();
+            setIsActive(Boolean(data));
+        };
+        window.addEventListener("parari-library-updated", refresh);
+        return () => window.removeEventListener("parari-library-updated", refresh);
+    }, [bookId, type]);
+
     async function toggle() {
         if (saving) return;
         
@@ -106,7 +119,12 @@ export default function BookSaveButton({
                 window.location.search +
                 window.location.hash;
 
-            window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+            if ((type === "read_later" || type === "shelf") && /^\\/p\\/[0-9a-f-]+(?:\\/|$)/i.test(window.location.pathname)) {
+                const action = type === "read_later" ? "later" : "save";
+                window.location.href = `/join/library?action=${action}&workId=${encodeURIComponent(bookId)}`;
+            } else {
+                window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+            }
             return;
         }
         
