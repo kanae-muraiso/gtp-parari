@@ -47,7 +47,8 @@ export default function HomePage() {
         return;
       }
 
-      // 2026-10-31 JST — PART: Start in STUDIO unless a preference was saved.
+      // New members without a saved preference begin in LIBRARY v2.
+      // Existing members keep their explicitly saved startup preference.
       const { data: preferenceData } = await supabase
         .from("user_workspace_preferences")
         .select("start_destination,last_workspace")
@@ -55,7 +56,12 @@ export default function HomePage() {
         .maybeSingle();
       if (!mounted) return;
 
-      const rawStart = String(preferenceData?.start_destination ?? "studio");
+      if (!preferenceData) {
+        router.replace("/my/library-v2");
+        return;
+      }
+
+      const rawStart = String(preferenceData.start_destination ?? "library");
       const startDestination: StartDestination =
         rawStart === "library" || rawStart === "last" ? rawStart : "studio";
 

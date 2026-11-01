@@ -49,8 +49,9 @@ export default function WorkspaceVisitTracker({
 
       const { error } = await supabase.from("user_workspace_preferences").insert({
         user_id: user.id,
-        studio_enabled: true,
-        start_destination: "studio",
+        studio_enabled: workspace === "studio",
+        ...(workspace === "studio" ? { studio_enabled_at: now } : {}),
+        start_destination: workspace,
         last_workspace: workspace,
         updated_at: now,
       });
