@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 
 const sections = [
   { label: "書棚", href: "/my/library-v2", key: "shelf" },
@@ -11,14 +10,8 @@ const sections = [
   { label: "メンバーシップ", href: "/my/library-v2/records?tab=memberships", key: "memberships" },
 ] as const;
 
-export default function LibraryV2Menu() {
-  const path = usePathname();
-  const search = useSearchParams();
-  const active = path === "/my/authors" ? "authors"
-    : path === "/my/library-v2/records"
-      ? (["purchases", "applications", "memberships"].includes(search.get("tab") || "")
-          ? search.get("tab") : "purchases")
-      : "shelf";
+type Section = typeof sections[number]["key"];
+export default function LibraryV2Menu({ active }: { active: Section }) {
   return <nav aria-label="LIBRARYメニュー" className="mt-5 flex flex-wrap gap-2">
     {sections.map(item => <Link key={item.key} href={item.href}
       aria-current={active === item.key ? "page" : undefined}
