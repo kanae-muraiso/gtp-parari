@@ -119,8 +119,8 @@ export default function PublicViewerShell({
             pageSlug={pageSlug}
             publicBasePath={publicBasePath}
             headerLogoUrl={headerLogoUrl}
+            endActions={<ReaderLibraryActions workId={bookId} ownerId={ownerId} />}
           />
-          <ReaderLibraryActions workId={bookId} ownerId={ownerId} />
         </>
       ) : null}
 
