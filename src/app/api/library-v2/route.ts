@@ -22,11 +22,12 @@ async function session(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Supabase public configuration is missing");
   // Every DB operation runs as the caller under RLS; no service-role bypass.
+  const authClient = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: { user }, error } = await authClient.auth.getUser(token);
   const db = createClient(url, key, {
     accessToken: async () => token,
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: { user }, error } = await db.auth.getUser(token);
   return error || !user ? null : { db, user };
 }
 function actionOf(value: unknown): value is Action {
