@@ -56,10 +56,11 @@ async function apply(request: NextRequest, method: "POST" | "DELETE") {
       if (method === "DELETE") result = await db.from(table).delete().eq("user_id", user.id).eq("work_id", input.workId);
       else {
         if (action === "reading" && !["to_read", "reading", "read"].includes(String(input.state))) return fail("読書状態が不正です。");
-        const row = action === "star"
-          ? { user_id: user.id, work_id: input.workId }
-          : { user_id: user.id, work_id: input.workId, state: input.state, updated_at: new Date().toISOString() };
-        result = await db.from(table).upsert(row, { onConflict: "user_id,work_id" });
+        if (action === "star") {
+          result = await db.from(tables.star).upsert({ user_id: user.id, work_id: input.workId }, { onConflict: "user_id,work_id" });
+        } else {
+          result = await db.from(tables.reading).upsert({ user_id: user.id, work_id: input.workId, state: input.state as "to_read" | "reading" | "read", updated_at: new Date().toISOString() }, { onConflict: "user_id,work_id" });
+        }
       }
     } else if (action === "category") {
       if (method === "POST") {
