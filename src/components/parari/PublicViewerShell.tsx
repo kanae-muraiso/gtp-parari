@@ -103,9 +103,9 @@ export default function PublicViewerShell({
               actions={
                 <BookSaveButton
                   bookId={bookId}
-                  type="shelf"
-                  idleLabel="保存"
-                  activeLabel="保存済み"
+                  type="read_later"
+                  idleLabel="あとで読む"
+                  activeLabel="あとで読む済み"
                 />
               }
             />
