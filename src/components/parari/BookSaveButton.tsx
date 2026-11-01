@@ -119,7 +119,7 @@ export default function BookSaveButton({
                 window.location.search +
                 window.location.hash;
 
-            if ((type === "read_later" || type === "shelf") && /^\\/p\\/[0-9a-f-]+(?:\\/|$)/i.test(window.location.pathname)) {
+            if ((type === "read_later" || type === "shelf") && window.location.pathname.startsWith("/p/")) {
                 const action = type === "read_later" ? "later" : "save";
                 window.location.href = `/join/library?action=${action}&workId=${encodeURIComponent(bookId)}`;
             } else {
