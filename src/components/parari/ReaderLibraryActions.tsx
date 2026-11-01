@@ -4,10 +4,14 @@ import React from "react";
 import Link from "next/link";
 import BookSaveButton from "./BookSaveButton";
 import { supabase } from "@/lib/supabaseClient";
+import {useSearchParams,useRouter} from "next/navigation";
 
 type Props = {workId:string;ownerId:string|null};
 export default function ReaderLibraryActions({workId,ownerId}:Props){
  const [userId,setUserId]=React.useState<string|null>(null);
+ const params=useSearchParams();
+ const router=useRouter();
+ const completedIntent=React.useRef(false);
  const [starred,setStarred]=React.useState(false);
  const [following,setFollowing]=React.useState(false);
  const [username,setUsername]=React.useState<string|null>(null);
@@ -38,7 +42,9 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
   if(!supabase||busy)return;
   if(!userId){
    const returnTo=window.location.pathname+window.location.search+window.location.hash;
-   window.location.href="/login?returnTo="+encodeURIComponent(returnTo);return;
+   window.location.href=action==="follow" && ownerId
+    ?"/join/fan?workId="+encodeURIComponent(workId)+"&authorId="+encodeURIComponent(ownerId)
+    :"/login?returnTo="+encodeURIComponent(returnTo);return;
   }
   setBusy(true);setMessage("");
   try{
@@ -55,6 +61,24 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
    if(action==="follow")setFollowing(enabled);
   }finally{setBusy(false);}
  }
+ React.useEffect(()=>{
+  if(completedIntent.current||!userId||!ownerId||params.get("followAuthor")!==ownerId||!supabase)return;
+  completedIntent.current=true;
+  let alive=true;
+  async function complete(){
+   const {data:{session}}=await supabase!.auth.getSession();
+   if(!session||!alive)return;
+   const response=await fetch("/api/library-v2",{
+    method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
+    body:JSON.stringify({action:"follow",authorId:ownerId}),
+   });
+   if(!alive)return;
+   if(response.ok){setFollowing(true);setMessage("ファン登録しました。作者の書棚を開けます。");}
+   else setMessage("ファン登録を完了できませんでした。もう一度お試しください。");
+   router.replace(window.location.pathname,{scroll:false});
+  }
+  void complete();return()=>{alive=false;};
+ },[userId,ownerId,params,router]);
  const button="rounded-full border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 disabled:opacity-50";
  return <div className="mx-auto w-full max-w-[620px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-6">
   <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3">
