@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 
 type Shelf = {
@@ -91,7 +90,7 @@ export default function LibraryV2Page() {
   const visibleAuthors = categoryFilter ? authors.filter(a=>data?.categoryItems.some(i=>i.category_id===categoryFilter && i.target_kind==="author" && i.target_id===a.user_id)) : authors;
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <MyAreaHeader title="書棚" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded/>}/>
+      <MyAreaHeader title="書棚" area="library" />
       <LibraryV2Menu active="shelf" />
       <div className="mt-6">
         <h1 className="text-xl font-bold">書棚</h1>
