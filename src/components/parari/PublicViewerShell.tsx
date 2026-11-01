@@ -12,6 +12,8 @@ import {
   ParariTopBarButton,
 } from "./ParariTopBars";
 import BookSaveButton from "./BookSaveButton";
+import ReaderLibraryActions from "./ReaderLibraryActions";
+import CompleteLibraryIntent from "./CompleteLibraryIntent";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
 import { isBookSsot } from "@/lib/parari/book/pageRefs";
 
@@ -103,14 +105,15 @@ export default function PublicViewerShell({
               actions={
                 <BookSaveButton
                   bookId={bookId}
-                  type="shelf"
-                  idleLabel="保存"
-                  activeLabel="保存済み"
+                  type="read_later"
+                  idleLabel="あとで読む"
+                  activeLabel="あとで読む済み"
                 />
               }
             />
           )}
 
+          <CompleteLibraryIntent workId={bookId} ownerId={ownerId} />
           <ParariViewer
             key={`${bookId}:${pageSlug ?? ""}`}
             workId={bookId}
@@ -118,6 +121,7 @@ export default function PublicViewerShell({
             pageSlug={pageSlug}
             publicBasePath={publicBasePath}
             headerLogoUrl={headerLogoUrl}
+            endActions={<ReaderLibraryActions workId={bookId} ownerId={ownerId} />}
           />
         </>
       ) : null}

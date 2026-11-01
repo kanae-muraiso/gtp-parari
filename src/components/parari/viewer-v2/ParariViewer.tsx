@@ -43,8 +43,8 @@ type ReadingItem = {
   physicalPageNumber?: number;
 };
 
-export function ParariViewer(props: ViewerDocumentInput) {
-  const { content, workId, pageSlug = null, publicBasePath = "", headerLogoUrl = null } = props;
+export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.ReactNode }) {
+  const { content, workId, pageSlug = null, publicBasePath = "", headerLogoUrl = null, endActions } = props;
   const documentModel = React.useMemo(() => buildViewerDocument({ content, workId, pageSlug, publicBasePath, headerLogoUrl }), [content, workId, pageSlug, publicBasePath, headerLogoUrl]);
   const book = documentModel.book;
   const viewerRef = React.useRef<HTMLDivElement | null>(null);
@@ -67,6 +67,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
   }));
   const pagedItems = pagination.items;
   const [currentItemIndex, setCurrentItemIndex] = React.useState(0);
+  const [showEndActions, setShowEndActions] = React.useState(false);
 
   const pagedItemsRef = React.useRef<ReadingItem[]>(pagedItems);
   const currentItemIndexRef = React.useRef(0);
@@ -624,20 +625,22 @@ export function ParariViewer(props: ViewerDocumentInput) {
   }, [book, scrollToReaderTop]);
 
   const goPrev = React.useCallback(() => {
+    if (showEndActions) { setShowEndActions(false); scrollToReaderTop(); return; }
     setCurrentItemIndex((current) => Math.max(0, current - 1));
     setMenuOpen(false);
     setSettingsOpen(false);
     scrollToReaderTop();
-  }, [scrollToReaderTop]);
+  }, [scrollToReaderTop, showEndActions]);
 
   const goNext = React.useCallback(() => {
+    if (endActions && currentItemIndex >= pagedItems.length - 1) { setShowEndActions(true); scrollToReaderTop(); return; }
     setCurrentItemIndex((current) =>
       Math.min(Math.max(0, pagedItems.length - 1), current + 1),
     );
     setMenuOpen(false);
     setSettingsOpen(false);
     scrollToReaderTop();
-  }, [pagedItems.length, scrollToReaderTop]);
+  }, [pagedItems.length, currentItemIndex, endActions, scrollToReaderTop]);
 
   if (!currentSheet) {
     return (
@@ -693,7 +696,7 @@ export function ParariViewer(props: ViewerDocumentInput) {
         />
 
         {readingMode === "scroll" ? (
-          <ScrollReaderView
+          <><ScrollReaderView
             book={book}
             currentSheetId={anchorSheetId}
             onSelectSheet={goToSheetId}
@@ -701,7 +704,9 @@ export function ParariViewer(props: ViewerDocumentInput) {
             textClassName={textClassName}
             dictionaryMode={dictionaryMode}
             rubyMode={rubyMode}
-          />
+          />{endActions && <div className="mx-auto max-w-[720px] px-4 py-12 text-center">{endActions}</div>}</>
+        ) : showEndActions && endActions ? (
+          <main className="mx-auto w-full max-w-[720px] px-4 py-10 pb-28 text-center"><h2 className="mb-5 text-lg font-semibold">読了</h2>{endActions}</main>
         ) : (
           <main
             className={[
@@ -744,11 +749,13 @@ export function ParariViewer(props: ViewerDocumentInput) {
         {readingMode === "paged" ? (
           <SheetPager
             key={`${currentItem?.id ?? "empty"}-${centerLabel}`}
-            currentSheetIndex={currentItemIndex}
-            sheetCount={pagedItems.length}
-            centerLabel={centerLabel}
+            currentSheetIndex={showEndActions ? pagedItems.length : currentItemIndex}
+            sheetCount={pagedItems.length + (endActions ? 1 : 0)}
+            centerLabel={showEndActions ? "読了" : centerLabel}
             onPrev={goPrev}
             onNext={goNext}
+            isEnd={showEndActions}
+            hasEndActions={Boolean(endActions)}
           />
         ) : null}
 
@@ -1324,12 +1331,16 @@ function SheetPager({
   centerLabel,
   onPrev,
   onNext,
+  isEnd = false,
+  hasEndActions = false,
 }: {
   currentSheetIndex: number;
   sheetCount: number;
   centerLabel: string;
   onPrev: () => void;
   onNext: () => void;
+  isEnd?: boolean;
+  hasEndActions?: boolean;
 }) {
   const canPrev = currentSheetIndex > 0;
   const canNext = currentSheetIndex < sheetCount - 1;
@@ -1359,7 +1370,7 @@ function SheetPager({
           disabled={!canNext}
           className="min-w-20 rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-30"
         >
-          次へ
+          {hasEndActions && !isEnd && currentSheetIndex === sheetCount - 2 ? "読了へ" : "次へ"}
         </button>
       </div>
     </nav>
