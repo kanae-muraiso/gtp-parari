@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 
 type Author = { user_id: string; username: string; display_name: string | null };
@@ -48,7 +47,7 @@ export default function AuthorsPage() {
   }
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <MyAreaHeader title="作者を探す" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded />} />
+      <MyAreaHeader title="作者を探す" area="library" />
       <LibraryV2Menu active="authors" />
       <h1 className="mt-6 text-xl font-bold">作者を探す</h1>
       <form onSubmit={lookup} className="mt-4 flex gap-2">
