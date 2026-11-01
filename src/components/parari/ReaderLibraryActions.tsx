@@ -41,9 +41,9 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
   if(!supabase||busy)return;
   if(!userId){
    const returnTo=window.location.pathname+window.location.search+window.location.hash;
-   window.location.href=action==="follow" && ownerId
-    ?"/join/fan?workId="+encodeURIComponent(workId)+"&authorId="+encodeURIComponent(ownerId)
-    :"/login?returnTo="+encodeURIComponent(returnTo);return;
+   const query=new URLSearchParams({action:action==="follow"?"follow":"star",workId});
+   if(action==="follow"&&ownerId)query.set("authorId",ownerId);
+   window.location.href="/join/library?"+query.toString();return;
   }
   setBusy(true);setMessage("");
   try{
@@ -60,6 +60,18 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
    if(action==="follow")setFollowing(enabled);
   }finally{setBusy(false);}
  }
+ React.useEffect(()=>{
+  const refresh=async()=>{
+   if(!supabase||!userId)return;
+   const [stars,follows]=await Promise.all([
+    supabase.from("parari_work_stars").select("work_id").eq("user_id",userId).eq("work_id",workId).maybeSingle(),
+    ownerId?supabase.from("parari_author_follows").select("author_user_id").eq("follower_user_id",userId).eq("author_user_id",ownerId).maybeSingle():Promise.resolve({data:null}),
+   ]);
+   setStarred(Boolean(stars.data));setFollowing(Boolean(follows.data));
+  };
+  window.addEventListener("parari-library-updated",refresh);
+  return()=>window.removeEventListener("parari-library-updated",refresh);
+ },[userId,ownerId,workId]);
  React.useEffect(()=>{
   if(completedIntent.current||!userId||!ownerId||new URLSearchParams(window.location.search).get("followAuthor")!==ownerId||!supabase)return;
   completedIntent.current=true;
