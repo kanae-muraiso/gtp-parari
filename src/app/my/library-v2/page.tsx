@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import { parseParari } from "@/lib/parariParse";
 
 type Shelf = {
   follows: {author_user_id:string}[];
@@ -13,7 +14,14 @@ type Shelf = {
   categories: {id:string;name:string}[];
   categoryItems: {category_id:string;target_kind:string;target_id:string}[];
 };
-type Work = {id:string;title:string|null;owner:string};
+type Work = {id:string;title:string|null;owner:string;content:string|null};
+function coverOf(work:Work):string {
+  if (!work.content) return "";
+  try {
+    const parsed=parseParari(work.content);
+    return parsed.bookCoverImage || parsed.pages?.[0]?.imageUrl || "";
+  } catch {return "";}
+}
 type Author = {user_id:string;username:string|null;display_name:string|null};
 const tabs = [{id:"mine",name:"自分の作品"},{id:"authors",name:"作者別"},{id:"later",name:"これから読む"},{id:"read",name:"読んだ"},{id:"stars",name:"お気に入り"}] as const;
 type Tab = typeof tabs[number]["id"];
@@ -39,8 +47,8 @@ export default function LibraryV2Page() {
     const ids = [...new Set([...shelf.stars.map(x=>x.work_id),...shelf.reading.map(x=>x.work_id)])];
     const authorIds = [...new Set(shelf.follows.map(x=>x.author_user_id))];
     const [own, saved, people] = await Promise.all([
-      supabase.from("parari_books").select("id,title,owner").eq("owner",session.user.id).eq("is_deleted",false).order("updated_at",{ascending:false}).limit(200),
-      ids.length ? supabase.from("parari_books").select("id,title,owner").in("id",ids) : Promise.resolve({data:[],error:null}),
+      supabase.from("parari_books").select("id,title,owner,content").eq("owner",session.user.id).eq("is_deleted",false).order("updated_at",{ascending:false}).limit(200),
+      ids.length ? supabase.from("parari_books").select("id,title,owner,content").in("id",ids) : Promise.resolve({data:[],error:null}),
       authorIds.length ? supabase.from("profiles").select("user_id,username,display_name").in("user_id",authorIds) : Promise.resolve({data:[],error:null}),
     ]);
     if (own.error || saved.error || people.error) {setMessage("一部の作品を取得できませんでした。");return;}
@@ -105,7 +113,7 @@ export default function LibraryV2Page() {
           {tab==="authors" ? <div className="grid gap-3 sm:grid-cols-2">{visibleAuthors.map(a=><div key={a.user_id} className="rounded-xl border border-neutral-200 p-4"><Link href={a.username?"/"+encodeURIComponent(a.username)+"/library":"#"} className="font-medium underline">{a.display_name||a.username||"作者"}</Link>{categorySelect("author",a.user_id)}</div>)}
             {!message && authors.length===0 && <p className="text-sm text-neutral-500">まだファン登録した作者はいません。</p>}</div>
           : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{visibleWorks.map(w=><div key={w.id} className="rounded-xl border border-neutral-200 p-4"><Link href={"/p/"+w.id} className="block">
-              <div className="mb-2 aspect-[3/4] rounded-lg bg-neutral-100 flex items-center justify-center text-2xl">▤</div>
+              <div className="mb-2 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-neutral-100">{coverOf(w) ? <img src={coverOf(w)} alt="" loading="lazy" className="h-full w-full object-cover"/> : <span className="px-3 text-center text-xs text-neutral-500">表紙画像なし</span>}</div>
               <span className="text-sm font-medium">{w.title||"無題の作品"}</span></Link><div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={busy} aria-pressed={Boolean(data?.stars.some(x=>x.work_id===w.id))} onClick={()=>void mutate("star",{workId:w.id},data?.stars.some(x=>x.work_id===w.id)?"DELETE":"POST")} className="rounded-lg border px-2 py-1 text-sm disabled:opacity-50">{data?.stars.some(x=>x.work_id===w.id)?"★":"☆"}</button><select aria-label={`${w.title||"作品"}の読書状態`} disabled={busy} value={data?.reading.find(x=>x.work_id===w.id)?.state||""} onChange={e=>void mutate("reading",{workId:w.id,state:e.target.value},e.target.value?"POST":"DELETE")} className="min-w-0 rounded-lg border px-1 py-1 text-xs"><option value="">未設定</option><option value="to_read">これから読む</option><option value="reading">読書中</option><option value="read">読んだ</option></select></div>{categorySelect("work",w.id)}</div>)}
             {!message && selected.length===0 && <p className="text-sm text-neutral-500">該当する作品はありません。</p>}</div>}
         </section>
