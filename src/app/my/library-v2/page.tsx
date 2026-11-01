@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 
 type Shelf = {
   follows: {author_user_id:string}[];
@@ -91,6 +92,7 @@ export default function LibraryV2Page() {
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
       <MyAreaHeader title="書棚" area="library" navigation={<MyPrimaryTabs active="bookshelf" embedded/>}/>
+      <LibraryV2Menu active="shelf" />
       <div className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-bold">書棚</h1><Link href="/my/authors" className="rounded-full border border-neutral-300 px-4 py-2 text-sm">作者を探す・作者図鑑</Link></div>
         <p className="mt-1 text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>\n        <Link href="/my/library-v2/records" className="mt-3 inline-block rounded-full border border-neutral-300 px-4 py-2 text-sm">購入・申込・メンバーシップの記録</Link>
