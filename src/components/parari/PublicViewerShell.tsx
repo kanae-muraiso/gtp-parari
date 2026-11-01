@@ -13,6 +13,7 @@ import {
 } from "./ParariTopBars";
 import BookSaveButton from "./BookSaveButton";
 import ReaderLibraryActions from "./ReaderLibraryActions";
+import CompleteLibraryIntent from "./CompleteLibraryIntent";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
 import { isBookSsot } from "@/lib/parari/book/pageRefs";
 
@@ -112,6 +113,7 @@ export default function PublicViewerShell({
             />
           )}
 
+          <CompleteLibraryIntent workId={bookId} ownerId={ownerId} />
           <ParariViewer
             key={`${bookId}:${pageSlug ?? ""}`}
             workId={bookId}
