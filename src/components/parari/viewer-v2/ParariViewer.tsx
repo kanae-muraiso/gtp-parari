@@ -749,11 +749,13 @@ export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.R
         {readingMode === "paged" ? (
           <SheetPager
             key={`${currentItem?.id ?? "empty"}-${centerLabel}`}
-            currentSheetIndex={currentItemIndex}
-            sheetCount={pagedItems.length}
-            centerLabel={centerLabel}
+            currentSheetIndex={showEndActions ? pagedItems.length : currentItemIndex}
+            sheetCount={pagedItems.length + (endActions ? 1 : 0)}
+            centerLabel={showEndActions ? "読了" : centerLabel}
             onPrev={goPrev}
             onNext={goNext}
+            isEnd={showEndActions}
+            hasEndActions={Boolean(endActions)}
           />
         ) : null}
 
