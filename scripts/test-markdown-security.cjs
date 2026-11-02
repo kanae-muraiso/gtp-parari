@@ -42,7 +42,7 @@ for(const input of [
  "[T]\nText",
  "[MARKDOWN]\nTest",
  "こちらが本文\n[/MARKDOWN]\n続き",
- "本文\n[SECRET-PANEL] unexpected",
+ "本文\n[SECRET_PANEL] unexpected",
  "Hello <script>alert(1)</script>",
  "<img src=x onerror=alert(1)>",
  "<svg/onload=alert(1)>",
