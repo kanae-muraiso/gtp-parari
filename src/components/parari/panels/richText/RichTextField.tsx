@@ -53,7 +53,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
-import {parseMarkdownForParari} from "@/lib/parari/markdown/parseMarkdownForParari";
+import {parseMarkdownForParari, type MarkdownPart} from "@/lib/parari/markdown/parseMarkdownForParari";
 
 import {
   RichTextInlineInsertMenu,
@@ -120,7 +120,7 @@ type RichTextFieldProps = {
   borderless?: boolean;
   inlineOnly?: boolean;
   onEnter?: () => void;
-  onMarkdownTablePaste?: (payload:{markedRaw:string;marker:string;replacementSsot:string})=>void;
+  onMarkdownTablePaste?: (payload:{markedRaw:string;marker:string;parts:MarkdownPart[]})=>void;
   autoFocus?: boolean;
 };
 
@@ -312,7 +312,7 @@ export function RichTextField({
   );
 }
 
-function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:string;marker:string;replacementSsot:string})=>void}) {
+function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:string;marker:string;parts:MarkdownPart[]})=>void}) {
   const [editor] = useLexicalComposerContext();
   useEffect(()=>editor.registerCommand(PASTE_COMMAND,(event)=>{
     if (!event || !("clipboardData" in event)) return false;
@@ -333,7 +333,7 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
         const marker="PARARI_MD_PASTE_"+Date.now()+"_END";
         selection.insertText(marker);
         const markedRaw=exportLexicalToParariSsotText();
-        queueMicrotask(()=>onTablePaste({markedRaw,marker,replacementSsot:parts.map(part=>part.kind==="table"?part.ssot:"[T]\n"+part.ssot).join("\n\n")}));
+        queueMicrotask(()=>onTablePaste({markedRaw,marker,parts}));
         return;
       }
       const nodes:LexicalNode[]=[];
