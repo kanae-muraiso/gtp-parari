@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
+import MarkdownImportControl from "@/components/parari/writing/MarkdownImportControl";
 import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 
 type WorkRow = {
