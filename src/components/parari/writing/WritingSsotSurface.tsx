@@ -5,6 +5,8 @@ import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import type { SsotBlock } from "@/lib/parari/ssot-v2/panelTypes";
 import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
+import {MarkdownPanelEditor} from "@/components/parari/panels/markdown/MarkdownPanelEditor";
+import {parseMarkdownPanel} from "@/components/parari/panels/markdown/markdownSsot";
 import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { parsePanelVisualStyle } from "@/lib/parari/ssot-v2/panelStyle";
 
