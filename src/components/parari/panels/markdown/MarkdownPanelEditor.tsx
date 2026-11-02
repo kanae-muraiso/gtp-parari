@@ -6,26 +6,35 @@ import {serializeMarkdownPanel,type MarkdownPanelData} from "./markdownSsot";
 import {MarkdownPanelRenderer} from "./MarkdownPanelRenderer";
 import {convertMarkdownToParari} from "./convertMarkdownToParari";
 import {MARKDOWN_LIMITS} from "./markdownSecurity";
+import {htmlToSafeMarkdown} from "@/lib/parari/markdown/htmlToSafeMarkdown";
 
 export function MarkdownPanelEditor({block,data,onChangeRaw,onReplaceWithSsot}:PanelEditorProps<MarkdownPanelData>){
  const [preview,setPreview]=useState(false);
  const [review,setReview]=useState(false);
  const [sizeError,setSizeError]=useState("");
  const inputRef=useRef<HTMLTextAreaElement>(null);
- const conversion=useMemo(()=>convertMarkdownToParari(data.source),[data.source]);
+ const conversion=useMemo(()=>{
+  if(data.format==="html"){
+   const parsed=htmlToSafeMarkdown(data.source);
+   return parsed.ok?convertMarkdownToParari(parsed.markdown):{ok:false,panels:[],ssot:"",errors:["reason" in parsed?parsed.reason:"HTMLを解析できません。"],warnings:[]};
+  }
+  return convertMarkdownToParari(data.source);
+ },[data.source,data.format]);
  useEffect(()=>{inputRef.current?.focus();},[]);
  useEffect(()=>{setReview(false);},[data.source]);
  const smallButton="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50";
  return <div className="space-y-3">
   <div className="flex flex-wrap items-center justify-between gap-2">
-   <p className="text-xs text-neutral-500">Markdownを貼り付けて編集できます。変換を確定するまでは原文を保持します。</p>
+   <label className="flex items-center gap-2 text-xs text-neutral-600">入力形式
+    <select aria-label="コード形式" value={data.format??"markdown"} onChange={e=>onChangeRaw?.(serializeMarkdownPanel({source:data.source,format:e.target.value==="html"?"html":"markdown"}))} className="rounded border border-neutral-300 bg-white px-2 py-1.5"><option value="markdown">Markdown</option><option value="html">HTML</option></select>
+   </label>
    <div className="flex flex-wrap gap-2">
     <button type="button" className={smallButton} onClick={()=>setPreview(p=>!p)}>{preview?"原文を編集":"表示を確認"}</button>
     <button type="button" className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 disabled:opacity-40" disabled={!data.source.trim()||!onReplaceWithSsot} onClick={()=>setReview(r=>!r)}>PARARI形式に変換</button>
    </div>
   </div>
   {preview?<div className="rounded-lg border border-neutral-200 bg-white p-4"><MarkdownPanelRenderer block={block} data={data}/></div>:
-   <textarea ref={inputRef} aria-label="Markdown本文" spellCheck={false} value={data.source}
+   <textarea ref={inputRef} aria-label="コード本文" spellCheck={false} value={data.source}
     onPaste={e=>{
       const pasted=e.clipboardData.getData("text/plain");
       const textarea=e.currentTarget;
@@ -41,7 +50,7 @@ export function MarkdownPanelEditor({block,data,onChangeRaw,onReplaceWithSsot}:P
         return;
       }
       setSizeError("");
-      onChangeRaw?.(serializeMarkdownPanel({source:e.target.value}));
+      onChangeRaw?.(serializeMarkdownPanel({source:e.target.value,format:data.format}));
     }}
     rows={14} className="w-full rounded-lg border border-neutral-300 bg-white p-3 font-mono text-sm leading-6"/>}
   {sizeError&&<p role="alert" className="text-xs text-red-700">{sizeError}</p>}
