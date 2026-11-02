@@ -2,6 +2,7 @@ import type {ReactNode} from "react";
 import type {PanelRendererProps} from "../panelDefinitionTypes";
 import type {MarkdownPanelData} from "./markdownSsot";
 import {safeParariUrl} from "@/lib/parari/security/safeParariUrl";
+import {MARKDOWN_LIMITS} from "./markdownSecurity";
 
 const safeUrl=(url:string,isImage:boolean)=>safeParariUrl(url,isImage?"image":"link");
 function inline(source:string):ReactNode[]{
@@ -38,7 +39,9 @@ function isSpecial(line:string,next?:string):boolean{
  Boolean(next&&line.includes("|")&&isDivider(next,cells(line).length));
 }
 export function MarkdownPanelRenderer({data}:PanelRendererProps<MarkdownPanelData>){
+ if(data.source.length>MARKDOWN_LIMITS.maxSourceChars)return <p role="status" className="text-sm text-red-700">Markdownが30万文字の表示上限を超えています。分割してください。</p>;
  const lines=data.source.replace(/\r\n?/g,"\n").split("\n");
+ if(lines.length>MARKDOWN_LIMITS.maxSourceLines)return <p role="status" className="text-sm text-red-700">Markdownが1万行の表示上限を超えています。分割してください。</p>;
  const result:ReactNode[]=[];let i=0;
  const add=(node:ReactNode)=>result.push(<div key={result.length}>{node}</div>);
  while(i<lines.length){
