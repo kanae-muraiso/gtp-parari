@@ -11,7 +11,7 @@ export function insertMarkdownBetweenText(
  markedText:string,marker:string,markdown:string,
 ):{ok:true;replacementSsot:string}|{ok:false;reason:string}{
  const split=splitTextAtMarker(markedText,marker);
- if(!split.ok)return {ok:false,reason:split.reason};
+ if(!split.ok)return {ok:false,reason:"reason" in split?split.reason:"TEXTを分割できません。"};
  const converted=convertMarkdownToParari(markdown);
  if(!converted.ok)return {ok:false,reason:converted.errors[0]??"Markdownの検査に失敗しました。"};
  if(!split.before.trim()||!split.after.trim())return {ok:false,reason:"空のTEXTは生成できません。"};
