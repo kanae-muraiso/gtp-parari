@@ -301,6 +301,9 @@ export function RichTextPanelEditor({
             panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
             onSplitText={onSplitText}
+            onMarkdownTablePaste={({markedRaw,marker,replacementSsot})=>{
+              onReplacePanel?.({replacementSsot:markedRaw.replace(marker,"\n\n"+replacementSsot+"\n\n[T]\n")});
+            }}
           />
         )}
       </div>
