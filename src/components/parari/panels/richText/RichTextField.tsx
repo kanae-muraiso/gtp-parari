@@ -249,6 +249,9 @@ export function RichTextField({
               <ForceEditablePlugin />
               {autoFocus ? <AutoFocusPlugin /> : null}
               <SoftReturnPlugin onEnter={onEnter} />
+              {onSafeMarkdownInsert ? (
+                <SafeMarkdownPastePlugin onInsert={onSafeMarkdownInsert} />
+              ) : null}
             <DictionaryHighlightPlugin
               enabled={dictionaryMarksEnabled}
               colorEnabled={readingSupport?.eikenLevel ?? false}
