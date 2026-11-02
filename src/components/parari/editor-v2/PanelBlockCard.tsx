@@ -34,6 +34,7 @@ type PanelCardMode = "summary" | "view" | "edit";
 type PanelBlockCardProps = {
   block: PanelBlock;
   onChangeRaw: (nextRaw: string, options?: { structural?: boolean }) => void;
+  onReplaceWithSsot?: (replacementSsot: string) => void;
   onDelete?: () => void;
   onInsertAfter?: (raw: string) => void;
   publicBasePath?: string;
@@ -52,6 +53,7 @@ type PanelBlockCardProps = {
 export function PanelBlockCard({
   block,
   onChangeRaw,
+  onReplaceWithSsot,
   onDelete,
   onInsertAfter,
   publicBasePath,
@@ -333,6 +335,7 @@ export function PanelBlockCard({
                     block={contentBlock}
                     data={data as never}
                     onChangeRaw={handleEditorChangeRaw}
+                    onReplaceWithSsot={onReplaceWithSsot}
                     onInsertAfter={onInsertAfter}
                     publicBasePath={publicBasePath}
                     ownerUsername={ownerUsername}
