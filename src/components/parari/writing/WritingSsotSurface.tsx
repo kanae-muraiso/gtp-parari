@@ -105,6 +105,12 @@ function WritingBlock({
           const boundary = hasFollowingPanel ? "\n\n" : "";
           onChange(before + body + boundary + after.replace(/^\s+/, ""));
         }}
+        onMarkdownTablePaste={({markedRaw,marker,replacementSsot})=>{
+          const start=Math.max(0,block.start??0);
+          const end=Math.max(start,block.end??start);
+          const inserted=markedRaw.replace(marker,"\\n\\n"+replacementSsot+"\\n\\n[T]\\n");
+          onChange(source.slice(0,start)+inserted+source.slice(end));
+        }}
         placeholder={placeholder}
         minHeightClassName={nextBlock?.kind === "panel" ? "min-h-0" : "min-h-[120px]"}
         quiet
