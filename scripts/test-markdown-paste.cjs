@@ -5,13 +5,13 @@ const ts = require("typescript");
 
 const source = fs.readFileSync("src/lib/parari/markdown/parseMarkdownForParari.ts", "utf8");
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-const exports = {};
+const moduleExports = {};
 const serializeTablePanel = data => JSON.stringify(data);
-vm.runInNewContext(compiled, {exports,require: name => {
+vm.runInNewContext(compiled, {exports:moduleExports,require: name => {
   if (name.includes("tableSsot")) return {serializeTablePanel};
   throw new Error("Unexpected import: "+name);
 }}, {filename:"parseMarkdownForParari.js"});
-const parse = exports.parseMarkdownForParari;
+const parse = moduleExports.parseMarkdownForParari;
 assert.equal(typeof parse,"function");
 const sample = ["# 旅の日記","","**太字**と[参考](https://example.com)","","| 日付 | 場所 |","| --- | --- |","| 11/1 | ウブド |","| 11/2 | ヌサドゥア |","","- 散歩","- 食事"].join("\n");
 const parts = parse(sample);
