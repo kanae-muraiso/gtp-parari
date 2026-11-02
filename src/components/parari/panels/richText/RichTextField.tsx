@@ -326,7 +326,8 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
     if (!tables.length && !markdownSyntax.test(plain)) return false;
     if (tables.length && !onTablePaste) return false;
     if (tables.length && !window.confirm("Markdownの表をTABLEパネルに変換しますか？ キャンセルすると元の文章を貼り付けます。")) return false;
-    event.preventDefault();\n    event.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopImmediatePropagation();
     editor.update(()=>{
       const selection=$getSelection();
       if (!$isRangeSelection(selection)) return;
@@ -351,7 +352,8 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
       selection.insertNodes(nodes);
     });
     return true;
-    };\n    return editor.registerRootListener((root,previousRoot)=>{
+    };
+    return editor.registerRootListener((root,previousRoot)=>{
       previousRoot?.removeEventListener("paste",handlePaste,true);
       root?.addEventListener("paste",handlePaste,true);
     });
