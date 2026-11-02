@@ -1,12 +1,9 @@
 import type {ReactNode} from "react";
 import type {PanelRendererProps} from "../panelDefinitionTypes";
 import type {MarkdownPanelData} from "./markdownSsot";
+import {safeParariUrl} from "@/lib/parari/security/safeParariUrl";
 
-const safeUrl=(url:string):string|null=>{
- const value=url.trim();
- if(value.startsWith("/")&&!value.startsWith("//"))return value;
- try{const parsed=new URL(value);return ["http:","https:"].includes(parsed.protocol)?value:null;}catch{return null;}
-};
+const safeUrl=(url:string,isImage:boolean)=>safeParariUrl(url,isImage?"image":"link");
 function inline(source:string):ReactNode[]{
  const out:ReactNode[]=[];
  const pattern=/(!?\[[^\]]*\]\([^)]*\)|\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~\n]+~~|\`[^\`\n]+\`)/g;
@@ -16,7 +13,7 @@ function inline(source:string):ReactNode[]{
   const token=match[0];const key=out.length;
   if(token.startsWith("![")||token.startsWith("[")){
    const parsed=token.match(/^(!?)\[([^\]]*)\]\(([^)]*)\)$/);
-   const url=parsed?safeUrl(parsed[3]):null;
+   const url=parsed?safeUrl(parsed[3],parsed[1]==="!"):null;
    if(parsed&&url)out.push(parsed[1]?<img key={key} src={url} alt={parsed[2]} loading="lazy" className="my-3 h-auto max-w-full rounded-lg"/>:<a key={key} href={url} rel="noopener noreferrer" className="text-blue-700 underline">{parsed[2]}</a>);
    else out.push(token);
   }else if(token.startsWith("**")||token.startsWith("__"))out.push(<strong key={key}>{token.slice(2,-2)}</strong>);
