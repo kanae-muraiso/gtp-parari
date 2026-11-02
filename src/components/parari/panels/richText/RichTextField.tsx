@@ -327,9 +327,9 @@ function SafeMarkdownPastePlugin({
    const plain=event.clipboardData.getData("text/plain");
    if(!plain)return;
    const envelope=identifyPasteEnvelope(plain);
-   // Without an envelope, paste strictly as text even if the clipboard
-   // also contains rich HTML. Never let clipboard HTML select panel types.
+
    if(envelope.kind==="text"){
+    // Do not interpret rich clipboard HTML. Plain paste must be predictable.
     event.preventDefault();
     event.stopImmediatePropagation();
     editor.update(()=>{
@@ -338,17 +338,19 @@ function SafeMarkdownPastePlugin({
     });
     return;
    }
+
+   // From this point an explicit envelope owns the entire paste event.
    event.preventDefault();
    event.stopImmediatePropagation();
    if(envelope.body.length>300000){
-    window.alert("貼り付け内容が30万文字の上限を超えています。原文は変更していません。");
+    window.alert("貼り付け内容が30万文字を超えています。変更は行いません。");
     return;
    }
    let markdown=envelope.body;
    if(envelope.kind==="html"){
     const result=htmlToSafeMarkdown(envelope.body);
     if(!result.ok){
-     window.alert("HTMLの安全性検査で変換を停止しました。\n"+("reason" in result?result.reason:"安全性検査に失敗しました。"));
+     window.alert("HTMLの安全性検査で変換を停止しました。\n"+("reason" in result?result.reason:"検査に失敗しました。"));
      return;
     }
     markdown=result.markdown;
@@ -358,33 +360,32 @@ function SafeMarkdownPastePlugin({
     window.alert("PARARIへの変換を停止しました。\n"+(conversion.errors[0]??"入力を検査してください。"));
     return;
    }
-   let hasCaret=false;
-   editor.getEditorState().read(()=>{
-    const selection=$getSelection();
-    hasCaret=Boolean($isRangeSelection(selection)&&selection.isCollapsed()&&selection.anchor&&selection.focus);
-   });
-   if(!hasCaret){
-    window.alert("挿入位置にカーソルを置いてください。既存の文章は変更していません。");
-    return;
-   }
-   let replacement:string|null=null;
-   let failure="カーソル位置を取得できませんでした。";
+
+   // IMPORTANT: editor.update may be scheduled; never read a replacement
+   // variable immediately after calling it. Wait until its callback has run.
    editor.update(()=>{
     const selection=$getSelection();
-    if(!$isRangeSelection(selection)||!selection.isCollapsed())return;
+    if(!$isRangeSelection(selection)||!selection.isCollapsed()){
+     queueMicrotask(()=>window.alert("文章中の挿入位置にカーソルを置いてください。"));
+     return;
+    }
     const marker=createPanelMarker();
-    $insertNodes([$createTextNode(marker)]);
-    const marked=exportLexicalToParariSsotText();
+    // insertText keeps the marker INSIDE the current paragraph. Using
+    // $insertNodes can create an unwanted paragraph boundary mid-sentence.
+    selection.insertText(marker);
+    const markedRaw=exportLexicalToParariSsotText();
     replacePanelMarkerInCurrentEditorState(marker,"");
-    const result=insertMarkdownBetweenText(marked,marker,markdown);
-    if(result.ok)replacement=result.replacementSsot;
-    else failure="reason" in result?result.reason:"安全な挿入位置が見つかりませんでした。";
+    const result=insertMarkdownBetweenText(markedRaw,marker,markdown);
+    if(!result.ok){
+     const reason="reason" in result?result.reason:"TEXTを分割できません。";
+     queueMicrotask(()=>window.alert("挿入を中止しました。元の文章は保持されています。\n"+reason));
+     return;
+    }
+    const ssot=result.replacementSsot;
+    // Defer the parent state change until Lexical's temporary marker is
+    // restored; avoids concurrent mutations and incomplete replacement.
+    queueMicrotask(()=>onInsert(ssot));
    },{discrete:true});
-   if(!replacement){
-    window.alert("PARARIへの挿入を停止しました。\n"+failure);
-    return;
-   }
-   onInsert(replacement);
   };
   return editor.registerRootListener((root,previousRoot)=>{
    previousRoot?.removeEventListener("paste",onPaste,true);
