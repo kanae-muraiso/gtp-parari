@@ -327,8 +327,17 @@ function SafeMarkdownPastePlugin({
    const plain=event.clipboardData.getData("text/plain");
    if(!plain)return;
    const envelope=identifyPasteEnvelope(plain);
-   // No explicit wrapper = native plain-text paste. Never guess the format.
-   if(envelope.kind==="text")return;
+   // Without an envelope, paste strictly as text even if the clipboard
+   // also contains rich HTML. Never let clipboard HTML select panel types.
+   if(envelope.kind==="text"){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    editor.update(()=>{
+     const selection=$getSelection();
+     if($isRangeSelection(selection))selection.insertText(envelope.body);
+    });
+    return;
+   }
    event.preventDefault();
    event.stopImmediatePropagation();
    if(envelope.body.length>300000){
