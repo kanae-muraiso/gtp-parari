@@ -197,7 +197,10 @@ export function RichTextField({
           exportLexicalToParariSsotText(),
         );
 
-        // A TABLE paste is handed to the SSOT panel owner; never persist the temporary marker.\n        if (nextValue.includes("PARARI_MD_PASTE_")) return;\n\n        if (suppressNextChangeRef.current) {
+        // A TABLE paste is handed to the SSOT panel owner; never persist the temporary marker.
+        if (nextValue.includes("PARARI_MD_PASTE_")) return;
+
+        if (suppressNextChangeRef.current) {
           suppressNextChangeRef.current = false;
           lastEmittedValueRef.current = nextValue;
           return;
