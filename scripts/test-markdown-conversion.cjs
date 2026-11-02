@@ -10,6 +10,7 @@ function load(path,deps={}){
  const output={};
  vm.runInNewContext(code,{
   exports:output,
+  URL,
   require:id=>{
    if(Object.prototype.hasOwnProperty.call(deps,id))return deps[id];
    throw new Error("Unexpected import: "+id);
@@ -21,9 +22,16 @@ const table=load("src/components/parari/panels/table/tableSsot.ts");
 const list=load("src/components/parari/panels/list/serializeListPanel.ts");
 const types=load("src/lib/parari/ssot-v2/panelTypes.ts");
 const parser=load("src/lib/parari/ssot-v2/parseBlocks.ts",{"./panelTypes":types});
+const urls=load("src/lib/parari/security/safeParariUrl.ts");
+const security=load("src/components/parari/panels/markdown/markdownSecurity.ts",{
+ "@/lib/parari/ssot-v2/parseBlocks":parser,
+ "@/lib/parari/security/safeParariUrl":urls
+});
 const convert=load("src/components/parari/panels/markdown/convertMarkdownToParari.ts",{
  "@/components/parari/panels/table/tableSsot":table,
- "@/components/parari/panels/list/serializeListPanel":list
+ "@/components/parari/panels/list/serializeListPanel":list,
+ "./markdownSecurity":security,
+ "@/lib/parari/security/safeParariUrl":urls
 }).convertMarkdownToParari;
 const source=[
  "# 旅の記録","","本文の **強調** と [参考](https://example.com)","","| 日付 | 場所 |",
