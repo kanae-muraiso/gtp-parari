@@ -122,4 +122,18 @@ const rejectedAtStart=inserter(MARKER+"後ろ",MARKER,"## 見出し");
 assert.equal(rejectedAtStart.ok,false);
 const unsafeExisting=inserter("前の文章\n[BUTTON] surprise"+MARKER+"後ろ",MARKER,"## 見出し");
 assert.equal(unsafeExisting.ok,false);
+for(const [before,after] of [
+ ["第一段落\n\n二番目の文章","次の文章\n\n最終行"],
+ ["## 見出し\n\n本文", "続きの本文"],
+ ["太字**途中", "後半**とリンク[公式](https://example.com)"],
+ ["行末の改行\n", "\n行頭の改行"],
+ ["日本語😀", "🌴 海岸"],
+]){
+ const result=inserter(before+MARKER+after,MARKER,"| 名称 | 値 |\n| --- | --- |\n| バリ | 2026 |");
+ assert.equal(result.ok,true,JSON.stringify({before,after,result}));
+ const actual=parser.parseBlocks(result.replacementSsot);
+ assert.deepEqual(Array.from(actual,x=>x.kind==="text"?"TEXT":x.tag),["TEXT","TABLE","TEXT"]);
+ assert.equal(actual[0].raw.trim(),before.trim());
+ assert.equal(actual[2].raw.trim(),after.trim());
+}
 console.log("Markdown security and SSOT isolation tests passed");
