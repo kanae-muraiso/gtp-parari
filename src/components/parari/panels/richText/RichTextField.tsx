@@ -314,10 +314,9 @@ export function RichTextField({
  * split and complete structural validation. Ordinary paste remains native.
  */
 function SafeMarkdownPastePlugin({
- onInsert,suppressNextChangeRef,
+ onInsert,
 }:{
  onInsert:(replacementSsot:string)=>void;
- suppressNextChangeRef:MutableRefObject<boolean>;
 }){
  const [editor]=useLexicalComposerContext();
  useEffect(()=>{
@@ -351,14 +350,13 @@ function SafeMarkdownPastePlugin({
    if(!replacement)return; // Browser retains ordinary paste on failed validation.
    event.preventDefault();
    event.stopImmediatePropagation();
-   suppressNextChangeRef.current=true;
    onInsert(replacement);
   };
   return editor.registerRootListener((root,previousRoot)=>{
    previousRoot?.removeEventListener("paste",onPaste,true);
    root?.addEventListener("paste",onPaste,true);
   });
- },[editor,onInsert,suppressNextChangeRef]);
+ },[editor,onInsert]);
  return null;
 }
 
