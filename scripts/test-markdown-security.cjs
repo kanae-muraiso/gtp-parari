@@ -102,4 +102,24 @@ assert.ok(normal.startsWith("[MARKDOWN]\n"));
 assert.equal(codec.parseMarkdownPanel(normal).source,ordinary);
 const utf="絵文字😀\n\uD800\n[/MARKDOWN]";
 assert.equal(codec.parseMarkdownPanel(codec.serializeMarkdownPanel({source:utf})).source,utf);
+const splitter=load("src/lib/parari/markdown/splitTextAtMarker.ts");
+const inserter=load("src/lib/parari/markdown/insertMarkdownBetweenText.ts",{
+ "./splitTextAtMarker":splitter,
+ "@/components/parari/panels/markdown/convertMarkdownToParari":{convertMarkdownToParari:convert},
+ "@/components/parari/panels/markdown/markdownSecurity":security,
+ "@/lib/parari/ssot-v2/parseBlocks":parser,
+}).insertMarkdownBetweenText;
+const MARKER="PARARI_INSERT_MARKER_TEST_1234567";
+const inserted=inserter("前の文章"+MARKER+"後ろの文章",MARKER,"|項目|内容|\n|---|---|\n|A|B|");
+assert.equal(inserted.ok,true,inserted.reason);
+const insertedBlocks=parser.parseBlocks(inserted.replacementSsot);
+assert.deepEqual(Array.from(insertedBlocks,x=>x.kind==="text"?"TEXT":x.tag),["TEXT","TABLE","TEXT"]);
+assert.equal(insertedBlocks[0].raw.trim(),"前の文章");
+assert.equal(insertedBlocks[2].raw.trim(),"後ろの文章");
+const rejected=inserter("前の文章"+MARKER+"後ろの文章",MARKER,"[BUTTON] surprise");
+assert.equal(rejected.ok,false);
+const rejectedAtStart=inserter(MARKER+"後ろ",MARKER,"## 見出し");
+assert.equal(rejectedAtStart.ok,false);
+const unsafeExisting=inserter("前の文章\n[BUTTON] surprise"+MARKER+"後ろ",MARKER,"## 見出し");
+assert.equal(unsafeExisting.ok,false);
 console.log("Markdown security and SSOT isolation tests passed");
