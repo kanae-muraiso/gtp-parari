@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "npm run test:markdown-conversion && next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
@@ -17,7 +17,8 @@
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs",
-    "test:english-authoring": "node scripts/test-english-authoring.cjs"
+    "test:english-authoring": "node scripts/test-english-authoring.cjs",
+    "test:markdown-conversion": "node scripts/test-markdown-conversion.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
