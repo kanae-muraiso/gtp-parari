@@ -314,7 +314,8 @@ export function RichTextField({
 
 function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:string;marker:string;parts:MarkdownPart[]})=>void}) {
   const [editor] = useLexicalComposerContext();
-  useEffect(()=>editor.registerCommand(PASTE_COMMAND,(event)=>{
+  useEffect(()=>{
+    const handlePaste=(event:ClipboardEvent)=>{
     if (!event || !("clipboardData" in event)) return false;
     const plain=event.clipboardData?.getData("text/plain") ?? "";
     if (!plain) return false;
@@ -325,7 +326,7 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
     if (!tables.length && !markdownSyntax.test(plain)) return false;
     if (tables.length && !onTablePaste) return false;
     if (tables.length && !window.confirm("Markdownの表をTABLEパネルに変換しますか？ キャンセルすると元の文章を貼り付けます。")) return false;
-    event.preventDefault();
+    event.preventDefault();\n    event.stopImmediatePropagation();
     editor.update(()=>{
       const selection=$getSelection();
       if (!$isRangeSelection(selection)) return;
@@ -350,7 +351,11 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
       selection.insertNodes(nodes);
     });
     return true;
-  },COMMAND_PRIORITY_CRITICAL),[editor,onTablePaste]);
+    };\n    return editor.registerRootListener((root,previousRoot)=>{
+      previousRoot?.removeEventListener("paste",handlePaste,true);
+      root?.addEventListener("paste",handlePaste,true);
+    });
+  },[editor,onTablePaste]);
   return null;
 }
 
