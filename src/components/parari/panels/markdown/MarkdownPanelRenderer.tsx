@@ -3,6 +3,7 @@ import type {PanelRendererProps} from "../panelDefinitionTypes";
 import type {MarkdownPanelData} from "./markdownSsot";
 import {safeParariUrl} from "@/lib/parari/security/safeParariUrl";
 import {MARKDOWN_LIMITS} from "./markdownSecurity";
+import {htmlToSafeMarkdown} from "@/lib/parari/markdown/htmlToSafeMarkdown";
 
 const safeUrl=(url:string,isImage:boolean)=>safeParariUrl(url,isImage?"image":"link");
 function inline(source:string):ReactNode[]{
@@ -40,7 +41,10 @@ function isSpecial(line:string,next?:string):boolean{
 }
 export function MarkdownPanelRenderer({data}:PanelRendererProps<MarkdownPanelData>){
  if(data.source.length>MARKDOWN_LIMITS.maxSourceChars)return <p role="status" className="text-sm text-red-700">Markdownが30万文字の表示上限を超えています。分割してください。</p>;
- const lines=data.source.replace(/\r\n?/g,"\n").split("\n");
+ const converted=data.format==="html"?htmlToSafeMarkdown(data.source):null;
+ if(converted&&!converted.ok)return <p role="status" className="text-sm text-red-700">HTMLを安全に表示できません。PARARI形式に変換する前に内容を修正してください。</p>;
+ const source=converted&&converted.ok?converted.markdown:data.source;
+ const lines=source.replace(/\r\n?/g,"\n").split("\n");
  if(lines.length>MARKDOWN_LIMITS.maxSourceLines)return <p role="status" className="text-sm text-red-700">Markdownが1万行の表示上限を超えています。分割してください。</p>;
  const result:ReactNode[]=[];let i=0;
  const add=(node:ReactNode)=>result.push(<div key={result.length}>{node}</div>);
