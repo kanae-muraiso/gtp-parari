@@ -8,6 +8,8 @@
 import { createPortal } from "react-dom";
 import {convertMarkdownToParari} from "@/components/parari/panels/markdown/convertMarkdownToParari";
 import {insertMarkdownBetweenText} from "@/lib/parari/markdown/insertMarkdownBetweenText";
+import {identifyPasteEnvelope} from "@/lib/parari/markdown/identifyPasteEnvelope";
+import {htmlToSafeMarkdown} from "@/lib/parari/markdown/htmlToSafeMarkdown";
 import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
   useCallback,
@@ -323,20 +325,41 @@ function SafeMarkdownPastePlugin({
   const onPaste=(event:ClipboardEvent)=>{
    if(event.defaultPrevented||!event.clipboardData)return;
    const plain=event.clipboardData.getData("text/plain");
-   if(!plain||plain.length>300000)return;
-   const likelyMarkdown=/(?:^|\n)\s*(?:#{1,6}\s+\S|[-*+]\s+\S|>\s+\S|\|[^\n]+\|)|\|\s*:?-{3,}:?\s*\|/.test(plain);
-   if(!likelyMarkdown)return;
-   const conversion=convertMarkdownToParari(plain);
-   if(!conversion.ok||conversion.panels.length===0)return;
-   let canInsert=false;
+   if(!plain)return;
+   const envelope=identifyPasteEnvelope(plain);
+   // No explicit wrapper = native plain-text paste. Never guess the format.
+   if(envelope.kind==="text")return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   if(envelope.body.length>300000){
+    window.alert("貼り付け内容が30万文字の上限を超えています。原文は変更していません。");
+    return;
+   }
+   let markdown=envelope.body;
+   if(envelope.kind==="html"){
+    const result=htmlToSafeMarkdown(envelope.body);
+    if(!result.ok){
+     window.alert("HTMLの安全性検査で変換を停止しました。\n"+result.reason);
+     return;
+    }
+    markdown=result.markdown;
+   }
+   const conversion=convertMarkdownToParari(markdown);
+   if(!conversion.ok){
+    window.alert("PARARIへの変換を停止しました。\n"+(conversion.errors[0]??"入力を検査してください。"));
+    return;
+   }
+   let hasCaret=false;
    editor.getEditorState().read(()=>{
     const selection=$getSelection();
-    canInsert=Boolean($isRangeSelection(selection)&&selection.isCollapsed()&&selection.anchor&&selection.focus);
+    hasCaret=Boolean($isRangeSelection(selection)&&selection.isCollapsed()&&selection.anchor&&selection.focus);
    });
-   if(!canInsert)return;
-   // Validate inside the Lexical update before cancelling native paste.
-   // A transient marker is removed in the same update.
+   if(!hasCaret){
+    window.alert("挿入位置にカーソルを置いてください。既存の文章は変更していません。");
+    return;
+   }
    let replacement:string|null=null;
+   let failure="カーソル位置を取得できませんでした。";
    editor.update(()=>{
     const selection=$getSelection();
     if(!$isRangeSelection(selection)||!selection.isCollapsed())return;
@@ -344,12 +367,14 @@ function SafeMarkdownPastePlugin({
     $insertNodes([$createTextNode(marker)]);
     const marked=exportLexicalToParariSsotText();
     replacePanelMarkerInCurrentEditorState(marker,"");
-    const result=insertMarkdownBetweenText(marked,marker,plain);
+    const result=insertMarkdownBetweenText(marked,marker,markdown);
     if(result.ok)replacement=result.replacementSsot;
+    else failure=result.reason;
    },{discrete:true});
-   if(!replacement)return; // Browser retains ordinary paste on failed validation.
-   event.preventDefault();
-   event.stopImmediatePropagation();
+   if(!replacement){
+    window.alert("PARARIへの挿入を停止しました。\n"+failure);
+    return;
+   }
    onInsert(replacement);
   };
   return editor.registerRootListener((root,previousRoot)=>{
