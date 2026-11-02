@@ -80,6 +80,7 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
   { tag: "NOTICE", label: "お知らせ" },
   { tag: "LIST", label: "リスト" },
   { tag: "TABLE", label: "表" },
+  { tag: "MARKDOWN", label: "Markdown" },
   { tag: "BUTTON", label: "ボタン" },
   { tag: "ACCORDION", label: "開閉" },
   { tag: "LINKS", label: "リンク" },
@@ -803,6 +804,9 @@ const waitForNextPaint = () =>
 
         case "TABLE":
           return createTablePanel();
+
+        case "MARKDOWN":
+          return "[MARKDOWN]\n\n[/MARKDOWN]";
 
         case "LIST":
           return "[LIST]\nリスト\n\n- 項目1\n- 項目2";
