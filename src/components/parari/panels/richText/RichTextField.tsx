@@ -197,7 +197,7 @@ export function RichTextField({
           exportLexicalToParariSsotText(),
         );
 
-        if (suppressNextChangeRef.current) {
+        // A TABLE paste is handed to the SSOT panel owner; never persist the temporary marker.\n        if (nextValue.includes("PARARI_MD_PASTE_")) return;\n\n        if (suppressNextChangeRef.current) {
           suppressNextChangeRef.current = false;
           lastEmittedValueRef.current = nextValue;
           return;
@@ -312,7 +312,7 @@ export function RichTextField({
 function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:string;marker:string;replacementSsot:string})=>void}) {
   const [editor] = useLexicalComposerContext();
   useEffect(()=>editor.registerCommand(PASTE_COMMAND,(event)=>{
-    if (!(event instanceof ClipboardEvent)) return false;
+    if (!event || !("clipboardData" in event)) return false;
     const plain=event.clipboardData?.getData("text/plain") ?? "";
     if (!plain || !/(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*[-*+]\s+\S|(^|\n)\s*\d+[.)]\s+\S|(^|\n)\s*\|.+\|\s*\n\s*\|?\s*:?-{3,}/m.test(plain)) return false;
     const parts=parseMarkdownForParari(plain);
