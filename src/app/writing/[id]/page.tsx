@@ -9,7 +9,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
-import MarkdownImportControl from "@/components/parari/writing/MarkdownImportControl";
 import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 
 type WorkRow = {
@@ -34,8 +33,6 @@ export default function WritingWorkPage() {
   const [message, setMessage] = useState("");
   const [epubMessage, setEpubMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
-  const [importMenuOpen,setImportMenuOpen] = useState(false);
-  const [markdownDialogOpen,setMarkdownDialogOpen] = useState(false);
   const [extractingPage, setExtractingPage] = useState(false);
   const [lastExtractedPageId, setLastExtractedPageId] = useState<string | null>(null);
   const [promotingToBook, setPromotingToBook] = useState(false);
@@ -552,17 +549,10 @@ export default function WritingWorkPage() {
             <ParariTopBarButton href={`/p/${workId}`}>
               表示
             </ParariTopBarButton>
-            <div className="relative">
-              <ParariTopBarButton onClick={()=>setImportMenuOpen(v=>!v)}>取り込み ▾</ParariTopBarButton>
-              {importMenuOpen&&<div className="absolute right-0 top-full z-[10000] mt-2 min-w-52 rounded-lg border border-neutral-200 bg-white p-1 text-neutral-900 shadow-xl">
-                <button type="button" className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-neutral-100" onClick={()=>{setImportMenuOpen(false);setMarkdownDialogOpen(true);}}>Markdownを貼り付け</button>
-              </div>}
-            </div>
             <EpubExportButton workId={workId} title={title} getBlockedReason={getEpubBlockedReason} onMessage={setEpubMessage} />
           </>
         }
       />
-      <MarkdownImportControl value={ssot} onChange={scheduleSave} open={markdownDialogOpen} onClose={()=>setMarkdownDialogOpen(false)}/>
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
         <WorkLimitsNotice source={ssot} />
         <DraftRecovery workId={workId} source={state === "error" && work ? ssot : ""} />
