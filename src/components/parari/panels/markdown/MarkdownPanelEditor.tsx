@@ -7,6 +7,7 @@ import {MarkdownPanelRenderer} from "./MarkdownPanelRenderer";
 import {convertMarkdownToParari} from "./convertMarkdownToParari";
 import {MARKDOWN_LIMITS} from "./markdownSecurity";
 import {htmlToSafeMarkdown} from "@/lib/parari/markdown/htmlToSafeMarkdown";
+import {identifyPasteEnvelope} from "@/lib/parari/markdown/identifyPasteEnvelope";
 
 export function MarkdownPanelEditor({block,data,onChangeRaw,onReplaceWithSsot}:PanelEditorProps<MarkdownPanelData>){
  const [preview,setPreview]=useState(false);
@@ -34,14 +35,26 @@ export function MarkdownPanelEditor({block,data,onChangeRaw,onReplaceWithSsot}:P
    </div>
   </div>
   {preview?<div className="rounded-lg border border-neutral-200 bg-white p-4"><MarkdownPanelRenderer block={block} data={data}/></div>:
-   <textarea ref={inputRef} aria-label="コード本文" spellCheck={false} value={data.source}
+   <textarea ref={inputRef} aria-label="コード本文" placeholder="MarkdownまたはHTMLの本文をそのまま貼り付けてください。識別タグは不要です。" spellCheck={false} value={data.source}
     onPaste={e=>{
-      const pasted=e.clipboardData.getData("text/plain");
+      const original=e.clipboardData.getData("text/plain");
+      const envelope=identifyPasteEnvelope(original);
+      const pasted=envelope.kind==="text"?original:envelope.body;
       const textarea=e.currentTarget;
       const nextLength=data.source.length-(textarea.selectionEnd-textarea.selectionStart)+pasted.length;
       if(nextLength>MARKDOWN_LIMITS.maxSourceChars){
         e.preventDefault();
         setSizeError("貼り付け内容が30万文字の上限を超えます。原文は変更していません。分割して貼り付けてください。");
+        return;
+      }
+      if(envelope.kind!=="text"){
+        e.preventDefault();
+        const start=textarea.selectionStart;
+        const end=textarea.selectionEnd;
+        const nextSource=data.source.slice(0,start)+pasted+data.source.slice(end);
+        setSizeError("");
+        onChangeRaw?.(serializeMarkdownPanel({source:nextSource,format:envelope.kind==="html"?"html":"markdown"}));
+        requestAnimationFrame(()=>{textarea.focus();textarea.setSelectionRange(start+pasted.length,start+pasted.length);});
       }
     }}
     onChange={e=>{
