@@ -317,10 +317,12 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
   useEffect(()=>editor.registerCommand(PASTE_COMMAND,(event)=>{
     if (!event || !("clipboardData" in event)) return false;
     const plain=event.clipboardData?.getData("text/plain") ?? "";
-    if (!plain || !/(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*[-*+]\s+\S|(^|\n)\s*\d+[.)]\s+\S|(^|\n)\s*\|.+\|\s*\n\s*\|?\s*:?-{3,}/m.test(plain)) return false;
+    if (!plain) return false;
     const parts=parseMarkdownForParari(plain);
     if (!parts.length) return false;
     const tables=parts.filter(part=>part.kind==="table");
+    const markdownSyntax = /(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*[-*+]\s+\S|(^|\n)\s*\d+[.)]\s+\S/m;
+    if (!tables.length && !markdownSyntax.test(plain)) return false;
     if (tables.length && !onTablePaste) return false;
     if (tables.length && !window.confirm("Markdownの表をTABLEパネルに変換しますか？ キャンセルすると元の文章を貼り付けます。")) return false;
     event.preventDefault();
