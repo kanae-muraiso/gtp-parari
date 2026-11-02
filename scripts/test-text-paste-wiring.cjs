@@ -1,0 +1,16 @@
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const root=fs.readFileSync("src/components/parari/panels/richText/RichTextField.tsx","utf8");
+const writing=fs.readFileSync("src/components/parari/writing/WritingSsotSurface.tsx","utf8");
+const editing=fs.readFileSync("src/components/parari/panels/richText/RichTextPanelEditor.tsx","utf8");
+const envelope=fs.readFileSync("src/lib/parari/markdown/identifyPasteEnvelope.ts","utf8");
+assert.match(root,/function SafeMarkdownPastePlugin\s*\(/,"Paste handler must exist");
+assert.match(root,/<SafeMarkdownPastePlugin\s+onInsert=\{onSafeMarkdownInsert\}\s*\/>/,"Paste handler MUST be mounted in the Lexical editor");
+assert.match(root,/onSafeMarkdownInsert\s*\?\s*\(/,"Only opt-in TEXT editors should mount handler");
+assert.match(root,/registerRootListener\s*\(/,"Paste handler must register on current editable root");
+assert.match(root,/addEventListener\("paste",onPaste,true\)/,"Capture listener must actually attach");
+assert.match(root,/removeEventListener\("paste",onPaste,true\)/,"Capture listener must detach");
+assert.match(writing,/onSafeMarkdownInsert=\{replacementSsot=>/,"Writing must connect to block replacement");
+assert.match(editing,/onSafeMarkdownInsert=\{onReplacePanel/,"Editing must connect to block replacement");
+assert.match(envelope,/kind!=="markdown"&&kind!=="html"/,"Only explicit formats are supported");
+console.log("TEXT paste handler wiring tests passed");
