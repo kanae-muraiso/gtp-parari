@@ -30,7 +30,7 @@ export default function WritingSsotSurface({
     const parts = parseMarkdownForParari(markdown);
     if (!parts.length) {setMarkdownError("貼り付ける文章を入力してください。");return;}
     if (parts.some(part=>part.kind==="table") && !window.confirm("Markdown表をTABLEパネルに変換します。よろしいですか？")) return;
-    const ssot=parts.map(part=>part.kind==="table"?part.ssot:part.ssot).join("\n\n");
+    const ssot=parts.map(part=>part.kind==="table"?part.ssot:"[T]\n"+part.ssot).join("\n\n");
     onChange([value.trimEnd(),ssot].filter(Boolean).join("\n\n"));
     setMarkdown("");setMarkdownError("");setMarkdownOpen(false);
   };
