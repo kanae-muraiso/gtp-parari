@@ -6,10 +6,6 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import {convertMarkdownToParari} from "@/components/parari/panels/markdown/convertMarkdownToParari";
-import {insertMarkdownBetweenText} from "@/lib/parari/markdown/insertMarkdownBetweenText";
-import {identifyPasteEnvelope} from "@/lib/parari/markdown/identifyPasteEnvelope";
-import {htmlToSafeMarkdown} from "@/lib/parari/markdown/htmlToSafeMarkdown";
 import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
   useCallback,
@@ -110,7 +106,6 @@ type RichTextFieldProps = {
   minHeightClassName?: string;
   panelizeActions?: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
-  onSafeMarkdownInsert?: (replacementSsot:string) => void;
   onSplitText?: (payload: {
     beforeTextSsot: string;
     afterTextSsot: string;
@@ -150,7 +145,6 @@ export function RichTextField({
   panelizeActions = [],
   onPanelizeSelection,
   onSplitText,
-  onSafeMarkdownInsert,
   showDebugLabel = false,
   englishMenuContainer,
   readingSupport,
@@ -249,9 +243,6 @@ export function RichTextField({
               <ForceEditablePlugin />
               {autoFocus ? <AutoFocusPlugin /> : null}
               <SoftReturnPlugin onEnter={onEnter} />
-              {onSafeMarkdownInsert ? (
-                <SafeMarkdownPastePlugin onInsert={onSafeMarkdownInsert} />
-              ) : null}
             <DictionaryHighlightPlugin
               enabled={dictionaryMarksEnabled}
               colorEnabled={readingSupport?.eikenLevel ?? false}
@@ -318,86 +309,6 @@ export function RichTextField({
  * Only intercept supported multiline Markdown after a successful, lossless
  * split and complete structural validation. Ordinary paste remains native.
  */
-function SafeMarkdownPastePlugin({
- onInsert,
-}:{
- onInsert:(replacementSsot:string)=>void;
-}){
- const [editor]=useLexicalComposerContext();
- useEffect(()=>{
-  const onPaste=(event:ClipboardEvent)=>{
-   if(event.defaultPrevented||!event.clipboardData)return;
-   const plain=event.clipboardData.getData("text/plain");
-   if(!plain)return;
-   const envelope=identifyPasteEnvelope(plain);
-
-   if(envelope.kind==="text"){
-    // Do not interpret rich clipboard HTML. Plain paste must be predictable.
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    editor.update(()=>{
-     const selection=$getSelection();
-     if($isRangeSelection(selection))selection.insertText(envelope.body);
-    });
-    return;
-   }
-
-   // From this point an explicit envelope owns the entire paste event.
-   event.preventDefault();
-   event.stopImmediatePropagation();
-   if(envelope.body.length>300000){
-    window.alert("貼り付け内容が30万文字を超えています。変更は行いません。");
-    return;
-   }
-   let markdown=envelope.body;
-   if(envelope.kind==="html"){
-    const result=htmlToSafeMarkdown(envelope.body);
-    if(!result.ok){
-     window.alert("HTMLの安全性検査で変換を停止しました。\n"+("reason" in result?result.reason:"検査に失敗しました。"));
-     return;
-    }
-    markdown=result.markdown;
-   }
-   const conversion=convertMarkdownToParari(markdown);
-   if(!conversion.ok){
-    window.alert("PARARIへの変換を停止しました。\n"+(conversion.errors[0]??"入力を検査してください。"));
-    return;
-   }
-
-   // IMPORTANT: editor.update may be scheduled; never read a replacement
-   // variable immediately after calling it. Wait until its callback has run.
-   editor.update(()=>{
-    const selection=$getSelection();
-    if(!$isRangeSelection(selection)||!selection.isCollapsed()){
-     queueMicrotask(()=>window.alert("文章中の挿入位置にカーソルを置いてください。"));
-     return;
-    }
-    const marker=createPanelMarker();
-    // insertText keeps the marker INSIDE the current paragraph. Using
-    // $insertNodes can create an unwanted paragraph boundary mid-sentence.
-    selection.insertText(marker);
-    const markedRaw=exportLexicalToParariSsotText();
-    replacePanelMarkerInCurrentEditorState(marker,"");
-    const result=insertMarkdownBetweenText(markedRaw,marker,markdown);
-    if(!result.ok){
-     const reason="reason" in result?result.reason:"TEXTを分割できません。";
-     queueMicrotask(()=>window.alert("挿入を中止しました。元の文章は保持されています。\n"+reason));
-     return;
-    }
-    const ssot=result.replacementSsot;
-    // Defer the parent state change until Lexical's temporary marker is
-    // restored; avoids concurrent mutations and incomplete replacement.
-    queueMicrotask(()=>onInsert(ssot));
-   },{discrete:true});
-  };
-  return editor.registerRootListener((root,previousRoot)=>{
-   previousRoot?.removeEventListener("paste",onPaste,true);
-   root?.addEventListener("paste",onPaste,true);
-  });
- },[editor,onInsert]);
- return null;
-}
-
 function ForceEditablePlugin() {
   const [editor] = useLexicalComposerContext();
 
