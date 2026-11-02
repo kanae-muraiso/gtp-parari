@@ -339,7 +339,7 @@ function SafeMarkdownPastePlugin({
    if(envelope.kind==="html"){
     const result=htmlToSafeMarkdown(envelope.body);
     if(!result.ok){
-     window.alert("HTMLの安全性検査で変換を停止しました。\n"+result.reason);
+     window.alert("HTMLの安全性検査で変換を停止しました。\n"+("reason" in result?result.reason:"安全性検査に失敗しました。"));
      return;
     }
     markdown=result.markdown;
@@ -369,7 +369,7 @@ function SafeMarkdownPastePlugin({
     replacePanelMarkerInCurrentEditorState(marker,"");
     const result=insertMarkdownBetweenText(marked,marker,markdown);
     if(result.ok)replacement=result.replacementSsot;
-    else failure=result.reason;
+    else failure="reason" in result?result.reason:"安全な挿入位置が見つかりませんでした。";
    },{discrete:true});
    if(!replacement){
     window.alert("PARARIへの挿入を停止しました。\n"+failure);
