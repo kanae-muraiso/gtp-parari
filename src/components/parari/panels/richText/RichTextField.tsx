@@ -29,6 +29,7 @@ import {
   COMMAND_PRIORITY_CRITICAL,
   FORMAT_TEXT_COMMAND,
   KEY_ENTER_COMMAND,
+  PASTE_COMMAND,
   type EditorState,
   type LexicalEditor,
   type LexicalNode,
@@ -52,6 +53,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
+import {parseMarkdownForParari, type MarkdownPart} from "@/lib/parari/markdown/parseMarkdownForParari";
 
 import {
   RichTextInlineInsertMenu,
@@ -118,6 +120,7 @@ type RichTextFieldProps = {
   borderless?: boolean;
   inlineOnly?: boolean;
   onEnter?: () => void;
+  onMarkdownTablePaste?: (payload:{markedRaw:string;marker:string;parts:MarkdownPart[]})=>void;
   autoFocus?: boolean;
 };
 
@@ -153,6 +156,7 @@ export function RichTextField({
   borderless = false,
   inlineOnly = false,
   onEnter,
+  onMarkdownTablePaste,
   autoFocus = false,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
@@ -192,6 +196,9 @@ export function RichTextField({
         const nextValue = removeParariPanelMarkers(
           exportLexicalToParariSsotText(),
         );
+
+        // A TABLE paste is handed to the SSOT panel owner; never persist the temporary marker.
+        if (nextValue.includes("PARARI_MD_PASTE_")) return;
 
         if (suppressNextChangeRef.current) {
           suppressNextChangeRef.current = false;
@@ -303,6 +310,55 @@ export function RichTextField({
       </LexicalComposer>
     </div>
   );
+}
+
+function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:string;marker:string;parts:MarkdownPart[]})=>void}) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(()=>{
+    const handlePaste=(event:ClipboardEvent)=>{
+    if (!event || !("clipboardData" in event)) return false;
+    const plain=event.clipboardData?.getData("text/plain") ?? "";
+    if (!plain) return false;
+    const parts=parseMarkdownForParari(plain);
+    if (!parts.length) return false;
+    const tables=parts.filter(part=>part.kind==="table");
+    const markdownSyntax = /(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*[-*+]\s+\S|(^|\n)\s*\d+[.)]\s+\S/m;
+    if (!tables.length && !markdownSyntax.test(plain)) return false;
+    if (tables.length && !onTablePaste) return false;
+    if (tables.length && !window.confirm("Markdownの表をTABLEパネルに変換しますか？ キャンセルすると元の文章を貼り付けます。")) return false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    editor.update(()=>{
+      const selection=$getSelection();
+      if (!$isRangeSelection(selection)) return;
+      if (tables.length && onTablePaste) {
+        const marker="PARARI_MD_PASTE_"+Date.now()+"_END";
+        selection.insertText(marker);
+        const markedRaw=exportLexicalToParariSsotText();
+        queueMicrotask(()=>onTablePaste({markedRaw,marker,parts}));
+        return;
+      }
+      const nodes:LexicalNode[]=[];
+      for (const part of parts) {
+        const paragraphs=part.ssot.split(/\n{2,}/);
+        for (const body of paragraphs) {
+          const heading=body.match(/^(#{2,3})\s+(.+)$/);
+          const element=heading ? $createHeadingNode(heading[1]==="##"?"h2":"h3") : $createParagraphNode();
+          const lines=(heading?heading[2]:body).split("\n");
+          lines.forEach((line,index)=>{if(index)element.append($createLineBreakNode());appendInlineMarkdownLikeText(element,line);});
+          nodes.push(element);
+        }
+      }
+      selection.insertNodes(nodes);
+    });
+    return true;
+    };
+    return editor.registerRootListener((root,previousRoot)=>{
+      previousRoot?.removeEventListener("paste",handlePaste,true);
+      root?.addEventListener("paste",handlePaste,true);
+    });
+  },[editor,onTablePaste]);
+  return null;
 }
 
 function ForceEditablePlugin() {

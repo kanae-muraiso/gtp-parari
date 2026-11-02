@@ -12,6 +12,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import {insertMarkdownAtMarker} from "@/lib/parari/markdown/insertMarkdownAtMarker";
 import { useEnglishAuthoring } from "@/components/parari/english/EnglishAuthoringProvider";
 import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
@@ -301,6 +302,9 @@ export function RichTextPanelEditor({
             panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
             onSplitText={onSplitText}
+            onMarkdownTablePaste={({markedRaw,marker,parts})=>{
+              onReplacePanel?.({replacementSsot:insertMarkdownAtMarker(markedRaw,marker,parts)});
+            }}
           />
         )}
       </div>

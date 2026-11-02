@@ -2,6 +2,8 @@
 
 import React from "react";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
+import {insertMarkdownAtMarker} from "@/lib/parari/markdown/insertMarkdownAtMarker";
+import MarkdownImportControl from "./MarkdownImportControl";
 import type { SsotBlock } from "@/lib/parari/ssot-v2/panelTypes";
 import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
@@ -41,7 +43,7 @@ export default function WritingSsotSurface({
 
   if (contentBlocks.length === 0) {
     return (
-      <RichTextField
+      <><RichTextField
         value=""
         onChange={(raw) => {
           const suffix = value.trimEnd();
@@ -50,12 +52,13 @@ export default function WritingSsotSurface({
         placeholder={placeholder}
         minHeightClassName="min-h-[65vh]"
         quiet
-      />
+      /></>
     );
   }
 
   return (
     <div className="min-h-[65vh]">
+      
       {contentBlocks.map((block, index) => (
         <WritingBlock
           key={`${block.kind}-${index}`}
@@ -102,6 +105,12 @@ function WritingBlock({
           const body = hasFollowingPanel ? trimTextBoundary(raw) : raw;
           const boundary = hasFollowingPanel ? "\n\n" : "";
           onChange(before + body + boundary + after.replace(/^\s+/, ""));
+        }}
+        onMarkdownTablePaste={({markedRaw,marker,parts})=>{
+          const start=Math.max(0,block.start??0);
+          const end=Math.max(start,block.end??start);
+          const replacement=insertMarkdownAtMarker(markedRaw,marker,parts);
+          onChange(source.slice(0,start)+replacement+source.slice(end));
         }}
         placeholder={placeholder}
         minHeightClassName={nextBlock?.kind === "panel" ? "min-h-0" : "min-h-[120px]"}
