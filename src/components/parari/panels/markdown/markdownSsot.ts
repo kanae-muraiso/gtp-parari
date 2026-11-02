@@ -1,18 +1,22 @@
 export type MarkdownPanelData={source:string;format?:"markdown"|"html"};
 const closingTagLine=/^[ \t]*\[\/MARKDOWN\][ \t]*$/im;
 
+/** The last nonblank line is the ONLY SSOT terminator. */
 export function parseMarkdownPanel(raw:string):MarkdownPanelData{
  const lines=String(raw??"").replace(/\r\n?/g,"\n").split("\n");
- const first=lines[0]?.trim()??"";
- const html=first==="[MARKDOWN:html]";
- const encoded=html||first==="[MARKDOWN:json]";
- const payload=lines.slice(1,lines[lines.length-1]?.trim()==="[/MARKDOWN]"?-1:undefined).join("\n");
+ const first=(lines[0]??"").trim();
+ const variant=first.match(/^\[MARKDOWN(?::([a-z]+))?(?:\s+[^\]]+)?\]$/i)?.[1]?.toLowerCase();
+ const encoded=variant==="json"||variant==="html";
+ let last=lines.length-1;
+ while(last>=1&&!lines[last].trim())last--;
+ const end=lines[last]?.trim()==="[/MARKDOWN]"?last:lines.length;
+ const payload=lines.slice(1,end).join("\n");
  if(encoded){
   try{
    const decoded=JSON.parse(payload);
-   if(typeof decoded==="string")return {source:decoded,format:html?"html":"markdown"};
+   if(typeof decoded==="string")return {source:decoded,format:variant==="html"?"html":"markdown"};
   }catch{
-   // Invalid serialized content is never executed.
+   // Safe fallback for legacy or malformed data: never execute the source.
   }
  }
  return {source:payload,format:"markdown"};
