@@ -314,7 +314,7 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
   useEffect(()=>editor.registerCommand(PASTE_COMMAND,(event)=>{
     if (!(event instanceof ClipboardEvent)) return false;
     const plain=event.clipboardData?.getData("text/plain") ?? "";
-    if (!plain || !/(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*\|.+\|\s*\n\s*\|?\s*:?-{3,}/m.test(plain)) return false;
+    if (!plain || !/(^|\n)\s*#{1,6}\s|\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/|(^|\n)\s*[-*+]\s+\S|(^|\n)\s*\d+[.)]\s+\S|(^|\n)\s*\|.+\|\s*\n\s*\|?\s*:?-{3,}/m.test(plain)) return false;
     const parts=parseMarkdownForParari(plain);
     if (!parts.length) return false;
     const tables=parts.filter(part=>part.kind==="table");
