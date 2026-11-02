@@ -6,6 +6,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import {convertMarkdownToParari} from "@/components/parari/panels/markdown/convertMarkdownToParari";
+import {insertMarkdownBetweenText} from "@/lib/parari/markdown/insertMarkdownBetweenText";
 import { EnglishAuthoringMenu } from "@/components/parari/english/EnglishAuthoringMenu";
 import {
   useCallback,
@@ -106,6 +108,7 @@ type RichTextFieldProps = {
   minHeightClassName?: string;
   panelizeActions?: RichTextPanelizeAction[];
   onPanelizeSelection?: (payload: RichTextPanelizePayload) => void;
+  onSafeMarkdownInsert?: (replacementSsot:string) => void;
   onSplitText?: (payload: {
     beforeTextSsot: string;
     afterTextSsot: string;
@@ -145,6 +148,7 @@ export function RichTextField({
   panelizeActions = [],
   onPanelizeSelection,
   onSplitText,
+  onSafeMarkdownInsert,
   showDebugLabel = false,
   englishMenuContainer,
   readingSupport,
@@ -303,6 +307,59 @@ export function RichTextField({
       </LexicalComposer>
     </div>
   );
+}
+
+/**
+ * Only intercept supported multiline Markdown after a successful, lossless
+ * split and complete structural validation. Ordinary paste remains native.
+ */
+function SafeMarkdownPastePlugin({
+ onInsert,suppressNextChangeRef,
+}:{
+ onInsert:(replacementSsot:string)=>void;
+ suppressNextChangeRef:MutableRefObject<boolean>;
+}){
+ const [editor]=useLexicalComposerContext();
+ useEffect(()=>{
+  const onPaste=(event:ClipboardEvent)=>{
+   if(event.defaultPrevented||!event.clipboardData)return;
+   const plain=event.clipboardData.getData("text/plain");
+   if(!plain||plain.length>300000)return;
+   const likelyMarkdown=/(?:^|\n)\s*(?:#{1,6}\s+\S|[-*+]\s+\S|>\s+\S|\|[^\n]+\|)|\|\s*:?-{3,}:?\s*\|/.test(plain);
+   if(!likelyMarkdown)return;
+   const conversion=convertMarkdownToParari(plain);
+   if(!conversion.ok||conversion.panels.length===0)return;
+   let canInsert=false;
+   editor.getEditorState().read(()=>{
+    const selection=$getSelection();
+    canInsert=Boolean($isRangeSelection(selection)&&selection.isCollapsed()&&selection.anchor&&selection.focus);
+   });
+   if(!canInsert)return;
+   // Validate inside the Lexical update before cancelling native paste.
+   // A transient marker is removed in the same update.
+   let replacement:string|null=null;
+   editor.update(()=>{
+    const selection=$getSelection();
+    if(!$isRangeSelection(selection)||!selection.isCollapsed())return;
+    const marker=createPanelMarker();
+    $insertNodes([$createTextNode(marker)]);
+    const marked=exportLexicalToParariSsotText();
+    replacePanelMarkerInCurrentEditorState(marker,"");
+    const result=insertMarkdownBetweenText(marked,marker,plain);
+    if(result.ok)replacement=result.replacementSsot;
+   },{discrete:true});
+   if(!replacement)return; // Browser retains ordinary paste on failed validation.
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   suppressNextChangeRef.current=true;
+   onInsert(replacement);
+  };
+  return editor.registerRootListener((root,previousRoot)=>{
+   previousRoot?.removeEventListener("paste",onPaste,true);
+   root?.addEventListener("paste",onPaste,true);
+  });
+ },[editor,onInsert,suppressNextChangeRef]);
+ return null;
 }
 
 function ForceEditablePlugin() {
