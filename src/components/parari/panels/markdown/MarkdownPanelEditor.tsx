@@ -1,5 +1,5 @@
 "use client";
-import {useState} from "react";
+import {useState,useRef,useEffect} from "react";
 import type {PanelEditorProps} from "../panelDefinitionTypes";
 import {serializeMarkdownPanel,type MarkdownPanelData} from "./markdownSsot";
 import {MarkdownPanelRenderer} from "./MarkdownPanelRenderer";
