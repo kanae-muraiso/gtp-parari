@@ -106,6 +106,11 @@ function WritingBlock({
           onChange(before + body + boundary + after.replace(/^\s+/, ""));
         }}
         placeholder={placeholder}
+        onSafeMarkdownInsert={replacementSsot=>{
+          const before=source.slice(0,Math.max(0,block.start)).trimEnd();
+          const after=source.slice(Math.max(0,block.end)).trimStart();
+          onChange([before,replacementSsot,after].filter(Boolean).join("\n\n"));
+        }}
         minHeightClassName={nextBlock?.kind === "panel" ? "min-h-0" : "min-h-[120px]"}
         quiet
         autoFocus={autoFocus}
