@@ -301,6 +301,7 @@ export function RichTextPanelEditor({
             panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
             onSplitText={onSplitText}
+            onSafeMarkdownInsert={onReplacePanel ? replacementSsot=>onReplacePanel({replacementSsot}) : undefined}
           />
         )}
       </div>
