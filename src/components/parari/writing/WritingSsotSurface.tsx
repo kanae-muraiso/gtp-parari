@@ -42,7 +42,7 @@ export default function WritingSsotSurface({
 
   if (contentBlocks.length === 0) {
     return (
-      <><MarkdownImportControl value={value} onChange={onChange} /><RichTextField
+      <><RichTextField
         value=""
         onChange={(raw) => {
           const suffix = value.trimEnd();
@@ -57,7 +57,7 @@ export default function WritingSsotSurface({
 
   return (
     <div className="min-h-[65vh]">
-      <MarkdownImportControl value={value} onChange={onChange} />
+      
       {contentBlocks.map((block, index) => (
         <WritingBlock
           key={`${block.kind}-${index}`}
