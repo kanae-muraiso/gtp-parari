@@ -4,8 +4,8 @@ const ts=require("typescript");
 const vm=require("node:vm");
 const path="src/lib/parari/markdown/splitTextAtMarker.ts";
 const output=ts.transpileModule(fs.readFileSync(path,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-const exports={};vm.runInNewContext(output,{exports},{filename:path});
-const split=exports.splitTextAtMarker;
+const moduleExports={};vm.runInNewContext(output,{exports:moduleExports},{filename:path});
+const split=moduleExports.splitTextAtMarker;
 const MARKER="PARARI_INSERT_MARKER_TEST_1234567";
 for(const [left,right] of [
  ["左側の文章","右側の文章"],
