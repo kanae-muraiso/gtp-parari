@@ -328,7 +328,7 @@ function MarkdownPastePlugin({onTablePaste}:{onTablePaste?: (payload:{markedRaw:
         const marker="PARARI_MD_PASTE_"+Date.now()+"_END";
         selection.insertText(marker);
         const markedRaw=exportLexicalToParariSsotText();
-        queueMicrotask(()=>onTablePaste({markedRaw,marker,replacementSsot:parts.map(part=>part.kind==="table"?part.ssot:"[T]\\n"+part.ssot).join("\\n\\n")}));
+        queueMicrotask(()=>onTablePaste({markedRaw,marker,replacementSsot:parts.map(part=>part.kind==="table"?part.ssot:"[T]\n"+part.ssot).join("\n\n")}));
         return;
       }
       const nodes:LexicalNode[]=[];
