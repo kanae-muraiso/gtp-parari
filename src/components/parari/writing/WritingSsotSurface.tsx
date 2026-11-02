@@ -112,6 +112,11 @@ function WritingBlock({
     );
   }
 
+  if(block.kind==="panel"&&block.tag==="MARKDOWN"){
+    const start=Math.max(0,block.start);
+    const end=Math.max(start,block.end);
+    return <PanelFrame defaultWidth="text"><MarkdownPanelEditor block={block} data={parseMarkdownPanel(block.raw)} onChangeRaw={raw=>onChange(source.slice(0,start)+raw+source.slice(end))}/></PanelFrame>;
+  }
   return <PageBodyPanelRenderer bodySsot={block.raw} />;
 }
 
