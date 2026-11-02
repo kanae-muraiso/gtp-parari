@@ -108,7 +108,7 @@ function WritingBlock({
         onMarkdownTablePaste={({markedRaw,marker,replacementSsot})=>{
           const start=Math.max(0,block.start??0);
           const end=Math.max(start,block.end??start);
-          const inserted=markedRaw.replace(marker,"\\n\\n"+replacementSsot+"\\n\\n[T]\\n");
+          const inserted=markedRaw.replace(marker,"\n\n"+replacementSsot+"\n\n[T]\n");
           onChange(source.slice(0,start)+inserted+source.slice(end));
         }}
         placeholder={placeholder}
