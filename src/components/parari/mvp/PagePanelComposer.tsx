@@ -996,6 +996,7 @@ const waitForNextPaint = () =>
                                             )
                                           : undefined
                                       }
+                                      onReplaceWithSsot={(nextSsot)=>replaceBlockWithSsot(block.id,nextSsot)}
                                       onChangeRaw={(nextRaw) => {
                                         if (block.tag === "TABLE") replaceBlockRaw(block.id, nextRaw);
                                         else void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
