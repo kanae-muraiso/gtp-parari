@@ -1,11 +1,15 @@
 import {serializeTablePanel} from "@/components/parari/panels/table/tableSsot";
 import {serializeListPanel} from "@/components/parari/panels/list/serializeListPanel";
+import {inspectMarkdownSource,inspectConvertedParari} from "./markdownSecurity";
+import {safeParariUrl} from "@/lib/parari/security/safeParariUrl";
 
 export type ConversionPanel={tag:"TEXT"|"TABLE"|"LIST"|"NOTICE"|"IMAGE";label:string;summary:string;ssot:string};
 export type MarkdownConversion={panels:ConversionPanel[];ssot:string;errors:string[];warnings:string[];ok:boolean};
 
 /** Compute a preview only. Never alter the source panel until explicitly confirmed. */
 export function convertMarkdownToParari(source:string):MarkdownConversion {
+ const sourceErrors=inspectMarkdownSource(source);
+ if(sourceErrors.length)return {panels:[],ssot:"",errors:sourceErrors,warnings:[],ok:false};
  const lines=String(source??"").replace(/\r\n?/g,"\n").split("\n");
  const panels:ConversionPanel[]=[];const errors:string[]=[];const warnings:string[]=[];
  let text:string[]=[];let i=0;
@@ -33,8 +37,8 @@ export function convertMarkdownToParari(source:string):MarkdownConversion {
   }
   const image=trimmed.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
   if(image){
-   const url=image[2].trim();
-   if(!/^https?:\/\/[^\s]+$/i.test(url)&&!/^\/(?!\/)\S+$/.test(url)){
+   const url=safeParariUrl(image[2].trim(),"image");
+   if(!url){
     errors.push(lineNo+"行目：画像URLがサポートされていません。");
    }else{
     flush();const caption=image[1].trim();
@@ -88,6 +92,7 @@ export function convertMarkdownToParari(source:string):MarkdownConversion {
  flush();
  const ssot=panels.map(p=>p.ssot).join("\n\n");
  if(!ssot.trim()&&!errors.length)errors.push("変換できる本文がありません。");
+ if(!errors.length)errors.push(...inspectConvertedParari(panels,ssot));
  return {panels,ssot,errors,warnings,ok:errors.length===0&&panels.length>0};
 }
 function splitRow(line:string):string[]{
