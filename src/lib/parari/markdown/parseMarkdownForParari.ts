@@ -1,7 +1,10 @@
 import { serializeTablePanel } from "@/components/parari/panels/table/tableSsot";
 
 export type MarkdownPart = { kind: "text" | "table"; ssot: string };
-const separator = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/;
+const separatorCell = /^:?-{3,}:?$/;\nfunction isSeparator(line:string,width:number):boolean {
+  const columns=cells(line).map(cell=>cell.replace(/\\s/g,""));
+  return columns.length===width && columns.every(cell=>separatorCell.test(cell));
+}
 function cells(line: string): string[] {
   const raw = line.trim().replace(/^\|/, "").replace(/\|$/, "");
   return raw.split(/(?<!\\)\|/).map(cell => cell.replace(/\\\|/g, "|").trim());
@@ -33,7 +36,7 @@ export function parseMarkdownForParari(source: string): MarkdownPart[] {
   for (let i=0; i<lines.length; i++) {
     const line = lines[i];
     if (/^\s*`{3,}/.test(line)) {inCode = !inCode; text.push(line); continue;}
-    if (!inCode && i+1<lines.length && line.includes("|") && separator.test(lines[i+1])) {
+    if (!inCode && i+1<lines.length && line.includes("|") && isSeparator(lines[i+1],cells(line).length)) {
       const headers = cells(line);
       if (headers.length>=2) {
         const rows=[headers]; i++;
