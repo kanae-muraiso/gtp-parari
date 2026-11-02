@@ -1,11 +1,18 @@
 "use client";
+import {useState} from "react";
 import type {PanelEditorProps} from "../panelDefinitionTypes";
 import {serializeMarkdownPanel,type MarkdownPanelData} from "./markdownSsot";
-export function MarkdownPanelEditor({data,onChangeRaw}:PanelEditorProps<MarkdownPanelData>){
- return <div className="space-y-2">
-  <p className="text-xs text-neutral-500">ChatGPTなどのMarkdownをそのまま貼り付けられます。表もこのパネル内で表示します。</p>
+import {MarkdownPanelRenderer} from "./MarkdownPanelRenderer";
+export function MarkdownPanelEditor({block,data,onChangeRaw}:PanelEditorProps<MarkdownPanelData>){
+ const [preview,setPreview]=useState(false);
+ return <div className="space-y-3">
+  <div className="flex flex-wrap items-center justify-between gap-2">
+   <p className="text-xs text-neutral-500">Markdownをそのまま貼り付けます。原文を保持して保存します。</p>
+   <button type="button" className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold" onClick={()=>setPreview(p=>!p)}>{preview?"原文を編集":"表示を確認"}</button>
+  </div>
+  {preview?<div className="rounded-lg border border-neutral-200 bg-white p-4"><MarkdownPanelRenderer block={block} data={data}/></div>:
   <textarea aria-label="Markdown本文" spellCheck={false} value={data.source}
    onChange={e=>onChangeRaw?.(serializeMarkdownPanel({source:e.target.value}))}
-   rows={12} className="w-full rounded-lg border border-neutral-300 bg-white p-3 font-mono text-sm leading-6"/>
+   rows={14} className="w-full rounded-lg border border-neutral-300 bg-white p-3 font-mono text-sm leading-6"/>}
  </div>;
 }
