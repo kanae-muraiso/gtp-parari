@@ -23,6 +23,8 @@ export type PanelEditorProps<TData = unknown> = {
   block: PanelBlock;
   data: TData;
   onChangeRaw?: (nextRaw: string) => void;
+  /** Replace this entire panel with parsed PARARI SSOT blocks, only after confirmation. */
+  onReplaceWithSsot?: (replacementSsot: string) => void;
   onInsertAfter?: (raw: string) => void;
   publicBasePath?: string;
   renderNestedPanelEditor?: NestedPanelEditorRenderer;

@@ -1,0 +1,18 @@
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const rich=fs.readFileSync("src/components/parari/panels/richText/RichTextField.tsx","utf8");
+const writing=fs.readFileSync("src/components/parari/writing/WritingSsotSurface.tsx","utf8");
+const editing=fs.readFileSync("src/components/parari/panels/richText/RichTextPanelEditor.tsx","utf8");
+const composer=fs.readFileSync("src/components/parari/mvp/PagePanelComposer.tsx","utf8");
+const panel=fs.readFileSync("src/components/parari/panels/markdown/MarkdownPanelEditor.tsx","utf8");
+assert.doesNotMatch(rich,/SafeMarkdownPastePlugin|onSafeMarkdownInsert|identifyPasteEnvelope|insertMarkdownBetweenText|htmlToSafeMarkdown/);
+assert.doesNotMatch(writing,/onSafeMarkdownInsert/);
+assert.doesNotMatch(editing,/onSafeMarkdownInsert/);
+assert.match(composer,/codeInsertEnabled/);
+assert.match(composer,/getItem\("parari:code-insert-enabled"\)/);
+assert.match(composer,/item.tag==="MARKDOWN"&&!codeInsertEnabled/);
+assert.match(composer,/\{ tag: "MARKDOWN", label: "コード挿入" \}/);
+assert.match(panel,/<option value="markdown">Markdown<\/option>/);
+assert.match(panel,/<option value="html">HTML<\/option>/);
+assert.match(panel,/onReplaceWithSsot/);
+console.log("Code insertion opt-in and ordinary TEXT editor isolation tests passed");

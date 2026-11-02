@@ -24,6 +24,7 @@ import type {
   RichTextTheme,
 } from "@/lib/parari/richText/types";
 import { RICH_TEXT_COLOR_HEX } from "@/lib/parari/richText/textColors";
+import {safeParariUrl} from "@/lib/parari/security/safeParariUrl";
 
 /**
  * PART: className helper
@@ -172,17 +173,26 @@ function renderInlineLinksInText(
         </span>,
       );
     } else if (href) {
-      result.push(
-        <a
-          key={`${keyPrefix}-link-${index++}`}
-          href={href}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-blue-600 underline underline-offset-4 hover:text-blue-800"
-        >
-          {label || href}
-        </a>,
-      );
+      const checkedHref = safeParariUrl(href, "link");
+      if (checkedHref) {
+        result.push(
+          <a
+            key={`${keyPrefix}-link-${index++}`}
+            href={checkedHref}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-blue-600 underline underline-offset-4 hover:text-blue-800"
+          >
+            {label || href}
+          </a>,
+        );
+      } else {
+        result.push(
+          <React.Fragment key={`${keyPrefix}-unsafe-${index++}`}>
+            {full}
+          </React.Fragment>,
+        );
+      }
     } else {
       result.push(
         <React.Fragment key={`${keyPrefix}-raw-${index++}`}>

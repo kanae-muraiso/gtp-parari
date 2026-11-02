@@ -305,6 +305,10 @@ export function RichTextField({
   );
 }
 
+/**
+ * Only intercept supported multiline Markdown after a successful, lossless
+ * split and complete structural validation. Ordinary paste remains native.
+ */
 function ForceEditablePlugin() {
   const [editor] = useLexicalComposerContext();
 

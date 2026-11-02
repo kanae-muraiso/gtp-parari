@@ -5,6 +5,8 @@ import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import type { SsotBlock } from "@/lib/parari/ssot-v2/panelTypes";
 import { RichTextField } from "@/components/parari/panels/richText/RichTextField";
 import PageBodyPanelRenderer from "@/components/parari/mvp/PageBodyPanelRenderer";
+import {MarkdownPanelEditor} from "@/components/parari/panels/markdown/MarkdownPanelEditor";
+import {parseMarkdownPanel} from "@/components/parari/panels/markdown/markdownSsot";
 import { PanelFrame } from "@/components/parari/panels/shared/PanelFrame";
 import { parsePanelVisualStyle } from "@/lib/parari/ssot-v2/panelStyle";
 
@@ -112,6 +114,15 @@ function WritingBlock({
     );
   }
 
+  if(block.kind==="panel"&&block.tag==="MARKDOWN"){
+    const start=Math.max(0,block.start);
+    const end=Math.max(start,block.end);
+    return <PanelFrame defaultWidth="text"><MarkdownPanelEditor block={block} data={parseMarkdownPanel(block.raw)} onChangeRaw={raw=>onChange(source.slice(0,start)+raw+source.slice(end))} onReplaceWithSsot={nextSsot=>{
+      const before=source.slice(0,start).trimEnd();
+      const after=source.slice(end).trimStart();
+      onChange([before,nextSsot,after].filter(Boolean).join("\n\n"));
+    }}/></PanelFrame>;
+  }
   return <PageBodyPanelRenderer bodySsot={block.raw} />;
 }
 

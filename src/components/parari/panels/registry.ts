@@ -28,6 +28,7 @@ import { formDefinition } from "./form/formDefinition";
 import { carouselDefinition } from "./carousel/carouselDefinition";
 
 import { tableDefinition } from "./table/tableDefinition";
+import {markdownDefinition} from "./markdown/markdownDefinition";
 
 const panelDefinitions: Record<string, PanelDefinition<any>> = {
   ETTEXT: etTextPanelDefinition,
@@ -42,6 +43,7 @@ const panelDefinitions: Record<string, PanelDefinition<any>> = {
   MENU: menuDefinition,
   LIST: listDefinition,
   TABLE: tableDefinition,
+  MARKDOWN: markdownDefinition,
   QA: qaDefinition,
   IMAGE: imageDefinition,
   VIDEO: videoDefinition,

@@ -4,7 +4,7 @@
 
 "use client";
 
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import { serializeBlocks } from "@/lib/parari/ssot-v2/serializeBlocks";
 import type {
@@ -80,6 +80,7 @@ const CONTENT_INSERT_ITEMS: PanelInsertItem[] = [
   { tag: "NOTICE", label: "お知らせ" },
   { tag: "LIST", label: "リスト" },
   { tag: "TABLE", label: "表" },
+  { tag: "MARKDOWN", label: "コード挿入" },
   { tag: "BUTTON", label: "ボタン" },
   { tag: "ACCORDION", label: "開閉" },
   { tag: "LINKS", label: "リンク" },
@@ -184,12 +185,16 @@ export function PagePanelComposer({
 }: PagePanelComposerProps) {
   const panelSet = authoringSet ?? readPanelSet(value);
   const [structureVersion, setStructureVersion] = useState(0);
+  const [codeInsertEnabled,setCodeInsertEnabled]=useState(false);
+  useEffect(()=>{try{setCodeInsertEnabled(window.localStorage.getItem("parari:code-insert-enabled")==="true");}catch{}},[]);
+  const toggleCodeInsertion=(enabled:boolean)=>{setCodeInsertEnabled(enabled);try{window.localStorage.setItem("parari:code-insert-enabled",String(enabled));}catch{}};
   const [isMutating, setIsMutating] = useState(false);
   const isMutatingRef = useRef(false);
   const visibleContentInsertItems = useMemo(
     () =>
       CONTENT_INSERT_ITEMS.filter((item) => {
         if (!panelInSet(item.tag, panelSet)) return false;
+        if(item.tag==="MARKDOWN"&&!codeInsertEnabled)return false;
         switch (item.tag) {
           case "FORM":
             return entitlements.canManageForms;
@@ -201,7 +206,7 @@ export function PagePanelComposer({
             return true;
         }
       }),
-    [entitlements, panelSet],
+    [entitlements, panelSet, codeInsertEnabled],
   );
 const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
@@ -804,6 +809,9 @@ const waitForNextPaint = () =>
         case "TABLE":
           return createTablePanel();
 
+        case "MARKDOWN":
+          return "[MARKDOWN]\n\n[/MARKDOWN]";
+
         case "LIST":
           return "[LIST]\nリスト\n\n- 項目1\n- 項目2";
 
@@ -852,6 +860,7 @@ const waitForNextPaint = () =>
 
   return (
     <div className="relative space-y-0">
+      {mode==="page" ? <details className="mb-1 text-right text-xs text-neutral-500"><summary className="inline-flex cursor-pointer select-none px-2 py-1">編集オプション</summary><label className="mt-1 flex items-center justify-end gap-2 rounded-lg bg-neutral-50 px-3 py-2"><input type="checkbox" checked={codeInsertEnabled} onChange={e=>toggleCodeInsertion(e.target.checked)}/> ＋メニューに「コード挿入」を表示する</label></details> : null}
       {mode === "page" && (authoringSet || /^\s*\[(BOOK|PAGE)\b/.test(value)) ? <PanelSetControls value={panelSet} source={value} onChange={authoringSet ? undefined : next => onChange(writePanelSet(value, next))} /> : null}
                    {isMutating ? (
                      <div className="absolute inset-0 z-50 flex items-start justify-center rounded-3xl bg-white/70 pt-10 backdrop-blur-sm">
@@ -992,6 +1001,7 @@ const waitForNextPaint = () =>
                                             )
                                           : undefined
                                       }
+                                      onReplaceWithSsot={(nextSsot)=>replaceBlockWithSsot(block.id,nextSsot)}
                                       onChangeRaw={(nextRaw) => {
                                         if (block.tag === "TABLE") replaceBlockRaw(block.id, nextRaw);
                                         else void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));

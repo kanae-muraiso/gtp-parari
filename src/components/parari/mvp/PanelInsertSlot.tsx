@@ -23,6 +23,7 @@ export type PanelInsertTag =
   | "AUDIO"
   | "NOTICE"
   | "TABLE"
+  | "MARKDOWN"
   | "LIST"
   | "BUTTON"
   | "ACCORDION"
@@ -65,6 +66,7 @@ const PANEL_TAGS: PanelInsertTag[] = [
   "NOTICE",
   "LIST",
   "TABLE",
+  "MARKDOWN",
   "BUTTON",
   "ACCORDION",
   "LINKS",

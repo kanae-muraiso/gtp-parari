@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
@@ -17,7 +17,13 @@
     "repo:status": "node scripts/repo-status.cjs",
     "check:repo-hygiene": "node scripts/check-repo-hygiene.cjs",
     "test:unified-viewer": "node scripts/test-unified-viewer-interactions.cjs",
-    "test:english-authoring": "node scripts/test-english-authoring.cjs"
+    "test:english-authoring": "node scripts/test-english-authoring.cjs",
+    "test:markdown-conversion": "node scripts/test-markdown-conversion.cjs",
+    "test:markdown-security": "node scripts/test-markdown-security.cjs",
+    "test:text-split": "node scripts/test-text-split.cjs",
+    "test:paste-envelope": "node scripts/test-paste-envelope.cjs",
+    "test:html-conversion": "node scripts/test-html-to-markdown.cjs",
+    "test:text-paste-wiring": "node scripts/test-text-paste-wiring.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",

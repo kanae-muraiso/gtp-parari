@@ -40,6 +40,7 @@ const TAIL_VALUE_PANEL_TAGS = new Set([
 const EXPLICIT_CONTAINER_PANEL_TAGS = new Set([
   "CAROUSEL",
   "TABLE",
+  "MARKDOWN",
 ]);
 
 type ProtectedContainerRange = {
