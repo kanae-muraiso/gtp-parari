@@ -11,9 +11,9 @@ function inline(value: string): string {
 }
 function asText(lines: string[]): string {
   return lines.map(line => {
-    const heading = line.match(/^\s*#{1,6}\s+(.+)$/);
+    const heading = line.match(/^\s*(#{1,6})\s+(.+)$/);
     if (heading) return (heading[1].length >= 3 ? "### " : "## ") + inline(heading[2]);
-    return inline(line);
+    const bullet = line.match(/^\s*[-*+]\s+(.+)$/);\n    if (bullet) return "・" + inline(bullet[1]);\n    const numbered = line.match(/^\s*(\d+)[.)]\s+(.+)$/);\n    if (numbered) return numbered[1] + ". " + inline(numbered[2]);\n    return inline(line);
   }).join("\n").trim();
 }
 export function parseMarkdownForParari(source: string): MarkdownPart[] {
