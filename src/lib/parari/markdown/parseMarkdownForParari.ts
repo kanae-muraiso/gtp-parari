@@ -1,8 +1,9 @@
 import { serializeTablePanel } from "@/components/parari/panels/table/tableSsot";
 
 export type MarkdownPart = { kind: "text" | "table"; ssot: string };
-const separatorCell = /^:?-{3,}:?$/;\nfunction isSeparator(line:string,width:number):boolean {
-  const columns=cells(line).map(cell=>cell.replace(/\\s/g,""));
+const separatorCell = /^:?-{3,}:?$/;
+function isSeparator(line:string,width:number):boolean {
+  const columns=cells(line).map(cell=>cell.replace(/\s/g,""));
   return columns.length===width && columns.every(cell=>separatorCell.test(cell));
 }
 function cells(line: string): string[] {
