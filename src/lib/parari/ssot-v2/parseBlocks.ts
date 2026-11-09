@@ -332,7 +332,7 @@ export function parseBlocks(
       
       // apps/tools/parari/src/lib/parari/ssot-v2/parseBlocks.ts
       // 2026-06-29 21:10 JST
-      // PART: Close PAGEINFO before legacy body text
+      // 2026-11-09 JST — PART: Close BOOK and PAGE headers before legacy body text
       // コメント:
       // - [PAGE] の後に title: などのmetaではなく本文が来たら、PAGEINFOを閉じてTEXTを開始する
       // - 旧BOOKの [PAGE] タイトル / 本文 記法を安全に読む
@@ -341,7 +341,7 @@ export function parseBlocks(
           if (
             !isBlank &&
             !tagInfo &&
-            normalizeTag(openBlock.tagInfo.tag) === "PAGE" &&
+            ["BOOK", "BOOKINFO", "PAGE", "PAGEINFO"].includes(openBlock.tagInfo.tag) &&
             !isColonMetaLine(line.text)
           ) {
             flushPanelBlock(openBlock.start, line.start, openBlock.tagInfo);

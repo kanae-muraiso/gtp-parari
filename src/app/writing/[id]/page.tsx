@@ -2,6 +2,7 @@
 
 import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
+import { isLegacyBookSsot } from "@/lib/parari/book/pageRefs";
 import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -78,6 +79,11 @@ export default function WritingWorkPage() {
         return;
       }
 
+      if (isLegacyBookSsot(data.content ?? "")) {
+        router.replace(`/editor-v2/${encodeURIComponent(data.id)}`);
+        return;
+      }
+
       const parsed = parsePageMeta(data.content ?? "");
       const resolvedTitle =
         parsed.title ||
@@ -105,7 +111,7 @@ export default function WritingWorkPage() {
     return () => {
       cancelled = true;
     };
-  }, [workId]);
+  }, [router, workId]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

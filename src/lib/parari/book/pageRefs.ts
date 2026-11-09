@@ -172,7 +172,7 @@ export function hasEmbeddedBookPages(
     .replace(/\r\n/g, "\n")
     .split("\n")
     .some((line) =>
-      /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(
+      /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?(?:\s+[^\]]+)?\]/i.test(
         line,
       ),
     );
@@ -189,10 +189,24 @@ export function isBookSsot(
 export function isReferenceBookSsot(
   ssot: string,
 ): boolean {
-  return (
-    isBookSsot(ssot) &&
-    !hasEmbeddedBookPages(ssot)
+  if (!isBookSsot(ssot) || hasEmbeddedBookPages(ssot)) {
+    return false;
+  }
+
+  // 2026-11-09 JST — PART: Keep inline legacy manuscripts in the panel editor.
+  // A reference BOOK contains only header fields and outline entries, even when empty.
+  const [, ...lines] = ssot.trimStart().split(/\r?\n/);
+  return lines.every(
+    (line) =>
+      !line.trim() ||
+      PAGE_REF_RE.test(line) ||
+      CHAPTER_REF_RE.test(line) ||
+      /^\s*[A-Za-z][A-Za-z0-9_]*\s*:/.test(line),
   );
+}
+
+export function isLegacyBookSsot(ssot: string): boolean {
+  return isBookSsot(ssot) && !isReferenceBookSsot(ssot);
 }
 
 export function replaceBookPageRefs(
