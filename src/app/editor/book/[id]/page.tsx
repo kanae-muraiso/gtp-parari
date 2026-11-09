@@ -877,7 +877,7 @@ export default function ReferenceBookEditorPage() {
         }
       />
 
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className={`mx-auto px-4 py-8 ${showAllPages ? "max-w-6xl" : "max-w-3xl"}`}>
         {book?.id === workId && book.content !== null ? (
           <BookSsotInspector
             key={workId}
@@ -1133,9 +1133,17 @@ export default function ReferenceBookEditorPage() {
                   まだPAGEがありません。「＋ 新しいPAGE」で書き始めるか、下の「PAGEを追加」から既存のPAGEを選べます。
                 </div>
               ) : (
-                <div className="mt-4 space-y-2">
+                <div className={showAllPages ? "mt-4 space-y-6" : "mt-4 space-y-2"}>
                   {outline.map((entry, index) => {
                     if (entry.kind === "chapter") {
+                      if (showAllPages) {
+                        return (
+                          <h3 key={`chapter-${entry.id}`} className="px-3 pt-4 text-xl font-bold text-neutral-950">
+                            {entry.title}
+                          </h3>
+                        );
+                      }
+
                       return (
                         <div
                           key={`chapter-${entry.id}`}
@@ -1206,10 +1214,39 @@ export default function ReferenceBookEditorPage() {
                         .filter((candidate) => candidate.kind === "page")
                         .length;
 
-                    const isOpen =
-                      showAllPages || openPageId === entry.id;
-                    const pageState =
-                      pageSaveState[entry.id] ?? "idle";
+                    const isOpen = openPageId === entry.id;
+                    const pageState = pageSaveState[entry.id] ?? "idle";
+                    const pageComposer = work && (showAllPages || isOpen) ? (
+                      <PagePanelComposer
+                        authoringSet={bookSettings.authoringSet ?? "standard"}
+                        value={String(work.content ?? "")}
+                        onChange={(nextContent) => schedulePageSave(work.id, nextContent)}
+                        onSplitPageToBook={({ beforeBodySsot, afterBodySsot }) =>
+                          splitBookPage({ sourcePage: work, beforeBodySsot, afterBodySsot })
+                        }
+                      />
+                    ) : null;
+
+                    if (showAllPages) {
+                      return (
+                        <section key={`page-${entry.id}`} aria-label={work ? getWorkTitle(work) : undefined}>
+                          {work ? (
+                            <>
+                              {pageState === "error" ? (
+                                <p role="alert" className="px-3 text-xs text-rose-600">保存エラー</p>
+                              ) : pageState === "saving" ? (
+                                <p role="status" className="px-3 text-xs text-neutral-500">保存中…</p>
+                              ) : null}
+                              <DeferredBookPage eager={pageNumber === 1} title={getWorkTitle(work)}>
+                                {pageComposer}
+                              </DeferredBookPage>
+                            </>
+                          ) : (
+                            <p className="px-3 text-sm text-neutral-600">参照先PAGEが見つかりません。</p>
+                          )}
+                        </section>
+                      );
+                    }
 
                     return (
                       <div
@@ -1242,7 +1279,7 @@ export default function ReferenceBookEditorPage() {
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1">
-                            {work && !showAllPages ? (
+                            {work ? (
                               <button
                                 type="button"
                                 aria-expanded={isOpen}
@@ -1317,26 +1354,7 @@ export default function ReferenceBookEditorPage() {
 
                             <div className="rounded-2xl bg-white p-2 ring-1 ring-neutral-200 sm:p-3">
                               <WorkLimitsNotice source={String(work.content ?? "")} />
-                              <PagePanelComposer
-                                authoringSet={bookSettings.authoringSet ?? "standard"}
-                                value={String(work.content ?? "")}
-                                onChange={(nextContent) =>
-                                  schedulePageSave(
-                                    work.id,
-                                    nextContent,
-                                  )
-                                }
-                                onSplitPageToBook={({
-                                  beforeBodySsot,
-                                  afterBodySsot,
-                                }) =>
-                                  splitBookPage({
-                                    sourcePage: work,
-                                    beforeBodySsot,
-                                    afterBodySsot,
-                                  })
-                                }
-                              />
+                              {pageComposer}
                             </div>
                           </div>
                         ) : null}
@@ -1406,6 +1424,50 @@ export default function ReferenceBookEditorPage() {
         )}
       </div>
     </main>
+  );
+}
+
+// Mount each editor once as it approaches the viewport, then keep it mounted
+// so scrolling never interrupts an active edit.
+function DeferredBookPage({
+  eager,
+  title,
+  children,
+}: {
+  eager: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [ready, setReady] = React.useState(eager);
+  const placeholder = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    if (ready || eager) return;
+    const target = placeholder.current;
+    if (!target) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setReady(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      observer.disconnect();
+      setReady(true);
+    }, { rootMargin: "400px 0px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [eager, ready]);
+
+  return ready || eager ? children : (
+    <button
+      ref={placeholder}
+      type="button"
+      onClick={() => setReady(true)}
+      className="flex min-h-36 w-full items-center justify-center rounded-xl bg-neutral-50 px-3 text-sm text-neutral-600"
+    >
+      {title}を表示
+    </button>
   );
 }
 
