@@ -243,7 +243,7 @@ export default function EditorNewPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            {defaultParariTemplates.map((template) => (
+            {defaultParariTemplates.filter((template) => template.kind !== "web" && template.id !== "blank-basic").map((template) => (
               <button
                 key={template.id}
                 type="button"
