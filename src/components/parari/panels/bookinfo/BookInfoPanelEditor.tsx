@@ -59,7 +59,8 @@ async function normalizeBookInfoCoverImageFile(file: File): Promise<File> {
 export function BookInfoPanelEditor({
   data,
   onChangeRaw,
-}: PanelEditorProps<BookInfoPanelData>) {
+  settingsExtra,
+}: PanelEditorProps<BookInfoPanelData> & { settingsExtra?: ReactNode }) {
   const coverImageInputId = "bookinfo-cover-image-input";
 
   const [draftRaw, setDraftRaw] = useState(data.raw);
@@ -302,6 +303,8 @@ export function BookInfoPanelEditor({
         </div>
 
       </div>
+
+      {settingsExtra}
 
       {!isDetailEditing ? (
         <div className="mb-4 space-y-4">

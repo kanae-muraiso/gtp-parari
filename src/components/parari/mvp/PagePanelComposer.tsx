@@ -1017,9 +1017,11 @@ const waitForNextPaint = () =>
                                         if (block.tag === "TABLE") replaceBlockRaw(block.id, nextRaw);
                                         else void runLockedMutation(() => replaceBlockRaw(block.id, nextRaw));
                                       }}
-                                      onDelete={() => {
-                                        void runLockedMutation(() => deleteBlock(block.id));
-                                      }}
+                                      onDelete={
+                                        bookPage && /^(PAGE|PAGEINFO)$/.test(block.tag)
+                                          ? undefined
+                                          : () => void runLockedMutation(() => deleteBlock(block.id))
+                                      }
                                       onInsertAfter={(raw) => {
                                         void runLockedMutation(() => insertRawAfterBlockIndex(index, raw));
                                       }}
