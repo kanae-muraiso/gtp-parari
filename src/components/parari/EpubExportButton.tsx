@@ -10,9 +10,11 @@ type Props = {
   title: string;
   getBlockedReason: () => string;
   onMessage: (message: string) => void;
+  className?: string;
+  label?: string;
 };
 
-export function EpubExportButton({ workId, title, getBlockedReason, onMessage }: Props) {
+export function EpubExportButton({ workId, title, getBlockedReason, onMessage, className, label = "EPUB3出力" }: Props) {
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const latest = useRef(getBlockedReason);
@@ -65,7 +67,7 @@ export function EpubExportButton({ workId, title, getBlockedReason, onMessage }:
 
   return <button type="button" onClick={() => void exportEpub()} disabled={busy || !!blocked}
     title={blocked || "保存済みの作品をEPUB3で出力します"}
-    className="rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 disabled:cursor-not-allowed disabled:opacity-50">
-    {busy ? "EPUB生成中…" : "EPUB3出力"}
+    className={className ?? "rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"}>
+    {busy ? "EPUB生成中…" : label}
   </button>;
 }
