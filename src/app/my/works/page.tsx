@@ -91,12 +91,12 @@ export default function MyWorksPage() {
     const [ownerCollaborators, setOwnerCollaborators] =
       React.useState<OwnerCollaborator[]>([]);
 
-    const [openCollaborationWorkId, setOpenCollaborationWorkId] =
-      React.useState<string | null>(null);
 
+    const [openWorkDetails, setOpenWorkDetails] = React.useState<{
+      workId: string;
+      section: "menu" | "category" | "collaboration" | "page";
+    } | null>(null);
     const [exportMessages, setExportMessages] = React.useState<Record<string, string>>({});
-    const [openDetailWorkId, setOpenDetailWorkId] =
-      React.useState<string | null>(null);
 
     const [removingCollaboratorKey, setRemovingCollaboratorKey] =
       React.useState<string | null>(null);
@@ -119,8 +119,6 @@ export default function MyWorksPage() {
         Web: "created-desc",
       });
 
-    const [openCategoryWorkId, setOpenCategoryWorkId] =
-      React.useState<string | null>(null);
 
     const [changingWorkCategoryKey, setChangingWorkCategoryKey] =
       React.useState<string | null>(null);
@@ -609,7 +607,6 @@ export default function MyWorksPage() {
 
         // ★★★ ここに追加します ★★★
         await refreshOwnerCollaborators();
-        setOpenCollaborationWorkId(workId);
 
         // 既に成功メッセージがあるなら、そのまま残します
         window.alert(
@@ -1296,7 +1293,6 @@ export default function MyWorksPage() {
           ];
         });
 
-        setOpenCategoryWorkId(null);
       } finally {
         setChangingWorkCategoryKey(null);
       }
@@ -1692,8 +1688,10 @@ export default function MyWorksPage() {
                   const showCollaborationButton =
                     canUseCollaboration || workCollaborators.length > 0;
 
-                  const isCollaborationOpen =
-                    openCollaborationWorkId === work.id;
+                  const activeDetails = openWorkDetails?.workId === work.id
+                    ? openWorkDetails.section
+                    : null;
+                  const isCollaborationOpen = activeDetails === "collaboration";
                   
                 const title = resolveWorkTitle(work);
                 const kind = resolveWorkKind(work.content);
@@ -1740,11 +1738,7 @@ export default function MyWorksPage() {
                       ),
                   );
 
-                const isCategoryPickerOpen =
-                  openCategoryWorkId === work.id;
-
-                const isDetailOpen =
-                  openDetailWorkId === work.id;
+                const isDetailOpen = activeDetails === "page";
 
                 const relatedBooks =
                   kind === "Page"
@@ -1818,117 +1812,28 @@ export default function MyWorksPage() {
                           <option value="unlisted">限定公開</option>
                           <option value="public">公開</option>
                         </select>
-                                                {categories.length > 0 ? (
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {workCategories.map(
-                                (category) => {
-                                  const key =
-                                    `${work.id}:${category.id}`;
-
-                                  return (
-                                    <button
-                                      key={category.id}
-                                      type="button"
-                                      disabled={
-                                        changingWorkCategoryKey ===
-                                        key
-                                      }
-                                      onClick={() =>
-                                        void onRemoveWorkCategory(
-                                          work.id,
-                                          category.id,
-                                        )
-                                      }
-                                      title="クリックするとカテゴリーから外れます"
-                                      className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-100 disabled:opacity-40"
-                                    >
-                                      {category.name} ×
-                                    </button>
-                                  );
-                                },
-                              )}
-
-                              {availableCategories.length >
-                              0 ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setOpenCategoryWorkId(
-                                      (current) =>
-                                        current === work.id
-                                          ? null
-                                          : work.id,
-                                    )
-                                  }
-                                  className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-neutral-500 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-                                >
-                                  ＋カテゴリー
-                                </button>
-                              ) : null}
-                            </div>
-
-                            {isCategoryPickerOpen &&
-                            availableCategories.length >
-                              0 ? (
-                              <div className="mt-2 flex items-center gap-2 rounded-xl bg-neutral-50 p-2">
-                                <select
-                                  value=""
-                                  disabled={
-                                    changingWorkCategoryKey !==
-                                    null
-                                  }
-                                  onChange={(event) => {
-                                    const categoryId =
-                                      event.target.value;
-
-                                    if (!categoryId) return;
-
-                                    void onAddWorkCategory(
-                                      work.id,
-                                      categoryId,
-                                    );
-                                  }}
-                                  className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 outline-none disabled:opacity-50"
-                                >
-                                  <option value="">
-                                    カテゴリーを選ぶ…
-                                  </option>
-
-                                  {availableCategories.map(
-                                    (category) => (
-                                      <option
-                                        key={category.id}
-                                        value={category.id}
-                                      >
-                                        {category.name}
-                                      </option>
-                                    ),
-                                  )}
-                                </select>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setOpenCategoryWorkId(
-                                      null,
-                                    )
-                                  }
-                                  className="shrink-0 rounded-full px-3 py-2 text-[11px] font-bold text-neutral-500 hover:bg-white"
-                                >
-                                  閉じる
-                                </button>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
                       </div>
 
-                      <details name="owned-work-details" className="relative shrink-0">
-                        <summary aria-label={`${title}の詳細`} className="cursor-pointer list-none rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 [&::-webkit-details-marker]:hidden">
-                          詳細 ▾
-                        </summary>
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          aria-label={`${title}の詳細`}
+                          aria-expanded={activeDetails !== null}
+                          onClick={() => {
+                            setExportMessages((current) => ({ ...current, [work.id]: "" }));
+                            setOpenWorkDetails(activeDetails ? null : { workId: work.id, section: "menu" });
+                          }}
+                          className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+                        >
+                          {activeDetails ? "詳細を閉じる ▴" : "詳細 ▾"}
+                        </button>
+                        {activeDetails === "menu" ? (
                         <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
+                          {categories.length > 0 ? (
+                            <button type="button" className={detailItem} onClick={() => setOpenWorkDetails({ workId: work.id, section: "category" })}>
+                              カテゴリー
+                            </button>
+                          ) : null}
                           <button type="button" className={detailItem} onClick={() => void onCopyPublicUrl(work.id)}>
                             {copiedWorkId === work.id ? "URLをコピーしました" : "URLをコピー"}
                           </button>
@@ -1936,13 +1841,9 @@ export default function MyWorksPage() {
                             <button
                               type="button"
                               className={detailItem}
-                              aria-expanded={isCollaborationOpen}
-                              onClick={(event) => {
-                                event.currentTarget.closest("details")?.removeAttribute("open");
-                                setOpenCollaborationWorkId((current) => current === work.id ? null : work.id);
-                              }}
+                              onClick={() => setOpenWorkDetails({ workId: work.id, section: "collaboration" })}
                             >
-                              {isCollaborationOpen ? "共同編集を閉じる" : "共同編集"}
+                              共同編集
                             </button>
                           ) : null}
                           {kind !== "Web" ? (
@@ -1959,13 +1860,9 @@ export default function MyWorksPage() {
                             <button
                               type="button"
                               className={detailItem}
-                              aria-expanded={isDetailOpen}
-                              onClick={(event) => {
-                                event.currentTarget.closest("details")?.removeAttribute("open");
-                                setOpenDetailWorkId((current) => current === work.id ? null : work.id);
-                              }}
+                              onClick={() => setOpenWorkDetails({ workId: work.id, section: "page" })}
                             >
-                              {isDetailOpen ? "PAGE詳細を閉じる" : "PAGE詳細"}
+                              PAGE詳細
                             </button>
                           ) : null}
                           <div className="mt-1 border-t border-neutral-100 pt-1">
@@ -1979,7 +1876,8 @@ export default function MyWorksPage() {
                             </button>
                           </div>
                         </div>
-                      </details>
+                        ) : null}
+                      </div>
                     </div>
 
                     <div className="flex items-start justify-between gap-3">
@@ -1993,8 +1891,44 @@ export default function MyWorksPage() {
                       </div>
                     </div>
 
-                    {exportMessages[work.id] ? (
+                    {activeDetails && exportMessages[work.id] ? (
                       <p role="status" className="mt-3 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-xs text-violet-900">{exportMessages[work.id]}</p>
+                    ) : null}
+
+                    {activeDetails === "category" ? (
+                      <section aria-label="カテゴリー" className="mt-3 space-y-2 rounded-2xl bg-neutral-50 p-3">
+                        <h3 className="text-xs font-bold text-neutral-700">カテゴリー</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {workCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              type="button"
+                              disabled={changingWorkCategoryKey === `${work.id}:${category.id}`}
+                              onClick={() => void onRemoveWorkCategory(work.id, category.id)}
+                              aria-label={`${category.name}をカテゴリーから外す`}
+                              className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-40"
+                            >
+                              {category.name} ×
+                            </button>
+                          ))}
+                        </div>
+                        {availableCategories.length > 0 ? (
+                          <select
+                            aria-label="追加するカテゴリー"
+                            value=""
+                            disabled={changingWorkCategoryKey !== null}
+                            onChange={(event) => {
+                              if (event.target.value) void onAddWorkCategory(work.id, event.target.value);
+                            }}
+                            className="max-w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700"
+                          >
+                            <option value="">カテゴリーを選ぶ…</option>
+                            {availableCategories.map((category) => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                        ) : null}
+                      </section>
                     ) : null}
 
                     {kind === "Page" && isDetailOpen ? (
