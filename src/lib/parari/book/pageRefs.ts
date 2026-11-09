@@ -305,6 +305,7 @@ export function resolveBookPageRefs(
     string,
     string
   >,
+  options: { forInspection?: boolean } = {},
 ): string {
   const normalized = String(
     ssot ?? "",
@@ -355,6 +356,11 @@ export function resolveBookPageRefs(
     const pageContent =
       pageContentById.get(id);
 
+    if (options.forInspection) {
+      output.push("", pageContent ?? `【参照先PAGEが見つかりません: ${id}】`, "");
+      continue;
+    }
+
     if (!pageContent) {
       continue;
     }
@@ -364,6 +370,10 @@ export function resolveBookPageRefs(
       pageContent.trim(),
     );
     output.push("");
+  }
+
+  if (options.forInspection) {
+    return output.join("\n");
   }
 
   return (

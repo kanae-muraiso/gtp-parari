@@ -8,6 +8,8 @@
 
 "use client";
 
+import { BookSsotInspector } from "@/components/parari/BookSsotInspector";
+import { isLegacyBookSsot } from "@/lib/parari/book/pageRefs";
 import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import { EnglishAuthoringProvider } from "@/components/parari/english/EnglishAuthoringProvider";
 import {
@@ -1231,6 +1233,10 @@ export default function BookPanelSequenceEditorPage() {
                    プランを確認する
                  </a>
                </div>
+             ) : null}
+
+             {accessRole === "owner" && row?.id === workId && isLegacyBookSsot(row.content ?? "") ? (
+               <BookSsotInspector key={workId} source={row.content ?? ""} />
              ) : null}
 
              {showInternalSsotUi ? (
