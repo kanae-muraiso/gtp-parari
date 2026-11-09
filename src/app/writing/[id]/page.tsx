@@ -1,9 +1,7 @@
 "use client";
 
 import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
-import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { isLegacyBookSsot } from "@/lib/parari/book/pageRefs";
-import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -32,7 +30,6 @@ export default function WritingWorkPage() {
   const [ssot, setSsot] = useState("");
   const [state, setState] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [epubMessage, setEpubMessage] = useState("");
   const [editingPinned, setEditingPinned] = useState(false);
   const [extractingPage, setExtractingPage] = useState(false);
   const [lastExtractedPageId, setLastExtractedPageId] = useState<string | null>(null);
@@ -502,15 +499,6 @@ export default function WritingWorkPage() {
     }
   }
 
-  // 2026-10-30 JST — PART: Export only after the current draft is saved.
-  const getEpubBlockedReason = () => {
-    if (!workRef.current) return "作品を読み込み中です。";
-    if (isWebLikeSsot(ssotRef.current)) return "WEB作品はEPUB3出力の対象外です。";
-    if (state === "error") return "保存エラーを解消してから出力してください。";
-    if (saveLockRef.current || pendingSaveRef.current !== null || ssotRef.current !== workRef.current.content)
-      return "自動保存の完了をお待ちください。";
-    return "";
-  };
   const editingActive = editingPinned;
 
   const statusText = useMemo(
@@ -555,14 +543,12 @@ export default function WritingWorkPage() {
             <ParariTopBarButton href={`/p/${workId}`}>
               表示
             </ParariTopBarButton>
-            <EpubExportButton workId={workId} title={title} getBlockedReason={getEpubBlockedReason} onMessage={setEpubMessage} />
           </>
         }
       />
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
         <WorkLimitsNotice source={ssot} />
         <DraftRecovery workId={workId} source={state === "error" && work ? ssot : ""} />
-        {epubMessage ? <p role="status" className="mt-4 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{epubMessage}</p> : null}
         {state === "error" && !work ? (
           <p className="mt-12 text-sm text-red-600">{message}</p>
         ) : editingActive && work ? (
