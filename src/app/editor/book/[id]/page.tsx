@@ -32,6 +32,10 @@ type WorkRow = {
   updated_at?: string | null;
 };
 
+type PageDisplayMode = "list" | "expanded";
+
+const PAGE_DISPLAY_MODE_KEY = "parari:book-page-display-mode";
+
 type SaveState = "loading" | "idle" | "saving" | "saved" | "error";
 
 export default function ReferenceBookEditorPage() {
@@ -57,6 +61,27 @@ export default function ReferenceBookEditorPage() {
   const draftBookRef = React.useRef<string | null>(null);
   const savedPageContentsRef = React.useRef(new Map<string, string>());
   const [openPageId, setOpenPageId] = React.useState<string | null>(null);
+  const [pageDisplayMode, setPageDisplayMode] = React.useState<PageDisplayMode>("list");
+  const showAllPages = pageDisplayMode === "expanded";
+
+  React.useEffect(() => {
+    try {
+      if (window.localStorage.getItem(PAGE_DISPLAY_MODE_KEY) === "expanded") {
+        setPageDisplayMode("expanded");
+      }
+    } catch {
+      // Keep the default when browser storage is unavailable.
+    }
+  }, []);
+
+  function changePageDisplayMode(mode: PageDisplayMode) {
+    setPageDisplayMode(mode);
+    try {
+      window.localStorage.setItem(PAGE_DISPLAY_MODE_KEY, mode);
+    } catch {
+      // The selection still applies to the open editor.
+    }
+  }
   const [pageSaveState, setPageSaveState] = React.useState<
     Record<string, SaveState>
   >({});
@@ -1062,18 +1087,45 @@ export default function ReferenceBookEditorPage() {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={creatingPage}
-                  onClick={() =>
-                    void createBlankPageAndAppend()
-                  }
-                  className="shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {creatingPage
-                    ? "作成中…"
-                    : "＋ 新しいPAGE"}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    role="group"
+                    aria-label="BOOKに入っているPAGEの表示方法"
+                    className="inline-flex rounded-full bg-neutral-100 p-0.5"
+                  >
+                    {([
+                      ["list", "一覧"],
+                      ["expanded", "全PAGEを展開"],
+                    ] as const).map(([mode, label]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={pageDisplayMode === mode}
+                        onClick={() => changePageDisplayMode(mode)}
+                        className={[
+                          "rounded-full px-3 py-1.5 text-xs font-bold",
+                          pageDisplayMode === mode
+                            ? "bg-white text-neutral-950 shadow-sm"
+                            : "text-neutral-600 hover:text-neutral-950",
+                        ].join(" ")}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={creatingPage}
+                    onClick={() =>
+                      void createBlankPageAndAppend()
+                    }
+                    className="shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {creatingPage
+                      ? "作成中…"
+                      : "＋ 新しいPAGE"}
+                  </button>
+                </div>
               </div>
 
               {outline.length === 0 ? (
@@ -1155,7 +1207,7 @@ export default function ReferenceBookEditorPage() {
                         .length;
 
                     const isOpen =
-                      openPageId === entry.id;
+                      showAllPages || openPageId === entry.id;
                     const pageState =
                       pageSaveState[entry.id] ?? "idle";
 
@@ -1190,9 +1242,10 @@ export default function ReferenceBookEditorPage() {
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1">
-                            {work ? (
+                            {work && !showAllPages ? (
                               <button
                                 type="button"
+                                aria-expanded={isOpen}
                                 onClick={() =>
                                   setOpenPageId((current) =>
                                     current === entry.id
