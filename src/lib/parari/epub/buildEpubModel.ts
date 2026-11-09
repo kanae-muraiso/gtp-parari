@@ -41,6 +41,7 @@ export type EpubContentItem = {
   subtitle: string;
   showTitle: boolean;
   showInToc: boolean;
+  tocTitle?: string;
   chapterId?: string;
   blocks: EpubContentBlock[];
 };
@@ -88,6 +89,7 @@ function buildContentItem(sheet: BookSheet, issues: EpubPanelIssue[]): EpubConte
     id: sheet.id,
     kind: sheet.kind === "chapter" ? "chapter" : "page",
     title: sheet.title,
+    tocTitle: sheet.tocTitle,
     subtitle: sheet.subtitle ?? "",
     showTitle: sheet.showTitle !== false,
     showInToc: sheet.showInToc !== false,

@@ -1151,7 +1151,7 @@ function BookTocSheet({
       return sheet.showInToc !== false;
     }
 
-    return !sheet.chapterId || visibleChapterIds.has(sheet.chapterId);
+    return sheet.showInToc !== false && (!sheet.chapterId || visibleChapterIds.has(sheet.chapterId));
   });
 
   return (
@@ -1187,7 +1187,7 @@ function BookTocSheet({
                   </span>
                 ) : null}
                 <span className={isChapter ? "font-bold" : "text-sm font-semibold"}>
-                  {sheet.title}
+                  {sheet.tocTitle ?? sheet.title}
                 </span>
               </span>
 

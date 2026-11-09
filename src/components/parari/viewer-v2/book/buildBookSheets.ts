@@ -24,6 +24,7 @@ export type BookSheet = {
   chapterId?: string;
   chapterNumber?: string;
   showInToc?: boolean;
+  tocTitle?: string;
   isImplicitPage?: boolean;
   isChapterStart?: boolean;
 };
@@ -78,12 +79,14 @@ export function buildBookSheets(ssot: string): ViewerBook {
     let currentChapterId = "";
     let chapterIndex = 0;
     let pageIndex = 0;
+    let sectionNumber = 0;
     
     for (const segment of segments) {
         if (segment.kind === "chapter") {
             const chapterSheet = createChapterSheet(segment, chapterIndex);
             chapterIndex += 1;
             currentChapterId = chapterSheet.id;
+            sectionNumber = 0;
             chapterSheets.push(chapterSheet);
             
             const hasChapterBody = chapterSheet.bodySsot.trim().length > 0;
@@ -112,7 +115,8 @@ export function buildBookSheets(ssot: string): ViewerBook {
             continue;
         }
         
-        const pageSheet = createPageSheet(segment, pageIndex, currentChapterId);
+        const pageSheet = createPageSheet(segment, pageIndex, currentChapterId, sectionNumber + 1);
+        if (pageSheet.tocTitle) sectionNumber += 1;
         pageIndex += 1;
         pageSheets.push(pageSheet);
         contentSheets.push(pageSheet);
@@ -271,17 +275,19 @@ function createPageSheet(
   segment: StructuralSegment,
   index: number,
   chapterId: string,
+  sectionNumber: number,
 ): BookSheet {
   const { meta, bodyLines } = splitLeadingMetaLines(segment.bodyLines);
+  const title = getMeta(meta, ["title", "name"], "") || segment.markerTitle || `PAGE ${index + 1}`;
+  const tocMode = getMeta(meta, ["tocMode"], "title");
 
     return {
       id: `book-sheet-page-${index + 1}`,
       kind: "page",
       chapterId: chapterId || undefined,
-      title:
-        getMeta(meta, ["title", "name"], "") ||
-        segment.markerTitle ||
-        `PAGE ${index + 1}`,
+      title,
+      tocTitle: tocMode === "section" ? `第${sectionNumber}節　${title}` : undefined,
+      showInToc: tocMode !== "hidden",
       showTitle: getBooleanMeta(
         meta,
         ["showTitle", "show_title"],

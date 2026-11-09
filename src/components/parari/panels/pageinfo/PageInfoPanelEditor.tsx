@@ -333,6 +333,21 @@ export function PageInfoPanelEditor({
             onChange={setTitleDraft}
             onCommit={commitTitle}
           />
+          <label className="block space-y-1">
+            <span className="block text-xs font-bold text-neutral-700">BOOKの目次での扱い</span>
+            <select
+              value={getMetaValue(fields, ["tocMode"], "title")}
+              onChange={(event) => updateMeta("tocMode", event.currentTarget.value)}
+              className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-sm"
+            >
+              <option value="title">タイトルで表示（標準）</option>
+              <option value="section">節として表示</option>
+              <option value="hidden">目次に載せない</option>
+            </select>
+            <span className="block text-xs text-neutral-500">
+              「節として表示」を選ぶと、目次の項目に「第1節」などの番号が付きます。
+            </span>
+          </label>
           {!isDetailEditing ? (
             <div className="space-y-4">
               <label className="flex items-center gap-2">
