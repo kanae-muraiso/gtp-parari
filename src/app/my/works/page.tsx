@@ -1358,52 +1358,27 @@ export default function MyWorksPage() {
           {/* WORKS CONTENT */}
           <div className="mt-6 w-full">
             <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-                    MY WORKS
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-2.5">
-                    <h2 className="text-xl font-bold text-neutral-950">
-                      自分の作品
-                    </h2>
-
-                    <StatusBadge
-                      status={status}
-                      count={
-                        works.length -
-                        hiddenBookPageIds.size +
-                        sharedWorks.length
-                      }
-                    />
-                  </div>
-
-                  <p className="mt-2 text-sm leading-7 text-neutral-500">
-                    作品を編集したり、表示確認用のURLをコピーしたりできます。
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-end gap-3">
-
-
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Link
-                      href="/editor/quick"
-                      className="inline-flex rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
-                    >
-                      今すぐ書く
-                    </Link>
-
-                    <Link
-                      href="/editor/new"
-                      className="inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-700 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-                    >
-                      ＋ 新規作成
-                    </Link>
-                  </div>
-                </div>
+              <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
+                MY WORKS
               </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-xl font-bold text-neutral-950">自分の作品</h2>
+                  <StatusBadge
+                    status={status}
+                    count={works.length - hiddenBookPageIds.size + sharedWorks.length}
+                  />
+                </div>
+                <Link
+                  href="/editor/new"
+                  className="inline-flex shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
+                >
+                  ＋ 新規作成
+                </Link>
+              </div>
+              <p className="mt-2 text-sm leading-7 text-neutral-500">
+                作品を編集したり、表示確認用のURLをコピーしたりできます。
+              </p>
 
             {status === "ready" && works.length > 0 ? (
               <div className="mt-4 border-t border-neutral-100 pt-4">
@@ -1648,23 +1623,8 @@ export default function MyWorksPage() {
                 まだ作品がありません
               </div>
               <p className="mt-2 text-sm leading-7 text-neutral-500">
-                最初のPage作品、またはBook作品を作ってみましょう。
+                上の「＋ 新規作成」から最初の作品を作れます。
               </p>
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <Link
-                  href="/editor/quick"
-                  className="inline-flex rounded-full bg-neutral-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-neutral-800"
-                >
-                  今すぐ書く
-                </Link>
-
-                <Link
-                  href="/editor/new"
-                  className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-bold text-neutral-800 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
-                >
-                  ＋ 新規作成
-                </Link>
-              </div>
             </div>
           ) : null}
 
