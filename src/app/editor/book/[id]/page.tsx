@@ -912,33 +912,69 @@ export default function ReferenceBookEditorPage() {
           </div>
         ) : (
           <>
-            <section className="rounded-3xl bg-white p-6 shadow-sm">
-              <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
-                BOOK
+            <section className="mt-5" aria-label="BOOK編集">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-neutral-500">{selectedPageIds.length} PAGE</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    role="group"
+                    aria-label="PAGEの表示方法"
+                    className="inline-flex rounded-full bg-neutral-100 p-0.5"
+                  >
+                    {([
+                      ["list", "一覧"],
+                      ["expanded", "全PAGEを展開"],
+                    ] as const).map(([mode, label]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={pageDisplayMode === mode}
+                        onClick={() => changePageDisplayMode(mode)}
+                        className={[
+                          "rounded-full px-3 py-1.5 text-xs font-bold",
+                          pageDisplayMode === mode
+                            ? "bg-white text-neutral-950 shadow-sm"
+                            : "text-neutral-600 hover:text-neutral-950",
+                        ].join(" ")}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={creatingPage}
+                    onClick={() =>
+                      void createBlankPageAndAppend()
+                    }
+                    className="shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {creatingPage
+                      ? "作成中…"
+                      : "＋ 新しいPAGE"}
+                  </button>
+                </div>
               </div>
 
-              <input
-                value={title}
-                onChange={(event) => {
-                  setTitle(event.target.value);
-                }}
-                onBlur={() =>
-                  scheduleSave(title, bookSettings, outline)
-                }
-                className="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-neutral-950 outline-none placeholder:text-neutral-300"
-                placeholder="BOOKタイトル"
-              />
-
-              <p className="mt-3 text-sm leading-7 text-neutral-500">
-                PAGEの順番を管理しながら、この画面のまま各PAGE本文も編集できます。
-              </p>
-
-              <details className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-                <summary className="cursor-pointer select-none text-xs font-bold text-neutral-700">
-                  BOOK設定
+              <details className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+                <summary className="cursor-pointer select-none text-sm font-bold text-neutral-900">
+                  BOOK設定{title ? ` · ${title}` : ""}
                 </summary>
 
                 <div className="mt-4">
+                  <input
+                    aria-label="BOOKタイトル"
+                    value={title}
+                    onChange={(event) => {
+                      setTitle(event.target.value);
+                    }}
+                    onBlur={() =>
+                      scheduleSave(title, bookSettings, outline)
+                    }
+                    className="mt-2 w-full border-0 bg-transparent p-0 text-2xl font-bold text-neutral-950 outline-none placeholder:text-neutral-300"
+                    placeholder="BOOKタイトル"
+                  />
+
                   <PanelSetControls value={bookSettings.authoringSet ?? "standard"} source={String(book.content ?? "")} onChange={authoringSet => scheduleSave(title, { ...bookSettings, authoringSet }, outline)} />
                 </div>
 
@@ -1077,59 +1113,6 @@ export default function ReferenceBookEditorPage() {
                   </label>
                 </div>
               </details>
-            </section>
-
-            <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-neutral-950">
-                    BOOKに入っているPAGE
-                  </h2>
-                  <p className="mt-1 text-xs text-neutral-400">
-                    {selectedPageIds.length} PAGE
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    role="group"
-                    aria-label="BOOKに入っているPAGEの表示方法"
-                    className="inline-flex rounded-full bg-neutral-100 p-0.5"
-                  >
-                    {([
-                      ["list", "一覧"],
-                      ["expanded", "全PAGEを展開"],
-                    ] as const).map(([mode, label]) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        aria-pressed={pageDisplayMode === mode}
-                        onClick={() => changePageDisplayMode(mode)}
-                        className={[
-                          "rounded-full px-3 py-1.5 text-xs font-bold",
-                          pageDisplayMode === mode
-                            ? "bg-white text-neutral-950 shadow-sm"
-                            : "text-neutral-600 hover:text-neutral-950",
-                        ].join(" ")}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={creatingPage}
-                    onClick={() =>
-                      void createBlankPageAndAppend()
-                    }
-                    className="shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {creatingPage
-                      ? "作成中…"
-                      : "＋ 新しいPAGE"}
-                  </button>
-                </div>
-              </div>
 
               {outline.length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-400">
@@ -1222,6 +1205,7 @@ export default function ReferenceBookEditorPage() {
                     const pageComposer = work && (showAllPages || isOpen) ? (
                       <PagePanelComposer
                         bookPage
+                        hideLeadingInsertSlot={showAllPages}
                         authoringSet={bookSettings.authoringSet ?? "standard"}
                         value={String(work.content ?? "")}
                         onChange={(nextContent) => schedulePageSave(work.id, nextContent)}

@@ -40,6 +40,7 @@ import { PanelSetControls } from "@/components/parari/editor-v2/PanelSetControls
 
 type PagePanelComposerProps = {
   bookPage?: boolean;
+  hideLeadingInsertSlot?: boolean;
   authoringSet?: PanelSet;
   value: string;
   onChange: (nextValue: string) => void;
@@ -173,6 +174,7 @@ function normalizePageHeadersFromTitle(ssot: string): string {
 
 export function PagePanelComposer({
   bookPage = false,
+  hideLeadingInsertSlot = false,
   value,
   authoringSet,
   onChange,
@@ -872,7 +874,7 @@ const waitForNextPaint = () =>
                      </div>
                    ) : null}
 <div className="space-y-0">
-          {!firstBlockIsBookInfo ? (
+          {!hideLeadingInsertSlot && !firstBlockIsBookInfo ? (
             <PanelInsertSlot
               items={
                 mode === "card"
