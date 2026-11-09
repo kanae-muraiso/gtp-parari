@@ -115,7 +115,7 @@ export default function ReferenceBookEditorPage() {
         bookRef.current = bookData;
         setState("error");
         setMessage(
-          "このBOOKは従来形式です。既存BOOKは変更せず、新しい参照型BOOKからこの構成画面を使用します。",
+          "このBOOKは従来形式です。下のボタンから本文のパネル編集を開けます。",
         );
         return;
       }
@@ -870,10 +870,10 @@ export default function ReferenceBookEditorPage() {
               {message}
             </p>
             <a
-              href={`/writing/${book.id}?mode=editing`}
+              href={`/editor-v2/${encodeURIComponent(book.id)}`}
               className="mt-5 inline-flex rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
             >
-              従来のEditingで開く
+              本文をパネル編集
             </a>
           </div>
         ) : (
