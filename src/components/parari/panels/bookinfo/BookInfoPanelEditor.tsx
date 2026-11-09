@@ -60,7 +60,8 @@ export function BookInfoPanelEditor({
   data,
   onChangeRaw,
   settingsExtra,
-}: PanelEditorProps<BookInfoPanelData> & { settingsExtra?: ReactNode }) {
+  collapsedByDefault = false,
+}: PanelEditorProps<BookInfoPanelData> & { settingsExtra?: ReactNode; collapsedByDefault?: boolean }) {
   const coverImageInputId = "bookinfo-cover-image-input";
 
   const [draftRaw, setDraftRaw] = useState(data.raw);
@@ -292,18 +293,8 @@ export function BookInfoPanelEditor({
     }
   };
 
-  return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-amber-700">BOOKINFO</div>
-          <div className="mt-1 text-[11px] leading-5 text-amber-700/80">
-            BOOKのタイトル・著者・表紙・読者向けシートを設定します。
-          </div>
-        </div>
-
-      </div>
-
+  const settings = (
+    <>
       {settingsExtra}
 
       {!isDetailEditing ? (
@@ -734,6 +725,40 @@ export function BookInfoPanelEditor({
           {hasToc ? <TocPreview /> : <EmptyBookPreview label="目次なし" />}
         </BookSheetPreviewCard>
       </div>
+    </>
+  );
+
+  if (collapsedByDefault) {
+    return (
+      <details className="group rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0">
+            <span className="block text-xs font-bold text-amber-700">BOOKINFO</span>
+            <span className="block break-words text-base font-bold text-neutral-900">{previewTitle}</span>
+          </span>
+          <span className="shrink-0 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800">
+            <span className="group-open:hidden">詳細を表示</span>
+            <span className="hidden group-open:inline">詳細を閉じる</span>
+          </span>
+        </summary>
+        <div className="mt-4">{settings}</div>
+      </details>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-bold text-amber-700">BOOKINFO</div>
+          <div className="mt-1 text-[11px] leading-5 text-amber-700/80">
+            BOOKのタイトル・著者・表紙・読者向けシートを設定します。
+          </div>
+        </div>
+
+      </div>
+
+      {settings}
     </div>
   );
 }

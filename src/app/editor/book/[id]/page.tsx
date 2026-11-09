@@ -916,6 +916,7 @@ export default function ReferenceBookEditorPage() {
               {bookInfo?.kind === "panel" ? (
                 <div className="mt-4">
                   <BookInfoPanelEditor
+                    collapsedByDefault
                     block={bookInfo}
                     data={bookInfoDefinition.parse(bookInfo.raw.replace(/^(\s*\[)BOOKINFO(?=[:\s\]])/i, "$1BOOK"), bookInfo)}
                     onChangeRaw={(raw) => scheduleSave(outline, raw)}
