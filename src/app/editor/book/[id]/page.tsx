@@ -1130,7 +1130,7 @@ export default function ReferenceBookEditorPage() {
 
               {outline.length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-400">
-                  まだPAGEがありません。「＋ 新しいPAGE」で書き始めるか、下の「PAGEを追加」から既存のPAGEを選べます。
+                  まだPAGEがありません。「＋ 新しいPAGE」で書き始めるか、下の「既存のPAGEを取り込む」から書いたPAGEを選べます。
                 </div>
               ) : (
                 <div className={showAllPages ? "mt-4 space-y-6" : "mt-4 space-y-2"}>
@@ -1375,15 +1375,15 @@ export default function ReferenceBookEditorPage() {
 
             <details key={workId} className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
               <summary className="cursor-pointer text-base font-bold text-neutral-950">
-                PAGEを追加
+                既存のPAGEを取り込む
               </summary>
               <p className="mt-2 text-xs leading-6 text-neutral-600">
-                既存のPAGEから派生して追加します。元のPAGEはそのまま残ります。
+                書いたPAGEをコピーして、このBOOKに入れます。元のPAGEはそのまま残ります。
               </p>
 
               {availablePages.length === 0 ? (
                 <div className="mt-4 text-sm text-neutral-400">
-                  追加できるPAGEはありません。
+                  取り込めるPAGEはありません。
                 </div>
               ) : (
                 <div className="mt-4 space-y-2">
@@ -1412,8 +1412,8 @@ export default function ReferenceBookEditorPage() {
                         className="shrink-0 rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {derivingPageId === page.id
-                          ? "派生中…"
-                          : "派生して追加"}
+                          ? "取り込み中…"
+                          : "取り込む"}
                       </button>
                     </div>
                   ))}
