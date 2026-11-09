@@ -27,7 +27,12 @@ import {
 
 type Visibility = "private" | "unlisted" | "public";
 type WorkKind = "Page" | "Book" | "Web";
+const WORK_TABS = ["All", "Page", "Book", "Web"] as const;
+type WorkTab = (typeof WORK_TABS)[number];
+const workTabKey = (userId: string) => `parari:my-works:tab:${userId}`;
+
 type WorkSortMode =
+  | "updated-desc"
   | "created-desc"
   | "created-asc"
   | "title-asc";
@@ -103,9 +108,10 @@ export default function MyWorksPage() {
     const [activeCategoryId, setActiveCategoryId] =
       React.useState<string>("all");
     const [activeWorkKind, setActiveWorkKind] =
-      React.useState<WorkKind>("Page");
+      React.useState<WorkTab>("All");
     const [sortModeByKind, setSortModeByKind] =
-      React.useState<Record<WorkKind, WorkSortMode>>({
+      React.useState<Record<WorkTab, WorkSortMode>>({
+        All: "updated-desc",
         Page: "created-desc",
         Book: "created-desc",
         Web: "created-desc",
@@ -150,6 +156,13 @@ export default function MyWorksPage() {
       }
 
       setCurrentUserId(user.id);
+      let savedTab: string | null = null;
+      try {
+        savedTab = window.localStorage.getItem(workTabKey(user.id));
+      } catch {
+        // The default tab also works without browser storage.
+      }
+      setActiveWorkKind(WORK_TABS.find((tab) => tab === savedTab) ?? "All");
         
         const { data: monitorProfile, error: monitorError } = await supabase
           .from("profiles")
@@ -997,6 +1010,7 @@ export default function MyWorksPage() {
 
     const worksByKind = React.useMemo(
       () => ({
+        All: [...pageWorks, ...bookWorks, ...webWorks],
         Page: pageWorks,
         Book: bookWorks,
         Web: webWorks,
@@ -1023,6 +1037,10 @@ export default function MyWorksPage() {
             },
           ),
         );
+      }
+
+      if (sortMode === "updated-desc") {
+        return source.sort((a, b) => getUpdatedTime(b) - getUpdatedTime(a));
       }
 
       return source.sort((a, b) => {
@@ -1522,7 +1540,7 @@ export default function MyWorksPage() {
                     role="tablist"
                     aria-label="作品タイプ"
                   >
-                    {(["Page", "Book", "Web"] as WorkKind[]).map(
+                    {WORK_TABS.map(
                       (kind) => {
                         const count =
                           worksByKind[kind].length;
@@ -1535,13 +1553,21 @@ export default function MyWorksPage() {
                             type="button"
                             role="tab"
                             aria-selected={active}
-                            onClick={() =>
-                              setActiveWorkKind(kind)
-                            }
+                            onClick={() => {
+                              setActiveWorkKind(kind);
+                              if (!currentUserId) return;
+                              try {
+                                window.localStorage.setItem(workTabKey(currentUserId), kind);
+                              } catch {
+                                // The selection still applies to this visit.
+                              }
+                            }}
                             className={[
-                              "flex-1 rounded-xl px-4 py-2 text-xs font-bold transition sm:flex-none",
+                              "flex-1 whitespace-nowrap rounded-xl px-2 py-2 text-xs font-bold transition sm:flex-none sm:px-4",
                               active
-                                ? kind === "Page"
+                                ? kind === "All"
+                                  ? "bg-white text-neutral-900 shadow-sm"
+                                  : kind === "Page"
                                   ? "bg-amber-100 text-amber-900 shadow-sm"
                                   : kind === "Book"
                                     ? "bg-blue-100 text-blue-900 shadow-sm"
@@ -1549,7 +1575,7 @@ export default function MyWorksPage() {
                                 : "text-neutral-500 hover:bg-white",
                             ].join(" ")}
                           >
-                            {kind.toUpperCase()}{" "}
+                            {kind === "All" ? "すべて" : kind.toUpperCase()}{" "}
                             <span className="opacity-60">
                               {count}
                             </span>
@@ -1578,6 +1604,9 @@ export default function MyWorksPage() {
                       }}
                       className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-600 outline-none"
                     >
+                      {activeWorkKind === "All" ? (
+                        <option value="updated-desc">更新：新しい順</option>
+                      ) : null}
                       <option value="created-desc">
                         作成：新しい順
                       </option>
@@ -1646,7 +1675,7 @@ export default function MyWorksPage() {
           visibleWorks.length === 0 ? (
             <div className="rounded-3xl bg-white p-8 text-center text-sm text-neutral-400 shadow-sm">
               このカテゴリーには
-              {activeWorkKind.toUpperCase()}がありません。
+              {activeWorkKind === "All" ? "作品" : activeWorkKind.toUpperCase()}がありません。
             </div>
           ) : null}
 
@@ -1757,7 +1786,7 @@ export default function MyWorksPage() {
                       <div className="min-w-0">
                         <div className="mb-2 flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-600">
-                            {kind}
+                            {kind.toUpperCase()}
                           </span>
                         <select
                           value={
@@ -2523,6 +2552,11 @@ function createPublicUrl(workId: string): string {
   }
 
   return `${window.location.origin}/p/${workId}`;
+}
+
+function getUpdatedTime(work: WorkRow): number {
+  const updatedAt = Date.parse(work.updated_at ?? "");
+  return Number.isFinite(updatedAt) ? updatedAt : getCreatedTime(work);
 }
 
 function getCreatedTime(
