@@ -158,7 +158,7 @@ export async function buildEpub(
     contentDocuments.push({
       id: documentId,
       fileName,
-      title: item.title || `PAGE ${index + 1}`,
+      title: item.tocTitle || item.title || `PAGE ${index + 1}`,
       showInToc: item.showInToc,
       level: item.kind === "chapter" ? 1 : 2,
     });
@@ -385,7 +385,7 @@ function createVisibleTocXhtml(model: EpubBookModel): string {
         item.kind === "chapter" ? "toc-chapter" : "toc-page";
 
       return `<li class="${className}"><a href="${href}">${escapeXml(
-        item.title,
+        item.tocTitle ?? item.title,
       )}</a></li>`;
     })
     .join("\n");

@@ -642,10 +642,12 @@ export default function ReferenceBookEditorPage() {
     sourcePage,
     beforeBodySsot,
     afterBodySsot,
+    chapter,
   }: {
     sourcePage: WorkRow;
     beforeBodySsot: string;
     afterBodySsot: string;
+    chapter?: BookOutlineEntry;
   }): Promise<boolean> => {
     if (derivingPageId) {
       return false;
@@ -666,11 +668,21 @@ export default function ReferenceBookEditorPage() {
           "新しいPAGE",
         );
 
+      const sourceHeader = chapter
+        ? parseBlocks(withPageInfo(pagesRef.current.get(sourcePage.id) ?? sourcePage))
+            .find((block) => block.kind === "panel" && block.tag === "PAGE")
+        : undefined;
+
       const firstPage =
         await createPageWork({
           title: firstTitle,
-          ssot:
-            createPageSsotFromBody({
+          ssot: sourceHeader
+            ? createDerivedPageSsot(
+                `${sourceHeader.raw.trimEnd()}\n\n${beforeBodySsot}`,
+                sourcePage.id,
+                firstTitle,
+              )
+            : createPageSsotFromBody({
               title: firstTitle,
               bodySsot:
                 beforeBodySsot,
@@ -696,7 +708,7 @@ export default function ReferenceBookEditorPage() {
       registerCreatedPage(secondPage);
 
       const nextOutline =
-        outline.flatMap((entry) =>
+        parseBookOutline(draftBookRef.current ?? bookRef.current?.content ?? "").flatMap((entry) =>
           entry.kind === "page" &&
           entry.id === sourcePage.id
             ? [
@@ -704,6 +716,7 @@ export default function ReferenceBookEditorPage() {
                   kind: "page" as const,
                   id: firstPage.id,
                 },
+                ...(chapter ? [chapter] : []),
                 {
                   kind: "page" as const,
                   id: secondPage.id,
@@ -751,19 +764,19 @@ export default function ReferenceBookEditorPage() {
     scheduleSave(next);
   };
 
-  const addChapter = () => {
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `chapter-${Date.now().toString(36)}`;
+  const createChapter = (): BookOutlineEntry => ({
+    kind: "chapter",
+    id: typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `chapter-${Date.now().toString(36)}`,
+    title: "新しい章扉",
+  });
 
+  const addChapter = (index: number) => {
     scheduleSave([
-      ...outline,
-      {
-        kind: "chapter",
-        id,
-        title: "新しい章扉",
-      },
+      ...outline.slice(0, index),
+      createChapter(),
+      ...outline.slice(index),
     ]);
   };
 
@@ -930,11 +943,17 @@ export default function ReferenceBookEditorPage() {
                   />
                 </div>
               ) : null}
-              {showAllPages && outline.length > 0 ? (
+              {showAllPages ? (
                 <PanelInsertSlot
                   items={[]}
-                  structureItems={[{ tag: "PAGE", label: "先頭に新しいPAGEを作る" }]}
-                  onSelect={() => void createBlankPageAndAppend(true)}
+                  structureItems={[
+                    { tag: "PAGE", label: "先頭に新しいPAGEを作る" },
+                    { tag: "CHAPTER", label: "章扉を挿入" },
+                  ]}
+                  onSelect={(tag) => {
+                    if (tag === "CHAPTER") addChapter(0);
+                    else void createBlankPageAndAppend(true);
+                  }}
                 />
               ) : null}
 
@@ -946,69 +965,68 @@ export default function ReferenceBookEditorPage() {
                 <div className={showAllPages ? "mt-4 space-y-6" : "mt-4 space-y-2"}>
                   {outline.map((entry, index) => {
                     if (entry.kind === "chapter") {
-                      if (showAllPages) {
-                        return (
-                          <h3 key={`chapter-${entry.id}`} className="px-3 pt-4 text-xl font-bold text-neutral-950">
-                            {entry.title}
-                          </h3>
-                        );
-                      }
-
                       return (
-                        <div
-                          key={`chapter-${entry.id}`}
-                          className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3"
-                        >
-                          <div className="w-10 shrink-0 text-center text-[10px] font-bold text-violet-500">
-                            章扉
-                          </div>
+                        <div key={`chapter-${entry.id}`}>
+                          <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
+                            <div className="w-10 shrink-0 text-center text-[10px] font-bold text-violet-500">
+                              章扉
+                            </div>
 
-                          <input
-                            defaultValue={entry.title}
-                            onBlur={(event) =>
-                              renameChapter(
-                                entry.id,
-                                event.currentTarget.value,
-                              )
-                            }
-                            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold text-violet-950 outline-none"
-                            placeholder="章扉タイトル"
-                          />
-
-                          <div className="flex shrink-0 items-center gap-1">
-                            <button
-                              type="button"
-                              disabled={index === 0}
-                              onClick={() => moveOutlineEntry(index, -1)}
-                              className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              type="button"
-                              disabled={index === outline.length - 1}
-                              onClick={() => moveOutlineEntry(index, 1)}
-                              className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
-                            >
-                              ↓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                scheduleSave(outline.filter(
-                                    (candidate) =>
-                                      !(
-                                        candidate.kind === "chapter" &&
-                                        candidate.id === entry.id
-                                      ),
-                                  ),
+                            <input
+                              aria-label="章扉タイトル"
+                              defaultValue={entry.title}
+                              onBlur={(event) =>
+                                renameChapter(
+                                  entry.id,
+                                  event.currentTarget.value,
                                 )
                               }
-                              className="rounded-full px-2 py-1 text-[10px] font-bold text-violet-400 hover:bg-rose-50 hover:text-rose-600"
-                            >
-                              外す
-                            </button>
+                              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold text-violet-950 outline-none"
+                              placeholder="章扉タイトル"
+                            />
+
+                            <div className="flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={index === 0}
+                                onClick={() => moveOutlineEntry(index, -1)}
+                                className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                disabled={index === outline.length - 1}
+                                onClick={() => moveOutlineEntry(index, 1)}
+                                className="rounded-full px-2 py-1 text-xs text-violet-500 hover:bg-violet-100 disabled:opacity-20"
+                              >
+                                ↓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  scheduleSave(outline.filter(
+                                      (candidate) =>
+                                        !(
+                                          candidate.kind === "chapter" &&
+                                          candidate.id === entry.id
+                                        ),
+                                    ),
+                                  )
+                                }
+                                className="rounded-full px-2 py-1 text-[10px] font-bold text-violet-400 hover:bg-rose-50 hover:text-rose-600"
+                              >
+                                外す
+                              </button>
+                            </div>
                           </div>
+                          {showAllPages ? (
+                            <PanelInsertSlot
+                              items={[]}
+                              structureItems={[{ tag: "CHAPTER", label: "章扉を挿入" }]}
+                              onSelect={() => addChapter(index + 1)}
+                            />
+                          ) : null}
                         </div>
                       );
                     }
@@ -1030,6 +1048,18 @@ export default function ReferenceBookEditorPage() {
                         authoringSet={authoringSet}
                         value={withPageInfo(work)}
                         onChange={(nextContent) => schedulePageSave(work.id, nextContent)}
+                        onInsertBookChapter={async ({ beforeBodySsot, afterBodySsot }) => {
+                          if (beforeBodySsot.trim() && afterBodySsot.trim()) {
+                            return splitBookPage({
+                              sourcePage: work,
+                              beforeBodySsot,
+                              afterBodySsot,
+                              chapter: createChapter(),
+                            });
+                          }
+                          addChapter(afterBodySsot.trim() ? index : index + 1);
+                          return true;
+                        }}
                         onSplitPageToBook={({ beforeBodySsot, afterBodySsot }) =>
                           splitBookPage({ sourcePage: work, beforeBodySsot, afterBodySsot })
                         }
@@ -1088,6 +1118,13 @@ export default function ReferenceBookEditorPage() {
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => addChapter(index)}
+                              className="rounded-full px-2 py-1 text-[10px] font-bold text-violet-700 hover:bg-violet-50"
+                            >
+                              前に章扉
+                            </button>
                             {work ? (
                               <button
                                 type="button"
@@ -1170,13 +1207,15 @@ export default function ReferenceBookEditorPage() {
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={addChapter}
-                className="mt-4 rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-bold text-violet-700 ring-1 ring-violet-200 transition hover:bg-violet-100"
-              >
-                ＋ 章扉を追加
-              </button>
+              {!showAllPages ? (
+                <button
+                  type="button"
+                  onClick={() => addChapter(outline.length)}
+                  className="mt-4 rounded-full bg-violet-50 px-3 py-1.5 text-[11px] font-bold text-violet-700 ring-1 ring-violet-200 transition hover:bg-violet-100"
+                >
+                  ＋ 章扉を追加
+                </button>
+              ) : null}
             </section>
 
             <details key={workId} className="mt-5 rounded-3xl bg-white p-5 shadow-sm">

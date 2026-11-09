@@ -53,6 +53,7 @@ type PagePanelComposerProps = {
   onExtractSelectionToPage?: (payload: {
     selectedText: string;
   }) => Promise<boolean>;
+  onInsertBookChapter?: PagePanelComposerProps["onSplitPageToBook"];
   onSplitPageToBook?: (payload: {
     beforeBodySsot: string;
     afterBodySsot: string;
@@ -185,6 +186,7 @@ export function PagePanelComposer({
   mode = "page",
   entitlements = getPlanEntitlements("free"),
   onExtractSelectionToPage,
+  onInsertBookChapter,
   onSplitPageToBook,
 }: PagePanelComposerProps) {
   const panelSet = authoringSet ?? readPanelSet(value);
@@ -526,11 +528,10 @@ const waitForNextPaint = () =>
     ) => {
       preserveWindowScrollForNextRender();
 
-      if (
-        mode === "page" &&
-        onSplitPageToBook &&
-        tag === "PAGE"
-      ) {
+      const insertBookStructure =
+        tag === "CHAPTER" ? onInsertBookChapter : tag === "PAGE" ? onSplitPageToBook : undefined;
+
+      if (mode === "page" && insertBookStructure) {
         const baseBlocks =
           meaningfulBlocks.length > 0
             ? meaningfulBlocks
@@ -566,7 +567,7 @@ const waitForNextPaint = () =>
           );
 
         if (
-          !isMeaningfulRaw(beforeBodySsot)
+          tag === "PAGE" && !isMeaningfulRaw(beforeBodySsot)
         ) {
           window.alert(
             "PAGEの先頭では分割できません。",
@@ -574,7 +575,7 @@ const waitForNextPaint = () =>
           return;
         }
 
-        await onSplitPageToBook({
+        await insertBookStructure({
           beforeBodySsot,
           afterBodySsot,
         });
@@ -1037,7 +1038,12 @@ const waitForNextPaint = () =>
                                  structureItems={
                                   mode === "card"
                                     ? []
-                                    : onSplitPageToBook
+                                    : onInsertBookChapter
+                                      ? [
+                                          ...STANDALONE_PAGE_STRUCTURE_ITEMS,
+                                          { tag: "CHAPTER", label: index < renderBlocks.length - 1 && index > 0 ? "PAGEを分けて章扉を挿入" : "章扉を挿入" },
+                                        ]
+                                      : onSplitPageToBook
                                       ? STANDALONE_PAGE_STRUCTURE_ITEMS
                                       : STRUCTURE_INSERT_ITEMS
                                 }
