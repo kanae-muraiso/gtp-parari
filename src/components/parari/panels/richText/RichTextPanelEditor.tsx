@@ -41,6 +41,8 @@ const LONG_TEXT_THRESHOLD = 30000;
 import { panelInSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
 
 type RichTextPanelEditorProps = {
+  framed?: boolean;
+  editControls?: import("react").ReactNode;
   panelSet?: PanelSet;
   ssotText: string;
   placeholder?: string;
@@ -86,6 +88,8 @@ const DEFAULT_PANELIZE_ACTIONS: Array<{
 ];
 
 export function RichTextPanelEditor({
+  framed = false,
+  editControls,
   ssotText,
   panelSet = "standard",
   placeholder = "ここから本文",
@@ -219,9 +223,10 @@ export function RichTextPanelEditor({
             setMode("edit");
           }
         }}
-            className="cursor-text rounded-xl border border-transparent bg-white px-4 py-3 text-base leading-8 text-neutral-900 transition hover:bg-neutral-50/60"
+        className={`cursor-text rounded-xl border bg-white px-4 py-3 text-base leading-8 text-neutral-900 transition hover:bg-neutral-50/60 ${framed ? "border-neutral-200" : "border-transparent"}`}
         title="クリックして本文を編集"
       >
+        {framed ? <div className="mb-1 text-xs font-semibold text-neutral-500">テキスト</div> : null}
         {hasVisibleRichText(ssotText) ? (
           <div className="px-0 py-0">
             {readingSupport && hasTextReadingSupport(readingSupport) ? (
@@ -304,6 +309,7 @@ export function RichTextPanelEditor({
           />
         )}
       </div>
+      {editControls}
     </div>
   );
 }

@@ -59,7 +59,9 @@ async function normalizeBookInfoCoverImageFile(file: File): Promise<File> {
 export function BookInfoPanelEditor({
   data,
   onChangeRaw,
-}: PanelEditorProps<BookInfoPanelData>) {
+  settingsExtra,
+  collapsedByDefault = false,
+}: PanelEditorProps<BookInfoPanelData> & { settingsExtra?: ReactNode; collapsedByDefault?: boolean }) {
   const coverImageInputId = "bookinfo-cover-image-input";
 
   const [draftRaw, setDraftRaw] = useState(data.raw);
@@ -291,17 +293,9 @@ export function BookInfoPanelEditor({
     }
   };
 
-  return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-amber-700">BOOKINFO</div>
-          <div className="mt-1 text-[11px] leading-5 text-amber-700/80">
-            BOOKのタイトル・著者・表紙・読者向けシートを設定します。
-          </div>
-        </div>
-
-      </div>
+  const settings = (
+    <>
+      {settingsExtra}
 
       {!isDetailEditing ? (
         <div className="mb-4 space-y-4">
@@ -731,6 +725,36 @@ export function BookInfoPanelEditor({
           {hasToc ? <TocPreview /> : <EmptyBookPreview label="目次なし" />}
         </BookSheetPreviewCard>
       </div>
+    </>
+  );
+
+  if (collapsedByDefault) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <h2 className="break-words text-2xl font-bold leading-tight text-neutral-900">
+          {previewTitle}
+        </h2>
+        <details className="mt-3 rounded-xl border border-amber-200 bg-white px-3 py-2">
+          <summary className="cursor-pointer text-xs font-bold text-amber-800">BOOK設定</summary>
+          <div className="mt-4">{settings}</div>
+        </details>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-bold text-amber-700">BOOKINFO</div>
+          <div className="mt-1 text-[11px] leading-5 text-amber-700/80">
+            BOOKのタイトル・著者・表紙・読者向けシートを設定します。
+          </div>
+        </div>
+
+      </div>
+
+      {settings}
     </div>
   );
 }

@@ -307,27 +307,9 @@ export function PageInfoPanelEditor({
 
   return (
     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-      {isDetailEditing ? (
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <div className="text-xs font-bold text-sky-700">PAGE設定</div>
-            <div className="mt-1 text-[11px] leading-5 text-sky-700/80">
-              画像・URL・公開期間などの詳細を設定します。
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {!isDetailEditing ? (
-        <div className="mb-4">
-          <input
-            value={title}
-            onKeyDown={stopTitleInputShortcutKeys}
-            onChange={(event) => setTitleDraft(event.target.value)}
-            onBlur={(event) => commitTitle(event.currentTarget.value)}
-            placeholder="タイトル"
-            className="w-full border-0 bg-transparent px-1 py-3 text-2xl font-bold leading-tight text-neutral-900 outline-none placeholder:text-neutral-300 md:text-3xl"
-          />
+      <h3 data-page-info-title="" className="break-words text-2xl font-bold leading-tight text-neutral-900 md:text-3xl">
+        {title.trim() || "無題のPAGE"}
+      </h3>
 
           {mainImage ? (
             <div className="mt-4 overflow-hidden rounded-xl bg-white p-2 ring-1 ring-sky-100">
@@ -339,12 +321,20 @@ export function PageInfoPanelEditor({
             </div>
           ) : null}
 
-          <details className="mt-4 rounded-xl border border-sky-200 bg-white px-3 py-2">
-            <summary className="cursor-pointer select-none text-xs font-bold text-sky-700">
-              設定
-            </summary>
-
-            <div className="mt-3 space-y-4">
+      <details className="mt-4 rounded-xl border border-sky-200 bg-white px-3 py-2">
+        <summary className="cursor-pointer select-none text-xs font-bold text-sky-700">
+          PAGE設定
+        </summary>
+        <div className="mt-3 space-y-4">
+          <TextField
+            label="PAGEタイトル"
+            value={title}
+            placeholder="PAGEタイトル"
+            onChange={setTitleDraft}
+            onCommit={commitTitle}
+          />
+          {!isDetailEditing ? (
+            <div className="space-y-4">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -413,10 +403,8 @@ export function PageInfoPanelEditor({
                 詳細設定
               </button>
             </div>
-          </details>
-        </div>
-      ) : (
-        <div className="mb-4 space-y-4">
+          ) : (
+        <div className="space-y-4">
           <div className="flex justify-end">
             <button
               type="button"
@@ -428,14 +416,6 @@ export function PageInfoPanelEditor({
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <TextField
-              label="PAGEタイトル"
-              value={title}
-              placeholder="PAGEタイトル"
-              onChange={setTitleDraft}
-              onCommit={commitTitle}
-            />
-
             <label className="flex items-center gap-2 rounded-xl border border-sky-200 bg-white px-3 py-2">
               <input
                 type="checkbox"
@@ -664,7 +644,9 @@ export function PageInfoPanelEditor({
             </label>
           </div>
         </div>
-      )}
+          )}
+        </div>
+      </details>
     </div>
   );
 }
