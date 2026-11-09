@@ -913,7 +913,6 @@ export default function ReferenceBookEditorPage() {
         ) : (
           <>
             <section className="rounded-3xl bg-white p-6 shadow-sm">
-              <PanelSetControls value={bookSettings.authoringSet ?? "standard"} source={String(book.content ?? "")} onChange={authoringSet => scheduleSave(title, { ...bookSettings, authoringSet }, outline)} />
               <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
                 BOOK
               </div>
@@ -938,6 +937,10 @@ export default function ReferenceBookEditorPage() {
                 <summary className="cursor-pointer select-none text-xs font-bold text-neutral-700">
                   BOOK設定
                 </summary>
+
+                <div className="mt-4">
+                  <PanelSetControls value={bookSettings.authoringSet ?? "standard"} source={String(book.content ?? "")} onChange={authoringSet => scheduleSave(title, { ...bookSettings, authoringSet }, outline)} />
+                </div>
 
                 <div className="mt-4 grid gap-4">
                   <label className="block">
@@ -1218,6 +1221,7 @@ export default function ReferenceBookEditorPage() {
                     const pageState = pageSaveState[entry.id] ?? "idle";
                     const pageComposer = work && (showAllPages || isOpen) ? (
                       <PagePanelComposer
+                        bookPage
                         authoringSet={bookSettings.authoringSet ?? "standard"}
                         value={String(work.content ?? "")}
                         onChange={(nextContent) => schedulePageSave(work.id, nextContent)}
