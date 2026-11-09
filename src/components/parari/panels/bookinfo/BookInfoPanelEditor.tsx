@@ -734,7 +734,7 @@ export function BookInfoPanelEditor({
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
           <span className="min-w-0">
             <span className="block text-xs font-bold text-amber-700">BOOKINFO</span>
-            <span className="block break-words text-base font-bold text-neutral-900">{previewTitle}</span>
+            <span className="block break-words text-2xl font-bold leading-tight text-neutral-900">{previewTitle}</span>
           </span>
           <span className="shrink-0 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800">
             <span className="group-open:hidden">詳細を表示</span>

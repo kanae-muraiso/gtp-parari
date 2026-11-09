@@ -321,6 +321,7 @@ export function PageInfoPanelEditor({
       {!isDetailEditing ? (
         <div className="mb-4">
           <input
+            data-page-info-title=""
             value={title}
             onKeyDown={stopTitleInputShortcutKeys}
             onChange={(event) => setTitleDraft(event.target.value)}

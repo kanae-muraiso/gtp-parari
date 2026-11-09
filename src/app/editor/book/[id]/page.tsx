@@ -1273,7 +1273,7 @@ function DeferredBookPage({
       className="flex min-h-24 w-full flex-col items-start justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 text-left text-neutral-900"
     >
       <span className="text-xs font-semibold text-sky-700">PAGEINFO</span>
-      <span className="text-base font-bold">{title}</span>
+      <span className="text-lg font-bold">{title}</span>
       <span className="text-xs text-neutral-600">本文を表示</span>
     </button>
   );
