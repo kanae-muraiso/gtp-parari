@@ -1060,7 +1060,7 @@ export default function MyWorksPage() {
       sortModeByKind,
     ]);
 
-    const onCreateCategory = async () => {
+    const onCreateCategory = async (workId?: string) => {
       if (!currentUserId) {
         window.alert(
           "テーマを作成するにはログインが必要です。",
@@ -1135,6 +1135,7 @@ export default function MyWorksPage() {
           );
         }),
       );
+      if (workId) await onAddWorkCategory(workId, data.id);
     };
 
     const onRenameCategory = async (
@@ -1481,11 +1482,8 @@ export default function MyWorksPage() {
                   </div>
 
                   {works.length > 0 ? (
-                  <label className="flex items-center justify-between gap-2 sm:justify-end">
-                    <span className="text-[11px] font-bold text-neutral-400">
-                      並べ替え
-                    </span>
                     <select
+                      aria-label="並べ替え"
                       value={
                         sortModeByKind[activeWorkKind]
                       }
@@ -1513,7 +1511,6 @@ export default function MyWorksPage() {
                         タイトル順
                       </option>
                     </select>
-                  </label>
                   ) : null}
                 </div>
 
@@ -1739,26 +1736,87 @@ export default function MyWorksPage() {
                         </select>
                       </div>
 
+                      <div className="relative flex shrink-0 flex-wrap justify-end gap-1.5">
+                        <div
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape" && activeDetails === "category") {
+                              setOpenWorkDetails(null);
+                              event.currentTarget.querySelector("button")?.focus();
+                            }
+                          }}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`${title}のテーマ（${workCategories.length}件）`}
+                            aria-expanded={activeDetails === "category"}
+                            aria-controls={activeDetails === "category" ? `work-themes-${work.id}` : undefined}
+                            onClick={() => setOpenWorkDetails(activeDetails === "category" ? null : { workId: work.id, section: "category" })}
+                            className="whitespace-nowrap rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+                          >
+                            テーマ{workCategories.length > 0 ? ` ${workCategories.length}` : ""} {activeDetails === "category" ? "▴" : "▾"}
+                          </button>
+                          {activeDetails === "category" ? (
+                            <section aria-label="テーマ" id={`work-themes-${work.id}`} className="absolute right-0 z-20 mt-1 max-h-72 w-64 max-w-[calc(100vw-3rem)] space-y-3 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+                              <h3 className="text-xs font-bold text-neutral-700">テーマ</h3>
+                              {workCategories.length === 0 ? (
+                                <p className="text-xs text-neutral-500">テーマはまだ付いていません。</p>
+                              ) : null}
+                              <div className="flex flex-wrap gap-2">
+                                {workCategories.map((category) => (
+                                  <button
+                                    key={category.id}
+                                    type="button"
+                                    disabled={changingWorkCategoryKey === `${work.id}:${category.id}`}
+                                    onClick={() => void onRemoveWorkCategory(work.id, category.id)}
+                                    aria-label={`${category.name}をテーマから外す`}
+                                    className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-40"
+                                  >
+                                    {category.name} ×
+                                  </button>
+                                ))}
+                              </div>
+                              {availableCategories.length > 0 ? (
+                                <select
+                                  aria-label="追加するテーマ"
+                                  value=""
+                                  disabled={changingWorkCategoryKey !== null}
+                                  onChange={(event) => {
+                                    if (event.target.value) void onAddWorkCategory(work.id, event.target.value);
+                                  }}
+                                  className="max-w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700"
+                                >
+                                  <option value="">テーマを選ぶ…</option>
+                                  {availableCategories.map((category) => (
+                                    <option key={category.id} value={category.id}>{category.name}</option>
+                                  ))}
+                                </select>
+                              ) : null}
+                              <button
+                                type="button"
+                                disabled={changingWorkCategoryKey !== null}
+                                onClick={() => void onCreateCategory(work.id)}
+                                className="block rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                              >
+                                ＋ 新しいテーマを作って付ける
+                              </button>
+                            </section>
+                          ) : null}
+                        </div>
                       <div className="relative shrink-0">
                         <button
                           type="button"
                           aria-label={`${title}の詳細`}
-                          aria-expanded={activeDetails !== null}
+                          aria-expanded={activeDetails !== null && activeDetails !== "category"}
                           onClick={() => {
                             setExportMessages((current) => ({ ...current, [work.id]: "" }));
-                            setOpenWorkDetails(activeDetails ? null : { workId: work.id, section: "menu" });
+                            setOpenWorkDetails(activeDetails && activeDetails !== "category" ? null : { workId: work.id, section: "menu" });
                           }}
                           className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
                         >
-                          {activeDetails ? "詳細を閉じる ▴" : "詳細 ▾"}
+                          {activeDetails && activeDetails !== "category" ? "詳細を閉じる ▴" : "詳細 ▾"}
                         </button>
                         {activeDetails === "menu" ? (
                         <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
-                          {categories.length > 0 ? (
-                            <button type="button" className={detailItem} onClick={() => setOpenWorkDetails({ workId: work.id, section: "category" })}>
-                              テーマ
-                            </button>
-                          ) : null}
                           <button type="button" className={detailItem} onClick={() => void onCopyPublicUrl(work.id)}>
                             {copiedWorkId === work.id ? "URLをコピーしました" : "URLをコピー"}
                           </button>
@@ -1803,6 +1861,7 @@ export default function MyWorksPage() {
                         </div>
                         ) : null}
                       </div>
+                      </div>
                     </div>
 
                     <div className="flex items-start justify-between gap-3">
@@ -1816,44 +1875,8 @@ export default function MyWorksPage() {
                       </div>
                     </div>
 
-                    {activeDetails && exportMessages[work.id] ? (
+                    {activeDetails && activeDetails !== "category" && exportMessages[work.id] ? (
                       <p role="status" className="mt-3 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-xs text-violet-900">{exportMessages[work.id]}</p>
-                    ) : null}
-
-                    {activeDetails === "category" ? (
-                      <section aria-label="テーマ" className="mt-3 space-y-2 rounded-2xl bg-neutral-50 p-3">
-                        <h3 className="text-xs font-bold text-neutral-700">テーマ</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {workCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              type="button"
-                              disabled={changingWorkCategoryKey === `${work.id}:${category.id}`}
-                              onClick={() => void onRemoveWorkCategory(work.id, category.id)}
-                              aria-label={`${category.name}をテーマから外す`}
-                              className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-40"
-                            >
-                              {category.name} ×
-                            </button>
-                          ))}
-                        </div>
-                        {availableCategories.length > 0 ? (
-                          <select
-                            aria-label="追加するテーマ"
-                            value=""
-                            disabled={changingWorkCategoryKey !== null}
-                            onChange={(event) => {
-                              if (event.target.value) void onAddWorkCategory(work.id, event.target.value);
-                            }}
-                            className="max-w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700"
-                          >
-                            <option value="">テーマを選ぶ…</option>
-                            {availableCategories.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                          </select>
-                        ) : null}
-                      </section>
                     ) : null}
 
                     {kind === "Page" && isDetailOpen ? (
