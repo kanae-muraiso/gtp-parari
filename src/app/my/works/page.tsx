@@ -77,6 +77,16 @@ type OwnerCollaborator = {
 
 type LoadStatus = "loading" | "ready" | "error" | "login-required";
 
+// Keep the last owner list in memory for navigation back from the editor.
+const WORK_LIST_CACHE_MS = 5 * 60 * 1000;
+let ownerListCache: {
+  userId: string;
+  expiresAt: number;
+  works: WorkRow[];
+  categories: WorkCategoryRow[];
+  categoryLinks: WorkCategoryLinkRow[];
+} | null = null;
+
 export default function MyWorksPage() {
   const [works, setWorks] = React.useState<WorkRow[]>([]);
     const [sharedWorks, setSharedWorks] = React.useState<WorkRow[]>([]);
@@ -151,6 +161,7 @@ export default function MyWorksPage() {
       }
 
       if (userError || !user) {
+        ownerListCache = null;
         setCurrentUserId(null);
           setWorks([]);
           setSharedWorks([]);
@@ -159,7 +170,8 @@ export default function MyWorksPage() {
         return;
       }
 
-      setCurrentUserId(user.id);
+      const userId = user.id;
+      setCurrentUserId(userId);
       let savedTab: string | null = null;
       try {
         savedTab = window.localStorage.getItem(workTabKey(user.id));
@@ -168,183 +180,91 @@ export default function MyWorksPage() {
       }
       setActiveWorkKind(WORK_TABS.find((tab) => tab === savedTab) ?? "All");
         
-        const { data: monitorProfile, error: monitorError } = await supabase
-          .from("profiles")
-          .select("is_monitor")
-          .eq("user_id", user.id)
-          .maybeSingle<{ is_monitor: boolean | null }>();
-
-        if (cancelled) {
-          return;
-        }
-
-        if (monitorError) {
-          console.warn("[my/works] monitor profile load failed:", monitorError);
-        }
-
-        const isMonitor = monitorProfile?.is_monitor === true;
-
-        const { data: billing, error: billingError } = await supabase
-          .from("user_billing")
-          .select("plan, billing_status")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (cancelled) {
-          return;
-        }
-
-        if (billingError) {
-          console.error("[my/works] billing load failed:", billingError);
-
-          setCanUseCollaboration(isMonitor);
-        } else {
-          const effectivePlan = getEffectivePlan(billing);
-
-          setCanUseCollaboration(
-            isMonitor ||
-              effectivePlan === "plus" ||
-              effectivePlan === "pro",
-          );
-        }
-
-        const { data: ownerData, error: ownerError } = await supabase
-          .from("parari_books")
-          .select(
-            "id,title,content,visibility,is_public,created_at,updated_at,stable_slug",
-          )
-          .eq("owner", user.id)
-          .order("updated_at", { ascending: false });
-
-        if (cancelled) {
-          return;
-        }
-
-        if (ownerError) {
-          setWorks([]);
-          setSharedWorks([]);
-          setStatus("error");
-          setMessage(
-            `作品リストの取得に失敗しました: ${ownerError.message}`,
-          );
-          return;
-        }
-
-        // --------------------------------------------------------
-        // --------------------------------------------------------
-        // 自分の作品テーマを取得
-        // --------------------------------------------------------
-        const {
-          data: categoryData,
-          error: categoryError,
-        } = await supabase
-          .from("parari_work_categories")
-          .select("id,owner,name,sort_order")
-          .eq("owner", user.id)
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true });
-
-        if (cancelled) {
-          return;
-        }
-
-        if (categoryError) {
-          console.warn(
-            "[my/works] category load failed:",
-            categoryError,
-          );
-        }
-
-        const {
-          data: categoryLinkData,
-          error: categoryLinkError,
-        } = await supabase
-          .from("parari_work_category_links")
-          .select("work_id,category_id,owner")
-          .eq("owner", user.id);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (categoryLinkError) {
-          console.warn(
-            "[my/works] category link load failed:",
-            categoryLinkError,
-          );
-        }
-
-        // 自分が共同編集者として登録されている作品を取得
-        // --------------------------------------------------------
-
-        const {
-          data: collaboratorRows,
-          error: collaboratorError,
-        } = await supabase
-          .from("parari_work_collaborators")
-          .select("work_id, role")
-          .eq("user_id", user.id);
-
-        if (cancelled) {
-          return;
-        }
-
-        let nextSharedWorks: WorkRow[] = [];
-
-        if (collaboratorError) {
-          console.warn(
-            "[my/works] collaborator list load failed:",
-            collaboratorError,
-          );
-        } else {
-          const sharedWorkIds = Array.from(
-            new Set(
-              (collaboratorRows ?? [])
-                .map((row) => String(row.work_id ?? "").trim())
-                .filter(Boolean),
-            ),
-          );
-
-          if (sharedWorkIds.length > 0) {
-            const {
-              data: sharedData,
-              error: sharedError,
-            } = await supabase
-              .from("parari_books")
-              .select(
-                "id,title,content,visibility,is_public,created_at,updated_at,stable_slug",
-              )
-              .in("id", sharedWorkIds)
-              .order("updated_at", { ascending: false });
-
-            if (cancelled) {
-              return;
-            }
-
-            if (sharedError) {
-              console.warn(
-                "[my/works] shared works load failed:",
-                sharedError,
-              );
-            } else {
-              nextSharedWorks = (sharedData ?? []) as WorkRow[];
-            }
-          }
-        }
-
-        setWorks((ownerData ?? []) as WorkRow[]);
-        setSharedWorks(nextSharedWorks);
-        setCategories(
-          categoryError
-            ? []
-            : ((categoryData ?? []) as WorkCategoryRow[]),
-        );
-        setCategoryLinks(
-          categoryLinkError
-            ? []
-            : ((categoryLinkData ?? []) as WorkCategoryLinkRow[]),
-        );
+      const cached = ownerListCache?.userId === user.id &&
+        ownerListCache.expiresAt > Date.now() ? ownerListCache : null;
+      if (cached) {
+        setWorks(cached.works);
+        setCategories(cached.categories);
+        setCategoryLinks(cached.categoryLinks);
         setStatus("ready");
+      }
+
+      const workColumns = "id,title,content,visibility,is_public,created_at,updated_at,stable_slug";
+
+      async function loadOwnedList() {
+        const [owner, category, links] = await Promise.all([
+          supabase.from("parari_books").select(workColumns)
+            .eq("owner", userId).order("updated_at", { ascending: false }),
+          supabase.from("parari_work_categories").select("id,owner,name,sort_order")
+            .eq("owner", userId).order("sort_order", { ascending: true }).order("name", { ascending: true }),
+          supabase.from("parari_work_category_links").select("work_id,category_id,owner")
+            .eq("owner", userId),
+        ]);
+        if (cancelled) return;
+
+        if (owner.error) {
+          setMessage(`作品リストの取得に失敗しました: ${owner.error.message}`);
+          if (!cached) setStatus("error");
+          return;
+        }
+
+        if (category.error) console.warn("[my/works] category load failed:", category.error);
+        if (links.error) console.warn("[my/works] category link load failed:", links.error);
+
+        const nextWorks = (owner.data ?? []) as WorkRow[];
+        const nextCategories = (category.data ?? cached?.categories ?? []) as WorkCategoryRow[];
+        const nextLinks = (links.data ?? cached?.categoryLinks ?? []) as WorkCategoryLinkRow[];
+        // A refresh must not overwrite edits made while the cached list is visible.
+        setWorks((current) => cached && current !== cached.works ? current : nextWorks);
+        setCategories((current) => cached && current !== cached.categories ? current : nextCategories);
+        setCategoryLinks((current) => cached && current !== cached.categoryLinks ? current : nextLinks);
+        setStatus("ready");
+
+        ownerListCache = {
+          userId: userId,
+          expiresAt: Date.now() + WORK_LIST_CACHE_MS,
+          works: nextWorks,
+          categories: nextCategories,
+          categoryLinks: nextLinks,
+        };
+      }
+
+      async function loadCollaborationAccess() {
+        const [profile, billing] = await Promise.all([
+          supabase.from("profiles").select("is_monitor").eq("user_id", userId)
+            .maybeSingle<{ is_monitor: boolean | null }>(),
+          supabase.from("user_billing").select("plan, billing_status").eq("user_id", userId)
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+        if (profile.error) console.warn("[my/works] monitor profile load failed:", profile.error);
+        if (billing.error) console.warn("[my/works] billing load failed:", billing.error);
+        const plan = getEffectivePlan(billing.data);
+        setCanUseCollaboration(profile.data?.is_monitor === true || plan === "plus" || plan === "pro");
+      }
+
+      async function loadSharedWorks() {
+        const { data, error } = await supabase.from("parari_work_collaborators")
+          .select("work_id, role").eq("user_id", userId);
+        if (cancelled) return;
+        if (error) {
+          console.warn("[my/works] collaborator list load failed:", error);
+          return;
+        }
+
+        const ids = [...new Set((data ?? []).map((row) => String(row.work_id ?? "").trim()).filter(Boolean))];
+        if (!ids.length) return;
+        const shared = await supabase.from("parari_books").select(workColumns)
+          .in("id", ids).order("updated_at", { ascending: false });
+        if (cancelled) return;
+        if (shared.error) {
+          console.warn("[my/works] shared works load failed:", shared.error);
+        } else {
+          setSharedWorks((shared.data ?? []) as WorkRow[]);
+        }
+      }
+
+      await Promise.all([loadOwnedList(), loadCollaborationAccess(), loadSharedWorks()]);
     };
 
     void loadWorks();
@@ -353,6 +273,12 @@ export default function MyWorksPage() {
       cancelled = true;
     };
   }, []);
+
+  React.useEffect(() => {
+    if (status === "ready" && ownerListCache && ownerListCache.userId === currentUserId) {
+      ownerListCache = { ...ownerListCache, works, categories, categoryLinks };
+    }
+  }, [status, currentUserId, works, categories, categoryLinks]);
 
   const onCopyPublicUrl = React.useCallback(async (workId: string) => {
     const url = createPublicUrl(workId);
