@@ -2,6 +2,7 @@
 
 import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import React from "react";
+import { BookSsotInspector } from "@/components/parari/BookSsotInspector";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -466,6 +467,7 @@ export default function ReferenceBookEditorPage() {
     page: WorkRow,
   ) => {
     pagesRef.current.set(page.id, page);
+    savedPageContentsRef.current.set(page.id, page.content ?? "");
     setPages((current) => [
       page,
       ...current.filter(
@@ -851,6 +853,13 @@ export default function ReferenceBookEditorPage() {
       />
 
       <div className="mx-auto max-w-3xl px-4 py-8">
+        {book?.id === workId && book.content !== null ? (
+          <BookSsotInspector
+            key={workId}
+            source={book.content}
+            savedPages={savedPageContentsRef.current}
+          />
+        ) : null}
         <WorkLimitsNotice source={draftBookRef.current ?? book?.content ?? ""} />
         <DraftRecovery workId={workId} source={state === "error" ? draftBookRef.current ?? "" : ""} />
         {pages.filter(page => pageSaveState[page.id] === "error").map(page => <DraftRecovery key={page.id} workId={page.id} source={page.content ?? ""} />)}
