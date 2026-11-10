@@ -57,7 +57,7 @@ export default function HomePage() {
       if (!mounted) return;
 
       if (!preferenceData) {
-        router.replace("/my/library-v2");
+        router.replace("/my/bookshelf");
         return;
       }
 

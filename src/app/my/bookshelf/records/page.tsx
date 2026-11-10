@@ -18,7 +18,7 @@ export default function LibraryRecordsPage(){
   const sync=()=>{const value=new URLSearchParams(window.location.search).get("tab");setTab(value==="applications"||value==="memberships"?value:"purchases");};
   sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);
  },[]);
- function selectTab(value:Tab){setTab(value);window.history.replaceState(null,"","/my/library-v2/records?tab="+value);}
+ function selectTab(value:Tab){setTab(value);window.history.replaceState(null,"","/my/bookshelf/records?tab="+value);}
  const [records,setRecords]=useState<Records|null>(null);
  const [message,setMessage]=useState("記録を読み込んでいます…");
  useEffect(()=>{
