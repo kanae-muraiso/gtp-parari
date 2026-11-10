@@ -4,10 +4,8 @@ import Link from "next/link";
 
 const sections = [
   { label: "書棚", href: "/my/library-v2", key: "shelf" },
-  { label: "作者を探す", href: "/my/authors", key: "authors" },
-  { label: "購入", href: "/my/library-v2/records?tab=purchases", key: "purchases" },
-  { label: "申込", href: "/my/library-v2/records?tab=applications", key: "applications" },
-  { label: "メンバーシップ", href: "/my/library-v2/records?tab=memberships", key: "memberships" },
+  { label: "作品・作者を探す", href: "/my/authors", key: "authors" },
+  { label: "申込・購入", href: "/my/library-v2/records?tab=purchases", key: "records" },
 ] as const;
 
 type Section = typeof sections[number]["key"];
