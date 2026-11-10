@@ -63,7 +63,7 @@ export default function SquareRegistrationGuide() {
               <p>
                 カード決済の承認と口座の認証を確認したら、PARARIで「Squareを接続」を押し、Squareの画面で連携を許可します。「Square接続済み」になったら、販売する作品を選んで価格を設定できます。
               </p>
-              <Link className="mt-2 inline-block font-semibold text-sky-800 underline underline-offset-4" href="/billing#square-connection">
+              <Link className="mt-2 inline-block font-semibold text-sky-800 underline underline-offset-4" href="/my/settings#sell-work">
                 PARARIのSquare接続を開く
               </Link>
             </li>
