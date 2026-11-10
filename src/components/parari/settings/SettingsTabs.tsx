@@ -2,7 +2,7 @@
 // 2026/09/15 JST
 //
 // 共通設定は基本設定 / プラン。
-// 公開トップページは STUDIO を使う人にだけ表示する。
+// 公開プロフィールは STUDIO を使う人にだけ表示する。
 
 "use client";
 
@@ -32,7 +32,7 @@ const BASIC_ITEM: Item = {
 
 const PUBLIC_ITEM: Item = {
   key: "public",
-  label: "トップページ",
+  label: "公開プロフィール",
   href: "/my/profile/public",
 };
 

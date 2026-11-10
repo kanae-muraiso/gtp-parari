@@ -38,7 +38,6 @@ import PublicPageModelLab, {
 type ProfileImageStyle = "circle" | "logo" | "none";
 type ProfileAlign = "left" | "center" | "right";
 type ProfilePageType = "profile" | "links" | "works";
-type UserTopMode = "web" | "profile" | "works";
 type ProfileBuilderMode = "simple" | "strategy";
 
 type PublicPageIdea = {
@@ -110,8 +109,6 @@ type ProfileRow = {
   user_id: string;
   username: string | null;
   display_name: string | null;
-  homepage_mode: string | null;
-  homepage_book_id: string | null;
   bio: string | null;
   profile_body: string | null;
   avatar_url: string | null;
@@ -134,15 +131,6 @@ type ProfileRow = {
   public_page_published_at: string | null;
   public_page_ideas: unknown | null;
   public_page_active_idea_id: string | null;
-};
-
-type WebWorkRow = {
-  id: string;
-  title: string | null;
-  content: string | null;
-  stable_slug: string | null;
-  custom_slug: string | null;
-  slug: string | null;
 };
 
 type ProfileLinkRow = {
@@ -245,8 +233,6 @@ export default function MyPublicProfileSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [topPageSaving, setTopPageSaving] =
-    useState(false);
   const [linkSaving, setLinkSaving] = useState(false);
   const [workSavingId, setWorkSavingId] = useState<string | null>(null);
   const [movingWorkId, setMovingWorkId] = useState<string | null>(null);
@@ -257,19 +243,6 @@ export default function MyPublicProfileSettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [profileBody, setProfileBody] = useState("");
-
-  const [userTopMode, setUserTopMode] =
-    useState<UserTopMode>("works");
-  const [savedUserTopMode, setSavedUserTopMode] =
-    useState<UserTopMode>("works");
-
-  const [homepageBookId, setHomepageBookId] =
-    useState("");
-  const [savedHomepageBookId, setSavedHomepageBookId] =
-    useState("");
-
-  const [webWorks, setWebWorks] =
-    useState<WebWorkRow[]>([]);
 
   const [publicPageDraft, setPublicPageDraft] =
     useState<unknown | null>(null);
@@ -293,16 +266,6 @@ export default function MyPublicProfileSettingsPage() {
     selectedIdeaId,
     setSelectedIdeaId,
   ] = useState<string | null>(null);
-
-  const [
-    profileTopSelection,
-    setProfileTopSelection,
-  ] = useState("simple");
-
-  const [
-    savedProfileTopSelection,
-    setSavedProfileTopSelection,
-  ] = useState("simple");
 
   const [
     ideaPublishingId,
@@ -531,8 +494,6 @@ export default function MyPublicProfileSettingsPage() {
           "user_id",
           "username",
           "display_name",
-          "homepage_mode",
-          "homepage_book_id",
           "bio",
           "profile_body",
           "avatar_url",
@@ -579,74 +540,6 @@ export default function MyPublicProfileSettingsPage() {
     }
 
     setUsername(profile.username ?? "");
-
-    const loadedTopMode: UserTopMode =
-      profile.homepage_mode === "book"
-        ? "web"
-        : profile.homepage_mode === "profile"
-          ? "profile"
-          : "works";
-
-    setUserTopMode(loadedTopMode);
-    setSavedUserTopMode(loadedTopMode);
-
-    const loadedHomepageBookId =
-      profile.homepage_book_id ?? "";
-
-    setHomepageBookId(
-      loadedHomepageBookId,
-    );
-    setSavedHomepageBookId(
-      loadedHomepageBookId,
-    );
-
-    const {
-      data: webWorkRows,
-      error: webWorksError,
-    } = await supabase
-      .from("parari_books")
-      .select(
-        "id, title, content, stable_slug, custom_slug, slug",
-      )
-      .eq("owner", user.id)
-      .or(
-        "is_deleted.is.null,is_deleted.eq.false",
-      )
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (webWorksError) {
-      setMessage(
-        `WEB作品の取得に失敗しました: ${webWorksError.message}`,
-      );
-      setMessageIsError(true);
-      setLoading(false);
-      return;
-    }
-
-    const availableWebWorks = (
-      (webWorkRows ?? []) as WebWorkRow[]
-    ).filter((work) =>
-      /^\s*\[(WEB|WEBINFO)\b/i.test(
-        String(work.content ?? ""),
-      ),
-    );
-
-    setWebWorks(
-      availableWebWorks,
-    );
-
-    if (
-      loadedTopMode === "web" &&
-      loadedHomepageBookId &&
-      !availableWebWorks.some(
-        (work) =>
-          work.id === loadedHomepageBookId,
-      )
-    ) {
-      setHomepageBookId("");
-    }
 
     const loadedPagePattern =
       normalizePublicPagePattern(
@@ -745,20 +638,6 @@ export default function MyPublicProfileSettingsPage() {
 
     setPublicPageActiveIdeaId(
       loadedActiveIdeaId,
-    );
-
-    const loadedProfileTopSelection =
-      loadedPagePattern &&
-      loadedActiveIdeaId
-        ? loadedActiveIdeaId
-        : "simple";
-
-    setProfileTopSelection(
-      loadedProfileTopSelection,
-    );
-
-    setSavedProfileTopSelection(
-      loadedProfileTopSelection,
     );
 
     setProfileBuilderMode(
@@ -1076,12 +955,6 @@ export default function MyPublicProfileSettingsPage() {
       );
       setPublicPageDraft(null);
 
-      setProfileTopSelection(
-        selectedIdeaId,
-      );
-      setSavedProfileTopSelection(
-        selectedIdeaId,
-      );
 
       setSelectedPagePattern(
         nextPublished.pattern,
@@ -1150,12 +1023,6 @@ export default function MyPublicProfileSettingsPage() {
       );
       setPublicPageDraft(null);
 
-      setProfileTopSelection(
-        idea.id,
-      );
-      setSavedProfileTopSelection(
-        idea.id,
-      );
 
       setSelectedPagePattern(
         idea.page.pattern,
@@ -1168,166 +1035,6 @@ export default function MyPublicProfileSettingsPage() {
       setIdeaPublishingId(null);
     };
 
-
-  const handleSaveTopPage = async () => {
-    if (!supabase || !userId) {
-      setMessage(
-        "ログインユーザーを確認できませんでした。",
-      );
-      setMessageIsError(true);
-      return;
-    }
-
-    if (
-      userTopMode === "web" &&
-      !homepageBookId
-    ) {
-      setMessage(
-        "トップページに使用するWEBページを選択してください。",
-      );
-      setMessageIsError(true);
-      return;
-    }
-
-    const selectedProfileIdea =
-      profileTopSelection === "simple"
-        ? null
-        : publicPageIdeas.find(
-            (idea) =>
-              idea.id ===
-              profileTopSelection,
-          ) ?? null;
-
-    if (
-      userTopMode === "profile" &&
-      profileTopSelection !== "simple" &&
-      !selectedProfileIdea
-    ) {
-      setMessage(
-        "表示する3Qページ案を選択してください。",
-      );
-      setMessageIsError(true);
-      return;
-    }
-
-    setTopPageSaving(true);
-    setMessage("");
-    setMessageIsError(false);
-
-    const homepageMode =
-      userTopMode === "web"
-        ? "book"
-        : userTopMode;
-
-    const nextHomepageBookId =
-      userTopMode === "web"
-        ? homepageBookId
-        : null;
-
-    const profileSelectionUpdate =
-      userTopMode !== "profile"
-        ? {}
-        : profileTopSelection ===
-            "simple"
-          ? {
-              public_page_pattern: null,
-              public_page_active_idea_id:
-                null,
-              public_page_ideas:
-                publicPageIdeas,
-              public_page_draft: null,
-            }
-          : selectedProfileIdea
-            ? {
-                public_page_pattern:
-                  selectedProfileIdea.page
-                    .pattern,
-                public_page_active_idea_id:
-                  selectedProfileIdea.id,
-                public_page_published:
-                  selectedProfileIdea.page,
-                public_page_published_at:
-                  new Date().toISOString(),
-                public_page_ideas:
-                  publicPageIdeas,
-                public_page_draft: null,
-              }
-            : {};
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .update({
-        homepage_mode: homepageMode,
-        homepage_book_id:
-          nextHomepageBookId,
-        ...profileSelectionUpdate,
-      })
-      .eq("user_id", userId)
-      .select("user_id");
-
-    if (error) {
-      setMessage(
-        `トップページ設定の保存に失敗しました: ${error.message}`,
-      );
-      setMessageIsError(true);
-      setTopPageSaving(false);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setMessage(
-        "プロフィールが見つかりません。先に基本設定を行ってください。",
-      );
-      setMessageIsError(true);
-      setTopPageSaving(false);
-      return;
-    }
-
-    setSavedUserTopMode(
-      userTopMode,
-    );
-    setSavedHomepageBookId(
-      nextHomepageBookId ?? "",
-    );
-
-    if (userTopMode === "profile") {
-      setSavedProfileTopSelection(
-        profileTopSelection,
-      );
-
-      if (
-        profileTopSelection ===
-        "simple"
-      ) {
-        setPublicPageActiveIdeaId(
-          null,
-        );
-        setSelectedPagePattern(
-          null,
-        );
-      } else if (
-        selectedProfileIdea
-      ) {
-        setPublicPageActiveIdeaId(
-          selectedProfileIdea.id,
-        );
-        setPublicPagePublished(
-          selectedProfileIdea.page,
-        );
-        setSelectedPagePattern(
-          selectedProfileIdea.page.pattern,
-        );
-      }
-
-      setPublicPageDraft(null);
-    }
-
-    setMessage(
-      "トップページ設定を保存しました。",
-    );
-    setMessageIsError(false);
-    setTopPageSaving(false);
-  };
 
   const handleSave = async () => {
     if (!supabase || !userId) {
@@ -1696,11 +1403,11 @@ export default function MyPublicProfileSettingsPage() {
             </div>
 
             <h1 className="text-lg font-semibold text-neutral-900">
-              あなたのトップページ
+              公開プロフィール
             </h1>
 
             <p className="mt-1 text-xs leading-5 text-neutral-500">
-              PARARIであなたを訪ねた人が、最初に見るページを設定します。
+              あなた自身や活動を紹介するプロフィールを編集できます。
             </p>
           </div>
 
@@ -1757,312 +1464,6 @@ export default function MyPublicProfileSettingsPage() {
             {!showEditor ? (
               <>
                 <section className="rounded-[32px] border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
-                    YOUR TOP PAGE
-                  </div>
-
-                  <h2 className="mt-2 text-2xl font-black text-neutral-950">
-                    あなたのトップページ
-                  </h2>
-
-                  <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-600">
-                    <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
-                      /{username || "username"}/
-                    </code>
-                    {" "}にアクセスした人が、最初に見るページです。
-                    まず、何を入口にするかを選びます。
-                  </p>
-
-                  <div className="mt-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-[9px] font-black tracking-[0.12em] text-neutral-600">
-                        STEP 1
-                      </span>
-
-                      <div className="text-sm font-black text-neutral-950">
-                        トップページに何を表示しますか？
-                      </div>
-                    </div>
-
-                    <p className="mt-1 text-xs leading-6 text-neutral-500">
-                      基本設定にある「ユーザートップページ」と同じ設定です。
-                      どちらで変更しても同じ設定が使われます。
-                    </p>
-                  </div>
-
-                  <div className="mt-5 grid gap-3">
-                    <label
-                      className={[
-                        "relative flex cursor-pointer gap-4 rounded-[24px] border p-5 transition",
-                        userTopMode === "profile"
-                          ? "border-neutral-950 bg-neutral-50 ring-1 ring-neutral-950"
-                          : "border-neutral-200 bg-white hover:border-neutral-400",
-                      ].join(" ")}
-                    >
-                      <input
-                        type="radio"
-                        name="top-page-mode"
-                        value="profile"
-                        checked={
-                          userTopMode === "profile"
-                        }
-                        onChange={() =>
-                          setUserTopMode("profile")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-base font-black text-neutral-950">
-                            プロフィール・活動紹介
-                          </div>
-
-                          {savedUserTopMode === "profile" ? (
-                            <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[9px] font-black text-white">
-                              現在のトップページ
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <p className="mt-1 text-xs leading-6 text-neutral-500">
-                          あなた自身や、今している活動を紹介するページを入口にします。
-                        </p>
-
-                        <p className="mt-3 text-[11px] leading-5 text-neutral-400">
-                          プロフィールページの内容は、下の「プロフィールページ」でいつでも編集できます。
-                        </p>
-
-                        {userTopMode === "profile" ? (
-                          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
-                            <div className="text-[10px] font-black tracking-[0.14em] text-neutral-400">
-                              表示するプロフィール
-                            </div>
-
-                            <select
-                              value={profileTopSelection}
-                              onChange={(event) =>
-                                setProfileTopSelection(
-                                  event.target.value,
-                                )
-                              }
-                              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                            >
-                              <option value="simple">
-                                SIMPLE
-                              </option>
-
-                              {publicPageIdeas.map(
-                                (idea, index) => (
-                                  <option
-                                    key={idea.id}
-                                    value={idea.id}
-                                  >
-                                    {`3Q ページ案 ${index + 1} — ${idea.page.pattern.replace(/-/g, " ").toUpperCase()} / ${idea.page.design.toUpperCase()}`}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-
-                            <p className="mt-2 text-[11px] leading-5 text-neutral-400">
-                              3Q METHODで作ったページ案も、ここから選んでトップページにできます。
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    </label>
-
-                    <label
-                      className={[
-                        "relative flex cursor-pointer gap-4 rounded-[24px] border p-5 transition",
-                        userTopMode === "works"
-                          ? "border-neutral-950 bg-neutral-50 ring-1 ring-neutral-950"
-                          : "border-neutral-200 bg-white hover:border-neutral-400",
-                      ].join(" ")}
-                    >
-                      <input
-                        type="radio"
-                        name="top-page-mode"
-                        value="works"
-                        checked={
-                          userTopMode === "works"
-                        }
-                        onChange={() =>
-                          setUserTopMode("works")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-base font-black text-neutral-950">
-                            作品一覧
-                          </div>
-
-                          {savedUserTopMode === "works" ? (
-                            <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[9px] font-black text-white">
-                              現在のトップページ
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <p className="mt-1 text-xs leading-6 text-neutral-500">
-                          公開している作品の一覧を、そのまま入口にします。
-                        </p>
-                      </div>
-                    </label>
-
-                    <label
-                      className={[
-                        "relative flex cursor-pointer gap-4 rounded-[24px] border p-5 transition",
-                        userTopMode === "web"
-                          ? "border-neutral-950 bg-neutral-50 ring-1 ring-neutral-950"
-                          : "border-neutral-200 bg-white hover:border-neutral-400",
-                      ].join(" ")}
-                    >
-                      <input
-                        type="radio"
-                        name="top-page-mode"
-                        value="web"
-                        checked={
-                          userTopMode === "web"
-                        }
-                        onChange={() =>
-                          setUserTopMode("web")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-base font-black text-neutral-950">
-                            指定した作品・WEBページ
-                          </div>
-
-                          {savedUserTopMode === "web" ? (
-                            <span className="rounded-full bg-neutral-950 px-2.5 py-1 text-[9px] font-black text-white">
-                              現在のトップページ
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <p className="mt-1 text-xs leading-6 text-neutral-500">
-                          作成済みのWEB作品を選び、そのページを入口にします。
-                        </p>
-
-                        {userTopMode === "web" ? (
-                          <>
-                            <select
-                              value={homepageBookId}
-                              onChange={(event) =>
-                                setHomepageBookId(
-                                  event.target.value,
-                                )
-                              }
-                              className="mt-4 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                            >
-                              <option value="">
-                                WEBページを選択
-                              </option>
-
-                              {webWorks.map((work) => {
-                                const slug =
-                                  work.stable_slug ||
-                                  work.custom_slug ||
-                                  work.slug ||
-                                  "";
-
-                                return (
-                                  <option
-                                    key={work.id}
-                                    value={work.id}
-                                  >
-                                    {work.title || "無題のWEB"}
-                                    {slug
-                                      ? `（${slug}）`
-                                      : ""}
-                                  </option>
-                                );
-                              })}
-                            </select>
-
-                            {webWorks.length === 0 ? (
-                              <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
-                                選択できるWEBページがありません。
-                                先にWEB作品を作成してください。
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
-                      </div>
-                    </label>
-                  </div>
-
-                  
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleSaveTopPage()
-                      }
-                      disabled={
-                        topPageSaving ||
-                        (
-                          userTopMode === "web" &&
-                          !homepageBookId
-                        ) ||
-                        (
-                          userTopMode === "profile" &&
-                          profileTopSelection !== "simple" &&
-                          !publicPageIdeas.some(
-                            (idea) =>
-                              idea.id ===
-                              profileTopSelection,
-                          )
-                        )
-                      }
-                      className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
-                    >
-                      {topPageSaving
-                        ? "保存中..."
-                        : "トップページ設定を保存"}
-                    </button>
-
-                    {savedUserTopMode === userTopMode &&
-                    (
-                      userTopMode !== "web" ||
-                      savedHomepageBookId === homepageBookId
-                    ) &&
-                    (
-                      userTopMode !== "profile" ||
-                      savedProfileTopSelection ===
-                        profileTopSelection
-                    ) ? (
-                      <span className="text-xs font-bold text-neutral-400">
-                        保存済み
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-amber-600">
-                        変更があります
-                      </span>
-                    )}
-                  </div>
-
-                  {message ? (
-                    <div
-                      className={[
-                        "mt-4 rounded-2xl border px-4 py-3 text-sm leading-6",
-                        messageIsError
-                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                          : "border-neutral-200 bg-neutral-50 text-neutral-700",
-                      ].join(" ")}
-                    >
-                      {message}
-                    </div>
-                  ) : null}
-                </section>
-
-                <section className="rounded-[32px] border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <div className="text-[10px] font-black tracking-[0.18em] text-neutral-400">
@@ -2074,8 +1475,7 @@ export default function MyPublicProfileSettingsPage() {
                       </h2>
 
                       <p className="mt-2 max-w-2xl text-sm leading-7 text-neutral-600">
-                        トップページの設定とは別に、あなた自身や活動を紹介するページを作れます。
-                        WEBや作品一覧をトップページにしていても、ここは自由に編集できます。
+                        あなた自身や活動を紹介するページを作れます。
                       </p>
 
                       {username ? (

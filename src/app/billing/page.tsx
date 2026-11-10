@@ -65,6 +65,10 @@ export default function BillingPage() {
 
               <CurrentPlanPanel />
 
+              <div id="square-connection" className="scroll-mt-6">
+                <SquareConnectionPanel />
+              </div>
+
               <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
                 <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
                   SALES
@@ -82,9 +86,6 @@ export default function BillingPage() {
                   販売管理を開く
                 </a>
               </section>
-
-              <SquareConnectionPanel />
-
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">
