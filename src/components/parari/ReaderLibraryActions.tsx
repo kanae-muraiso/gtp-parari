@@ -93,7 +93,7 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
  const button="rounded-full border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 disabled:opacity-50";
  return <div className="mx-auto w-full max-w-[620px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-6">
   <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-3">
-   <BookSaveButton bookId={workId} type="shelf" idleLabel="保存する" activeLabel="保存済み" />
+   <BookSaveButton bookId={workId} type="read_later" idleLabel="あとで読む" activeLabel="あとで読む済み" appearance="light" />
    <button type="button" className={button} disabled={busy} aria-pressed={starred} onClick={()=>void change("star",!starred)}>{starred?"★ お気に入り済み":"☆ お気に入り"}</button>
    {ownerId && ownerId!==userId&&<button type="button" className={button} disabled={busy} aria-pressed={following} onClick={()=>void change("follow",!following)}>{following?"♡ ファン登録済み":"♡ 作者のファンになる"}</button>}
    {following&&username&&<Link href={"/"+encodeURIComponent(username)+"/library"} className="text-sm underline">作者の書棚を見る</Link>}
