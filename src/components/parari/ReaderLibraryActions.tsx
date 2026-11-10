@@ -97,7 +97,7 @@ export default function ReaderLibraryActions({workId,ownerId}:Props){
    <button type="button" className={button} disabled={busy} aria-pressed={starred} onClick={()=>void change("star",!starred)}>{starred?"★ お気に入り済み":"☆ お気に入り"}</button>
    {ownerId && ownerId!==userId&&<button type="button" className={button} disabled={busy} aria-pressed={following} onClick={()=>void change("follow",!following)}>{following?"♡ ファン登録済み":"♡ 作者のファンになる"}</button>}
    {following&&username&&<Link href={"/"+encodeURIComponent(username)+"/library"} className="text-sm underline">作者の書棚を見る</Link>}
-   <Link href="/my/library-v2" className="text-sm underline">LIBRARY</Link>
+   <Link href="/my/bookshelf" className="text-sm underline">LIBRARY</Link>
   </div>
   {message&&<p role="status" className="mx-auto mt-2 max-w-5xl text-sm text-red-700">{message}</p>}
  </div>;

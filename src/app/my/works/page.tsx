@@ -1281,7 +1281,7 @@ export default function MyWorksPage() {
             <Link href="/my/author-library-settings" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
               作者の書棚設定
             </Link>
-            <Link href="/my/library-v2" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+            <Link href="/my/bookshelf" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
               新LIBRARYを確認
             </Link>
           </div>

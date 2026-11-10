@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 import { parseParari } from "@/lib/parariParse";
+import BookshelfAnnouncements from "@/components/parari/announcements/BookshelfAnnouncements";
 
 type Shelf = {
   follows: {author_user_id:string}[];
@@ -206,6 +207,7 @@ export default function LibraryV2Page() {
       <MyAreaHeader title="書棚" area="library" />
       <LibraryV2Menu active="shelf" />
       <div className="mt-6">
+        <BookshelfAnnouncements />
         <h1 className="text-xl font-bold">書棚</h1>
         <p className="mt-1 text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>
         <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
@@ -235,7 +237,7 @@ export default function LibraryV2Page() {
             <button type="button" onClick={addCategory} className="rounded-lg border px-4 py-2 text-sm">追加</button>
           </div>
         </section>
-        <p className="mt-8 text-xs text-neutral-500">試験版。既存の書棚・購入・申込・メンバーシップには影響しません。</p>
+        <Link href="/my/bookshelf/legacy" className="mt-8 inline-block text-xs text-neutral-600 underline">従来の本棚を開く</Link>
       </div>
     </div>
   </main>;
