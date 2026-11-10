@@ -19,6 +19,8 @@ import {
   getUsableSquareConnection,
 } from "@/lib/square/connection";
 
+import { saleWorkIsAvailable } from "@/lib/parari/sales/server";
+
 export const runtime = "nodejs";
 
 function bearerToken(request: NextRequest): string | null {
@@ -133,6 +135,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (product.work_id) {
+      if (product.listing_visibility) {
+        const {data:work} = await supabaseAdmin.from("parari_books").select("is_deleted,expires_at")
+          .eq("id",product.work_id).maybeSingle();
+        if (!work || !saleWorkIsAvailable(work)) {
+          return NextResponse.json({ok:false,message:"この作品は現在購入できません。"},{status:404});
+        }
+      }
       const { data: entitlement } =
         await supabaseAdmin
           .from("commerce_entitlements")
@@ -161,10 +170,7 @@ export async function POST(request: NextRequest) {
       Number(product.amount);
     const amountMinor =
       toMinorUnits(amount, currency);
-    const resultUrl =
-      product.work_id
-        ? `${appUrl()}/p/${product.work_id}?purchase=return`
-        : `${appUrl()}/buy/${product.id}?purchase=return`;
+    const resultUrl = `${appUrl()}/buy/${product.id}?purchase=return`;
 
     if (product.billing_interval === "monthly") {
       const sellerAccess =

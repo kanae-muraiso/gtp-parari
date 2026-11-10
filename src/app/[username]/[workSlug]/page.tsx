@@ -2,6 +2,8 @@
 // PARARI MVP: public PAGE route via viewer-v2 only
 
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
 import { createClient } from "@supabase/supabase-js";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
 import {
@@ -78,6 +80,8 @@ export default async function PublicWorkPage(props: PublicWorkPageProps) {
   const pageData = await findPublicPageData(username, workSlug);
 
   if (!pageData) {
+    const saleHref = await workSaleHrefForAuthor(workSlug,username);
+    if (saleHref) redirect(saleHref);
     return (
       <main className="min-h-screen bg-white">
         <div className="flex flex-col items-center px-2 py-10">

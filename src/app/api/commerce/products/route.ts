@@ -18,6 +18,9 @@ import {
   getUsableSquareConnection,
 } from "@/lib/square/connection";
 
+import { MAX_PREVIEW_PAGES } from "@/lib/parari/sales/workPreview";
+import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
+
 export const runtime = "nodejs";
 
 function bearerToken(request: NextRequest): string | null {
@@ -208,11 +211,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let workVisibility: "public" | "unlisted" = "unlisted";
     if (workId) {
       const { data: work, error: workError } =
         await supabaseAdmin
           .from("parari_books")
-          .select("id,owner,is_deleted")
+          .select("id,owner,is_deleted,visibility,is_public,content")
           .eq("id", workId)
           .maybeSingle();
 
@@ -229,6 +233,10 @@ export async function POST(request: NextRequest) {
           },
           { status: 403 },
         );
+      }
+      workVisibility = work.visibility === "public" || work.is_public ? "public" : "unlisted";
+      if (productType === "work" && body?.listingVisibility != null && isWebLikeSsot(work.content ?? "")) {
+        return NextResponse.json({ok:false,message:"試し読み販売はBOOKとPAGEが対象です。"},{status:400});
       }
     }
 
@@ -276,10 +284,14 @@ export async function POST(request: NextRequest) {
       | {
           id: string;
           owner_user_id: string;
+          work_id: string | null;
+          product_type: string;
           name: string;
           amount: number | string;
           currency: string;
           billing_interval: string;
+          listing_visibility: "public" | "unlisted" | null;
+          preview_page_count: number;
           square_plan_id: string | null;
           square_plan_variation_id: string | null;
         }
@@ -289,7 +301,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabaseAdmin
         .from("commerce_products")
         .select(
-          "id,owner_user_id,name,amount,currency,billing_interval,square_plan_id,square_plan_variation_id",
+          "id,owner_user_id,work_id,product_type,name,amount,currency,billing_interval,listing_visibility,preview_page_count,square_plan_id,square_plan_variation_id",
         )
         .eq("id", productId)
         .maybeSingle();
@@ -305,6 +317,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (data.product_type === "work" && (productType !== "work" || data.work_id !== workId)) {
+        return NextResponse.json({ok:false,message:"登録済み商品の販売作品は変更できません。"},{status:400});
+      }
       existing = data;
     }
 
@@ -345,20 +360,14 @@ export async function POST(request: NextRequest) {
         plan.variationId;
     }
 
-    if (productType === "work" && workId) {
-      const { error: privacyError } =
-        await supabaseAdmin
-          .from("parari_books")
-          .update({
-            visibility: "private",
-            is_public: false,
-          })
-          .eq("id", workId)
-          .eq("owner", user.id);
-
-      if (privacyError) {
-        throw privacyError;
-      }
+    const requestedVisibility = body?.listingVisibility;
+    const previewPageCount = body?.previewPageCount ?? existing?.preview_page_count ?? 1;
+    if (productType === "work" && (
+      (requestedVisibility != null && requestedVisibility !== "public" && requestedVisibility !== "unlisted") ||
+      typeof previewPageCount !== "number" || !Number.isInteger(previewPageCount) ||
+      previewPageCount < 1 || previewPageCount > MAX_PREVIEW_PAGES
+    )) {
+      return NextResponse.json({ok:false,message:"試し読み範囲と公開設定を確認してください。"},{status:400});
     }
 
     const payload = {
@@ -371,6 +380,10 @@ export async function POST(request: NextRequest) {
       currency,
       billing_interval: billingInterval,
       active,
+      listing_visibility: productType === "work"
+        ? requestedVisibility ?? (existing ? existing.listing_visibility : workVisibility)
+        : null,
+      preview_page_count: productType === "work" ? previewPageCount : 1,
       square_plan_id:
         billingInterval === "monthly"
           ? squarePlanId

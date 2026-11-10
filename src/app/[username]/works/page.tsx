@@ -27,6 +27,7 @@ type ProfileRow = {
 
 type PublicWorkRow = {
   id: string;
+  href?: string;
   owner: string;
   title: string | null;
   content: string | null;
@@ -94,7 +95,7 @@ export default function PublicAuthorWorksPage() {
 
     setProfile(profileRow);
 
-    const { data, error } = await supabase
+    const [{ data, error }, sales] = await Promise.all([supabase
       .from("parari_books")
       .select(
         [
@@ -116,7 +117,9 @@ export default function PublicAuthorWorksPage() {
       .eq("visibility", "public")
       .eq("show_in_profile_works", true)
       .order("updated_at", { ascending: false })
-      .limit(500);
+      .limit(500),
+      fetch(`/api/commerce/listing?owner=${encodeURIComponent(profileRow.user_id)}`).then(response=>response.ok?response.json():null).catch(()=>null),
+    ]);
 
     if (error) {
       setStatus({
@@ -137,11 +140,15 @@ export default function PublicAuthorWorksPage() {
       is_deleted: Boolean(work.is_deleted),
     }));
 
-    setWorks(rows);
+    const paid: PublicWorkRow[] = (sales?.works ?? []).map((work:Pick<PublicWorkRow,"id"|"title"|"owner"|"href">)=>({
+      ...work,content:null,visibility:"public",stable_slug:null,slug:null,entry_mode:null,
+      updated_at:null,show_in_profile_works:true,is_deleted:false,
+    }));
+    setWorks([...rows,...paid.filter(work=>!rows.some(row=>row.id===work.id))]);
 
     setStatus({
       type: "ready",
-      message: `${rows.length}件の作品を読み込みました。`,
+      message: `${rows.length+paid.length}件の作品を読み込みました。`,
     });
   }, [routeUsername, supabase]);
 
@@ -207,7 +214,7 @@ export default function PublicAuthorWorksPage() {
               {works.map((work) => {
                 const workKind = detectWorkKind(work.content ?? "");
                 const title = work.title?.trim() || "Untitled";
-                const workHref = buildPublicWorkHref(work);
+                const workHref = work.href ?? buildPublicWorkHref(work);
 
                 return (
                   <article

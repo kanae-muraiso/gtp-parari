@@ -37,6 +37,16 @@ export default function PublicPage() {
     React.useState(false);
 
   React.useEffect(() => {
+    const showSaleOrNotFound = async () => {
+      const response = await fetch(`/api/commerce/work-preview?workId=${encodeURIComponent(id)}`).catch(()=>null);
+      const result = await response?.json().catch(()=>null);
+      if (typeof result?.href === "string" && /^\/buy\/[0-9a-f-]+$/i.test(result.href)) {
+        window.location.replace(result.href);
+        return;
+      }
+      setNotFound(true);
+      setLoading(false);
+    };
     const load = async () => {
       if (!id) {
         setNotFound(true);
@@ -61,8 +71,7 @@ export default function PublicPage() {
         .maybeSingle<BookRow>();
 
       if (error || !data) {
-        setNotFound(true);
-        setLoading(false);
+        await showSaleOrNotFound();
         return;
       }
 
@@ -78,13 +87,15 @@ export default function PublicPage() {
         data.visibility === "unlisted";
 
       let purchasedAccess = false;
+      let isOwner = false;
 
       if (!isVisible) {
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (user) {
+        isOwner = Boolean(user && user.id === data.owner);
+        if (user && !isOwner) {
           const now =
             new Date().toISOString();
 
@@ -117,9 +128,8 @@ export default function PublicPage() {
         }
       }
 
-      if (!isVisible && !purchasedAccess) {
-        setNotFound(true);
-        setLoading(false);
+      if (!isVisible && !purchasedAccess && !isOwner) {
+        await showSaleOrNotFound();
         return;
       }
 
