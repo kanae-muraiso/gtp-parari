@@ -124,8 +124,16 @@ export default function SettingsHomePage() {
               <section aria-labelledby="sell-work" className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
                 <h2 id="sell-work" className="text-sm font-bold text-neutral-950">PARARIで販売する</h2>
                 <p className="mt-1 text-xs leading-6 text-neutral-600">
-                  Squareに登録済みなら、アカウントを接続するところから始められます。
+                  Squareで売上を受け取る準備をしてから、作品を販売します。
                 </p>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-sky-800">
+                  <Link className="underline underline-offset-4" href="/my/settings/square">
+                    Squareアカウントをお持ちでない方
+                  </Link>
+                  <Link className="underline underline-offset-4" href="/billing#square-connection">
+                    登録済みのSquareを接続する
+                  </Link>
+                </div>
                 <details className="mt-2">
                   <summary className="cursor-pointer text-sm font-semibold text-neutral-800">販売を始める手順</summary>
                   <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm">
