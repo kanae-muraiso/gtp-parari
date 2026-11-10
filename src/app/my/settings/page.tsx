@@ -109,8 +109,8 @@ export default function SettingsHomePage() {
                     <GuideStep title="ユーザーネームを決める" action={{ label: "ユーザーネームを設定する", href: "/my/profile?returnTo=/my/settings" }}>
                       ユーザーネームを決めると、www.parari.app/あなたのユーザーネーム/ があなたの公開ページのURLになります。初期設定では、公開作品の一覧が表示されます。
                     </GuideStep>
-                    <GuideStep title="PARARIで作品を見つけてもらう（整備中）" action={{ label: "作品の公開設定を開く", href: "/my/works" }}>
-                      作品の公開範囲は作品一覧で変更できます。公開作品を「作者から探す」「作品から探す」ための機能は整備中です。
+                    <GuideStep title="PARARIで作品を見つけてもらう" action={{ label: "作品の公開設定を開く", href: "/my/works" }}>
+                      作品の公開範囲は作品一覧で変更できます。公開プロフィールに掲載した公開作品は、LIBRARYの「作品・作者を探す」で作品名から検索できます。
                     </GuideStep>
                     <GuideStep title="ファンになってもらう">
                       公開作品を読んだ人が「ファンになる」を押すと、その読者の本棚の「作者別」に、あなたの作品をまとめて見られる入口ができます。
