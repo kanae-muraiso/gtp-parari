@@ -9,6 +9,7 @@ type SquareConnectionState = {
   connected: boolean;
   merchantId: string | null;
   locationId: string | null;
+  locationName: string | null;
   status: string | null;
 };
 
@@ -248,6 +249,7 @@ export default function SquareConnectionPanel() {
         connected: false,
         merchantId: null,
         locationId: null,
+        locationName: null,
         status: null,
       });
       setMessage(
@@ -278,6 +280,15 @@ export default function SquareConnectionPanel() {
       ) : connection?.connected ? (
         <>
           <p className="mt-3 text-sm font-semibold text-emerald-800">Square接続済み</p>
+          <dl className="mt-2 text-sm">
+            <dt className="text-neutral-600">作品の売上を受け取るSquare店舗</dt>
+            <dd className="break-words font-semibold text-neutral-950">
+              {connection.locationName ?? "店舗名を確認できませんでした"}
+            </dd>
+            {connection.locationId ? (
+              <dd className="break-all text-xs text-neutral-500">店舗ID {connection.locationId}</dd>
+            ) : null}
+          </dl>
           <Link className={`mt-3 inline-block ${actionClass}`} href="/my/sales">
             販売管理を開く
           </Link>
