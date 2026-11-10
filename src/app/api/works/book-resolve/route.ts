@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { protectedSaleWorkIds } from "@/lib/parari/sales/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   parseBookPageRefs,
@@ -89,7 +90,8 @@ export async function GET(request: NextRequest) {
       userId = user?.id ?? null;
     }
 
-    let allowed = isVisible || userId === data.owner;
+    const canReadPrivateBook = userId === data.owner;
+    let allowed = isVisible || canReadPrivateBook;
 
     if (!allowed && userId) {
       const { data: collaborator } = await supabaseAdmin
@@ -146,7 +148,7 @@ export async function GET(request: NextRequest) {
 
     const { data: pages, error: pagesError } = await supabaseAdmin
       .from("parari_books")
-      .select("id,owner,title,content,is_deleted")
+      .select("id,owner,title,content,is_deleted,visibility,is_public")
       .in("id", uniqueIds)
       .eq("owner", data.owner);
 
@@ -158,10 +160,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const protectedIds = isVisible && userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
     const pageContentById = new Map<string, string>();
 
     for (const page of pages ?? []) {
-      if (page.is_deleted === true) continue;
+      if (page.is_deleted === true || (protectedIds.has(page.id) && !page.is_public && page.visibility === "private")) continue;
       const rawContent = String(page.content ?? "");
       pageContentById.set(
         String(page.id),

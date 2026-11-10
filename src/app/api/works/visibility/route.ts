@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
             ok: false,
             code: "SOLD_WORK_MUST_STAY_PRIVATE",
             message:
-              "販売中の作品は購入者限定のため一般公開・限定公開には変更できません。販売を停止してから公開設定を変更してください。",
+              "販売中の公開範囲は「販売管理」の「試し読み設定」から変更できます。本文の公開設定を変更するには、販売を停止してください。",
           },
           { status: 409 },
         );

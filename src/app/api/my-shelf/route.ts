@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { protectedSaleWorkIds } from "@/lib/parari/sales/server";
 import { isExpired } from "../../../lib/parariExpiry";
 import {
   canAccessApplicationDelivery,
@@ -31,6 +32,7 @@ type ParariBookRow = {
   title: string | null;
   content: string | null;
   is_public: boolean | null;
+  visibility: string | null;
   updated_at: string | null;
   is_deleted: boolean | null;
   expires_at: string | null;
@@ -268,12 +270,25 @@ export async function GET(request: Request) {
      */
     const { data: booksRaw, error: booksError } = await (adminClient as any)
       .from("parari_books")
-      .select("id,title,content,is_public,updated_at,is_deleted,expires_at,owner")
+      .select("id,title,content,is_public,visibility,updated_at,is_deleted,expires_at,owner")
       .in("id", uniqueBookIds)
       .or("is_deleted.is.null,is_deleted.eq.false");
 
     if (booksError) {
       return NextResponse.json({ error: booksError.message }, { status: 500 });
+    }
+
+    const privateWorks = (booksRaw ?? []).filter((book:ParariBookRow)=>
+      book.owner !== userId && !book.is_public && book.visibility === "private");
+    const protectedIds = await protectedSaleWorkIds(privateWorks.map((book:ParariBookRow)=>book.id));
+    const entitledIds = new Set<string>();
+    if (protectedIds.size) {
+      const now = new Date().toISOString();
+      const {data: rights,error} = await adminClient.from("commerce_entitlements").select("work_id")
+        .eq("user_id",userId).eq("status","active").in("work_id",[...protectedIds]).lte("starts_at",now)
+        .or(`expires_at.is.null,expires_at.gt.${now}`).or("remaining_uses.is.null,remaining_uses.gt.0");
+      if (error) throw error;
+      for (const right of rights ?? []) entitledIds.add(right.work_id);
     }
 
     const bookMap = new Map<string, ParariBookRow>();
@@ -297,7 +312,7 @@ export async function GET(request: Request) {
       const item: ShelfBook = {
         id: book.id,
         title: book.title ?? "",
-        content: book.content ?? "",
+        content: protectedIds.has(book.id) && !entitledIds.has(book.id) ? "" : book.content ?? "",
         is_public: Boolean(book.is_public),
         updated_at: book.updated_at ?? null,
         expires_at: book.expires_at ?? null,

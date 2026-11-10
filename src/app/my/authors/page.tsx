@@ -6,7 +6,7 @@ import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
 
 type Author = { user_id: string; username: string; display_name: string | null };
-type Work = { id: string; title: string | null; owner: string };
+type Work = { id: string; title: string | null; owner: string; href?: string };
 type WorkAuthor = Omit<Author, "username"> & { username: string | null };
 type FoundWork = Work & { author?: WorkAuthor };
 const workLimit = 30;
@@ -32,7 +32,7 @@ function WorkSearchPanel() {
     try {
       // Treat punctuation as part of the title, including %, _ and *.
       const pattern = query.replace(/[.*+?^$(){}|[\]\\]/g, "\\$&");
-      const { data, error } = await supabase.from("parari_books")
+      const [{ data, error }, sales] = await Promise.all([supabase.from("parari_books")
         .select("id,title,owner")
         .eq("visibility", "public")
         .eq("show_in_profile_works", true)
@@ -41,10 +41,13 @@ function WorkSearchPanel() {
         .filter("title", "imatch", pattern)
         .order("published_at", { ascending: false, nullsFirst: false })
         .order("id")
-        .limit(workLimit + 1);
+        .limit(workLimit + 1),
+        fetch(`/api/commerce/listing?q=${encodeURIComponent(query)}`).then(response=>response.ok?response.json():null).catch(()=>null),
+      ]);
       if (error) throw error;
 
-      const matches: Work[] = (data ?? []).slice(0, workLimit);
+      const combined = [...(sales?.works ?? []) as Work[], ...(data ?? [])];
+      const matches: Work[] = [...new Map(combined.map(work=>[work.id,work])).values()].slice(0,workLimit);
       if (!matches.length) {
         setMessage("該当する公開作品はありません。");
         return;
@@ -55,7 +58,7 @@ function WorkSearchPanel() {
         .in("user_id", [...new Set(matches.map(work => work.owner))]);
       const authorsById = new Map((profiles ?? []).map(author => [author.user_id, author]));
       setWorks(matches.map(work => ({ ...work, author: authorsById.get(work.owner) })));
-      if ((data?.length ?? 0) > workLimit) {
+      if (combined.length > workLimit) {
         setMessage("先頭の30件を表示しています。検索語を変えて絞り込んでください。");
       }
     } catch {
@@ -79,8 +82,8 @@ function WorkSearchPanel() {
       {pending ? "作品を検索しています…" : message}
     </p>}
     {works.length > 0 && <ul aria-label="作品の検索結果" className="mt-4 space-y-2">
-      {works.map(({ id, title, author }) => <li key={id}>
-        <Link href={"/p/" + id} className="block rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50">
+      {works.map(({ id, title, author, href }) => <li key={id}>
+        <Link href={href ?? "/p/" + id} className="block rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50">
           <div className="break-words font-medium">{title || "無題の作品"}</div>
           {author && <div className="break-words text-xs text-neutral-600">
             {author.display_name || author.username}{author.display_name && author.username ? " · @" + author.username : ""}

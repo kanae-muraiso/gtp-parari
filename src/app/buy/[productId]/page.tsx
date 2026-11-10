@@ -12,6 +12,8 @@ import React from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
+import WorkSample from "@/components/parari/WorkSample";
+import type { WorkPreview } from "@/lib/parari/sales/workPreview";
 import { supabase } from "@/lib/supabaseClient";
 
 type Product = {
@@ -31,6 +33,9 @@ export default function BuyProductPage() {
   const productId =
     params?.productId ?? "";
 
+  const returnedFromPayment = searchParams.get("purchase") === "return";
+  const [preview, setPreview] = React.useState<WorkPreview | null>(null);
+  const [canRead, setCanRead] = React.useState(false);
   const [product, setProduct] =
     React.useState<Product | null>(null);
   const [loading, setLoading] =
@@ -42,41 +47,45 @@ export default function BuyProductPage() {
 
   React.useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    setLoading(true);
+    setProduct(null);
+    setPreview(null);
+    setCanRead(false);
+    setMessage("");
 
-    async function load() {
-      const { data, error } =
-        await supabase
-          .from("commerce_products")
-          .select(
-            "id,name,description,amount,currency,billing_interval,work_id",
-          )
-          .eq("id", productId)
-          .eq("active", true)
-          .maybeSingle<Product>();
-
-      if (cancelled) return;
-
-      if (error || !data) {
-        setMessage(
-          "この販売ページは現在利用できません。",
-        );
-      } else {
-        setProduct(data);
+    async function load(attempt = 0) {
+      try {
+        const session = (await supabase?.auth.getSession())?.data.session;
+        if (cancelled) return;
+        const response = await fetch(`/api/commerce/listing/${encodeURIComponent(productId)}`, {
+          headers:session ? {Authorization:`Bearer ${session.access_token}`} : undefined,
+          signal:controller.signal,
+        });
+        if (!response.ok) throw new Error("この販売ページは現在利用できません。");
+        const result = await response.json();
+        if (cancelled) return;
+        setProduct(result.product);
+        setPreview(result.preview);
+        setCanRead(result.canRead);
+        if (returnedFromPayment && session && result.product.work_id && !result.canRead && attempt < 15) {
+          timer = setTimeout(()=>void load(attempt+1),2000);
+        }
+      } catch (error) {
+        if (!cancelled) setMessage(error instanceof Error ? error.message : "商品を取得できませんでした。");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setLoading(false);
     }
-
-    if (productId) {
-      void load();
-    } else {
-      setLoading(false);
-    }
-
+    if (productId) void load();
+    else setLoading(false);
     return () => {
       cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
     };
-  }, [productId]);
+  }, [productId,returnedFromPayment]);
 
   async function checkout() {
     setCheckingOut(true);
@@ -88,9 +97,7 @@ export default function BuyProductPage() {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        setMessage(
-          "購入にはPARARIへのログインが必要です。",
-        );
+        window.location.assign(`/login?returnTo=${encodeURIComponent(`/buy/${productId}`)}`);
         return;
       }
 
@@ -160,6 +167,8 @@ export default function BuyProductPage() {
                 </p>
               ) : null}
 
+              {preview && <WorkSample preview={preview} />}
+
               <div className="mt-7 rounded-2xl bg-slate-50 p-5">
                 <div className="text-3xl font-bold">
                   ¥{Number(product.amount).toLocaleString("ja-JP")}
@@ -177,13 +186,17 @@ export default function BuyProductPage() {
                 ) : null}
               </div>
 
-              {searchParams.get("purchase") === "return" ? (
+              {returnedFromPayment && !canRead ? (
                 <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-900">
                   Squareでのお手続きから戻りました。決済反映には少し時間差が生じる場合があります。
                 </div>
               ) : null}
 
-              <button
+              {canRead && product.work_id ? (
+                <Link href={`/p/${product.work_id}`} className="mt-7 inline-block rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white">
+                  続きを読む
+                </Link>
+              ) : <button
                 type="button"
                 disabled={checkingOut}
                 onClick={() => {
@@ -196,7 +209,7 @@ export default function BuyProductPage() {
                   : product.billing_interval === "monthly"
                     ? "月額で申し込む"
                     : "購入する"}
-              </button>
+              </button>}
 
               {message ? (
                 <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">

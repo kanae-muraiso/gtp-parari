@@ -88,6 +88,15 @@ export default function UserPageViewPage() {
         return;
       }
 
+      async function showSale() {
+        const query = new URLSearchParams({workId,username:routeUsername});
+        const response = await fetch(`/api/commerce/work-preview?${query}`).catch(()=>null);
+        const result = await response?.json().catch(()=>null);
+        if (typeof result?.href !== "string" || !/^\/buy\/[0-9a-f-]+$/i.test(result.href)) return false;
+        window.location.replace(result.href);
+        return true;
+      }
+
       const isOwner = Boolean(user && profile.user_id === user.id);
       const { data, error } = await supabase
         .from("parari_books")
@@ -118,6 +127,7 @@ export default function UserPageViewPage() {
       }
 
       if (!data) {
+        if (await showSale()) return;
         setStatus({
           type: "error",
           message: "指定されたPAGEが見つかりませんでした。",
@@ -128,6 +138,7 @@ export default function UserPageViewPage() {
       const visibility = normalizeVisibility(data.visibility, data.is_public);
 
       if (!isOwner && visibility === "private") {
+        if (await showSale()) return;
         setStatus({
           type: "error",
           message: "このPAGEは非公開です。",

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-type Work = { id:string; title:string|null; stable_slug:string|null; slug:string|null; updated_at:string|null };
+type Work = { id:string; title:string|null; stable_slug:string|null; slug:string|null; updated_at?:string|null; href?:string };
 type Author = { user_id:string; username:string; display_name:string|null; introduction_work_id:string|null };
 export default function AuthorLibraryPage() {
   const { username: raw } = useParams<{username:string}>();
@@ -23,14 +23,16 @@ export default function AuthorLibraryPage() {
     if (error || !profile) { setMessage("作者が見つかりません。"); return; }
     const a = profile as Author;
     setAuthor(a);
-    const {data: books,error: workError} = await supabase.from("parari_books")
+    const [{data: books,error: workError},sales] = await Promise.all([supabase.from("parari_books")
       .select("id,title,stable_slug,slug,updated_at")
       .eq("owner",a.user_id).eq("visibility","public")
       .eq("show_in_profile_works",true).eq("is_deleted",false)
       .or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
-      .order("updated_at",{ascending:false}).limit(200);
+      .order("updated_at",{ascending:false}).limit(200),
+      fetch(`/api/commerce/listing?owner=${encodeURIComponent(a.user_id)}`).then(response=>response.ok?response.json():null).catch(()=>null),
+    ]);
     if (workError) { setMessage("公開作品を読み込めませんでした。"); return; }
-    setWorks((books ?? []) as Work[]);
+    setWorks([...new Map([...(sales?.works ?? []) as Work[],...(books ?? []) as Work[]].map(work=>[work.id,work])).values()]);
     setMessage("");
     const {data:{user}} = await supabase.auth.getUser();
     if (user) {
@@ -76,7 +78,7 @@ export default function AuthorLibraryPage() {
         <h2 className="mb-4 text-lg font-semibold">公開作品</h2>
         {author && !message && works.length===0 && <p className="text-sm text-neutral-500">現在、公開作品はありません。</p>}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {works.map(work=><Link key={work.id} href={"/p/"+work.id}
+          {works.map(work=><Link key={work.id} href={work.href ?? "/p/"+work.id}
             className="rounded-xl border border-neutral-200 p-4 hover:bg-neutral-50">
             <div className="mb-3 flex aspect-[3/4] items-center justify-center rounded-lg bg-neutral-100 text-3xl" aria-hidden>▤</div>
             <p className="font-medium">{work.title || "無題の作品"}</p>

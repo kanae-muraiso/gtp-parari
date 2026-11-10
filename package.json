@@ -6,6 +6,7 @@
     "build": "npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
+    "test:commerce-work-preview": "node scripts/test-commerce-work-preview.cjs",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",

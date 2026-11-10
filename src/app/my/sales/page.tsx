@@ -12,12 +12,18 @@ import React from "react";
 import Link from "next/link";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import WorkSample from "@/components/parari/WorkSample";
+import { MAX_PREVIEW_PAGES, type WorkPreview } from "@/lib/parari/sales/workPreview";
+import { isBookLikeSsot } from "@/components/parari/viewer-v2/book/buildBookSheets";
+import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import { supabase } from "@/lib/supabaseClient";
 
 type Work = {
   id: string;
   title: string | null;
+  visibility: string | null;
+  is_public: boolean | null;
 };
 
 type Product = {
@@ -29,6 +35,8 @@ type Product = {
   currency: string;
   billing_interval: "one_time" | "monthly";
   active: boolean;
+  listing_visibility: "public" | "unlisted" | null;
+  preview_page_count: number;
 };
 
 type SellerSubscription = {
@@ -64,6 +72,75 @@ export default function SalesPage() {
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [amount, setAmount] = React.useState("");
+  const [listingVisibility, setListingVisibility] = React.useState<"public" | "unlisted">("unlisted");
+  const [previewPageCount, setPreviewPageCount] = React.useState("1");
+  const [preview, setPreview] = React.useState<WorkPreview | null>(null);
+  const [previewing, setPreviewing] = React.useState(false);
+  const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+  const [selectedFormat,setSelectedFormat] = React.useState<{id:string;format:"book"|"page"|"web"|"error"} | null>(null);
+  const workFormat = selectedFormat?.id === workId ? selectedFormat.format : null;
+  const isBook = workFormat === "book";
+  const sampleCount = isBook ? Number(previewPageCount) : 1;
+  const invalidCount = !Number.isInteger(sampleCount) || sampleCount < 1 || sampleCount > MAX_PREVIEW_PAGES;
+  const canSample = workFormat === "book" || workFormat === "page";
+
+  React.useEffect(()=>{
+    if (!workId) return;
+    let active = true;
+    async function loadFormat() {
+      const {data,error} = await supabase.from("parari_books").select("content").eq("id",workId).maybeSingle();
+      if (!active) return;
+      const source = data?.content ?? "";
+      const format = error || !data ? "error" : isWebLikeSsot(source) ? "web" : isBookLikeSsot(source) ? "book" : "page";
+      setSelectedFormat({id:workId,format});
+    }
+    void loadFormat();
+    return ()=>{active=false;};
+  },[workId]);
+
+  function selectWork(id: string) {
+    const work = works.find(item=>item.id===id);
+    setWorkId(id);
+    setName(work?.title ?? "");
+    setListingVisibility(work?.visibility==="public" || work?.is_public ? "public" : "unlisted");
+    setPreviewPageCount("1");
+    setPreview(null);
+  }
+
+  async function loadPreview() {
+    setPreviewing(true);
+    setPreview(null);
+    setMessage("");
+    try {
+      const {data:{session}} = await supabase.auth.getSession();
+      if (!session) throw new Error("ログインが必要です。");
+      const response = await fetch("/api/commerce/work-preview", {
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+        body:JSON.stringify({workId,previewPageCount:sampleCount}),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.preview) throw new Error(data.message ?? "試し読みを取得できませんでした。");
+      setPreview(data.preview);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "試し読みを取得できませんでした。");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  function editWorkSale(product: Product) {
+    setMode("work");
+    setEditingProduct(product);
+    setWorkId(product.work_id ?? "");
+    setName(product.name);
+    setDescription(product.description ?? "");
+    setAmount(String(product.amount));
+    setListingVisibility(product.listing_visibility ?? "unlisted");
+    setPreviewPageCount(String(product.preview_page_count ?? 1));
+    setPreview(null);
+    document.getElementById("work-sale-form")?.scrollIntoView({block:"start"});
+  }
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -90,7 +167,7 @@ export default function SalesPage() {
       ] = await Promise.all([
           supabase
             .from("parari_books")
-            .select("id,title")
+            .select("id,title,visibility,is_public")
             .eq("owner", user.id)
             .or("is_deleted.is.null,is_deleted.eq.false")
             .order("updated_at", { ascending: false }),
@@ -173,17 +250,6 @@ export default function SalesPage() {
     void load();
   }, [load]);
 
-  React.useEffect(() => {
-    if (mode !== "work" || !workId) return;
-
-    const work =
-      works.find((item) => item.id === workId);
-
-    if (work?.title && !name.trim()) {
-      setName(work.title);
-    }
-  }, [mode, workId, works, name]);
-
   async function saveProduct() {
     setSaving(true);
     setMessage("");
@@ -217,6 +283,10 @@ export default function SalesPage() {
               `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
+            productId:editingProduct?.id,
+            active:editingProduct?.active ?? true,
+            listingVisibility:mode === "work" ? listingVisibility : undefined,
+            previewPageCount:mode === "work" ? sampleCount : undefined,
             workId:
               mode === "work"
                 ? workId
@@ -244,6 +314,8 @@ export default function SalesPage() {
         );
       }
 
+      setEditingProduct(null);
+      setPreview(null);
       setMode("work");
       setWorkId("");
       setName("");
@@ -376,12 +448,12 @@ export default function SalesPage() {
         <MyAreaHeader title="販売管理" area="studio" navigation={<ManagementTabs active="sales" embedded />} />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.15fr]">
-          <section className="rounded-3xl bg-white p-6 shadow-sm">
+          <section id="work-sale-form" className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
               NEW PRODUCT
             </p>
             <h1 className="mt-2 text-2xl font-bold">
-              販売する
+              {editingProduct ? "販売設定を編集" : "販売する"}
             </h1>
 
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-600">
@@ -399,6 +471,7 @@ export default function SalesPage() {
             <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
               <button
                 type="button"
+                disabled={Boolean(editingProduct) || previewing}
                 onClick={() => setMode("work")}
                 className={`rounded-xl px-3 py-2 text-sm font-bold ${mode === "work" ? "bg-white shadow-sm" : "text-slate-500"}`}
               >
@@ -406,6 +479,7 @@ export default function SalesPage() {
               </button>
               <button
                 type="button"
+                disabled={Boolean(editingProduct) || previewing}
                 onClick={() => setMode("monthly")}
                 className={`rounded-xl px-3 py-2 text-sm font-bold ${mode === "monthly" ? "bg-white shadow-sm" : "text-slate-500"}`}
               >
@@ -431,7 +505,7 @@ export default function SalesPage() {
               {mode === "work" ? (
                 <>
                 <div className="rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
-                  作品の販売を開始すると、その作品は一般公開から外れ、購入者だけが読める状態になります。作品本文そのものは変更されません。
+                  販売中は、誰でも試し読みでき、購入した人は全文を読めます。公開範囲は試し読み・購入ページに適用されます。
                 </div>
                 <label className="block">
                   <span className="text-sm font-bold">
@@ -439,9 +513,8 @@ export default function SalesPage() {
                   </span>
                   <select
                     value={workId}
-                    onChange={(event) =>
-                      setWorkId(event.target.value)
-                    }
+                    disabled={Boolean(editingProduct) || previewing}
+                    onChange={event=>selectWork(event.target.value)}
                     className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm"
                   >
                     <option value="">
@@ -457,6 +530,30 @@ export default function SalesPage() {
                     ))}
                   </select>
                 </label>
+                <label className="block">
+                  <span className="text-sm font-bold">試し読み・購入ページの公開範囲</span>
+                  <select value={listingVisibility} onChange={event=>setListingVisibility(event.target.value === "public" ? "public" : "unlisted")}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+                    <option value="unlisted">限定公開（URLを知っている人）</option>
+                    <option value="public">公開（プロフィール掲載時は作品検索の対象）</option>
+                  </select>
+                </label>
+                {isBook ? <label className="block">
+                  <span className="text-sm font-bold">試し読みの範囲（先頭から何PAGEまで）</span>
+                  <input type="number" min={1} max={MAX_PREVIEW_PAGES} value={previewPageCount} disabled={previewing}
+                    onChange={event=>{setPreviewPageCount(event.target.value);setPreview(null);}}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm" />
+                </label> : workFormat==="page" ? <p className="text-sm text-slate-600">PAGE作品は本文の先頭約200字を試し読みできます。</p> : null}
+                {workFormat==="web" && <p role="status" className="text-sm text-slate-600">試し読み販売はBOOKとPAGEが対象です。</p>}
+                {workFormat==="error" && <p role="status" className="text-sm text-slate-600">作品形式を確認できませんでした。</p>}
+                <button type="button" disabled={!canSample || invalidCount || previewing}
+                  onClick={()=>void loadPreview()} className="rounded-xl border border-slate-300 px-3 py-2 text-sm disabled:opacity-40">
+                  {previewing ? "試し読みを作成中…" : "読者に見える試し読みを確認"}
+                </button>
+                {preview && <>
+                  <p className="text-xs text-slate-600">設定した範囲に本文全体が収まる作品は、試し読みで全文を表示できます。</p>
+                  <WorkSample preview={preview} />
+                </>}
                 </>
               ) : null}
 
@@ -513,7 +610,7 @@ export default function SalesPage() {
               <button
                 type="button"
                 disabled={
-                  saving ||
+                  saving || previewing || (mode === "work" && (!canSample || invalidCount)) ||
                   (mode === "monthly" &&
                     !canRecurring)
                 }
@@ -524,8 +621,11 @@ export default function SalesPage() {
               >
                 {saving
                   ? "保存しています…"
-                  : "販売を開始"}
+                  : editingProduct ? "販売設定を保存" : "販売を開始"}
               </button>
+              {editingProduct && <button type="button" className="text-sm underline" onClick={()=>{
+                setEditingProduct(null);selectWork("");setDescription("");setAmount("");
+              }}>編集をやめる</button>}
             </div>
           </section>
 
@@ -585,6 +685,8 @@ export default function SalesPage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
+                      {product.work_id && <button type="button" onClick={()=>editWorkSale(product)}
+                        className="rounded-full border border-slate-300 px-3 py-2 text-xs font-bold">試し読み設定</button>}
                       {product.active ? (
                         <Link
                           href={`/buy/${product.id}`}
