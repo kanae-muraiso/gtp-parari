@@ -108,7 +108,7 @@ export default function LibraryV2Page() {
   const [authors,setAuthors] = useState<Author[]>([]);
   const [me,setMe] = useState<string|null>(null);
   const [category,setCategory] = useState("");
-  const [message,setMessage] = useState("書棚を読み込んでいます…");
+  const [message,setMessage] = useState("読み込み中…");
   const [busy,setBusy] = useState(false);
   const [categoryFilter,setCategoryFilter] = useState("");
   async function load() {
@@ -204,12 +204,11 @@ export default function LibraryV2Page() {
   const recent = readingItems(activity.filter(row=>row.type==="viewed").map(row=>({id:row.book_id,date:row.created_at})));
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <MyAreaHeader title="書棚" area="library" />
+      <MyAreaHeader title="書棚" area="library" visuallyHideTitle />
       <LibraryV2Menu active="shelf" />
       <div className="mt-6">
         <BookshelfAnnouncements />
-        <h1 className="text-xl font-bold">書棚</h1>
-        <p className="mt-1 text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>
+        <p className="text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>
         <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
           {tabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
             className={"rounded-full border px-3 py-2 text-sm "+(tab===t.id?"bg-neutral-900 text-white":"bg-white text-neutral-800")}>{t.name}</button>)}
