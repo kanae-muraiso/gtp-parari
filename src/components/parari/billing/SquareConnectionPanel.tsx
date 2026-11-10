@@ -11,7 +11,53 @@ type SquareConnectionState = {
   locationId: string | null;
   locationName: string | null;
   status: string | null;
+  locationStatus: {
+    active: boolean | null;
+    cardPayments: boolean | null;
+    automaticTransfers: boolean | null;
+  } | null;
 };
+
+async function accessToken(): Promise<string | null> {
+  if (!supabase) {
+    return null;
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.access_token ?? null;
+}
+
+async function loadSquareConnection() {
+  const token = await accessToken();
+  if (!token) throw new Error("ログイン情報を確認できませんでした。");
+
+  const response = await fetch("/api/square/connection", {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const result = await response.json().catch(() => null) as {
+    ok?: boolean;
+    configured?: boolean;
+    environment?: "sandbox" | "production";
+    connection?: SquareConnectionState;
+  } | null;
+
+  if (!response.ok || !result?.ok || !result.connection) {
+    throw new Error("Square接続状態を確認できませんでした。");
+  }
+  return {
+    configured: result.configured === true,
+    environment: result.environment ?? null,
+    connection: result.connection,
+  };
+}
+
+function capabilityLabel(value: boolean | null) {
+  return value === null ? "不明" : value ? "有効" : "無効";
+}
 
 export default function SquareConnectionPanel() {
   const [
@@ -39,93 +85,45 @@ export default function SquareConnectionPanel() {
     setIsDisconnecting,
   ] = React.useState(false);
 
-  async function accessToken(): Promise<string | null> {
-    if (!supabase) {
-      return null;
-    }
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    return session?.access_token ?? null;
-  }
+  const [environment, setEnvironment] = React.useState<"sandbox" | "production" | null>(null);
+  const [checking, setChecking] = React.useState(false);
+  const [showCheck, setShowCheck] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      try {
-        const token = await accessToken();
+    loadSquareConnection().then((result) => {
+      if (cancelled) return;
+      setConfigured(result.configured);
+      setEnvironment(result.environment);
+      setConnection(result.connection);
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      setMessage(error instanceof Error ? error.message : "Square接続状態を確認できませんでした。");
+    }).finally(() => {
+      if (!cancelled) setIsLoading(false);
+    });
 
-        if (!token) {
-          if (!cancelled) {
-            setMessage("ログイン情報を確認できませんでした。");
-          }
-          return;
-        }
-
-        const response = await fetch(
-          "/api/square/connection",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-            cache: "no-store",
-          },
-        );
-
-        const result =
-          (await response
-            .json()
-            .catch(() => null)) as
-            | {
-                ok?: boolean;
-                configured?: boolean;
-                connection?: SquareConnectionState;
-              }
-            | null;
-
-        if (
-          !response.ok ||
-          !result?.ok ||
-          !result.connection
-        ) {
-          throw new Error(
-            "Square接続状態を確認できませんでした。",
-          );
-        }
-
-        if (!cancelled) {
-          setConfigured(
-            result.configured === true,
-          );
-          setConnection(
-            result.connection,
-          );
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Square接続状態を確認できませんでした。",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
+
+  async function checkConnection() {
+    setChecking(true);
+    setShowCheck(false);
+    setMessage("");
+    try {
+      const result = await loadSquareConnection();
+      setConfigured(result.configured);
+      setEnvironment(result.environment);
+      setConnection(result.connection);
+      setShowCheck(result.connection.connected);
+      if (!result.connection.connected) setMessage("有効なSquare接続が見つかりませんでした。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Square接続状態を確認できませんでした。");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function connectSquare() {
     setIsConnecting(true);
@@ -250,6 +248,7 @@ export default function SquareConnectionPanel() {
         merchantId: null,
         locationId: null,
         locationName: null,
+        locationStatus: null,
         status: null,
       });
       setMessage(
@@ -280,6 +279,11 @@ export default function SquareConnectionPanel() {
       ) : connection?.connected ? (
         <>
           <p className="mt-3 text-sm font-semibold text-emerald-800">Square接続済み</p>
+          {environment ? (
+            <p className="mt-1 text-xs text-neutral-600">
+              {environment === "production" ? "Square本番環境" : "Squareテスト環境（入金なし）"}
+            </p>
+          ) : null}
           <dl className="mt-2 text-sm">
             <dt className="text-neutral-600">作品の売上を受け取るSquare店舗</dt>
             <dd className="break-words font-semibold text-neutral-950">
@@ -289,21 +293,45 @@ export default function SquareConnectionPanel() {
               <dd className="break-all text-xs text-neutral-500">店舗ID {connection.locationId}</dd>
             ) : null}
           </dl>
-          <Link className={`mt-3 inline-block ${actionClass}`} href="/my/sales">
-            販売管理を開く
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link className={actionClass} href="/my/sales">販売管理を開く</Link>
+            <button
+              type="button"
+              className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 disabled:opacity-40"
+              disabled={checking || isConnecting || isDisconnecting}
+              onClick={checkConnection}
+            >
+              {checking ? "Squareに確認しています…" : "Squareで接続先を確認"}
+            </button>
+          </div>
+          {showCheck ? (
+            <div className="mt-3 rounded-xl bg-neutral-50 p-3 text-sm text-neutral-700" role="status">
+              {connection.locationStatus ? (
+                <>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                    <dt>店舗の状態</dt><dd>{capabilityLabel(connection.locationStatus.active)}</dd>
+                    <dt>カード決済</dt><dd>{capabilityLabel(connection.locationStatus.cardPayments)}</dd>
+                    <dt>Squareからの自動振込</dt><dd>{capabilityLabel(connection.locationStatus.automaticTransfers)}</dd>
+                  </dl>
+                  <p className="mt-2 text-xs">振込先の銀行口座はSquare管理画面で確認できます。</p>
+                </>
+              ) : (
+                <p>Squareから店舗の状態を取得できませんでした。時間をおいて再度お試しください。</p>
+              )}
+            </div>
+          ) : null}
           <details className="mt-3">
             <summary className="cursor-pointer text-sm font-semibold text-neutral-700">Squareの再設定</summary>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
               接続先を変更したいときや、月謝・定期販売に必要な権限を更新するときは、Squareに再接続します。
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" disabled={!configured || isConnecting || isDisconnecting} onClick={connectSquare} className={actionClass}>
+              <button type="button" disabled={!configured || checking || isConnecting || isDisconnecting} onClick={connectSquare} className={actionClass}>
                 {isConnecting ? "Squareを開いています…" : "Squareに再接続"}
               </button>
               <button
                 type="button"
-                disabled={isConnecting || isDisconnecting}
+                disabled={checking || isConnecting || isDisconnecting}
                 onClick={disconnectSquare}
                 className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 disabled:opacity-40"
               >
