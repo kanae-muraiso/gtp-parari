@@ -42,28 +42,15 @@ type LoadStatus =
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
-type UserTopMode = "web" | "profile" | "works";
-
 type ProfileRow = {
   user_id: string;
   username: string | null;
   display_name: string | null;
-  homepage_mode: string | null;
-  homepage_book_id: string | null;
 };
 
 type PrivateProfileRow = {
   user_id: string;
   full_name: string | null;
-};
-
-type WebWorkRow = {
-  id: string;
-  title: string | null;
-  content: string | null;
-  stable_slug: string | null;
-  custom_slug: string | null;
-  slug: string | null;
 };
 
 type UsernameOwnerRow = {
@@ -86,20 +73,12 @@ export default function MyProfilePage() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [hasSavedUsername, setHasSavedUsername] = useState(false);
 
     const [displayName, setDisplayName] = useState("");
     const [username, setUsername] = useState("");
     const [fullName, setFullName] = useState("");
     const [usernameTouched, setUsernameTouched] = useState(false);
-
-  const [userTopMode, setUserTopMode] =
-    useState<UserTopMode>("works");
-
-  const [homepageBookId, setHomepageBookId] =
-    useState("");
-
-  const [webWorks, setWebWorks] =
-    useState<WebWorkRow[]>([]);
 
   const normalizedUsername = normalizeUsername(username);
   const usernameError = usernameTouched
@@ -163,7 +142,7 @@ export default function MyProfilePage() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "user_id, username, display_name, homepage_mode, homepage_book_id",
+        "user_id, username, display_name",
       )
       .eq("user_id", user.id)
       .maybeSingle<ProfileRow>();
@@ -177,6 +156,7 @@ export default function MyProfilePage() {
     }
 
     setUsername(data?.username ?? "");
+    setHasSavedUsername(Boolean(data?.username));
     setDisplayName(data?.display_name ?? "");
       
       const { data: privateProfile, error: privateProfileError } = await supabase
@@ -194,62 +174,6 @@ export default function MyProfilePage() {
       }
 
       setFullName(privateProfile?.full_name ?? "");
-
-    const loadedMode =
-      data?.homepage_mode === "book"
-        ? "web"
-        : data?.homepage_mode === "profile"
-          ? "profile"
-          : "works";
-
-    setUserTopMode(loadedMode);
-    setHomepageBookId(
-      data?.homepage_book_id ?? "",
-    );
-
-    const {
-      data: webWorkRows,
-      error: webWorksError,
-    } = await supabase
-      .from("parari_books")
-      .select(
-        "id, title, content, stable_slug, custom_slug, slug",
-      )
-      .eq("owner", user.id)
-      .or("is_deleted.is.null,is_deleted.eq.false")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (webWorksError) {
-      setStatus({
-        type: "error",
-        message:
-          `WEB作品の取得に失敗しました: ${webWorksError.message}`,
-      });
-      return;
-    }
-
-    const availableWebWorks = (
-      (webWorkRows ?? []) as WebWorkRow[]
-    ).filter((work) =>
-      /^\s*\[(WEB|WEBINFO)\b/i.test(
-        String(work.content ?? ""),
-      ),
-    );
-
-    setWebWorks(availableWebWorks);
-
-    if (
-      loadedMode === "web" &&
-      data?.homepage_book_id &&
-      !availableWebWorks.some(
-        (work) =>
-          work.id === data.homepage_book_id,
-      )
-    ) {
-      setHomepageBookId("");
-    }
 
     setStatus({
       type: "ready",
@@ -317,38 +241,10 @@ export default function MyProfilePage() {
       return;
     }
 
-    if (
-      userTopMode === "web" &&
-      !homepageBookId
-    ) {
-      setStatus({
-        type: "error",
-        message:
-          "トップページに使用するWEBサイトを選択してください。",
-      });
-      return;
-    }
-
-    const homepageMode =
-      userTopMode === "web"
-        ? "book"
-        : userTopMode === "works"
-          ? "tag"
-          : "profile";
-
     const payload = {
       user_id: userId,
       username: normalizedUsername,
       display_name: displayName.trim() || null,
-      homepage_mode: homepageMode,
-      homepage_book_id:
-        userTopMode === "web"
-          ? homepageBookId
-          : null,
-      homepage_tag_key:
-        userTopMode === "works"
-          ? "works"
-          : null,
     };
 
     const { data: updatedRows, error: updateError } = await supabase
@@ -356,11 +252,7 @@ export default function MyProfilePage() {
       .update({
         username: payload.username,
         display_name: payload.display_name,
-        homepage_mode: payload.homepage_mode,
-        homepage_book_id:
-          payload.homepage_book_id,
-        homepage_tag_key:
-          payload.homepage_tag_key,
+        ...(!hasSavedUsername ? { homepage_mode: "tag", homepage_tag_key: "works" } : {}),
       })
       .eq("user_id", userId)
       .select("user_id");
@@ -378,11 +270,8 @@ export default function MyProfilePage() {
         user_id: payload.user_id,
         username: payload.username,
         display_name: payload.display_name,
-        homepage_mode: payload.homepage_mode,
-        homepage_book_id:
-          payload.homepage_book_id,
-        homepage_tag_key:
-          payload.homepage_tag_key,
+        homepage_mode: "tag",
+        homepage_tag_key: "works",
       });
 
       if (insertError) {
@@ -414,6 +303,7 @@ export default function MyProfilePage() {
         return;
       }
       
+    setHasSavedUsername(true);
     setStatus({
       type: "success",
       message: "プロフィールを保存しました。",
@@ -424,13 +314,12 @@ export default function MyProfilePage() {
   }, [
     displayName,
     fullName,
-    homepageBookId,
+    hasSavedUsername,
     normalizedUsername,
     returnTo,
     router,
     supabase,
     userId,
-    userTopMode,
   ]);
 
   const isBusy = status.type === "loading" || status.type === "saving";
@@ -588,139 +477,6 @@ export default function MyProfilePage() {
                   <p className="mt-2 text-xs leading-5 text-neutral-400">
                     `/my/works` で「作品リストに掲載」にした公開作品が、このURLに表示されます。
                   </p>
-                </div>
-
-                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="text-sm font-bold text-neutral-900">
-                    ユーザートップページ
-                  </div>
-
-                  <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    <code>/{normalizedUsername || "username"}/</code>
-                    にアクセスしたときの表示先を選びます。
-                  </p>
-
-                  <div className="mt-4 space-y-3">
-                    <label className="flex cursor-pointer gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                      <input
-                        type="radio"
-                        name="user-top-mode"
-                        value="web"
-                        checked={userTopMode === "web"}
-                        onChange={() =>
-                          setUserTopMode("web")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-bold text-neutral-900">
-                          WEBサイトを表示
-                        </div>
-                        <div className="mt-1 text-xs leading-5 text-neutral-500">
-                          選択したWEBサイトへ転送します。
-                        </div>
-
-                        {userTopMode === "web" ? (
-                          <select
-                            value={homepageBookId}
-                            onChange={(event) =>
-                              setHomepageBookId(
-                                event.target.value,
-                              )
-                            }
-                            className="mt-3 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-neutral-600"
-                          >
-                            <option value="">
-                              WEBサイトを選択
-                            </option>
-
-                            {webWorks.map((work) => {
-                              const slug =
-                                work.stable_slug ||
-                                work.custom_slug ||
-                                work.slug ||
-                                "";
-
-                              return (
-                                <option
-                                  key={work.id}
-                                  value={work.id}
-                                >
-                                  {work.title || "無題のWEB"}
-                                  {slug
-                                    ? `（${slug}）`
-                                    : ""}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        ) : null}
-
-                        {userTopMode === "web" &&
-                        webWorks.length === 0 ? (
-                          <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
-                            選択できるWEBサイトがありません。
-                            先にWEBサイトを作成してください。
-                          </div>
-                        ) : null}
-                      </div>
-                    </label>
-
-                    <label className="flex cursor-pointer gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                      <input
-                        type="radio"
-                        name="user-top-mode"
-                        value="profile"
-                        checked={
-                          userTopMode === "profile"
-                        }
-                        onChange={() =>
-                          setUserTopMode("profile")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div>
-                        <div className="text-sm font-bold text-neutral-900">
-                          プロフィールを表示
-                        </div>
-                        <div className="mt-1 text-xs leading-5 text-neutral-500">
-                          <code>
-                            /{normalizedUsername || "username"}/profile
-                          </code>
-                          へ転送します。
-                        </div>
-                      </div>
-                    </label>
-
-                    <label className="flex cursor-pointer gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                      <input
-                        type="radio"
-                        name="user-top-mode"
-                        value="works"
-                        checked={
-                          userTopMode === "works"
-                        }
-                        onChange={() =>
-                          setUserTopMode("works")
-                        }
-                        className="mt-1"
-                      />
-
-                      <div>
-                        <div className="text-sm font-bold text-neutral-900">
-                          作品一覧を表示
-                        </div>
-                        <div className="mt-1 text-xs leading-5 text-neutral-500">
-                          <code>
-                            /{normalizedUsername || "username"}/works
-                          </code>
-                          へ転送します。
-                        </div>
-                      </div>
-                    </label>
-                  </div>
                 </div>
 
                 {status.type === "error" ? (
