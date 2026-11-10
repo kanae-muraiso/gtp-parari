@@ -10,6 +10,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import WorkSample from "@/components/parari/WorkSample";
@@ -52,6 +53,17 @@ type SellerSubscription = {
 };
 
 export default function SalesPage() {
+  return (
+    <React.Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">販売情報を読み込んでいます…</p>}>
+      <SalesManagement />
+    </React.Suspense>
+  );
+}
+
+function SalesManagement() {
+  const requestedWorkId = useSearchParams().get("workId")?.trim() || "";
+  const handledWorkId = React.useRef("");
+  const [salesLoaded, setSalesLoaded] = React.useState(false);
   const [works, setWorks] = React.useState<Work[]>([]);
   const [products, setProducts] = React.useState<Product[]>([]);
   const [subscriptions, setSubscriptions] =
@@ -98,14 +110,13 @@ export default function SalesPage() {
     return ()=>{active=false;};
   },[workId]);
 
-  function selectWork(id: string) {
-    const work = works.find(item=>item.id===id);
-    setWorkId(id);
+  const selectWork = React.useCallback((work?: Work) => {
+    setWorkId(work?.id ?? "");
     setName(work?.title ?? "");
     setListingVisibility(work?.visibility==="public" || work?.is_public ? "public" : "unlisted");
     setPreviewPageCount("1");
     setPreview(null);
-  }
+  }, []);
 
   async function loadPreview() {
     setPreviewing(true);
@@ -129,7 +140,7 @@ export default function SalesPage() {
     }
   }
 
-  function editWorkSale(product: Product) {
+  const editWorkSale = React.useCallback((product: Product) => {
     setMode("work");
     setEditingProduct(product);
     setWorkId(product.work_id ?? "");
@@ -140,7 +151,7 @@ export default function SalesPage() {
     setPreviewPageCount(String(product.preview_page_count ?? 1));
     setPreview(null);
     document.getElementById("work-sale-form")?.scrollIntoView({block:"start"});
-  }
+  }, []);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -209,6 +220,8 @@ export default function SalesPage() {
         (productResult.products ?? []) as Product[],
       );
 
+      setSalesLoaded(true);
+
       setPlan(
         productResult.plan?.effectivePlan ??
           "free",
@@ -249,6 +262,32 @@ export default function SalesPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  React.useEffect(() => {
+    if (!requestedWorkId) {
+      handledWorkId.current = "";
+      return;
+    }
+    if (!salesLoaded || loading || handledWorkId.current === requestedWorkId) return;
+    handledWorkId.current = requestedWorkId;
+    const work = works.find(item => item.id === requestedWorkId);
+    if (!work) {
+      setMessage("指定された作品は販売管理で開けません。");
+      return;
+    }
+
+    const product = products.find(item => item.work_id === work.id && item.billing_interval === "one_time");
+    if (product) {
+      editWorkSale(product);
+      return;
+    }
+
+    setMode("work");
+    setEditingProduct(null);
+    selectWork(work);
+    setAmount("");
+    setDescription("");
+  }, [editWorkSale, loading, products, requestedWorkId, salesLoaded, selectWork, works]);
 
   async function saveProduct() {
     setSaving(true);
@@ -514,7 +553,7 @@ export default function SalesPage() {
                   <select
                     value={workId}
                     disabled={Boolean(editingProduct) || previewing}
-                    onChange={event=>selectWork(event.target.value)}
+                    onChange={event=>selectWork(works.find(work=>work.id===event.target.value))}
                     className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm"
                   >
                     <option value="">
@@ -624,7 +663,7 @@ export default function SalesPage() {
                   : editingProduct ? "販売設定を保存" : "販売を開始"}
               </button>
               {editingProduct && <button type="button" className="text-sm underline" onClick={()=>{
-                setEditingProduct(null);selectWork("");setDescription("");setAmount("");
+                setEditingProduct(null);selectWork();setDescription("");setAmount("");
               }}>編集をやめる</button>}
             </div>
           </section>

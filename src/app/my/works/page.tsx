@@ -89,6 +89,7 @@ let ownerListCache: {
 
 export default function MyWorksPage() {
   const [works, setWorks] = React.useState<WorkRow[]>([]);
+  const [registeredSaleIds, setRegisteredSaleIds] = React.useState<Set<string> | null>(null);
     const [sharedWorks, setSharedWorks] = React.useState<WorkRow[]>([]);
   const [status, setStatus] = React.useState<LoadStatus>("loading");
   const [message, setMessage] = React.useState("");
@@ -264,7 +265,14 @@ export default function MyWorksPage() {
         }
       }
 
-      await Promise.all([loadOwnedList(), loadCollaborationAccess(), loadSharedWorks()]);
+      async function loadSaleStatus() {
+        const { data, error } = await supabase.from("commerce_products")
+          .select("work_id").eq("owner_user_id", userId).eq("product_type", "work");
+        if (cancelled || error) return;
+        setRegisteredSaleIds(new Set((data ?? []).flatMap(row => row.work_id ? [row.work_id] : [])));
+      }
+
+      await Promise.all([loadOwnedList(), loadCollaborationAccess(), loadSharedWorks(), loadSaleStatus()]);
     };
 
     void loadWorks();
@@ -1764,6 +1772,17 @@ export default function MyWorksPage() {
                               getBlockedReason={() => ""}
                               onMessage={(message) => setExportMessages((current) => ({ ...current, [work.id]: message }))}
                             />
+                          ) : null}
+                          {kind !== "Web" ? (
+                            <Link
+                              href={`/my/sales?workId=${encodeURIComponent(work.id)}#work-sale-form`}
+                              className={detailItem}
+                              prefetch={false}
+                            >
+                              {registeredSaleIds?.has(work.id)
+                                ? "販売設定を開く"
+                                : registeredSaleIds ? "販売する" : "販売設定"}
+                            </Link>
                           ) : null}
                           {kind === "Page" ? (
                             <button
