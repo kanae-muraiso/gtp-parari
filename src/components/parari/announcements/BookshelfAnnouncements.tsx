@@ -77,12 +77,14 @@ export default function BookshelfAnnouncements() {
       <div className="flex items-center justify-between gap-4 px-1">
         <Link
           href="/my/announcements"
-          className="inline-flex items-center gap-2 text-xs font-bold text-neutral-600 transition hover:text-neutral-950"
+          className={`inline-flex items-center gap-2 text-xs font-bold transition ${latestUnread
+            ? "rounded-full bg-sky-100 px-2.5 py-1 text-sky-900 hover:bg-sky-200"
+            : "text-neutral-600 hover:text-neutral-950"}`}
         >
           <span>PARARIからのお知らせ</span>
-          {unread.length > 0 ? (
-            <span className="rounded-full bg-neutral-950 px-2 py-0.5 text-[10px] text-white">
-              {unread.length}
+          {latestUnread ? (
+            <span className="rounded-full bg-sky-800 px-2 py-0.5 text-[10px] text-white">
+              未読 {unread.length}件
             </span>
           ) : null}
           <span className="text-neutral-400">›</span>
@@ -92,7 +94,7 @@ export default function BookshelfAnnouncements() {
       {latestUnread ? (
         <Link
           href="/my/announcements"
-          className="mt-3 block rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm transition hover:bg-neutral-50"
+          className="mt-3 block rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-sm transition hover:bg-sky-100"
         >
           <div className="flex items-center gap-2">
             {latestUnread.is_important ? (
