@@ -9,7 +9,7 @@
  * コメント:
  * - read_later / shelf / participant / managed に対応
  * - 未ログイン時は /login へ移動
- * - 同じ type のみをトグルする
+ * - あとで読むは旧形式の shelf も含めてトグルする
  * - 現在UIボタンとして主に使うのは read_later / shelf
  * - participant / managed は自動追加用の型として先に受けられるようにしておく
  */
@@ -29,13 +29,17 @@ type Props = {
   type: ShelfType;
   idleLabel: string;
   activeLabel: string;
+  appearance?: "light" | "dark";
 };
+
+const readLaterTypes = ["read_later", "shelf"];
 
 export default function BookSaveButton({
   bookId,
   type,
   idleLabel,
   activeLabel,
+  appearance = "dark",
 }: Props) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -76,7 +80,8 @@ export default function BookSaveButton({
             .select("id")
             .eq("user_id", user.id)
             .eq("book_id", bookId)
-            .eq("type", type)
+            .in("type", type === "read_later" ? readLaterTypes : [type])
+            .limit(1)
             .maybeSingle();
             
             if (!mounted) return;
@@ -103,7 +108,7 @@ export default function BookSaveButton({
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
             const { data } = await supabase.from("user_bookshelf").select("id")
-                .eq("user_id", user.id).eq("book_id", bookId).eq("type", type).maybeSingle();
+                .eq("user_id", user.id).eq("book_id", bookId).in("type", type === "read_later" ? readLaterTypes : [type]).limit(1).maybeSingle();
             setIsActive(Boolean(data));
         };
         window.addEventListener("parari-library-updated", refresh);
@@ -138,9 +143,12 @@ export default function BookSaveButton({
             .delete()
             .eq("user_id", userId)
             .eq("book_id", bookId)
-            .eq("type", type);
+            .in("type", type === "read_later" ? readLaterTypes : [type]);
             
-            if (!error) setIsActive(false);
+            if (!error) {
+                setIsActive(false);
+                window.dispatchEvent(new Event("parari-library-updated"));
+            }
             setSaving(false);
             return;
         }
@@ -151,7 +159,10 @@ export default function BookSaveButton({
             type,
         });
         
-        if (!error) setIsActive(true);
+        if (!error) {
+            setIsActive(true);
+            window.dispatchEvent(new Event("parari-library-updated"));
+        }
         setSaving(false);
     }
     
@@ -159,12 +170,17 @@ export default function BookSaveButton({
             <button
             type="button"
             onClick={toggle}
+            aria-pressed={isActive}
             disabled={loading || saving}
             className={`rounded-lg border px-3 py-1 text-[12px] font-semibold transition-colors
             ${
-              isActive
-                ? "border-white bg-white text-black"
-                : "border-white/30 text-white hover:bg-white/10"
+              appearance === "light"
+                ? isActive
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-100"
+                : isActive
+                  ? "border-white bg-white text-black"
+                  : "border-white/30 text-white hover:bg-white/10"
             }
             disabled:opacity-40`}
             >

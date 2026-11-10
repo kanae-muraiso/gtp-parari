@@ -7,7 +7,6 @@ import React from "react";
 import { useParams } from "next/navigation";
 import PublicViewerShell from "../../../components/parari/PublicViewerShell";
 import { supabase } from "../../../lib/supabaseClient";
-import BookViewTracker from "../../../components/parari/BookViewTracker";
 import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
 import { hasBookPageRefs } from "@/lib/parari/book/pageRefs";
 
@@ -180,8 +179,6 @@ export default function PublicPage() {
 
   return (
     <>
-      <BookViewTracker bookId={book.id} />
-
       {hasPurchasedAccess ? (
         <div className="mx-auto max-w-[440px] px-2 pt-3">
           <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
