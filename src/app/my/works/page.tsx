@@ -11,6 +11,7 @@
 import React from "react";
 import Link from "next/link";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
+import { KindlePublishingGuide } from "@/components/parari/KindlePublishingGuide";
 
 import { supabase } from "@/lib/supabaseClient";
 import { getEffectivePlan } from "@/lib/billing/plan";
@@ -109,7 +110,7 @@ export default function MyWorksPage() {
 
     const [openWorkDetails, setOpenWorkDetails] = React.useState<{
       workId: string;
-      section: "menu" | "category" | "collaboration" | "page";
+      section: "menu" | "category" | "collaboration" | "page" | "kindle";
     } | null>(null);
     const [exportMessages, setExportMessages] = React.useState<Record<string, string>>({});
 
@@ -1763,6 +1764,15 @@ export default function MyWorksPage() {
                               共同編集
                             </button>
                           ) : null}
+                          {kind === "Book" ? (
+                            <button
+                              type="button"
+                              className={detailItem}
+                              onClick={() => setOpenWorkDetails({ workId: work.id, section: "kindle" })}
+                            >
+                              Kindleで出版する
+                            </button>
+                          ) : null}
                           {kind !== "Web" ? (
                             <EpubExportButton
                               workId={work.id}
@@ -1822,6 +1832,16 @@ export default function MyWorksPage() {
 
                     {activeDetails && activeDetails !== "category" && exportMessages[work.id] ? (
                       <p role="status" className="mt-3 whitespace-pre-wrap rounded-xl bg-violet-50 p-3 text-xs text-violet-900">{exportMessages[work.id]}</p>
+                    ) : null}
+
+                    {kind === "Book" && activeDetails === "kindle" ? (
+                      <KindlePublishingGuide
+                        workId={work.id}
+                        title={title}
+                        content={work.content ?? ""}
+                        editHref={editHref}
+                        viewHref={publicHref}
+                      />
                     ) : null}
 
                     {kind === "Page" && isDetailOpen ? (
