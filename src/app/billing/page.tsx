@@ -5,7 +5,6 @@ import BillingPortalButton from "@/components/parari/billing/BillingPortalButton
 import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
 import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
 import OrganizerCheckoutButton from "@/components/parari/billing/OrganizerCheckoutButton";
-import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -59,33 +58,11 @@ export default function BillingPage() {
 
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
                   現在のプラン確認、有料プランへの申込、カード情報の変更や解約を
-                  このページから行えます。販売を始める場合はSquareもここで接続します。
+                  このページから行えます。
                 </p>
               </header>
 
               <CurrentPlanPanel />
-
-              <div id="square-connection" className="scroll-mt-6">
-                <SquareConnectionPanel />
-              </div>
-
-              <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-                  SALES
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-950">
-                  販売管理
-                </h2>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  作品の販売、イベント決済、Organizerの月謝・定期サービスを管理します。
-                </p>
-                <a
-                  href="/my/sales"
-                  className="mt-5 inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
-                >
-                  販売管理を開く
-                </a>
-              </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">

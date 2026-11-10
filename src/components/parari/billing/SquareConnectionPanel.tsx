@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { supabase } from "@/lib/supabaseClient";
 
@@ -8,6 +9,7 @@ type SquareConnectionState = {
   connected: boolean;
   merchantId: string | null;
   locationId: string | null;
+  locationName: string | null;
   status: string | null;
 };
 
@@ -247,6 +249,7 @@ export default function SquareConnectionPanel() {
         connected: false,
         merchantId: null,
         locationId: null,
+        locationName: null,
         status: null,
       });
       setMessage(
@@ -263,90 +266,83 @@ export default function SquareConnectionPanel() {
     }
   }
 
+  const actionClass = "rounded-xl bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40";
+
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-        SQUARE
-      </p>
-
-      <h2 className="mt-1 text-xl font-bold text-slate-950">
-        売上を受け取るSquareアカウント
-      </h2>
-
-      <p className="mt-3 text-sm leading-7 text-slate-600">
-        PARARIで作品・イベント・月謝などを販売する場合、あなた自身のSquareアカウントへ売上を受け取ります。
-        PARARIがカード番号を保存することはありません。
+    <section id="sell-work" aria-labelledby="sell-work-title" className="scroll-mt-6 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <h2 id="sell-work-title" className="text-sm font-bold text-neutral-950">PARARIで販売する</h2>
+      <p className="mt-1 text-xs leading-6 text-neutral-600">
+        現在、PARARIでの作品販売はSquare決済にのみ対応しています。
       </p>
 
       {isLoading ? (
-        <p className="mt-5 text-sm text-slate-500">
-          接続状態を確認しています...
-        </p>
-      ) : !configured ? (
-        <div className="mt-5 rounded-2xl bg-neutral-50 px-4 py-4">
-          <div className="text-sm font-bold text-neutral-900">
-            Square連携は準備中です
-          </div>
-          <p className="mt-1 text-xs leading-6 text-neutral-600">
-            PARARI側のSquare設定が完了すると、ここから接続できるようになります。
-          </p>
-        </div>
+        <p className="mt-3 text-sm text-neutral-500" role="status">Squareの接続状態を確認しています…</p>
       ) : connection?.connected ? (
-        <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-4">
-          <div className="text-sm font-bold text-emerald-900">
-            Square接続済み
-          </div>
-          <p className="mt-1 text-xs leading-6 text-emerald-800">
-            このアカウントでPARARI決済を受け付けられます。月謝・定期販売を初めて使う場合は、新しい権限を反映するため一度再接続してください。
+        <>
+          <p className="mt-3 text-sm font-semibold text-emerald-800">Square接続済み</p>
+          <dl className="mt-2 text-sm">
+            <dt className="text-neutral-600">作品の売上を受け取るSquare店舗</dt>
+            <dd className="break-words font-semibold text-neutral-950">
+              {connection.locationName ?? "店舗名を確認できませんでした"}
+            </dd>
+            {connection.locationId ? (
+              <dd className="break-all text-xs text-neutral-500">店舗ID {connection.locationId}</dd>
+            ) : null}
+          </dl>
+          <Link className={`mt-3 inline-block ${actionClass}`} href="/my/sales">
+            販売管理を開く
+          </Link>
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-700">Squareの再設定</summary>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              接続先を変更したいときや、月謝・定期販売に必要な権限を更新するときは、Squareに再接続します。
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" disabled={!configured || isConnecting || isDisconnecting} onClick={connectSquare} className={actionClass}>
+                {isConnecting ? "Squareを開いています…" : "Squareに再接続"}
+              </button>
+              <button
+                type="button"
+                disabled={isConnecting || isDisconnecting}
+                onClick={disconnectSquare}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 disabled:opacity-40"
+              >
+                {isDisconnecting ? "解除しています…" : "Square連携を解除"}
+              </button>
+            </div>
+          </details>
+        </>
+      ) : connection ? (
+        <>
+          <p className="mt-3 text-sm text-neutral-600">
+            {configured ? "Square未接続" : "Square連携は準備中です"}
           </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={isConnecting}
-              onClick={() => {
-                void connectSquare();
-              }}
-              className="rounded-xl bg-emerald-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-40"
-            >
-              {isConnecting
-                ? "Squareを開いています..."
-                : "Square権限を更新"}
-            </button>
-
-            <button
-              type="button"
-              disabled={isDisconnecting}
-              onClick={() => {
-                void disconnectSquare();
-              }}
-              className="rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-40"
-            >
-              {isDisconnecting
-                ? "解除しています..."
-                : "Square連携を解除"}
-            </button>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {configured ? (
+              <button type="button" disabled={isConnecting} onClick={connectSquare} className={actionClass}>
+                {isConnecting ? "Squareを開いています…" : "Squareを接続"}
+              </button>
+            ) : null}
+            <Link className="text-sm font-semibold text-sky-800 underline underline-offset-4" href="/my/settings/square">
+              Squareアカウントをお持ちでない方
+            </Link>
           </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          disabled={isConnecting}
-          onClick={() => {
-            void connectSquare();
-          }}
-          className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40"
-        >
-          {isConnecting
-            ? "Squareへ接続しています..."
-            : "Squareを接続"}
-        </button>
-      )}
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-700">販売を始める手順</summary>
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-700">
+              <li>Squareで振込先を設定し、この画面から接続します。</li>
+              <li>販売管理で作品と価格を決め、「販売を開始」を押します。販売開始後の本文は購入者限定です。</li>
+              <li>購入ページを確認し、そのURLを読者に知らせます。</li>
+            </ol>
+          </details>
+          <Link className="mt-3 inline-block text-sm font-semibold text-sky-800 underline underline-offset-4" href="/my/sales">
+            販売管理を開く
+          </Link>
+        </>
+      ) : null}
 
       {message ? (
-        <p className="mt-4 text-sm text-rose-700">
-          {message}
-        </p>
+        <p className="mt-3 text-sm text-neutral-700" role="status">{message}</p>
       ) : null}
     </section>
   );

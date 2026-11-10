@@ -18,10 +18,11 @@ function resultUrl(
   result: string,
 ): URL {
   const url = new URL(
-    "/billing",
+    "/my/settings",
     request.nextUrl.origin,
   );
   url.searchParams.set("square", result);
+  url.hash = "sell-work";
   return url;
 }
 

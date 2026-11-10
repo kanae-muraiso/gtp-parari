@@ -25,6 +25,7 @@ async function squareRequest<T>(
     accessToken?: string;
     method?: string;
     body?: unknown;
+    signal?: AbortSignal;
   } = {},
 ): Promise<T> {
   const response = await fetch(
@@ -46,6 +47,7 @@ async function squareRequest<T>(
           ? undefined
           : JSON.stringify(options.body),
       cache: "no-store",
+      signal: options.signal,
     },
   );
 
@@ -130,20 +132,26 @@ export type SquareLocation = {
   capabilities?: string[];
 };
 
-export async function getSquareMainLocation(
+export async function getSquareLocation(
   accessToken: string,
+  locationId: string,
 ): Promise<SquareLocation> {
-  const result = await squareRequest<{
-    location?: SquareLocation;
-  }>("/v2/locations/main", {
-    accessToken,
-  });
+  const result = await squareRequest<{ location?: SquareLocation }>(
+    `/v2/locations/${encodeURIComponent(locationId)}`,
+    { accessToken, signal: AbortSignal.timeout(5_000) },
+  );
 
   if (!result.location?.id) {
-    throw new Error("Square main location was not found");
+    throw new Error("Square location was not found");
   }
 
   return result.location;
+}
+
+export async function getSquareMainLocation(
+  accessToken: string,
+): Promise<SquareLocation> {
+  return getSquareLocation(accessToken, "main");
 }
 
 export type SquarePaymentLinkResult = {

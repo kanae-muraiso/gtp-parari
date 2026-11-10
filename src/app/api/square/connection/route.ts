@@ -6,6 +6,7 @@ import {
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   getSquareConnection,
+  getUsableSquareConnection,
 } from "@/lib/square/connection";
 import {
   getSquareEnvironment,
@@ -15,6 +16,7 @@ import {
   decryptSquareToken,
 } from "@/lib/square/crypto";
 import {
+  getSquareLocation,
   revokeSquareOAuthAuthorization,
 } from "@/lib/square/api";
 
@@ -56,6 +58,21 @@ export async function GET(
   const connection =
     await getSquareConnection(user.id);
 
+  let locationName: string | null = null;
+  if (connection?.status === "active") {
+    try {
+      const usable = await getUsableSquareConnection(user.id);
+      if (usable.locationId === connection.location_id && usable.merchantId === connection.merchant_id) {
+        const location = await getSquareLocation(usable.accessToken, usable.locationId);
+        if (location.id === connection.location_id) {
+          locationName = location.name?.trim() || null;
+        }
+      }
+    } catch {
+      // A location lookup failure does not change the recorded connection status.
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     configured:
@@ -69,12 +86,14 @@ export async function GET(
           locationId:
             connection.location_id,
           status: connection.status,
+          locationName,
         }
       : {
           connected: false,
           merchantId: null,
           locationId: null,
           status: null,
+          locationName: null,
         },
   });
 }

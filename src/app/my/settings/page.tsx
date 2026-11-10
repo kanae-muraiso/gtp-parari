@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 
+import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
@@ -121,26 +122,7 @@ export default function SettingsHomePage() {
                 </details>
               </section>
 
-              <section aria-labelledby="sell-work" className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-                <h2 id="sell-work" className="text-sm font-bold text-neutral-950">PARARIで販売する</h2>
-                <p className="mt-1 text-xs leading-6 text-neutral-600">
-                  Squareに登録済みなら、アカウントを接続するところから始められます。
-                </p>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-sm font-semibold text-neutral-800">販売を始める手順</summary>
-                  <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm">
-                    <GuideStep title="SquareアカウントをPARARIに接続する" action={{ label: "Squareの接続を開く", href: "/billing#square-connection" }}>
-                      「Squareを接続」を押し、売上を受け取るSquareアカウントで連携を許可します。PARARIに戻ったら「Square接続済み」を確認します。
-                    </GuideStep>
-                    <GuideStep title="作品と価格を決めて販売を開始する" action={{ label: "販売する作品を選ぶ", href: "/my/sales" }}>
-                      販売画面で作品を選び、商品名と価格を入力して「販売を開始」を押します。販売を始めると、作品本文は購入者限定になります。
-                    </GuideStep>
-                    <GuideStep title="購入ページのURLを知らせる">
-                      販売画面の「商品」で「購入ページを見る」から表示を確認し、「URLをコピー」で読者に案内します。
-                    </GuideStep>
-                  </ol>
-                </details>
-              </section>
+              <SquareConnectionPanel />
             </>
           ) : null}
 
