@@ -10,7 +10,7 @@ const sections = [
 
 type Section = typeof sections[number]["key"];
 export default function LibraryV2Menu({ active }: { active: Section }) {
-  return <nav aria-label="LIBRARYメニュー" className="mt-5 flex flex-wrap gap-2">
+  return <nav aria-label="LIBRARYメニュー" className="flex flex-wrap gap-2">
     {sections.map(item => <Link key={item.key} href={item.href}
       aria-current={active === item.key ? "page" : undefined}
       className={"rounded-full border px-4 py-2 text-sm font-medium transition " +

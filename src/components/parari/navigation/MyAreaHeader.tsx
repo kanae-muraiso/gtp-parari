@@ -14,7 +14,6 @@ type WorkspaceArea = "library" | "studio" | "settings" | "operations";
 
 type MyAreaHeaderProps = {
   title: string;
-  visuallyHideTitle?: boolean;
   navigation?: ReactNode;
   showManagementLinks?: boolean;
   area?: WorkspaceArea;
@@ -22,7 +21,6 @@ type MyAreaHeaderProps = {
 
 export default function MyAreaHeader({
   title,
-  visuallyHideTitle = false,
   navigation,
   showManagementLinks = true,
   area,
@@ -49,7 +47,7 @@ export default function MyAreaHeader({
         <WorkspaceLinks area={resolvedArea} />
 
         {/* 2026-10-31 JST — PART: Integrated workspace navigation. */}
-        <h1 className={navigation || visuallyHideTitle ? "sr-only" : "mt-4 text-xl font-bold text-neutral-950"}>
+        <h1 className={navigation ? "sr-only" : "mt-4 text-xl font-bold text-neutral-950"}>
           {title}
         </h1>
         {navigation ? <div className="mt-3 border-t border-neutral-200 pt-3">{navigation}</div> : null}
