@@ -204,8 +204,8 @@ export default function LibraryV2Page() {
   const recent = readingItems(activity.filter(row=>row.type==="viewed").map(row=>({id:row.book_id,date:row.created_at})));
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <MyAreaHeader title="書棚" area="library" visuallyHideTitle />
-      <LibraryV2Menu active="shelf" />
+      <MyAreaHeader title="書棚" area="library"
+        navigation={<LibraryV2Menu active="shelf" />} />
       <div className="mt-6">
         <BookshelfAnnouncements />
         <p className="text-sm text-neutral-500">作品と作者を、自分の関心で整理します。</p>
