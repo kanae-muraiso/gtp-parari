@@ -59,6 +59,7 @@ export async function GET(
     await getSquareConnection(user.id);
 
   let locationName: string | null = null;
+  let locationStatus: { active: boolean | null; cardPayments: boolean | null; automaticTransfers: boolean | null } | null = null;
   if (connection?.status === "active") {
     try {
       const usable = await getUsableSquareConnection(user.id);
@@ -66,6 +67,11 @@ export async function GET(
         const location = await getSquareLocation(usable.accessToken, usable.locationId);
         if (location.id === connection.location_id) {
           locationName = location.name?.trim() || null;
+          locationStatus = {
+            active: location.status ? location.status === "ACTIVE" : null,
+            cardPayments: location.capabilities?.includes("CREDIT_CARD_PROCESSING") ?? null,
+            automaticTransfers: location.capabilities?.includes("AUTOMATIC_TRANSFERS") ?? null,
+          };
         }
       }
     } catch {
@@ -75,6 +81,7 @@ export async function GET(
 
   return NextResponse.json({
     ok: true,
+    environment: getSquareEnvironment(),
     configured:
       squarePlatformConfigured(),
     connection: connection
@@ -87,6 +94,7 @@ export async function GET(
             connection.location_id,
           status: connection.status,
           locationName,
+          locationStatus,
         }
       : {
           connected: false,
@@ -94,6 +102,7 @@ export async function GET(
           locationId: null,
           status: null,
           locationName: null,
+          locationStatus: null,
         },
   });
 }
