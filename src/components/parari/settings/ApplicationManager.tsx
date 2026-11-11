@@ -3611,17 +3611,22 @@ export default function ApplicationManager({
                                       </>
                                     ) : null}
 
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          startEdit(
-                                            application,
-                                          )
-                                        }
-                                        className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
-                                      >
-                                        編集する
-                                      </button>
+                                      {(application.definition as { wizard?: unknown } | null)?.wizard ? (
+                                        <a
+                                          href={"/application-v2-test?edit=" + encodeURIComponent(application.id)}
+                                          className="rounded-full bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-200"
+                                        >
+                                          質問式で編集する
+                                        </a>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => startEdit(application)}
+                                          className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
+                                        >
+                                          編集する
+                                        </button>
+                                      )}
                                     </div>
                       </div>
 
