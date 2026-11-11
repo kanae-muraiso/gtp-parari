@@ -584,9 +584,19 @@ export async function submitApplication(
     const planLimits =
       getPlanLimits(effectivePlan);
 
+    // Liteの継続クラスは1人1回の在籍登録。
+    // 有料Squareでも人数上限10名を維持し、退会時のみ枠を空ける。
+    const wizard = (application.definition as {
+      mode?: unknown;
+      wizard?: { kind?: unknown };
+    } | null)?.wizard;
+    const isLiteClass =
+      application.definition?.mode === "lite" &&
+      wizard?.kind === "class";
     const planParticipantLimit =
       application.payment_method === "parari" &&
-      Number(application.payment_amount ?? 0) > 0
+      Number(application.payment_amount ?? 0) > 0 &&
+      !isLiteClass
         ? null
         : planLimits.applicationParticipantLimit;
 
