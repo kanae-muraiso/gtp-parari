@@ -95,8 +95,8 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       if (!savedId && !plan.canCreateApplication) {
         throw new Error("APPLICATIONの作成可能数に達しています。");
       }
-      if (plan.applicationMode === "lite" && capacity !== null && capacity > 10 && price === 0) {
-        throw new Error("Liteの無料受付は10名までです。定員を10名以下に変更してください。");
+      if (plan.applicationMode === "lite" && capacity !== null && capacity > 10 && (data.kind === "class" || price === 0)) {
+        throw new Error("Liteの継続クラスと無料受付は10名までです。定員を10名以下に変更してください。");
       }
       if (price > 0 && data.payment === "onsite" && plan.effectivePlan === "free") {
         throw new Error("Free Liteでは有料の現地支払いを管理できません。Square決済を選ぶか、無料の受付として現地徴収をご案内ください。");
