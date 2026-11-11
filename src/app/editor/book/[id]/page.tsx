@@ -2,6 +2,7 @@
 
 import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsNotice";
 import React from "react";
+import dynamic from "next/dynamic";
 import { BookSsotInspector } from "@/components/parari/BookSsotInspector";
 import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { useParams } from "next/navigation";
@@ -23,6 +24,8 @@ import {
   replaceBookOutline,
   type BookOutlineEntry,
 } from "@/lib/parari/book/pageRefs";
+
+const BookPaperDesk = dynamic(() => import("@/components/parari/book/BookPaperDesk").then(module => module.BookPaperDesk));
 
 type WorkRow = {
   id: string;
@@ -60,6 +63,15 @@ export default function ReferenceBookEditorPage() {
   const savedPageContentsRef = React.useRef(new Map<string, string>());
   const [openPageId, setOpenPageId] = React.useState<string | null>(null);
   const [pageDisplayMode, setPageDisplayMode] = React.useState<PageDisplayMode>("list");
+  const [showPaperDesk, setShowPaperDesk] = React.useState(false);
+  const deskPages = React.useMemo(() => {
+    if (!showPaperDesk) return new Map();
+    const ids = new Set(outline.filter(entry => entry.kind === "page").map(entry => entry.id));
+    return new Map(pages.filter(page => ids.has(page.id)).map(page => {
+      const excerpt = parseBlocks(page.content ?? "").find(block => block.kind === "text" && block.raw.trim())?.raw.trim() ?? "";
+      return [page.id, { title: getWorkTitle(page), excerpt: excerpt.slice(0, 160) }];
+    }));
+  }, [showPaperDesk, outline, pages]);
   const showAllPages = pageDisplayMode === "expanded";
 
   React.useEffect(() => {
@@ -913,6 +925,14 @@ export default function ReferenceBookEditorPage() {
                   </div>
                   <button
                     type="button"
+                    disabled={creatingPage || derivingPageId !== null}
+                    onClick={() => setShowPaperDesk(true)}
+                    className="shrink-0 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold hover:bg-neutral-100 disabled:opacity-50"
+                  >
+                    原稿の机
+                  </button>
+                  <button
+                    type="button"
                     disabled={creatingPage}
                     onClick={() =>
                       void createBlankPageAndAppend()
@@ -1268,6 +1288,39 @@ export default function ReferenceBookEditorPage() {
           </>
         )}
       </div>
+      {showPaperDesk && book?.id === workId && (
+        <BookPaperDesk
+          key={workId}
+          storageKey={`parari:book-paper-desk:${book.owner}:${workId}`}
+          outline={outline}
+          pages={deskPages}
+          onApply={scheduleSave}
+          onClose={() => setShowPaperDesk(false)}
+          renderPage={(id) => {
+            const work = pages.find(page => page.id === id);
+            if (!work) return <p className="text-sm">参照先PAGEが見つかりません。</p>;
+            return (
+              <>
+                <p className="mb-3 text-xs text-neutral-600" role="status">
+                  {pageSaveState[id] === "error"
+                    ? "PAGEの保存に失敗しました。次の変更時に再試行します。"
+                    : pageSaveState[id] === "saved"
+                      ? "PAGE本文を保存しました。"
+                      : "PAGE本文の変更は自動保存されます。"}
+                </p>
+                <WorkLimitsNotice source={work.content ?? ""} />
+                <PagePanelComposer
+                  key={id}
+                  bookPage
+                  authoringSet={authoringSet}
+                  value={withPageInfo(work)}
+                  onChange={(content) => schedulePageSave(id, content)}
+                />
+              </>
+            );
+          }}
+        />
+      )}
     </main>
   );
 }
