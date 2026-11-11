@@ -95,6 +95,9 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       if (!savedId && !plan.canCreateApplication) {
         throw new Error("APPLICATIONの作成可能数に達しています。");
       }
+      if (data.kind === "class" && plan.applicationMode === "lite" && data.attendance === "per_event") {
+        throw new Error("Liteは継続受講者を一度登録する方式です。毎回自由参加の予約を自動管理するにはCALENDARを利用してください。");
+      }
       if (plan.applicationMode === "lite" && capacity !== null && capacity > 10 && (data.kind === "class" || price === 0)) {
         throw new Error("Liteの継続クラスと無料受付は10名までです。定員を10名以下に変更してください。");
       }
