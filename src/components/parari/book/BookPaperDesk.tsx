@@ -265,25 +265,25 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
       return;
     }
     const { x, y, target } = movement;
-    if (page && target === origin.key && origin.pages[0] === page) return;
+    if (page && target === origin.key && origin.pages.at(-1) === page) return;
     if (!page || (target === undefined && origin.pages.length === 1 && !origin.chapter)) {
       change(piles.map(pile => pile === origin ? { ...pile, x: pile.x + x, y: pile.y + y } : pile));
       return;
     }
     const next = piles.flatMap(pile => {
       if (pile.key === target) {
-        return [{ ...pile, pages: [page, ...pile.pages.filter(item => item.key !== page.key)] }];
+        return [{ ...pile, pages: [...pile.pages.filter(item => item.key !== page.key), page] }];
       }
       if (pile !== origin) return [pile];
       const remaining = { ...pile, pages: pile.pages.filter(item => item.key !== page.key) };
       const kept = remaining.chapter || remaining.pages.length ? [remaining] : [];
       if (target !== undefined) return kept;
-      const pageIndex = origin.pages.indexOf(page);
+      const depth = origin.pages.length - 1 - origin.pages.indexOf(page);
       return [...kept, {
         key: nextKey.current++,
         pages: [page],
-        x: origin.x + stackOffsets[pageIndex] + x,
-        y: origin.y + pageIndex * edgeHeight + y,
+        x: origin.x + stackOffsets[depth] + x,
+        y: origin.y + depth * edgeHeight + y,
       }];
     });
     change(next);
@@ -325,7 +325,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
           </div>
         </header>
         <div inert={overlayOpen} className="flex flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-2 text-xs">
-          <p className="mr-auto">紙を自由に配置できます。重ねると、束の上から読む順番になります。</p>
+          <p className="mr-auto">紙を重ねると、下のPAGEから順に読みます。上に置いたPAGEが続きになります。</p>
           <button type="button" className={actionClass} onClick={() => zoom(1 / 1.2)} aria-label="縮小">−</button>
           <span>{Math.round(view.scale * 100)}%</span>
           <button type="button" className={actionClass} onClick={() => zoom(1.2)} aria-label="拡大">＋</button>
@@ -351,7 +351,8 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
               {piles.map(pile => {
                 const active = motion?.pile === pile.key ? motion : null;
                 const moveWhole = active && active.page === undefined;
-                const visible = pile.pages.slice(0, 4);
+                // The outline stores reading order, from the bottom of the stack to the top.
+                const visible = pile.pages.slice(-stackOffsets.length).reverse();
                 return (
                   <div
                     key={pile.key}
@@ -397,7 +398,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                         </article>
                       );
                     })}
-                    {motion?.target === pile.key && <span className="pointer-events-none absolute left-6 top-20 z-20 rounded-full bg-emerald-900 px-4 py-2 text-xs text-white">束の一番上へ</span>}
+                    {motion?.target === pile.key && <span className="pointer-events-none absolute left-6 top-20 z-20 rounded-full bg-emerald-900 px-4 py-2 text-xs text-white">続きに追加</span>}
                   </div>
                 );
               })}
