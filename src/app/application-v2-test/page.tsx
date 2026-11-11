@@ -164,7 +164,7 @@ export default function ApplicationV2Prototype() {
             <p className="mb-4 text-sm text-slate-600">近いものを選んでください。これは最初の質問の順番を決めるだけで、機能の制限ではありません。</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {kinds.map(kind => (
-                <button key={kind.id} type="button" onClick={() => setData(old => ({ ...old, kind: kind.id, cadence: kind.id === "sale" ? "none" : "once" }))}
+                <button key={kind.id} type="button" onClick={() => setData(old => ({ ...old, kind: kind.id, cadence: kind.id === "sale" ? "none" : "once", attendance: kind.id === "class" ? "fixed" : old.attendance }))}
                   aria-pressed={data.kind === kind.id}
                   className={`rounded-xl border p-4 text-left ${data.kind === kind.id ? "border-amber-700 bg-amber-50" : "border-slate-200 bg-white"}`}>
                   <div className="text-xl">{kind.icon}</div>
@@ -229,7 +229,7 @@ export default function ApplicationV2Prototype() {
             </label>}
             {isClass && <label className="block space-y-1 text-sm"><span>受講者の参加方式</span>
               <select className={inputClass} value={data.attendance} onChange={e => patch("attendance", e.target.value)}>
-                <option value="per_event">開催回ごとに自由参加</option>
+                <option value="per_event">開催回ごとに自由参加（CALENDAR管理が必要）</option>
                 <option value="fixed">決まった受講者のみ</option>
                 <option value="mixed">既存受講者＋新規募集</option>
               </select>
