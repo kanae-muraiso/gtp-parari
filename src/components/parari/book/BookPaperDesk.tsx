@@ -321,9 +321,12 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     const rect = event.currentTarget.getBoundingClientRect();
     const worldX = (event.clientX - rect.left - view.x) / view.scale;
     const worldY = (event.clientY - rect.top - view.y) / view.scale;
-    const target = current.page === undefined ? undefined : [...piles].reverse()
+    const origin = piles.find(pile => pile.key === current.pile);
+    const draggingBundle = origin && !origin.chapter && origin.pages.length > 1 && current.page === undefined;
+    const target = !draggingBundle && current.page === undefined ? undefined : [...piles].reverse()
       .sort((a, b) => (layers.get(b.key) ?? 0) - (layers.get(a.key) ?? 0))
       .find(pile => {
+        if (draggingBundle && !pile.chapter) return false;
         const inset = pile.chapter ? -clipboardInset : 25;
         const top = pile.chapter ? -clipboardTop : inset;
         const height = pile.chapter ? pileHeight(pile) : paperHeight;
@@ -371,6 +374,12 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
       return;
     }
     const { x, y, target } = movement;
+    if (!page && target !== undefined) {
+      // The array is in reading order, so the bottom sheet of the incoming bundle comes first.
+      change(piles.filter(pile => pile.key !== origin.key).map(pile =>
+        pile.key === target ? { ...pile, pages: [...pile.pages, ...origin.pages] } : pile));
+      return;
+    }
     if (page && target === origin.key && origin.pages.at(-1) === page) return;
     if (!page || (target === undefined && origin.pages.length === 1 && !origin.chapter)) {
       setRaisedPiles(current => [...current.filter(key => key !== origin.key), origin.key]);
@@ -435,7 +444,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
           </div>
         </header>
         <div inert={overlayOpen} className="flex flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-2 text-xs">
-          <p className="mr-auto">クリップをつかむと束ごと動きます。紙を重ねると、下のPAGEから順に読みます。</p>
+          <p className="mr-auto">束の見出しを章のクリップボードにドラッグすると、束ごと章の続きに入ります。</p>
           <button type="button" className={actionClass} onClick={() => zoom(1 / 1.2)} aria-label="縮小">−</button>
           <span>{Math.round(view.scale * 100)}%</span>
           <button type="button" className={actionClass} onClick={() => zoom(1.2)} aria-label="拡大">＋</button>
@@ -536,7 +545,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                         </article>
                       );
                     })}
-                    {motion?.target === pile.key && <span className="pointer-events-none absolute left-6 top-20 z-20 rounded-full bg-emerald-900 px-4 py-2 text-xs text-white">続きに追加</span>}
+                    {motion?.target === pile.key && <span className="pointer-events-none absolute left-6 top-20 z-20 rounded-full bg-emerald-900 px-4 py-2 text-xs text-white">{motion.page === undefined ? "束ごと追加" : "続きに追加"}</span>}
                   </div>
                 );
               })}
