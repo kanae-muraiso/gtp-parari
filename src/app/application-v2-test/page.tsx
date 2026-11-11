@@ -51,6 +51,20 @@ export default function ApplicationV2Prototype() {
   const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   useEffect(() => {
+    const kind = new URLSearchParams(window.location.search).get("kind");
+    if (!kind || !["event", "booking", "sale", "class"].includes(kind)) return;
+    const chosen = kind as Kind;
+    setData(old => ({
+      ...old,
+      kind: chosen,
+      cadence: chosen === "sale" ? "none" : "once",
+      attendance: chosen === "class" ? "fixed" : old.attendance,
+    }));
+    // Purpose was selected on the management screen; continue at its first question.
+    setStep(1);
+  }, []);
+
+  useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("edit");
     if (!id || !/^[0-9a-fA-F-]{36}$/.test(id) || !supabase) return;
     let cancelled = false;
