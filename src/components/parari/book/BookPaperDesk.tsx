@@ -479,26 +479,26 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                       <div
                         data-desk-handle
                         className={[
-                          "absolute cursor-grab rounded-xl border bg-gradient-to-br from-amber-100 via-amber-200 to-amber-300 shadow-md",
-                          motion?.target === pile.key ? "border-emerald-600 ring-2 ring-emerald-400" : "border-amber-800/40",
+                          "absolute cursor-grab rounded-xl border bg-gradient-to-br from-sky-50/35 via-sky-200/40 to-sky-300/35 shadow-md",
+                          motion?.target === pile.key ? "border-emerald-600 ring-2 ring-emerald-400" : "border-sky-600/45",
                         ].join(" ")}
                         style={{ top: -clipboardTop, bottom: -clipboardInset, left: -clipboardInset, right: -clipboardInset }}
                       >
                         <div aria-hidden="true" className="absolute -top-2 left-1/2 h-6 w-20 -translate-x-1/2 rounded-md border border-stone-500 bg-gradient-to-b from-white via-stone-300 to-stone-400 shadow-sm">
                           <div className="mx-auto mt-1 h-1.5 w-8 rounded-full border border-stone-400 bg-stone-500 shadow-inner" />
                         </div>
-                        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-amber-950">
+                        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-sky-950">
                           <div className="min-w-0 flex-1">
                             <span className="block text-[10px] font-semibold">章 {chapterNumbers.get(pile.key)} · {pile.pages.length} PAGE</span>
                             <span className="block truncate text-sm font-bold" title={pile.chapter.title}>{pile.chapter.title}</span>
                           </div>
                           {pileOrderActions(pile, index)}
                           {!!pile.pages.length && (
-                            <button type="button" data-desk-action onClick={() => viewPile(pile)} className="shrink-0 rounded-full border border-amber-800/30 bg-amber-50 px-2.5 py-1 text-xs font-bold hover:bg-white">見る</button>
+                            <button type="button" data-desk-action onClick={() => viewPile(pile)} className="shrink-0 rounded-full border border-sky-700/25 bg-white/75 px-2.5 py-1 text-xs font-bold hover:bg-white">見る</button>
                           )}
                         </div>
                         {visible.length === 0 && (
-                          <div className="absolute inset-x-4 bottom-4 top-[76px] grid place-items-center rounded-lg border border-dashed border-amber-800/45 bg-amber-50/40 px-3 text-center text-xs font-semibold text-amber-950">
+                          <div className="absolute inset-x-4 bottom-4 top-[76px] grid place-items-center rounded-lg border border-dashed border-sky-700/40 bg-white/20 px-3 text-center text-xs font-semibold text-sky-950">
                             PAGEをここに置く
                           </div>
                         )}
@@ -685,7 +685,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-5">
                       {spreadPile.pages.map((page, index) => (
                         <article key={page.key}
-                          className={`flex min-h-40 flex-col rounded border bg-white text-left shadow ${pageDropKey === page.key ? "border-emerald-600 ring-2 ring-emerald-200" : "border-stone-200"}`}
+                          className={`flex min-h-40 flex-col rounded border bg-amber-50 text-left shadow ${pageDropKey === page.key ? "border-emerald-600 ring-2 ring-emerald-200" : "border-stone-200"}`}
                           style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}
                           onDragOver={event => {
                             if (!event.dataTransfer.types.includes(pageDragType)) return;
@@ -707,7 +707,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                               event.dataTransfer.setData(pageDragType, String(page.key));
                             }}
                             onDragEnd={() => setPageDropKey(null)}
-                            className="flex-1 px-3 pb-2 pt-3 text-left hover:bg-stone-50"
+                            className="flex-1 px-3 pb-2 pt-3 text-left hover:bg-amber-100/50"
                           >
                             <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
                             <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
