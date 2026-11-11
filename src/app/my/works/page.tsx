@@ -1433,9 +1433,7 @@ export default function MyWorksPage() {
                       }}
                       className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-600 outline-none"
                     >
-                      {activeWorkKind === "All" ? (
-                        <option value="updated-desc">更新：新しい順</option>
-                      ) : null}
+                      <option value="updated-desc">更新：新しい順</option>
                       <option value="created-desc">
                         作成：新しい順
                       </option>
