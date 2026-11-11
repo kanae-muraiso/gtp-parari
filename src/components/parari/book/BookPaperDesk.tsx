@@ -32,6 +32,11 @@ type Props = {
   onApply: (outline: BookOutlineEntry[]) => void;
   onClose: () => void;
 };
+type ChapterForm =
+  | { kind: "add"; title: string; beforeKey: string }
+  | { kind: "bundle"; title: string }
+  | { kind: "rename"; title: string; key: number };
+
 type View = { x: number; y: number; scale: number };
 type Drag = {
   pointer: number;
@@ -63,8 +68,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     if (element) element.scrollTop = spreadScrollTop.current;
   }, []);
   const [openPage, setOpenPage] = useState<string | null>(null);
-  const [chapterName, setChapterName] = useState<string | null>(null);
-  const [renameKey, setRenameKey] = useState<number | null>(null);
+  const [chapterForm, setChapterForm] = useState<ChapterForm | null>(null);
   const [discard, setDiscard] = useState(false);
   const draft = useMemo(() => deskOutline(piles), [piles]);
   const structureChanged = useMemo(() => JSON.stringify(draft) !== base, [draft, base]);
@@ -74,7 +78,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   const { opening, chapters } = useMemo(() => groupDeskChapters(piles), [piles]);
   const chapterNumbers = useMemo(() => new Map(chapters.map(({ key }, index) => [key, index + 1])), [chapters]);
   const layers = useMemo(() => new Map(raisedPiles.map((key, index) => [key, index + 1])), [raisedPiles]);
-  const overlayOpen = chapterOrderOpen || discard || chapterName !== null || !!spreadPile || !!openPage;
+  const overlayOpen = chapterOrderOpen || discard || !!chapterForm || !!spreadPile || !!openPage;
 
   function fit() {
     if (!canvas.current || !piles.length) return;
@@ -141,7 +145,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
       change(piles.map(pile => pile === first
         ? { ...pile, chapter: { ...chapter, title } } : pile));
       setSelected([]);
-      setChapterName(null);
+      setChapterForm(null);
       return;
     }
     const keepFirst = first.chapter || first.pages.some(page => !members.has(page.key));
@@ -163,7 +167,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     });
     change(next);
     setSelected([]);
-    setChapterName(null);
+    setChapterForm(null);
   }
 
   function unpack(pile: DeskPile) {
@@ -180,21 +184,61 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     setSpread(null);
   }
 
-  function startChapterForm(pile?: DeskPile) {
-    setRenameKey(pile?.key ?? null);
-    setChapterName(pile?.chapter?.title ?? "");
+  function addEmptyChapter(title: string, beforeKey: string) {
+    // Find an open spot without shifting any of the papers already on the desk.
+    let x: number;
+    let y: number;
+    for (let slot = 0; ; slot++) {
+      x = 32 + (slot % 4) * 258;
+      y = 86 + Math.floor(slot / 4) * 405;
+      const occupied = piles.some(pile =>
+        Math.abs(pile.x - x) < paperWidth + 2 * clipboardInset + 12 &&
+        y - clipboardTop - 20 < pile.y + pileHeight(pile) + clipboardInset &&
+        y + paperHeight + clipboardInset + 12 > pile.y - (pile.chapter ? clipboardTop + 8 : 36),
+      );
+      if (!occupied) break;
+    }
+    const newPile: DeskPile = {
+      key: nextKey.current++,
+      chapter: { kind: "chapter", id: crypto.randomUUID(), title },
+      pages: [],
+      x,
+      y,
+    };
+    const insertAt = piles.findIndex(pile => pile.chapter && String(pile.key) === beforeKey);
+    const next = [...piles];
+    next.splice(insertAt < 0 ? next.length : insertAt, 0, newPile);
+    change(next);
+
+    const width = canvas.current?.clientWidth ?? 0;
+    const height = canvas.current?.clientHeight ?? 0;
+    if (!width || !height) return;
+    const left = x - clipboardInset;
+    const right = x + paperWidth + clipboardInset;
+    const top = y - clipboardTop - 8;
+    const bottom = y + paperHeight + clipboardInset;
+    if (view.scale >= 0.65 && view.x + left * view.scale >= 8 && view.x + right * view.scale <= width - 8 &&
+        view.y + top * view.scale >= 8 && view.y + bottom * view.scale <= height - 8) return;
+
+    const scale = Math.min(Math.max(view.scale, 0.65), width / (right - left + 28), height / (bottom - top + 28));
+    setView({ x: (width - (left + right) * scale) / 2, y: (height - (top + bottom) * scale) / 2, scale });
   }
 
   function submitChapter() {
-    const title = chapterName?.trim();
-    if (!title) return;
-    if (renameKey === null) {
+    const title = chapterForm?.title.trim();
+    if (!chapterForm || !title) return;
+    if (chapterForm.kind === "bundle") {
       bundle(title);
       return;
     }
-    change(piles.map(pile => pile.key === renameKey && pile.chapter
-      ? { ...pile, chapter: { ...pile.chapter, title } } : pile));
-    setChapterName(null);
+    if (chapterForm.kind === "add") {
+      addEmptyChapter(title, chapterForm.beforeKey);
+    } else {
+      const { key } = chapterForm;
+      change(piles.map(pile => pile.key === key && pile.chapter
+        ? { ...pile, chapter: { ...pile.chapter, title } } : pile));
+    }
+    setChapterForm(null);
   }
 
   function moveChapter(key: number, target: number) {
@@ -337,7 +381,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
       onCancel={event => {
         event.preventDefault();
         if (discard) setDiscard(false);
-        else if (chapterName !== null) setChapterName(null);
+        else if (chapterForm) setChapterForm(null);
         else if (openPage) setOpenPage(null);
         else if (spread !== null) closeSpread();
         else if (chapterOrderOpen) closeChapterOrder();
@@ -349,7 +393,8 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
         <header inert={overlayOpen} className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 px-4 py-3">
           <h2 className="text-lg font-bold">原稿の机</h2>
           <div className="flex flex-wrap gap-2">
-            {!!chapters.length && <button type="button" className={actionClass} onClick={() => setChapterOrderOpen(true)}>章の順番</button>}
+            <button type="button" className={actionClass} onClick={() => setChapterForm({ kind: "add", title: "", beforeKey: "" })}>＋ 章扉を追加</button>
+            <button type="button" className={actionClass} onClick={() => setChapterOrderOpen(true)}>章の順番</button>
             <button type="button" className={actionClass} onClick={undo} disabled={!history.length}>元に戻す</button>
             <button type="button" className={actionClass} onClick={closeDesk}>閉じる</button>
             <button type="button" className={primaryClass} disabled={stale} onClick={apply}>BOOKに反映</button>
@@ -469,7 +514,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                   <span className="min-w-0 flex-1 break-words">{pile.chapter?.title ?? (pile.pages.length > 1 ? "PAGEの束" : "PAGE")}</span>
                   {pile.chapter ? (
                     <>
-                      <button type="button" className={actionClass} onClick={() => startChapterForm(pile)}>改名</button>
+                      <button type="button" className={actionClass} onClick={() => setChapterForm({ kind: "rename", key: pile.key, title: pile.chapter?.title ?? "" })}>改名</button>
                       <button type="button" className={actionClass} onClick={() => setChapterOrderOpen(true)}>順番</button>
                     </>
                   ) : (
@@ -492,7 +537,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
             <div className="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-white p-2 text-xs shadow-lg">
               <span>{selected.length} PAGE選択中</span>
               <button type="button" className={actionClass} disabled={selected.length < 2} onClick={() => bundle()}>束ねる</button>
-              <button type="button" className={actionClass} onClick={() => startChapterForm()}>Chapterにする</button>
+              <button type="button" className={actionClass} onClick={() => setChapterForm({ kind: "bundle", title: "" })}>Chapterにする</button>
               <button type="button" className={actionClass} onClick={() => setSelected([])}>選択解除</button>
             </div>
           )}
@@ -503,14 +548,19 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                 if (spreadPile && !openPage && event.target === event.currentTarget) closeSpread();
               }}
             >
-              {chapterOrderOpen ? (
+              {chapterOrderOpen && !chapterForm ? (
                 <section aria-labelledby="paper-desk-chapter-order" className="flex max-h-full min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white">
                   <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-3">
                     <h3 id="paper-desk-chapter-order" className="mr-auto text-lg font-bold">章の順番</h3>
+                    <button type="button" className={actionClass} onClick={() => setChapterForm({ kind: "add", title: "", beforeKey: "" })}>＋ 章扉を追加</button>
                     <button type="button" className={primaryClass} onClick={closeChapterOrder}>机に戻る</button>
                   </div>
                   <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
-                    <p className="mb-3 text-xs text-stone-600">章をドラッグするか、矢印で並べ替えます。並びを確定するには、机に戻って「BOOKに反映」を押します。</p>
+                    <p className="mb-3 text-xs text-stone-600">
+                      {chapters.length === 0
+                        ? "まだ章扉がありません。章扉を追加すると、ここで順番を決められます。"
+                        : "章をドラッグするか、矢印で並べ替えます。並びを確定するには、机に戻って「BOOKに反映」を押します。"}
+                    </p>
                     <ol className="space-y-2">
                       {chapters.map(({ chapter, key, piles: chapterPiles }, index) => (
                         <li key={key} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${chapterDropKey === key ? "border-emerald-600 bg-emerald-50" : "border-stone-200 bg-stone-50"}`}
@@ -552,13 +602,23 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                   <button type="button" className={actionClass} onClick={() => setDiscard(false)}>机に戻る</button>{" "}
                   <button type="button" className={actionClass} onClick={onClose}>変更を破棄</button>
                 </section>
-              ) : chapterName !== null ? (
-                <form className="w-full max-w-sm rounded-xl bg-white p-5" onSubmit={event => { event.preventDefault(); submitChapter(); }}>
+              ) : chapterForm ? (
+                <form className="w-full max-w-sm space-y-3 rounded-xl bg-white p-5" onSubmit={event => { event.preventDefault(); submitChapter(); }}>
                   <label className="block text-sm font-bold">章のタイトル
-                    <input autoFocus required maxLength={80} value={chapterName} onChange={event => setChapterName(event.target.value)} className="my-3 block w-full rounded border border-stone-300 p-2" />
+                    <input autoFocus required maxLength={80} value={chapterForm.title} onChange={event => setChapterForm({ ...chapterForm, title: event.target.value })} className="mt-1 block w-full rounded border border-stone-300 p-2" />
                   </label>
-                  <button type="button" className={actionClass} onClick={() => setChapterName(null)}>キャンセル</button>{" "}
-                  <button type="submit" className={primaryClass}>{renameKey === null ? "Chapterにする" : "名前を変更"}</button>
+                  {chapterForm.kind === "add" && chapters.length > 0 && (
+                    <label className="block text-sm font-bold">入れる位置
+                      <select value={chapterForm.beforeKey} onChange={event => setChapterForm({ ...chapterForm, beforeKey: event.target.value })} className="mt-1 block w-full rounded border border-stone-300 p-2">
+                        <option value="">最後に追加</option>
+                        {chapters.map(({ chapter, key }, index) => <option key={key} value={key}>{index + 1}. {chapter.title} の前</option>)}
+                      </select>
+                    </label>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <button type="button" className={actionClass} onClick={() => setChapterForm(null)}>キャンセル</button>
+                    <button type="submit" className={primaryClass}>{chapterForm.kind === "add" ? "章扉を追加" : chapterForm.kind === "bundle" ? "Chapterにする" : "名前を変更"}</button>
+                  </div>
                 </form>
               ) : openPage ? (
                 <section aria-label="PAGE本文" className="flex max-h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white">
