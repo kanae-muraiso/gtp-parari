@@ -452,7 +452,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
             onPointerUp={event => stopDrag(event)}
             onPointerCancel={event => stopDrag(event, true)}
             onLostPointerCapture={event => stopDrag(event, true)}
-            className="relative isolate min-h-0 flex-1 touch-none overflow-hidden bg-stone-100 [background-image:radial-gradient(#a8a29e_0.7px,transparent_0.7px)] [background-size:24px_24px]"
+            className="relative isolate min-h-0 flex-1 touch-none overflow-hidden bg-stone-100 [background-image:linear-gradient(to_right,#78716c14_1px,transparent_1px),linear-gradient(to_bottom,#78716c14_1px,transparent_1px)] [background-size:24px_24px]"
           >
             {!piles.length && <p className="p-6 text-sm">BOOKにPAGEを追加すると、ここに並びます。</p>}
             <div className="absolute left-0 top-0 origin-top-left" style={{
