@@ -9,6 +9,7 @@ const paperHeight = 224;
 const edgeHeight = 23;
 const clipboardTop = 76;
 const clipboardInset = 14;
+const pageDragType = "application/x-parari-desk-page";
 const stackOffsets = [0, 5, -3, 8];
 const paperAngles = [-5.5, 2.5, -2, 5, -3.5, 1.5, -4.5, 3.5, -1.5, 4.5, -2.5];
 
@@ -21,6 +22,7 @@ function paperAngle(id: string) {
 }
 
 const actionClass = "rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-stone-100 disabled:opacity-40";
+const orderArrowClass = "rounded border border-stone-300 bg-white px-1.5 py-0.5 text-xs font-bold hover:bg-stone-100 disabled:opacity-40";
 const primaryClass = "rounded-full bg-emerald-900 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-40";
 const pileHeight = (pile: DeskPile) => paperHeight + Math.min(Math.max(0, pile.pages.length - 1), 3) * edgeHeight;
 
@@ -62,6 +64,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   const [chapterOrderOpen, setChapterOrderOpen] = useState(false);
   const [chapterDropKey, setChapterDropKey] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
+  const [pageDropKey, setPageDropKey] = useState<number | null>(null);
   const [spread, setSpread] = useState<number | null>(null);
   const spreadScrollTop = useRef(0);
   const restoreSpreadScroll = useCallback((element: HTMLDivElement | null) => {
@@ -264,6 +267,36 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     change(next);
   }
 
+  function movePage(pile: DeskPile, key: number, target: number) {
+    const source = pile.pages.findIndex(page => page.key === key);
+    if (source < 0 || target < 0 || target >= pile.pages.length || source === target) return;
+    const pages = [...pile.pages];
+    const [page] = pages.splice(source, 1);
+    pages.splice(target, 0, page);
+    change(piles.map(item => item.key === pile.key ? { ...item, pages } : item));
+  }
+
+  function pileOrderActions(pile: DeskPile, index: number) {
+    const chapterIndex = (chapterNumbers.get(pile.key) ?? 0) - 1;
+    const canMove = (direction: number) => pile.chapter
+      ? chapterIndex + direction >= 0 && chapterIndex + direction < chapters.length
+      : !!piles[index + direction] && !piles[index + direction].chapter;
+    if (!canMove(-1) && !canMove(1)) return null;
+    const label = pile.chapter?.title ?? "この束";
+    return (
+      <div className="flex shrink-0 gap-1">
+        {([-1, 1] as const).map(direction => (
+          <button key={direction} type="button" data-desk-action
+            className={orderArrowClass}
+            aria-label={`${label}を${direction === -1 ? "前" : "後ろ"}へ移動`}
+            disabled={!canMove(direction)}
+            onClick={() => pile.chapter ? moveChapter(pile.key, chapterIndex + direction) : movePile(index, direction)}
+          >{direction === -1 ? "↑" : "↓"}</button>
+        ))}
+      </div>
+    );
+  }
+
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 || drag.current) return;
     const target = event.target as HTMLElement;
@@ -311,6 +344,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   }
 
   function closeSpread() {
+    setPageDropKey(null);
     setOpenPage(null);
     setSpread(null);
   }
@@ -424,7 +458,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
             <div className="absolute left-0 top-0 origin-top-left" style={{
               transform: `translate(${view.x + (pan?.x ?? 0) * view.scale}px, ${view.y + (pan?.y ?? 0) * view.scale}px) scale(${view.scale})`,
             }}>
-              {piles.map(pile => {
+              {piles.map((pile, index) => {
                 const active = motion?.pile === pile.key ? motion : null;
                 const moveWhole = active && active.page === undefined;
                 // The outline stores reading order, from the bottom of the stack to the top.
@@ -458,6 +492,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                             <span className="block text-[10px] font-semibold">章 {chapterNumbers.get(pile.key)} · {pile.pages.length} PAGE</span>
                             <span className="block truncate text-sm font-bold" title={pile.chapter.title}>{pile.chapter.title}</span>
                           </div>
+                          {pileOrderActions(pile, index)}
                           {!!pile.pages.length && (
                             <button type="button" data-desk-action onClick={() => viewPile(pile)} className="shrink-0 rounded-full border border-amber-800/30 bg-amber-50 px-2.5 py-1 text-xs font-bold hover:bg-white">見る</button>
                           )}
@@ -472,7 +507,8 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                       <div data-desk-handle className="absolute -top-9 flex w-full cursor-grab items-center gap-2 rounded bg-emerald-100 px-2 py-1 text-xs font-bold">
                         <span aria-hidden="true">⠿</span>
                         <span className="flex-1 truncate">PAGEの束</span>
-                        <span>{pile.pages.length} PAGE</span>
+                        <span className="shrink-0">{pile.pages.length} PAGE</span>
+                        {pileOrderActions(pile, index)}
                         <button type="button" data-desk-action onClick={() => viewPile(pile)} className="rounded bg-white px-1.5 py-0.5">見る</button>
                       </div>
                     )}
@@ -645,15 +681,45 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                     onScroll={event => { spreadScrollTop.current = event.currentTarget.scrollTop; }}
                     className="min-h-0 overflow-y-auto overscroll-contain"
                   >
+                    {spreadPile.pages.length > 1 && <p className="px-5 pt-3 text-xs text-stone-600">PAGEをドラッグするか、矢印で読む順番を変えられます。</p>}
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-5">
-                      {spreadPile.pages.map(page => (
-                        <button key={page.key} type="button" onClick={() => setOpenPage(page.id)}
-                          className="min-h-40 rounded border border-stone-200 bg-white p-3 text-left shadow hover:border-emerald-600"
-                          style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}>
-                          <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
-                          <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
-                          <span className="mt-2 block line-clamp-5 whitespace-pre-line text-xs leading-relaxed">{pages.get(page.id)?.excerpt}</span>
-                        </button>
+                      {spreadPile.pages.map((page, index) => (
+                        <article key={page.key}
+                          className={`flex min-h-40 flex-col rounded border bg-white text-left shadow ${pageDropKey === page.key ? "border-emerald-600 ring-2 ring-emerald-200" : "border-stone-200"}`}
+                          style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}
+                          onDragOver={event => {
+                            if (!event.dataTransfer.types.includes(pageDragType)) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                            setPageDropKey(page.key);
+                          }}
+                          onDrop={event => {
+                            event.preventDefault();
+                            const key = event.dataTransfer.getData(pageDragType);
+                            if (key) movePage(spreadPile, Number(key), index);
+                            setPageDropKey(null);
+                          }}
+                        >
+                          <button type="button" draggable={spreadPile.pages.length > 1}
+                            onClick={() => setOpenPage(page.id)}
+                            onDragStart={event => {
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData(pageDragType, String(page.key));
+                            }}
+                            onDragEnd={() => setPageDropKey(null)}
+                            className="flex-1 px-3 pb-2 pt-3 text-left hover:bg-stone-50"
+                          >
+                            <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
+                            <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
+                            <span className="mt-2 block line-clamp-5 whitespace-pre-line text-xs leading-relaxed">{pages.get(page.id)?.excerpt}</span>
+                          </button>
+                          {spreadPile.pages.length > 1 && (
+                            <div className="flex justify-end gap-1 border-t border-stone-100 px-2 py-1">
+                              <button type="button" className={orderArrowClass} aria-label={`${paperTitle(page.id)}を前へ移動`} disabled={index === 0} onClick={() => movePage(spreadPile, page.key, index - 1)}>↑</button>
+                              <button type="button" className={orderArrowClass} aria-label={`${paperTitle(page.id)}を後ろへ移動`} disabled={index === spreadPile.pages.length - 1} onClick={() => movePage(spreadPile, page.key, index + 1)}>↓</button>
+                            </div>
+                          )}
+                        </article>
                       ))}
                     </div>
                   </div>
