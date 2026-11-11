@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -25,13 +25,15 @@ export type ApplicationWizardDraft = {
 type Props = {
   data: ApplicationWizardDraft;
   panelOrder: string[];
+  initialId?: string | null;
 };
 
 const applicationType = { event: "EVENT", booking: "OTHER", sale: "OTHER", class: "SCHOOL" } as const;
 const actionLabel = { event: "参加を申し込む", booking: "予約を問い合わせる", sale: "購入を申し込む", class: "クラスに申し込む" } as const;
 
-export default function SaveApplicationWizardDraft({ data, panelOrder }: Props) {
-  const [savedId, setSavedId] = useState<string | null>(null);
+export default function SaveApplicationWizardDraft({ data, panelOrder, initialId }: Props) {
+  const [savedId, setSavedId] = useState<string | null>(initialId || null);
+  useEffect(() => { if (initialId) setSavedId(initialId); }, [initialId]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
