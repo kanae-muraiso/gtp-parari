@@ -1738,7 +1738,8 @@ export default function ApplicationManager({
       action:
         | "qualification_approve"
         | "qualification_reject"
-        | "payment_confirm",
+        | "payment_confirm"
+        | "enrollment_close",
     ) {
       setEntryActionId(entryId);
       setEntriesMessage("");
