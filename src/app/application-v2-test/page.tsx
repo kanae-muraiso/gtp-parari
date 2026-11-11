@@ -10,7 +10,8 @@ type Data = {
   title: string;
   description: string;
   date: string;
-  time: string;
+  startTime: string;
+  durationMinutes: string;
   place: string;
   cadence: string;
   attendance: string;
@@ -22,7 +23,7 @@ type Data = {
   notes: string;
 };
 const defaults: Data = {
-  kind: "event", title: "", description: "", date: "", time: "", place: "",
+  kind: "event", title: "", description: "", date: "", startTime: "", durationMinutes: "60", place: "",
   cadence: "once", attendance: "per_event", capacity: "", price: "0",
   payment: "onsite", access: "public", extraQuestion: "", notes: "",
 };
@@ -67,6 +68,16 @@ export default function ApplicationV2Prototype() {
       return current;
     });
   }
+  const endTime = (() => {
+    if (!/^\\d{2}:\\d{2}$/.test(data.startTime)) return "";
+    const [hours, minutes] = data.startTime.split(":").map(Number);
+    const duration = Number(data.durationMinutes);
+    if (!Number.isFinite(duration) || duration <= 0) return "";
+    const total = hours * 60 + minutes + duration;
+    const dayOffset = Math.floor(total / 1440);
+    const clock = `${String(Math.floor((total % 1440) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    return clock + (dayOffset ? `（翌日+${dayOffset}日）` : "");
+  })();
   const cadenceLabel = data.cadence === "weekly" ? "毎週" : data.cadence === "daily" ? "毎日" : data.cadence === "custom" ? "日程を個別に指定" : "1回のみ";
   const priceLabel = isPaid ? `${Number(data.price).toLocaleString("ja-JP")}円` : "無料";
   const paymentLabel = !isPaid ? "支払い不要" : data.payment === "online" ? "オンライン事前決済" : "現地・個別支払い";
@@ -131,9 +142,14 @@ export default function ApplicationV2Prototype() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1 text-sm"><span>{data.cadence === "once" ? "開催日" : "開始日・例示日"}</span>
                   <input type="date" className={inputClass} value={data.date} onChange={e => patch("date", e.target.value)} /></label>
-                <label className="block space-y-1 text-sm"><span>時間・所要時間</span>
-                  <input className={inputClass} value={data.time} onChange={e => patch("time", e.target.value)} placeholder="例：19:00〜20:00" /></label>
+                <label className="block space-y-1 text-sm"><span>開始時刻</span>
+                  <input type="time" className={inputClass} value={data.startTime} onChange={e => patch("startTime", e.target.value)} /></label>
+                <label className="block space-y-1 text-sm"><span>所要時間</span>
+                  <select className={inputClass} value={data.durationMinutes} onChange={e => patch("durationMinutes", e.target.value)}>
+                    {[15, 30, 45, 60, 75, 90, 120, 150, 180, 240, 360, 480].map(minutes => <option key={minutes} value={minutes}>{minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60 ? `${minutes % 60}分` : ""}` : `${minutes}分`}</option>)}
+                  </select></label>
               </div>
+              <p className="text-sm text-slate-600">終了時刻：{endTime || "開始時刻を選択してください"}（自動計算）</p>
               <label className="block space-y-1 text-sm"><span>会場・提供場所</span>
                 <input className={inputClass} value={data.place} onChange={e => patch("place", e.target.value)} placeholder="例：京都市内 / オンライン" /></label>
             </>}
@@ -207,7 +223,7 @@ export default function ApplicationV2Prototype() {
                   {view === "edit" ? <textarea className={inputClass} value={data.description} onChange={e => patch("description", e.target.value)} rows={3} placeholder="自由に紹介文を書けます" /> :
                     <p className="whitespace-pre-wrap text-sm">{data.description || "紹介文がありません"}</p>}
                 </>}
-                {key === "schedule" && <p className="text-sm">{cadenceLabel} ／ {data.date || "日付未設定"} ／ {data.time || "時間未設定"} ／ {data.place || "場所未設定"}</p>}
+                {key === "schedule" && <p className="text-sm">{cadenceLabel} ／ {data.date || "日付未設定"} ／ {data.startTime ? `${data.startTime}〜${endTime}` : "開始時刻未設定"} ／ {data.place || "場所未設定"}</p>}
                 {key === "capacity" && <p className="text-sm">定員：{data.capacity ? `${data.capacity}名` : "指定なし"} ／ 公開：{data.access === "public" ? "一般公開" : data.access === "unlisted" ? "URL限定" : "参加資格者に限定"}{isClass ? ` ／ ${data.attendance === "fixed" ? "固定受講者" : data.attendance === "mixed" ? "固定＋新規募集" : "自由参加"}` : ""}</p>}
                 {key === "payment" && <p className="text-sm">{priceLabel} ／ {paymentLabel}</p>}
                 {key === "form" && <div className="space-y-2 text-sm"><p>氏名・メールアドレスを受け付けます。</p>{data.extraQuestion && <p>追加質問：{data.extraQuestion}</p>}<p className="text-xs text-slate-500">この試作で申込・課金はできません。</p></div>}
