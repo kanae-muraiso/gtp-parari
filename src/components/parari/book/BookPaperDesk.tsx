@@ -7,6 +7,17 @@ import { deskOutline, makeDesk, saveDeskLayout, type DeskPile } from "@/lib/para
 const paperWidth = 210;
 const paperHeight = 224;
 const edgeHeight = 23;
+const stackOffsets = [0, 5, -3, 8];
+const paperAngles = [-5.5, 2.5, -2, 5, -3.5, 1.5, -4.5, 3.5, -1.5, 4.5, -2.5];
+
+function paperAngle(id: string) {
+  let index = 0;
+  for (const character of id) {
+    index = (index * 31 + character.charCodeAt(0)) % paperAngles.length;
+  }
+  return paperAngles[index];
+}
+
 const actionClass = "rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-stone-100 disabled:opacity-40";
 const primaryClass = "rounded-full bg-emerald-900 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-40";
 const pileHeight = (pile: DeskPile) => paperHeight + Math.min(Math.max(0, pile.pages.length - 1), 3) * edgeHeight;
@@ -254,7 +265,13 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
       const remaining = { ...pile, pages: pile.pages.filter(item => item.key !== page.key) };
       const kept = remaining.chapter || remaining.pages.length ? [remaining] : [];
       if (target !== undefined) return kept;
-      return [...kept, { key: nextKey.current++, pages: [page], x: origin.x + x, y: origin.y + y }];
+      const pageIndex = origin.pages.indexOf(page);
+      return [...kept, {
+        key: nextKey.current++,
+        pages: [page],
+        x: origin.x + stackOffsets[pageIndex] + x,
+        y: origin.y + pageIndex * edgeHeight + y,
+      }];
     });
     change(next);
   }
@@ -351,7 +368,9 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                           selected.includes(page.key) || motion?.target === pile.key ? "border-emerald-500 ring-2 ring-emerald-300" : "border-stone-300",
                         ].join(" ")} style={{
                           width: paperWidth, height: paperHeight,
-                          left: moving ? active.x : 0, top: index * edgeHeight + (moving ? active.y : 0),
+                          left: stackOffsets[index] + (moving ? active.x : 0),
+                          top: index * edgeHeight + (moving ? active.y : 0),
+                          transform: `rotate(${paperAngle(page.id)}deg)`,
                           zIndex: moving ? 10 : visible.length - index,
                         }}>
                           <button type="button" data-desk-action aria-label={`${paperTitle(page.id)}を選択`} aria-pressed={selected.includes(page.key)} onClick={() => select(page.key)} className="absolute left-3 top-3 grid h-5 w-5 place-items-center rounded-full border border-stone-400 bg-white text-xs">
@@ -432,10 +451,10 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                     </div>
                   </div>
                   <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-2">
-                    {spreadPile.pages.map((page, index) => (
+                    {spreadPile.pages.map(page => (
                       <button key={page.key} type="button" onClick={() => setOpenPage(page.id)}
                         className="min-h-40 rounded border border-stone-200 bg-white p-3 text-left shadow hover:border-emerald-600"
-                        style={{ transform: `rotate(${[-3, 2, -1, 3][index % 4]}deg)` }}>
+                        style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}>
                         <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
                         <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
                         <span className="mt-2 block line-clamp-5 whitespace-pre-line text-xs leading-relaxed">{pages.get(page.id)?.excerpt}</span>

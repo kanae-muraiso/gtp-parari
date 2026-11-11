@@ -4,6 +4,9 @@ type Chapter = Extract<BookOutlineEntry, { kind: "chapter" }>;
 export type DeskPage = { key: number; id: string };
 export type DeskPile = { key: number; chapter?: Chapter; pages: DeskPage[]; x: number; y: number };
 
+// Keep a little variation in the initial placement. Dragged positions are saved as-is.
+const deskOffsets = [[-9, 8], [5, -11], [-4, 15], [9, -3], [7, -8], [-8, 13], [9, 1], [-5, -12]];
+
 export function deskOutline(piles: DeskPile[]): BookOutlineEntry[] {
   return piles.flatMap(({ chapter, pages }) => [
     ...(chapter ? [chapter] : []),
@@ -45,10 +48,11 @@ export function makeDesk(outline: BookOutlineEntry[], storageKey: string): DeskP
       chapterPile.pages.push({ key: index, id: entry.id });
       return;
     }
+    const [offsetX, offsetY] = deskOffsets[piles.length % deskOffsets.length];
     const pile: DeskPile = {
       key: index,
-      x: 32 + (piles.length % 4) * 258,
-      y: 62 + Math.floor(piles.length / 4) * 310,
+      x: 32 + (piles.length % 4) * 258 + offsetX,
+      y: 62 + Math.floor(piles.length / 4) * 310 + offsetY,
       pages: entry.kind === "page" ? [{ key: index, id: entry.id }] : [],
       chapter: entry.kind === "chapter" ? entry : undefined,
     };
