@@ -68,10 +68,6 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       setError("日付と開始時刻を指定してください。");
       return;
     }
-    if (data.extraQuestion.trim()) {
-      setError("追加質問の回答収集は、まだ実装されていません。質問欄を空にすると下書きを保存できます。");
-      return;
-    }
     if (data.access === "restricted") {
       setError("登録者限定の閲覧制御はこの作成画面では未対応です。一般公開かURL限定を選んでください。");
       return;
@@ -120,9 +116,25 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
         visibilityHint: data.access,
         notes: data.notes,
         panelOrder,
+        extraQuestion: extra,
         timezone: "Asia/Tokyo",
         recurringClassIsInformational: data.kind === "class",
       };
+      if (data.extraQuestion.trim() && plan.applicationMode === "lite") {
+        throw new Error("Liteでは追加質問の回答を収集できません。質問欄を空にするか、Organizer以上をご利用ください。");
+      }
+      const extra = data.extraQuestion.trim();
+      const inputFields = extra ? [{
+        id: "wizard-extra-answer",
+        kind: "textarea",
+        label: extra,
+        required: false,
+      }] : [];
+      const blocks = extra ? [{
+        id: "wizard-extra-block",
+        type: "field",
+        fieldId: "wizard-extra-answer",
+      }] : [];
       const paymentMethod = price === 0 ? "none" : (data.payment === "online" ? "parari" : "on_site");
       const body = {
         ...(savedId ? { applicationId: savedId } : {}),
@@ -131,9 +143,9 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
         description: data.description.trim(),
         definition: {
           mode: plan.applicationMode,
-          blocks: [],
+          blocks,
           fields: [],
-          inputFields: [],
+          inputFields,
           capacity,
           agreement: "",
           actionLabel: actionLabel[data.kind],
@@ -175,7 +187,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       <p className="text-sm text-slate-600">
         既存の受付機能へ設定を保存します。保存時点では公開されません。
         Liteの継続クラスは同じ受講者10名までを一度登録する方式です。
-        毎回の予約、CALENDAR作成、FORMの追加質問、PAGEの自動生成はまだ接続していません。
+        追加質問の回答収集はOrganizer以上で利用できます。毎回の予約、CALENDAR作成、PAGEの自動生成はまだ接続していません。
       </p>
       {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       {success && savedHash === draftHash && (
