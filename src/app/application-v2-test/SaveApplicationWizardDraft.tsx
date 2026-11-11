@@ -35,6 +35,8 @@ export default function SaveApplicationWizardDraft({ data, panelOrder }: Props) 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [savedHash, setSavedHash] = useState<string | null>(null);
+  const draftHash = JSON.stringify({ data, panelOrder });
 
   async function save() {
     setError("");
@@ -156,6 +158,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder }: Props) 
         throw new Error(json?.message || "下書きを保存できませんでした。");
       }
       setSavedId(json.application.id);
+      setSavedHash(draftHash);
       setSuccess(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");
@@ -173,7 +176,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder }: Props) 
         毎回の予約、CALENDAR作成、FORMの追加質問、PAGEの自動生成はまだ接続していません。
       </p>
       {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
-      {success && (
+      {success && savedHash === draftHash && (
         <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
           下書きを保存しました。STUDIOの運営画面で受付を開き、作品に設置してください。
           <div><Link className="underline" href="/my/works">STUDIOへ戻る</Link></div>
