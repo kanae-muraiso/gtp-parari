@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { BookOutlineEntry } from "@/lib/parari/book/pageRefs";
 import { deskOutline, makeDesk, saveDeskLayout, type DeskPile } from "@/lib/parari/book/paperDesk";
 
@@ -53,6 +53,10 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   const [motion, setMotion] = useState<Motion | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const [spread, setSpread] = useState<number | null>(null);
+  const spreadScrollTop = useRef(0);
+  const restoreSpreadScroll = useCallback((element: HTMLDivElement | null) => {
+    if (element) element.scrollTop = spreadScrollTop.current;
+  }, []);
   const [openPage, setOpenPage] = useState<string | null>(null);
   const [chapterName, setChapterName] = useState<string | null>(null);
   const [renameKey, setRenameKey] = useState<number | null>(null);
@@ -226,8 +230,17 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   }
 
   function viewPile(pile: DeskPile, page?: string) {
-    if (pile.pages.length > 1) setSpread(pile.key);
-    else setOpenPage(page ?? pile.pages[0]?.id ?? null);
+    if (pile.pages.length > 1) {
+      spreadScrollTop.current = 0;
+      setSpread(pile.key);
+    } else {
+      setOpenPage(page ?? pile.pages[0]?.id ?? null);
+    }
+  }
+
+  function closeSpread() {
+    setOpenPage(null);
+    setSpread(null);
   }
 
   function stopDrag(event: PointerEvent<HTMLDivElement>, cancel = false) {
@@ -297,7 +310,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
         if (discard) setDiscard(false);
         else if (chapterName !== null) setChapterName(null);
         else if (openPage) setOpenPage(null);
-        else if (spread !== null) setSpread(null);
+        else if (spread !== null) closeSpread();
         else closeDesk();
       }}
       className="m-auto h-[92dvh] max-h-none w-[min(96vw,1440px)] max-w-none overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 p-0 text-stone-800 shadow-2xl backdrop:bg-stone-950/40"
@@ -418,7 +431,12 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
             </div>
           )}
           {overlayOpen && (
-            <div className="absolute inset-0 z-30 grid place-items-center overflow-auto bg-stone-900/30 p-4">
+            <div
+              className="absolute inset-0 z-30 grid grid-rows-[minmax(0,1fr)] place-items-center overflow-auto bg-stone-900/30 p-3 sm:p-4"
+              onClick={event => {
+                if (spreadPile && !openPage && event.target === event.currentTarget) closeSpread();
+              }}
+            >
               {discard ? (
                 <section aria-label="変更を破棄" className="rounded-xl bg-white p-5">
                   <p className="mb-3 text-sm">読書順や章の変更を反映せずに閉じますか？</p>
@@ -434,32 +452,41 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                   <button type="submit" className={primaryClass}>{renameKey === null ? "Chapterにする" : "名前を変更"}</button>
                 </form>
               ) : openPage ? (
-                <section aria-label="PAGE本文" className="max-h-full w-full max-w-3xl overflow-auto rounded-xl bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h3 className="break-words text-lg font-bold">{paperTitle(openPage)}</h3>
-                    <button type="button" className={actionClass} onClick={() => setOpenPage(null)}>{spreadPile ? "束の中身に戻る" : "机に戻る"}</button>
-                  </div>
-                  {renderPage(openPage)}
-                </section>
-              ) : spreadPile && (
-                <section aria-label="束の中身" className="max-h-full w-full max-w-4xl overflow-auto rounded-xl bg-stone-50 p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-bold">{spreadPile.chapter?.title ?? "PAGEの束"} <span className="text-xs text-stone-600">{spreadPile.pages.length} PAGE</span></h3>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button type="button" className={actionClass} onClick={() => unpack(spreadPile)}>束をばらす</button>
-                      <button type="button" className={actionClass} onClick={() => setSpread(null)}>束に戻す</button>
+                <section aria-label="PAGE本文" className="flex max-h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-3">
+                    <h3 className="mr-auto min-w-0 break-words text-lg font-bold">{paperTitle(openPage)}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {spreadPile && <button type="button" className={actionClass} onClick={() => setOpenPage(null)}>束の中身に戻る</button>}
+                      <button type="button" className={primaryClass} onClick={closeSpread}>机に戻る</button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-2">
-                    {spreadPile.pages.map(page => (
-                      <button key={page.key} type="button" onClick={() => setOpenPage(page.id)}
-                        className="min-h-40 rounded border border-stone-200 bg-white p-3 text-left shadow hover:border-emerald-600"
-                        style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}>
-                        <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
-                        <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
-                        <span className="mt-2 block line-clamp-5 whitespace-pre-line text-xs leading-relaxed">{pages.get(page.id)?.excerpt}</span>
-                      </button>
-                    ))}
+                  <div className="min-h-0 overflow-y-auto overscroll-contain p-4">{renderPage(openPage)}</div>
+                </section>
+              ) : spreadPile && (
+                <section aria-label="束の中身" className="flex max-h-full min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-stone-50">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-3">
+                    <h3 className="mr-auto min-w-0 break-words text-lg font-bold">{spreadPile.chapter?.title ?? "PAGEの束"} <span className="text-xs text-stone-600">{spreadPile.pages.length} PAGE</span></h3>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" className={actionClass} onClick={() => unpack(spreadPile)}>束をばらす</button>
+                      <button type="button" className={primaryClass} onClick={closeSpread}>机に戻る</button>
+                    </div>
+                  </div>
+                  <div
+                    ref={restoreSpreadScroll}
+                    onScroll={event => { spreadScrollTop.current = event.currentTarget.scrollTop; }}
+                    className="min-h-0 overflow-y-auto overscroll-contain"
+                  >
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-5">
+                      {spreadPile.pages.map(page => (
+                        <button key={page.key} type="button" onClick={() => setOpenPage(page.id)}
+                          className="min-h-40 rounded border border-stone-200 bg-white p-3 text-left shadow hover:border-emerald-600"
+                          style={{ transform: `rotate(${paperAngle(page.id)}deg)` }}>
+                          <span className="block text-xs text-stone-500">PAGE {pageNumbers.get(page.key)}</span>
+                          <span className="mt-1 block break-words font-serif font-bold">{paperTitle(page.id)}</span>
+                          <span className="mt-2 block line-clamp-5 whitespace-pre-line text-xs leading-relaxed">{pages.get(page.id)?.excerpt}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </section>
               )}
