@@ -14,6 +14,19 @@ export function deskOutline(piles: DeskPile[]): BookOutlineEntry[] {
   ]);
 }
 
+export function groupDeskChapters(piles: DeskPile[]) {
+  const opening: DeskPile[] = [];
+  const chapters: { chapter: Chapter; key: number; piles: DeskPile[] }[] = [];
+  for (const pile of piles) {
+    if (pile.chapter) {
+      chapters.push({ chapter: pile.chapter, key: pile.key, piles: [pile] });
+    } else {
+      (chapters.at(-1)?.piles ?? opening).push(pile);
+    }
+  }
+  return { opening, chapters };
+}
+
 export function makeDesk(outline: BookOutlineEntry[], storageKey: string): DeskPile[] {
   let layout: unknown;
   try {

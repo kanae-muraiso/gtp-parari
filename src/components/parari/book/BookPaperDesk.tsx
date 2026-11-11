@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { BookOutlineEntry } from "@/lib/parari/book/pageRefs";
-import { deskOutline, makeDesk, saveDeskLayout, type DeskPile } from "@/lib/parari/book/paperDesk";
+import { deskOutline, groupDeskChapters, makeDesk, saveDeskLayout, type DeskPile } from "@/lib/parari/book/paperDesk";
 
 const paperWidth = 210;
 const paperHeight = 224;
@@ -53,6 +53,9 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   const [history, setHistory] = useState<DeskPile[][]>([]);
   const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 });
   const [motion, setMotion] = useState<Motion | null>(null);
+  const [raisedPiles, setRaisedPiles] = useState<number[]>([]);
+  const [chapterOrderOpen, setChapterOrderOpen] = useState(false);
+  const [chapterDropKey, setChapterDropKey] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const [spread, setSpread] = useState<number | null>(null);
   const spreadScrollTop = useRef(0);
@@ -68,7 +71,10 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   const stale = useMemo(() => JSON.stringify(outline) !== base, [outline, base]);
   const spreadPile = piles.find(pile => pile.key === spread);
   const pageNumbers = useMemo(() => new Map(piles.flatMap(pile => pile.pages).map((page, index) => [page.key, index + 1])), [piles]);
-  const overlayOpen = discard || chapterName !== null || !!spreadPile || !!openPage;
+  const { opening, chapters } = useMemo(() => groupDeskChapters(piles), [piles]);
+  const chapterNumbers = useMemo(() => new Map(chapters.map(({ key }, index) => [key, index + 1])), [chapters]);
+  const layers = useMemo(() => new Map(raisedPiles.map((key, index) => [key, index + 1])), [raisedPiles]);
+  const overlayOpen = chapterOrderOpen || discard || chapterName !== null || !!spreadPile || !!openPage;
 
   function fit() {
     if (!canvas.current || !piles.length) return;
@@ -191,9 +197,24 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     setChapterName(null);
   }
 
+  function moveChapter(key: number, target: number) {
+    const source = chapters.findIndex(chapter => chapter.key === key);
+    if (source < 0 || target < 0 || target >= chapters.length || source === target) return;
+    const next = [...chapters];
+    const [chapter] = next.splice(source, 1);
+    next.splice(target, 0, chapter);
+    change([...opening, ...next.flatMap(group => group.piles)]);
+  }
+
+  function closeChapterOrder() {
+    setChapterDropKey(null);
+    setChapterOrderOpen(false);
+  }
+
   function movePile(index: number, direction: number) {
     const target = index + direction;
-    if (target < 0 || target >= piles.length) return;
+    const neighbor = piles[target];
+    if (!neighbor || neighbor.chapter || piles[index].chapter) return;
     const next = [...piles];
     [next[index], next[target]] = [next[target], next[index]];
     change(next);
@@ -223,13 +244,15 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     const rect = event.currentTarget.getBoundingClientRect();
     const worldX = (event.clientX - rect.left - view.x) / view.scale;
     const worldY = (event.clientY - rect.top - view.y) / view.scale;
-    const target = current.page === undefined ? undefined : [...piles].reverse().find(pile => {
-      const inset = pile.chapter ? -clipboardInset : 25;
-      const top = pile.chapter ? -clipboardTop : inset;
-      const height = pile.chapter ? pileHeight(pile) : paperHeight;
-      return worldX > pile.x + inset && worldX < pile.x + paperWidth - inset &&
-        worldY > pile.y + top && worldY < pile.y + height - inset;
-    })?.key;
+    const target = current.page === undefined ? undefined : [...piles].reverse()
+      .sort((a, b) => (layers.get(b.key) ?? 0) - (layers.get(a.key) ?? 0))
+      .find(pile => {
+        const inset = pile.chapter ? -clipboardInset : 25;
+        const top = pile.chapter ? -clipboardTop : inset;
+        const height = pile.chapter ? pileHeight(pile) : paperHeight;
+        return worldX > pile.x + inset && worldX < pile.x + paperWidth - inset &&
+          worldY > pile.y + top && worldY < pile.y + height - inset;
+      })?.key;
     motionRef.current = { x, y, target, pile: current.pile, page: current.page };
     setMotion(motionRef.current);
   }
@@ -272,6 +295,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     const { x, y, target } = movement;
     if (page && target === origin.key && origin.pages.at(-1) === page) return;
     if (!page || (target === undefined && origin.pages.length === 1 && !origin.chapter)) {
+      setRaisedPiles(current => [...current.filter(key => key !== origin.key), origin.key]);
       change(piles.map(pile => pile === origin ? { ...pile, x: pile.x + x, y: pile.y + y } : pile));
       return;
     }
@@ -316,6 +340,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
         else if (chapterName !== null) setChapterName(null);
         else if (openPage) setOpenPage(null);
         else if (spread !== null) closeSpread();
+        else if (chapterOrderOpen) closeChapterOrder();
         else closeDesk();
       }}
       className="m-auto h-[92dvh] max-h-none w-[min(96vw,1440px)] max-w-none overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 p-0 text-stone-800 shadow-2xl backdrop:bg-stone-950/40"
@@ -324,13 +349,14 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
         <header inert={overlayOpen} className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 px-4 py-3">
           <h2 className="text-lg font-bold">原稿の机</h2>
           <div className="flex flex-wrap gap-2">
+            {!!chapters.length && <button type="button" className={actionClass} onClick={() => setChapterOrderOpen(true)}>章の順番</button>}
             <button type="button" className={actionClass} onClick={undo} disabled={!history.length}>元に戻す</button>
             <button type="button" className={actionClass} onClick={closeDesk}>閉じる</button>
             <button type="button" className={primaryClass} disabled={stale} onClick={apply}>BOOKに反映</button>
           </div>
         </header>
         <div inert={overlayOpen} className="flex flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-2 text-xs">
-          <p className="mr-auto">紙を重ねると、下のPAGEから順に読みます。上に置いたPAGEが続きになります。</p>
+          <p className="mr-auto">クリップをつかむと束ごと動きます。紙を重ねると、下のPAGEから順に読みます。</p>
           <button type="button" className={actionClass} onClick={() => zoom(1 / 1.2)} aria-label="縮小">−</button>
           <span>{Math.round(view.scale * 100)}%</span>
           <button type="button" className={actionClass} onClick={() => zoom(1.2)} aria-label="拡大">＋</button>
@@ -362,12 +388,12 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                   <div
                     key={pile.key}
                     data-desk-pile={pile.key}
-                    className="absolute select-none"
+                    className="absolute isolate select-none"
                     style={{
                       width: paperWidth, height: pileHeight(pile),
                       left: pile.x + (moveWhole ? active.x : 0),
                       top: pile.y + (moveWhole ? active.y : 0),
-                      zIndex: active ? piles.length + 1 : undefined,
+                      zIndex: active ? raisedPiles.length + 1 : layers.get(pile.key) ?? 0,
                     }}
                   >
                     {pile.chapter ? (
@@ -384,7 +410,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                         </div>
                         <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-amber-950">
                           <div className="min-w-0 flex-1">
-                            <span className="block text-[10px] font-semibold">章扉 · {pile.pages.length} PAGE</span>
+                            <span className="block text-[10px] font-semibold">章 {chapterNumbers.get(pile.key)} · {pile.pages.length} PAGE</span>
                             <span className="block truncate text-sm font-bold" title={pile.chapter.title}>{pile.chapter.title}</span>
                           </div>
                           {!!pile.pages.length && (
@@ -441,9 +467,17 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
               <div key={pile.key} className="mb-2 rounded-lg bg-stone-100 p-2">
                 <div className="flex items-center gap-1 text-xs font-bold">
                   <span className="min-w-0 flex-1 break-words">{pile.chapter?.title ?? (pile.pages.length > 1 ? "PAGEの束" : "PAGE")}</span>
-                  {pile.chapter && <button type="button" className={actionClass} onClick={() => startChapterForm(pile)}>改名</button>}
-                  <button type="button" className={actionClass} aria-label="前へ移動" disabled={index === 0} onClick={() => movePile(index, -1)}>↑</button>
-                  <button type="button" className={actionClass} aria-label="後ろへ移動" disabled={index === piles.length - 1} onClick={() => movePile(index, 1)}>↓</button>
+                  {pile.chapter ? (
+                    <>
+                      <button type="button" className={actionClass} onClick={() => startChapterForm(pile)}>改名</button>
+                      <button type="button" className={actionClass} onClick={() => setChapterOrderOpen(true)}>順番</button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" className={actionClass} aria-label="前へ移動" disabled={index === 0 || !!piles[index - 1]?.chapter} onClick={() => movePile(index, -1)}>↑</button>
+                      <button type="button" className={actionClass} aria-label="後ろへ移動" disabled={index === piles.length - 1 || !!piles[index + 1]?.chapter} onClick={() => movePile(index, 1)}>↓</button>
+                    </>
+                  )}
                 </div>
                 {pile.pages.map(page => (
                   <div key={page.key} className="flex items-center gap-2 py-1 text-xs">
@@ -469,7 +503,50 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                 if (spreadPile && !openPage && event.target === event.currentTarget) closeSpread();
               }}
             >
-              {discard ? (
+              {chapterOrderOpen ? (
+                <section aria-labelledby="paper-desk-chapter-order" className="flex max-h-full min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-3">
+                    <h3 id="paper-desk-chapter-order" className="mr-auto text-lg font-bold">章の順番</h3>
+                    <button type="button" className={primaryClass} onClick={closeChapterOrder}>机に戻る</button>
+                  </div>
+                  <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
+                    <p className="mb-3 text-xs text-stone-600">章をドラッグするか、矢印で並べ替えます。並びを確定するには、机に戻って「BOOKに反映」を押します。</p>
+                    <ol className="space-y-2">
+                      {chapters.map(({ chapter, key, piles: chapterPiles }, index) => (
+                        <li key={key} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${chapterDropKey === key ? "border-emerald-600 bg-emerald-50" : "border-stone-200 bg-stone-50"}`}
+                          onDragOver={event => {
+                            if (!event.dataTransfer.types.includes("application/x-parari-desk-chapter")) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
+                            setChapterDropKey(key);
+                          }}
+                          onDrop={event => {
+                            event.preventDefault();
+                            const sourceKey = event.dataTransfer.getData("application/x-parari-desk-chapter");
+                            if (sourceKey) moveChapter(Number(sourceKey), index);
+                            setChapterDropKey(null);
+                          }}
+                        >
+                          <span draggable aria-hidden="true" className="cursor-grab px-1 text-stone-500"
+                            onDragStart={event => {
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("application/x-parari-desk-chapter", String(key));
+                            }}
+                            onDragEnd={() => setChapterDropKey(null)}
+                          >⠿</span>
+                          <span className="text-sm tabular-nums text-stone-500">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words text-sm font-bold">{chapter.title}</p>
+                            <p className="text-xs text-stone-600">{chapterPiles.reduce((count, pile) => count + pile.pages.length, 0)} PAGE</p>
+                          </div>
+                          <button type="button" className={actionClass} aria-label={`${chapter.title}を前へ移動`} disabled={index === 0} onClick={() => moveChapter(key, index - 1)}>↑</button>
+                          <button type="button" className={actionClass} aria-label={`${chapter.title}を後ろへ移動`} disabled={index === chapters.length - 1} onClick={() => moveChapter(key, index + 1)}>↓</button>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </section>
+              ) : discard ? (
                 <section aria-label="変更を破棄" className="rounded-xl bg-white p-5">
                   <p className="mb-3 text-sm">読書順や章の変更を反映せずに閉じますか？</p>
                   <button type="button" className={actionClass} onClick={() => setDiscard(false)}>机に戻る</button>{" "}
