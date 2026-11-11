@@ -217,11 +217,11 @@ export default function ApplicationV2Prototype() {
         {step === 3 && (
           <section className={cardClass + " space-y-4"}>
             <h2 className="text-lg font-semibold">{isSale ? "誰に販売しますか？" : "誰が、どのように参加できますか？"}</h2>
-            <label className="block space-y-1 text-sm"><span>公開範囲</span>
+            <label className="block space-y-1 text-sm"><span>案内方法（公開範囲は作品側で設定します）</span>
               <select className={inputClass} value={data.access} onChange={e => patch("access", e.target.value)}>
                 <option value="public">誰でも見ることができる</option>
-                <option value="unlisted">URLを知っている人だけに案内する</option>
-                <option value="restricted">登録・確認済みの人に限定する（実装時に権限設定が必要）</option>
+                <option value="unlisted">URL限定で案内する予定（作品側で設定）</option>
+                <option value="restricted">登録・確認済みの人に限定する（この作成画面では未対応）</option>
               </select>
             </label>
             {!isSale && <label className="block space-y-1 text-sm"><span>{isBooking ? "1枠あたりの定員" : "定員（未入力なら指定なし）"}</span>
@@ -235,7 +235,7 @@ export default function ApplicationV2Prototype() {
               </select>
             </label>}
             {isBooking && <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">受付可能な時間を随時増減する操作は、CALENDAR連携の実装段階で行います。</div>}
-            <p className="text-xs text-slate-600">限定URLは厳密なアクセス制限ではありません。公開範囲と参加受付条件は別々に扱います。</p>
+            <p className="text-xs text-slate-600">この選択だけでは閲覧制限は有効になりません。実際の公開範囲は作品の公開設定で指定します。限定URLは厳密なアクセス制限ではありません。</p>
           </section>
         )}
         {step === 4 && (
