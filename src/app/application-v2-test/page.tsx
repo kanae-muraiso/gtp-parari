@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import SaveApplicationWizardDraft from "./SaveApplicationWizardDraft";
 
@@ -47,6 +48,61 @@ export default function ApplicationV2Prototype() {
   const [step, setStep] = useState(0);
   const [panelOrder, setPanelOrder] = useState<PanelKey[]>(["intro", "schedule", "capacity", "payment", "form"]);
   const [view, setView] = useState<"edit" | "visitor">("edit");
+  const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState("");
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("edit");
+    if (!id || !/^[0-9a-fA-F-]{36}$/.test(id) || !supabase) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (!session?.access_token) throw new Error("編集にはログインが必要です。");
+        const response = await fetch("/api/application/manage", {
+          headers: { Authorization: "Bearer " + session.access_token },
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.ok) throw new Error(result?.message || "取得に失敗しました。");
+        const application = (result.applications as Array<Record<string, unknown>>).find(row => row.id === id);
+        if (!application) throw new Error("編集できるAPPLICATIONが見つかりません。");
+        const definition = application.definition as Record<string, unknown> | null;
+        const wizard = definition?.wizard as Record<string, unknown> | undefined;
+        if (!wizard || wizard.version !== 1) throw new Error("質問型で作成されたAPPLICATIONではありません。");
+        if (!["event", "booking", "sale", "class"].includes(String(wizard.kind))) throw new Error("種類が正しくありません。");
+        if (cancelled) return;
+        setData({
+          ...defaults,
+          kind: wizard.kind as Kind,
+          title: String(application.title || ""),
+          description: String(application.description || ""),
+          date: String(wizard.date || ""),
+          startTime: String(wizard.startTime || ""),
+          durationMinutes: String(wizard.durationMinutes || 60),
+          place: String(wizard.location || ""),
+          cadence: String(wizard.cadence || "once"),
+          attendance: String(wizard.attendance || "per_event"),
+          capacity: definition?.capacity == null ? "" : String(definition.capacity),
+          price: application.payment_amount == null ? "0" : String(application.payment_amount),
+          payment: application.payment_method === "parari" ? "online" : "onsite",
+          access: String(wizard.visibilityHint || "public"),
+          extraQuestion: String(wizard.extraQuestion || ""),
+          notes: String(wizard.notes || ""),
+        });
+        const savedOrder = wizard.panelOrder;
+        if (Array.isArray(savedOrder)) {
+          const allowed: PanelKey[] = ["intro", "schedule", "capacity", "payment", "form"];
+          const selected = savedOrder.filter((x): x is PanelKey => typeof x === "string" && allowed.includes(x as PanelKey));
+          setPanelOrder([...new Set([...selected, ...allowed])]);
+        }
+        setLoadedApplicationId(id);
+      } catch (cause) {
+        if (!cancelled) setLoadError(cause instanceof Error ? cause.message : "読み込みに失敗しました。");
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, []);
+
   const patch = <K extends keyof Data>(key: K, value: Data[K]) => setData(old => ({ ...old, [key]: value }));
   const isSale = data.kind === "sale";
   const isBooking = data.kind === "booking";
@@ -94,6 +150,7 @@ export default function ApplicationV2Prototype() {
           </div>
           <p className="text-sm text-slate-600">4つの入口から始め、質問に答えるだけで案内パネルを構成する操作実験です。保存ボタンを押すまではサーバーへ送信されません。</p>
         </header>
+        {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{loadError}</p>}
         <nav aria-label="作成手順" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {progress.map((p, i) => (
             <div key={p} className={`rounded-lg px-2 py-2 text-center text-xs ${step === i ? "bg-amber-100 font-semibold text-amber-900" : "bg-white text-slate-500"}`}>
@@ -240,7 +297,7 @@ export default function ApplicationV2Prototype() {
             </div>
           </section>
         )}
-        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} /></div>
+        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
           {step < 5 ? <button type="button" onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
