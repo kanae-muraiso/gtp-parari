@@ -21,7 +21,8 @@ import type {
 type ApplicationEntryAction =
   | "qualification_approve"
   | "qualification_reject"
-  | "payment_confirm";
+  | "payment_confirm"
+  | "enrollment_close";
 
 type ApplicationEntriesPanelProps = {
   application: ManagedApplication;
@@ -411,6 +412,28 @@ export default function ApplicationEntriesPanel({
                   </div>
                 </div>
               </div>
+
+              {(application.definition as { mode?: string; wizard?: { kind?: string } } | null)?.mode === "lite" &&
+                (application.definition as { wizard?: { kind?: string } } | null)?.wizard?.kind === "class" &&
+                entry.status === "confirmed" ? (
+                <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-3">
+                  <button
+                    type="button"
+                    disabled={entryActionId === entry.id}
+                    onClick={() => {
+                      if (window.confirm("この受講者を退会扱いにして、新しい受講者の枠を空けますか？申込履歴と支払記録は残ります。返金は別途対応してください。")) {
+                        void onEntryAction(entry.id, "enrollment_close");
+                      }
+                    }}
+                    className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-700 disabled:opacity-40"
+                  >
+                    退会・在籍枠を空ける
+                  </button>
+                  {entry.payment_status === "paid" ? (
+                    <p className="mt-2 text-xs text-neutral-600">支払済みです。返金は自動実行されません。</p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="mt-4 text-xs text-neutral-500">
                 申込日時：
