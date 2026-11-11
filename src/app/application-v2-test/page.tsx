@@ -95,7 +95,7 @@ export default function ApplicationV2Prototype() {
             <p className="mb-4 text-sm text-slate-600">近いものを選んでください。これは最初の質問の順番を決めるだけで、機能の制限ではありません。</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {kinds.map(kind => (
-                <button key={kind.id} type="button" onClick={() => patch("kind", kind.id)}
+                <button key={kind.id} type="button" onClick={() => setData(old => ({ ...old, kind: kind.id, cadence: kind.id === "sale" ? "none" : "once" }))}
                   aria-pressed={data.kind === kind.id}
                   className={`rounded-xl border p-4 text-left ${data.kind === kind.id ? "border-amber-700 bg-amber-50" : "border-slate-200 bg-white"}`}>
                   <div className="text-xl">{kind.icon}</div>
