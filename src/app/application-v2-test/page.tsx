@@ -240,7 +240,7 @@ export default function ApplicationV2Prototype() {
             </div>
           </section>
         )}
-        {step === 5 && <SaveApplicationWizardDraft data={data} panelOrder={panels} />}
+        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
           {step < 5 ? <button type="button" onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
