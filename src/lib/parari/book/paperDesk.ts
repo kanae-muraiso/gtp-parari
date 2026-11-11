@@ -42,6 +42,7 @@ export function makeDesk(outline: BookOutlineEntry[], storageKey: string): DeskP
     piles.length = 0;
   }
 
+  const rowHeight = outline.some(entry => entry.kind === "chapter") ? 405 : 310;
   let chapterPile: DeskPile | undefined;
   outline.forEach((entry, index) => {
     if (entry.kind === "page" && chapterPile) {
@@ -52,7 +53,7 @@ export function makeDesk(outline: BookOutlineEntry[], storageKey: string): DeskP
     const pile: DeskPile = {
       key: index,
       x: 32 + (piles.length % 4) * 258 + offsetX,
-      y: 62 + Math.floor(piles.length / 4) * 310 + offsetY,
+      y: 62 + Math.floor(piles.length / 4) * rowHeight + offsetY,
       pages: entry.kind === "page" ? [{ key: index, id: entry.id }] : [],
       chapter: entry.kind === "chapter" ? entry : undefined,
     };

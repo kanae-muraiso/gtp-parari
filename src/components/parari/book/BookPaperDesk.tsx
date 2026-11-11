@@ -7,6 +7,8 @@ import { deskOutline, makeDesk, saveDeskLayout, type DeskPile } from "@/lib/para
 const paperWidth = 210;
 const paperHeight = 224;
 const edgeHeight = 23;
+const clipboardTop = 76;
+const clipboardInset = 14;
 const stackOffsets = [0, 5, -3, 8];
 const paperAngles = [-5.5, 2.5, -2, 5, -3.5, 1.5, -4.5, 3.5, -1.5, 4.5, -2.5];
 
@@ -71,10 +73,10 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
   function fit() {
     if (!canvas.current || !piles.length) return;
     const { clientWidth, clientHeight } = canvas.current;
-    const left = Math.min(...piles.map(pile => pile.x)) - 24;
-    const top = Math.min(...piles.map(pile => pile.y)) - 48;
-    const width = Math.max(...piles.map(pile => pile.x)) + paperWidth + 24 - left;
-    const height = Math.max(...piles.map(pile => pile.y + pileHeight(pile))) + 24 - top;
+    const left = Math.min(...piles.map(pile => pile.x - (pile.chapter ? clipboardInset : 0))) - 24;
+    const top = Math.min(...piles.map(pile => pile.y - (pile.chapter ? clipboardTop + 8 : 36))) - 12;
+    const width = Math.max(...piles.map(pile => pile.x + (pile.chapter ? clipboardInset : 0))) + paperWidth + 24 - left;
+    const height = Math.max(...piles.map(pile => pile.y + pileHeight(pile) + (pile.chapter ? clipboardInset : 0))) + 24 - top;
     const scale = Math.max(0.05, Math.min(1, clientWidth / width, clientHeight / height));
     setView({ x: (clientWidth - width * scale) / 2 - left * scale, y: (clientHeight - height * scale) / 2 - top * scale, scale });
   }
@@ -221,16 +223,19 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
     const rect = event.currentTarget.getBoundingClientRect();
     const worldX = (event.clientX - rect.left - view.x) / view.scale;
     const worldY = (event.clientY - rect.top - view.y) / view.scale;
-    const target = current.page === undefined ? undefined : [...piles].reverse().find(pile =>
-      worldX > pile.x + 25 && worldX < pile.x + paperWidth - 25 &&
-      worldY > pile.y + 25 && worldY < pile.y + paperHeight - 25,
-    )?.key;
+    const target = current.page === undefined ? undefined : [...piles].reverse().find(pile => {
+      const inset = pile.chapter ? -clipboardInset : 25;
+      const top = pile.chapter ? -clipboardTop : inset;
+      const height = pile.chapter ? pileHeight(pile) : paperHeight;
+      return worldX > pile.x + inset && worldX < pile.x + paperWidth - inset &&
+        worldY > pile.y + top && worldY < pile.y + height - inset;
+    })?.key;
     motionRef.current = { x, y, target, pile: current.pile, page: current.page };
     setMotion(motionRef.current);
   }
 
   function viewPile(pile: DeskPile, page?: string) {
-    if (pile.pages.length > 1) {
+    if (pile.pages.length > 1 || (pile.chapter && pile.pages.length === 1)) {
       spreadScrollTop.current = 0;
       setSpread(pile.key);
     } else {
@@ -365,15 +370,41 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                       zIndex: active ? piles.length + 1 : undefined,
                     }}
                   >
-                    {(pile.chapter || pile.pages.length > 1) && (
+                    {pile.chapter ? (
+                      <div
+                        data-desk-handle
+                        className={[
+                          "absolute cursor-grab rounded-xl border bg-gradient-to-br from-amber-100 via-amber-200 to-amber-300 shadow-md",
+                          motion?.target === pile.key ? "border-emerald-600 ring-2 ring-emerald-400" : "border-amber-800/40",
+                        ].join(" ")}
+                        style={{ top: -clipboardTop, bottom: -clipboardInset, left: -clipboardInset, right: -clipboardInset }}
+                      >
+                        <div aria-hidden="true" className="absolute -top-2 left-1/2 h-6 w-20 -translate-x-1/2 rounded-md border border-stone-500 bg-gradient-to-b from-white via-stone-300 to-stone-400 shadow-sm">
+                          <div className="mx-auto mt-1 h-1.5 w-8 rounded-full border border-stone-400 bg-stone-500 shadow-inner" />
+                        </div>
+                        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-amber-950">
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[10px] font-semibold">章扉 · {pile.pages.length} PAGE</span>
+                            <span className="block truncate text-sm font-bold" title={pile.chapter.title}>{pile.chapter.title}</span>
+                          </div>
+                          {!!pile.pages.length && (
+                            <button type="button" data-desk-action onClick={() => viewPile(pile)} className="shrink-0 rounded-full border border-amber-800/30 bg-amber-50 px-2.5 py-1 text-xs font-bold hover:bg-white">見る</button>
+                          )}
+                        </div>
+                        {visible.length === 0 && (
+                          <div className="absolute inset-x-4 bottom-4 top-[76px] grid place-items-center rounded-lg border border-dashed border-amber-800/45 bg-amber-50/40 px-3 text-center text-xs font-semibold text-amber-950">
+                            PAGEをここに置く
+                          </div>
+                        )}
+                      </div>
+                    ) : pile.pages.length > 1 && (
                       <div data-desk-handle className="absolute -top-9 flex w-full cursor-grab items-center gap-2 rounded bg-emerald-100 px-2 py-1 text-xs font-bold">
                         <span aria-hidden="true">⠿</span>
-                        <span className="flex-1 truncate">{pile.chapter?.title ?? "PAGEの束"}</span>
+                        <span className="flex-1 truncate">PAGEの束</span>
                         <span>{pile.pages.length} PAGE</span>
-                        {!!pile.pages.length && <button type="button" data-desk-action onClick={() => viewPile(pile)} className="rounded bg-white px-1.5 py-0.5">見る</button>}
+                        <button type="button" data-desk-action onClick={() => viewPile(pile)} className="rounded bg-white px-1.5 py-0.5">見る</button>
                       </div>
                     )}
-                    {visible.length === 0 && <div data-desk-handle className="cursor-grab rounded border border-dashed border-emerald-400 bg-emerald-50 p-4 text-sm">章扉</div>}
                     {visible.map((page, index) => {
                       const moving = active && active.page === page.key;
                       return (
@@ -468,7 +499,7 @@ export function BookPaperDesk({ storageKey, outline, pages, renderPage, onApply,
                   <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-stone-200 px-4 py-3">
                     <h3 className="mr-auto min-w-0 break-words text-lg font-bold">{spreadPile.chapter?.title ?? "PAGEの束"} <span className="text-xs text-stone-600">{spreadPile.pages.length} PAGE</span></h3>
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" className={actionClass} onClick={() => unpack(spreadPile)}>束をばらす</button>
+                      {spreadPile.pages.length > 1 && <button type="button" className={actionClass} onClick={() => unpack(spreadPile)}>束をばらす</button>}
                       <button type="button" className={primaryClass} onClick={closeSpread}>机に戻る</button>
                     </div>
                   </div>
