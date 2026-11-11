@@ -801,7 +801,8 @@ export async function PATCH(
     action !==
       "qualification_reject" &&
     action !==
-      "payment_confirm"
+      "payment_confirm" &&
+    action !== "enrollment_close"
   ) {
     return NextResponse.json(
       {
@@ -892,6 +893,7 @@ export async function PATCH(
         `
           id,
           owner_user_id,
+          definition,
           acceptance_mode,
           payment_method,
           payment_confirmation_required
@@ -938,6 +940,48 @@ export async function PATCH(
         status: 403,
       },
     );
+  }
+
+  // Lite の継続クラスでは、確定した申込を「在籍」として扱う。
+  // 退会時は履歴を削除せず cancelled にし、10人上限の枠を空ける。
+  // 返金や支払残高の変更はここでは一切行わない。
+  if (action === "enrollment_close") {
+    const definition = application.definition as
+      | { mode?: unknown; wizard?: { kind?: unknown } }
+      | null;
+    if (definition?.mode !== "lite" ||
+        definition?.wizard?.kind !== "class" ||
+        entry.calendar_occurrence_id !== null) {
+      return NextResponse.json(
+        { ok: false, message: "継続Liteクラス以外ではこの操作を使えません。" },
+        { status: 400 },
+      );
+    }
+    if (entry.status !== "confirmed") {
+      return NextResponse.json(
+        { ok: false, message: "参加確定済みの受講者だけを退会処理できます。" },
+        { status: 409 },
+      );
+    }
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from("application_entries")
+      .update({ status: "cancelled" })
+      .eq("id", entry.id)
+      .eq("application_id", application.id)
+      .eq("status", "confirmed")
+      .select("id,status,qualification_status,payment_status,payment_reported_at,payment_confirmed_at")
+      .maybeSingle();
+    if (updateError || !updated) {
+      return NextResponse.json(
+        { ok: false, message: "退会処理を完了できませんでした。" },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({
+      ok: true,
+      entry: updated,
+      message: "在籍枠を空けました。返金が必要な場合は主催者が別途対応してください。",
+    });
   }
 
   // ========================================================
