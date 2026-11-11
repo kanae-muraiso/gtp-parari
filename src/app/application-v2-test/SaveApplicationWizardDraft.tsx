@@ -104,6 +104,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
 
       // Lite retains one class enrollment entry per person rather than creating a new entry each lesson.
       // No calendar occurrences, reservations or recurring charges are generated here.
+      const extra = data.extraQuestion.trim();
       const wizard = {
         version: 1,
         kind: data.kind,
@@ -123,7 +124,6 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       if (data.extraQuestion.trim() && plan.applicationMode === "lite") {
         throw new Error("Liteでは追加質問の回答を収集できません。質問欄を空にするか、Organizer以上をご利用ください。");
       }
-      const extra = data.extraQuestion.trim();
       const inputFields = extra ? [{
         id: "wizard-extra-answer",
         kind: "textarea",
