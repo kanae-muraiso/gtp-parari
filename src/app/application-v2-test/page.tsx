@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import SaveApplicationWizardDraft from "./SaveApplicationWizardDraft";
 
 type Kind = "event" | "booking" | "sale" | "class";
 type PanelKey = "intro" | "schedule" | "capacity" | "payment" | "form";
@@ -89,9 +90,9 @@ export default function ApplicationV2Prototype() {
           <Link href="/my/works" className="text-sm text-amber-800 underline">← STUDIOに戻る</Link>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold">APPLICATION v2 試作</h1>
-            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold">保存・公開・決済なし</span>
+            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold">公開・決済なし（下書き保存可）</span>
           </div>
-          <p className="text-sm text-slate-600">4つの入口から始め、質問に答えるだけで案内パネルを構成する操作実験です。入力内容はサーバーへ送信されません。</p>
+          <p className="text-sm text-slate-600">4つの入口から始め、質問に答えるだけで案内パネルを構成する操作実験です。保存ボタンを押すまではサーバーへ送信されません。</p>
         </header>
         <nav aria-label="作成手順" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {progress.map((p, i) => (
@@ -239,12 +240,13 @@ export default function ApplicationV2Prototype() {
             </div>
           </section>
         )}
+        {step === 5 && <SaveApplicationWizardDraft data={data} panelOrder={panels} />}
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
           {step < 5 ? <button type="button" onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
             <button type="button" className={buttonClass} onClick={() => { setStep(0); setData(defaults); setPanelOrder(["intro", "schedule", "capacity", "payment", "form"]); setView("edit"); }}>別の入口を試す</button>}
         </footer>
-        <p className="text-center text-xs text-slate-500">独立したUIテスト画面。既存のAPPLICATION、CALENDAR、FORM、Square、DBには接続していません。</p>
+        <p className="text-center text-xs text-slate-500">質問型UIから既存APPLICATIONの下書き保存に対応。CALENDAR・FORM作成と実際の予約・決済・PAGE公開は別工程です。</p>
       </div>
     </main>
   );
