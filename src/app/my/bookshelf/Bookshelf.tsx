@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { parseParari } from "@/lib/parariParse";
 import BookshelfAnnouncements from "@/components/parari/announcements/BookshelfAnnouncements";
 
@@ -290,7 +291,7 @@ export default function LibraryV2Page() {
         return <button key={c.id} type="button" disabled={busy}
           aria-pressed={selected}
           onClick={()=>void mutate("category_item",{categoryId:c.id,targetKind:kind,targetId:id},selected?"DELETE":"POST")}
-          className={"rounded-full border px-2 py-1 text-xs disabled:opacity-50 "+(selected?"bg-neutral-900 text-white":"bg-white")}>
+          className={"rounded-full border px-2 py-1 text-xs disabled:opacity-50 "+(selected?WORKSPACE_PALETTE.library.tabActive:"bg-white")}>
           {selected?"✓ ":"＋ "}{c.name}
         </button>;
       })}
@@ -357,7 +358,7 @@ export default function LibraryV2Page() {
         <BookshelfAnnouncements />
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
           {tabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
-            className={"rounded-full border px-3 py-2 text-sm "+(tab===t.id?"bg-neutral-900 text-white":"bg-white text-neutral-800")}>{t.name}</button>)}
+            className={"rounded-full border px-3 py-2 text-sm "+(tab===t.id?WORKSPACE_PALETTE.library.tabActive:"bg-white text-neutral-800 hover:bg-emerald-50")}>{t.name}</button>)}
         </div>
         {message && <p role="status" className="mt-5 text-sm text-neutral-600">{message}</p>}
         {shelfMessage && <p role="status" className="mt-3 text-sm text-neutral-600">{shelfMessage}</p>}
