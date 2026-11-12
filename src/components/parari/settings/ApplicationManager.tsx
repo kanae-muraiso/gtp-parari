@@ -1931,6 +1931,7 @@ export default function ApplicationManager({
                 };
 
                 message?: string;
+                settingsUrl?: string;
               }
             | null;
 
