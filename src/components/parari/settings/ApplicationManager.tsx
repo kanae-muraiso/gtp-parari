@@ -720,28 +720,6 @@ export default function ApplicationManager({
 
   React.useEffect(() => {
     if (
-      !createOnly ||
-      isLoading ||
-      !applicationAccess ||
-      applicationAccess.effectivePlan !== "free" ||
-      applicationAccess.isMonitor === true ||
-      applicationAccess.canCreateApplication === false ||
-      showBuilder
-    ) {
-      return;
-    }
-
-    setApplicationMode("lite");
-    startCreate("OTHER");
-  }, [
-    applicationAccess,
-    createOnly,
-    isLoading,
-    showBuilder,
-  ]);
-
-  React.useEffect(() => {
-    if (
       !embeddedEditApplicationId ||
       embeddedEditStartedRef.current ||
       isLoading ||
@@ -2787,15 +2765,9 @@ export default function ApplicationManager({
                                return;
                              }
 
-                             if (isFreePlan) {
-                               setApplicationMode("lite");
-                               startCreate("OTHER");
-                             } else if (canUseExtendedApplication) {
-                               setShowModeChooser(true);
-                             } else {
-                               setApplicationMode("lite");
-                               setShowTypeChooser(true);
-                             }
+                             setShowBuilder(false);
+                             setShowModeChooser(true);
+                             setShowTypeChooser(false);
                              setStatusMessage("");
                            }}
                            className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -3115,13 +3087,8 @@ export default function ApplicationManager({
                   ) {
                     onCancel?.();
                   } else if (createOnly) {
-                    if (isFreePlan) {
-                      onCancel?.();
-                    } else {
-                      setShowTypeChooser(
-                        true,
-                      );
-                    }
+                    setShowModeChooser(true);
+                    setShowTypeChooser(false);
                   }
                 }}
                 disabled={isSaving}
@@ -3132,181 +3099,68 @@ export default function ApplicationManager({
             </div>
           </div>
         </div>
-      ) : showModeChooser ? (
+      ) : showModeChooser || showTypeChooser ? (
         <div className="px-6 py-8 sm:px-10">
           <div className="mx-auto max-w-2xl">
             <h3 className="text-xl font-bold text-neutral-950">
-              APPLICATIONの作り方を選んでください
+              何を始めますか？
             </h3>
-
             <p className="mt-2 text-sm leading-7 text-neutral-500">
+              目的に合った入口を選んでください。
               {canUseExtendedApplication
-                ? "Liteはボタンだけのシンプルな受付、Builderは入力項目や他のパネルを組み合わせるAPPLICATIONです。"
-                : "ボタンだけのシンプルな受付を作成します。"}
+                ? " 詳細な設定はBuilderで行えます。"
+                : " Liteでは1つの約束を10名まで受け付ける簡易受付から始められます。"}
             </p>
-
-            <div
-              className={[
-                "mt-6 grid gap-3",
-                canUseExtendedApplication
-                  ? "sm:grid-cols-2"
-                  : "",
-              ].join(" ")}
-            >
-              <button
-                type="button"
-                disabled={
-                  isLoading ||
-                  applicationAccess
-                    ?.canCreateApplication ===
-                    false
-                }
-                onClick={() => {
-                  if (
-                    isLoading ||
-                    applicationAccess
-                      ?.canCreateApplication ===
-                      false
-                  ) {
-                    return;
-                  }
-
-                  setApplicationMode("lite");
-                  setShowModeChooser(false);
-                  setShowTypeChooser(true);
-                }}
-                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50"
-              >
-                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                  APPLICATION LITE
-                </div>
-
-                <div className="mt-2 text-base font-bold text-neutral-950">
-                  Lite
-                </div>
-
-                <p className="mt-2 text-xs leading-6 text-neutral-500">
-                  「参加する」「応募する」など、
-                  OKボタンだけでシンプルに受付します。
-                </p>
-              </button>
-
-              {canUseExtendedApplication ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {([
+                { key: "event", name: "イベントを開催する", example: "単発イベント・交流会", type: "EVENT" },
+                { key: "booking", name: "予約を受け付ける", example: "説明会・面談の希望受付", type: "OTHER" },
+                { key: "class", name: "クラスを運営する", example: "英会話・ダンスなどの継続クラス", type: "SCHOOL" },
+              ] as const).map((item) => (
                 <button
-                type="button"
-                disabled={
-                  isLoading ||
-                  applicationAccess
-                    ?.canCreateApplication ===
-                    false
-                }
-                onClick={() => {
-                  if (
-                    isLoading ||
-                    applicationAccess
-                      ?.canCreateApplication ===
-                      false
-                  ) {
-                    return;
-                  }
-
-                  setApplicationMode(
-                    "builder",
-                  );
-                  setShowModeChooser(false);
-                  setShowTypeChooser(true);
-                }}
-                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-50 disabled:text-neutral-300"
-              >
-                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                  APPLICATION BUILDER
-                </div>
-
-                <div className="mt-2 text-base font-bold text-neutral-950">
-                  Builder
-                </div>
-
-                <p className="mt-2 text-xs leading-6 text-neutral-500">
-                  FIELD / CALENDAR /
-                  MEMBERSHIPを＋ボタンで
-                  組み合わせて作ります。
-                </p>
-
+                  key={item.key}
+                  type="button"
+                  disabled={applicationAccess?.canCreateApplication === false}
+                  onClick={() => {
+                    setApplicationMode(canUseExtendedApplication ? "builder" : "lite");
+                    setShowModeChooser(false);
+                    setShowTypeChooser(false);
+                    startCreate(item.type);
+                  }}
+                  className="rounded-2xl border border-neutral-200 p-5 text-left transition hover:border-neutral-400 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <div className="font-bold text-neutral-950">{item.name}</div>
+                  <p className="mt-2 text-xs leading-6 text-neutral-500">{item.example}</p>
                 </button>
-              ) : null}
+              ))}
+              <div aria-disabled="true" className="cursor-not-allowed rounded-2xl border border-neutral-200 bg-neutral-100 p-5 text-left text-neutral-400">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold">作品・商品を販売する</span>
+                  <span className="rounded-full bg-neutral-200 px-2 py-1 text-xs font-bold text-neutral-500">準備中</span>
+                </div>
+                <p className="mt-2 text-xs leading-6">
+                  作品販売は既存の販売管理を利用できます。物品の販売は準備中です。
+                </p>
+                <a href="/my/sales" className="mt-3 inline-block text-xs font-semibold text-neutral-600 underline">
+                  PARARI作品の販売管理を開く
+                </a>
+              </div>
             </div>
-
+            <p className="mt-4 text-xs leading-6 text-neutral-500">
+              Liteでは毎回の自動予約・月謝・配送管理は行いません。設定した受付の内容は次の画面で確認してください。
+            </p>
             <button
               type="button"
               onClick={() => {
-                if (
-                  embeddedEditApplicationId ||
-                  createOnly
-                ) {
+                if (createOnly || embeddedEditApplicationId) {
                   onCancel?.();
                   return;
                 }
-
-                setShowModeChooser(
-                  false,
-                );
-              }}
-              className="mt-6 text-sm font-bold text-neutral-500"
-            >
-              戻る
-            </button>
-          </div>
-        </div>
-      ) : showTypeChooser ? (
-        <div className="px-6 py-8 sm:px-10">
-          <div className="mx-auto max-w-2xl">
-            <h3 className="text-xl font-bold text-neutral-950">
-              何を募集しますか？
-            </h3>
-
-            <p className="mt-2 text-sm leading-7 text-neutral-500">
-              テンプレートを選んでから自由に変更できます。
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {APPLICATION_TYPES.map(
-                (type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() =>
-                      startCreate(type)
-                    }
-                    className="rounded-2xl border border-neutral-200 p-5 text-left transition hover:border-neutral-400 hover:bg-neutral-50"
-                  >
-                    <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                      {type}
-                    </div>
-
-                    <div className="mt-2 text-sm font-bold text-neutral-950">
-                      {
-                        APPLICATION_TYPE_LABELS[
-                          type
-                        ]
-                      }
-                    </div>
-                  </button>
-                ),
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
+                setShowModeChooser(false);
                 setShowTypeChooser(false);
-                setShowModeChooser(
-                  canUseExtendedApplication,
-                );
               }}
               className="mt-6 text-sm font-bold text-neutral-500"
-            >
-              戻る
-            </button>
+            >戻る</button>
           </div>
         </div>
       ) : (
@@ -3330,15 +3184,9 @@ export default function ApplicationManager({
                 <button
                   type="button"
                   onClick={() => {
-                    if (isFreePlan) {
-                      setApplicationMode("lite");
-                      startCreate("OTHER");
-                      return;
-                    }
-
-                    setShowModeChooser(
-                      true,
-                    );
+                    setShowBuilder(false);
+                    setShowModeChooser(true);
+                    setShowTypeChooser(false);
                   }}
                   className="mt-6 rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-700"
                 >
