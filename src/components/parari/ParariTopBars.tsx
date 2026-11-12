@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import ReaderHistoryBackButton from "./navigation/ReaderHistoryBackButton";
-import { ParticipationMenu, ParticipationReturn } from "./navigation/ParticipationNav";
+import { ParticipationReturn } from "./navigation/ParticipationNav";
 import { useParticipations } from "./navigation/ParticipationProvider";
 
 type OwnerBarProps = {
@@ -74,7 +74,6 @@ export function ParariOwnerTopBar({
           "flex items-center gap-2",
           readerNavigation ? "shrink-0 whitespace-nowrap" : "flex-wrap",
         ].join(" ")}>
-          <ParticipationMenu dark />
           {actions}
         </div>
       </div>
@@ -184,7 +183,6 @@ export function ParariBrandTopBar({
           "flex items-center gap-2",
           readerNavigation ? "shrink-0 whitespace-nowrap" : "",
         ].join(" ")}>
-          <ParticipationMenu dark />
           {actions}
         </div>
       </div>

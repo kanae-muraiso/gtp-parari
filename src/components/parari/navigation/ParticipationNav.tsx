@@ -2,7 +2,7 @@
 // PART: The same verified destinations in headers, HOME and readers.
 "use client";
 
-import { useRef, type MouseEvent, type ReactNode } from "react";
+import { type MouseEvent, type ReactNode } from "react";
 import { useParticipations } from "./ParticipationProvider";
 import type { Participation } from "@/lib/participation";
 
@@ -15,27 +15,10 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
   return <a href={item.href} onClick={follow} aria-disabled={leaving || undefined} className={className}>{children}</a>;
 }
 
-export function ParticipationMenu({ dark = false }: { dark?: boolean }) {
-  const { userId, items, error, refresh, leaving, leaveError } = useParticipations();
-  const details = useRef<HTMLDetailsElement>(null);
-  // Do not flash an empty membership menu while the initial query is pending.
-  if (!userId || items.length === 0) return null;
-  return <div className="relative shrink-0">
-    <details ref={details} onKeyDown={event => { if (event.key === "Escape" && details.current) { details.current.open = false; details.current.querySelector("summary")?.focus(); } }}>
-      <summary className={`cursor-pointer list-none whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${dark ? "text-white hover:bg-white/10" : "text-neutral-700 hover:bg-white"}`}>
-        {leaving ? "保存・移動中…" : "参加先 ▾"}
-      </summary>
-      <div className="absolute right-0 top-full z-[10000] mt-2 w-64 max-w-[85vw] rounded-2xl border border-neutral-200 bg-white p-2 text-neutral-900 shadow-xl">
-        <p className="px-3 py-2 text-xs text-neutral-500">参加しているメンバーシップ</p>
-        {items.map(item => <DestinationLink key={item.key} item={item} onFollow={() => { if (details.current) details.current.open = false; }} className="block rounded-xl px-3 py-3 text-sm font-bold hover:bg-neutral-100">
-          {item.name}{item.state === "incomplete" ? <span className="ml-2 text-xs font-normal text-neutral-500">登録途中</span> : null}
-          {item.state === "restricted" ? <span className="block text-xs font-normal text-neutral-500">{item.action}</span> : null}
-        </DestinationLink>)}
-        {error ? <div className="px-3 py-2 text-xs"><p role="alert">{error}</p><button type="button" onClick={refresh} className="mt-2 font-bold underline">再読み込み</button></div> : null}
-      </div>
-    </details>
-    {leaveError ? <p role="alert" className="absolute right-0 top-full z-[10001] mt-2 w-72 max-w-[85vw] rounded-xl border border-red-200 bg-white p-3 text-xs text-red-700 shadow-lg">{leaveError}</p> : null}
-  </div>;
+// Compatibility for legacy pages. Switching membership destinations now
+// happens exclusively from LIBRARY HOME, not from global headers.
+export function ParticipationMenu() {
+  return null;
 }
 
 export function ParticipationReturn({ dark = false }: { dark?: boolean }) {
