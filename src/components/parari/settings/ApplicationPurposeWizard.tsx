@@ -126,6 +126,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
         formId: null,
         acceptanceMode: "instant",
         paymentMethod: method,
+        saveAsDraftBeforePaymentSetup: method === "parari",
         paymentAmount: amount > 0 ? amount : null,
         paymentUrl: "", paymentInstructions: "", paymentConfirmationRequired: false,
         cancellationMode: "not_allowed",
@@ -249,7 +250,9 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
           </label>}
           {isFee && <p className="text-xs leading-6 text-neutral-600">
             Square接続と販売者情報の登録・公開が必要です。
-            <Link href="/my/settings/seller" className="ml-1 font-semibold text-sky-800 underline">販売者情報を設定</Link>
+            <Link href="/my/settings/seller" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-sky-800 underline">販売者情報を設定</Link>
+            <span className="mx-1">／</span>
+            <Link href="/my/settings#sell-work" target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-800 underline">Squareの設定を開く</Link>
           </p>}
           <label className="block text-sm font-bold">補足・注意事項
             <textarea className={fieldClass} rows={4} value={notes} onChange={e => setNotes(e.target.value)}
@@ -259,6 +262,10 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
             <strong>確認</strong>
             <p>{name || "名称未入力"} ／ {purpose !== "booking" ? (date + " " + startTime) : "日時は主催者と相談"} ／ {effectiveCapacity ?? (lite ? 10 : "指定なし")}名 ／ {isFee ? Number(fee).toLocaleString("ja-JP") + "円" : "無料"}</p>
             <p className="text-xs text-neutral-500">保存すると下書きのAPPLICATIONを作成します。公開・作品への配置は既存の作品編集画面で行います。</p>
+            {isFee && <p className="mt-2 text-xs font-semibold text-amber-900">
+              Squareをまだ接続していなくても、料金を含めて下書き保存できます。
+              受付開始はSquare接続と販売者情報の公開を済ませた後になります。
+            </p>}
           </div>
         </div>}
 
@@ -271,7 +278,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
           ) : (
             <button type="button" disabled={saving || saved} onClick={() => void submit()}
               className="rounded-full bg-neutral-950 px-6 py-2.5 text-sm font-bold text-white disabled:opacity-40">
-              {saving ? "保存しています…" : "APPLICATIONを保存"}
+              {saving ? "保存しています…" : isFee ? "下書き保存して後で決済を設定" : "APPLICATIONを保存"}
             </button>
           )}
           <button type="button" onClick={onCancel} disabled={saving} className="rounded-full px-5 py-2.5 text-sm font-bold text-neutral-500">作成をやめる</button>

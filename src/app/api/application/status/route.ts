@@ -13,6 +13,8 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
+import { getUsableSquareConnection } from "@/lib/square/connection";
 
 
 function getBearerToken(
@@ -136,6 +138,7 @@ export async function PATCH(
           id,
           owner_user_id,
           status,
+          payment_method,
           archived_at
         `,
       )
@@ -190,6 +193,39 @@ export async function PATCH(
         status: 409,
       },
     );
+  }
+
+  if (nextStatus === "open" && application.payment_method === "parari") {
+    try {
+      const disclosure = await readSellerDisclosure(user.id);
+      if (!sellerDisclosureReady(disclosure)) {
+        return NextResponse.json({
+          ok: false,
+          code: "SELLER_DISCLOSURE_REQUIRED",
+          message: "有料受付の開始前に販売者情報・特商法表記・個人情報の取扱いを公開してください。",
+          settingsUrl: "/my/settings/seller",
+        }, { status: 409 });
+      }
+      try {
+        await getUsableSquareConnection(user.id);
+      } catch (squareError) {
+        const reason = squareError instanceof Error ? squareError.message : "";
+        if (reason === "SQUARE_NOT_CONNECTED" || reason === "SQUARE_RECONNECT_REQUIRED") {
+          return NextResponse.json({
+            ok: false,
+            code: "SQUARE_CONNECTION_REQUIRED",
+            message: "有料受付の開始前にSquareを接続してください。",
+            settingsUrl: "/my/settings#sell-work",
+          }, { status: 409 });
+        }
+        throw squareError;
+      }
+    } catch (error) {
+      console.error("[application status] paid opening check failed:", error);
+      return NextResponse.json({
+        ok: false, message: "決済設定を確認できませんでした。",
+      }, { status: 503 });
+    }
   }
 
   const currentStatus =

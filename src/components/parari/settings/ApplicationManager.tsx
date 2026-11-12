@@ -3365,6 +3365,16 @@ export default function ApplicationManager({
                                               ? "受付を終了する"
                                               : "受付を再開する"}
                                       </button>
+                                      {application.status === "draft" && application.payment_method === "parari" ? (
+                                        <a
+                                          href="/my/settings#sell-work"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
+                                        >
+                                          決済の準備
+                                        </a>
+                                      ) : null}
                                     </div>
                       </div>
 
