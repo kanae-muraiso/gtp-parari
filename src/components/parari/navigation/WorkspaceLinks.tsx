@@ -98,7 +98,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
                   onClick={closeAccountMenu}
                   className={menuLinkClass(false)}
                 >
-                  作品を作る
+                  作品づくり
                 </Link>
               ) : null}
               {isStaff ? (
