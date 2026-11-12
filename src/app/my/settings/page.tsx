@@ -82,7 +82,7 @@ export default function SettingsHomePage() {
 
           <SettingsCard
             title="基本設定"
-            description="氏名、表示名、ユーザーネームなどを設定します。"
+            description="氏名や表示名など、アカウントの情報を設定します。"
             href="/my/profile?returnTo=/my/settings"
           />
 
@@ -92,12 +92,6 @@ export default function SettingsHomePage() {
               description="現在のプランや利用できる機能を確認します。"
               href="/billing"
             />
-          ) : null}
-
-          {!loading && !studioEnabled ? (
-            <Link href="/billing" className="inline-block px-1 text-xs text-neutral-500 underline underline-offset-4 hover:text-neutral-800">
-              プラン・契約を確認
-            </Link>
           ) : null}
 
           {!loading && studioEnabled ? (
