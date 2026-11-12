@@ -11,6 +11,7 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
 import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
+import StudioPausePanel from "@/components/parari/settings/StudioPausePanel";
 
 type SettingsCardProps = {
   title: string;
@@ -138,6 +139,7 @@ export default function SettingsHomePage() {
 
               <StartDestinationPanel />
               <EnglishAuthoringSettings />
+              <StudioPausePanel />
             </>
           ) : null}
 
