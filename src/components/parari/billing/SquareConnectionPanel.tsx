@@ -272,6 +272,7 @@ export default function SquareConnectionPanel() {
       <h2 id="sell-work-title" className="text-sm font-bold text-neutral-950">PARARIで販売する</h2>
       <p className="mt-1 text-xs leading-6 text-neutral-600">
         現在、PARARIでの作品販売はSquare決済にのみ対応しています。
+        販売開始前に販売者情報・特商法表記・個人情報の取扱いを登録してください。
       </p>
 
       {isLoading ? (
@@ -295,6 +296,7 @@ export default function SquareConnectionPanel() {
           </dl>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link className={actionClass} href="/my/sales">販売管理を開く</Link>
+            <Link className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800" href="/my/settings/seller">販売者情報を設定</Link>
             <button
               type="button"
               className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 disabled:opacity-40"

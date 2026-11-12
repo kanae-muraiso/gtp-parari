@@ -19,6 +19,7 @@ import {
 } from "@/lib/square/connection";
 
 import { MAX_PREVIEW_PAGES } from "@/lib/parari/sales/workPreview";
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { isWebLikeSsot } from "@/components/parari/viewer-v2/web/webSsot";
 
 export const runtime = "nodejs";
@@ -162,6 +163,15 @@ export async function POST(request: NextRequest) {
         : "one_time";
     const active =
       body?.active === false ? false : true;
+    if (active && !sellerDisclosureReady(await readSellerDisclosure(user.id))) {
+      return NextResponse.json({
+        ok: false,
+        code: "SELLER_DISCLOSURE_REQUIRED",
+        message: "有料販売の前に、販売者情報・特定商取引法に基づく表記・個人情報の取扱いを登録し、公開してください。",
+        settingsUrl: "/my/settings/seller",
+      }, { status: 409 });
+    }
+
     const productType =
       billingInterval === "monthly"
         ? "recurring"

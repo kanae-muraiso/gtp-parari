@@ -186,6 +186,12 @@ export default function BuyProductPage() {
                 ) : null}
               </div>
 
+              <div className="mt-4 text-sm leading-7">
+                <Link className="font-semibold text-sky-800 underline" href={`/seller-info?productId=${encodeURIComponent(productId)}`}>
+                  販売者情報・特定商取引法に基づく表記・個人情報の取扱い
+                </Link>
+              </div>
+
               {returnedFromPayment && !canRead ? (
                 <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-900">
                   Squareでのお手続きから戻りました。決済反映には少し時間差が生じる場合があります。

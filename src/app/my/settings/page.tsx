@@ -122,6 +122,11 @@ export default function SettingsHomePage() {
                 </details>
               </section>
 
+              <SettingsCard
+                title="販売者情報・特定商取引法・個人情報の取扱い"
+                description="有料販売前に必要な表示を登録し、購入者に公開します。Square接続とは別に必要です。"
+                href="/my/settings/seller"
+              />
               <SquareConnectionPanel />
             </>
           ) : null}

@@ -780,6 +780,17 @@ export default function GuestApplicationPanelRenderer({
         </span>
       </div>
 
+      {application.payment_method !== "none" ? (
+        <div className="mt-3 text-sm">
+          <a
+            href={`/seller-info?applicationId=${encodeURIComponent(applicationId)}`}
+            className="font-semibold text-sky-800 underline"
+          >
+            販売者・主催者情報／特定商取引法に基づく表記／個人情報の取扱い
+          </a>
+        </div>
+      ) : null}
+
       {application.description ? (
         <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-neutral-700">
           {application.description}
