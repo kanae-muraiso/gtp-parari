@@ -202,16 +202,14 @@ export default function MyProfilePage() {
       return;
     }
 
-    setUsernameTouched(true);
-
-    const validationError = getUsernameError(normalizedUsername);
-
-    if (validationError) {
-      setStatus({
-        type: "error",
-        message: validationError,
-      });
-      return;
+    // A reader can save account settings without choosing an author URL.
+    if (studioEnabled) {
+      setUsernameTouched(true);
+      const validationError = getUsernameError(normalizedUsername);
+      if (validationError) {
+        setStatus({ type: "error", message: validationError });
+        return;
+      }
     }
 
     setStatus({
@@ -219,40 +217,41 @@ export default function MyProfilePage() {
       message: "保存中です...",
     });
 
-    const { data: usernameOwner, error: usernameOwnerError } = await supabase
-      .from("profiles")
-      .select("user_id, username")
-      .eq("username", normalizedUsername)
-      .maybeSingle<UsernameOwnerRow>();
+    if (studioEnabled) {
+      const { data: usernameOwner, error: usernameOwnerError } = await supabase
+        .from("profiles")
+        .select("user_id, username")
+        .eq("username", normalizedUsername)
+        .maybeSingle<UsernameOwnerRow>();
 
-    if (usernameOwnerError) {
-      setStatus({
-        type: "error",
-        message: `ユーザーネーム確認に失敗しました: ${usernameOwnerError.message}`,
-      });
-      return;
-    }
+      if (usernameOwnerError) {
+        setStatus({
+          type: "error",
+          message: `ユーザーネーム確認に失敗しました: ${usernameOwnerError.message}`,
+        });
+        return;
+      }
 
-    if (usernameOwner?.user_id && usernameOwner.user_id !== userId) {
-      setStatus({
-        type: "error",
-        message: "このユーザーネームはすでに使われています。",
-      });
-      return;
+      if (usernameOwner?.user_id && usernameOwner.user_id !== userId) {
+        setStatus({
+          type: "error",
+          message: "このユーザーネームはすでに使われています。",
+        });
+        return;
+      }
     }
 
     const payload = {
       user_id: userId,
-      username: normalizedUsername,
       display_name: displayName.trim() || null,
     };
 
     const { data: updatedRows, error: updateError } = await supabase
       .from("profiles")
       .update({
-        username: payload.username,
+        ...(studioEnabled ? { username: normalizedUsername } : {}),
         display_name: payload.display_name,
-        ...(!hasSavedUsername ? { homepage_mode: "tag", homepage_tag_key: "works" } : {}),
+        ...(studioEnabled && !hasSavedUsername ? { homepage_mode: "tag", homepage_tag_key: "works" } : {}),
       })
       .eq("user_id", userId)
       .select("user_id");
@@ -268,10 +267,9 @@ export default function MyProfilePage() {
     if (!updatedRows || updatedRows.length === 0) {
       const { error: insertError } = await supabase.from("profiles").insert({
         user_id: payload.user_id,
-        username: payload.username,
+        username: studioEnabled ? normalizedUsername : null,
         display_name: payload.display_name,
-        homepage_mode: "tag",
-        homepage_tag_key: "works",
+        ...(studioEnabled ? { homepage_mode: "tag", homepage_tag_key: "works" } : {}),
       });
 
       if (insertError) {
@@ -303,7 +301,7 @@ export default function MyProfilePage() {
         return;
       }
       
-    setHasSavedUsername(true);
+    if (studioEnabled) setHasSavedUsername(true);
     setStatus({
       type: "success",
       message: "プロフィールを保存しました。",
@@ -316,6 +314,7 @@ export default function MyProfilePage() {
     fullName,
     hasSavedUsername,
     normalizedUsername,
+    studioEnabled,
     returnTo,
     router,
     supabase,
@@ -403,17 +402,17 @@ export default function MyProfilePage() {
             <section className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
               <div>
                                       <div className="text-sm font-bold text-neutral-900">
-                                        PARARIで表示する情報
+                                        プロフィールに表示する名前
                                       </div>
                                       <p className="mt-1 text-xs leading-5 text-neutral-500">
-                                        PARARI内で、あなたの名前を表示する際に使用します。
+                                        ほかの人に見える名前を設定します。本名でなくてもかまいません。
                                       </p>
               </div>
 
               <div className="mt-5 space-y-5">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-neutral-900">
-                    表示名
+                    表示名（ほかの人に見える名前）
                   </label>
 
                   <input
@@ -424,13 +423,14 @@ export default function MyProfilePage() {
                   />
 
                   <p className="text-xs leading-5 text-neutral-400">
-                   PARARIで表示される名前です。ペンネームや活動名でもかまいません。
+                   作品や作者のページなどで表示する名前です。日本語も使えます。
                   </p>
                 </div>
 
+                {!experienceLoading && studioEnabled ? (
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-neutral-900">
-                    ユーザーネーム
+                    ユーザーネーム（あなたのURLに使うID）
                   </label>
 
                   <input
@@ -447,7 +447,7 @@ export default function MyProfilePage() {
                   />
 
                   <p className="text-xs leading-5 text-neutral-400">
-                    英小文字・数字・ハイフンのみ。5〜32文字で入力してください。
+                    表示名とは別に、専用URLに使う文字列です（例：parari.app/taro-aoyama）。英小文字・数字・ハイフンで5〜32文字。
                   </p>
 
                   {usernameError ? (
@@ -456,6 +456,7 @@ export default function MyProfilePage() {
                     </div>
                   ) : null}
                 </div>
+                ) : null}
 
                 {!experienceLoading && studioEnabled ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
