@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { supabase } from "@/lib/supabaseClient";
+import { notifyParariExperienceChanged } from "@/components/parari/hooks/useParariExperience";
 
 type WorkspaceVisitTrackerProps = {
   workspace: "library" | "studio";
@@ -27,14 +28,14 @@ export default function WorkspaceVisitTracker({
 
       const { data: existing, error: readError } = await supabase
         .from("user_workspace_preferences")
-        .select("user_id,studio_enabled")
+        .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (cancelled || readError) return;
 
       if (existing) {
-        const { error } = await supabase
+        await supabase
           .from("user_workspace_preferences")
           .update({
             last_workspace: workspace,
