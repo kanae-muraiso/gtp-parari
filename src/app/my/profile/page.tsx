@@ -321,7 +321,7 @@ export default function MyProfilePage() {
     userId,
   ]);
 
-  const isBusy = status.type === "loading" || status.type === "saving";
+  const isBusy = experienceLoading || status.type === "loading" || status.type === "saving";
 
     return (
       <main className="min-h-screen bg-neutral-50">
