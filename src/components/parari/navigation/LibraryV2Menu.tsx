@@ -13,5 +13,5 @@ const sections = [
 
 type Section = (typeof sections)[number]["key"];
 export default function LibraryV2Menu({ active }: { active: Section }) {
-  return <ParariTabs items={sections} active={active} embedded color="library" />;
+  return <ParariTabs items={[...sections]} active={active} embedded color="library" />;
 }
