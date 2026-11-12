@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { ParticipationMenu } from "./ParticipationNav";
 import LogoutButton from "./LogoutButton";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
@@ -67,8 +66,6 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-        <ParticipationMenu />
-
         {studioEnabled ? (
           <Link
             href="/editor/quick"
