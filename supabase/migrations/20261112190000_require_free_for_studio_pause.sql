@@ -12,7 +12,6 @@ set search_path = ''
 as $function$
 begin
   if new.studio_paused = true
-    and (tg_op = 'INSERT' or old.studio_paused is distinct from true)
     and exists (
       select 1 from public.user_billing billing
       where billing.user_id = new.user_id
