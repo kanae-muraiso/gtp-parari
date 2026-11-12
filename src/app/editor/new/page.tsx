@@ -10,7 +10,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { ParticipationMenu, ParticipationReturn } from "@/components/parari/navigation/ParticipationNav";
+import { ParticipationReturn } from "@/components/parari/navigation/ParticipationNav";
 import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import {
   defaultParariTemplates,
@@ -226,7 +226,6 @@ export default function EditorNewPage() {
             ← 作品リストへ
           </a>
           <ParticipationReturn />
-          <ParticipationMenu />
         </div>
 
         <section className="rounded-3xl bg-white p-6 shadow-sm">
