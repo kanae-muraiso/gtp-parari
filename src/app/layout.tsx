@@ -7,6 +7,7 @@ import React from "react";
 import type { Metadata } from "next";
 import CppTestBanner from "@/components/parari/cpp/CppTestBanner";
 import { ParticipationProvider } from "@/components/parari/navigation/ParticipationProvider";
+import StudioRouteBoundary from "@/components/parari/navigation/StudioRouteBoundary";
 
 /**
  * PART: site metadata
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body><ParticipationProvider>{children}<CppTestBanner /></ParticipationProvider></body>
+      <body><ParticipationProvider><StudioRouteBoundary>{children}</StudioRouteBoundary><CppTestBanner /></ParticipationProvider></body>
     </html>
   );
 }
