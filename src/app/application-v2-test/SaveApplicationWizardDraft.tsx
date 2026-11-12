@@ -26,12 +26,13 @@ type Props = {
   data: ApplicationWizardDraft;
   panelOrder: string[];
   initialId?: string | null;
+  mode: "lite" | "builder" | null;
 };
 
 const applicationType = { event: "EVENT", booking: "OTHER", sale: "OTHER", class: "SCHOOL" } as const;
 const actionLabel = { event: "参加を申し込む", booking: "予約を問い合わせる", sale: "購入を申し込む", class: "クラスに申し込む" } as const;
 
-export default function SaveApplicationWizardDraft({ data, panelOrder, initialId }: Props) {
+export default function SaveApplicationWizardDraft({ data, panelOrder, initialId, mode }: Props) {
   const [savedId, setSavedId] = useState<string | null>(initialId || null);
   useEffect(() => { if (initialId) setSavedId(initialId); }, [initialId]);
   const [saving, setSaving] = useState(false);
@@ -45,8 +46,9 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
     setSuccess(false);
     const price = Number(data.price);
     const capacity = data.capacity.trim() ? Number(data.capacity) : (data.kind === "class" ? 10 : null);
-    const scheduleNeeded = data.kind !== "sale" || data.cadence !== "none";
+    const scheduleNeeded = mode === "lite" ? (data.kind === "event" || data.kind === "class") : (data.kind !== "sale" || data.cadence !== "none");
 
+    if (!mode) { setError("利用プランを確認してから保存してください。"); return; }
     if (!data.title.trim() || data.title.trim().length > 120) {
       setError("名称は1〜120文字で入力してください。");
       return;
@@ -66,10 +68,6 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
     if (scheduleNeeded && (!/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
         !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.startTime))) {
       setError("日付と開始時刻を指定してください。");
-      return;
-    }
-    if (data.access === "restricted") {
-      setError("登録者限定の閲覧制御はこの作成画面では未対応です。一般公開かURL限定を選んでください。");
       return;
     }
     if (!supabase) {
@@ -114,26 +112,26 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
         date: scheduleNeeded ? data.date : null,
         startTime: scheduleNeeded ? data.startTime : null,
         durationMinutes: scheduleNeeded ? Number(data.durationMinutes) : null,
-        cadence: data.cadence,
+        cadence: scheduleNeeded ? data.cadence : "none",
         location: data.place,
         attendance: data.attendance,
-        visibilityHint: data.access,
+        visibilityHint: "set_on_work",
         notes: data.notes,
         panelOrder,
-        extraQuestion: extra,
+        extraQuestion: mode === "lite" ? "" : extra,
         timezone: "Asia/Tokyo",
         recurringClassIsInformational: data.kind === "class",
       };
       if (data.extraQuestion.trim() && plan.applicationMode === "lite") {
         throw new Error("Liteでは追加質問の回答を収集できません。質問欄を空にするか、Organizer以上をご利用ください。");
       }
-      const inputFields = extra ? [{
+      const inputFields = mode === "builder" && extra ? [{
         id: "wizard-extra-answer",
         kind: "textarea",
         label: extra,
         required: false,
       }] : [];
-      const blocks = extra ? [{
+      const blocks = mode === "builder" && extra ? [{
         id: "wizard-extra-block",
         type: "field",
         fieldId: "wizard-extra-answer",
@@ -199,7 +197,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
           <div><Link className="underline" href="/my/works">STUDIOへ戻る</Link></div>
         </div>
       )}
-      <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-amber-700 px-5 py-2.5 font-medium text-white disabled:opacity-50">
+      <button onClick={() => void save()} disabled={saving || !mode} className="rounded-lg bg-amber-700 px-5 py-2.5 font-medium text-white disabled:opacity-50">
         {saving ? "保存中…" : savedId ? "下書きを更新" : "下書きを保存"}
       </button>
     </section>
