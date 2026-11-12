@@ -528,20 +528,49 @@ export default function WritingWorkPage() {
             <span className="hidden text-xs text-white/60 sm:inline" aria-live="polite">
               {statusText}
             </span>
-            <ParariTopBarButton
-              active={!editingPinned}
-              onClick={() => setEditingPinned(false)}
-            >
-              書く
-            </ParariTopBarButton>
-            <ParariTopBarButton
-              active={editingPinned}
-              onClick={() => setEditingPinned(true)}
-            >
-              構成
-            </ParariTopBarButton>
+            <div className="flex items-center gap-1.5">
+              <span className="hidden text-xs font-medium text-white/65 lg:inline">
+                作業画面
+              </span>
+              <div
+                role="group"
+                aria-label="作業画面の切り替え"
+                className="inline-flex items-center gap-0.5 rounded-lg border border-white/25 bg-white/10 p-0.5"
+              >
+                <button
+                  type="button"
+                  aria-pressed={!editingPinned}
+                  onClick={() => setEditingPinned(false)}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm ${
+                    !editingPinned
+                      ? "bg-white text-neutral-950 shadow-sm"
+                      : "text-white/85 hover:bg-white/15 hover:text-white"
+                  }`}
+                >
+                  <span aria-hidden="true">✎</span>
+                  本文を書く
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={editingPinned}
+                  onClick={() => setEditingPinned(true)}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm ${
+                    editingPinned
+                      ? "bg-white text-neutral-950 shadow-sm"
+                      : "text-white/85 hover:bg-white/15 hover:text-white"
+                  }`}
+                >
+                  <span aria-hidden="true">▦</span>
+                  パネル編集
+                </button>
+              </div>
+            </div>
+            <span className="mx-0.5 hidden h-6 w-px bg-white/25 sm:block" aria-hidden="true" />
             <ParariTopBarButton href={`/p/${workId}`}>
-              表示
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden="true">◉</span>
+                表示確認
+              </span>
             </ParariTopBarButton>
           </>
         }
