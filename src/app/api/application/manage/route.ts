@@ -1175,6 +1175,7 @@ export async function POST(
         cancellationMode?: unknown;
         cancellationDeadlineAt?: unknown;
         cancellationCutoffMinutes?: unknown;
+        saveAsDraftBeforePaymentSetup?: unknown;
       }
     | null;
     
@@ -1462,7 +1463,13 @@ export async function POST(
       );
     }
 
-    if (paymentMethod === "parari" &&
+    // A new APPLICATION is always created as a draft. Permit the seller to
+    // save its proposed price before they finish Square/disclosure onboarding.
+    // /api/application/status enforces those conditions before opening.
+    const pendingPaymentSetup = body?.saveAsDraftBeforePaymentSetup === true &&
+      paymentMethod === "parari";
+
+    if (paymentMethod === "parari" && !pendingPaymentSetup &&
         !sellerDisclosureReady(await readSellerDisclosure(auth.user.id))) {
       return NextResponse.json({
         ok: false,
@@ -1473,7 +1480,7 @@ export async function POST(
     }
 
     if (
-      paymentMethod === "parari" &&
+      paymentMethod === "parari" && !pendingPaymentSetup &&
       !(await hasActiveSquareConnection(auth.user.id))
     ) {
       return NextResponse.json(
