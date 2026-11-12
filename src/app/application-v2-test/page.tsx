@@ -253,7 +253,7 @@ export default function ApplicationV2Prototype() {
         )}
         {step === 2 && (
           <section className={cardClass + " space-y-4"}>
-            <h2 className="text-lg font-semibold">{isSale ? "日時の指定は必要ですか？" : isBooking ? "いつ予約できますか？" : "いつ、どこで開催しますか？"}</h2>
+            <h2 className="text-lg font-semibold">{isSale ? isLite ? "商品をどう案内しますか？" : "日時の指定は必要ですか？" : isBooking ? isLite ? "予約希望をどう受け付けますか？" : "いつ予約できますか？" : "いつ、どこで開催しますか？"}</h2>
             {isBooking && isLite ? (
               <div className="rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
                 <strong>Liteは予約希望の受付のみ</strong>
@@ -293,7 +293,7 @@ export default function ApplicationV2Prototype() {
         )}
         {step === 3 && (
           <section className={cardClass + " space-y-4"}>
-            <h2 className="text-lg font-semibold">{isSale ? "誰に販売しますか？" : "誰が、どのように参加できますか？"}</h2>
+            <h2 className="text-lg font-semibold">{isSale ? "購入者への案内" : isBooking && isLite ? "何名から希望を受け付けますか？" : "誰が、どのように参加できますか？"}</h2>
             <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
               <strong>案内ページの公開範囲</strong>
               <p className="mt-1">一般公開・URL限定・非公開は、作品を公開するときに設定します。この受付フォームで変更する項目ではありません。</p>
@@ -330,7 +330,7 @@ export default function ApplicationV2Prototype() {
         {step === 4 && (
           <section className={cardClass + " space-y-4"}>
             <h2 className="text-lg font-semibold">料金と質問を設定しましょう</h2>
-            <label className="block space-y-1 text-sm"><span>{isSale ? "販売価格（円）" : "参加料金（円・無料は0）"}</span>
+            <label className="block space-y-1 text-sm"><span>{isSale ? "販売価格（円）" : isBooking && isLite ? "予約希望の受付料金（無料は0円）" : "参加料金（円・無料は0）"}</span>
               <input type="number" min="0" className={inputClass} value={data.price} onChange={e => setData(old => {
                 const price = e.target.value;
                 const shouldCap = isLite && (old.kind === "class" || Number(price) === 0);
