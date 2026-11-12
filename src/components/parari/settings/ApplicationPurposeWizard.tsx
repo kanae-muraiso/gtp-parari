@@ -48,7 +48,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
   const [durationMinutes, setDurationMinutes] = React.useState("60");
   const [place, setPlace] = React.useState("");
   const [cadence, setCadence] = React.useState("weekly");
-  const [capacity, setCapacity] = React.useState(purpose === "class" ? "10" : "");
+  const [capacity, setCapacity] = React.useState(lite ? "10" : "");
   const [fee, setFee] = React.useState("0");
   const [payment, setPayment] = React.useState<"none" | "parari" | "on_site">("none");
   const [notes, setNotes] = React.useState("");
@@ -57,7 +57,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
   const [saved, setSaved] = React.useState(false);
   const isFee = Number(fee) > 0;
   const effectiveCapacity = capacity ? Number(capacity) : purpose === "class" ? 10 : null;
-  const maxCapacity = lite && (purpose === "class" || !isFee) ? 10 : null;
+  const maxCapacity = lite ? 10 : null;
   const canGoNext = step === 0 ? Boolean(name.trim()) :
     step === 1 ? (purpose === "booking" || (Boolean(date) && Boolean(startTime))) : true;
 
@@ -225,7 +225,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
                 setCapacity(String(maxCapacity ? Math.min(n,maxCapacity) : n));
               }} />
           </label>
-          {lite && <p className="text-xs text-amber-900">Liteの無料受付は最大10名。クラスは同じ10名が継続利用できます。</p>}
+          {lite && <p className="text-xs text-amber-900">Liteでは1つの受付につき10名まで。クラスは同じ10名が継続利用できます。</p>}
         </div>}
 
         {step === 2 && <div className="mt-6 space-y-5">
