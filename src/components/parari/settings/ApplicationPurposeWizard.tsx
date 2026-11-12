@@ -121,7 +121,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, initialApplica
       if (!initialApplication && !access.access?.canCreateApplication) throw new Error("APPLICATIONの作成数が上限に達しています。");
       // Formal entitlement always comes from the server, not this display.
       const actualMode = access.access.applicationMode === "lite" ? "lite" : "builder";
-      if (actualMode !== mode) throw new Error("プランの利用条件が変わりました。画面を再度開いてください。");
+      if (actualMode !== mode && !(initialApplication && actualMode === "builder" && mode === "lite")) throw new Error("プランの利用条件が変わりました。画面を再度開いてください。");
       const method = amount === 0 ? "none" : payment === "none" ? "none" : payment;
       if (amount > 0 && method === "none") throw new Error("有料受付ではSquare決済か現地払いを選んでください。");
       if (lite && method === "on_site" && access.access.effectivePlan === "free") {
@@ -193,7 +193,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, initialApplica
     <div className="px-6 py-7 sm:px-10">
       <div className="mx-auto max-w-2xl">
         <div className="text-xs font-bold tracking-widest text-neutral-400">APPLICATION {lite ? "LITE" : "BUILDER"}</div>
-        <h2 className="mt-2 text-xl font-bold text-neutral-950">{copy.heading}</h2>
+        <h2 className="mt-2 text-xl font-bold text-neutral-950">{copy.heading}{initialApplication ? "を編集" : ""}</h2>
         <p className="mt-2 text-sm leading-7 text-neutral-600">{copy.description}</p>
         <div className="mt-5 grid grid-cols-3 gap-2">
           {stepNames.map((text, i) => (
@@ -305,7 +305,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, initialApplica
         </div>}
 
         {error && <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-        {saved && <p className="mt-5 text-sm text-green-800" role="status">APPLICATIONを保存しました。</p>}
+        {saved && <p className="mt-5 text-sm text-green-800" role="status">{initialApplication ? "APPLICATIONを更新しました。" : "APPLICATIONを保存しました。"}</p>}
         <div className="mt-8 flex flex-wrap gap-2">
           {step > 0 && <button type="button" onClick={() => { setError(""); setStep(step-1); }} className="rounded-full border px-5 py-2.5 text-sm font-bold">前へ戻る</button>}
           {step < 2 ? (
@@ -316,7 +316,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, initialApplica
               {saving ? "保存しています…" : initialApplication ? "変更を保存" : isFee ? "下書き保存して後で決済を設定" : "APPLICATIONを保存"}
             </button>
           )}
-          <button type="button" onClick={onCancel} disabled={saving} className="rounded-full px-5 py-2.5 text-sm font-bold text-neutral-500">作成をやめる</button>
+          <button type="button" onClick={onCancel} disabled={saving} className="rounded-full px-5 py-2.5 text-sm font-bold text-neutral-500">{initialApplication ? "編集を閉じる" : "作成をやめる"}</button>
         </div>
       </div>
     </div>
