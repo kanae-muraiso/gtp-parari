@@ -229,11 +229,18 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
         </div>}
 
         {step === 2 && <div className="mt-6 space-y-5">
-          <label className="block text-sm font-bold">参加・受付料金（円、無料は0）
-            <input type="number" min="0" step="1" className={fieldClass} value={fee}
-              onChange={e => { setFee(e.target.value); setPayment(Number(e.target.value) > 0 ? "parari" : "none");
-                if (lite && Number(e.target.value) === 0 && capacity && Number(capacity) > 10) setCapacity("10"); }} />
-          </label>
+          {purpose === "booking" ? (
+            <div className="rounded-xl bg-neutral-50 p-4 text-sm leading-7 text-neutral-700">
+              <strong>Liteの予約希望受付は無料です。</strong>
+              <p>具体的な日時や料金は主催者が後から連絡し、別途合意します。ここでは予約料や前払いを請求しません。</p>
+            </div>
+          ) : (
+            <label className="block text-sm font-bold">参加・受付料金（円、無料は0）
+              <input type="number" min="0" step="1" className={fieldClass} value={fee}
+                onChange={e => { setFee(e.target.value); setPayment(Number(e.target.value) > 0 ? "parari" : "none");
+                  if (lite && Number(e.target.value) === 0 && capacity && Number(capacity) > 10) setCapacity("10"); }} />
+            </label>
+          )}
           {isFee && <label className="block text-sm font-bold">支払方法
             <select className={fieldClass} value={payment} onChange={e => setPayment(e.target.value as "none" | "parari" | "on_site")}>
               <option value="parari">PARARI決済（Square）</option>
