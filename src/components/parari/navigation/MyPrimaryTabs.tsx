@@ -39,7 +39,7 @@ const HOME_ITEM: Item = {
 
 const BOOKSHELF_ITEM: Item = {
   key: "bookshelf",
-  label: "本棚",
+  label: "書棚",
   href: "/my/bookshelf",
 };
 
