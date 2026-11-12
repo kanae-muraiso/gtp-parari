@@ -2732,9 +2732,31 @@ export default function ApplicationManager({
             </h3>
             <p className="mt-3 text-sm leading-7 text-neutral-600">
               {applicationAccess.applicationLimit === 1
-                ? "FREEではAPPLICATIONは1つまでです。作成済みのAPPLICATIONをこの作品で選んで使ってください。"
+                ? "Freeでは現役のAPPLICATIONは1件までです。今のAPPLICATIONを終了・保管すると、内容や申込履歴を残したまま、新しいAPPLICATIONを作れます。"
                 : "現在のプランではAPPLICATIONの作成上限に達しています。"}
             </p>
+            {applicationAccess.applicationLimit === 1 && manualApplications.length > 0 ? (
+              <div className="mt-5 space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-bold text-amber-950">新しく作り直す場合</p>
+                {manualApplications.map((application) => (
+                  <div key={application.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3">
+                    <span className="text-sm font-semibold text-neutral-900">{application.title}</span>
+                    <button
+                      type="button"
+                      disabled={archiveUpdatingApplicationId !== null}
+                      onClick={() => { void updateApplicationArchive(application, "archive"); }}
+                      className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-40"
+                    >
+                      {archiveUpdatingApplicationId === application.id ? "終了処理中…" : "終了・保管して枠を空ける"}
+                    </button>
+                  </div>
+                ))}
+                <p className="text-xs leading-6 text-amber-950">
+                  受付は終了しますが、申込履歴は消えません。処理後、この画面で新しいAPPLICATIONを作成できます。
+                </p>
+              </div>
+            ) : null}
+            {statusMessage ? <p role="status" className="mt-4 rounded-xl bg-neutral-100 p-3 text-sm text-neutral-700">{statusMessage}</p> : null}
             <button
               type="button"
               onClick={() => onCancel?.()}
@@ -3510,7 +3532,7 @@ export default function ApplicationManager({
                                         {archiveUpdatingApplicationId ===
                                         application.id
                                           ? "処理中..."
-                                          : "アーカイブ"}
+                                          : "終了・保管（新規作成枠を空ける）"}
                                       </button>
                                       </>
                                     ) : null}
@@ -3786,7 +3808,7 @@ export default function ApplicationManager({
 
                <p className="mt-1 text-xs leading-6 text-neutral-500">
                  現在のAPPLICATIONは引き続き編集できます。
-                 追加のAPPLICATIONを作成するにはOrganizer以上をご利用ください。
+                 作り直す場合は、現在のAPPLICATIONを「アーカイブ」すると枠が空きます。申込履歴は残ります。複数の現役APPLICATIONを同時に使う場合はOrganizer以上をご利用ください。
                </p>
              </div>
            ) : null}
