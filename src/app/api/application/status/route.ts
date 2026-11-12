@@ -206,14 +206,19 @@ export async function PATCH(
           settingsUrl: "/my/settings/seller",
         }, { status: 409 });
       }
-      const square = await getUsableSquareConnection(user.id);
-      if (!square) {
-        return NextResponse.json({
-          ok: false,
-          code: "SQUARE_CONNECTION_REQUIRED",
-          message: "有料受付の開始前にSquareを接続してください。",
-          settingsUrl: "/my/settings#sell-work",
-        }, { status: 409 });
+      try {
+        await getUsableSquareConnection(user.id);
+      } catch (squareError) {
+        const reason = squareError instanceof Error ? squareError.message : "";
+        if (reason === "SQUARE_NOT_CONNECTED" || reason === "SQUARE_RECONNECT_REQUIRED") {
+          return NextResponse.json({
+            ok: false,
+            code: "SQUARE_CONNECTION_REQUIRED",
+            message: "有料受付の開始前にSquareを接続してください。",
+            settingsUrl: "/my/settings#sell-work",
+          }, { status: 409 });
+        }
+        throw squareError;
       }
     } catch (error) {
       console.error("[application status] paid opening check failed:", error);
