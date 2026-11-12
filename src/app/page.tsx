@@ -51,12 +51,17 @@ export default function HomePage() {
       // Existing members keep their explicitly saved startup preference.
       const { data: preferenceData } = await supabase
         .from("user_workspace_preferences")
-        .select("start_destination,last_workspace")
+        .select("start_destination,last_workspace,studio_enabled")
         .eq("user_id", user.id)
         .maybeSingle();
       if (!mounted) return;
 
       if (!preferenceData) {
+        router.replace("/my/bookshelf");
+        return;
+      }
+
+      if (!preferenceData.studio_enabled) {
         router.replace("/my/bookshelf");
         return;
       }
