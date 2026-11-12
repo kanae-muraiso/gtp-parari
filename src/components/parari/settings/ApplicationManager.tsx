@@ -2723,7 +2723,7 @@ export default function ApplicationManager({
     return (
       <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
         <div className="px-6 py-8 sm:px-10">
-          <div className="mx-auto max-w-2xl">
+          <div className={createOnly || embeddedEditApplicationId ? "w-full min-w-0" : "mx-auto max-w-2xl"}>
             <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
               APPLICATION
             </div>
@@ -2825,7 +2825,7 @@ export default function ApplicationManager({
 
       {showBuilder ? (
         <div className="px-6 py-8 sm:px-10 sm:py-10">
-          <div className="mx-auto max-w-2xl">
+          <div className={createOnly || embeddedEditApplicationId ? "w-full min-w-0" : "mx-auto max-w-2xl"}>
             <div className="text-xs font-bold tracking-[0.18em] text-neutral-400">
               {isFreeLiteApplication
                 ? "APPLICATION LITE"
@@ -3172,7 +3172,7 @@ export default function ApplicationManager({
         />
       ) : showModeChooser || showTypeChooser ? (
         <div className="px-6 py-8 sm:px-10">
-          <div className="mx-auto max-w-2xl">
+          <div className={createOnly || embeddedEditApplicationId ? "w-full min-w-0" : "mx-auto max-w-2xl"}>
             <h3 className="text-xl font-bold text-neutral-950">
               何を始めますか？
             </h3>
@@ -3236,7 +3236,7 @@ export default function ApplicationManager({
         </div>
       ) : (
         <div className="px-6 py-8 sm:px-10 sm:py-10">
-          <div className="mx-auto max-w-2xl">
+          <div className={createOnly || embeddedEditApplicationId ? "w-full min-w-0" : "mx-auto max-w-2xl"}>
             {isLoading ? (
               <p className="text-sm text-neutral-500">
                 APPLICATIONを読み込んでいます...
