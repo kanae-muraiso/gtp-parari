@@ -57,7 +57,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
             area === "library"
               ? "text-[#5B8DB8] hover:bg-[#5B8DB8]/10"
               : area === "studio"
-                ? "bg-[#34836D] text-white shadow-sm hover:bg-[#2D715D]"
+                ? "bg-emerald-300 text-emerald-950 shadow-sm hover:bg-emerald-400"
                 : "text-neutral-950 hover:bg-neutral-100",
           ].join(" ")}
         >
