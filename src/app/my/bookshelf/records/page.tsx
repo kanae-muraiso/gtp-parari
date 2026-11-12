@@ -4,6 +4,7 @@ import Link from "next/link";
 import {supabase} from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type Purchase={id:string;kind:"commerce"|"application";title:string;status:string|null;amount:number|null;currency:string|null;createdAt:string};
 type Application={id:string;title:string;status:string;paymentStatus:string|null;startsAt:string;timezone:string;location:string|null};
@@ -40,7 +41,7 @@ export default function LibraryRecordsPage(){
  return <main className="min-h-screen bg-white"><div className="mx-auto max-w-4xl px-4 py-6">
   <MyAreaHeader title="申込・購入" area="library"
     navigation={<LibraryV2Menu active="records" />} />
-  <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="申込・購入の種類">{tabs.map(t=><button key={t.key} type="button" role="tab" aria-selected={tab===t.key} onClick={()=>selectTab(t.key)} className={"rounded-full border px-4 py-2 text-sm "+(tab===t.key?"bg-neutral-900 text-white":"bg-white")}>{t.label}</button>)}</div>
+  <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="申込・購入の種類">{tabs.map(t=><button key={t.key} type="button" role="tab" aria-selected={tab===t.key} onClick={()=>selectTab(t.key)} className={"rounded-full border px-4 py-2 text-sm "+(tab===t.key?WORKSPACE_PALETTE.library.tabActive:"bg-white text-neutral-800 hover:bg-emerald-50")}>{t.label}</button>)}</div>
   {message&&<p role="status" className="mt-5 text-sm">{message}</p>}
   <div className="mt-5 space-y-3">
    {tab==="purchases"&&records&&<>

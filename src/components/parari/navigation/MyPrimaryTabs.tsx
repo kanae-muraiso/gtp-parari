@@ -93,6 +93,6 @@ export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTab
   }
 
   return (
-    <ParariTabs items={items} active={active} embedded={embedded} />
+    <ParariTabs items={items} active={active} embedded={embedded} color="library" />
   );
 }

@@ -43,7 +43,7 @@ function HomeCard({ title, description, href, action }: HomeCardProps) {
 
         <Link
           href={href}
-          className="shrink-0 text-xs font-bold text-neutral-700 transition hover:text-neutral-950"
+          className="shrink-0 text-xs font-bold text-emerald-800 transition hover:text-emerald-950"
         >
           {action} →
         </Link>
@@ -226,7 +226,7 @@ export default function MyPage() {
             作品をつくりたい方は{" "}
             <Link
               href={studioEnabled ? "/my/works" : "/my/settings"}
-              className="font-bold text-neutral-800 underline underline-offset-4 hover:text-neutral-950"
+              className="font-bold text-emerald-800 underline underline-offset-4 hover:text-emerald-950"
             >
               {studioEnabled ? "STUDIOで作品をつくる" : "制作機能を使う"}
             </Link>

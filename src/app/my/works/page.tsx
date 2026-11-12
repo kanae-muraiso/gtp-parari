@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getEffectivePlan } from "@/lib/billing/plan";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import {
   isLegacyBookSsot,
   isReferenceBookSsot,
@@ -1311,7 +1312,7 @@ export default function MyWorksPage() {
                 </div>
                 <Link
                   href="/editor/new"
-                  className="inline-flex shrink-0 rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-700"
+                  className={`inline-flex shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${WORKSPACE_PALETTE.studio.button}`}
                 >
                   ＋ 新規作成
                 </Link>
@@ -1823,8 +1824,8 @@ export default function MyWorksPage() {
                         <div className="mt-1 text-xs text-neutral-400">更新: {formatDate(work.updated_at)}</div>
                       </div>
                       <div className="flex shrink-0 gap-2">
-                        <Link href={editHref} className="rounded-full bg-emerald-300 px-3 py-1.5 text-xs font-bold text-white [text-shadow:0_1px_2px_#065f46] hover:bg-emerald-400">編集</Link>
-                        <Link href={publicHref} target="_blank" rel="noreferrer" className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100">表示</Link>
+                        <Link href={editHref} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${WORKSPACE_PALETTE.studio.button}`}>編集</Link>
+                        <Link href={publicHref} target="_blank" rel="noreferrer" className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${WORKSPACE_PALETTE.library.quietButton}`}>表示</Link>
                       </div>
                     </div>
 
@@ -2248,7 +2249,7 @@ export default function MyWorksPage() {
                                 ? `/editor-v2/${encodeURIComponent(work.id)}`
                                 : `/writing/${work.id}?mode=editing`
                             }
-                            className="inline-flex w-full justify-center rounded-full bg-emerald-300 px-2.5 py-1.5 text-[11px] font-bold text-white [text-shadow:0_1px_2px_#065f46] transition hover:bg-emerald-400 sm:w-auto"
+                            className={`inline-flex w-full justify-center rounded-full px-2.5 py-1.5 text-[11px] font-bold transition sm:w-auto ${WORKSPACE_PALETTE.studio.button}`}
                           >
                             編集
                           </Link>
@@ -2257,7 +2258,7 @@ export default function MyWorksPage() {
                             href={publicHref}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex w-full justify-center rounded-full bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 ring-1 ring-blue-200 transition hover:bg-blue-100 sm:w-auto"
+                            className={`inline-flex w-full justify-center rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition sm:w-auto ${WORKSPACE_PALETTE.library.quietButton}`}
                           >
                             表示
                           </Link>

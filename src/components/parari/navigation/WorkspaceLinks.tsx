@@ -7,6 +7,7 @@ import LogoutButton from "./LogoutButton";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import useParariStaff from "@/components/parari/hooks/useParariStaff";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type WorkspaceLinksProps = {
   area: "library" | "studio" | "settings" | "operations";
@@ -55,9 +56,9 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
           className={[
             "inline-flex items-center rounded-lg px-2 py-1.5 text-sm font-black tracking-[0.18em] transition",
             area === "library"
-              ? "text-[#5B8DB8] hover:bg-[#5B8DB8]/10"
+              ? WORKSPACE_PALETTE.library.logo
               : area === "studio"
-                ? "bg-emerald-300 text-emerald-950 shadow-sm hover:bg-emerald-400"
+                ? WORKSPACE_PALETTE.studio.logo
                 : "text-neutral-950 hover:bg-neutral-100",
           ].join(" ")}
         >
@@ -71,7 +72,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
         {studioEnabled ? (
           <Link
             href="/editor/quick"
-            className="inline-flex shrink-0 rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white transition hover:bg-neutral-800"
+            className={`inline-flex shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${WORKSPACE_PALETTE.studio.button}` }
           >
             作成
           </Link>

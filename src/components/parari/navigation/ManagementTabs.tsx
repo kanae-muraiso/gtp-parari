@@ -58,5 +58,5 @@ export default function ManagementTabs({ active, embedded = false }: ManagementT
 
   items.push(SALES_ITEM);
 
-  return <ParariTabs items={items} active={active} embedded={embedded} />;
+  return <ParariTabs items={items} active={active} embedded={embedded} color="studio" />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 const sections = [
   { label: "書棚", href: "/my/bookshelf", key: "shelf" },
@@ -14,8 +15,8 @@ export default function LibraryV2Menu({ active }: { active: Section }) {
     {sections.map(item => <Link key={item.key} href={item.href}
       aria-current={active === item.key ? "page" : undefined}
       className={"rounded-full border px-4 py-2 text-sm font-medium transition " +
-        (active === item.key ? "border-neutral-900 bg-neutral-900 text-white" :
-          "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50")}>
+        (active === item.key ? WORKSPACE_PALETTE.library.tabActive :
+          "border-neutral-300 bg-white text-neutral-700 hover:border-emerald-200 hover:bg-emerald-50")}>
       {item.label}
     </Link>)}
   </nav>;

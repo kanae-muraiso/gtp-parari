@@ -233,6 +233,7 @@ export default function MyManagePage() {
           <ParariTabs
             items={manageTabs}
             active={manageMode}
+            color="studio"
             onChange={(key) =>
               changeManageMode(
                 key as ManageMode,

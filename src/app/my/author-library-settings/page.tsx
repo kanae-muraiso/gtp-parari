@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type Work = {id:string;title:string|null};
 export default function AuthorLibrarySettingsPage() {
@@ -61,7 +62,7 @@ export default function AuthorLibrarySettingsPage() {
         <p className="mt-2 text-xs text-neutral-500">公開中の自分の作品から選択します。</p>
       </div>
       {username && <Link className="inline-block text-sm underline" href={"/"+encodeURIComponent(username)+"/library"}>公開書棚を確認する</Link>}
-      <div><button type="button" disabled={busy} onClick={save} className="rounded-lg bg-neutral-900 px-5 py-2 text-white disabled:opacity-50">設定を保存</button></div>
+      <div><button type="button" disabled={busy} onClick={save} className={`rounded-lg px-5 py-2 disabled:opacity-50 ${WORKSPACE_PALETTE.studio.button}`}>設定を保存</button></div>
       {message&&<p role="status" className="text-sm">{message}</p>}
     </div>
   </div></main>;
