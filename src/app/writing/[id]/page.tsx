@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
+import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import { ParariOwnerTopBar, ParariTopBarButton } from "@/components/parari/ParariTopBars";
 
 type WorkRow = {
@@ -43,13 +44,6 @@ export default function WritingWorkPage() {
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
   const controlCandidateRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const mode = new URLSearchParams(window.location.search).get("mode");
-      setEditingPinned(mode === "editing");
-    }
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +83,12 @@ export default function WritingWorkPage() {
           : String(data.title ?? ""));
 
       const loadedSsot = data.content ?? createBlankPageSsot();
+
+      // A new, genuinely blank PAGE opens in Writing. Existing work with
+      // written text, media or other content opens straight in Editing.
+      // Explicit ?mode=writing remains available for a requested focus view.
+      const requestedMode = new URLSearchParams(window.location.search).get("mode");
+      setEditingPinned(hasPageBodyContent(loadedSsot) && requestedMode !== "writing");
 
       workRef.current = data;
       ssotRef.current = loadedSsot;
@@ -532,13 +532,13 @@ export default function WritingWorkPage() {
               active={!editingPinned}
               onClick={() => setEditingPinned(false)}
             >
-              Writing
+              書く
             </ParariTopBarButton>
             <ParariTopBarButton
               active={editingPinned}
               onClick={() => setEditingPinned(true)}
             >
-              Editing
+              構成
             </ParariTopBarButton>
             <ParariTopBarButton href={`/p/${workId}`}>
               表示
@@ -555,7 +555,7 @@ export default function WritingWorkPage() {
           <section className="mt-8 flex-1 rounded-2xl bg-neutral-100 p-3 sm:p-5">
             <div className="mb-3">
               <div className="text-xs font-bold tracking-[0.16em] text-neutral-400">
-                EDITING
+                構成
               </div>
             </div>
 
@@ -757,6 +757,20 @@ function updatePageMeta(
     ...metaLines,
     ...lines.slice(metaEnd),
   ].join("\n");
+}
+
+function hasPageBodyContent(source: string): boolean {
+  // PAGE/PAGEINFO carry metadata rather than body content. A blank [T]
+  // placeholder (even with zero-width characters) is still a white page.
+  // Other content panels and an attached main image make it a worked-on PAGE.
+  if (parsePageMeta(source).mainImageUrl) return true;
+
+  return parseBlocks(source).some((block) => {
+    if (block.kind === "text") {
+      return block.raw.replace(/[\s\u200B\uFEFF]/g, "").length > 0;
+    }
+    return !["PAGE", "PAGEINFO"].includes(block.tag.toUpperCase());
+  });
 }
 
 function createBlankPageSsot() {
