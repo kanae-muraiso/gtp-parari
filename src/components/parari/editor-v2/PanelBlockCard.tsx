@@ -421,7 +421,7 @@ function defaultWidthForPanelTag(tag: string): "text" | "panel" | "full" {
   const normalizedTag = String(tag ?? "").trim().toUpperCase();
 
   // 2026-10-30 JST — PART: Align PAGE editor width with TEXT.
-  if (normalizedTag === "NOTICE" || isPageInfoPanel(normalizedTag)) {
+  if (normalizedTag === "NOTICE" || normalizedTag === "APPLICATION" || isPageInfoPanel(normalizedTag)) {
     return "text";
   }
 
