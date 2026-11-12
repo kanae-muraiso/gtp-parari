@@ -268,12 +268,12 @@ export default function ApplicationV2Prototype() {
               <label className="block space-y-1 text-sm"><span>{isSale ? "提供方法" : "開催パターン"}</span>
                 <select className={inputClass} value={data.cadence} onChange={e => patch("cadence", e.target.value)}>
                   {isSale ? <><option value="none">日時の指定なし（通常販売）</option><option value="once">日時を指定する（チケット等・案内のみ）</option></> :
-                    <><option value="once">1回のみ</option><option value="weekly">毎週</option><option value="daily">毎日</option><option value="custom" disabled>個別の日程を複数登録（今後対応）</option></>}
+                    <><option value="once">1回のみ</option><option value="weekly" disabled={isLite && !isClass}>毎週{isLite && !isClass ? "（現在利用不可）" : ""}</option><option value="daily" disabled={isLite && !isClass}>毎日{isLite && !isClass ? "（現在利用不可）" : ""}</option><option value="custom" disabled>個別の日程を複数登録（今後対応）</option></>}
                 </select>
               </label>
             )}
             {hasSchedule && <>
-              <p className="text-xs text-slate-600">日程と繰り返しは操作フローの確認用です。予約枠の生成・重複検査はこの試作では行いません。</p>
+              <p className="text-xs text-slate-600">{isLite ? "日時は案内用の情報です。Liteでは日時別の予約枠は生成しません。" : "日程と繰り返しは操作フローの確認用です。予約枠の生成・重複検査はこの試作では行いません。"}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1 text-sm"><span>{data.cadence === "once" ? "開催日" : "開始日・例示日"}</span>
                   <input type="date" className={inputClass} value={data.date} onChange={e => patch("date", e.target.value)} /></label>
@@ -394,7 +394,7 @@ export default function ApplicationV2Prototype() {
             </div>
           </section>
         )}
-        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} /></div>
+        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={planMode} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
           {step < 5 ? <button type="button" onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
