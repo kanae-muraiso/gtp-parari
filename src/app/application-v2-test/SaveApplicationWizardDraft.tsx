@@ -27,12 +27,13 @@ type Props = {
   panelOrder: string[];
   initialId?: string | null;
   mode: "lite" | "builder" | null;
+  previewOnly?: boolean;
 };
 
 const applicationType = { event: "EVENT", booking: "OTHER", sale: "OTHER", class: "SCHOOL" } as const;
 const actionLabel = { event: "参加を申し込む", booking: "予約を問い合わせる", sale: "購入を申し込む", class: "クラスに申し込む" } as const;
 
-export default function SaveApplicationWizardDraft({ data, panelOrder, initialId, mode }: Props) {
+export default function SaveApplicationWizardDraft({ data, panelOrder, initialId, mode, previewOnly = false }: Props) {
   const [savedId, setSavedId] = useState<string | null>(initialId || null);
   useEffect(() => { if (initialId) setSavedId(initialId); }, [initialId]);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
   const draftHash = JSON.stringify({ data, panelOrder });
 
   async function save() {
+    if (previewOnly) { setError("Liteの体験表示では保存できません。実際の契約プランを変えずに画面のみ確認できます。"); return; }
     setError("");
     setSuccess(false);
     const price = Number(data.price);
@@ -211,7 +213,8 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
           <div><Link className="underline" href="/my/works">STUDIOへ戻る</Link></div>
         </div>
       )}
-      <button onClick={() => void save()} disabled={saving || !mode} className="rounded-lg bg-amber-700 px-5 py-2.5 font-medium text-white disabled:opacity-50">
+      {previewOnly && <p className="text-sm text-amber-900">Lite体験表示では保存できません。Builderの保存機能は実際のプランに戻して利用してください。</p>}
+      <button onClick={() => void save()} disabled={saving || !mode || previewOnly} className="rounded-lg bg-amber-700 px-5 py-2.5 font-medium text-white disabled:opacity-50">
         {saving ? "保存中…" : savedId ? "下書きを更新" : "下書きを保存"}
       </button>
     </section>
