@@ -92,6 +92,15 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
               >
                 設定
               </Link>
+              {!studioEnabled ? (
+                <Link
+                  href="/my/start-studio"
+                  onClick={closeAccountMenu}
+                  className={menuLinkClass(false)}
+                >
+                  作品を作る
+                </Link>
+              ) : null}
               {isStaff ? (
                 <Link
                   href="/my/operations"
