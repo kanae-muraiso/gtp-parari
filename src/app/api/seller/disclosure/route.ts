@@ -68,6 +68,32 @@ export async function PUT(request: NextRequest) {
   if (publish && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.contact_email)) {
     return NextResponse.json({ ok: false, message: "連絡先メールアドレスを確認してください。" }, { status: 400 });
   }
+  // Published seller information must remain available while paid offerings are active.
+  // A seller may edit their details but cannot hide all notices from existing buyers.
+  if (!publish) {
+    try {
+      const old = await readSellerDisclosure(user.id);
+      if (old?.published) {
+        const [products, applications] = await Promise.all([
+          supabaseAdmin.from("commerce_products").select("id", { head: true, count: "exact" })
+            .eq("owner_user_id", user.id).eq("active", true),
+          supabaseAdmin.from("applications").select("id", { head: true, count: "exact" })
+            .eq("owner_user_id", user.id).eq("status", "open").eq("payment_method", "parari"),
+        ]);
+        if (products.error || applications.error) throw new Error("active sales lookup failed");
+        if ((products.count || 0) > 0 || (applications.count || 0) > 0) {
+          return NextResponse.json({
+            ok: false,
+            message: "販売中の商品・有料受付があるため公開を解除できません。表示内容を修正する場合は「確認して公開」を選んでください。",
+          }, { status: 409 });
+        }
+      }
+    } catch (error) {
+      console.error("[seller disclosures deactivate]", error);
+      return NextResponse.json({ ok: false, message: "販売状況を確認できませんでした。" }, { status: 500 });
+    }
+  }
+
   try {
     const { error } = await supabaseAdmin.from("seller_disclosures").upsert(draft, { onConflict: "owner_user_id" });
     if (error) throw error;
