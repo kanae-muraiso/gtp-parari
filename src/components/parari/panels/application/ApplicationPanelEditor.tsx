@@ -147,6 +147,9 @@ export default function ApplicationPanelEditor({
     setStatusUpdatingApplicationId,
   ] = React.useState<string | null>(null);
 
+  const [archivingApplicationId, setArchivingApplicationId] = React.useState<string | null>(null);
+
+
   const [
     statusMessage,
     setStatusMessage,
@@ -315,6 +318,48 @@ export default function ApplicationPanelEditor({
         nextData,
       ),
     );
+  }
+
+
+  async function replaceArchivedApplication(target: ManagedApplication) {
+    if (archivingApplicationId) return;
+    const confirmed = window.confirm(
+      "「" + target.title + "」の受付を終了・保管して、新しいAPPLICATIONを作りますか？\\n\\n既存の申込履歴は残ります。保管したAPPLICATIONはFreeの利用件数に含まれなくなります。"
+    );
+    if (!confirmed) return;
+    setArchivingApplicationId(target.id);
+    setMessage("");
+    setStatusMessage("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("ログイン情報を確認できませんでした。");
+      const response = await fetch("/api/application/archive", {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + session.access_token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ applicationId: target.id, action: "archive" }),
+      });
+      const result = await response.json().catch(() => null) as {
+        ok?: boolean; canCreateApplication?: boolean; message?: string;
+      } | null;
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.message || "APPLICATIONを終了・保管できませんでした。");
+      }
+      setApplications(current => current.filter(item => item.id !== target.id));
+      if (applicationId === target.id) commit("");
+      setCanCreateApplication(result.canCreateApplication === true);
+      if (result.canCreateApplication === true) {
+        setCreatingApplication(true);
+      } else {
+        setMessage("保管しましたが新規作成の枠を確認できませんでした。");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "APPLICATIONを終了・保管できませんでした。");
+    } finally {
+      setArchivingApplicationId(null);
+    }
   }
 
 
@@ -610,8 +655,22 @@ export default function ApplicationPanelEditor({
           ) : (
             <div className="mt-3 rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm leading-7 text-neutral-700">
               {applicationLimit === 1
-                ? "FREEではAPPLICATIONは1つまでです。上の作成済みAPPLICATIONを選んで、この作品で使ってください。"
+                ? "Freeでは現役のAPPLICATIONは1件までです。現在の受付を終了・保管すると、記録を残して新しいAPPLICATIONを作れます。"
                 : "現在、新しいAPPLICATIONは作成できません。作成済みのAPPLICATIONを選んでください。"}
+              {applicationLimit === 1 && applications.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {applications.map(application => (
+                    <button key={application.id} type="button"
+                      disabled={archivingApplicationId !== null}
+                      onClick={() => { void replaceArchivedApplication(application); }}
+                      className="block w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm font-bold text-amber-950 disabled:opacity-50">
+                      {archivingApplicationId === application.id ? "終了・保管中…" :
+                        `「${application.title}」を終了・保管して新しく作る`}
+                    </button>
+                  ))}
+                  <p className="text-xs text-neutral-500">申込履歴は残ります。完全削除ではありません。</p>
+                </div>
+              )}
             </div>
           )
         ) : null}
@@ -698,6 +757,14 @@ export default function ApplicationPanelEditor({
                       ? "受付を終了する"
                       : "受付を再開する"}
               </button>
+              {applicationLimit === 1 && (
+                <button type="button"
+                  disabled={archivingApplicationId !== null}
+                  onClick={() => { void replaceArchivedApplication(selectedApplication); }}
+                  className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 disabled:opacity-50">
+                  {archivingApplicationId === selectedApplication.id ? "終了・保管中…" : "終了・保管して新しく作る"}
+                </button>
+              )}
             </div>
 
             {statusMessage ? (
