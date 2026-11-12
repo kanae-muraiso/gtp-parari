@@ -32,7 +32,7 @@ const defaults: Data = {
 const kinds: { id: Kind; label: string; examples: string; icon: string }[] = [
   { id: "event", label: "イベントを開催", examples: "バザー・パーティ・単発レッスン", icon: "◇" },
   { id: "booking", label: "予約を受け付ける", examples: "説明会・個人相談・面談", icon: "◷" },
-  { id: "sale", label: "作品・商品を販売", examples: "電子書籍・写真・手作り作品", icon: "▣" },
+  { id: "sale", label: "作品・商品を販売", examples: "PARARI作品の販売／物品販売は準備中", icon: "▣" },
   { id: "class", label: "クラスを運営", examples: "ZUMBA・生け花・英会話", icon: "◎" },
 ];
 const panelLabels: Record<PanelKey, string> = {
@@ -156,7 +156,7 @@ export default function ApplicationV2Prototype() {
   const liteSummary: Record<Kind, string> = {
     event: "名前とメールアドレスで参加受付。無料は最大10名。開催日時は案内として表示し、日時枠の自動予約は行いません。",
     booking: "予約希望者の名前とメールアドレスを受け付けます。日時の調整・確定は主催者が個別に行います。",
-    sale: "Square決済による単品の申込受付が中心です。物品の在庫・配送、購入後の自動提供はこの質問画面では設定できません。",
+    sale: "PARARI作品の販売は既存の販売管理から行えます。アクセサリーなどの物品販売は準備が整うまで利用できません。",
     class: "同じ受講者10名までを継続登録できます。毎回の申込や出欠管理は行いません。退会は主催者が操作します。",
   };
   const hasSchedule = (isSale ? data.cadence !== "none" && !isLite : isBooking ? !isLite : true);
@@ -261,12 +261,31 @@ export default function ApplicationV2Prototype() {
         {step === 1 && (
           <section className={cardClass + " space-y-4"}>
             <h2 className="text-lg font-semibold">{isSale ? "何を販売しますか？" : isClass ? "どんなクラスですか？" : isBooking ? "何の予約を受け付けますか？" : "どんなイベントですか？"}</h2>
-            <label className="block space-y-1 text-sm"><span>名称</span>
-              <input className={inputClass} value={data.title} onChange={e => patch("title", e.target.value)} placeholder={isSale ? "例：写真集" : "例：金曜夜のZUMBA"} />
-            </label>
-            <label className="block space-y-1 text-sm"><span>内容・紹介（自由記述）</span>
-              <textarea className={inputClass} rows={4} value={data.description} onChange={e => patch("description", e.target.value)} placeholder="参加者・購入者に伝えたいこと" />
-            </label>
+            {isSale ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Link href="/my/sales" className="rounded-xl border border-amber-300 bg-amber-50 p-5 transition hover:border-amber-600">
+                  <div className="font-semibold text-slate-900">PARARI作品を販売する</div>
+                  <p className="mt-2 text-sm text-slate-700">PAGE・BOOKなどのデジタル作品を販売管理画面で設定します。</p>
+                  <span className="mt-3 inline-block text-sm font-semibold text-amber-800">販売設定へ進む</span>
+                </Link>
+                <div aria-disabled="true" className="cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 p-5 text-slate-400">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold">物品を販売する</span>
+                    <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-500">準備中</span>
+                  </div>
+                  <p className="mt-2 text-sm">アクセサリー・手作り品など。発送・返品・販売者情報の運用を整えるまで利用できません。</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="block space-y-1 text-sm"><span>名称</span>
+                  <input className={inputClass} value={data.title} onChange={e => patch("title", e.target.value)} placeholder="例：金曜夜のZUMBA" />
+                </label>
+                <label className="block space-y-1 text-sm"><span>内容・紹介（自由記述）</span>
+                  <textarea className={inputClass} rows={4} value={data.description} onChange={e => patch("description", e.target.value)} placeholder="参加者に伝えたいこと" />
+                </label>
+              </>
+            )}
           </section>
         )}
         {step === 2 && (
@@ -425,7 +444,7 @@ export default function ApplicationV2Prototype() {
         <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={selectedMode} previewOnly={simulatingLite} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
-          {step < 5 ? <button type="button" disabled={planLoading || !planMode} onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
+          {step < 5 ? <button type="button" disabled={planLoading || !planMode || (isSale && step === 1)} onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
             <button type="button" className={buttonClass} onClick={() => { setStep(0); setData(defaults); setPanelOrder(["intro", "schedule", "capacity", "payment", "form"]); setView("edit"); }}>別の入口を試す</button>}
         </footer>
         <p className="text-center text-xs text-slate-500">質問型UIから既存APPLICATIONの下書き保存に対応。CALENDAR・FORM作成と実際の予約・決済・PAGE公開は別工程です。</p>
