@@ -331,7 +331,17 @@ export default function ApplicationV2Prototype() {
           <section className={cardClass + " space-y-4"}>
             <h2 className="text-lg font-semibold">料金と質問を設定しましょう</h2>
             <label className="block space-y-1 text-sm"><span>{isSale ? "販売価格（円）" : "参加料金（円・無料は0）"}</span>
-              <input type="number" min="0" className={inputClass} value={data.price} onChange={e => setData(old => ({ ...old, price: e.target.value, payment: isLite && planName === "free" && Number(e.target.value) > 0 ? "online" : old.payment }))} />
+              <input type="number" min="0" className={inputClass} value={data.price} onChange={e => setData(old => {
+                const price = e.target.value;
+                const shouldCap = isLite && (old.kind === "class" || Number(price) === 0);
+                const existingCapacity = Number(old.capacity);
+                return {
+                  ...old,
+                  price,
+                  capacity: shouldCap && old.capacity && existingCapacity > 10 ? "10" : old.capacity,
+                  payment: isLite && planName === "free" && Number(price) > 0 ? "online" : old.payment,
+                };
+              })} />
             </label>
             {isPaid && <label className="block space-y-1 text-sm"><span>支払方法</span>
               <select className={inputClass} value={data.payment} onChange={e => patch("payment", e.target.value)}>
@@ -397,7 +407,7 @@ export default function ApplicationV2Prototype() {
         <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={planMode} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
-          {step < 5 ? <button type="button" onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
+          {step < 5 ? <button type="button" disabled={planLoading || !planMode} onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
             <button type="button" className={buttonClass} onClick={() => { setStep(0); setData(defaults); setPanelOrder(["intro", "schedule", "capacity", "payment", "form"]); setView("edit"); }}>別の入口を試す</button>}
         </footer>
         <p className="text-center text-xs text-slate-500">質問型UIから既存APPLICATIONの下書き保存に対応。CALENDAR・FORM作成と実際の予約・決済・PAGE公開は別工程です。</p>
