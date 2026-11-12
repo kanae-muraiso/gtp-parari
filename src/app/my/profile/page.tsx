@@ -15,8 +15,7 @@ import { useRouter } from "next/navigation";
 import { supabase as sharedSupabase } from "@/lib/supabaseClient";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
-import MembershipShelfPanel from "@/components/parari/MembershipShelfPanel";
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 
 const USERNAME_RE = /^(?=.{5,32}$)[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -60,9 +59,10 @@ type UsernameOwnerRow = {
 
 export default function MyProfilePage() {
   const router = useRouter();
+  const { studioEnabled, loading: experienceLoading } = useParariExperience();
   const supabase = useMemo(() => sharedSupabase, []);
 
-  const [returnTo, setReturnTo] = useState("/my/works");
+  const [returnTo, setReturnTo] = useState("/my/settings");
   const [siteOrigin, setSiteOrigin] = useState("");
   const activeTab = "basic" as const;
 
@@ -328,19 +328,11 @@ export default function MyProfilePage() {
       <main className="min-h-screen bg-neutral-50">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
           {/* HEADER */}
-          <MyAreaHeader
-            title="設定"
-            showManagementLinks={false}
-          />
+          <MyAreaHeader title="基本設定" area="settings" />
 
-          {/* MANAGEMENT MAIN MENU */}
-          <div className="mt-6">
-            <ManagementTabs active="settings" />
-          </div>
-
-          {/* SETTINGS */}
+          {/* Common account settings are not a STUDIO workspace. */}
           <div className="mx-auto mt-4 max-w-3xl">
-            <SettingsTabs active={activeTab} />
+            {!experienceLoading && studioEnabled ? <SettingsTabs active={activeTab} /> : null}
 
             {activeTab === "basic" ? (
               <div className="mt-3 flex justify-end">
@@ -414,7 +406,7 @@ export default function MyProfilePage() {
                                         PARARIで表示する情報
                                       </div>
                                       <p className="mt-1 text-xs leading-5 text-neutral-500">
-                                        作品ページやプロフィールページなどで表示される情報です。
+                                        PARARI内で、あなたの名前を表示する際に使用します。
                                       </p>
               </div>
 
@@ -465,6 +457,7 @@ export default function MyProfilePage() {
                   ) : null}
                 </div>
 
+                {!experienceLoading && studioEnabled ? (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
                   <div className="text-xs font-bold text-neutral-500">
                     公開作品リストURL
@@ -478,6 +471,7 @@ export default function MyProfilePage() {
                     `/my/works` で「作品リストに掲載」にした公開作品が、このURLに表示されます。
                   </p>
                 </div>
+                ) : null}
 
                 {status.type === "error" ? (
                   <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
@@ -505,7 +499,7 @@ export default function MyProfilePage() {
                     href={returnTo}
                     className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 transition hover:bg-neutral-50"
                   >
-                    作品リストへ戻る
+                    {returnTo.startsWith("/my/settings") ? "設定に戻る" : "戻る"}
                   </a>
                 </div>
               </div>
