@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import { activateStudioForCurrentUser } from "@/lib/parari/workspace/activateStudio";
@@ -86,6 +87,13 @@ export default function StudioCreateEntry() {
           {activating ? "準備しています…" : previouslyPaused ? "STUDIOを再開" : "書き始める"}
         </button>
       </div>
+      {previouslyPaused ? (
+        <p className="mt-2 text-xs leading-6 text-neutral-500">
+          休止中も有料プランの契約は継続します。必要なら
+          <Link href="/billing" className="ml-1 underline underline-offset-4">契約・請求を確認</Link>
+          できます。
+        </p>
+      ) : null}
       {error ? <p role="alert" className="mt-2 text-xs text-red-700">{error}</p> : null}
     </section>
   );
