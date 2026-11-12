@@ -435,6 +435,7 @@ export default function ApplicationManager({
     statusMessage,
     setStatusMessage,
   ] = React.useState("");
+  const [paymentSetupUrl, setPaymentSetupUrl] = React.useState<string | null>(null);
     
     const [
       statusUpdatingApplicationId,
@@ -507,6 +508,7 @@ export default function ApplicationManager({
     async function load() {
       setIsLoading(true);
       setStatusMessage("");
+      setPaymentSetupUrl(null);
 
       try {
         const {
@@ -597,6 +599,7 @@ export default function ApplicationManager({
                 ok?: boolean;
                 forms?: ManagedForm[];
                 message?: string;
+                settingsUrl?: string;
               }
             | null;
 
@@ -608,6 +611,7 @@ export default function ApplicationManager({
                 ok?: boolean;
                 items?: ManagedCalendarItem[];
                 message?: string;
+                settingsUrl?: string;
               }
             | null;
 
@@ -1927,6 +1931,7 @@ export default function ApplicationManager({
                 };
 
                 message?: string;
+                settingsUrl?: string;
               }
             | null;
 
@@ -1935,11 +1940,10 @@ export default function ApplicationManager({
           !result?.ok ||
           !result.application
         ) {
-          setStatusMessage(
-            result?.message ||
-              "受付状態を変更できませんでした。",
-          );
-
+          setStatusMessage(result?.message || "受付状態を変更できませんでした。");
+          if (nextStatus === "open" && result?.settingsUrl?.startsWith("/my/settings")) {
+            setPaymentSetupUrl(result.settingsUrl);
+          }
           return;
         }
 
@@ -3366,14 +3370,11 @@ export default function ApplicationManager({
                                               : "受付を再開する"}
                                       </button>
                                       {application.status === "draft" && application.payment_method === "parari" ? (
-                                        <a
-                                          href="/my/settings#sell-work"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
-                                        >
-                                          決済の準備
-                                        </a>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="text-xs font-semibold text-amber-900">有料受付の開始にはSquare接続・販売者情報の公開が必要です。</span>
+                                          <a href="/my/settings#sell-work" target="_blank" rel="noopener noreferrer" className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900">Squareを設定</a>
+                                          <a href="/my/settings/seller" target="_blank" rel="noopener noreferrer" className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900">特商法・個人情報を登録</a>
+                                        </div>
                                       ) : null}
                                     </div>
                       </div>
@@ -3767,10 +3768,16 @@ export default function ApplicationManager({
            ) : null}
            
             {statusMessage ? (
-              <p className="mt-5 text-sm leading-7 text-neutral-600">
-                {statusMessage}
-              </p>
-            ) : null}
+               <div role="status" className="mt-5 space-y-3 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-950">
+                 <p>{statusMessage}</p>
+                 {paymentSetupUrl && (
+                   <div className="flex flex-wrap gap-2">
+                     <a href={paymentSetupUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-neutral-950 px-4 py-2 font-bold text-white">必要な販売設定を行う</a>
+                     <a href="/my/settings/seller" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-amber-300 px-4 py-2 font-bold text-amber-950">特商法・個人情報を登録</a>
+                   </div>
+                 )}
+               </div>
+             ) : null}
           </div>
         </div>
       )}

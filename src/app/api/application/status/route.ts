@@ -139,6 +139,8 @@ export async function PATCH(
           owner_user_id,
           status,
           payment_method,
+          payment_amount,
+          definition,
           archived_at
         `,
       )
@@ -193,6 +195,22 @@ export async function PATCH(
         status: 409,
       },
     );
+  }
+
+  // New Lite paid drafts must never be activated as "free" or without
+  // completing the payment onboarding. Legacy Organizer payment methods
+  // keep their existing rules.
+  const liteWizard = application.definition && typeof application.definition === "object"
+    && !Array.isArray(application.definition)
+    && (application.definition as { mode?: unknown; wizard?: { version?: unknown } }).mode === "lite"
+    && (application.definition as { wizard?: { version?: unknown } }).wizard?.version === 1;
+  if (nextStatus === "open" && liteWizard && Number(application.payment_amount) > 0
+      && application.payment_method !== "parari") {
+    return NextResponse.json({
+      ok: false, code: "PAYMENT_SETUP_REQUIRED",
+      message: "有料APPLICATIONはSquare決済を設定してから受付を開始してください。",
+      settingsUrl: "/my/settings#sell-work",
+    }, { status: 409 });
   }
 
   if (nextStatus === "open" && application.payment_method === "parari") {
