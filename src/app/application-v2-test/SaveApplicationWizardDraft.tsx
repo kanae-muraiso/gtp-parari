@@ -90,6 +90,23 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
       }
 
       const plan = accessResult.access;
+      if (plan.applicationMode !== mode) {
+        throw new Error("利用プランが変更されています。画面を読み直してください。");
+      }
+      if (mode === "lite") {
+        if (data.kind === "event" && data.cadence !== "once") {
+          throw new Error("Liteイベントは一度だけの開催案内に限ります。");
+        }
+        if (data.kind === "class" && !["once", "weekly", "daily"].includes(data.cadence)) {
+          throw new Error("Liteクラスは一度のみ／毎週／毎日の案内から選択してください。");
+        }
+        if (data.kind === "class" && !["fixed", "mixed"].includes(data.attendance)) {
+          throw new Error("Liteでは継続受講者の受付のみ利用できます。");
+        }
+        if (data.extraQuestion.trim()) {
+          throw new Error("Liteでは追加質問を設定できません。画面を読み直してください。");
+        }
+      }
       if (!savedId && !plan.canCreateApplication) {
         throw new Error("APPLICATIONの作成可能数に達しています。");
       }
@@ -122,9 +139,6 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
         timezone: "Asia/Tokyo",
         recurringClassIsInformational: data.kind === "class",
       };
-      if (data.extraQuestion.trim() && plan.applicationMode === "lite") {
-        throw new Error("Liteでは追加質問の回答を収集できません。質問欄を空にするか、Organizer以上をご利用ください。");
-      }
       const inputFields = mode === "builder" && extra ? [{
         id: "wizard-extra-answer",
         kind: "textarea",
