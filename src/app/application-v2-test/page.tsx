@@ -51,6 +51,7 @@ export default function ApplicationV2Prototype() {
   const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   const [planMode, setPlanMode] = useState<"lite" | "builder" | null>(null);
+  const [previewMode, setPreviewMode] = useState<"lite" | "builder">("lite");
   const [planName, setPlanName] = useState("");
   const [planLoading, setPlanLoading] = useState(true);
   useEffect(() => {
@@ -76,8 +77,10 @@ export default function ApplicationV2Prototype() {
     void checkPlan();
     return () => { active = false; };
   }, []);
-  const isLite = planMode === "lite";
-  const planText = planMode === "lite" ? "APPLICATION Lite" : planMode === "builder" ? "APPLICATION Builder" : "プラン確認中";
+  const selectedMode = planMode === "builder" ? previewMode : planMode;
+  const isLite = selectedMode === "lite";
+  const simulatingLite = planMode === "builder" && selectedMode === "lite";
+  const planText = selectedMode === "lite" ? "APPLICATION Lite" : selectedMode === "builder" ? "APPLICATION Builder" : "プラン確認中";
   useEffect(() => {
     const kind = new URLSearchParams(window.location.search).get("kind");
     if (!kind || !["event", "booking", "sale", "class"].includes(kind)) return;
@@ -210,6 +213,21 @@ export default function ApplicationV2Prototype() {
               <strong>{planText}</strong>
               <span className="text-xs text-slate-600">{planName === "free" ? "Free" : planName === "plus" ? "Plus" : planName}</span>
             </div>
+            {planMode === "builder" && (
+              <div className="space-y-1">
+                <label htmlFor="wizard-preview-mode" className="block text-sm font-semibold">確認する画面</label>
+                <select id="wizard-preview-mode" className={inputClass} value={previewMode}
+                  onChange={e => setPreviewMode(e.target.value === "builder" ? "builder" : "lite")}>
+                  <option value="lite">Liteとして確認（体験表示）</option>
+                  <option value="builder">Builderとして確認</option>
+                </select>
+              </div>
+            )}
+            {simulatingLite && (
+              <p className="rounded-lg border border-amber-300 bg-white p-3 text-xs text-amber-950">
+                実際のプランは変更しません。Liteとして確認している間は下書き保存を停止します。
+              </p>
+            )}
             <p className="text-sm">{isLite ? liteSummary[data.kind] : "質問に答えて案内を構成します。詳細なCALENDAR・FORM設定は既存管理画面で行います。"}</p>
             {isLite && <p className="text-xs text-slate-700">Lite：APPLICATIONは1件まで。氏名・メールアドレス受付が基本です。無料受付は最大10名、継続クラスは在籍10名まで。</p>}
             {isLite && <p className="text-xs text-amber-900">Liteは簡易受付です。自動予約、月謝、回数券、空き枠の管理は行いません。質問の途中で有料プランへの切替を強制しません。</p>}
@@ -404,7 +422,7 @@ export default function ApplicationV2Prototype() {
             </div>
           </section>
         )}
-        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={planMode} /></div>
+        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={selectedMode} previewOnly={simulatingLite} /></div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
           <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
           {step < 5 ? <button type="button" disabled={planLoading || !planMode} onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
