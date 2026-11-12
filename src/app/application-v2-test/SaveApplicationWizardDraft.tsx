@@ -43,6 +43,10 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
   const draftHash = JSON.stringify({ data, panelOrder });
 
   async function save() {
+    if (data.kind === "sale") {
+      setError("物品販売のAPPLICATIONは準備中です。PARARI作品を販売する場合は、STUDIOの販売管理をご利用ください。");
+      return;
+    }
     if (previewOnly) { setError("Liteの体験表示では保存できません。実際の契約プランを変えずに画面のみ確認できます。"); return; }
     setError("");
     setSuccess(false);
