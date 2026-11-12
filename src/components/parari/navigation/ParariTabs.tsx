@@ -10,6 +10,7 @@
 "use client";
 
 import Link from "next/link";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 export type ParariTabItem = {
   key: string;
@@ -23,6 +24,7 @@ type ParariTabsProps = {
   onChange?: (key: string) => void;
   className?: string;
   embedded?: boolean;
+  color?: "neutral" | "library" | "studio";
 };
 
 export default function ParariTabs({
@@ -31,6 +33,7 @@ export default function ParariTabs({
   onChange,
   className = "",
   embedded = false,
+  color = "neutral",
 }: ParariTabsProps) {
   return (
     <nav
@@ -47,8 +50,12 @@ export default function ParariTabs({
         const tabClassName = [
           "rounded-xl px-4 py-2 text-xs font-bold transition",
           selected
-            ? "bg-neutral-900 text-white"
-            : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900",
+            ? color === "library"
+              ? WORKSPACE_PALETTE.library.tabActive
+              : color === "studio"
+                ? WORKSPACE_PALETTE.studio.tabActive
+                : "bg-neutral-900 text-white"
+            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950",
         ].join(" ");
 
         if (item.href) {
