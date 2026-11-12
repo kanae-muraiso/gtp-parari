@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type Author = { user_id: string; username: string; display_name: string | null };
 type Work = { id: string; title: string | null; owner: string; href?: string };
@@ -76,14 +77,14 @@ function WorkSearchPanel() {
         maxLength={120} required placeholder="作品名"
         className="min-w-0 flex-1 rounded-lg border px-3 py-2" />
       <button type="submit" disabled={pending}
-        className="rounded-lg bg-neutral-900 px-4 py-2 text-white disabled:opacity-50">検索</button>
+        className={`rounded-lg px-4 py-2 font-semibold disabled:opacity-50 ${WORKSPACE_PALETTE.library.button}`}>検索</button>
     </form>
     {(pending || message) && <p role="status" className="mt-3 text-sm text-neutral-600">
       {pending ? "作品を検索しています…" : message}
     </p>}
     {works.length > 0 && <ul aria-label="作品の検索結果" className="mt-4 space-y-2">
       {works.map(({ id, title, author, href }) => <li key={id}>
-        <Link href={href ?? "/p/" + id} className="block rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50">
+        <Link href={href ?? "/p/" + id} className="block rounded-xl border border-neutral-200 p-3 hover:border-emerald-200 hover:bg-emerald-50">
           <div className="break-words font-medium">{title || "無題の作品"}</div>
           {author && <div className="break-words text-xs text-neutral-600">
             {author.display_name || author.username}{author.display_name && author.username ? " · @" + author.username : ""}
@@ -129,7 +130,7 @@ export default function AuthorsPage() {
   }
   function card(a: Author) {
     return <Link key={a.user_id} href={`/${encodeURIComponent(a.username)}/library`}
-      className="block rounded-xl border border-neutral-200 p-4 hover:bg-neutral-50">
+      className="block rounded-xl border border-neutral-200 p-4 hover:border-emerald-200 hover:bg-emerald-50">
       <div className="font-medium">{a.display_name || a.username}</div>
       <div className="text-xs text-neutral-500">@{a.username}</div>
     </Link>;
@@ -146,7 +147,7 @@ export default function AuthorsPage() {
             <input type="search" aria-label="ユーザーネーム" value={name} onChange={e => setName(e.target.value)}
               maxLength={80} required placeholder="ユーザーネーム（完全一致）"
               className="min-w-0 flex-1 rounded-lg border px-3 py-2" />
-            <button className="rounded-lg bg-neutral-900 px-4 py-2 text-white" type="submit">検索</button>
+            <button className={`rounded-lg px-4 py-2 font-semibold ${WORKSPACE_PALETTE.library.button}`} type="submit">検索</button>
           </form>
           {message && <p role="status" className="mt-3 text-sm">{message}</p>}
           {searched && !message && <div className="mt-5">
