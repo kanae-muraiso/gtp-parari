@@ -7,6 +7,7 @@ import * as React from "react";
 
 import ParticipantsPanel from "@/components/parari/manage/ParticipantsPanel";
 import ApplicationEntriesPanel from "./ApplicationEntriesPanel";
+import ApplicationPurposeWizard, { type Purpose } from "./ApplicationPurposeWizard";
 import ApplicationPolicySettings from "./ApplicationPolicySettings";
 import ApplicationContentBuilder from "./ApplicationContentBuilder";
 import FreeApplicationLiteSettings from "./FreeApplicationLiteSettings";
@@ -252,6 +253,8 @@ export default function ApplicationManager({
     showBuilder,
     setShowBuilder,
   ] = React.useState(false);
+
+  const [selectedPurpose, setSelectedPurpose] = React.useState<Purpose | null>(null);
 
   const [
     editingApplicationId,
@@ -3099,6 +3102,25 @@ export default function ApplicationManager({
             </div>
           </div>
         </div>
+      ) : selectedPurpose ? (
+        <ApplicationPurposeWizard
+          key={selectedPurpose}
+          purpose={selectedPurpose}
+          mode={canUseExtendedApplication ? "builder" : "lite"}
+          onCreated={(created) => {
+            setSelectedPurpose(null);
+            if (createOnly) {
+              onCreated?.(created);
+            } else {
+              window.location.reload();
+            }
+          }}
+          onCancel={() => {
+            setSelectedPurpose(null);
+            setShowModeChooser(true);
+            setShowTypeChooser(false);
+          }}
+        />
       ) : showModeChooser || showTypeChooser ? (
         <div className="px-6 py-8 sm:px-10">
           <div className="mx-auto max-w-2xl">
@@ -3122,10 +3144,9 @@ export default function ApplicationManager({
                   type="button"
                   disabled={applicationAccess?.canCreateApplication === false}
                   onClick={() => {
-                    setApplicationMode(canUseExtendedApplication ? "builder" : "lite");
+                    setSelectedPurpose(item.key);
                     setShowModeChooser(false);
                     setShowTypeChooser(false);
-                    startCreate(item.type);
                   }}
                   className="rounded-2xl border border-neutral-200 p-5 text-left transition hover:border-neutral-400 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
