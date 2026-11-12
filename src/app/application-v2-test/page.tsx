@@ -50,6 +50,34 @@ export default function ApplicationV2Prototype() {
   const [view, setView] = useState<"edit" | "visitor">("edit");
   const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [planMode, setPlanMode] = useState<"lite" | "builder" | null>(null);
+  const [planName, setPlanName] = useState("");
+  const [planLoading, setPlanLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    async function checkPlan() {
+      try {
+        if (!supabase) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/application/manage", {
+          headers: { Authorization: "Bearer " + session.access_token },
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!active || !json?.ok) return;
+        setPlanMode(json.access?.applicationMode === "builder" ? "builder" : "lite");
+        setPlanName(String(json.access?.effectivePlan || ""));
+      } finally {
+        if (active) setPlanLoading(false);
+      }
+    }
+    void checkPlan();
+    return () => { active = false; };
+  }, []);
+  const isLite = planMode === "lite";
+  const planText = planMode === "lite" ? "APPLICATION Lite" : planMode === "builder" ? "APPLICATION Builder" : "プラン確認中";
   useEffect(() => {
     const kind = new URLSearchParams(window.location.search).get("kind");
     if (!kind || !["event", "booking", "sale", "class"].includes(kind)) return;
@@ -122,6 +150,12 @@ export default function ApplicationV2Prototype() {
   const isBooking = data.kind === "booking";
   const isClass = data.kind === "class";
   const isPaid = Number(data.price) > 0;
+  const liteSummary: Record<Kind, string> = {
+    event: "名前とメールアドレスで参加受付。無料は最大10名。開催日時は案内として表示し、日時枠の自動予約は行いません。",
+    booking: "予約希望者の名前とメールアドレスを受け付けます。日時の調整・確定は主催者が個別に行います。",
+    sale: "Square決済による単品の申込受付が中心です。物品の在庫・配送、購入後の自動提供はこの質問画面では設定できません。",
+    class: "同じ受講者10名までを継続登録できます。毎回の申込や出欠管理は行いません。退会は主催者が操作します。",
+  };
   const hasSchedule = !isSale || data.cadence !== "none";
   const panels = useMemo(() => panelOrder.filter(key =>
     (key !== "schedule" || hasSchedule) &&
@@ -160,10 +194,26 @@ export default function ApplicationV2Prototype() {
           <Link href="/my/works" className="text-sm text-amber-800 underline">← STUDIOに戻る</Link>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold">APPLICATION v2 試作</h1>
-            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold">公開・決済なし（下書き保存可）</span>
+            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold">{planText}</span>
           </div>
           <p className="text-sm text-slate-600">4つの入口から始め、質問に答えるだけで案内パネルを構成する操作実験です。保存ボタンを押すまではサーバーへ送信されません。</p>
         </header>
+        {planLoading ? (
+          <p className="text-sm text-slate-600">利用プランを確認しています…</p>
+        ) : !planMode ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+            プランを確認できませんでした。保存するにはログインしてください。
+          </p>
+        ) : (
+          <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <strong>{planText}</strong>
+              <span className="text-xs text-slate-600">{planName === "free" ? "Free" : planName === "plus" ? "Plus" : planName}</span>
+            </div>
+            <p className="text-sm">{isLite ? liteSummary[data.kind] : "質問に答えて案内を構成します。詳細なCALENDAR・FORM設定は既存管理画面で行います。"}</p>
+            {isLite && <p className="text-xs text-amber-900">Liteは簡易受付です。自動予約、月謝、回数券、空き枠の管理は行いません。質問の途中で有料プランへの切替を強制しません。</p>}
+          </section>
+        )}
         {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{loadError}</p>}
         <nav aria-label="作成手順" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {progress.map((p, i) => (
@@ -175,7 +225,7 @@ export default function ApplicationV2Prototype() {
         {step === 0 && (
           <section className={cardClass}>
             <h2 className="mb-1 text-lg font-semibold">何を始めますか？</h2>
-            <p className="mb-4 text-sm text-slate-600">近いものを選んでください。これは最初の質問の順番を決めるだけで、機能の制限ではありません。</p>
+            <p className="mb-4 text-sm text-slate-600">近いものを選んでください。入口は質問の順番を決めるものです。できる機能はご利用プランによって異なります。</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {kinds.map(kind => (
                 <button key={kind.id} type="button" onClick={() => setData(old => ({ ...old, kind: kind.id, cadence: kind.id === "sale" ? "none" : "once", attendance: kind.id === "class" ? "fixed" : old.attendance }))}
@@ -239,16 +289,17 @@ export default function ApplicationV2Prototype() {
               </select>
             </label>
             {!isSale && <label className="block space-y-1 text-sm"><span>{isBooking ? "1枠あたりの定員" : "定員（未入力なら指定なし）"}</span>
-              <input type="number" min="1" className={inputClass} value={data.capacity} onChange={e => patch("capacity", e.target.value)} placeholder="例：30" />
+              <input type="number" min="1" max={isLite && (isClass || !isPaid) ? 10 : undefined} className={inputClass} value={data.capacity} onChange={e => patch("capacity", e.target.value)} placeholder={isLite ? "例：10" : "例：30"} />
             </label>}
+            {isLite && !isSale && <p className="text-xs text-amber-800">{isClass ? "Liteの継続クラスは在籍10名までです。退会者の履歴を残したまま、在籍枠を空けられます。" : "Liteの無料受付は最大10名です。有料Square受付は種類により上限の扱いが異なります。"}</p>}
             {isClass && <label className="block space-y-1 text-sm"><span>受講者の参加方式</span>
               <select className={inputClass} value={data.attendance} onChange={e => patch("attendance", e.target.value)}>
-                <option value="per_event">開催回ごとに自由参加（CALENDAR管理が必要）</option>
-                <option value="fixed">決まった受講者のみ</option>
-                <option value="mixed">既存受講者＋新規募集</option>
+                <option value="per_event" disabled={isLite}>開催回ごとに自由参加（OrganizerのCALENDAR管理）</option>
+                <option value="fixed">決まった受講者のみ（Lite対応）</option>
+                <option value="mixed">既存受講者＋新規募集（Lite対応・合計10名まで）</option>
               </select>
             </label>}
-            {isBooking && <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">受付可能な時間を随時増減する操作は、CALENDAR連携の実装段階で行います。</div>}
+            {isBooking && <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">{isLite ? "Liteでは予約希望を受け付け、日時は主催者が後で調整します。画面に表示した日時は確定枠ではありません。" : "空き時間や繰り返し予約は、この試作からCALENDARへまだ自動接続しません。"}</div>}
             <p className="text-xs text-slate-600">この選択だけでは閲覧制限は有効になりません。実際の公開範囲は作品の公開設定で指定します。限定URLは厳密なアクセス制限ではありません。</p>
           </section>
         )}
@@ -260,11 +311,12 @@ export default function ApplicationV2Prototype() {
             </label>
             {isPaid && <label className="block space-y-1 text-sm"><span>支払方法</span>
               <select className={inputClass} value={data.payment} onChange={e => patch("payment", e.target.value)}>
-                <option value="onsite">現地・個別支払い</option><option value="online">オンライン事前決済（実際の連携は未実装）</option>
+                <option value="onsite" disabled={isLite && planName === "free"}>現地・個別支払い{isLite && planName === "free" ? "（Freeでは利用不可）" : ""}</option><option value="online">PARARI決済（Square接続が必要）</option>
               </select>
             </label>}
-            <label className="block space-y-1 text-sm"><span>参加者・購入者に尋ねたいこと（任意）</span>
-              <input className={inputClass} value={data.extraQuestion} onChange={e => patch("extraQuestion", e.target.value)} placeholder="例：経験年数を教えてください" />
+            {isLite && isPaid && planName === "free" && data.payment === "onsite" && <p className="text-sm text-amber-900">Freeで有料受付をする場合はSquare決済を選択してください。当日払いの案内だけなら料金を0円として自由記述で説明できます。</p>}
+            <label className="block space-y-1 text-sm"><span>参加者・購入者に尋ねたいこと（任意）{isLite ? "・Organizer以上で利用可能" : ""}</span>
+              <input className={inputClass} disabled={isLite} value={data.extraQuestion} onChange={e => patch("extraQuestion", e.target.value)} placeholder={isLite ? "Liteは氏名とメールアドレスのみ" : "例：経験年数を教えてください"} />
             </label>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
               <strong>重要：</strong>追加質問や自由記述は表示・回答収集のためだけのものです。料金・定員・予約可否・決済条件には反映しません。申込時の正式な条件は基本設定で指定してください。
@@ -296,7 +348,7 @@ export default function ApplicationV2Prototype() {
                     <p className="whitespace-pre-wrap text-sm">{data.description || "紹介文がありません"}</p>}
                 </>}
                 {key === "schedule" && <p className="text-sm">{cadenceLabel} ／ {data.date || "日付未設定"} ／ {data.startTime ? `${data.startTime}〜${endTime}` : "開始時刻未設定"} ／ {data.place || "場所未設定"}</p>}
-                {key === "capacity" && <p className="text-sm">定員：{data.capacity ? `${data.capacity}名` : "指定なし"} ／ 公開：{data.access === "public" ? "一般公開" : data.access === "unlisted" ? "URL限定" : "参加資格者に限定"}{isClass ? ` ／ ${data.attendance === "fixed" ? "固定受講者" : data.attendance === "mixed" ? "固定＋新規募集" : "自由参加"}` : ""}</p>}
+                {key === "capacity" && <p className="text-sm">定員：{data.capacity ? `${data.capacity}名` : isLite && isClass ? "在籍10名" : "指定なし"} ／ 公開：{data.access === "public" ? "一般公開" : data.access === "unlisted" ? "URL限定" : "参加資格者に限定"}{isClass ? ` ／ ${data.attendance === "fixed" ? "固定受講者" : data.attendance === "mixed" ? "固定＋新規募集" : "自由参加"}` : ""}</p>}
                 {key === "payment" && <p className="text-sm">{priceLabel} ／ {paymentLabel}</p>}
                 {key === "form" && <div className="space-y-2 text-sm"><p>氏名・メールアドレスを受け付けます。</p>{data.extraQuestion && <p>追加質問：{data.extraQuestion}</p>}<p className="text-xs text-slate-500">この試作で申込・課金はできません。</p></div>}
                 {key === "intro" && view === "edit" && <p className="text-xs text-slate-500">自由記述以外の条件は質問画面に戻って変更してください。</p>}
