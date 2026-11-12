@@ -27,6 +27,14 @@ export default function StartStudioPage() {
               STUDIOの作品リストへ
             </Link>
           ) : null}
+          <div className="rounded-xl bg-neutral-50 px-4 py-3 text-sm leading-7 text-neutral-700">
+            <p className="font-semibold text-neutral-900">作品づくりはFreeから始められます</p>
+            <p className="mt-1">
+              まずは無料で作品を書いてみることができます。
+              より多くの作品の制作・公開や、継続的な運営のための上位プランもあります。
+              詳しい比較や契約の管理はSTUDIOを利用する際に確認できます。
+            </p>
+          </div>
           <StudioCreateEntry />
           <p className="text-xs leading-6 text-neutral-500">
             このページを開くだけではSTUDIOは有効になりません。
