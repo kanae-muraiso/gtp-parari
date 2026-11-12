@@ -211,6 +211,7 @@ export default function ApplicationV2Prototype() {
               <span className="text-xs text-slate-600">{planName === "free" ? "Free" : planName === "plus" ? "Plus" : planName}</span>
             </div>
             <p className="text-sm">{isLite ? liteSummary[data.kind] : "質問に答えて案内を構成します。詳細なCALENDAR・FORM設定は既存管理画面で行います。"}</p>
+            {isLite && <p className="text-xs text-slate-700">Lite：APPLICATIONは1件まで。氏名・メールアドレス受付が基本です。無料受付は最大10名、継続クラスは在籍10名まで。</p>}
             {isLite && <p className="text-xs text-amber-900">Liteは簡易受付です。自動予約、月謝、回数券、空き枠の管理は行いません。質問の途中で有料プランへの切替を強制しません。</p>}
           </section>
         )}
@@ -252,7 +253,7 @@ export default function ApplicationV2Prototype() {
         )}
         {step === 2 && (
           <section className={cardClass + " space-y-4"}>
-            <h2 className="text-lg font-semibold">{isSale ? "どのように提供しますか？" : isBooking ? "いつ予約できますか？" : "いつ、どこで開催しますか？"}</h2>
+            <h2 className="text-lg font-semibold">{isSale ? "日時の指定は必要ですか？" : isBooking ? "いつ予約できますか？" : "いつ、どこで開催しますか？"}</h2>
             <label className="block space-y-1 text-sm"><span>{isSale ? "提供方法" : "開催パターン"}</span>
               <select className={inputClass} value={data.cadence} onChange={e => patch("cadence", e.target.value)}>
                 {isSale ? <><option value="none">日時の指定なし（通常販売）</option><option value="once">日時を指定する（チケット等）</option></> :
@@ -307,7 +308,7 @@ export default function ApplicationV2Prototype() {
           <section className={cardClass + " space-y-4"}>
             <h2 className="text-lg font-semibold">料金と質問を設定しましょう</h2>
             <label className="block space-y-1 text-sm"><span>{isSale ? "販売価格（円）" : "参加料金（円・無料は0）"}</span>
-              <input type="number" min="0" className={inputClass} value={data.price} onChange={e => patch("price", e.target.value)} />
+              <input type="number" min="0" className={inputClass} value={data.price} onChange={e => setData(old => ({ ...old, price: e.target.value, payment: isLite && planName === "free" && Number(e.target.value) > 0 ? "online" : old.payment }))} />
             </label>
             {isPaid && <label className="block space-y-1 text-sm"><span>支払方法</span>
               <select className={inputClass} value={data.payment} onChange={e => patch("payment", e.target.value)}>
