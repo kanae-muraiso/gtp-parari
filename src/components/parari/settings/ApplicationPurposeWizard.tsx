@@ -6,9 +6,35 @@ import { supabase } from "@/lib/supabaseClient";
 import type { ApplicationManagerCreatedApplication } from "./applicationManagerSupport";
 
 export type Purpose = "event" | "booking" | "class";
+type WizardEditableApplication = {
+  id: string;
+  title: string;
+  description: string | null;
+  definition: Record<string, unknown> & {
+    mode?: "lite" | "builder";
+    capacity?: number | null;
+    wizard?: {
+      version?: number;
+      kind?: Purpose;
+      date?: string | null;
+      startTime?: string | null;
+      durationMinutes?: number | null;
+      cadence?: string;
+      location?: string;
+      notes?: string;
+    };
+  };
+  payment_method: string;
+  payment_amount: number | null;
+  application_type: ApplicationManagerCreatedApplication["application_type"];
+  acceptance_mode: ApplicationManagerCreatedApplication["acceptance_mode"];
+  status: ApplicationManagerCreatedApplication["status"];
+};
+
 type Props = {
   purpose: Purpose;
   mode: "lite" | "builder";
+  initialApplication?: WizardEditableApplication | null;
   onCreated: (item: ApplicationManagerCreatedApplication) => void;
   onCancel: () => void;
 };
@@ -37,21 +63,21 @@ const purposeCopy: Record<Purpose, { heading: string; name: string; action: stri
 const fieldClass = "mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-neutral-600 focus:outline-none";
 const stepNames = ["内容", "開催・定員", "料金・確認"] as const;
 
-export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onCancel }: Props) {
+export default function ApplicationPurposeWizard({ purpose, mode, initialApplication, onCreated, onCancel }: Props) {
   const lite = mode === "lite";
   const copy = purposeCopy[purpose];
   const [step, setStep] = React.useState(0);
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [date, setDate] = React.useState("");
-  const [startTime, setStartTime] = React.useState("");
-  const [durationMinutes, setDurationMinutes] = React.useState("60");
-  const [place, setPlace] = React.useState("");
-  const [cadence, setCadence] = React.useState("weekly");
-  const [capacity, setCapacity] = React.useState(lite ? "10" : "");
-  const [fee, setFee] = React.useState("0");
-  const [payment, setPayment] = React.useState<"none" | "parari" | "on_site">("none");
-  const [notes, setNotes] = React.useState("");
+  const [name, setName] = React.useState(initialApplication?.title ?? "");
+  const [description, setDescription] = React.useState(initialApplication?.description ?? "");
+  const [date, setDate] = React.useState(initialApplication?.definition.wizard?.date ?? "");
+  const [startTime, setStartTime] = React.useState(initialApplication?.definition.wizard?.startTime ?? "");
+  const [durationMinutes, setDurationMinutes] = React.useState(String(initialApplication?.definition.wizard?.durationMinutes ?? 60));
+  const [place, setPlace] = React.useState(initialApplication?.definition.wizard?.location ?? "");
+  const [cadence, setCadence] = React.useState(initialApplication?.definition.wizard?.cadence ?? "weekly");
+  const [capacity, setCapacity] = React.useState(initialApplication ? String(initialApplication.definition.capacity ?? "") : (lite ? "10" : ""));
+  const [fee, setFee] = React.useState(String(initialApplication?.payment_amount ?? 0));
+  const [payment, setPayment] = React.useState<"none" | "parari" | "on_site">(initialApplication?.payment_method === "parari" ? "parari" : initialApplication?.payment_method === "on_site" ? "on_site" : "none");
+  const [notes, setNotes] = React.useState(initialApplication?.definition.wizard?.notes ?? "");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
   const [saved, setSaved] = React.useState(false);
@@ -92,7 +118,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
       const accessResponse = await fetch("/api/application/manage", { headers, cache: "no-store" });
       const access = await accessResponse.json();
       if (!accessResponse.ok || !access.ok) throw new Error(access.message || "プランを確認できませんでした。");
-      if (!access.access?.canCreateApplication) throw new Error("APPLICATIONの作成数が上限に達しています。");
+      if (!initialApplication && !access.access?.canCreateApplication) throw new Error("APPLICATIONの作成数が上限に達しています。");
       // Formal entitlement always comes from the server, not this display.
       const actualMode = access.access.applicationMode === "lite" ? "lite" : "builder";
       if (actualMode !== mode) throw new Error("プランの利用条件が変わりました。画面を再度開いてください。");
@@ -106,12 +132,16 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
         title: name.trim(),
         description: description.trim(),
         definition: {
+          ...(initialApplication?.definition ?? {}),
           mode,
-          fields: [], inputFields: [], blocks: [],
+          fields: initialApplication?.definition.fields ?? [],
+          inputFields: initialApplication?.definition.inputFields ?? [],
+          blocks: initialApplication?.definition.blocks ?? [],
           capacity: effectiveCapacity,
           actionLabel: copy.action, passEnabled: false, agreement: "",
           display: { applicationLabel: false, typeLabel: false, title: true, status: true, remainingSlots: true },
           wizard: {
+            ...(initialApplication?.definition.wizard ?? {}),
             version: 1, kind: purpose,
             date: purpose === "booking" ? null : date,
             startTime: purpose === "booking" ? null : startTime,
@@ -126,12 +156,17 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
         formId: null,
         acceptanceMode: "instant",
         paymentMethod: method,
-        saveAsDraftBeforePaymentSetup: method === "parari",
+        ...(initialApplication ? { applicationId: initialApplication.id } : {}),
+        saveAsDraftBeforePaymentSetup: method === "parari" && initialApplication?.status === "draft",
         paymentAmount: amount > 0 ? amount : null,
         paymentUrl: "", paymentInstructions: "", paymentConfirmationRequired: false,
         cancellationMode: "not_allowed",
       };
-      const response = await fetch("/api/application/manage", { method: "POST", headers, body: JSON.stringify(body) });
+      const response = await fetch("/api/application/manage", {
+        method: initialApplication ? "PATCH" : "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.ok || !result.application?.id) {
         if (result?.code === "SELLER_DISCLOSURE_REQUIRED") {
@@ -261,9 +296,9 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
           <div className="rounded-xl bg-neutral-50 p-4 text-sm leading-7">
             <strong>確認</strong>
             <p>{name || "名称未入力"} ／ {purpose !== "booking" ? (date + " " + startTime) : "日時は主催者と相談"} ／ {effectiveCapacity ?? (lite ? 10 : "指定なし")}名 ／ {isFee ? Number(fee).toLocaleString("ja-JP") + "円" : "無料"}</p>
-            <p className="text-xs text-neutral-500">保存すると下書きのAPPLICATIONを作成します。公開・作品への配置は既存の作品編集画面で行います。</p>
+            <p className="text-xs text-neutral-500">{initialApplication ? "既存のAPPLICATIONの内容を更新します。" : "保存すると下書きのAPPLICATIONを作成します。公開・作品への配置は既存の作品編集画面で行います。"}</p>
             {isFee && <p className="mt-2 text-xs font-semibold text-amber-900">
-              Squareをまだ接続していなくても、料金を含めて下書き保存できます。
+              {initialApplication?.status === "open" ? "公開中の有料受付の変更には決済設定が必要です。" : "Squareをまだ接続していなくても、料金を含めて下書き保存できます。"}
               受付開始はSquare接続と販売者情報の公開を済ませた後になります。
             </p>}
           </div>
@@ -278,7 +313,7 @@ export default function ApplicationPurposeWizard({ purpose, mode, onCreated, onC
           ) : (
             <button type="button" disabled={saving || saved} onClick={() => void submit()}
               className="rounded-full bg-neutral-950 px-6 py-2.5 text-sm font-bold text-white disabled:opacity-40">
-              {saving ? "保存しています…" : isFee ? "下書き保存して後で決済を設定" : "APPLICATIONを保存"}
+              {saving ? "保存しています…" : initialApplication ? "変更を保存" : isFee ? "下書き保存して後で決済を設定" : "APPLICATIONを保存"}
             </button>
           )}
           <button type="button" onClick={onCancel} disabled={saving} className="rounded-full px-5 py-2.5 text-sm font-bold text-neutral-500">作成をやめる</button>
