@@ -13,6 +13,7 @@ import {
 } from "next/server";
 
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 
 import {
   getEffectivePlan,
@@ -1461,6 +1462,16 @@ export async function POST(
       );
     }
 
+    if (paymentMethod === "parari" &&
+        !sellerDisclosureReady(await readSellerDisclosure(auth.user.id))) {
+      return NextResponse.json({
+        ok: false,
+        code: "SELLER_DISCLOSURE_REQUIRED",
+        message: "Square決済を使うには、販売者情報・特商法表記・個人情報の取扱いを登録して公開してください。",
+        settingsUrl: "/my/settings/seller",
+      }, { status: 409 });
+    }
+
     if (
       paymentMethod === "parari" &&
       !(await hasActiveSquareConnection(auth.user.id))
@@ -2045,6 +2056,16 @@ export async function PATCH(
         },
         { status: 400 },
       );
+    }
+
+    if (paymentMethod === "parari" &&
+        !sellerDisclosureReady(await readSellerDisclosure(auth.user.id))) {
+      return NextResponse.json({
+        ok: false,
+        code: "SELLER_DISCLOSURE_REQUIRED",
+        message: "Square決済を使うには、販売者情報・特商法表記・個人情報の取扱いを登録して公開してください。",
+        settingsUrl: "/my/settings/seller",
+      }, { status: 409 });
     }
 
     if (
