@@ -37,7 +37,9 @@ export default function StartStudioPage() {
           </div>
           <StudioCreateEntry />
           <p className="text-xs leading-6 text-neutral-500">
-            このページを開くだけではSTUDIOは有効になりません。
+            この画面や白紙の編集画面を開くだけでは、STUDIOは有効になりません。
+            初めて書く場合は、最初の作品が保存された時点で利用が始まります。
+            STUDIOは後から休止・再開でき、作品はそのまま残ります。
           </p>
           <Link
             href="/my/bookshelf"

@@ -15,6 +15,7 @@ export async function activateStudioForCurrentUser(): Promise<void> {
     {
       user_id: user.id,
       studio_enabled: true,
+      studio_paused: false,
       studio_enabled_at: now,
       updated_at: now,
     },
