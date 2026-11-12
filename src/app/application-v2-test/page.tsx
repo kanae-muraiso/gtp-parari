@@ -174,7 +174,7 @@ export default function ApplicationV2Prototype() {
     });
   }
   const endTime = (() => {
-    if (!/^\\d{2}:\\d{2}$/.test(data.startTime)) return "";
+    if (!/^\d{2}:\d{2}$/.test(data.startTime)) return "";
     const [hours, minutes] = data.startTime.split(":").map(Number);
     const duration = Number(data.durationMinutes);
     if (!Number.isFinite(duration) || duration <= 0) return "";
