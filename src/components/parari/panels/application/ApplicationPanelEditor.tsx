@@ -324,7 +324,7 @@ export default function ApplicationPanelEditor({
   async function replaceArchivedApplication(target: ManagedApplication) {
     if (archivingApplicationId) return;
     const confirmed = window.confirm(
-      "「" + target.title + "」の受付を終了・保管して、新しいAPPLICATIONを作りますか？\\n\\n既存の申込履歴は残ります。保管したAPPLICATIONはFreeの利用件数に含まれなくなります。"
+      "「" + target.title + "」の受付を終了・保管して、新しいAPPLICATIONを作りますか？\n\n既存の申込履歴は残りますが、このAPPLICATIONを利用している他の作品の受付も終了します。保管したAPPLICATIONはFreeの利用件数に含まれなくなります。"
     );
     if (!confirmed) return;
     setArchivingApplicationId(target.id);
@@ -582,6 +582,34 @@ export default function ApplicationPanelEditor({
       <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">
         APPLICATION
       </div>
+
+      {!loading && applicationLimit === 1 && applications.length > 0 ? (
+        <section aria-label="APPLICATIONの入れ替え" className="mt-4 rounded-2xl border border-amber-300 bg-white p-4">
+          <h3 className="text-sm font-bold text-neutral-950">別のAPPLICATIONを作りたい場合</h3>
+          <p className="mt-2 text-xs leading-6 text-neutral-700">
+            この作品に新しいAPPLICATIONパネルを追加する必要はありません。
+            現在のAPPLICATIONを終了・保管すると、申込履歴を残したまま、
+            このパネル内で新しいAPPLICATIONの作成へ進めます。
+          </p>
+          <div className="mt-3 space-y-2">
+            {applications.map(application => (
+              <button
+                key={application.id}
+                type="button"
+                disabled={archivingApplicationId !== null}
+                onClick={() => { void replaceArchivedApplication(application); }}
+                className="w-full rounded-xl bg-neutral-900 px-4 py-3 text-left text-sm font-bold text-white disabled:opacity-50"
+              >
+                {archivingApplicationId === application.id ? "終了・保管中…" :
+                  `「${application.title}」を終了・保管して、新しく作成`}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs leading-6 text-neutral-500">
+            保管前に確認画面が出ます。アーカイブは完全削除ではありません。
+          </p>
+        </section>
+      ) : null}
 
       <div className="mt-3">
         <label className="block text-xs font-bold text-neutral-600">
