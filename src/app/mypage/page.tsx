@@ -54,7 +54,6 @@ function HomeCard({ title, description, href, action }: HomeCardProps) {
 
 export default function MyPage() {
   const {
-    studioEnabled,
     hasApplications,
     hasCalendar,
     hasMessages,
@@ -221,17 +220,6 @@ export default function MyPage() {
           ) : null}
         </div>
 
-        {!loading ? (
-          <div className="mt-8 border-t border-neutral-100 pt-5 text-xs text-neutral-500">
-            作品をつくりたい方は{" "}
-            <Link
-              href={studioEnabled ? "/my/works" : "/my/bookshelf"}
-              className="font-bold text-emerald-800 underline underline-offset-4 hover:text-emerald-950"
-            >
-              {studioEnabled ? "STUDIOで作品をつくる" : "書棚から作品を作る"}
-            </Link>
-          </div>
-        ) : null}
       </div>
     </main>
   );
