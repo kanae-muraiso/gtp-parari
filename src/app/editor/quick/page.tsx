@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { activateStudioForCurrentUser } from "@/lib/parari/workspace/activateStudio";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
 import WritingSsotSurface from "@/components/parari/writing/WritingSsotSurface";
@@ -26,6 +27,7 @@ export default function QuickEditorPage() {
   const saveLockRef = useRef(false);
   const pendingSaveRef = useRef<string | null>(null);
   const controlCandidateRef = useRef(false);
+  const activationPendingRef = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -108,6 +110,7 @@ export default function QuickEditorPage() {
           .select("id,revision,content").eq("id", result.id).eq("owner", user.id).single();
         if (error || !saved) throw new Error("保存状態を確認できませんでした。");
         workRef.current = saved;
+        activationPendingRef.current = true;
       }
 
       const saved = workRef.current;
@@ -125,6 +128,13 @@ export default function QuickEditorPage() {
         const result = await response.json().catch(() => null);
         if (!response.ok || !result?.ok) throw new Error(result?.message ?? "保存できませんでした。");
         workRef.current = { id: saved.id, revision: result.revision, content: nextSsot };
+      }
+
+      // First meaningful save, not merely opening Writing, enables STUDIO.
+      // Keep this flag if the preference update fails so the next save retries.
+      if (activationPendingRef.current) {
+        await activateStudioForCurrentUser();
+        activationPendingRef.current = false;
       }
 
       setSaveState("saved");
