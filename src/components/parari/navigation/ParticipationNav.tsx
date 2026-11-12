@@ -15,6 +15,12 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
   return <a href={item.href} onClick={follow} aria-disabled={leaving || undefined} className={className}>{children}</a>;
 }
 
+// Compatibility for legacy pages. Switching membership destinations now
+// happens exclusively from LIBRARY HOME, not from global headers.
+export function ParticipationMenu() {
+  return null;
+}
+
 export function ParticipationReturn({ dark = false }: { dark?: boolean }) {
   const { origin } = useParticipations();
   if (!origin) return null;
