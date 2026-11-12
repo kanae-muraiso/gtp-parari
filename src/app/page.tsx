@@ -47,21 +47,23 @@ export default function HomePage() {
         return;
       }
 
-      // New members without a saved preference begin in LIBRARY v2.
-      // Existing members keep their explicitly saved startup preference.
-      const { data: preferenceData } = await supabase
-        .from("user_workspace_preferences")
-        .select("start_destination,last_workspace,studio_enabled")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // New members begin in LIBRARY. Previously active creators keep their
+      // startup choice, even when studio eligibility came from legacy works.
+      const [preference, experience] = await Promise.all([
+        supabase
+          .from("user_workspace_preferences")
+          .select("start_destination,last_workspace")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase.rpc("get_my_parari_experience"),
+      ]);
       if (!mounted) return;
 
-      if (!preferenceData) {
-        router.replace("/my/bookshelf");
-        return;
-      }
-
-      if (!preferenceData.studio_enabled) {
+      const preferenceData = preference.data;
+      const experienceData = Array.isArray(experience.data)
+        ? experience.data[0]
+        : experience.data;
+      if (!preferenceData || !experienceData?.studio_enabled) {
         router.replace("/my/bookshelf");
         return;
       }
