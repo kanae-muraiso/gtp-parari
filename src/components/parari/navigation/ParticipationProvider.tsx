@@ -52,7 +52,15 @@ export function ParticipationProvider({ children }: { children: ReactNode }) {
       setState({ userId: current.id, items: result.participations, loading: false, error: "" });
     } catch (error) {
       if (version !== generation.current) return;
-      setState({ userId: current.id, items: [], loading: false, error: error instanceof Error && error.name !== "AbortError" ? error.message : "参加先を取得できませんでした。もう一度お試しください。" });
+      // A transient refresh error should not remove previously verified destinations.
+      setState(previous => ({
+        userId: current.id,
+        items: previous.userId === current.id ? previous.items : [],
+        loading: false,
+        error: error instanceof Error && error.name !== "AbortError"
+          ? error.message
+          : "参加先を取得できませんでした。もう一度お試しください。",
+      }));
     } finally { window.clearTimeout(timer); }
   }, []);
 
