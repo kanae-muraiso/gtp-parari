@@ -1823,7 +1823,7 @@ export default function MyWorksPage() {
                         <div className="mt-1 text-xs text-neutral-400">更新: {formatDate(work.updated_at)}</div>
                       </div>
                       <div className="flex shrink-0 gap-2">
-                        <Link href={editHref} className="rounded-full bg-neutral-950 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800">編集</Link>
+                        <Link href={editHref} className="rounded-full bg-[#277C66] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#216A57]">編集</Link>
                         <Link href={publicHref} target="_blank" rel="noreferrer" className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100">表示</Link>
                       </div>
                     </div>
@@ -2248,7 +2248,7 @@ export default function MyWorksPage() {
                                 ? `/editor-v2/${encodeURIComponent(work.id)}`
                                 : `/writing/${work.id}?mode=editing`
                             }
-                            className="inline-flex w-full justify-center rounded-full bg-neutral-900 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-neutral-700 sm:w-auto"
+                            className="inline-flex w-full justify-center rounded-full bg-[#277C66] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#216A57] sm:w-auto"
                           >
                             編集
                           </Link>
