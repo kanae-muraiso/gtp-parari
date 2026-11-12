@@ -17,6 +17,9 @@ const STUDIO_PATH_PREFIXES = [
 ] as const;
 
 export function isStudioWorkspacePath(path: string) {
+  // The blank quick editor is a try-before-activation space. No work is created
+  // until meaningful content is saved; the save then activates STUDIO.
+  if (path === "/editor/quick") return false;
   return STUDIO_PATH_PREFIXES.some(prefix => path === prefix || path.startsWith(`${prefix}/`));
 }
 
