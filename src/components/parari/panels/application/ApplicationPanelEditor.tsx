@@ -324,7 +324,7 @@ export default function ApplicationPanelEditor({
   async function replaceArchivedApplication(target: ManagedApplication) {
     if (archivingApplicationId) return;
     const confirmed = window.confirm(
-      "「" + target.title + "」の受付を終了・保管して、新しいAPPLICATIONを作りますか？\n\n既存の申込履歴は残ります。保管したAPPLICATIONはFreeの利用件数に含まれなくなります。"
+      "「" + target.title + "」の受付を終了・保管して、新しいAPPLICATIONを作りますか？\n\n既存の申込履歴は残りますが、このAPPLICATIONを利用している他の作品の受付も終了します。保管したAPPLICATIONはFreeの利用件数に含まれなくなります。"
     );
     if (!confirmed) return;
     setArchivingApplicationId(target.id);
