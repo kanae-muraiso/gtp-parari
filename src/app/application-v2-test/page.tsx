@@ -1,0 +1,454 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
+import SaveApplicationWizardDraft from "./SaveApplicationWizardDraft";
+
+type Kind = "event" | "booking" | "sale" | "class";
+type PanelKey = "intro" | "schedule" | "capacity" | "payment" | "form";
+type Data = {
+  kind: Kind;
+  title: string;
+  description: string;
+  date: string;
+  startTime: string;
+  durationMinutes: string;
+  place: string;
+  cadence: string;
+  attendance: string;
+  capacity: string;
+  price: string;
+  payment: string;
+  access: string;
+  extraQuestion: string;
+  notes: string;
+};
+const defaults: Data = {
+  kind: "event", title: "", description: "", date: "", startTime: "", durationMinutes: "60", place: "",
+  cadence: "once", attendance: "per_event", capacity: "", price: "0",
+  payment: "onsite", access: "public", extraQuestion: "", notes: "",
+};
+const kinds: { id: Kind; label: string; examples: string; icon: string }[] = [
+  { id: "event", label: "イベントを開催", examples: "バザー・パーティ・単発レッスン", icon: "◇" },
+  { id: "booking", label: "予約を受け付ける", examples: "説明会・個人相談・面談", icon: "◷" },
+  { id: "sale", label: "作品・商品を販売", examples: "PARARI作品の販売／物品販売は準備中", icon: "▣" },
+  { id: "class", label: "クラスを運営", examples: "ZUMBA・生け花・英会話", icon: "◎" },
+];
+const panelLabels: Record<PanelKey, string> = {
+  intro: "紹介", schedule: "日時・場所", capacity: "参加・受付条件",
+  payment: "料金・支払方法", form: "申込・追加質問",
+};
+const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-amber-600 focus:outline-none";
+const cardClass = "rounded-xl border border-slate-200 bg-white p-4";
+const buttonClass = "rounded-lg bg-amber-700 px-5 py-2.5 font-medium text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:bg-slate-300";
+
+export default function ApplicationV2Prototype() {
+  const [data, setData] = useState<Data>(defaults);
+  const [step, setStep] = useState(0);
+  const [panelOrder, setPanelOrder] = useState<PanelKey[]>(["intro", "schedule", "capacity", "payment", "form"]);
+  const [view, setView] = useState<"edit" | "visitor">("edit");
+  const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [planMode, setPlanMode] = useState<"lite" | "builder" | null>(null);
+  const [previewMode, setPreviewMode] = useState<"lite" | "builder">("lite");
+  const [planName, setPlanName] = useState("");
+  const [planLoading, setPlanLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    async function checkPlan() {
+      try {
+        if (!supabase) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/application/manage", {
+          headers: { Authorization: "Bearer " + session.access_token },
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!active || !json?.ok) return;
+        setPlanMode(json.access?.applicationMode === "builder" ? "builder" : "lite");
+        setPlanName(String(json.access?.effectivePlan || ""));
+      } finally {
+        if (active) setPlanLoading(false);
+      }
+    }
+    void checkPlan();
+    return () => { active = false; };
+  }, []);
+  const selectedMode = planMode === "builder" ? previewMode : planMode;
+  const isLite = selectedMode === "lite";
+  const simulatingLite = planMode === "builder" && selectedMode === "lite";
+  const planText = selectedMode === "lite" ? "APPLICATION Lite" : selectedMode === "builder" ? "APPLICATION Builder" : "プラン確認中";
+  useEffect(() => {
+    const kind = new URLSearchParams(window.location.search).get("kind");
+    if (!kind || !["event", "booking", "sale", "class"].includes(kind)) return;
+    const chosen = kind as Kind;
+    setData(old => ({
+      ...old,
+      kind: chosen,
+      cadence: chosen === "sale" ? "none" : "once",
+      attendance: chosen === "class" ? "fixed" : old.attendance,
+    }));
+    // Purpose was selected on the management screen; continue at its first question.
+    setStep(1);
+  }, []);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("edit");
+    if (!id || !/^[0-9a-fA-F-]{36}$/.test(id) || !supabase) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (!session?.access_token) throw new Error("編集にはログインが必要です。");
+        const response = await fetch("/api/application/manage", {
+          headers: { Authorization: "Bearer " + session.access_token },
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.ok) throw new Error(result?.message || "取得に失敗しました。");
+        const application = (result.applications as Array<Record<string, unknown>>).find(row => row.id === id);
+        if (!application) throw new Error("編集できるAPPLICATIONが見つかりません。");
+        const definition = application.definition as Record<string, unknown> | null;
+        const wizard = definition?.wizard as Record<string, unknown> | undefined;
+        if (!wizard || wizard.version !== 1) throw new Error("質問型で作成されたAPPLICATIONではありません。");
+        if (!["event", "booking", "sale", "class"].includes(String(wizard.kind))) throw new Error("種類が正しくありません。");
+        if (cancelled) return;
+        setData({
+          ...defaults,
+          kind: wizard.kind as Kind,
+          title: String(application.title || ""),
+          description: String(application.description || ""),
+          date: String(wizard.date || ""),
+          startTime: String(wizard.startTime || ""),
+          durationMinutes: String(wizard.durationMinutes || 60),
+          place: String(wizard.location || ""),
+          cadence: String(wizard.cadence || "once"),
+          attendance: String(wizard.attendance || "per_event"),
+          capacity: definition?.capacity == null ? "" : String(definition.capacity),
+          price: application.payment_amount == null ? "0" : String(application.payment_amount),
+          payment: application.payment_method === "parari" ? "online" : "onsite",
+          access: String(wizard.visibilityHint || "public"),
+          extraQuestion: String(wizard.extraQuestion || ""),
+          notes: String(wizard.notes || ""),
+        });
+        const savedOrder = wizard.panelOrder;
+        if (Array.isArray(savedOrder)) {
+          const allowed: PanelKey[] = ["intro", "schedule", "capacity", "payment", "form"];
+          const selected = savedOrder.filter((x): x is PanelKey => typeof x === "string" && allowed.includes(x as PanelKey));
+          setPanelOrder([...new Set([...selected, ...allowed])]);
+        }
+        setLoadedApplicationId(id);
+      } catch (cause) {
+        if (!cancelled) setLoadError(cause instanceof Error ? cause.message : "読み込みに失敗しました。");
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const patch = <K extends keyof Data>(key: K, value: Data[K]) => setData(old => ({ ...old, [key]: value }));
+  const isSale = data.kind === "sale";
+  const isBooking = data.kind === "booking";
+  const isClass = data.kind === "class";
+  const isPaid = Number(data.price) > 0;
+  const liteSummary: Record<Kind, string> = {
+    event: "名前とメールアドレスで参加受付。無料は最大10名。開催日時は案内として表示し、日時枠の自動予約は行いません。",
+    booking: "予約希望者の名前とメールアドレスを受け付けます。日時の調整・確定は主催者が個別に行います。",
+    sale: "PARARI作品の販売は既存の販売管理から行えます。アクセサリーなどの物品販売は準備が整うまで利用できません。",
+    class: "同じ受講者10名までを継続登録できます。毎回の申込や出欠管理は行いません。退会は主催者が操作します。",
+  };
+  const hasSchedule = (isSale ? data.cadence !== "none" && !isLite : isBooking ? !isLite : true);
+  const panels = useMemo(() => panelOrder.filter(key =>
+    (key !== "schedule" || hasSchedule) &&
+    (key !== "capacity" || !isSale) &&
+    (key !== "payment" || isPaid) &&
+    (key !== "form" || !isSale || Boolean(data.extraQuestion.trim()))
+  ), [panelOrder, hasSchedule, isSale, isPaid, data.payment, data.extraQuestion]);
+  function move(key: PanelKey, delta: number) {
+    setPanelOrder(old => {
+      const current = [...old];
+      const from = current.indexOf(key);
+      const to = current.indexOf(panels[panels.indexOf(key) + delta]);
+      if (to < 0 || from < 0) return old;
+      [current[from], current[to]] = [current[to], current[from]];
+      return current;
+    });
+  }
+  const endTime = (() => {
+    if (!/^\d{2}:\d{2}$/.test(data.startTime)) return "";
+    const [hours, minutes] = data.startTime.split(":").map(Number);
+    const duration = Number(data.durationMinutes);
+    if (!Number.isFinite(duration) || duration <= 0) return "";
+    const total = hours * 60 + minutes + duration;
+    const dayOffset = Math.floor(total / 1440);
+    const clock = `${String(Math.floor((total % 1440) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    return clock + (dayOffset ? `（翌日+${dayOffset}日）` : "");
+  })();
+  const cadenceLabel = data.cadence === "weekly" ? "毎週" : data.cadence === "daily" ? "毎日" : data.cadence === "custom" ? "日程を個別に指定" : "1回のみ";
+  const priceLabel = isPaid ? `${Number(data.price).toLocaleString("ja-JP")}円` : "無料";
+  const paymentLabel = !isPaid ? "支払い不要" : data.payment === "online" ? "オンライン事前決済" : "現地・個別支払い";
+  const progress = ["入口", "内容", "日時・提供", "受付条件", "料金・質問", "レイアウト"];
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <header className="space-y-2">
+          <Link href="/my/works" className="text-sm text-amber-800 underline">← STUDIOに戻る</Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold">APPLICATION v2 試作</h1>
+            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold">{planText}</span>
+          </div>
+          <p className="text-sm text-slate-600">4つの入口から始め、質問に答えるだけで案内パネルを構成する操作実験です。保存ボタンを押すまではサーバーへ送信されません。</p>
+        </header>
+        {planLoading ? (
+          <p className="text-sm text-slate-600">利用プランを確認しています…</p>
+        ) : !planMode ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+            プランを確認できませんでした。保存するにはログインしてください。
+          </p>
+        ) : (
+          <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <strong>{planText}</strong>
+              <span className="text-xs text-slate-600">{planName === "free" ? "Free" : planName === "plus" ? "Plus" : planName}</span>
+            </div>
+            {planMode === "builder" && (
+              <div className="space-y-1">
+                <label htmlFor="wizard-preview-mode" className="block text-sm font-semibold">確認する画面</label>
+                <select id="wizard-preview-mode" className={inputClass} value={previewMode}
+                  onChange={e => setPreviewMode(e.target.value === "builder" ? "builder" : "lite")}>
+                  <option value="lite">Liteとして確認（体験表示）</option>
+                  <option value="builder">Builderとして確認</option>
+                </select>
+              </div>
+            )}
+            {simulatingLite && (
+              <p className="rounded-lg border border-amber-300 bg-white p-3 text-xs text-amber-950">
+                実際のプランは変更しません。Liteとして確認している間は下書き保存を停止します。
+              </p>
+            )}
+            <p className="text-sm">{isLite ? liteSummary[data.kind] : "質問に答えて案内を構成します。詳細なCALENDAR・FORM設定は既存管理画面で行います。"}</p>
+            {isLite && <p className="text-xs text-slate-700">Lite：APPLICATIONは1件まで。氏名・メールアドレス受付が基本です。無料受付は最大10名、継続クラスは在籍10名まで。</p>}
+            {isLite && <p className="text-xs text-amber-900">Liteは簡易受付です。自動予約、月謝、回数券、空き枠の管理は行いません。質問の途中で有料プランへの切替を強制しません。</p>}
+          </section>
+        )}
+        {loadError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{loadError}</p>}
+        <nav aria-label="作成手順" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {progress.map((p, i) => (
+            <div key={p} className={`rounded-lg px-2 py-2 text-center text-xs ${step === i ? "bg-amber-100 font-semibold text-amber-900" : "bg-white text-slate-500"}`}>
+              {i + 1}. {p}
+            </div>
+          ))}
+        </nav>
+        {step === 0 && (
+          <section className={cardClass}>
+            <h2 className="mb-1 text-lg font-semibold">何を始めますか？</h2>
+            <p className="mb-4 text-sm text-slate-600">近いものを選んでください。入口は質問の順番を決めるものです。できる機能はご利用プランによって異なります。</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {kinds.map(kind => (
+                <button key={kind.id} type="button" onClick={() => setData(old => ({ ...old, kind: kind.id, cadence: kind.id === "sale" ? "none" : "once", attendance: kind.id === "class" ? "fixed" : old.attendance }))}
+                  aria-pressed={data.kind === kind.id}
+                  className={`rounded-xl border p-4 text-left ${data.kind === kind.id ? "border-amber-700 bg-amber-50" : "border-slate-200 bg-white"}`}>
+                  <div className="text-xl">{kind.icon}</div>
+                  <div className="font-semibold">{kind.label}</div>
+                  <div className="mt-1 text-xs text-slate-600">{kind.examples}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {step === 1 && (
+          <section className={cardClass + " space-y-4"}>
+            <h2 className="text-lg font-semibold">{isSale ? "何を販売しますか？" : isClass ? "どんなクラスですか？" : isBooking ? "何の予約を受け付けますか？" : "どんなイベントですか？"}</h2>
+            {isSale ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Link href="/my/sales" className="rounded-xl border border-amber-300 bg-amber-50 p-5 transition hover:border-amber-600">
+                  <div className="font-semibold text-slate-900">PARARI作品を販売する</div>
+                  <p className="mt-2 text-sm text-slate-700">PAGE・BOOKなどのデジタル作品を販売管理画面で設定します。</p>
+                  <span className="mt-3 inline-block text-sm font-semibold text-amber-800">販売設定へ進む</span>
+                </Link>
+                <div aria-disabled="true" className="cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 p-5 text-slate-400">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold">物品を販売する</span>
+                    <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-500">準備中</span>
+                  </div>
+                  <p className="mt-2 text-sm">アクセサリー・手作り品など。発送・返品・販売者情報の運用を整えるまで利用できません。</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="block space-y-1 text-sm"><span>名称</span>
+                  <input className={inputClass} value={data.title} onChange={e => patch("title", e.target.value)} placeholder="例：金曜夜のZUMBA" />
+                </label>
+                <label className="block space-y-1 text-sm"><span>内容・紹介（自由記述）</span>
+                  <textarea className={inputClass} rows={4} value={data.description} onChange={e => patch("description", e.target.value)} placeholder="参加者に伝えたいこと" />
+                </label>
+              </>
+            )}
+          </section>
+        )}
+        {step === 2 && (
+          <section className={cardClass + " space-y-4"}>
+            <h2 className="text-lg font-semibold">{isSale ? isLite ? "商品をどう案内しますか？" : "日時の指定は必要ですか？" : isBooking ? isLite ? "予約希望をどう受け付けますか？" : "いつ予約できますか？" : "いつ、どこで開催しますか？"}</h2>
+            {isBooking && isLite ? (
+              <div className="rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
+                <strong>Liteは予約希望の受付のみ</strong>
+                <p className="mt-1">希望者の氏名とメールアドレスを受け取り、日時は主催者が個別に調整します。予約枠・開始日時・所要時間を登録することはできません。</p>
+              </div>
+            ) : isSale && isLite ? (
+              <div className="rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
+                <strong>Liteでは日時指定のない単品販売</strong>
+                <p className="mt-1">チケットの利用日時や座席、販売在庫はこの画面で管理できません。商品の説明・提供方法は自由記述欄で案内してください。</p>
+              </div>
+            ) : (
+              <label className="block space-y-1 text-sm"><span>{isSale ? "提供方法" : "開催パターン"}</span>
+                <select className={inputClass} value={data.cadence} onChange={e => patch("cadence", e.target.value)}>
+                  {isSale ? <><option value="none">日時の指定なし（通常販売）</option><option value="once">日時を指定する（チケット等・案内のみ）</option></> :
+                    <><option value="once">1回のみ</option><option value="weekly" disabled={isLite && !isClass}>毎週{isLite && !isClass ? "（現在利用不可）" : ""}</option><option value="daily" disabled={isLite && !isClass}>毎日{isLite && !isClass ? "（現在利用不可）" : ""}</option><option value="custom" disabled>個別の日程を複数登録（今後対応）</option></>}
+                </select>
+              </label>
+            )}
+            {hasSchedule && <>
+              <p className="text-xs text-slate-600">{isLite ? "日時は案内用の情報です。Liteでは日時別の予約枠は生成しません。" : "日程と繰り返しは操作フローの確認用です。予約枠の生成・重複検査はこの試作では行いません。"}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1 text-sm"><span>{data.cadence === "once" ? "開催日" : "開始日・例示日"}</span>
+                  <input type="date" className={inputClass} value={data.date} onChange={e => patch("date", e.target.value)} /></label>
+                <label className="block space-y-1 text-sm"><span>開始時刻</span>
+                  <input type="time" className={inputClass} value={data.startTime} onChange={e => patch("startTime", e.target.value)} /></label>
+                <label className="block space-y-1 text-sm"><span>所要時間</span>
+                  <select className={inputClass} value={data.durationMinutes} onChange={e => patch("durationMinutes", e.target.value)}>
+                    {[15, 30, 45, 60, 75, 90, 120, 150, 180, 240, 360, 480].map(minutes => <option key={minutes} value={minutes}>{minutes >= 60 ? `${Math.floor(minutes / 60)}時間${minutes % 60 ? `${minutes % 60}分` : ""}` : `${minutes}分`}</option>)}
+                  </select></label>
+              </div>
+              <p className="text-sm text-slate-600">終了時刻：{endTime || "開始時刻を選択してください"}（自動計算）</p>
+              <label className="block space-y-1 text-sm"><span>会場・提供場所</span>
+                <input className={inputClass} value={data.place} onChange={e => patch("place", e.target.value)} placeholder="例：京都市内 / オンライン" /></label>
+            </>}
+            {isSale && !hasSchedule && <label className="block space-y-1 text-sm"><span>提供についての補足（自由記述）</span><textarea className={inputClass} value={data.notes} onChange={e => patch("notes", e.target.value)} rows={3} placeholder="ダウンロード・配送・手渡し等" /></label>}
+          </section>
+        )}
+        {step === 3 && (
+          <section className={cardClass + " space-y-4"}>
+            <h2 className="text-lg font-semibold">{isSale ? "購入者への案内" : isBooking && isLite ? "何名から希望を受け付けますか？" : "誰が、どのように参加できますか？"}</h2>
+            <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+              <strong>案内ページの公開範囲</strong>
+              <p className="mt-1">一般公開・URL限定・非公開は、作品を公開するときに設定します。この受付フォームで変更する項目ではありません。</p>
+            </div>
+            {!isSale && <label className="block space-y-1 text-sm"><span>{isBooking && !isLite ? "1枠あたりの定員" : isLite && isClass ? "在籍定員（1〜10名）" : "定員（未入力なら指定なし）"}</span>
+              <input
+                type="number" min="1"
+                max={isLite && (isClass || !isPaid) ? 10 : undefined}
+                className={inputClass}
+                value={data.capacity}
+                onChange={e => {
+                  const value = e.target.value;
+                  if (!value) { patch("capacity", ""); return; }
+                  const numeric = Number(value);
+                  if (!Number.isFinite(numeric) || numeric < 1) return;
+                  const cap = isLite && (isClass || !isPaid) ? 10 : null;
+                  patch("capacity", String(Math.floor(cap === null ? numeric : Math.min(numeric, cap))));
+                }}
+                placeholder={isLite ? "例：10" : "例：30"}
+              />
+            </label>}
+            {isLite && !isSale && <p className="text-xs text-amber-800">{isClass ? "Liteの継続クラスは在籍10名までです。退会者の履歴を残したまま、在籍枠を空けられます。" : "Liteの無料受付は最大10名です。有料Square受付は種類により上限の扱いが異なります。"}</p>}
+            {isClass && <label className="block space-y-1 text-sm"><span>受講者の参加方式</span>
+              <select className={inputClass} value={data.attendance} onChange={e => patch("attendance", e.target.value)}>
+                <option value="per_event" disabled={isLite}>開催回ごとに自由参加（OrganizerのCALENDAR管理）</option>
+                <option value="fixed">決まった受講者のみ（Lite対応）</option>
+                <option value="mixed">既存受講者＋新規募集（Lite対応・合計10名まで）</option>
+              </select>
+            </label>}
+            {isBooking && !isLite && <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">空き時間や繰り返し予約は、この試作からCALENDARへまだ自動接続しません。</div>}
+            <p className="text-xs text-slate-600">受付可否と作品の公開範囲は別に管理します。URL限定は厳密な本人確認ではありません。</p>
+          </section>
+        )}
+        {step === 4 && (
+          <section className={cardClass + " space-y-4"}>
+            <h2 className="text-lg font-semibold">料金と質問を設定しましょう</h2>
+            <label className="block space-y-1 text-sm"><span>{isSale ? "販売価格（円）" : isBooking && isLite ? "予約希望の受付料金（無料は0円）" : "参加料金（円・無料は0）"}</span>
+              <input type="number" min="0" className={inputClass} value={data.price} onChange={e => setData(old => {
+                const price = e.target.value;
+                const shouldCap = isLite && (old.kind === "class" || Number(price) === 0);
+                const existingCapacity = Number(old.capacity);
+                return {
+                  ...old,
+                  price,
+                  capacity: shouldCap && old.capacity && existingCapacity > 10 ? "10" : old.capacity,
+                  payment: isLite && planName === "free" && Number(price) > 0 ? "online" : old.payment,
+                };
+              })} />
+            </label>
+            {isPaid && <label className="block space-y-1 text-sm"><span>支払方法</span>
+              <select className={inputClass} value={data.payment} onChange={e => patch("payment", e.target.value)}>
+                <option value="onsite" disabled={isLite && planName === "free"}>現地・個別支払い{isLite && planName === "free" ? "（Freeでは利用不可）" : ""}</option><option value="online">PARARI決済（Square接続が必要）</option>
+              </select>
+            </label>}
+            {isLite && isPaid && planName === "free" && data.payment === "onsite" && <p className="text-sm text-amber-900">Freeで有料受付をする場合はSquare決済を選択してください。当日払いの案内だけなら料金を0円として自由記述で説明できます。</p>}
+            {isLite ? (
+              <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+                <strong>Liteで受け付ける情報</strong>
+                <p className="mt-1">氏名とメールアドレスのみです。追加質問を作成する機能はOrganizer以上で利用できます。</p>
+              </div>
+            ) : (
+              <label className="block space-y-1 text-sm"><span>参加者・購入者に尋ねたいこと（任意）</span>
+                <input className={inputClass} value={data.extraQuestion} onChange={e => patch("extraQuestion", e.target.value)} placeholder="例：経験年数を教えてください" />
+              </label>
+            )}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+              <strong>重要：</strong>追加質問や自由記述は表示・回答収集のためだけのものです。料金・定員・予約可否・決済条件には反映しません。申込時の正式な条件は基本設定で指定してください。
+            </div>
+          </section>
+        )}
+        {step === 5 && (
+          <section className="space-y-4">
+            <div className={cardClass + " space-y-3"}>
+              <h2 className="text-lg font-semibold">パネルを自動構成しました</h2>
+              <p className="text-sm text-slate-600">パネルの追加・削除はできません。順番の変更と紹介・補足文の編集だけができます。日時・料金・定員は前の質問に戻って修正します。</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setView("edit")} className={`rounded-lg px-4 py-2 text-sm ${view === "edit" ? "bg-amber-700 text-white" : "bg-slate-100"}`}>構成を整える</button>
+                <button type="button" onClick={() => setView("visitor")} className={`rounded-lg px-4 py-2 text-sm ${view === "visitor" ? "bg-amber-700 text-white" : "bg-slate-100"}`}>参加者の表示</button>
+              </div>
+            </div>
+            {panels.map((key, index) => (
+              <div key={key} className={cardClass + " space-y-2"}>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-semibold">{panelLabels[key]}</h3>
+                  {view === "edit" && <div className="flex gap-1">
+                    <button type="button" disabled={index === 0} onClick={() => move(key, -1)} aria-label={`${panelLabels[key]}を上へ`} className="rounded border px-3 py-1 disabled:opacity-30">↑</button>
+                    <button type="button" disabled={index === panels.length - 1} onClick={() => move(key, 1)} aria-label={`${panelLabels[key]}を下へ`} className="rounded border px-3 py-1 disabled:opacity-30">↓</button>
+                  </div>}
+                </div>
+                {key === "intro" && <>
+                  <p className="font-medium">{data.title || "名称未入力"}</p>
+                  {view === "edit" ? <textarea className={inputClass} value={data.description} onChange={e => patch("description", e.target.value)} rows={3} placeholder="自由に紹介文を書けます" /> :
+                    <p className="whitespace-pre-wrap text-sm">{data.description || "紹介文がありません"}</p>}
+                </>}
+                {key === "schedule" && <p className="text-sm">{cadenceLabel} ／ {data.date || "日付未設定"} ／ {data.startTime ? `${data.startTime}〜${endTime}` : "開始時刻未設定"} ／ {data.place || "場所未設定"}</p>}
+                {key === "capacity" && <p className="text-sm">定員：{data.capacity ? `${data.capacity}名` : isLite && isClass ? "在籍10名" : "指定なし"} ／ 公開範囲は作品側で設定{isClass ? ` ／ ${data.attendance === "fixed" ? "固定受講者" : data.attendance === "mixed" ? "固定＋新規募集" : "自由参加"}` : ""}</p>}
+                {key === "payment" && <p className="text-sm">{priceLabel} ／ {paymentLabel}</p>}
+                {key === "form" && <div className="space-y-2 text-sm"><p>氏名・メールアドレスを受け付けます。</p>{!isLite && data.extraQuestion && <p>追加質問：{data.extraQuestion}</p>}<p className="text-xs text-slate-500">この試作で申込・課金はできません。</p></div>}
+                {key === "intro" && view === "edit" && <p className="text-xs text-slate-500">自由記述以外の条件は質問画面に戻って変更してください。</p>}
+              </div>
+            ))}
+            <div className={cardClass + " space-y-2"}>
+              <label className="block space-y-1 text-sm"><span>補足案内（自由記述）</span>
+                {view === "edit" ? <textarea className={inputClass} rows={3} value={data.notes} onChange={e => patch("notes", e.target.value)} placeholder="持ち物・アクセス・注意事項など" /> :
+                  <p className="whitespace-pre-wrap">{data.notes || "補足なし"}</p>}
+              </label>
+              <p className="text-xs text-slate-600">この文章によって申込条件や決済条件は変わりません。</p>
+            </div>
+          </section>
+        )}
+        <div className={step === 5 ? "" : "hidden"}><SaveApplicationWizardDraft data={data} panelOrder={panels} initialId={loadedApplicationId} mode={selectedMode} previewOnly={simulatingLite} /></div>
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+          <button type="button" onClick={() => setStep(x => Math.max(0, x - 1))} disabled={step === 0} className="rounded-lg border border-slate-300 px-5 py-2.5 disabled:opacity-40">戻る</button>
+          {step < 5 ? <button type="button" disabled={planLoading || !planMode || (isSale && step === 1)} onClick={() => setStep(x => Math.min(5, x + 1))} className={buttonClass}>次へ</button> :
+            <button type="button" className={buttonClass} onClick={() => { setStep(0); setData(defaults); setPanelOrder(["intro", "schedule", "capacity", "payment", "form"]); setView("edit"); }}>別の入口を試す</button>}
+        </footer>
+        <p className="text-center text-xs text-slate-500">質問型UIから既存APPLICATIONの下書き保存に対応。CALENDAR・FORM作成と実際の予約・決済・PAGE公開は別工程です。</p>
+      </div>
+    </main>
+  );
+}

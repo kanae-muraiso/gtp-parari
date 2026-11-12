@@ -718,28 +718,10 @@ export default function ApplicationManager({
     };
   }, []);
 
-  React.useEffect(() => {
-    if (
-      !createOnly ||
-      isLoading ||
-      !applicationAccess ||
-      applicationAccess.effectivePlan !== "free" ||
-      applicationAccess.isMonitor === true ||
-      applicationAccess.canCreateApplication === false ||
-      showBuilder
-    ) {
-      return;
-    }
-
-    setApplicationMode("lite");
-    startCreate("OTHER");
-  }, [
-    applicationAccess,
-    createOnly,
-    isLoading,
-    showBuilder,
-  ]);
-
+  // APPLICATION v2: new applications begin at the same four-purpose wizard
+  // for every plan. Do not auto-start the legacy Lite builder in createOnly.
+  // Editing legacy APPLICATIONs continues to use the existing editor.
+  
   React.useEffect(() => {
     if (
       !embeddedEditApplicationId ||
@@ -1738,7 +1720,8 @@ export default function ApplicationManager({
       action:
         | "qualification_approve"
         | "qualification_reject"
-        | "payment_confirm",
+        | "payment_confirm"
+        | "enrollment_close",
     ) {
       setEntryActionId(entryId);
       setEntriesMessage("");
@@ -2787,15 +2770,9 @@ export default function ApplicationManager({
                                return;
                              }
 
-                             if (isFreePlan) {
-                               setApplicationMode("lite");
-                               startCreate("OTHER");
-                             } else if (canUseExtendedApplication) {
-                               setShowModeChooser(true);
-                             } else {
-                               setApplicationMode("lite");
-                               setShowTypeChooser(true);
-                             }
+                             setShowBuilder(false);
+                             setShowModeChooser(false);
+                             setShowTypeChooser(true);
                              setStatusMessage("");
                            }}
                            className="rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -3115,13 +3092,8 @@ export default function ApplicationManager({
                   ) {
                     onCancel?.();
                   } else if (createOnly) {
-                    if (isFreePlan) {
-                      onCancel?.();
-                    } else {
-                      setShowTypeChooser(
-                        true,
-                      );
-                    }
+                    setShowModeChooser(false);
+                    setShowTypeChooser(true);
                   }
                 }}
                 disabled={isSaving}
@@ -3132,181 +3104,49 @@ export default function ApplicationManager({
             </div>
           </div>
         </div>
-      ) : showModeChooser ? (
+      ) : showModeChooser || showTypeChooser ? (
         <div className="px-6 py-8 sm:px-10">
           <div className="mx-auto max-w-2xl">
-            <h3 className="text-xl font-bold text-neutral-950">
-              APPLICATIONの作り方を選んでください
-            </h3>
-
+            <h3 className="text-xl font-bold text-neutral-950">何を始めますか？</h3>
             <p className="mt-2 text-sm leading-7 text-neutral-500">
+              4つの入口は質問の始め方です。APPLICATIONの内部は共通です。
               {canUseExtendedApplication
-                ? "Liteはボタンだけのシンプルな受付、Builderは入力項目や他のパネルを組み合わせるAPPLICATIONです。"
-                : "ボタンだけのシンプルな受付を作成します。"}
+                ? " Organizerでは質問に応じた追加機能を利用できます。"
+                : " Liteでは簡単な申込・問い合わせ・固定10名のクラスを利用できます。"}
             </p>
-
-            <div
-              className={[
-                "mt-6 grid gap-3",
-                canUseExtendedApplication
-                  ? "sm:grid-cols-2"
-                  : "",
-              ].join(" ")}
-            >
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {([
+                ["event", "イベントを開催する", "パーティ・バザー・講演会"],
+                ["booking", "予約を受け付ける", "説明会・個人相談（Liteは希望受付）"],
+                ["sale", "作品・商品を販売する", "電子書籍・写真・手作り作品"],
+                ["class", "クラスを運営する", "ZUMBA・生け花・英会話"],
+              ] as const).map(([kind, label, description]) => (
+                <a
+                  key={kind}
+                  href={`/application-v2-test?kind=${kind}`}
+                  className="rounded-2xl border border-neutral-200 p-5 text-left transition hover:border-amber-500 hover:bg-amber-50"
+                >
+                  <div className="font-bold text-neutral-950">{label}</div>
+                  <div className="mt-2 text-xs leading-6 text-neutral-500">{description}</div>
+                </a>
+              ))}
+            </div>
+            <p className="mt-4 text-xs leading-6 text-neutral-500">
+              現在の質問型画面はテスト版です。完成した設定は下書きとして保存できます。
+              公開・CALENDAR連携・自動返金は別工程です。
+            </p>
+            {!createOnly ? (
               <button
                 type="button"
-                disabled={
-                  isLoading ||
-                  applicationAccess
-                    ?.canCreateApplication ===
-                    false
-                }
                 onClick={() => {
-                  if (
-                    isLoading ||
-                    applicationAccess
-                      ?.canCreateApplication ===
-                      false
-                  ) {
-                    return;
-                  }
-
-                  setApplicationMode("lite");
                   setShowModeChooser(false);
-                  setShowTypeChooser(true);
+                  setShowTypeChooser(false);
                 }}
-                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50"
+                className="mt-6 text-sm font-bold text-neutral-500"
               >
-                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                  APPLICATION LITE
-                </div>
-
-                <div className="mt-2 text-base font-bold text-neutral-950">
-                  Lite
-                </div>
-
-                <p className="mt-2 text-xs leading-6 text-neutral-500">
-                  「参加する」「応募する」など、
-                  OKボタンだけでシンプルに受付します。
-                </p>
+                戻る
               </button>
-
-              {canUseExtendedApplication ? (
-                <button
-                type="button"
-                disabled={
-                  isLoading ||
-                  applicationAccess
-                    ?.canCreateApplication ===
-                    false
-                }
-                onClick={() => {
-                  if (
-                    isLoading ||
-                    applicationAccess
-                      ?.canCreateApplication ===
-                      false
-                  ) {
-                    return;
-                  }
-
-                  setApplicationMode(
-                    "builder",
-                  );
-                  setShowModeChooser(false);
-                  setShowTypeChooser(true);
-                }}
-                className="rounded-2xl border border-neutral-300 p-5 text-left transition hover:border-neutral-500 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-50 disabled:text-neutral-300"
-              >
-                <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                  APPLICATION BUILDER
-                </div>
-
-                <div className="mt-2 text-base font-bold text-neutral-950">
-                  Builder
-                </div>
-
-                <p className="mt-2 text-xs leading-6 text-neutral-500">
-                  FIELD / CALENDAR /
-                  MEMBERSHIPを＋ボタンで
-                  組み合わせて作ります。
-                </p>
-
-                </button>
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (
-                  embeddedEditApplicationId ||
-                  createOnly
-                ) {
-                  onCancel?.();
-                  return;
-                }
-
-                setShowModeChooser(
-                  false,
-                );
-              }}
-              className="mt-6 text-sm font-bold text-neutral-500"
-            >
-              戻る
-            </button>
-          </div>
-        </div>
-      ) : showTypeChooser ? (
-        <div className="px-6 py-8 sm:px-10">
-          <div className="mx-auto max-w-2xl">
-            <h3 className="text-xl font-bold text-neutral-950">
-              何を募集しますか？
-            </h3>
-
-            <p className="mt-2 text-sm leading-7 text-neutral-500">
-              テンプレートを選んでから自由に変更できます。
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {APPLICATION_TYPES.map(
-                (type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() =>
-                      startCreate(type)
-                    }
-                    className="rounded-2xl border border-neutral-200 p-5 text-left transition hover:border-neutral-400 hover:bg-neutral-50"
-                  >
-                    <div className="text-xs font-bold tracking-[0.12em] text-neutral-400">
-                      {type}
-                    </div>
-
-                    <div className="mt-2 text-sm font-bold text-neutral-950">
-                      {
-                        APPLICATION_TYPE_LABELS[
-                          type
-                        ]
-                      }
-                    </div>
-                  </button>
-                ),
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowTypeChooser(false);
-                setShowModeChooser(
-                  canUseExtendedApplication,
-                );
-              }}
-              className="mt-6 text-sm font-bold text-neutral-500"
-            >
-              戻る
-            </button>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -3330,15 +3170,9 @@ export default function ApplicationManager({
                 <button
                   type="button"
                   onClick={() => {
-                    if (isFreePlan) {
-                      setApplicationMode("lite");
-                      startCreate("OTHER");
-                      return;
-                    }
-
-                    setShowModeChooser(
-                      true,
-                    );
+                    setShowBuilder(false);
+                    setShowModeChooser(false);
+                    setShowTypeChooser(true);
                   }}
                   className="mt-6 rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-neutral-700"
                 >
@@ -3611,17 +3445,22 @@ export default function ApplicationManager({
                                       </>
                                     ) : null}
 
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          startEdit(
-                                            application,
-                                          )
-                                        }
-                                        className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
-                                      >
-                                        編集する
-                                      </button>
+                                      {(application.definition as { wizard?: unknown } | null)?.wizard ? (
+                                        <a
+                                          href={"/application-v2-test?edit=" + encodeURIComponent(application.id)}
+                                          className="rounded-full bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-amber-200"
+                                        >
+                                          質問式で編集する
+                                        </a>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => startEdit(application)}
+                                          className="rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-200"
+                                        >
+                                          編集する
+                                        </button>
+                                      )}
                                     </div>
                       </div>
 

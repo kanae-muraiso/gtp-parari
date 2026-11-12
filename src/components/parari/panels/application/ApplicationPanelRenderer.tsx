@@ -13,6 +13,7 @@
 "use client";
 
 import * as React from "react";
+import ApplicationWizardInfo from "./ApplicationWizardInfo";
 import { useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabaseClient";
@@ -2525,11 +2526,16 @@ export default function ApplicationPanelRenderer({
       ) : null}
 
 
-      {application.description ? (
+      {(application.definition as { wizard?: unknown } | null)?.wizard ? (
+        <ApplicationWizardInfo
+          definition={application.definition}
+          description={application.description}
+          paymentAmount={application.payment_amount}
+          capacity={(application.definition as { capacity?: number | null } | null)?.capacity}
+        />
+      ) : application.description ? (
         <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-          {
-            application.description
-          }
+          {application.description}
         </p>
       ) : null}
 
