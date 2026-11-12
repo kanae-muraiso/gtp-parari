@@ -16,9 +16,10 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
 }
 
 export function ParticipationMenu({ dark = false }: { dark?: boolean }) {
-  const { userId, items, loading, error, refresh, leaving, leaveError } = useParticipations();
+  const { userId, items, error, refresh, leaving, leaveError } = useParticipations();
   const details = useRef<HTMLDetailsElement>(null);
-  if (!userId || (!items.length && !loading && !error)) return null;
+  // Do not flash an empty membership menu while the initial query is pending.
+  if (!userId || items.length === 0) return null;
   return <div className="relative shrink-0">
     <details ref={details} onKeyDown={event => { if (event.key === "Escape" && details.current) { details.current.open = false; details.current.querySelector("summary")?.focus(); } }}>
       <summary className={`cursor-pointer list-none whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${dark ? "text-white hover:bg-white/10" : "text-neutral-700 hover:bg-white"}`}>
@@ -26,7 +27,6 @@ export function ParticipationMenu({ dark = false }: { dark?: boolean }) {
       </summary>
       <div className="absolute right-0 top-full z-[10000] mt-2 w-64 max-w-[85vw] rounded-2xl border border-neutral-200 bg-white p-2 text-neutral-900 shadow-xl">
         <p className="px-3 py-2 text-xs text-neutral-500">参加しているメンバーシップ</p>
-        {loading && !items.length ? <p role="status" className="px-3 py-2 text-sm">確認しています…</p> : null}
         {items.map(item => <DestinationLink key={item.key} item={item} onFollow={() => { if (details.current) details.current.open = false; }} className="block rounded-xl px-3 py-3 text-sm font-bold hover:bg-neutral-100">
           {item.name}{item.state === "incomplete" ? <span className="ml-2 text-xs font-normal text-neutral-500">登録途中</span> : null}
           {item.state === "restricted" ? <span className="block text-xs font-normal text-neutral-500">{item.action}</span> : null}
@@ -47,11 +47,11 @@ export function ParticipationReturn({ dark = false }: { dark?: boolean }) {
 }
 
 export function ParticipationHomePanel() {
-  const { userId, items, loading, error, refresh } = useParticipations();
-  if (!userId || (!items.length && !loading && !error)) return null;
+  const { userId, items, error, refresh } = useParticipations();
+  // Render the membership section only when there is an actual destination.
+  if (!userId || items.length === 0) return null;
   return <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5" aria-labelledby="participation-heading">
     <h2 id="participation-heading" className="text-sm font-bold text-neutral-950">参加しているメンバーシップ</h2>
-    {loading && !items.length ? <p role="status" className="mt-3 text-sm text-neutral-500">参加先を確認しています…</p> : null}
     <div className="mt-3 divide-y divide-neutral-100">{items.map(item => <DestinationLink key={item.key} item={item} className="flex items-center justify-between gap-4 rounded-xl px-2 py-3 hover:bg-neutral-50">
       <span className="text-sm font-bold text-neutral-900">{item.name}{item.state === "incomplete" ? <span className="ml-2 text-xs font-normal text-neutral-500">登録途中</span> : null}</span>
       <span className="shrink-0 text-xs font-bold text-sky-800">{item.action} →</span>

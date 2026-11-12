@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { parseParari } from "@/lib/parariParse";
 import BookshelfAnnouncements from "@/components/parari/announcements/BookshelfAnnouncements";
@@ -134,7 +135,12 @@ type Author = {user_id:string;username:string|null;display_name:string|null};
 const tabs = [{id:"mine",name:"自分の作品"},{id:"authors",name:"作者別"},{id:"history",name:"読書履歴"},{id:"shelves",name:"自分の棚"}] as const;
 type Tab = typeof tabs[number]["id"];
 export default function LibraryV2Page() {
+  const { studioEnabled, loading: experienceLoading } = useParariExperience();
   const [tab,setTab] = useState<Tab>("authors");
+  const visibleTabs = tabs.filter(item=>item.id!=="mine" || (!experienceLoading && studioEnabled));
+  useEffect(()=>{
+    if (!experienceLoading && !studioEnabled && tab==="mine") setTab("authors");
+  },[experienceLoading,studioEnabled,tab]);
   const [data,setData] = useState<Shelf|null>(null);
   const [works,setWorks] = useState<Work[]>([]);
   const [activity,setActivity] = useState<ShelfActivity[]>([]);
@@ -357,7 +363,7 @@ export default function LibraryV2Page() {
       <div className="mt-6">
         <BookshelfAnnouncements />
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
-          {tabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
+          {visibleTabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
             className={"rounded-full border px-3 py-2 text-sm "+(tab===t.id?WORKSPACE_PALETTE.library.tabActive:"bg-white text-neutral-800 hover:bg-emerald-50")}>{t.name}</button>)}
         </div>
         {message && <p role="status" className="mt-5 text-sm text-neutral-600">{message}</p>}
@@ -410,10 +416,10 @@ export default function LibraryV2Page() {
                   </>} />;
               })}
             </div>
-          : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{visibleWorks.map(w=><div key={w.id} className="min-w-0 rounded-xl border border-neutral-200 p-3"><Link href={"/p/"+w.id} className="block">
+          : tab==="mine" && !experienceLoading && studioEnabled ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{visibleWorks.map(w=><div key={w.id} className="min-w-0 rounded-xl border border-neutral-200 p-3"><Link href={"/p/"+w.id} className="block">
               <div className="mb-2 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-neutral-100">{coverOf(w) ? <img src={coverOf(w)} alt="" loading="lazy" className="h-full w-full object-cover"/> : <span className="px-3 text-center text-xs text-neutral-500">表紙画像なし</span>}</div>
               <span className="break-words text-sm font-medium">{w.title||"無題の作品"}</span></Link>{workActions(w)}</div>)}
-            {!message && visibleWorks.length===0 && <p className="text-sm text-neutral-500">該当する作品はありません。</p>}</div>}
+            {!message && visibleWorks.length===0 && <p className="text-sm text-neutral-500">該当する作品はありません。</p>}</div> : null}
         </section>
       </div>
     </div>
