@@ -52,7 +52,7 @@ export default function SaveApplicationWizardDraft({ data, panelOrder, initialId
     setSuccess(false);
     const price = Number(data.price);
     const capacity = data.capacity.trim() ? Number(data.capacity) : (data.kind === "class" ? 10 : null);
-    const scheduleNeeded = mode === "lite" ? (data.kind === "event" || data.kind === "class") : (data.kind !== "sale" || data.cadence !== "none");
+    const scheduleNeeded = mode === "lite" ? data.kind !== "booking" : true;
 
     if (!mode) { setError("利用プランを確認してから保存してください。"); return; }
     if (!data.title.trim() || data.title.trim().length > 120) {
