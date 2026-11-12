@@ -9,6 +9,7 @@
 import type { ReactNode } from "react";
 import WorkspaceLinks from "@/components/parari/navigation/WorkspaceLinks";
 import WorkspaceVisitTracker from "@/components/parari/navigation/WorkspaceVisitTracker";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type WorkspaceArea = "library" | "studio" | "settings" | "operations";
 
@@ -40,8 +41,10 @@ export default function MyAreaHeader({
         className={[
           "rounded-2xl border px-4 py-3",
           isStudio
-            ? "border-neutral-300 bg-neutral-100"
-            : "border-neutral-200 bg-white",
+            ? WORKSPACE_PALETTE.studio.header
+            : resolvedArea === "library"
+              ? WORKSPACE_PALETTE.library.header
+              : "border-neutral-200 bg-white",
         ].join(" ")}
       >
         <WorkspaceLinks area={resolvedArea} />
