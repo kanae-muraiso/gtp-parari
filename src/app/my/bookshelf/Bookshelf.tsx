@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import StudioCreateEntry from "@/components/parari/navigation/StudioCreateEntry";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { parseParari } from "@/lib/parariParse";
 import BookshelfAnnouncements from "@/components/parari/announcements/BookshelfAnnouncements";
@@ -355,6 +356,7 @@ export default function LibraryV2Page() {
       <MyAreaHeader title="書棚" area="library"
         navigation={<LibraryV2Menu active="shelf" />} />
       <div className="mt-6">
+        <StudioCreateEntry />
         <BookshelfAnnouncements />
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="書棚の表示">
           {tabs.map(t=><button type="button" role="tab" aria-selected={tab===t.id} key={t.id} onClick={()=>setTab(t.id)}
