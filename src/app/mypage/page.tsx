@@ -13,7 +13,6 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import { ParticipationHomePanel } from "@/components/parari/navigation/ParticipationNav";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
-import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { supabase } from "@/lib/supabaseClient";
 
 const notices: Array<{
