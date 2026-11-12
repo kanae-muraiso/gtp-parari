@@ -611,6 +611,7 @@ export default function ApplicationManager({
                 ok?: boolean;
                 items?: ManagedCalendarItem[];
                 message?: string;
+                settingsUrl?: string;
               }
             | null;
 
