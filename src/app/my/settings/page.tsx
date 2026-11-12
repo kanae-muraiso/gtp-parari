@@ -11,7 +11,6 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
 import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
-import StudioAccessPanel from "@/components/parari/settings/StudioAccessPanel";
 
 type SettingsCardProps = {
   title: string;
@@ -87,11 +86,19 @@ export default function SettingsHomePage() {
             href="/my/profile?returnTo=/my/settings"
           />
 
-          <SettingsCard
-            title="プラン"
-            description="現在のプランや利用できる機能を確認します。"
-            href="/billing"
-          />
+          {!loading && studioEnabled ? (
+            <SettingsCard
+              title="プラン"
+              description="現在のプランや利用できる機能を確認します。"
+              href="/billing"
+            />
+          ) : null}
+
+          {!loading && !studioEnabled ? (
+            <Link href="/billing" className="inline-block px-1 text-xs text-neutral-500 underline underline-offset-4 hover:text-neutral-800">
+              プラン・契約を確認
+            </Link>
+          ) : null}
 
           {!loading && studioEnabled ? (
             <>
@@ -140,12 +147,6 @@ export default function SettingsHomePage() {
             </>
           ) : null}
 
-          {!loading && !studioEnabled ? (
-            <>
-              <SectionTitle>制作・運営</SectionTitle>
-              <StudioAccessPanel />
-            </>
-          ) : null}
         </div>
       </div>
     </main>
