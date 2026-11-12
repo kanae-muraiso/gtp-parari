@@ -1772,6 +1772,7 @@ export async function PATCH(
         cancellationMode?: unknown;
         cancellationDeadlineAt?: unknown;
         cancellationCutoffMinutes?: unknown;
+        saveAsDraftBeforePaymentSetup?: unknown;
       }
     | null;
     
@@ -2065,7 +2066,25 @@ export async function PATCH(
       );
     }
 
-    if (paymentMethod === "parari" &&
+    // Only an existing, owned and still-unpublished v1 wizard draft may
+    // defer Square onboarding while being edited. Public applications must
+    // always pass the usual payment checks.
+    let deferredPaymentSetup = false;
+    if (paymentMethod === "parari" && body?.saveAsDraftBeforePaymentSetup === true &&
+        applicationId && (rawDefinition as { wizard?: { version?: unknown } }).wizard?.version === 1) {
+      const { data: draft, error: draftError } = await supabaseAdmin.from("applications")
+        .select("id,status,owner_user_id,definition")
+        .eq("id", applicationId)
+        .eq("owner_user_id", auth.user.id)
+        .is("archived_at", null)
+        .maybeSingle();
+      if (draftError) throw draftError;
+      const previousWizard = draft?.definition && typeof draft.definition === "object"
+        ? (draft.definition as { wizard?: { version?: unknown } }).wizard : null;
+      deferredPaymentSetup = draft?.status === "draft" && previousWizard?.version === 1;
+    }
+
+    if (paymentMethod === "parari" && !deferredPaymentSetup &&
         !sellerDisclosureReady(await readSellerDisclosure(auth.user.id))) {
       return NextResponse.json({
         ok: false,
@@ -2076,7 +2095,7 @@ export async function PATCH(
     }
 
     if (
-      paymentMethod === "parari" &&
+      paymentMethod === "parari" && !deferredPaymentSetup &&
       !(await hasActiveSquareConnection(auth.user.id))
     ) {
       return NextResponse.json(

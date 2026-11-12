@@ -255,6 +255,7 @@ export default function ApplicationManager({
   ] = React.useState(false);
 
   const [selectedPurpose, setSelectedPurpose] = React.useState<Purpose | null>(null);
+  const [editingWizard, setEditingWizard] = React.useState<ManagedApplication | null>(null);
 
   const [
     editingApplicationId,
@@ -822,6 +823,17 @@ export default function ApplicationManager({
   function startEdit(
     application: ManagedApplication,
   ) {
+    const wizard = (application.definition as { wizard?: { version?: unknown; kind?: unknown } } | null)?.wizard;
+    if (wizard?.version === 1 && (wizard.kind === "event" || wizard.kind === "booking" || wizard.kind === "class")) {
+      setSelectedPurpose(wizard.kind);
+      setEditingWizard(application);
+      setShowBuilder(false);
+      setShowModeChooser(false);
+      setShowTypeChooser(false);
+      return;
+    }
+    setSelectedPurpose(null);
+    setEditingWizard(null);
     setEditingApplicationId(
       application.id,
     );
@@ -3108,21 +3120,32 @@ export default function ApplicationManager({
         </div>
       ) : selectedPurpose ? (
         <ApplicationPurposeWizard
-          key={selectedPurpose}
+          key={editingWizard?.id ?? selectedPurpose}
           purpose={selectedPurpose}
-          mode={canUseExtendedApplication ? "builder" : "lite"}
+          mode={editingWizard?.definition?.mode === "lite" ? "lite" : canUseExtendedApplication ? "builder" : "lite"}
+          initialApplication={editingWizard}
           onCreated={(created) => {
+            const wasEditing = Boolean(editingWizard);
             setSelectedPurpose(null);
-            if (createOnly) {
+            setEditingWizard(null);
+            if (wasEditing && embeddedEditApplicationId) {
+              onUpdated?.(created);
+            } else if (!wasEditing && createOnly) {
               onCreated?.(created);
             } else {
               window.location.reload();
             }
           }}
           onCancel={() => {
+            const wasEditing = Boolean(editingWizard);
             setSelectedPurpose(null);
-            setShowModeChooser(true);
-            setShowTypeChooser(false);
+            setEditingWizard(null);
+            if (wasEditing && embeddedEditApplicationId) {
+              onCancel?.();
+            } else {
+              setShowModeChooser(!wasEditing);
+              setShowTypeChooser(false);
+            }
           }}
         />
       ) : showModeChooser || showTypeChooser ? (
@@ -3148,6 +3171,7 @@ export default function ApplicationManager({
                   type="button"
                   disabled={applicationAccess?.canCreateApplication === false}
                   onClick={() => {
+                    setEditingWizard(null);
                     setSelectedPurpose(item.key);
                     setShowModeChooser(false);
                     setShowTypeChooser(false);
