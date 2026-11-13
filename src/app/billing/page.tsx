@@ -1,255 +1,55 @@
-// src/app/billing/page.tsx
-// 2026-07-11 JST
-
+// PARARI subscriptions: public-facing WRITERS A/B product names map to legacy Free/Plus.
+// Existing Stripe price IDs and all active billing records remain unchanged.
+import Link from "next/link";
 import BillingPortalButton from "@/components/parari/billing/BillingPortalButton";
 import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
-import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
-import OrganizerCheckoutButton from "@/components/parari/billing/OrganizerCheckoutButton";
+import PackageStore from "@/components/parari/billing/PackageStore";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
-import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
-
-const PLUS_MONTHLY_PRICE_USD = PLAN_ENTITLEMENTS.plus.monthlyPriceUsd;
-const ORGANIZER_MONTHLY_PRICE_USD =
-  PLAN_ENTITLEMENTS.organizer.monthlyPriceUsd;
-
-function LimitItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex gap-3 text-sm leading-6 text-slate-700">
-      <span
-        aria-hidden="true"
-        className="mt-2 h-2 w-2 shrink-0 rounded-full bg-slate-400"
-      />
-      <span>{children}</span>
-    </li>
-  );
-}
 
 export default function BillingPage() {
-    return (
-      <main className="min-h-screen bg-neutral-50 text-slate-900">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-          {/* HEADER */}
-          <MyAreaHeader
-            title="設定"
-            showManagementLinks={false}
-          />
+  return (
+    <main className="min-h-screen bg-neutral-50 text-slate-900">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <MyAreaHeader title="設定" showManagementLinks={false} area="settings" />
+        <div className="mt-6"><ManagementTabs active="settings" /></div>
+        <div className="mx-auto mt-4 max-w-5xl">
+          <SettingsTabs active="plan" />
 
-          {/* MANAGEMENT MAIN MENU */}
-          <div className="mt-6">
-            <ManagementTabs active="settings" />
-          </div>
-
-          {/* SETTINGS */}
-          <div className="mx-auto mt-4 max-w-4xl">
-            <SettingsTabs active="plan" />
-
-            <div className="mt-6 flex flex-col gap-6">
-              <header className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">
-                  PLAN & BILLING
-                </p>
-
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-                  プランとお支払い
-                </h2>
-
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-                  現在のプラン確認、有料プランへの申込、カード情報の変更や解約を
-                  このページから行えます。
-                </p>
-              </header>
-
-              <CurrentPlanPanel />
-
-        <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-6">
-            <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-              PLAN COMPARISON
+          <header className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
+            <p className="text-xs font-semibold tracking-[0.18em] text-neutral-400">PACKAGES & BILLING</p>
+            <h1 className="mt-2 text-2xl font-bold text-neutral-950">パッケージとお支払い</h1>
+            <p className="mt-3 text-sm leading-7 text-neutral-600">
+              現在のFreeプランはWRITERS A、PlusプランはWRITERS Bとしてご案内します。
+              内部の契約・権限とStripeの課金設定は変更していません。
             </p>
+            <Link href="/packages" className="mt-3 inline-block text-sm font-semibold text-sky-800 underline underline-offset-4">
+              ログイン不要のパッケージ一覧を見る
+            </Link>
+          </header>
 
-            <h2 className="mt-1 text-xl font-bold text-slate-950">
-              FreeとPlus
-            </h2>
+          <div className="mt-6"><CurrentPlanPanel /></div>
 
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              PARARIはFreeから販売を始められます。Plusでは販売手数料が下がり、
-              Organizerではフォーム・カレンダー・月謝などの継続運営が使えます。
+          <div className="mt-10"><PackageStore checkoutOnPage /></div>
+
+          <section className="mt-10 rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
+            <p className="text-xs font-bold tracking-[0.16em] text-neutral-400">CUSTOMER PORTAL</p>
+            <h2 className="mt-2 text-xl font-bold text-neutral-950">請求管理</h2>
+            <p className="mt-3 text-sm leading-7 text-neutral-600">
+              カード情報の変更、請求履歴、有料契約の解約はStripeの管理画面から行えます。
+              既存のOrganizer・Host・Pro契約をお持ちの方も引き続き請求管理をご利用いただけます。
             </p>
-          </div>
+            <div className="mt-5 max-w-sm"><BillingPortalButton /></div>
+          </section>
 
-          <p className="mb-5 text-sm leading-7 text-slate-600">PAGEは内容のひとまとまりです。画面に表示する紙面枚数とは異なります。BOOK内のPAGEは作品数に重複して数えません。文字数は空白・改行・構造設定を除いて数えます。独立したPAGE・WEBの作成上限はFree 10作品、Plus 100作品です。</p>
-          <div className="grid gap-5 lg:grid-cols-3">
-            <article className="rounded-3xl border border-slate-200 bg-white p-6">
-              <p className="text-sm font-semibold text-slate-500">
-                Free
-              </p>
-
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                $0
-              </p>
-
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                PARARIの基本機能を無料で利用できます。販売手数料は10%です。
-              </p>
-
-              <ul className="mt-6 space-y-3">
-                <LimitItem>
-                  BOOK：{PLAN_ENTITLEMENTS.free.bookLimit}冊まで
-                </LimitItem>
-                <LimitItem>
-                  公開作品：3作品まで
-                </LimitItem>
-                <LimitItem>
-                  1 BOOK：{PLAN_ENTITLEMENTS.free.pageLimitPerWork} PAGEまで
-                </LimitItem>
-                <LimitItem>1 PAGE：{PLAN_ENTITLEMENTS.free.charactersPerPage?.toLocaleString()}字まで ／ 画像保存：100MB</LimitItem>
-                <LimitItem>単独PAGE・WEB：合計10作品まで</LimitItem>
-                <LimitItem>EPUB出力：なし</LimitItem>
-              </ul>
-            </article>
-
-            <article className="rounded-3xl border-2 border-slate-900 bg-slate-950 p-6 text-white shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-300">
-                    Plus
-                  </p>
-
-                  <p className="mt-2 text-3xl font-bold">
-                    ${PLUS_MONTHLY_PRICE_USD}
-                    <span className="ml-1 text-sm font-medium text-slate-300">
-                      / month
-                    </span>
-                  </p>
-                </div>
-
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-950">
-                  おすすめ
-                </span>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-slate-300">
-                日常的な作品制作と公開に使えるプランです。
-              </p>
-
-              <ul className="mt-6 space-y-3">
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span
-                    aria-hidden="true"
-                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
-                  />
-                  <span>BOOK：{PLAN_ENTITLEMENTS.plus.bookLimit}冊まで</span>
-                </li>
-
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span
-                    aria-hidden="true"
-                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
-                  />
-                  <span>公開作品：100作品まで</span>
-                </li>
-
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span
-                    aria-hidden="true"
-                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
-                  />
-                  <span>1 BOOK：{PLAN_ENTITLEMENTS.plus.pageLimitPerWork} PAGEまで</span>
-                </li>
-
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span
-                    aria-hidden="true"
-                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
-                  />
-                  <span>画像保存：1GB ／ 1 PAGE：{PLAN_ENTITLEMENTS.plus.charactersPerPage?.toLocaleString()}字まで</span>
-                </li>
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span
-                    aria-hidden="true"
-                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white"
-                  />
-                  <span>販売手数料：5% ／ EPUB3出力・共同編集</span>
-                </li>
-                <li className="flex gap-3 text-sm leading-6 text-slate-100">
-                  <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-white" />
-                  <span>英語教材支援：設定でONにして利用</span>
-                </li>
-              </ul>
-
-              <div className="mt-7">
-                <PlusCheckoutButton />
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500">
-                Organizer
-              </p>
-
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                ${ORGANIZER_MONTHLY_PRICE_USD}
-                <span className="ml-1 text-sm font-medium text-slate-500">
-                  / month
-                </span>
-              </p>
-
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                教室・講座・イベントなどを継続して運営するためのプランです。
-              </p>
-
-              <ul className="mt-6 space-y-3">
-                <LimitItem>販売手数料：5%</LimitItem>
-                <LimitItem>有料イベント・申込受付</LimitItem>
-                <LimitItem>フォーム・カレンダー</LimitItem>
-                <LimitItem>月謝・定期サービス</LimitItem>
-                <LimitItem>英語教材支援</LimitItem>
-              </ul>
-
-              <div className="mt-7">
-                <OrganizerCheckoutButton />
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-            CUSTOMER PORTAL
-          </p>
-
-          <h2 className="mt-1 text-xl font-bold text-slate-950">
-            請求管理
-          </h2>
-
-          <p className="mt-3 text-sm leading-7 text-slate-600">
-            カード情報の変更、請求履歴の確認、有料プランの解約は、
-            Stripeの安全な管理画面で行います。
-          </p>
-
-          <p className="mt-2 text-xs leading-6 text-slate-500">
-            請求管理は、有料プランをご契約中、または過去にお申し込み済みの場合に利用できます。
-            未契約の場合、請求管理画面は表示されません。
-          </p>
-
-          <div className="mt-5 max-w-sm">
-            <BillingPortalButton />
-          </div>
-        </section>
-
-        <div>
-          <p className="px-2 text-center text-xs leading-6 text-slate-500">
+          <p className="mt-8 text-center text-xs leading-6 text-neutral-500">
             決済情報はStripeが管理します。PARARIがカード番号を保存することはありません。
           </p>
-
-          <ParariLegalFooter />
+          <div className="mt-5"><ParariLegalFooter /></div>
         </div>
       </div>
-    </div>
-    </div>
     </main>
   );
 }
