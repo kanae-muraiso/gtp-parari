@@ -94,7 +94,13 @@ export default function OperationsPage() {
           </div>
 
           {isSuperuser ? (
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link
+                href="/my/operations/package-maker"
+                className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+              >
+                パッケージメーカー
+              </Link>
               <Link
                 href="/my/operations/dictionary"
                 className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
