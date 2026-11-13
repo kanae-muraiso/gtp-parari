@@ -71,7 +71,7 @@ export default function PlusCheckoutButton() {
       }
 
       if (!session?.access_token) {
-        setMessage("Plusに申し込むにはログインが必要です。");
+        setMessage("WRITERS Bへのお申し込みにはログインが必要です。");
         return;
       }
 
@@ -106,7 +106,7 @@ export default function PlusCheckoutButton() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Plus申込の開始に失敗しました。",
+          : "WRITERS B申込の開始に失敗しました。",
       );
     } finally {
       setIsLoading(false);
@@ -115,7 +115,7 @@ export default function PlusCheckoutButton() {
 
   const disabled = isLoading || checkingPlan || hasPaidPlan;
 
-  let buttonLabel = "Plusに申し込む";
+  let buttonLabel = "WRITERS Bに申し込む";
 
   if (checkingPlan) {
     buttonLabel = "プランを確認中…";
