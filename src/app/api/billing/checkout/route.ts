@@ -83,10 +83,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const requestedPlan = body?.plan ?? "plus";
 
-    if (requestedPlan !== "plus" && requestedPlan !== "organizer") {
+    // Currently the storefront sells only WRITERS B (legacy Plus).
+    // Keep older Organizer/Host/Pro subscriptions intact, but do not accept
+    // new Organizer purchases or upgrades through direct API calls.
+    if (requestedPlan !== "plus") {
       return NextResponse.json(
-        { error: "Unsupported billing plan" },
-        { status: 400 }
+        { error: "PACKAGE_NOT_AVAILABLE", message: "現在新たにお申し込みいただける有料商品はWRITERS Bのみです。" },
+        { status: 400 },
       );
     }
 
