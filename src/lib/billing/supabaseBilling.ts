@@ -11,6 +11,7 @@
 import type Stripe from "stripe";
 import { supabaseAdmin } from "./supabaseAdmin";
 import type { BillingPlan } from "./plan";
+import { getWritersBJapanPriceId } from "./writersPricing";
 
 export type { BillingPlan } from "./plan";
 
@@ -78,7 +79,7 @@ function getCurrentPeriodEndFromSubscription(
 export function getPlanFromPriceId(priceId: string | null | undefined): BillingPlan {
   if (!priceId) return "free";
 
-  if (priceId === process.env.STRIPE_PLUS_PRICE_ID) {
+  if (priceId === process.env.STRIPE_PLUS_PRICE_ID || priceId === getWritersBJapanPriceId()) {
     return "plus";
   }
 

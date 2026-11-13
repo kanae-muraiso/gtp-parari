@@ -1,10 +1,9 @@
 // src/app/api/billing/checkout/route.ts
-// src/app/api/billing/checkout/route.ts
 // 2026-05-16 19:15 JST
 
 // パーツ名：Stripe Checkout API
 // コメント：
-// PARARI Plus 月3ドルのStripe Checkout Sessionを作成するAPI。
+// WRITERS BのStripe Checkout Sessionを作成するAPI。
 // クライアント側から Authorization: Bearer <access_token> を受け取り、
 // Supabaseのユーザー確認後、Stripe Checkout URLを返す。
 // 戻り先URLは、PARARI既存設定の NEXT_PUBLIC_APP_URL / NEXT_PUBLIC_BASE_URL を利用する。
@@ -16,12 +15,15 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   ensureUserBillingRow,
   saveStripeCustomerIdForUser,
-  updateBillingFromSubscription,
 } from "@/lib/billing/supabaseBilling";
 import {
   getEffectivePlan,
   PLAN_ENTITLEMENTS,
 } from "@/lib/billing/plan";
+import {
+  WRITERS_B_MONTHLY_PRICE_JPY,
+  getWritersBJapanPriceId,
+} from "@/lib/billing/writersPricing";
 
 export const runtime = "nodejs";
 
@@ -83,28 +85,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const requestedPlan = body?.plan ?? "plus";
 
-    if (requestedPlan !== "plus" && requestedPlan !== "organizer") {
+    // Currently the storefront sells only WRITERS B (legacy Plus).
+    // Keep older Organizer/Host/Pro subscriptions intact, but do not accept
+    // new Organizer purchases or upgrades through direct API calls.
+    if (requestedPlan !== "plus") {
       return NextResponse.json(
-        { error: "Unsupported billing plan" },
-        { status: 400 }
+        { error: "PACKAGE_NOT_AVAILABLE", message: "現在新たにお申し込みいただける有料商品はWRITERS Bのみです。" },
+        { status: 400 },
       );
     }
 
-    const priceId =
-      requestedPlan === "organizer"
-        ? process.env.STRIPE_ORGANIZER_PRICE_ID
-        : process.env.STRIPE_PLUS_PRICE_ID;
+    const currency = body?.currency ?? "usd";
+    if (currency !== "jpy" && currency !== "usd") {
+      return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
+    }
+
+    const priceId = currency === "jpy"
+      ? getWritersBJapanPriceId()
+      : process.env.STRIPE_PLUS_PRICE_ID;
     const appUrl = getAppUrl();
 
     if (!priceId) {
       return NextResponse.json(
-        {
-          error:
-            requestedPlan === "organizer"
-              ? "STRIPE_ORGANIZER_PRICE_ID is not set"
-              : "STRIPE_PLUS_PRICE_ID is not set",
-        },
-        { status: 500 }
+        { error: "PRICE_NOT_CONFIGURED", message: "この通貨でのお申し込みは準備中です。" },
+        { status: 503 },
       );
     }
 
@@ -117,10 +121,12 @@ export async function POST(request: NextRequest) {
 
     const planPrice = await stripe.prices.retrieve(priceId);
     const expectedUnitAmount =
-      PLAN_ENTITLEMENTS[requestedPlan].monthlyPriceUsd * 100;
+      currency === "jpy"
+        ? WRITERS_B_MONTHLY_PRICE_JPY
+        : PLAN_ENTITLEMENTS.plus.monthlyPriceUsd * 100;
     const isExpectedPrice =
       planPrice.active &&
-      planPrice.currency === "usd" &&
+      planPrice.currency === currency &&
       planPrice.unit_amount === expectedUnitAmount &&
       planPrice.type === "recurring" &&
       planPrice.recurring?.interval === "month" &&
@@ -148,62 +154,6 @@ export async function POST(request: NextRequest) {
 
     const billing = await ensureUserBillingRow(user.id);
     const effectivePlan = getEffectivePlan(billing);
-
-    if (
-      effectivePlan === "plus" &&
-      requestedPlan === "organizer" &&
-      billing.stripe_subscription_id
-    ) {
-      const subscription =
-        await stripe.subscriptions.retrieve(
-          billing.stripe_subscription_id,
-        );
-      const subscriptionItem =
-        subscription.items.data[0];
-
-      if (!subscriptionItem) {
-        return NextResponse.json(
-          {
-            error: "SUBSCRIPTION_ITEM_NOT_FOUND",
-            message:
-              "現在の契約情報を確認できませんでした。",
-          },
-          { status: 409 },
-        );
-      }
-
-      const updatedSubscription =
-        await stripe.subscriptions.update(
-          subscription.id,
-          {
-            items: [
-              {
-                id: subscriptionItem.id,
-                price: priceId,
-              },
-            ],
-            proration_behavior:
-              "create_prorations",
-            metadata: {
-              ...subscription.metadata,
-              supabase_user_id: user.id,
-              plan: "organizer",
-            },
-          },
-        );
-
-      await updateBillingFromSubscription({
-        subscription:
-          updatedSubscription,
-        userId: user.id,
-      });
-
-      return NextResponse.json({
-        upgraded: true,
-        url:
-          `${appUrl}/billing?upgrade=organizer`,
-      });
-    }
 
     if (effectivePlan !== "free") {
       return NextResponse.json(
@@ -266,6 +216,11 @@ export async function POST(request: NextRequest) {
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: stripeCustomerId,
+      ...(currency === "jpy" ? {
+        currency,
+        locale: "ja",
+        adaptive_pricing: { enabled: false },
+      } : {}),
       line_items: [
         {
           price: priceId,
