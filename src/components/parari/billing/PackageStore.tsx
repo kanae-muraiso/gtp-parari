@@ -1,6 +1,8 @@
 // PARARI package storefront. Product labels are independent of stored billing codes.
 // Availability is defined here for display; purchase eligibility is enforced by the checkout API.
 import Link from "next/link";
+import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
+import { WRITERS_B_MONTHLY_PRICE_JPY, getWritersBJapanPriceId } from "@/lib/billing/writersPricing";
 import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
 
 const upcoming = [
@@ -44,7 +46,8 @@ function AvailabilityCard({ name, description }: { name: string; description: st
   );
 }
 
-export default function PackageStore() {
+export default function PackageStore({ checkoutOnPage = false }: { checkoutOnPage?: boolean }) {
+  const japanCheckoutReady = Boolean(getWritersBJapanPriceId() && process.env.STRIPE_SECRET_KEY);
   const free = PLAN_ENTITLEMENTS.free;
   const plus = PLAN_ENTITLEMENTS.plus;
   return (
@@ -79,10 +82,10 @@ export default function PackageStore() {
           <article className="flex flex-col rounded-2xl border-2 border-neutral-900 bg-neutral-950 p-5 text-white shadow-sm">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-bold">WRITERS B</h3>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-950">円建て申込準備中</span>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-950">{japanCheckoutReady ? "利用可能" : "円建て申込準備中"}</span>
             </div>
             <p className="mt-1 text-xs text-neutral-300">従来のPlusプラン</p>
-            <p className="mt-4 text-3xl font-bold">500円 <span className="text-sm font-normal text-neutral-300">/月（予定）</span></p>
+            <p className="mt-4 text-3xl font-bold">{WRITERS_B_MONTHLY_PRICE_JPY}円 <span className="text-sm font-normal text-neutral-300">/月{japanCheckoutReady ? "" : "（予定）"}</span></p>
             <p className="mt-3 text-sm leading-6 text-neutral-200">より多くの作品制作と電子書籍出版に。</p>
             <ul className="mt-4 flex-1 space-y-2 text-xs leading-6 text-neutral-200">
               <li>BOOK：{plus.bookLimit}冊</li>
@@ -92,6 +95,15 @@ export default function PackageStore() {
               <li>EPUB3出力・共同編集</li>
               <li>作品販売手数料：{plus.salesFeeBps / 100}%</li>
             </ul>
+            {japanCheckoutReady ? (
+              <div className="mt-6">
+                {checkoutOnPage ? <PlusCheckoutButton currency="jpy" /> : (
+                  <Link href="/billing" className="block rounded-full bg-white px-4 py-3 text-center text-sm font-bold text-neutral-950 hover:bg-neutral-100">
+                    WRITERS Bに申し込む
+                  </Link>
+                )}
+              </div>
+            ) : null}
           </article>
 
           <AvailabilityCard name="WRITERS C" description={upcoming[0].packages[0].description} />

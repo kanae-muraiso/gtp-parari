@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { getEffectivePlan } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function PlusCheckoutButton() {
+export default function PlusCheckoutButton({ currency = "usd" }: { currency?: "usd" | "jpy" }) {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingPlan, setCheckingPlan] = useState(true);
   const [hasPaidPlan, setHasPaidPlan] = useState(false);
@@ -83,6 +83,7 @@ export default function PlusCheckoutButton() {
         },
         body: JSON.stringify({
           plan: "plus",
+          currency,
         }),
       });
 
