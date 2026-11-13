@@ -15,14 +15,14 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
   return <a href={item.href} onClick={follow} aria-disabled={leaving || undefined} className={className}>{children}</a>;
 }
 
-// Only confirmed Membership destinations appear in the final LIBRARY tab.
-// Class and member destinations are resolved by existing participation data.
-// Never flash an empty menu during loading.
-export function MembershipMenu() {
+// Show every verified affiliation (CPP, CPP alumni, Membership, and future classes)
+// in the final LIBRARY tab. Class destinations can be added to buildParticipations
+// when the class membership backend is available. Avoid flashing during loading.
+export function AffiliationMenu() {
   const { userId, items, leaving } = useParticipations();
   const details = useRef<HTMLDetailsElement>(null);
-  const memberships = items.filter(item => item.key.startsWith("membership:"));
-  if (!userId || memberships.length === 0) return null;
+  const destinations = items;
+  if (!userId || destinations.length === 0) return null;
 
   return (
     <div className="relative shrink-0">
@@ -39,8 +39,8 @@ export function MembershipMenu() {
           所属先 <span aria-hidden="true">▾</span>
         </summary>
         <div className="absolute right-0 top-full z-[10000] mt-2 w-64 max-w-[85vw] rounded-2xl border border-neutral-200 bg-white p-2 text-neutral-900 shadow-xl">
-          <p className="px-3 py-2 text-xs text-neutral-500">参加しているクラス・MEMBERSHIP</p>
-          {memberships.map(item => (
+          <p className="px-3 py-2 text-xs text-neutral-500">所属している団体・クラス・MEMBERSHIP</p>
+          {destinations.map(item => (
             <DestinationLink
               key={item.key}
               item={item}
@@ -48,6 +48,9 @@ export function MembershipMenu() {
               className={`block rounded-xl px-3 py-3 text-sm font-bold transition hover:bg-emerald-50 ${leaving ? "pointer-events-none opacity-60" : ""}`}
             >
               {item.name}
+              {item.state !== "active" ? (
+                <span className="mt-1 block text-xs font-normal text-neutral-500">{item.action}</span>
+              ) : null}
             </DestinationLink>
           ))}
         </div>
@@ -56,7 +59,7 @@ export function MembershipMenu() {
   );
 }
 
-// Legacy callers remain a no-op; MembershipMenu is mounted at the end of LIBRARY tabs.
+// Legacy callers remain a no-op; AffiliationMenu is mounted at the end of LIBRARY tabs.
 export function ParticipationMenu() {
   return null;
 }
