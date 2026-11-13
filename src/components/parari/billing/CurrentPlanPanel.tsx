@@ -7,10 +7,10 @@ import { useEffect, useState } from "react";
 import {
   getEffectivePlan,
   getPlanEntitlements,
-  getPlanLabel,
   type EffectivePlan,
 } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
+import { getStorefrontPlanLabel } from "@/lib/billing/packageMapping";
 
 type BillingRow = {
   plan: string | null;
@@ -24,22 +24,22 @@ function getPlanMessage(
   status: BillingRow["billing_status"],
 ): string {
   if (effectivePlan !== "free") {
-    return `PARARI ${getPlanLabel(effectivePlan)}をご利用中です。このプランの利用範囲が適用されています。`;
+    return `PARARI ${getStorefrontPlanLabel(effectivePlan)}をご利用中です。このプランの利用範囲が適用されています。`;
   }
 
   if (status === "past_due" || status === "unpaid") {
-    return "お支払いの確認が必要なため、現在はFreeプランとして扱われています。請求管理からお支払い状況をご確認ください。";
+    return "お支払いの確認が必要なため、現在はWRITERS A（Free）として扱われています。請求管理からお支払い状況をご確認ください。";
   }
 
   if (status === "canceled") {
-    return "有料プランは終了しています。現在はFreeプランとしてご利用いただけます。";
+    return "有料プランは終了しています。現在はWRITERS A（Free）としてご利用いただけます。";
   }
 
   if (status === "incomplete" || status === "incomplete_expired") {
     return "プラン申込が完了していません。必要な場合は、もう一度申込を行ってください。";
   }
 
-  return "現在はFreeプランです。無料の利用上限内で作品を作成・公開できます。";
+  return "現在はWRITERS A（Free）です。無料の利用上限内で作品を作成・公開できます。";
 }
 
 function getStatusLabel(
@@ -258,7 +258,7 @@ export default function CurrentPlanPanel() {
 
   const rawStatus = billing?.billing_status ?? "none";
   const effectivePlan = getEffectivePlan(billing);
-  const planLabel = isMonitor ? "Monitor" : getPlanLabel(effectivePlan);
+  const planLabel = isMonitor ? "Monitor" : getStorefrontPlanLabel(effectivePlan);
   const limits = getPlanEntitlements(effectivePlan, isMonitor);
   const planMessage = isMonitor
     ? "PARARIモニターとして、検証期間中は全機能と無制限の画像容量をご利用いただけます。"
