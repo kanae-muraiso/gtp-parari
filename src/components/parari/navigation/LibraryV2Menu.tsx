@@ -1,7 +1,7 @@
 "use client";
 
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
-import { MembershipMenu } from "@/components/parari/navigation/ParticipationNav";
+import { AffiliationMenu } from "@/components/parari/navigation/ParticipationNav";
 
 // Use the same LIBRARY tab styling and HOME destination as applications,
 // messages and calendar, while retaining the bookshelf-specific destinations.
@@ -14,5 +14,5 @@ const sections = [
 
 type Section = (typeof sections)[number]["key"];
 export default function LibraryV2Menu({ active }: { active: Section }) {
-  return <ParariTabs items={[...sections]} active={active} embedded color="library" trailing={<MembershipMenu />} />;
+  return <ParariTabs items={[...sections]} active={active} embedded color="library" trailing={<AffiliationMenu />} />;
 }
