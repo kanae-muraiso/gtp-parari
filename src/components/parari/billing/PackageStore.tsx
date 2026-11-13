@@ -1,12 +1,7 @@
 // PARARI package storefront. Product labels are independent of stored billing codes.
 // Availability is defined here for display; purchase eligibility is enforced by the checkout API.
 import Link from "next/link";
-import PlusCheckoutButton from "@/components/parari/billing/PlusCheckoutButton";
 import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
-
-type PackageStoreProps = {
-  checkoutOnPage?: boolean;
-};
 
 const upcoming = [
   {
@@ -49,7 +44,7 @@ function AvailabilityCard({ name, description }: { name: string; description: st
   );
 }
 
-export default function PackageStore({ checkoutOnPage = false }: PackageStoreProps) {
+export default function PackageStore() {
   const free = PLAN_ENTITLEMENTS.free;
   const plus = PLAN_ENTITLEMENTS.plus;
   return (
@@ -67,7 +62,7 @@ export default function PackageStore({ checkoutOnPage = false }: PackageStorePro
               <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-bold text-neutral-600">利用可能</span>
             </div>
             <p className="mt-1 text-xs text-neutral-500">従来のFreeプラン</p>
-            <p className="mt-4 text-3xl font-bold text-neutral-950">$0 <span className="text-sm font-normal text-neutral-500">/月</span></p>
+            <p className="mt-4 text-3xl font-bold text-neutral-950">無料</p>
             <p className="mt-3 text-sm leading-6 text-neutral-600">まずは無料で書き、読者に作品を届ける。</p>
             <ul className="mt-4 flex-1 space-y-2 text-xs leading-6 text-neutral-700">
               <li>BOOK：{free.bookLimit}冊</li>
@@ -84,10 +79,10 @@ export default function PackageStore({ checkoutOnPage = false }: PackageStorePro
           <article className="flex flex-col rounded-2xl border-2 border-neutral-900 bg-neutral-950 p-5 text-white shadow-sm">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-bold">WRITERS B</h3>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-950">利用可能</span>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-neutral-950">円建て申込準備中</span>
             </div>
             <p className="mt-1 text-xs text-neutral-300">従来のPlusプラン</p>
-            <p className="mt-4 text-3xl font-bold">${plus.monthlyPriceUsd} <span className="text-sm font-normal text-neutral-300">USD /月</span></p>
+            <p className="mt-4 text-3xl font-bold">500円 <span className="text-sm font-normal text-neutral-300">/月（予定）</span></p>
             <p className="mt-3 text-sm leading-6 text-neutral-200">より多くの作品制作と電子書籍出版に。</p>
             <ul className="mt-4 flex-1 space-y-2 text-xs leading-6 text-neutral-200">
               <li>BOOK：{plus.bookLimit}冊</li>
@@ -97,13 +92,6 @@ export default function PackageStore({ checkoutOnPage = false }: PackageStorePro
               <li>EPUB3出力・共同編集</li>
               <li>作品販売手数料：{plus.salesFeeBps / 100}%</li>
             </ul>
-            <div className="mt-6">
-              {checkoutOnPage ? <PlusCheckoutButton /> : (
-                <Link href="/billing" className="block rounded-full bg-white px-4 py-3 text-center text-sm font-bold text-neutral-950 hover:bg-neutral-100">
-                  WRITERS Bに申し込む
-                </Link>
-              )}
-            </div>
           </article>
 
           <AvailabilityCard name="WRITERS C" description={upcoming[0].packages[0].description} />
@@ -132,8 +120,7 @@ export default function PackageStore({ checkoutOnPage = false }: PackageStorePro
       </section>
 
       <p className="text-xs leading-6 text-neutral-500">
-        表示金額は現行プランの米ドル建て月額です。WRITERS Bのお支払いはStripeで処理します。
-        ほかのパッケージの料金や提供機能は未確定です。既存のOrganizer・Host・Pro契約は本画面の販売状況とは別に継続されます。
+        既存の有料契約の料金は、請求管理でご確認いただけます。
       </p>
     </div>
   );

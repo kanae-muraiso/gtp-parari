@@ -32,7 +32,7 @@ export default function BillingPage() {
 
           <div className="mt-6"><CurrentPlanPanel /></div>
 
-          <div className="mt-10"><PackageStore checkoutOnPage /></div>
+          <div className="mt-10"><PackageStore /></div>
 
           <section className="mt-10 rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
             <p className="text-xs font-bold tracking-[0.16em] text-neutral-400">CUSTOMER PORTAL</p>

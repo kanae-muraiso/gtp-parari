@@ -1,4 +1,4 @@
-// PARARI public product storefront. Checkout remains on /billing for authenticated users.
+// PARARI public product storefront for Japan.
 import Link from "next/link";
 import PackageStore from "@/components/parari/billing/PackageStore";
 
@@ -19,8 +19,7 @@ export default function PackagesPage() {
           <p className="text-xs font-bold tracking-[0.18em] text-neutral-400">PACKAGES</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">あなたの活動に合ったPARARIを。</h1>
           <p className="mt-5 text-sm leading-8 text-neutral-600">
-            まずは書くことから。現在お選びいただけるのはWRITERS A（無料）とWRITERS B（月額3ドル）です。
-            CLASS・BUSINESSなどのパッケージは準備が整い次第ご案内します。
+            まずは無料のWRITERS Aから作品づくりを始められます。
           </p>
         </div>
         <PackageStore />
