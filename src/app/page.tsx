@@ -122,6 +122,12 @@ export default function HomePage() {
           </Link>
 
           <Link
+            href="/packages"
+            className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-medium text-neutral-800"
+          >
+            パッケージを見る
+          </Link>
+          <Link
             href="https://parari.cpp.co.jp/"
             className="rounded-full border border-neutral-300 bg-white px-6 py-3 text-sm font-medium text-neutral-800"
           >
