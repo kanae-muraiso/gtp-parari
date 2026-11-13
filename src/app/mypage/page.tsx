@@ -11,7 +11,6 @@ import {
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import { ParticipationHomePanel } from "@/components/parari/navigation/ParticipationNav";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -149,8 +148,6 @@ export default function MyPage() {
       <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
         <MyAreaHeader title="HOME" area="library" navigation={<MyPrimaryTabs active="home" embedded />} />
 
-        <ParticipationHomePanel />
-
         {notices.length > 0 ? (
           <div className="mt-5 space-y-2">
             {notices.map((notice) => (
@@ -169,13 +166,19 @@ export default function MyPage() {
           </div>
         ) : null}
 
-        <div className="mt-8">
-          <p className="text-xs leading-6 text-neutral-400">
-            PARARIでは、使った機能だけがLIBRARYに加わっていきます。
-          </p>
-        </div>
+        <div className="mt-6 space-y-4">
+          <section aria-labelledby="open-space-heading" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 id="open-space-heading" className="text-base font-bold text-emerald-950">
+                PARARIオープンスペース（仮称）
+              </h2>
+              <span className="text-xs font-semibold text-emerald-800">準備中</span>
+            </div>
+            <p className="mt-2 text-sm leading-7 text-emerald-950/80">
+              作品や作者との出会いを広げる、新しい入口を準備しています。
+            </p>
+          </section>
 
-        <div className="mt-5 space-y-4">
           <HomeCard
             title="あなたの本棚"
             description="読むもの、あとで読むもの、参加しているBOOKがここに集まります。"
