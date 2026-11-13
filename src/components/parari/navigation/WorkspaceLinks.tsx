@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRef } from "react";
 import LogoutButton from "./LogoutButton";
-import { MembershipMenu } from "./ParticipationNav";
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import useParariStaff from "@/components/parari/hooks/useParariStaff";
@@ -72,7 +71,6 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-        {area === "library" ? <MembershipMenu /> : null}
         {studioEnabled ? (
           <Link
             href="/editor/quick"

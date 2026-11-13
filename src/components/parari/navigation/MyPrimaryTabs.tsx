@@ -11,6 +11,7 @@
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
+import { MembershipMenu } from "@/components/parari/navigation/ParticipationNav";
 
 export type MyPrimaryTab =
   | "home"
@@ -93,6 +94,6 @@ export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTab
   }
 
   return (
-    <ParariTabs items={items} active={active} embedded={embedded} color="library" />
+    <ParariTabs items={items} active={active} embedded={embedded} color="library" trailing={<MembershipMenu />} />
   );
 }

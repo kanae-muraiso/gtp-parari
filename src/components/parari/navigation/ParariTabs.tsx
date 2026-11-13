@@ -10,6 +10,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 export type ParariTabItem = {
@@ -25,6 +26,7 @@ type ParariTabsProps = {
   className?: string;
   embedded?: boolean;
   color?: "neutral" | "library" | "studio";
+  trailing?: ReactNode;
 };
 
 export default function ParariTabs({
@@ -34,6 +36,7 @@ export default function ParariTabs({
   className = "",
   embedded = false,
   color = "neutral",
+  trailing,
 }: ParariTabsProps) {
   return (
     <nav
@@ -84,6 +87,7 @@ export default function ParariTabs({
           </button>
         );
       })}
+      {trailing}
     </nav>
   );
 }
