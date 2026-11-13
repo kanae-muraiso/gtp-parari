@@ -22,6 +22,7 @@ import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
 import CalendarManagerPanel from "@/components/parari/manage/CalendarManagerPanel";
+import ClassManagerPanel from "@/components/parari/manage/ClassManagerPanel";
 import MembershipManagerPanel from "@/components/parari/manage/MembershipManagerPanel";
 import {
   getEffectivePlan,
@@ -35,7 +36,8 @@ type ManageMode =
   | "form"
   | "application"
   | "calendar"
-  | "membership";
+  | "membership"
+  | "class";
 
 
 export default function MyManagePage() {
@@ -90,6 +92,7 @@ export default function MyManagePage() {
       });
     }
 
+    tabs.push({ key: "class", label: "クラス" });
     return tabs;
   }, [entitlements]);
 
@@ -172,7 +175,8 @@ export default function MyManagePage() {
       tab === "form" ||
       tab === "application" ||
       tab === "calendar" ||
-      tab === "membership"
+      tab === "membership" ||
+      tab === "class"
     ) {
       setManageMode(
         tab,
@@ -263,6 +267,8 @@ export default function MyManagePage() {
           manageMode === "calendar" ? (
             <CalendarManagerPanel />
           ) : null}
+
+          {accessLoaded && manageMode === "class" ? <ClassManagerPanel /> : null}
 
           {accessLoaded &&
           manageMode === "membership" ? (

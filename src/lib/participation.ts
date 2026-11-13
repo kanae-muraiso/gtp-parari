@@ -1,3 +1,5 @@
+import { classIdPattern } from "@/lib/classes";
+
 // 2026-10-04 JST
 // PART: Participation destinations (navigation only; never a content entitlement).
 export type Participation = {
@@ -15,6 +17,7 @@ export type ParticipationFacts = {
   hasCompany: boolean;
   cppMembershipIds: string[];
   memberships: { id: string; name: string }[];
+  classSchools?: { id: string; name: string }[];
 };
 
 export function membershipShelfHref(id: string) {
@@ -44,10 +47,14 @@ export function buildParticipations(facts: ParticipationFacts): Participation[] 
     if (facts.cppMembershipIds.includes(membership.id) || result.some(item => item.key === `membership:${membership.id}`)) continue;
     result.push({ key: `membership:${membership.id}`, name: membership.name, href: membershipShelfHref(membership.id), action: "開く", state: "active" });
   }
+  for (const school of facts.classSchools ?? []) {
+    result.push({ key: `class:${school.id}`, name: school.name, href: `/my/classes/${school.id}`, action: "開く", state: "active" });
+  }
   return result;
 }
 
 export function parseParticipationKey(value: string | null): string | null {
+  if (value?.startsWith("class:") && classIdPattern.test(value.slice(6))) return value;
   return value && /^(cpp|cpp-alumni|membership:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value) ? value : null;
 }
 
@@ -68,5 +75,7 @@ export function participationAtLocation(pathname: string, search: URLSearchParam
   if (pathname === "/my/cpp/social-profile" && search.get("returnTo") === "/cpp/alumni") return "cpp-alumni";
   if (pathname === "/my/cpp" || pathname.startsWith("/my/cpp/")) return "cpp";
   if (pathname === "/my/bookshelf" && search.get("tab") === "membership") return parseParticipationKey(`membership:${search.get("membership")}`);
+  const classPage = pathname.match(/^\/my\/classes\/([^/]+)$/);
+  if (classPage) return parseParticipationKey(`class:${classPage[1]}`);
   return parseParticipationKey(search.get("participation"));
 }

@@ -15,9 +15,7 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
   return <a href={item.href} onClick={follow} aria-disabled={leaving || undefined} className={className}>{children}</a>;
 }
 
-// Show every verified affiliation (CPP, CPP alumni, Membership, and future classes)
-// in the final LIBRARY tab. Class destinations can be added to buildParticipations
-// when the class membership backend is available. Avoid flashing during loading.
+// Show verified affiliations in the final LIBRARY tab once they have loaded.
 export function AffiliationMenu() {
   const { userId, items, leaving } = useParticipations();
   const details = useRef<HTMLDetailsElement>(null);
