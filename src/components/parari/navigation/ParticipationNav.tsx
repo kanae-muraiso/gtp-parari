@@ -15,8 +15,9 @@ function DestinationLink({ item, children, className, onFollow }: { item: Partic
   return <a href={item.href} onClick={follow} aria-disabled={leaving || undefined} className={className}>{children}</a>;
 }
 
-// Only confirmed Membership destinations appear; other participation types
-// keep their dedicated menus. Never flash an empty menu during loading.
+// Only confirmed Membership destinations appear in the final LIBRARY tab.
+// Class and member destinations are resolved by existing participation data.
+// Never flash an empty menu during loading.
 export function MembershipMenu() {
   const { userId, items, leaving } = useParticipations();
   const details = useRef<HTMLDetailsElement>(null);
@@ -32,13 +33,13 @@ export function MembershipMenu() {
         }
       }}>
         <summary
-          className="cursor-pointer list-none whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-emerald-50"
-          aria-label="参加中のMEMBERSHIPを開く"
+          className="cursor-pointer list-none whitespace-nowrap rounded-xl px-4 py-2 text-xs font-bold text-neutral-600 transition hover:bg-emerald-50 hover:text-emerald-950"
+          aria-label="所属しているクラス・MEMBERSHIPを開く"
         >
-          MEMBERSHIP <span aria-hidden="true">▾</span>
+          所属先 <span aria-hidden="true">▾</span>
         </summary>
         <div className="absolute right-0 top-full z-[10000] mt-2 w-64 max-w-[85vw] rounded-2xl border border-neutral-200 bg-white p-2 text-neutral-900 shadow-xl">
-          <p className="px-3 py-2 text-xs text-neutral-500">参加中のMEMBERSHIP</p>
+          <p className="px-3 py-2 text-xs text-neutral-500">参加しているクラス・MEMBERSHIP</p>
           {memberships.map(item => (
             <DestinationLink
               key={item.key}
@@ -55,8 +56,7 @@ export function MembershipMenu() {
   );
 }
 
-// Legacy callers keep the old no-op behavior; only the LIBRARY header
-// intentionally mounts MembershipMenu.
+// Legacy callers remain a no-op; MembershipMenu is mounted at the end of LIBRARY tabs.
 export function ParticipationMenu() {
   return null;
 }
