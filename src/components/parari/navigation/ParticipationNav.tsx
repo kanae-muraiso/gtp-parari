@@ -55,9 +55,10 @@ export function MembershipMenu() {
   );
 }
 
-// Compatibility for legacy callers; membership navigation uses the same menu.
+// Legacy callers keep the old no-op behavior; only the LIBRARY header
+// intentionally mounts MembershipMenu.
 export function ParticipationMenu() {
-  return <MembershipMenu />;
+  return null;
 }
 
 export function ParticipationReturn({ dark = false }: { dark?: boolean }) {
