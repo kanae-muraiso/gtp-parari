@@ -1287,15 +1287,6 @@ export default function MyWorksPage() {
           {/* HEADER */}
           <MyAreaHeader title="作品" area="studio" navigation={<ManagementTabs active="works" embedded />} />
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/my/author-library-settings" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
-              作者の書棚設定
-            </Link>
-            <Link href="/my/bookshelf" className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
-              新LIBRARYを確認
-            </Link>
-          </div>
-
           {/* WORKS CONTENT */}
           <div className="mt-6 w-full">
             <section className="mb-5 rounded-3xl bg-white p-5 shadow-sm">

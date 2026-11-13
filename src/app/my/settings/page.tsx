@@ -125,6 +125,12 @@ export default function SettingsHomePage() {
               </section>
 
               <SettingsCard
+                title="作者の書棚設定"
+                description="公開する作品の並び方や作者としての掲載を設定します。"
+                href="/my/author-library-settings"
+              />
+
+              <SettingsCard
                 title="販売者情報・特定商取引法・個人情報の取扱い"
                 description="有料販売前に必要な表示を登録し、購入者に公開します。Square接続とは別に必要です。"
                 href="/my/settings/seller"
