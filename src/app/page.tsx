@@ -6,96 +6,59 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabaseClient";
-
-type StartDestination = "library" | "studio" | "last";
-type Workspace = "library" | "studio";
-
-function resolveDestination(
-  startDestination: StartDestination,
-  lastWorkspace: Workspace,
-) {
-  if (startDestination === "studio") return "/my/works";
-  if (startDestination === "last") {
-    return lastWorkspace === "studio" ? "/my/works" : "/mypage";
-  }
-
-  return "/mypage";
-}
+import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
+import { classRequest } from "@/lib/classRequests";
 
 export default function HomePage() {
   const router = useRouter();
-  const [checking, setChecking] = React.useState(true);
+  const { userId, items, loading, error, refresh, navigate } = useParticipations();
+  const [checkedOwner, setCheckedOwner] = React.useState<{ userId: string; school: { name: string } | null } | null>(null);
 
   React.useEffect(() => {
-    let mounted = true;
+    if (!userId) return;
+    const controller = new AbortController();
+    void classRequest<{ userId: string; owned: { name: string } | null }>("?home=1", undefined, controller.signal)
+      .then(result => {
+        if (!controller.signal.aborted) setCheckedOwner({ userId: result.userId, school: result.owned });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCheckedOwner({ userId, school: null });
+      });
+    return () => controller.abort();
+  }, [userId]);
 
-    async function checkAuthAndRedirect() {
-      if (!supabase) {
-        if (mounted) setChecking(false);
-        return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!mounted) return;
-
-      if (!user) {
-        setChecking(false);
-        return;
-      }
-
-      // New members begin in LIBRARY. Previously active creators keep their
-      // startup choice, even when studio eligibility came from legacy works.
-      const [preference, experience, profile] = await Promise.all([
-        supabase
-          .from("user_workspace_preferences")
-          .select("start_destination,last_workspace")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase.rpc("get_my_parari_experience"),
-        supabase.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
-      ]);
-      if (!mounted) return;
-
-      if (profile.data?.is_monitor === true) {
-        router.replace("/mypage");
-        return;
-      }
-
-      const preferenceData = preference.data;
-      const experienceData = Array.isArray(experience.data)
-        ? experience.data[0]
-        : experience.data;
-      if (!preferenceData || !experienceData?.studio_enabled) {
-        router.replace("/my/bookshelf");
-        return;
-      }
-
-      const rawStart = String(preferenceData.start_destination ?? "library");
-      const startDestination: StartDestination =
-        rawStart === "library" || rawStart === "last" ? rawStart : "studio";
-
-      const rawLast = String(preferenceData?.last_workspace ?? "studio");
-      const lastWorkspace: Workspace =
-        rawLast === "library" ? "library" : "studio";
-
-      router.replace(
-        resolveDestination(startDestination, lastWorkspace),
-      );
+  const ownership = checkedOwner?.userId === userId ? checkedOwner : null;
+  React.useEffect(() => {
+    if (userId && !loading && !error && ownership && !ownership.school && items.length === 0) {
+      router.replace("/mypage");
     }
+  }, [userId, loading, error, ownership, items.length, router]);
 
-    void checkAuthAndRedirect();
+  if (loading || (userId && !ownership)) {
+    return <main className="min-h-screen bg-white px-6 py-12 text-sm" role="status">行き先を確認しています…</main>;
+  }
 
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
-
-  if (checking) {
-    return <main className="min-h-screen bg-white" />;
+  if (userId) {
+    if (!error && !ownership?.school && items.length === 0) return null;
+    return (
+      <main className="min-h-screen bg-[#f7f4ee] px-6 py-12 text-neutral-900">
+        <section className="mx-auto max-w-3xl">
+          <h1 className="text-2xl font-bold">行き先を選ぶ</h1>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Destination href="/mypage" name="PARARI" />
+            {ownership?.school && <Destination href="/my/manage?tab=class" name={ownership.school.name} detail="教室を運営" />}
+            {items.map(item => <Destination key={item.key} href={item.href} name={item.name}
+              detail={item.state === "active" ? undefined : item.action}
+              onClick={event => {
+                if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+                event.preventDefault();
+                void navigate(item.key);
+              }} />)}
+          </div>
+          {error && <p role="alert" className="mt-4 text-sm">{error} <button onClick={refresh} className="underline">再読み込み</button></p>}
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -142,5 +105,20 @@ export default function HomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function Destination({ href, name, detail, onClick }: {
+  href: string;
+  name: string;
+  detail?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+}) {
+  return (
+    <Link href={href} onClick={onClick} className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 hover:border-neutral-500 focus-visible:outline focus-visible:outline-2">
+      <span aria-hidden="true" className="mb-3 grid size-10 place-items-center rounded-xl bg-neutral-900 font-bold text-white">{Array.from(name)[0]}</span>
+      <span className="block break-words text-sm font-bold">{name}</span>
+      {detail && <span className="mt-1 block text-xs text-neutral-600">{detail}</span>}
+    </Link>
   );
 }
