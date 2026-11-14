@@ -97,6 +97,21 @@ async function main() {
     await assert.rejects(db.query("insert into school_class_assignments values ($1,$2,$3)", [anotherSchool, localMember, secondClass]), { code: "23503" });
     assert.equal(await read(learner), null);
 
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261114033907_class_daily_operations.sql"), "utf8"));
+    await db.exec("set role authenticated");
+    for (const table of ["school_notices", "school_attendance", "school_charges"]) {
+      await assert.rejects(db.query(`select * from ${table}`), { code: "42501" });
+    }
+    await db.exec("set role service_role");
+    const classId = (await read(owner)).classes.find(item => item.id !== secondClass).id;
+    const roll = [school, classId, localMember];
+    await db.query("insert into school_attendance(school_id,class_id,enrollment_id,lesson_date,actual) values($1,$2,$3,'2027-01-12','absent')", roll);
+    await db.query(`insert into school_attendance(school_id,class_id,enrollment_id,lesson_date,absence_reported)
+      values($1,$2,$3,'2027-01-12',true) on conflict(school_id,class_id,lesson_date,enrollment_id)
+      do update set absence_reported=excluded.absence_reported`, roll);
+    assert.deepEqual((await db.query("select actual,absence_reported from school_attendance")).rows, [{ actual: "absent", absence_reported: true }]);
+    await assert.rejects(db.query("insert into school_charges(id,school_id,enrollment_id,title,amount_yen,due_on) values(gen_random_uuid(),$1,$2,'月謝',1000,'2027-01-12')", [anotherSchool, localMember]), { code: "23503" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();

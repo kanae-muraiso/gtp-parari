@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import ClassDailyPanel from "./ClassDailyPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { type ClassManagement, type ClassRosterMember } from "@/lib/classes";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
@@ -129,6 +130,7 @@ export default function ClassManagerPanel() {
         </ul>
       </section>
     </>}
+    {school?.classes.map(item => <ClassDailyPanel key={item.id} schoolId={school.id} item={item} userId={data.userId} roster={data.roster} />)}
     <div aria-live="polite">
       {error && <p className="text-sm text-red-800" role="alert">{error}</p>}
       {message && <p className="text-sm text-emerald-900">{message}</p>}
