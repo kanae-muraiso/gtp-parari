@@ -22,7 +22,7 @@ function Select({ name, label, values, initial }: { name: string; label: string;
   </select></label>;
 }
 
-export default function ClassAdmissionsPanel({ onRosterChanged }: { onRosterChanged: () => void }) {
+export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: "settings" | "admissions"; onRosterChanged: () => void }) {
   const [data, setData] = useState<AdmissionsData | null>(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
@@ -63,9 +63,8 @@ export default function ClassAdmissionsPanel({ onRosterChanged }: { onRosterChan
   const { labels } = settings;
   const candidate = cases.find(row => row.id === selected);
   return <section className={panel}>
-    <h3 className="font-bold">{labels.admission}の手続き</h3>
-    <details>
-      <summary className="cursor-pointer text-sm">使う工程・呼び方・規約の設定</summary>
+    <h3 className="font-bold">{labels.admission}{mode === "settings" ? "設定" : "手続き"}</h3>
+    {mode === "settings" ? <>
       <form className="mt-3 grid gap-2" onSubmit={event => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
@@ -82,7 +81,8 @@ export default function ClassAdmissionsPanel({ onRosterChanged }: { onRosterChan
           <button className={button}>設定を保存</button>
         </fieldset>
       </form>
-    </details>
+      <p className="text-sm text-neutral-600">候補者登録 → {settings.briefing ? "説明会・体験 → " : ""}{settings.test ? "テスト・採点 → " : ""}{labels.operator}の確認 → 同意・支払い → 名簿登録</p>
+    </> : <>
     <form className="grid gap-2" onSubmit={async event => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -106,6 +106,7 @@ export default function ClassAdmissionsPanel({ onRosterChanged }: { onRosterChan
       {cases.map(row => <option key={row.id} value={row.id}>{row.name} · {row.enrollment_id ? "在籍登録済み" : options.decision[row.decision]}</option>)}
     </select></label>
     {candidate && <Candidate key={candidate.id + ":" + candidate.revision} candidate={candidate} data={data} busy={busy} save={save} />}
+    </>}
     {error && <p role="alert" className="text-sm text-red-800">{error} <button className="underline" type="button" onClick={() => { setError(""); setGeneration(value => value + 1); }}>再読み込み</button></p>}
     {message && <p role="status" className="text-sm text-emerald-800">{message}</p>}
   </section>;
