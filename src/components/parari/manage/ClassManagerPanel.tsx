@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { type ClassManagement, type ClassRosterMember } from "@/lib/classes";
@@ -102,6 +103,7 @@ export default function ClassManagerPanel() {
       {view !== "roster" && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
+      {view === "settings" && <ClassRecruitmentPanel />}
       {view === "settings" && <form key={data.applicationId ?? "unlinked"} className={panel} onSubmit={event => {
         const values = formValues(event);
         void save({ action: "admission", applicationId: values.applicationId || null }, "入会受付の設定を保存しました。");
