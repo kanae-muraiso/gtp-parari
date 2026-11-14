@@ -97,6 +97,26 @@ async function main() {
     await assert.rejects(db.query("insert into school_class_assignments values ($1,$2,$3)", [anotherSchool, localMember, secondClass]), { code: "23503" });
     assert.equal(await read(learner), null);
 
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261114122454_class_admissions.sql"), "utf8"));
+    await db.exec("set role authenticated");
+    await assert.rejects(db.query("select * from school_admission_cases"), { code: "42501" });
+    await db.exec("set role service_role");
+    const candidate = "00000000-0000-4000-8000-000000000061";
+    await db.query("delete from school_classes where id=$1", [secondClass]);
+    await db.query(`insert into school_admission_cases(id,school_id,name,source,briefing,test,decision,starts_on,payment)
+      values ($1,$2,'候補者','referral','skip','skip','approved',current_date,'advance')`, [candidate, school]);
+    const finish = (account = owner) => db.query("select finish_class_admission($1,$2,$3)", [account, school, candidate]);
+    await assert.rejects(finish(outsider), { code: "P0002" });
+    await assert.rejects(finish(), { code: "22023" });
+    await db.query("update school_admission_cases set consent_at=now(), agreed_terms='' where id=$1", [candidate]);
+    await assert.rejects(finish(), { code: "22023" });
+    await db.query("update school_admission_cases set received_at=now() where id=$1", [candidate]);
+    await finish();
+    await finish();
+    assert.equal((await db.query("select enrollment_id from school_admission_cases where id=$1", [candidate])).rows[0].enrollment_id, candidate);
+    assert.equal((await db.query("select count(*)::int as count from school_enrollments where id=$1", [candidate])).rows[0].count, 1);
+
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();
