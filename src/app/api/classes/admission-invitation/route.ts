@@ -10,21 +10,23 @@ async function handle(request: NextRequest, write: boolean) {
   const token = request.headers.get("x-class-invitation");
   if (!token || !classIdPattern.test(token)) return missing();
   try {
-    const accessToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-    if (!accessToken) return send({ ok: false, message: "モニター用アカウントでログインしてください。" }, 401);
-    const { data: { user }, error } = await db.auth.getUser(accessToken);
-    if (error || !user) return missing();
-    const viewer = await db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle();
-    if (viewer.error) throw viewer.error;
-    if (viewer.data?.is_monitor !== true) return missing();
     const candidate = await db.from("school_admission_cases")
-      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test")
+      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email")
       .eq("invite_token", token).eq("decision", "approved").is("enrollment_id", null).maybeSingle();
     if (candidate.error) throw candidate.error;
     const row = candidate.data;
     const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
     if (!row?.starts_on || !row.deadline || row.deadline < today ||
       !["skip", "done"].includes(row.briefing) || !["skip", "graded"].includes(row.test)) return missing();
+    if (!row.applicant_email) {
+      const accessToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+      if (!accessToken) return send({ ok: false, message: "モニター用アカウントでログインしてください。" }, 401);
+      const { data: { user }, error } = await db.auth.getUser(accessToken);
+      if (error || !user) return missing();
+      const viewer = await db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle();
+      if (viewer.error) throw viewer.error;
+      if (viewer.data?.is_monitor !== true) return missing();
+    }
     const [setting, school] = await Promise.all([
       db.from("school_admission_settings").select("labels,terms").eq("school_id", row.school_id).maybeSingle(),
       db.from("class_schools").select("name,owner_user_id").eq("id", row.school_id).maybeSingle(),

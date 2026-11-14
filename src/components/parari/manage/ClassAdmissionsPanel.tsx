@@ -46,7 +46,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
       await classRequest(path, { action, ...values });
       setData(await classRequest<AdmissionsData>(path));
       if (action === "finish") onRosterChanged();
-      setMessage("保存しました。");
+      setMessage(action === "email" ? "メールを送信しました。" : "保存しました。");
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");
@@ -103,7 +103,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
     </form>
     <label className="text-sm">候補者<select className={field} value={selected} onChange={event => setSelected(event.target.value)}>
       <option value="">選択してください</option>
-      {cases.map(row => <option key={row.id} value={row.id}>{row.name} · {row.enrollment_id ? "在籍登録済み" : options.decision[row.decision]}</option>)}
+      {cases.map(row => <option key={row.id} value={row.id}>{row.name} · {row.enrollment_id ? "在籍登録済み" : options.decision[row.decision]}{row.briefing_at && " · " + toJapanTime(row.briefing_at)}</option>)}
     </select></label>
     {candidate && <Candidate key={candidate.id + ":" + candidate.revision} candidate={candidate} data={data} busy={busy} save={save} />}
     </>}
@@ -112,12 +112,16 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
   </section>;
 }
 
+const toJapanTime = (value: string) => new Date(value).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
 function Candidate({ candidate: row, data, busy, save }: {
   candidate: AdmissionCase; data: AdmissionsData; busy: boolean; save: (action: string, values: object) => Promise<boolean>;
 }) {
   const [correction, setCorrection] = useState(false);
   const { labels, terms } = data.settings;
-  if (row.enrollment_id) return <p>名簿に登録済みです。氏名と在籍状態は名簿で修正できます。</p>;
+  if (row.enrollment_id) return <div className="grid gap-2"><p>名簿に登録済みです。</p>
+    {row.applicant_email && <MailForm title="初回の日程をメールで案内" busy={busy} onSend={instructions => save("email", { id: row.id, kind: "start", instructions })} />}
+  </div>;
   const showBriefing = row.briefing !== "skip" || correction;
   const showTest = row.test !== "skip" || correction;
   const agreed = row.consent_at && row.agreed_terms === terms;
@@ -138,6 +142,7 @@ function Candidate({ candidate: row, data, busy, save }: {
   }
 
   return <div className="grid gap-3 border-t pt-3">
+    {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}</p>}
     <button type="button" className="w-fit text-sm underline" onClick={() => setCorrection(value => !value)}>{correction ? "通常の表示に戻る" : "修正する"}</button>
     <form onSubmit={update}>
       <fieldset disabled={busy} className="grid gap-2">
@@ -175,7 +180,22 @@ function Candidate({ candidate: row, data, busy, save }: {
     {row.invite_token && canInvite && <label className="text-sm">本人に渡す案内リンク<input className={field} readOnly
       value={typeof window === "undefined" ? "" : window.location.origin + "/class-admission#" + row.invite_token}
       onFocus={event => event.currentTarget.select()} /></label>}
+    {row.applicant_email && row.invite_token && canInvite && <button type="button" disabled={busy} className={button}
+      onClick={() => void save("email", { id: row.id, kind: "invite" })}>申込者に入会案内をメールで送る</button>}
+    {row.applicant_email && agreed && row.payment !== "free" && <MailForm title="初回費用をメールで案内" busy={busy}
+      onSend={instructions => save("email", { id: row.id, kind: "payment", instructions })} />}
     {canFinish && agreed && (row.payment !== "advance" || row.received_at) && <button type="button" className={button} disabled={busy}
       onClick={() => void save("finish", { id: row.id })}>名簿に登録</button>}
   </div>;
+}
+
+
+function MailForm({ title, busy, onSend }: { title: string; busy: boolean; onSend: (text: string) => Promise<boolean> }) {
+  return <form className="grid gap-2" onSubmit={event => {
+    event.preventDefault();
+    void onSend(String(new FormData(event.currentTarget).get("instructions") ?? ""));
+  }}>
+    <label className="text-sm">{title}<textarea className={field} name="instructions" rows={3} required maxLength={2000} /></label>
+    <button className={button} disabled={busy}>メールを送る</button>
+  </form>;
 }

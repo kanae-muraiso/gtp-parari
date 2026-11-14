@@ -23,7 +23,7 @@ async function main() {
       create role service_role bypassrls;
       create schema auth;
       create table auth.users (id uuid primary key);
-      create table public.profiles (user_id uuid primary key, display_name text, username text);
+      create table public.profiles (user_id uuid primary key, display_name text, username text, is_monitor boolean default false);
       grant select on public.profiles to service_role;
       create table public.applications (
         id uuid primary key, owner_user_id uuid not null, application_type text not null,
@@ -116,6 +116,19 @@ async function main() {
     await finish();
     assert.equal((await db.query("select enrollment_id from school_admission_cases where id=$1", [candidate])).rows[0].enrollment_id, candidate);
     assert.equal((await db.query("select count(*)::int as count from school_enrollments where id=$1", [candidate])).rows[0].count, 1);
+
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261114145340_class_public_intake.sql"), "utf8"));
+    await db.query("insert into profiles(user_id,is_monitor) values($1,true) on conflict(user_id) do update set is_monitor=true", [owner]);
+    await db.exec("set role service_role");
+    const intake = (await db.query("insert into school_recruitment(school_id,enabled,information,kind) values($1,true,'申込規約','説明会') returning public_id", [school])).rows[0].public_id;
+    const slot = (await db.query("insert into school_recruitment_slots(id,school_id,starts_at,capacity) values(gen_random_uuid(),$1,now()+interval '2 days',1) returning id", [school])).rows[0].id;
+    const book = (name, agreement = "申込規約") => db.query("select * from book_school_intake($1,$2,$3,'保護者','guardian@example.invalid',$4)", [intake, slot, name, agreement]);
+    await assert.rejects(book("受講生", "旧規約"), { code: "22023" });
+    const booking = (await book("受講生")).rows[0];
+    assert.equal((await book("受講生")).rows[0].case_id, booking.case_id);
+    await assert.rejects(book("別の受講生"), { code: "P0001" });
+    await assert.rejects(db.query("select finish_class_admission($1,$2,$3)", [owner, school, booking.case_id]), { code: "22023" });
 
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {

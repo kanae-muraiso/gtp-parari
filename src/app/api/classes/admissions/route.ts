@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
+import { classAdmissionMail } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
@@ -55,6 +56,37 @@ async function handle(request: NextRequest, write: boolean) {
         briefing: settings.briefing ? "pending" : "skip", test: settings.test ? "pending" : "skip", decision: "pending", payment: "free",
       }, { onConflict: "id", ignoreDuplicates: true });
       if (result.error) throw result.error;
+    } else if (input?.action === "email" && validId(input.id)) {
+      const row = await db.from("school_admission_cases")
+        .select("id,applicant_email,invite_token,decision,briefing,test,starts_on,deadline,consent_at,agreed_terms,payment,enrollment_id,revision")
+        .eq("school_id", schoolId).eq("id", input.id).maybeSingle();
+      if (row.error) throw row.error;
+      const candidate = row.data;
+      if (!candidate?.applicant_email) return fail("公開受付で登録されたメールアドレスが必要です。");
+      const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.parari.app";
+      const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      let subject: string;
+      let body: string;
+      if (input.kind === "invite" && candidate.invite_token && candidate.decision === "approved" &&
+          !candidate.enrollment_id && candidate.starts_on && candidate.deadline >= today &&
+          ["skip", "done"].includes(candidate.briefing) && ["skip", "graded"].includes(candidate.test)) {
+        subject = settings.labels.admission + "手続きのご案内";
+        body = "案内をご確認のうえ、期限までに手続きをお願いします。\n" +
+          new URL("/class-admission#" + candidate.invite_token, base).href;
+      } else if (input.kind === "payment" && candidate.consent_at && candidate.agreed_terms === settings.terms &&
+          candidate.decision === "approved" && !candidate.enrollment_id && candidate.payment !== "free") {
+        const instructions = trim(input.instructions);
+        if (!instructions || instructions.length > 2000) return fail("金額・支払方法・期限を入力してください。");
+        subject = "初回費用のご案内";
+        body = instructions;
+      } else if (input.kind === "start" && candidate.enrollment_id && candidate.starts_on) {
+        const instructions = trim(input.instructions);
+        if (!instructions || instructions.length > 2000) return fail("初回の日時と会場を入力してください。");
+        subject = "初回レッスンのご案内";
+        body = `在籍開始日 ${candidate.starts_on}\n${instructions}`;
+      } else return fail("手続きの状態を確認してください。");
+      if (!(await classAdmissionMail(candidate.applicant_email, subject, body,
+          `class-${input.kind}-${candidate.id}-${candidate.revision}`))) return fail("メールを送信できませんでした。", 502);
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
       if (error?.code === "22023") return fail("工程・承認・開始日・同意・支払条件と期限を確認してください。");
