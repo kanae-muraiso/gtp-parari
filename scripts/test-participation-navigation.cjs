@@ -17,7 +17,7 @@ function load(relative, mocks = {}) {
   mod._compile(ts.transpileModule(fs.readFileSync(filename, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, filename);
   return mod.exports;
 }
-const domain = load("src/lib/participation.ts");
+const domain = load("src/lib/participation.ts", { "@/lib/classes": load("src/lib/classes.ts") });
 const a = "11111111-1111-1111-1111-111111111111";
 const b = "22222222-2222-2222-2222-222222222222";
 const cpp = "33333333-3333-3333-3333-333333333333";
@@ -59,11 +59,16 @@ const users = {
   purchaser: {}, groups: {}, company: {},
 };
 const tables = {
+  profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }],
   membership_members: [
     { user_id: "groups", membership_id: a, status: "active" },
     { user_id: "groups", membership_id: b, status: "active" },
     { user_id: "purchaser", membership_id: a, status: "ended" },
     { user_id: "researcher", membership_id: cpp, status: "active" },
+  ],
+  school_enrollments: [
+    { user_id: "groups", school: { id: a, name: "英語教室" }, status: "active" },
+    { user_id: "purchaser", school: { id: b, name: "ダンス教室" }, status: "active" },
   ],
   memberships: [{ id: a, name: "A" }, { id: b, name: "B" }, { id: cpp, name: "CPP" }],
   cpp_company_members: [{ user_id: "company", company_id: "co", role: "owner" }, { user_id: "purchaser", company_id: "co", role: "viewer" }],
@@ -76,7 +81,8 @@ function from(table) {
   assert.ok(table in tables, `Unexpected data access: ${table}`);
   let rows = tables[table];
   const chain = {
-    select() { return chain; },
+    maybeSingle() { return Promise.resolve({ data: rows[0] ?? null, error: null }); },
+    select() { return chain; }, returns() { return chain; },
     eq(key, value) { rows = rows.filter(row => row[key] === value); return chain; },
     in(key, values) { rows = rows.filter(row => values.includes(row[key])); return chain; },
     order() { return chain; }, limit(n) { rows = rows.slice(0, n); return chain; },
@@ -94,12 +100,24 @@ const { GET } = load("src/app/api/my-participations/route.ts", {
     return { data: row ? [row] : [], error: null };
   } }) },
 });
+const classes = load("src/app/api/classes/route.ts", {
+  "@/lib/classes": load("src/lib/classes.ts"),
+  "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
+});
 async function main() {
+  const hidden = { headers: { Authorization: "Bearer purchaser" } };
+  for (const query of ["", "?home=1", `?school=${b}`]) {
+    const response = await classes.GET(new NextRequest(`https://www.parari.app/api/classes${query}`, hidden));
+    assert.equal(response.status, 404);
+  }
+  const mutation = await classes.POST(new NextRequest("https://www.parari.app/api/classes", { ...hidden, method: "POST" }));
+  assert.equal(mutation.status, 404);
+  dbCalls = 0;
   for (const token of [null, "invalid"]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations", { headers: token ? { Authorization: `Bearer ${token}` } : {} }));
     assert.equal(response.status, 401); assert.equal(dbCalls, 0);
   }
-  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", []], ["groups", [`membership:${a}`, `membership:${b}`]], ["company", ["cpp"]]]) {
+  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", []], ["groups", [`membership:${a}`, `membership:${b}`, `class:${a}`]], ["company", ["cpp"]]]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations?user_id=groups", { headers: { Authorization: `Bearer ${token}` } }));
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control"), /no-store/);
@@ -118,6 +136,7 @@ async function main() {
   // Render menu/HOME with the actual UI components and synthetic destinations.
   const React = require("react");
   const { renderToStaticMarkup } = require("react-dom/server");
+  assert.equal(domain.participationAtLocation(`/my/classes/${a}`, new URLSearchParams()), `class:${a}`);
   const ui = load("src/components/parari/navigation/ParticipationNav.tsx", {
     "./ParticipationProvider": { useParticipations: () => ({ userId: "fixture", items: multiple, origin: multiple[1], loading: false, error: "", leaving: false, leaveError: "" }) },
   });

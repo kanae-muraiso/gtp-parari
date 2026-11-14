@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:commerce-work-preview": "node scripts/test-commerce-work-preview.cjs",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
+    "test:class-a-db": "node scripts/test-class-a-db.cjs",
     "test:participation-navigation": "node scripts/test-participation-navigation.cjs",
     "test:legacy-page-routes": "node scripts/test-legacy-page-routes.cjs",
     "test:table-panel": "node scripts/test-table-panel.cjs",

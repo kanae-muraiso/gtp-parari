@@ -22,7 +22,7 @@ export type MyPrimaryTab =
   | "messages";
 
 type MyPrimaryTabsProps = {
-  active: MyPrimaryTab;
+  active: MyPrimaryTab | null;
   embedded?: boolean;
 };
 

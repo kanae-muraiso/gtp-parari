@@ -22,6 +22,7 @@ import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
 import CalendarManagerPanel from "@/components/parari/manage/CalendarManagerPanel";
+import ClassManagerPanel from "@/components/parari/manage/ClassManagerPanel";
 import MembershipManagerPanel from "@/components/parari/manage/MembershipManagerPanel";
 import {
   getEffectivePlan,
@@ -35,7 +36,8 @@ type ManageMode =
   | "form"
   | "application"
   | "calendar"
-  | "membership";
+  | "membership"
+  | "class";
 
 
 export default function MyManagePage() {
@@ -57,6 +59,8 @@ export default function MyManagePage() {
     accessLoaded,
     setAccessLoaded,
   ] = useState(false);
+
+  const [isMonitor, setIsMonitor] = useState(false);
 
   const manageTabs = useMemo(() => {
     const tabs: {
@@ -90,8 +94,9 @@ export default function MyManagePage() {
       });
     }
 
+    if (isMonitor) tabs.push({ key: "class", label: "クラス" });
     return tabs;
-  }, [entitlements]);
+  }, [entitlements, isMonitor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,6 +139,7 @@ export default function MyManagePage() {
           billingResult.data,
         );
 
+      setIsMonitor(profileResult.data?.is_monitor === true);
       setEntitlements(
         getPlanEntitlements(
           effectivePlan,
@@ -172,7 +178,8 @@ export default function MyManagePage() {
       tab === "form" ||
       tab === "application" ||
       tab === "calendar" ||
-      tab === "membership"
+      tab === "membership" ||
+      tab === "class"
     ) {
       setManageMode(
         tab,
@@ -263,6 +270,8 @@ export default function MyManagePage() {
           manageMode === "calendar" ? (
             <CalendarManagerPanel />
           ) : null}
+
+          {accessLoaded && isMonitor && manageMode === "class" ? <ClassManagerPanel /> : null}
 
           {accessLoaded &&
           manageMode === "membership" ? (

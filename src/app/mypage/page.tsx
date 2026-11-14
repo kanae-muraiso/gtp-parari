@@ -11,6 +11,7 @@ import {
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import ClassHomeShortcuts from "@/components/parari/navigation/ClassHomeShortcuts";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -57,6 +58,7 @@ export default function MyPage() {
     hasCalendar,
     hasMessages,
     loading,
+    studioEnabled,
   } = useParariExperience();
 
   const [
@@ -167,6 +169,7 @@ export default function MyPage() {
         ) : null}
 
         <div className="mt-6 space-y-4">
+          <ClassHomeShortcuts studioEnabled={studioEnabled} />
           <section aria-labelledby="open-space-heading" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="open-space-heading" className="text-base font-bold text-emerald-950">
