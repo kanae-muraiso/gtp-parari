@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ClassDailyPanel from "@/components/parari/manage/ClassDailyPanel";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
@@ -43,6 +44,7 @@ export default function MyClassSchoolPage() {
         </> : <p role={current?.error ? "alert" : "status"}>{current?.error ?? "教室を読み込んでいます…"}</p>}
         {current?.status === 401 && <Link className="underline" href={`/login?returnTo=${encodeURIComponent(`/my/classes/${id}`)}`}>ログイン</Link>}
       </section>
+      {current?.school?.classes.map(item => <ClassDailyPanel key={item.id} schoolId={id} item={item} userId={current.userId!} />)}
     </div>
   </main>;
 }
