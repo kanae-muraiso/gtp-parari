@@ -4,6 +4,7 @@ import { WorkLimitsNotice, DraftRecovery } from "@/components/parari/WorkLimitsN
 import { isLegacyBookSsot } from "@/lib/parari/book/pageRefs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useParticipationLeaveGuard } from "@/components/parari/navigation/ParticipationProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageToJpeg } from "@/components/parari/panels/image/imageUploadUtils";
 import { PagePanelComposer } from "@/components/parari/mvp/PagePanelComposer";
@@ -42,7 +43,10 @@ export default function WritingWorkPage() {
   const mainImageUrlRef = useRef("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveLockRef = useRef(false);
-  const pendingSaveRef = useRef<string | null>(null);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
+  const savedSnapshotRef = useRef<{ title: string; ssot: string } | null>(null);
+  const navigationLockRef = useRef(false);
+  const [showInternalSsotUi, setShowInternalSsotUi] = useState(false);
   const controlCandidateRef = useRef(false);
 
   useEffect(() => {
@@ -94,6 +98,7 @@ export default function WritingWorkPage() {
       ssotRef.current = loadedSsot;
       titleRef.current = resolvedTitle;
       mainImageUrlRef.current = parsed.mainImageUrl;
+      savedSnapshotRef.current = { title: String(data.title ?? "").trim(), ssot: loadedSsot };
 
       setWork(data);
       setSsot(loadedSsot);
@@ -148,88 +153,153 @@ export default function WritingWorkPage() {
     };
   }, []);
 
+  // Save the latest title and SSOT together. A single in-flight writer also
+  // serializes edits made while the network request is running.
   function scheduleSave(nextSsot: string) {
     ssotRef.current = nextSsot;
     setSsot(nextSsot);
-    setState("idle");
-
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
+    const panelTitle = parsePageMeta(nextSsot).title;
+    if (panelTitle !== titleRef.current) {
+      titleRef.current = panelTitle;
+      setTitle(panelTitle);
+      setShowTitle(Boolean(panelTitle));
     }
-
-    saveTimerRef.current = setTimeout(() => {
-      void saveSsot(nextSsot);
-    }, 900);
+    setState("idle");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => { void flushSave(); }, 900);
   }
 
-  async function saveSsot(nextSsot: string) {
-    const currentWork = workRef.current;
-    if (!currentWork) return;
-
-    if (saveLockRef.current) {
-      pendingSaveRef.current = nextSsot;
-      return;
+  async function flushSave(): Promise<boolean> {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
     }
+    if (savePromiseRef.current) return savePromiseRef.current;
+    if (!workRef.current) return false;
 
-    saveLockRef.current = true;
-    setState("saving");
-    setMessage("");
+    const task = (async (): Promise<boolean> => {
+      while (true) {
+        const currentWork = workRef.current;
+        if (!currentWork) return false;
+        const content = ssotRef.current;
+        const currentTitle = titleRef.current.trim();
+        if (savedSnapshotRef.current?.ssot === content &&
+            savedSnapshotRef.current.title === currentTitle) return true;
 
+        setState("saving");
+        setMessage("");
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) throw new Error("ログインを確認できませんでした。");
+
+          const response = await fetch("/api/works/update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              workId: currentWork.id,
+              title: currentTitle,
+              content,
+              expectedRevision: currentWork.revision,
+            }),
+          });
+          const result = await response.json().catch(() => null);
+          if (!response.ok || !result?.ok || typeof result.revision !== "number") {
+            throw new Error(result?.message ?? "保存できませんでした。");
+          }
+
+          const nextWork: WorkRow = {
+            ...currentWork, title: currentTitle, content, revision: result.revision,
+          };
+          workRef.current = nextWork;
+          savedSnapshotRef.current = { title: currentTitle, ssot: content };
+          setWork(nextWork);
+
+          // If another change arrived during this request, send it with the
+          // new revision before allowing navigation.
+          if (ssotRef.current === content && titleRef.current.trim() === currentTitle) {
+            setState("saved");
+            return true;
+          }
+        } catch (error) {
+          setState("error");
+          setMessage(error instanceof Error ? error.message : "保存できませんでした。");
+          return false;
+        }
+      }
+    })();
+    savePromiseRef.current = task;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("ログインを確認できませんでした。");
-      }
-
-      const response = await fetch("/api/works/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          workId: currentWork.id,
-          title: titleRef.current.trim(),
-          content: nextSsot,
-          expectedRevision: currentWork.revision,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.message ?? "保存できませんでした。");
-      }
-
-      const nextWork: WorkRow = {
-        ...currentWork,
-        title: titleRef.current.trim(),
-        content: nextSsot,
-        revision: result.revision,
-      };
-      workRef.current = nextWork;
-      setWork(nextWork);
-
-      setState("saved");
-    } catch (error) {
-      setState("error");
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "保存できませんでした。",
-      );
+      return await task;
     } finally {
-      saveLockRef.current = false;
+      if (savePromiseRef.current === task) savePromiseRef.current = null;
+    }
+  }
 
-      const pending = pendingSaveRef.current;
-      pendingSaveRef.current = null;
+  // The participation switcher uses its own navigation guard.
+  useParticipationLeaveGuard(flushSave);
 
-      if (pending) {
-        window.setTimeout(() => {
-          void saveSsot(pending);
-        }, 50);
+  // Browser refresh/close cannot wait for a network save; protect dirty work.
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      const snapshot = savedSnapshotRef.current;
+      if (!snapshot || (snapshot.ssot === ssotRef.current &&
+          snapshot.title === titleRef.current.trim())) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  // Only internal PARARI administrators may inspect raw SSOT.
+  useEffect(() => {
+    if (!work) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const response = await fetch("/api/internal/admin-status", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        });
+        const result = await response.json().catch(() => null);
+        if (!cancelled) setShowInternalSsotUi(response.ok && result?.isAdmin === true);
+      } catch {
+        if (!cancelled) setShowInternalSsotUi(false);
       }
+    })();
+    return () => { cancelled = true; };
+  }, [work?.id]);
+
+  // Intercept the ordinary editor links (works list, viewer, etc.) so the
+  // pending debounced save finishes before the browser leaves the editor.
+  async function handleNavigationClick(event: React.MouseEvent<HTMLElement>) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey ||
+        event.ctrlKey || event.shiftKey || event.altKey) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest("a[href]");
+    if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" ||
+        link.hasAttribute("download")) return;
+    const destination = new URL(link.href, window.location.href);
+    if (destination.origin !== window.location.origin ||
+        (destination.pathname === window.location.pathname &&
+         destination.search === window.location.search &&
+         destination.hash)) return;
+    event.preventDefault();
+    if (navigationLockRef.current) return;
+    navigationLockRef.current = true;
+    try {
+      if (await flushSave()) window.location.assign(destination.href);
+    } finally {
+      navigationLockRef.current = false;
     }
   }
 
@@ -518,7 +588,7 @@ export default function WritingWorkPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white" onClickCapture={handleNavigationClick}>
       <ParariOwnerTopBar
         title={title || "作品編集"}
         leftHref="/my/works"
@@ -577,6 +647,14 @@ export default function WritingWorkPage() {
       />
       <div className="mx-auto flex min-h-screen w-full max-w-[760px] flex-col px-5 pb-24 sm:px-8">
         <WorkLimitsNotice source={ssot} />
+        {showInternalSsotUi && work ? (
+          <details className="mt-4 rounded-xl border border-neutral-300 bg-neutral-50 p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-700">管理者用：SSOT確認</summary>
+            <textarea readOnly value={ssot} spellCheck={false}
+              aria-label="SSOT（読み取り専用）"
+              className="mt-3 h-64 w-full resize-y rounded-lg border border-neutral-200 bg-white p-3 font-mono text-xs text-neutral-800" />
+          </details>
+        ) : null}
         <DraftRecovery workId={workId} source={state === "error" && work ? ssot : ""} />
         {state === "error" && !work ? (
           <p className="mt-12 text-sm text-red-600">{message}</p>
