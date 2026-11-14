@@ -7,6 +7,8 @@ export type SchoolClass = {
   starts_at: string;
   cadence: "weekly" | "monthly";
   location: string | null;
+  delivery: "onsite" | "online" | "hybrid";
+  meeting_url: string | null;
 };
 
 export type ClassSchool = {
@@ -32,4 +34,14 @@ export type ClassManagement = {
 
 export function classSchedule(item: SchoolClass) {
   return `${item.cadence === "weekly" ? "毎週" : "毎月"} · ${item.starts_at.slice(0, 5)}（日本時間） · 初回 ${item.starts_on}`;
+}
+
+export function classMeetingUrl(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 2000) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
 }

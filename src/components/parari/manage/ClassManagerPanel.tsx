@@ -20,6 +20,7 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 }
 
 export default function ClassManagerPanel() {
+  const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [view, setView] = useState<"admissions" | "settings" | "roster">("admissions");
   const [data, setData] = useState<ClassManagement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,6 +71,7 @@ export default function ClassManagerPanel() {
   }
   const school = data.school;
   const item = school?.classes[0];
+  const delivery = deliveryDraft ?? item?.delivery ?? "onsite";
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
   return <div className="grid gap-5">
@@ -93,7 +95,11 @@ export default function ClassManagerPanel() {
         <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
         <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
       </div>
-      <label className={label}>会場<input className={field} name="location" maxLength={200} defaultValue={item?.location ?? ""} /></label>
+      <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
+        <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
+      </select></label>
+      {delivery !== "online" && <label className={label}>会場<input className={field} name="location" maxLength={200} required={delivery === "hybrid"} defaultValue={item?.location ?? ""} /></label>}
+      {delivery !== "onsite" && <label className={label}>授業の参加リンク<input className={field} name="meetingUrl" type="url" maxLength={2000} required defaultValue={item?.meeting_url ?? ""} /></label>}
       <div className="flex flex-wrap items-center gap-4">
         <button className={button} disabled={busy}>{school ? "保存" : "開設する"}</button>
         {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}

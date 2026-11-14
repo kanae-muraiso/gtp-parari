@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classIdPattern } from "@/lib/classes";
+import { classIdPattern, classMeetingUrl } from "@/lib/classes";
 
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store", Vary: "Authorization" } });
 const fail = (message: string, status = 400) => reply({ ok: false, message }, status);
@@ -22,7 +22,7 @@ async function handle(request: NextRequest) {
     if (request.method === "GET") {
       const [recruitment, slots] = await Promise.all([
         db.from("school_recruitment").select("public_id,enabled,information,kind").eq("school_id", id).maybeSingle(),
-        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed").eq("school_id", id).order("starts_at", { ascending: true }),
+        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url").eq("school_id", id).order("starts_at", { ascending: true }),
       ]);
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
       return reply({ ok: true, recruitment: recruitment.data, slots: slots.data });
@@ -38,8 +38,10 @@ async function handle(request: NextRequest) {
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || typeof input.startsAt !== "string" ||
         !Number.isFinite(Date.parse(input.startsAt)) || Date.parse(input.startsAt) <= Date.now() ||
         !Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 100) return fail("日時と定員を確認してください。");
+      const meeting = classMeetingUrl(input.meetingUrl);
+      if (input.meetingUrl && !meeting) return fail("HTTPSの参加リンクを入力してください。");
       const result = await db.from("school_recruitment_slots").upsert({
-        school_id: id, id: input.id, starts_at: input.startsAt, capacity: input.capacity,
+        school_id: id, id: input.id, starts_at: input.startsAt, capacity: input.capacity, meeting_url: meeting,
       }, { onConflict: "id", ignoreDuplicates: true });
       if (result.error) throw result.error;
     } else if (input?.action === "close" && typeof input.id === "string" && classIdPattern.test(input.id)) {

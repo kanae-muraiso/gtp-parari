@@ -130,6 +130,20 @@ async function main() {
     await assert.rejects(book("別の受講生"), { code: "P0001" });
     await assert.rejects(db.query("select finish_class_admission($1,$2,$3)", [owner, school, booking.case_id]), { code: "22023" });
 
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261114181049_class_online.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const saveDelivery = (account, delivery, location, url) => db.query(
+      "select save_class_delivery($1,$2,'教室','授業',current_date,'16:00','weekly',$3,$4,$5)",
+      [account, school, location, delivery, url]);
+    await assert.rejects(saveDelivery(outsider, "online", null, "https://example.invalid/lesson"), { code: "P0002" });
+    await saveDelivery(owner, "hybrid", "会場", "https://example.invalid/lesson");
+    await saveDelivery(owner, "online", null, "https://example.invalid/lesson");
+    assert.equal((await read(owner)).classes[0].meeting_url, "https://example.invalid/lesson");
+    assert.equal(await read(learner), null);
+    await saveDelivery(owner, "onsite", "会場", null);
+    assert.equal((await read(owner)).classes[0].meeting_url, null);
+
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();

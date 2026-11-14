@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classIdPattern } from "@/lib/classes";
+import { classIdPattern, classMeetingUrl } from "@/lib/classes";
 import { classAdmissionMail, classDateTime } from "@/lib/classAdmissionMail";
 
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -23,7 +23,9 @@ async function handle(request: NextRequest) {
       if (error?.code === "P0001" || error?.code === "22023") return fail("満席か、受付内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const booking = data[0];
-      const text = `${booking.school_name}の${booking.kind}の日時は、${classDateTime(booking.starts_at)}（日本時間）です。`;
+      const slot = await db.from("school_recruitment_slots").select("meeting_url").eq("id", input.slot).maybeSingle();
+      const meeting = classMeetingUrl(slot.data?.meeting_url);
+      const text = `${booking.school_name}の${booking.kind}の日時は、${classDateTime(booking.starts_at)}（日本時間）です。` + (meeting ? "\nオンライン参加リンク " + meeting : "");
       const confirmation = await classAdmissionMail(email, `${booking.kind}の予約確認`, text, `class-booking-${booking.case_id}`);
       const remind = Date.parse(booking.starts_at) - 86400000;
       const reminder = remind > Date.now() && remind < Date.now() + 29 * 86400000
