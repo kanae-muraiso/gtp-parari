@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classIdPattern, type ClassSchool } from "@/lib/classes";
+import { classMeetingUrl, classIdPattern, type ClassSchool } from "@/lib/classes";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
-const scheduleColumns = "id,name,starts_on,starts_at,cadence,location";
+const scheduleColumns = "id,name,starts_on,starts_at,cadence,location,delivery,meeting_url";
 const reply = (data: object, status = 200) => NextResponse.json(data, { status, headers });
 const fail = (message: string, status = 400) => reply({ ok: false, message }, status);
 
@@ -97,21 +97,20 @@ export async function POST(request: NextRequest) {
           !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ||
           !["weekly", "monthly"].includes(body.cadence)) return fail("教室名・クラス名・初回日時・頻度を確認してください。");
 
-      if (body.action === "create") {
-        const { error } = await db.rpc("create_class_a", {
-          p_owner: user.id, p_school_name: schoolName, p_class_name: name, p_starts_on: date,
-          p_starts_at: time, p_cadence: body.cadence, p_location: location || null,
-        });
-        if (error) throw error;
-      } else {
-        const school = await ownedSchool(user.id);
-        if (!school) return fail("教室が見つかりません。", 404);
-        const { error } = await db.rpc("update_class_a_schedule", {
-          p_owner: user.id, p_school: school.id, p_school_name: schoolName, p_class_name: name,
-          p_starts_on: date, p_starts_at: time, p_cadence: body.cadence, p_location: location || null,
-        });
-        if (error) throw error;
+      const delivery = body.delivery ?? "onsite";
+      const meeting = delivery === "onsite" ? null : classMeetingUrl(body.meetingUrl);
+      if (!["onsite", "online", "hybrid"].includes(delivery) ||
+          (delivery !== "onsite" && !meeting) || (delivery === "hybrid" && !location)) {
+        return fail("開催方法に応じた会場とHTTPS参加リンクを入力してください。");
       }
+      const school = body.action === "schedule" ? await ownedSchool(user.id) : null;
+      if (body.action === "schedule" && !school) return fail("教室が見つかりません。", 404);
+      const { error } = await db.rpc("save_class_delivery", {
+        p_owner: user.id, p_school: school?.id ?? null, p_school_name: schoolName, p_class_name: name,
+        p_starts_on: date, p_starts_at: time, p_cadence: body.cadence,
+        p_location: delivery === "online" ? null : location || null, p_delivery: delivery, p_meeting_url: meeting,
+      });
+      if (error) throw error;
       return await manage(user.id);
     }
 

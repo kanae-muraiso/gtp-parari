@@ -7,7 +7,7 @@ import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
-import { classSchedule, type ClassSchool } from "@/lib/classes";
+import { classMeetingUrl, classSchedule, type ClassSchool } from "@/lib/classes";
 
 export default function MyClassSchoolPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +38,9 @@ export default function MyClassSchoolPage() {
           {current.school.classes.map(item => <article className="rounded-xl border border-neutral-200 p-4" key={item.id}>
             <h3 className="font-bold">{item.name}</h3>
             <p className="mt-1 text-sm">{classSchedule(item)}</p>
+            {item.delivery !== "onsite" && classMeetingUrl(item.meeting_url) && <a
+              className="mt-3 inline-flex rounded-lg bg-blue-800 px-4 py-2 text-sm text-white"
+              href={classMeetingUrl(item.meeting_url)!} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
             {item.location && <p className="mt-1 text-sm">{item.location}</p>}
           </article>)}
         </> : <p role={current?.error ? "alert" : "status"}>{current?.error ?? "教室を読み込んでいます…"}</p>}

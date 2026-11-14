@@ -47,12 +47,13 @@ export default function ClassRecruitmentPanel() {
         const values = new FormData(form);
         const id = form.dataset.requestId || crypto.randomUUID();
         form.dataset.requestId = id;
-        if (await save({ action: "slot", id, startsAt: values.get("startsAt") + ":00+09:00", capacity: Number(values.get("capacity")) })) {
+        if (await save({ action: "slot", id, startsAt: values.get("startsAt") + ":00+09:00", capacity: Number(values.get("capacity")), meetingUrl: values.get("meetingUrl") })) {
           delete form.dataset.requestId; form.reset();
         }
       }}>
         <label>開催日時（日本時間）<input className={field} name="startsAt" type="datetime-local" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>
+        <label>説明会・体験のオンライン参加リンク（任意）<input type="url" className={field} name="meetingUrl" maxLength={2000} /></label>
         <button className={button} disabled={busy}>予約枠を追加</button>
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.capacity}人{" "}
