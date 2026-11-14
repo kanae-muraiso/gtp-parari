@@ -60,6 +60,8 @@ export default function MyManagePage() {
     setAccessLoaded,
   ] = useState(false);
 
+  const [isMonitor, setIsMonitor] = useState(false);
+
   const manageTabs = useMemo(() => {
     const tabs: {
       key: ManageMode;
@@ -92,9 +94,9 @@ export default function MyManagePage() {
       });
     }
 
-    tabs.push({ key: "class", label: "クラス" });
+    if (isMonitor) tabs.push({ key: "class", label: "クラス" });
     return tabs;
-  }, [entitlements]);
+  }, [entitlements, isMonitor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +139,7 @@ export default function MyManagePage() {
           billingResult.data,
         );
 
+      setIsMonitor(profileResult.data?.is_monitor === true);
       setEntitlements(
         getPlanEntitlements(
           effectivePlan,
@@ -268,7 +271,7 @@ export default function MyManagePage() {
             <CalendarManagerPanel />
           ) : null}
 
-          {accessLoaded && manageMode === "class" ? <ClassManagerPanel /> : null}
+          {accessLoaded && isMonitor && manageMode === "class" ? <ClassManagerPanel /> : null}
 
           {accessLoaded &&
           manageMode === "membership" ? (

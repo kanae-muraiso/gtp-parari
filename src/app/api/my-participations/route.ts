@@ -18,16 +18,17 @@ export async function GET(request: NextRequest) {
     const actor = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       accessToken: async () => token, auth: { persistSession: false, autoRefreshToken: false },
     });
-    const [members, alumni, researcher, mode, company, cpp, schools] = await Promise.all([
+    const [members, alumni, researcher, mode, company, cpp, profile] = await Promise.all([
       supabaseAdmin.from("membership_members").select("membership_id").eq("user_id", user.id).eq("status", "active"),
       actor.rpc("cpp_alumni_participation_status"),
       actor.rpc("cpp_researcher_registration_status"),
       actor.rpc("cpp_mode_status"),
       supabaseAdmin.from("cpp_company_members").select("company_id").eq("user_id", user.id).in("role", ["owner", "editor", "consultant"]).limit(1),
       supabaseAdmin.from("membership_organizations").select("membership_id").in("organization_key", ["CPP-R", "CPP-C"]),
-      supabaseAdmin.from("school_enrollments").select("school:class_schools(id,name)").eq("user_id", user.id).eq("status", "active")
-        .returns<{ school: { id: string; name: string } | null }[]>(),
+      supabaseAdmin.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
     ]);
+    const schools = profile.data?.is_monitor === true ? await supabaseAdmin.from("school_enrollments").select("school:class_schools(id,name)").eq("user_id", user.id).eq("status", "active")
+        .returns<{ school: { id: string; name: string } | null }[]>() : { data: [], error: null };
     for (const result of [members, alumni, researcher, mode, company, cpp]) if (result.error) throw result.error;
     const ids = [...new Set((members.data ?? []).map(item => item.membership_id))];
     const memberships = ids.length ? await supabaseAdmin.from("memberships").select("id,name").in("id", ids).order("created_at", { ascending: true }) : { data: [], error: null };

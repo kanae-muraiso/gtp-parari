@@ -12,7 +12,10 @@ async function currentUser(request: NextRequest) {
   const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return null;
   const { data, error } = await db.auth.getUser(token);
-  return error ? null : data.user;
+  if (error || !data.user) return null;
+  const profile = await db.from("profiles").select("is_monitor").eq("user_id", data.user.id).maybeSingle();
+  if (profile.error) throw profile.error;
+  return { ...data.user, isMonitor: profile.data?.is_monitor === true };
 }
 
 async function ownedSchool(userId: string) {
@@ -41,6 +44,18 @@ export async function GET(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
+    if (request.nextUrl.searchParams.get("home") === "1") {
+      const [owned, enrolled] = await Promise.all([
+        db.from("class_schools").select("id,name").eq("owner_user_id", user.id).maybeSingle(),
+        db.from("school_enrollments").select("school:class_schools(id,name)")
+          .eq("user_id", user.id).eq("status", "active")
+          .returns<{ school: { id: string; name: string } | null }[]>(),
+      ]);
+      if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
+      return reply({ ok: true, userId: user.id, owned: owned.data,
+        enrolled: (enrolled.data ?? []).flatMap(({ school }) => school ? [school] : []) });
+    }
     const id = request.nextUrl.searchParams.get("school");
     if (id === null) return await manage(user.id);
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
@@ -70,6 +85,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const body = await request.json().catch(() => null);
     const name = clean(body?.name);
     if (body?.action === "create" || body?.action === "schedule") {

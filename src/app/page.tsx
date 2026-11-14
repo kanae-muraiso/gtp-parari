@@ -49,15 +49,21 @@ export default function HomePage() {
 
       // New members begin in LIBRARY. Previously active creators keep their
       // startup choice, even when studio eligibility came from legacy works.
-      const [preference, experience] = await Promise.all([
+      const [preference, experience, profile] = await Promise.all([
         supabase
           .from("user_workspace_preferences")
           .select("start_destination,last_workspace")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase.rpc("get_my_parari_experience"),
+        supabase.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
       ]);
       if (!mounted) return;
+
+      if (profile.data?.is_monitor === true) {
+        router.replace("/mypage");
+        return;
+      }
 
       const preferenceData = preference.data;
       const experienceData = Array.isArray(experience.data)
