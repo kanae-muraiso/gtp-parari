@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState, type FormEvent } from "react";
 
 type Invitation = { school: string; terms: string; label: string; startsOn: string; deadline: string;
-  payment: "free" | "advance" | "onsite"; revision: number; agreed: boolean };
+  payment: "free" | "advance" | "onsite"; revision: number; agreed: boolean; applicationText?: string; paymentUrl?: string | null; arrival?: string | null };
 
 export default function ClassAdmissionPage() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -26,8 +26,9 @@ export default function ClassAdmissionPage() {
     setBusy(true);
     setError("");
     try {
-      await request({ agree: true, terms: invitation.terms, revision: invitation.revision });
+      const result = await request({ agree: true, terms: invitation.terms, revision: invitation.revision });
       setDone(true);
+      if (result.paymentUrl) window.location.assign(result.paymentUrl);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "送信できませんでした。");
     } finally {
@@ -40,12 +41,15 @@ export default function ClassAdmissionPage() {
       <h1 className="text-xl font-bold">{invitation.school}の{invitation.label}手続き</h1>
       <p>開始予定日 {invitation.startsOn} ／ 回答期限 {invitation.deadline}</p>
       <p>{invitation.payment === "advance" ? "事前払い。支払い方法は教室にご確認ください。" : invitation.payment === "onsite" ? "当日払い" : "初回費用なし"}</p>
+      {invitation.applicationText && <p className="whitespace-pre-wrap">{invitation.applicationText}</p>}
       {invitation.terms && <p className="whitespace-pre-wrap rounded-xl border p-4">{invitation.terms}</p>}
       {done || invitation.agreed ? <p role="status">同意を受け付けました。教室からの案内をお待ちください。</p> :
         <form className="grid gap-3" onSubmit={submit}>
           <label><input type="checkbox" required /> 案内{invitation.terms ? "と規約" : ""}を確認し、{invitation.label}を申し込みます</label>
           <button disabled={busy} className="w-fit rounded-lg bg-blue-900 px-4 py-2 text-white">同意して申し込む</button>
         </form>}
+      {(done || invitation.agreed) && invitation.arrival && <p className="whitespace-pre-wrap">{invitation.arrival}</p>}
+      {(done || invitation.agreed) && invitation.paymentUrl && <a className="underline" href={invitation.paymentUrl}>支払いページを開く</a>}
     </>}
     {error && <p role="alert">{error}</p>}
     {!invitation && !error && <p role="status">案内を読み込んでいます…</p>}

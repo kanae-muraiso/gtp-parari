@@ -144,6 +144,22 @@ async function main() {
     await saveDelivery(owner, "onsite", "会場", null);
     assert.equal((await read(owner)).classes[0].meeting_url, null);
 
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115065330_class_intake_options.sql"), "utf8"));
+    await db.exec("set role service_role");
+    await db.query("update school_recruitment set route='direct', payment_mode='onsite' where public_id=$1", [intake]);
+    await assert.rejects(book("別の受講生"), { code: "P0002" });
+    const direct = (terms = "") => db.query(
+      "select submit_direct_class_application($1,'直接申込','保護者','direct@example.invalid','申込規約',$2) as id", [intake, terms]);
+    await assert.rejects(direct("旧規約"), { code: "22023" });
+    const directId = (await direct()).rows[0].id;
+    assert.equal((await direct()).rows[0].id, directId);
+    const pendingDirect = (await db.query("select decision,payment,briefing,intake_slot_id,consent_at is not null as agreed from school_admission_cases where id=$1", [directId])).rows[0];
+    assert.deepEqual(pendingDirect, { decision: "pending", payment: "onsite", briefing: "skip", intake_slot_id: null, agreed: true });
+    await assert.rejects(db.query("select finish_class_admission($1,$2,$3)", [owner, school, directId]), { code: "22023" });
+    await db.query("update school_recruitment set enabled=false where public_id=$1", [intake]);
+    await assert.rejects(direct(), { code: "P0002" });
+
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();
