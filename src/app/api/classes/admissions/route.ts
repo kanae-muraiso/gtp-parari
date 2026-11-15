@@ -33,19 +33,31 @@ async function handle(request: NextRequest, write: boolean) {
     const settings = setting.data ?? defaultAdmissionSettings;
 
     if (!write) {
+      if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, cases: [] });
       const cases = await db.from("school_admission_cases").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
       if (cases.error) throw cases.error;
       return send({ ok: true, settings, cases: cases.data });
     }
 
     const input = await request.json().catch(() => null);
-    if (input?.action === "settings") {
-      const labels = Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key => [key, trim(input.labels?.[key])]));
+    if (input?.action === "settings" || input?.action === "labels") {
       const terms = trim(input.terms);
-      if (Object.values(labels).some(label => !label || label.length > 24) || terms.length > 8000) return fail("呼び方と規約を確認してください。");
-      const result = await db.from("school_admission_settings").upsert({
-        school_id: schoolId, labels, terms, briefing: input.briefing === true, test: input.test === true, proxy: input.proxy === true,
-      });
+      const labels = Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key => [key, trim(input.labels?.[key])]));
+      if (input.action === "labels" && Object.values(labels).some(label => !label || label.length > 24)) {
+        return fail("呼び方はそれぞれ1〜24文字で入力してください。");
+      }
+      if (input.action === "settings" && terms.length > 8000) return fail("規約は8000文字以内で入力してください。");
+      const changes = input.action === "labels" ? { labels } : {
+        terms, briefing: input.briefing === true, test: input.test === true, proxy: input.proxy === true,
+      };
+      if (!setting.data) {
+        const initial = await db.from("school_admission_settings").upsert(
+          { school_id: schoolId, ...defaultAdmissionSettings, ...changes },
+          { onConflict: "school_id", ignoreDuplicates: true },
+        );
+        if (initial.error) throw initial.error;
+      }
+      const result = await db.from("school_admission_settings").update(changes).eq("school_id", schoolId);
       if (result.error) throw result.error;
     } else if (input?.action === "create") {
       const name = trim(input.name);

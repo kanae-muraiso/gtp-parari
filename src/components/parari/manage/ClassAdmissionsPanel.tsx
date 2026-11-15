@@ -22,7 +22,7 @@ function Select({ name, label, values, initial }: { name: string; label: string;
   </select></label>;
 }
 
-export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: "settings" | "admissions"; onRosterChanged: () => void }) {
+export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: "settings" | "admissions" | "labels"; onRosterChanged?: () => void }) {
   const [data, setData] = useState<AdmissionsData | null>(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
@@ -32,11 +32,11 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
 
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<AdmissionsData>(path, undefined, controller.signal).then(setData).catch(cause => {
+    void classRequest<AdmissionsData>(mode === "admissions" ? path : path + "?settings=1", undefined, controller.signal).then(setData).catch(cause => {
       if (!controller.signal.aborted) setError(cause.message);
     });
     return () => controller.abort();
-  }, [generation]);
+  }, [generation, mode]);
 
   async function save(action: string, values: object) {
     setBusy(true);
@@ -44,8 +44,8 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
     setMessage("");
     try {
       await classRequest(path, { action, ...values });
-      setData(await classRequest<AdmissionsData>(path));
-      if (action === "finish") onRosterChanged();
+      setData(await classRequest<AdmissionsData>(mode === "admissions" ? path : path + "?settings=1"));
+      if (action === "finish") onRosterChanged?.();
       setMessage(action === "email" ? "メールを送信しました。" : "保存しました。");
       return true;
     } catch (cause) {
@@ -61,6 +61,22 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
 
   const { settings, cases } = data;
   const { labels } = settings;
+  if (mode === "labels") return <section className={panel}>
+    <h3 className="font-bold">呼び方</h3>
+    <form onSubmit={event => {
+      event.preventDefault();
+      void save("labels", { labels: Object.fromEntries(new FormData(event.currentTarget)) });
+    }}>
+      <fieldset className="grid gap-2" disabled={busy}>
+          {Object.entries({ operator: "運営者の呼び方", learner: "参加する人の呼び方", proxy: "代理申込者の呼び方", admission: "手続きの呼び方" }).map(([key, title]) =>
+            <label key={key} className="text-sm">{title}<input className={field} name={key} defaultValue={labels[key as keyof typeof labels]} maxLength={24} required /></label>)}
+        <button className={button}>呼び方を保存</button>
+      </fieldset>
+    </form>
+    {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
+    {message && <p role="status" className="text-sm text-emerald-800">{message}</p>}
+  </section>;
+
   const candidate = cases.find(row => row.id === selected);
   return <section className={panel}>
     <h3 className="font-bold">{labels.admission}{mode === "settings" ? "設定" : "手続き"}</h3>
@@ -68,12 +84,9 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
       <form className="mt-3 grid gap-2" onSubmit={event => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        void save("settings", { labels: Object.fromEntries(Object.keys(labels).map(key => [key, form.get(key)])),
-          terms: form.get("terms"), briefing: form.has("briefing"), test: form.has("test"), proxy: form.has("usesProxy") });
+        void save("settings", { terms: form.get("terms"), briefing: form.has("briefing"), test: form.has("test"), proxy: form.has("usesProxy") });
       }}>
         <fieldset className="grid gap-2" disabled={busy}>
-          {Object.entries({ operator: "運営者の呼び方", learner: "参加する人の呼び方", proxy: "代理申込者の呼び方", admission: "手続きの呼び方" }).map(([key, title]) =>
-            <label key={key} className="text-sm">{title}<input className={field} name={key} defaultValue={labels[key as keyof typeof labels]} maxLength={24} required /></label>)}
           <label className="text-sm"><input type="checkbox" name="briefing" defaultChecked={settings.briefing} /> 説明会・体験を使う</label>
           <label className="text-sm"><input type="checkbox" name="test" defaultChecked={settings.test} /> テストを使う</label>
           <label className="text-sm"><input type="checkbox" name="usesProxy" defaultChecked={settings.proxy} /> 代理申込者の連絡先を使う</label>

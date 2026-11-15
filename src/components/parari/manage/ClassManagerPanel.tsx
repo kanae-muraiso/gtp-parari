@@ -142,7 +142,10 @@ export default function ClassManagerPanel() {
       </div>
     </form>}
     {school && item && <>
-      {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
+      {view === "product" && <>
+        <ClassProductPanel key={school.id} classes={school.classes} />
+        <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
+      </>}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
