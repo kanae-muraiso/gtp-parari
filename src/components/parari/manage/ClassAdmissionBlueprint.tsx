@@ -16,9 +16,12 @@ const fields = {
 type Field = keyof typeof fields;
 type Rule = "required" | "optional" | "hidden";
 type Route = keyof typeof routes;
-type Mail = "received" | "paid" | "booked" | "briefing" | "invite";
+type Mail = "received" | "paid" | "booked" | "briefing" | "invite" | "paymentRequest" | "firstDay" | "onsitePayment";
 const messages: Record<Mail, { subject: string; body: string }> = {
   received: { subject: "{教室名}の入会申込を受け付けました", body: "お申し込みありがとうございます。以下のボタンから次の手続きへお進みください。" },
+  onsitePayment: { subject: "{教室名}の当日のお支払い", body: "初日に会場でお支払いをお願いします。" },
+  paymentRequest: { subject: "{教室名}からお支払いのご案内", body: "保護者の方へ。以下のボタンからお支払いをお願いします。" },
+  firstDay: { subject: "{教室名}の初日の手続きができます", body: "以下のボタンから、初日の手続きへお進みください。" },
   paid: { subject: "{教室名}のお支払いを確認しました", body: "お支払いありがとうございます。初回の参加日をお選びください。" },
   booked: { subject: "{教室名}の初日のご案内", body: "初日の日時：{日時}\n集合場所：{会場}" },
   briefing: { subject: "{教室名}の説明会・体験の予約を受け付けました", body: "日時：{日時}\n集合場所：教室（サンプル）" },
@@ -32,37 +35,38 @@ const fieldIds = Object.keys(fields) as Field[];
 type Audience = "adult" | "minor";
 type FormProfile = { rules: Record<Field, Rule>; schoolLabel: string };
 type Draft = {
-  route: Route; audience: Audience | "both"; forms: Record<Audience, FormProfile>; firstDay: "choose" | "assigned";
+  route: Route; audience: Audience | null; forms: Record<Audience, FormProfile>; firstDay: "choose" | "assigned";
   introduction: string; arrival: string; amount: string; mail: Record<Mail, { subject: string; body: string }>;
 };
-const audienceLabels = { adult: "成人向け", minor: "未成年向け", both: "両方を受け付ける" } as const;
+const audienceLabels = { adult: "成人向け", minor: "未成年向け" } as const;
 const adultRules: FormProfile["rules"] = {
   name: "required", email: "required", phone: "optional", address: "optional", school: "hidden",
   guardianName: "required", guardianEmail: "required", guardianPhone: "optional", guardianAddress: "optional",
 };
 const defaults: Draft = {
-  route: "onsite", audience: "both",
+  route: "onsite", audience: null,
   forms: { adult: { rules: adultRules, schoolLabel: fields.school },
     minor: { rules: { ...adultRules, email: "optional" }, schoolLabel: fields.school } },
   firstDay: "choose", introduction: "", arrival: "", amount: "", mail: messages,
 };
 
 function readDraft(raw: string): Draft {
-  const { rules, schoolLabel, forms, ...saved } = JSON.parse(raw) as Partial<Draft> & Partial<FormProfile>;
+  const { rules, schoolLabel, forms, audience, ...saved } = JSON.parse(raw) as Partial<Draft> & Partial<FormProfile>;
   const restoreForm = (kind: Audience): FormProfile => ({
     schoolLabel: forms?.[kind]?.schoolLabel ?? schoolLabel ?? defaults.forms[kind].schoolLabel,
     rules: { ...defaults.forms[kind].rules, ...rules,
       ...(kind === "minor" && !forms?.minor ? { email: "optional" as const } : {}), ...forms?.[kind]?.rules },
   });
-  return { ...defaults, ...saved, forms: { adult: restoreForm("adult"), minor: restoreForm("minor") },
+  return { ...defaults, ...saved, audience: audience === "adult" || audience === "minor" ? audience : null, forms: { adult: restoreForm("adult"), minor: restoreForm("minor") },
     mail: { ...messages, ...saved.mail } };
 }
 const steps = ["入会方法", "申込フォーム", "初日・メール", "申込者として試す"];
 const samples = ["最初のクラス開催日 16:00", "次のクラス開催日 16:00"];
 
-function mailSequence(route: Route): Mail[] {
+function mailSequence(route: Route, minor: boolean): Mail[] {
   if (route === "briefing") return ["briefing", "invite", "received", "booked"];
-  return route === "online" ? ["received", "paid", "booked"] : ["received", "booked"];
+  if (route === "onsite") return minor ? ["received", "booked", "onsitePayment"] : ["received", "booked"];
+  return minor ? ["received", "paymentRequest", "paid", "firstDay", "booked"] : ["received", "paid", "booked"];
 }
 
 export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
@@ -70,8 +74,6 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Mail | "form" | "account" | "payment" | "date" | "briefingDate">("form");
   const [briefingSlot, setBriefingSlot] = useState("");
-  const [formTab, setFormTab] = useState<Audience>("adult");
-  const [previewTab, setPreviewTab] = useState<Audience>("adult");
   const [sameAddress, setSameAddress] = useState(false);
   const [date, setDate] = useState(samples[0]);
   const [notice, setNotice] = useState("");
@@ -100,7 +102,6 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     setStep(value);
     setPhase(draft.route === "briefing" ? "briefingDate" : "form");
     setBriefingSlot("");
-    setPreviewTab(formTab);
     setSameAddress(false);
     setDate(samples[0]);
     setNotice("");
@@ -108,41 +109,34 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
   const sampleBriefing = Math.ceil((Date.now() + 86400000) / 1800000) * 1800000;
   const sampleSlot = { id: "briefing-sample", starts_at: new Date(sampleBriefing).toISOString(), duration_minutes: 30 };
-  const routeMails = mailSequence(draft.route);
-  const editing = draft.audience === "both" ? formTab : draft.audience;
-  const previewing = draft.audience === "both" ? previewTab : draft.audience;
-  const minor = previewing === "minor";
-  const editForm = draft.forms[editing];
-  const shownForm = draft.forms[previewing];
-  const label = (id: Field, form: FormProfile) => id === "school" ? form.schoolLabel.trim() || fields.school : fields[id];
+  const audience = draft.audience ?? "adult";
+  const minor = audience === "minor";
+  const form = draft.forms[audience];
+  const routeMails = mailSequence(draft.route, minor);
+  const label = (id: Field) => id === "school" ? form.schoolLabel.trim() || fields.school : fields[id];
   function updateForm(next: FormProfile) {
-    setDraft(current => ({ ...current, forms: { ...current.forms, [editing]: next } }));
+    setDraft(current => ({ ...current, forms: { ...current.forms, [audience]: next } }));
   }
-  function chooseProfile(value: Audience, select: (kind: Audience) => void) {
-    select(value);
-    setSameAddress(false);
-  }
-  function profileButtons(value: Audience, select: (kind: Audience) => void) {
-    return <div className="flex flex-wrap gap-2" aria-label="申込フォームの対象">
-      {(["adult", "minor"] as const).map(kind => <button key={kind} type="button" aria-pressed={value === kind}
-        className={value === kind ? action : secondary} onClick={() => chooseProfile(kind, select)}>{audienceLabels[kind]}</button>)}
-    </div>;
+  function recipients(mail: Mail) {
+    if (!minor) return "受講者本人";
+    if (mail === "paymentRequest" || mail === "paid" || mail === "onsitePayment" || form.rules.email === "hidden") return "保護者";
+    return form.rules.email === "optional" ? "保護者と受講者（受講者のメール入力がある場合）" : "保護者と受講者";
   }
   const resolved = (value: string) => value.replaceAll("{教室名}", schoolName)
     .replaceAll("{日時}", phase === "briefing" ? bookingDate(sampleSlot.starts_at) + " " + bookingTime(sampleBriefing) : date).replaceAll("{会場}", draft.arrival || "教室（サンプル）");
   const dateButton = draft.firstDay === "choose" ? "初日を予約する" : "先生が指定した初日を確認する";
   const fieldControl = (id: Field) => {
-    const locked = id === "name" || (editing === "adult" ? id === "email" : id === "guardianEmail");
+    const locked = id === "name" || (minor ? id === "guardianEmail" : id === "email");
     return <label key={id} className="grid grid-cols-[1fr_8rem] items-center gap-2 text-sm">
-      <span>{label(id, editForm)}</span>
-      <select className={field} disabled={locked} value={locked ? "required" : editForm.rules[id]}
-        onChange={event => updateForm({ ...editForm, rules: { ...editForm.rules, [id]: event.target.value as Rule } })}>
+      <span>{label(id)}</span>
+      <select className={field} disabled={locked} value={locked ? "required" : form.rules[id]}
+        onChange={event => updateForm({ ...form, rules: { ...form.rules, [id]: event.target.value as Rule } })}>
         <option value="required">必須</option><option value="optional">任意</option><option value="hidden">表示しない</option>
       </select>
     </label>;
   };
-  const previewField = (id: Field) => shownForm.rules[id] === "hidden" || (id === "guardianAddress" && sameAddress) ? null :
-    <label key={id} className="grid gap-1 text-sm">{label(id, shownForm)}{shownForm.rules[id] === "required" ? "（必須）" : ""}
+  const previewField = (id: Field) => form.rules[id] === "hidden" || (id === "guardianAddress" && sameAddress) ? null :
+    <label key={id} className="grid gap-1 text-sm">{label(id)}{form.rules[id] === "required" ? "（必須）" : ""}
       <input className={field} type={/email/i.test(id) ? "email" : /phone/i.test(id) ? "tel" : "text"}
         placeholder={/email/i.test(id) ? "sample@example.test" : "サンプル"} />
     </label>;
@@ -173,30 +167,30 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
     {step === 1 && <div className="grid gap-4">
       <label className="grid gap-1 text-sm font-medium">受講対象
-        <select className={field} value={draft.audience} onChange={event => {
-          const audience = event.target.value as Draft["audience"];
-          setDraft(current => ({ ...current, audience }));
-          if (audience !== "both") setFormTab(audience);
+        <select className={field} value={draft.audience ?? ""} onChange={event => {
+          const value = event.target.value;
+          setDraft(current => ({ ...current, audience: value === "adult" || value === "minor" ? value : null }));
         }}>
-          <option value="adult">成人のみ</option><option value="minor">未成年のみ</option>
-          <option value="both">{audienceLabels.both}</option>
+          <option value="">受講対象を選ぶ</option>
+          <option value="adult">成人向け</option><option value="minor">未成年向け</option>
         </select>
       </label>
-      {draft.audience === "both" && profileButtons(editing, setFormTab)}
+      {draft.audience && <>
       <fieldset className="grid gap-2 rounded-lg border p-3">
-        <legend className="px-1 font-medium">{audienceLabels[editing]}の受講者項目</legend>
+        <legend className="px-1 font-medium">{audienceLabels[audience]}の受講者項目</legend>
         {fieldIds.filter(id => !id.startsWith("guardian")).map(fieldControl)}
-        {editForm.rules.school !== "hidden" && <label className="grid gap-1 text-sm">所属欄の表示名
-          <input className={field} maxLength={60} value={editForm.schoolLabel} onChange={event => updateForm({ ...editForm, schoolLabel: event.target.value })} />
+        {form.rules.school !== "hidden" && <label className="grid gap-1 text-sm">所属欄の表示名
+          <input className={field} maxLength={60} value={form.schoolLabel} onChange={event => updateForm({ ...form, schoolLabel: event.target.value })} />
         </label>}
       </fieldset>
-      {editing === "minor" && <fieldset className="grid gap-2 rounded-lg border p-3">
+      {minor && <fieldset className="grid gap-2 rounded-lg border p-3">
         <legend className="px-1 font-medium">保護者の項目</legend>
         {fieldIds.filter(id => id.startsWith("guardian")).map(fieldControl)}
       </fieldset>}
-      <p className="text-sm text-neutral-600">{editing === "minor"
-        ? "保護者宛てに受付メールを送り、保護者のPARARIアカウントを申込に紐づけます。"
+      <p className="text-sm text-neutral-600">{minor
+        ? "受付や日程の案内は、メールアドレスの登録がある受講者と保護者に届きます。決済の案内は保護者宛てです。"
         : "受講者本人のメール宛てに案内し、本人のPARARIアカウントを申込に紐づけます。"}</p>
+      </>}
     </div>}
 
     {step === 2 && <div className="grid gap-3">
@@ -216,6 +210,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
       {routeMails.map(id => <details className="rounded-lg border p-3" key={id}>
         <summary className="cursor-pointer text-sm font-medium">{messages[id].subject.replace("{教室名}の", "").replace("{教室名}からの", "")}</summary>
         <div className="mt-2 grid gap-2 text-sm">
+          {draft.audience && <p>宛先　{recipients(id)}</p>}
           <label>件名<input className={field} maxLength={180} value={draft.mail[id].subject}
             onChange={event => setDraft({ ...draft, mail: { ...draft.mail, [id]: { ...draft.mail[id], subject: event.target.value } } })} /></label>
           <label>本文<textarea className={field} maxLength={4000} rows={3} value={draft.mail[id].body}
@@ -225,7 +220,9 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
       </details>)}
     </div>}
 
-    {step === 3 && <div className="mx-auto grid w-full max-w-md gap-3 rounded-xl border p-4">
+    {step === 3 && !draft.audience && <button type="button" className={secondary}
+      onClick={() => selectStep(1)}>申込フォームで受講対象を選ぶ</button>}
+    {step === 3 && draft.audience && <div className="mx-auto grid w-full max-w-md gap-3 rounded-xl border p-4">
       <p className="text-sm font-medium">{routes[draft.route]}のプレビュー</p>
       {(phase === "form" || phase === "briefingDate") && draft.introduction &&
         <p className="whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm">{draft.introduction}</p>}
@@ -234,32 +231,38 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
         <button type="button" className={action} disabled={!briefingSlot} onClick={() => setPhase("briefing")}>説明会・体験を予約する（練習）</button>
       </>}
       {phase === "form" && <>
-        <h4 className="font-semibold">{schoolName}の入会申込（{audienceLabels[previewing]}）</h4>
-        {draft.audience === "both" && profileButtons(previewing, setPreviewTab)}
-        <div className="grid gap-2" key={previewing}>
+        <h4 className="font-semibold">{schoolName}の入会申込（{audienceLabels[audience]}）</h4>
+        <div className="grid gap-2" key={audience}>
           {fieldIds.filter(id => !id.startsWith("guardian")).map(previewField)}
         </div>
         {minor && <fieldset className="grid gap-2 rounded-lg border p-3">
           <legend className="px-1 text-sm font-medium">保護者情報</legend>
-          {shownForm.rules.address !== "hidden" && shownForm.rules.guardianAddress !== "hidden" &&
+          {form.rules.address !== "hidden" && form.rules.guardianAddress !== "hidden" &&
             <label className="text-sm"><input type="checkbox" checked={sameAddress} onChange={event => setSameAddress(event.target.checked)} /> 住所は受講者と同じ</label>}
           {fieldIds.filter(id => id.startsWith("guardian")).map(previewField)}
         </fieldset>}
         <button type="button" className={action} onClick={() => setPhase("received")}>申し込む（練習）</button>
       </>}
       {phase in messages && <div className="grid gap-2">
-        <span className="text-xs text-neutral-600">メールの見本{phase === "received" ? minor ? " · 保護者宛て" : " · 申込者宛て" : ""}</span>
+        <span className="text-xs text-neutral-600">メールの見本 · 宛先　{recipients(phase as Mail)}</span>
         <h4 className="font-semibold">{resolved(draft.mail[phase as Mail].subject)}</h4>
         <p className="whitespace-pre-wrap text-sm">{resolved(draft.mail[phase as Mail].body)}</p>
-        {phase === "booked" && draft.route === "onsite" && draft.amount && <p className="text-sm">当日のお支払い　{Number(draft.amount).toLocaleString("ja-JP")}円</p>}
+        {(phase === "onsitePayment" || (phase === "booked" && draft.route === "onsite" && !minor)) && draft.amount &&
+          <p className="text-sm">当日のお支払い　{Number(draft.amount).toLocaleString("ja-JP")}円</p>}
+        {phase === "booked" && draft.route === "onsite" && minor &&
+          <button type="button" className={action} onClick={() => setPhase("onsitePayment")}>保護者宛ての当日支払い案内を見る</button>}
         {phase === "briefing" && <button type="button" className={action} onClick={() => setPhase("invite")}>参加後の入会案内を見る</button>}
         {phase === "invite" && <button type="button" className={action} onClick={() => setPhase("form")}>入会を申し込む</button>}
-        {phase === "received" && <button type="button" className={action} onClick={() => setPhase("account")}>{draft.route === "online" ? "支払う" : dateButton}</button>}
-        {phase === "paid" && <button type="button" className={action} onClick={() => setPhase("date")}>{dateButton}</button>}
+        {phase === "received" && <button type="button" className={action} onClick={() => setPhase("account")}>{draft.route === "online" ? minor ? "保護者の手続きに進む" : "支払う" : dateButton}</button>}
+        {phase === "paymentRequest" && <button type="button" className={action} onClick={() => setPhase("payment")}>保護者が支払う</button>}
+        {phase === "paid" && <button type="button" className={action} onClick={() => setPhase(minor ? "firstDay" : "date")}>
+          {minor ? "初日の案内メールを見る" : dateButton}
+        </button>}
+        {phase === "firstDay" && <button type="button" className={action} onClick={() => setPhase("date")}>{dateButton}</button>}
       </div>}
       {phase === "account" && <>
         <h4 className="font-semibold">{minor ? "保護者のPARARI登録・ログイン" : "PARARI登録・ログイン"}</h4>
-        <button type="button" className={action} onClick={() => setPhase(draft.route === "online" ? "payment" : "date")}>紐づけ完了後の画面を見る</button>
+        <button type="button" className={action} onClick={() => setPhase(draft.route === "online" ? minor ? "paymentRequest" : "payment" : "date")}>紐づけ完了後の画面を見る</button>
       </>}
       {phase === "payment" && <button type="button" className={action} onClick={() => setPhase("paid")}>決済完了メールを見る（練習）</button>}
       {phase === "date" && <>
