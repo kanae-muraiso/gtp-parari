@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { SchoolClass } from "@/lib/classes";
+import ClassWeekTimeline from "./ClassWeekTimeline";
 import { classRequest } from "@/lib/classRequests";
 
 export type OfficeHour = { weekday: number; channel: "onsite" | "phone"; starts: string; ends: string };
@@ -12,9 +14,9 @@ const today = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10
 const shift = (value: string, days: number) => new Date(Date.parse(value) + days * 86400000).toISOString().slice(0, 10);
 const local = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16);
 
-export default function ClassAvailabilityPanel({ initial, duration, location, busy, save, revision }: {
+export default function ClassAvailabilityPanel({ initial, duration, location, busy, save, revision, classes }: {
   initial: OfficeHour[]; duration: number; location: string; busy: boolean;
-  save: (input: object) => Promise<boolean>; revision: object;
+  save: (input: object) => Promise<boolean>; revision: object; classes: SchoolClass[];
 }) {
   const [hours, setHours] = useState(initial);
   const [start, setStart] = useState(today);
@@ -56,29 +58,7 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
     }}>
       <h4 className="font-semibold">曜日ごとの受付時間</h4>
       <p className="text-sm text-neutral-600">授業・確定済み予約・予約不可と重ならない時間に、所要時間ごとの予約枠を出します。</p>
-      {[1, 2, 3, 4, 5, 6, 0].map(weekday => <fieldset key={weekday} className="grid gap-2 rounded border px-3 pb-3">
-        <legend className="px-1 text-sm font-semibold">{weekdays[weekday]}曜日</legend>
-        {hours.map((row, index) => row.weekday === weekday && <div key={index} className="flex flex-wrap items-end gap-2 text-sm">
-          <label>方法<select className={field} value={row.channel} onChange={event => {
-            const channel = event.target.value === "phone" ? "phone" : "onsite";
-            setHours(current => current.map((item, key) => key === index ? { ...item, channel } : item));
-            setSaved(false);
-          }}><option value="onsite">対面</option><option value="phone">電話</option></select></label>
-          {(["starts", "ends"] as const).map(key => <label key={key}>{key === "starts" ? "開始" : "終了"}<input required type="time" className={field} value={row[key]} onChange={event => {
-            const value = event.target.value;
-            setHours(current => current.map((item, i) => i === index ? { ...item, [key]: value } : item));
-            setSaved(false);
-          }} /></label>)}
-          <button type="button" className="underline" onClick={() => {
-            setHours(current => current.filter((_, i) => i !== index));
-            setSaved(false);
-          }}>削除</button>
-        </div>)}
-        <button type="button" className="w-fit text-sm underline" disabled={hours.length >= 42} onClick={() => {
-          setHours(current => [...current, { weekday, channel: "onsite", starts: "10:00", ends: "12:00" }]);
-          setSaved(false);
-        }}>{weekdays[weekday]}曜の受付時間を追加</button>
-      </fieldset>)}
+      <ClassWeekTimeline hours={hours} classes={classes} disabled={busy} onChange={next => { setHours(next); setSaved(false); }} />
       <label>1件の所要時間（分） <input className={field} type="number" name="duration" min={5} max={480} required defaultValue={duration} /></label>
       <label>対面の会場・集合場所 <input className={field} name="location" maxLength={300} defaultValue={location} /></label>
       <button className={button} disabled={busy}>受付時間を保存</button>
