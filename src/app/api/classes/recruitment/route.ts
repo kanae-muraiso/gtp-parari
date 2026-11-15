@@ -44,7 +44,7 @@ async function handle(request: NextRequest) {
       }
       const [recruitment, slots, blocks, available] = await Promise.all([
         db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location").eq("school_id", id).maybeSingle(),
-        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes").eq("school_id", id).order("starts_at", { ascending: true }),
+        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
       ]);
