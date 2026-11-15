@@ -84,17 +84,16 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
       <form className="mt-3 grid gap-2" onSubmit={event => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        void save("settings", { terms: form.get("terms"), briefing: form.has("briefing"), test: form.has("test"), proxy: form.has("usesProxy") });
+        void save("settings", { terms: form.get("terms"), briefing: settings.briefing, test: form.has("test"), proxy: form.has("usesProxy") });
       }}>
         <fieldset className="grid gap-2" disabled={busy}>
-          <label className="text-sm"><input type="checkbox" name="briefing" defaultChecked={settings.briefing} /> 説明会・体験を使う</label>
           <label className="text-sm"><input type="checkbox" name="test" defaultChecked={settings.test} /> テストを使う</label>
           <label className="text-sm"><input type="checkbox" name="usesProxy" defaultChecked={settings.proxy} /> 代理申込者の連絡先を使う</label>
           <label className="text-sm">同意する規約<textarea className={field} name="terms" rows={3} maxLength={8000} defaultValue={settings.terms} /></label>
           <button className={button}>設定を保存</button>
         </fieldset>
       </form>
-      <p className="text-sm text-neutral-600">候補者登録 → {settings.briefing ? "説明会・体験 → " : ""}{settings.test ? "テスト・採点 → " : ""}{labels.operator}の確認 → 同意・支払い → 名簿登録</p>
+      <p className="text-sm text-neutral-600">候補者登録 → {settings.test ? "テスト・採点 → " : ""}{labels.operator}の確認 → 同意・支払い → 名簿登録</p>
     </> : <>
     <form className="grid gap-2" onSubmit={async event => {
       event.preventDefault();
@@ -178,7 +177,7 @@ function Candidate({ candidate: row, data, busy, save }: {
           <div className="mt-2 grid gap-2">
             <label className="text-sm">開始予定日<input className={field} type="date" name="starts_on" defaultValue={row.starts_on ?? ""} /></label>
             <label className="text-sm">回答期限<input className={field} type="date" name="deadline" defaultValue={row.deadline ?? ""} /></label>
-            <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment} />
+            <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment === "free" && row.decision === "pending" && row.briefing !== "skip" ? data.paymentMode ?? row.payment : row.payment} />
             {terms && <p className="whitespace-pre-wrap rounded bg-neutral-50 p-2 text-sm">{terms}</p>}
             {agreed ? <p className="text-sm">同意済み</p> : <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
             {row.received_at ? <p className="text-sm">受領記録あり</p> : <label className="text-sm"><input type="checkbox" name="receipt" /> 初回費用を受領した</label>}

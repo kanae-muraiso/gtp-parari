@@ -19,4 +19,4 @@ export type AdmissionCase = {
   invite_token: string | null;
   enrollment_id: string | null; revision: number;
 };
-export type AdmissionsData = { settings: AdmissionSettings; cases: AdmissionCase[] };
+export type AdmissionsData = { settings: AdmissionSettings; paymentMode?: AdmissionCase["payment"]; cases: AdmissionCase[] };

@@ -36,7 +36,9 @@ async function handle(request: NextRequest, write: boolean) {
       if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, cases: [] });
       const cases = await db.from("school_admission_cases").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
       if (cases.error) throw cases.error;
-      return send({ ok: true, settings, cases: cases.data });
+      const recruitment = await db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle();
+      if (recruitment.error) throw recruitment.error;
+      return send({ ok: true, settings, cases: cases.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
     }
 
     const input = await request.json().catch(() => null);
@@ -63,9 +65,12 @@ async function handle(request: NextRequest, write: boolean) {
       const name = trim(input.name);
       const contact = trim(input.contact);
       if (!validId(input.id) || !name || name.length > 120 || contact.length > 300 || !["public", "referral", "invite"].includes(input.source)) return fail("候補者の入力を確認してください。");
+      const recruitment = await db.from("school_recruitment").select("route").eq("school_id", schoolId).maybeSingle();
+      if (recruitment.error) throw recruitment.error;
+      const needsBriefing = recruitment.data ? recruitment.data.route === "briefing" : settings.briefing;
       const result = await db.from("school_admission_cases").upsert({
         id: input.id, school_id: schoolId, name, contact, source: input.source,
-        briefing: settings.briefing ? "pending" : "skip", test: settings.test ? "pending" : "skip", decision: "pending", payment: "free",
+        briefing: needsBriefing ? "pending" : "skip", test: settings.test ? "pending" : "skip", decision: "pending", payment: "free",
       }, { onConflict: "id", ignoreDuplicates: true });
       if (result.error) throw result.error;
     } else if (input?.action === "email" && validId(input.id)) {
