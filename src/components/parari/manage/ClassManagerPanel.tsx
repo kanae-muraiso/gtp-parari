@@ -23,6 +23,7 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 export default function ClassManagerPanel() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [schoolAdmission, setSchoolAdmission] = useState(false);
   const [creating, setCreating] = useState(false);
   const [reload, setReload] = useState(0);
   const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview">("product");
@@ -85,6 +86,7 @@ export default function ClassManagerPanel() {
   const atLimit = Boolean(school?.classes.length);
   const backToList = () => {
     setSelectedId(null);
+    setSchoolAdmission(false);
     setCreating(false);
     setDeliveryDraft(null);
     setError("");
@@ -94,14 +96,17 @@ export default function ClassManagerPanel() {
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
   return <div className="grid gap-5">
-    {!item && !creating && school && <details className={panel}>
+    {!item && !creating && !schoolAdmission && school && <details className={panel}>
       <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
       <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
       <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
     </details>}
-    {!item && !creating && <section className={panel}>
+    {!item && !creating && !schoolAdmission && <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>
+        {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {
+          setSchoolAdmission(true); setView("settings");
+        }}>教室共通の入会設定</button>}
         <button type="button" className={button} disabled={atLimit} onClick={() => setCreating(true)}>クラスを新規作成</button>
       </div>
       {atLimit && <p className="text-sm text-neutral-600">CLASS Aでは、定期クラスを1件作成できます。</p>}
@@ -113,12 +118,12 @@ export default function ClassManagerPanel() {
       </button>)}
       {!atLimit && <p className="text-sm text-neutral-600">クラスはまだありません。</p>}
     </section>}
-    {(item || creating) && <header className="grid gap-2">
+    {(item || creating || schoolAdmission) && <header className="grid gap-2">
       <button type="button" className="w-fit text-sm underline" disabled={busy} onClick={backToList}>クラス一覧に戻る</button>
-      <h2 className="text-xl font-bold">{item?.name ?? "クラスを新規作成"}</h2>
+      <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? school?.name : "クラスを新規作成")}</h2>
     </header>}
-    {item && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
-      {([["product", "商品設計"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"]] as const).map(([key, title]) =>
+    {(item || schoolAdmission) && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
+      {([["product", "商品設計"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"]] as const).filter(([key]) => !schoolAdmission || key === "settings" || key === "preview" || key === "admissions").map(([key, title]) =>
         <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setMessage(""); setError(""); }}
           className={view === key ? button : "rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm"}>{title}</button>)}
     </nav>}
@@ -147,7 +152,8 @@ export default function ClassManagerPanel() {
         {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
       </div>
     </form>}
-    {school && item && <>
+    {school && (item || schoolAdmission) && <>
+      {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">この入会設定と募集は「{school.name}」の全クラスで共通です。</p>}
       {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
       {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} onOpenSettings={() => setView("settings")} />}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
