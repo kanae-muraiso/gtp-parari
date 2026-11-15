@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
-import { classAdmissionMail } from "@/lib/classAdmissionMail";
+import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
+import { classDate, classToday, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
 const send = (body: object, status = 200) => NextResponse.json(body, { status, headers });
@@ -22,27 +23,92 @@ async function handle(request: NextRequest, write: boolean) {
 
     const [profile, school] = await Promise.all([
       db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
-      db.from("class_schools").select("id").eq("owner_user_id", user.id).eq("tier", "a").maybeSingle(),
+      db.from("class_schools").select("id,name").eq("owner_user_id", user.id).eq("tier", "a").maybeSingle(),
     ]);
     if (profile.error || school.error) throw profile.error ?? school.error;
     if (profile.data?.is_monitor !== true || !school.data) return fail("教室が見つかりません。", 404);
 
     const schoolId = school.data.id;
-    const setting = await db.from("school_admission_settings").select("labels,briefing,test,proxy,terms").eq("school_id", schoolId).maybeSingle();
+    const setting = await db.from("school_admission_settings").select("labels,briefing,test,proxy,terms,briefing_design").eq("school_id", schoolId).maybeSingle();
     if (setting.error) throw setting.error;
     const settings = setting.data ?? defaultAdmissionSettings;
+    const design = parseBriefingDesign(setting.data?.briefing_design);
+    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.parari.app";
 
     if (!write) {
-      if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, cases: [] });
+      if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, briefingDesign: design, cases: [] });
       const cases = await db.from("school_admission_cases").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
       if (cases.error) throw cases.error;
       const recruitment = await db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle();
       if (recruitment.error) throw recruitment.error;
-      return send({ ok: true, settings, cases: cases.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
+      return send({ ok: true, settings, briefingDesign: design, cases: cases.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
     }
 
     const input = await request.json().catch(() => null);
-    if (input?.action === "settings" || input?.action === "labels") {
+    if (input?.action === "briefingDesign") {
+      const blueprint = parseBriefingDesign(input.design);
+      if (!blueprint) return fail("説明会の設計図を確認してください。");
+      const initial = await db.from("school_admission_settings").upsert(
+        { school_id: schoolId, ...defaultAdmissionSettings }, { onConflict: "school_id", ignoreDuplicates: true });
+      if (initial.error) throw initial.error;
+      const result = await db.from("school_admission_settings").update({ briefing_design: blueprint }).eq("school_id", schoolId);
+      if (result.error) throw result.error;
+    } else if ((input?.action === "briefingFollowup" || input?.action === "trial") && validId(input.id) && Number.isInteger(input.revision)) {
+      if (!design) return fail("入会設定で説明会の設計図を保存してください。");
+      const result = await db.from("school_admission_cases").select("*").eq("id", input.id).eq("school_id", schoolId).maybeSingle();
+      if (result.error) throw result.error;
+      const row = result.data;
+      if (!row?.applicant_email || !row.intake_slot_id || row.enrollment_id || row.consent_at ||
+        !["booked", "done"].includes(row.briefing) || ["withdrawn", "rejected"].includes(row.decision)) return fail("説明会の予約情報を確認してください。");
+      if (row.revision !== input.revision) return fail("申込情報が更新されています。再読み込みしてください。", 409);
+      if (input.action === "trial") {
+        const time = typeof input.at === "string" ? Date.parse(input.at) : NaN;
+        if (!design.allowTrials || !Number.isFinite(time) || time <= Date.now() || row.trial_dates.length >= 24) return fail("体験日時を確認してください。");
+        const at = new Date(time).toISOString();
+        if (row.trial_dates.includes(at)) return fail("この体験日時は登録済みです。");
+        const update = await db.from("school_admission_cases").update({ trial_dates: [...row.trial_dates, at].sort(), revision: row.revision + 1 })
+          .eq("id", row.id).eq("school_id", schoolId).eq("revision", row.revision).select("id").maybeSingle();
+        if (update.error) throw update.error;
+        if (!update.data) return fail("申込情報が更新されています。再読み込みしてください。", 409);
+        return send({ ok: true });
+      }
+      if (!["skip", "graded"].includes(row.test)) return fail("テストの結果を先に確認してください。");
+      const dates: string[] = Array.isArray(input.firstDays) ? [...new Set<string>(input.firstDays.filter((value: unknown) => typeof value === "string"))] : [];
+      if (!dates.length || dates.length > 12 || (design.firstDay === "assigned" && dates.length !== 1) ||
+          dates.some(day => !classDate(day) || day < classToday())) return fail("初日の候補日を確認してください。");
+      if (design.firstDay === "choose") {
+        const occurrences = await Promise.all(dates.map(day => db.rpc("class_recurrences", { p_school: schoolId, p_day: day })));
+        const error = occurrences.find(result => result.error)?.error;
+        if (error) throw error;
+        if (occurrences.some(result => !result.data?.length)) return fail("初日の候補にはクラスの開催日を指定してください。");
+      }
+      const deadline = trim(input.deadline);
+      if (!classDate(deadline) || deadline < classToday()) return fail("回答期限を確認してください。");
+      const followup = { design, invitedAt: new Date().toISOString(), firstDays: dates.sort() };
+      const invitation = row.invite_token ?? crypto.randomUUID();
+      const update = await db.from("school_admission_cases").update({
+        briefing: "done", decision: "approved", starts_on: design.firstDay === "assigned" ? dates[0] : null,
+        deadline, invite_token: invitation, briefing_followup: followup, revision: row.revision + 1,
+      }).eq("id", row.id).eq("school_id", schoolId).eq("revision", row.revision).select("id").maybeSingle();
+      if (update.error) throw update.error;
+      if (!update.data) return fail("申込情報が更新されています。再読み込みしてください。", 409);
+      const link = new URL("/class-admission#" + invitation, origin).href;
+      let mailed: boolean | undefined;
+      if (input.email === true) {
+        const mail = renderBriefingMail(design, "invite", { subject: school.data.name + "からの入会案内",
+          body: "入会をご希望の場合は、期限までに以下のフォームからお申し込みください。" }, { school: school.data.name });
+        // The application link is delivered to the account holder who can submit it.
+        const key = `briefing-invite-${row.id}-${row.revision + 1}`;
+        const [primary, learner] = await Promise.all([
+          classNotice([row.applicant_email], mail.subject, mail.body + "\n" + link, key),
+          design.audience === "minor" && row.learner_email && row.learner_email !== row.applicant_email
+            ? classNotice([row.learner_email], mail.subject, mail.body + "\n保護者に申込フォームをお送りしました。", key + "-learner")
+            : Promise.resolve(true),
+        ]);
+        mailed = primary && learner;
+      }
+      return send({ ok: true, link, mailed });
+    } else if (input?.action === "settings" || input?.action === "labels") {
       const terms = trim(input.terms);
       const labels = Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key => [key, trim(input.labels?.[key])]));
       if (input.action === "labels" && Object.values(labels).some(label => !label || label.length > 24)) {
@@ -75,7 +141,7 @@ async function handle(request: NextRequest, write: boolean) {
       if (result.error) throw result.error;
     } else if (input?.action === "email" && validId(input.id)) {
       const row = await db.from("school_admission_cases")
-        .select("id,applicant_email,invite_token,decision,briefing,test,starts_on,deadline,consent_at,agreed_terms,payment,enrollment_id,revision")
+        .select("id,applicant_email,invite_token,decision,briefing,test,starts_on,deadline,consent_at,agreed_terms,payment,enrollment_id,revision,learner_email")
         .eq("school_id", schoolId).eq("id", input.id).maybeSingle();
       if (row.error) throw row.error;
       const candidate = row.data;
@@ -102,8 +168,9 @@ async function handle(request: NextRequest, write: boolean) {
         subject = "初回レッスンのご案内";
         body = `在籍開始日 ${candidate.starts_on}\n${instructions}`;
       } else return fail("手続きの状態を確認してください。");
-      if (!(await classAdmissionMail(candidate.applicant_email, subject, body,
-          `class-${input.kind}-${candidate.id}-${candidate.revision}`))) return fail("メールを送信できませんでした。", 502);
+      const key = `class-${input.kind}-${candidate.id}-${candidate.revision}`;
+      if (!(input.kind === "start" ? await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key)
+        : await classAdmissionMail(candidate.applicant_email, subject, body, key))) return fail("メールを送信できませんでした。", 502);
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
       if (error?.code === "22023") return fail("工程・承認・開始日・同意・支払条件と期限を確認してください。");
@@ -124,6 +191,11 @@ async function handle(request: NextRequest, write: boolean) {
         (input.test === "graded" && !score)) return fail("候補者情報と工程を確認してください。");
 
       const now = new Date().toISOString();
+      if (input.confirmConsent === true) {
+        const candidate = await db.from("school_admission_cases").select("briefing_followup").eq("school_id", schoolId).eq("id", input.id).maybeSingle();
+        if (candidate.error) throw candidate.error;
+        if (candidate.data?.briefing_followup) return fail("申込者がご自身のアカウントで同意してください。");
+      }
       const changes = {
         name, contact, score, briefing: input.briefing, briefing_at: input.briefing_at || null,
         test: input.test, test_at: input.test_at || null, decision: input.decision,

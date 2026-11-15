@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern, classMeetingUrl } from "@/lib/classes";
-import { classAdmissionMail, classDateTime } from "@/lib/classAdmissionMail";
+import { classAdmissionMail, classDateTime, classNotice } from "@/lib/classAdmissionMail";
+
+import { parseBriefingDesign, renderBriefingMail, validClassEmail } from "@/lib/classBriefingWorkflow";
 
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const fail = (message: string, status = 400) => reply({ ok: false, message }, status);
@@ -49,11 +51,17 @@ async function handle(request: NextRequest) {
       return reply({ ok: true, school: school.data.name, information, kind, slots: [], direct: true,
         applicationText: options.application_text, terms: setting.data?.terms ?? "" });
     }
+    const settings = await db.from("school_admission_settings").select("briefing_design").eq("school_id", schoolId).maybeSingle();
+    if (settings.error) throw settings.error;
+    const design = parseBriefingDesign(settings.data?.briefing_design);
+    const minor = design?.audience === "minor";
     if (request.method === "POST") {
       const input = await request.json().catch(() => null);
       const name = clean(input?.name), applicant = clean(input?.applicant), email = clean(input?.email).toLowerCase();
       if (!name || name.length > 120 || !applicant || applicant.length > 120 || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
         !classIdPattern.test(clean(input?.slot)) || input?.agree !== true || typeof input?.information !== "string" || input.information.length > 4000) return fail("お名前・メール・日時・同意をご確認ください。");
+      const learnerEmail = minor ? clean(input?.learnerEmail).toLowerCase() : "";
+      if (learnerEmail && !validClassEmail(learnerEmail)) return fail("受講者のメールアドレスをご確認ください。");
       const phone = clean(input?.phone);
       if (phone && !/^[+0-9()\s-]{7,30}$/.test(phone)) return fail("電話番号をご確認ください。");
       const { data, error } = await db.rpc("book_school_intake", { p_public: id, p_slot: input.slot, p_name: name,
@@ -62,6 +70,14 @@ async function handle(request: NextRequest) {
       if (error?.code === "P0001" || error?.code === "22023") return fail("満席、受付期間外、または受付内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const booking = data[0];
+      if (learnerEmail) {
+        const update = await db.from("school_admission_cases").update({ learner_email: learnerEmail })
+          .eq("school_id", schoolId).eq("id", booking.case_id).eq("applicant_email", email).is("learner_email", null).is("consent_at", null);
+        if (update.error) throw update.error;
+      }
+      const contact = await db.from("school_admission_cases").select("learner_email").eq("school_id", schoolId).eq("id", booking.case_id).single();
+      if (contact.error) throw contact.error;
+      const recipients = [email, minor ? contact.data.learner_email : null];
       const slot = await db.from("school_recruitment_slots").select("meeting_url,location,duration_minutes,channel").eq("id", input.slot).maybeSingle();
       const meeting = classMeetingUrl(slot.data?.meeting_url);
       const text = `${booking.school_name}の${booking.kind}の日時は、${classDateTime(booking.starts_at)}（日本時間）です。` + [
@@ -70,10 +86,17 @@ async function handle(request: NextRequest) {
         slot.data?.duration_minutes ? "所要時間 " + slot.data.duration_minutes + "分" : "",
         meeting ? "オンライン参加リンク " + meeting : "", options.confirmation_text,
       ].filter(Boolean).map(line => "\n" + line).join("");
-      const confirmation = await classAdmissionMail(email, `${booking.kind}の予約確認`, text, `class-booking-${booking.case_id}`);
+      const mailValues = { school: school.data.name, when: classDateTime(booking.starts_at), where: slot.data?.location ?? "" };
+      const confirmationMail = renderBriefingMail(design, "briefing", { subject: booking.kind + "の予約確認", body: "" }, mailValues);
+      const reminderMail = renderBriefingMail(design, "reminder", { subject: booking.kind + "の前日のお知らせ", body: "" }, mailValues);
+      const withDetails = (body: string) => [body, text].filter(Boolean).join("\n\n");
+      const confirmation = design ? await classNotice(recipients, confirmationMail.subject, withDetails(confirmationMail.body), `class-booking-${booking.case_id}`)
+        : await classAdmissionMail(email, confirmationMail.subject, text, `class-booking-${booking.case_id}`);
       const remind = Date.parse(booking.starts_at) - 86400000;
       const reminder = remind > Date.now() && remind < Date.now() + 29 * 86400000
-        ? await classAdmissionMail(email, `${booking.kind}の前日のお知らせ`, text, `class-reminder-${booking.case_id}`, new Date(remind).toISOString())
+        ? design
+          ? await classNotice(recipients, reminderMail.subject, withDetails(reminderMail.body), `class-reminder-${booking.case_id}`, new Date(remind).toISOString())
+          : await classAdmissionMail(email, reminderMail.subject, text, `class-reminder-${booking.case_id}`, new Date(remind).toISOString())
         : null;
       return reply({ ok: true, confirmation, reminder });
     }
@@ -87,7 +110,7 @@ async function handle(request: NextRequest) {
     if (slots.error) throw slots.error;
     if (manual.error) throw manual.error;
     const details = new Map(manual.data.map(slot => [slot.id, slot]));
-    return reply({ ok: true, school: school.data.name, information, kind, bookingWeeks: options.booking_weeks,
+    return reply({ ok: true, school: school.data.name, information, kind, audience: design?.audience, bookingWeeks: options.booking_weeks,
       slots: (slots.data as { id: string; starts_at: string; channel: "onsite" | "phone" }[]).map(slot => {
         const saved = details.get(slot.id);
         return { ...slot, duration_minutes: saved?.duration_minutes ?? options.office_duration,

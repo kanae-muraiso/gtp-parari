@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 
 import ClassBookingCalendar, { bookingDate, bookingTime, type BookingSlot } from "./ClassBookingCalendar";
 
-export type Intake = { school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; slots: BookingSlot[] };
+export type Intake = { school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; audience?: "adult" | "minor"; slots: BookingSlot[] };
 
 const field = "block w-full rounded-lg border p-2";
 
@@ -28,9 +28,10 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         </div>}
         <fieldset disabled={busy || (!data.direct && !slot)} className={data.direct || slot ? "grid min-w-0 gap-3" : "hidden"}>
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
-        <label>申し込む方のお名前<input name="applicant" className={field} maxLength={120} required /></label>
+        <label>{data.audience === "minor" ? "保護者のお名前" : "申し込む方のお名前"}<input name="applicant" className={field} maxLength={120} required /></label>
         {!data.direct && slot?.channel === "phone" && <label>連絡先電話番号<input name="phone" className={field} type="tel" required maxLength={30} /></label>}
-        <label>連絡先メール<input name="email" className={field} type="email" maxLength={254} required /></label>
+        <label>{data.audience === "minor" ? "保護者のメールアドレス" : "連絡先メール"}<input name="email" className={field} type="email" maxLength={254} required /></label>
+        {data.audience === "minor" && <label>受講者のメールアドレス（任意）<input name="learnerEmail" className={field} type="email" maxLength={254} /></label>}
         <label><input type="checkbox" required /> 案内と個人情報の取り扱いを確認し、同意します{data.direct && data.terms ? "。教室規約にも同意します" : ""}</label>
         <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white" disabled={busy}>{data.direct ? "申し込む" : "この日時で予約する"}</button>
         </fieldset>

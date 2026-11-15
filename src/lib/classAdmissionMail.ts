@@ -16,3 +16,11 @@ export async function classAdmissionMail(to: string, subject: string, text: stri
 }
 
 export const classDateTime = (timestamp: string) => new Date(timestamp).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+export async function classNotice(recipients: (string | null | undefined)[], subject: string, text: string, key: string, scheduledAt?: string) {
+  const emails = [...new Set(recipients.filter((email): email is string => Boolean(email)).map(email => email.toLowerCase()))];
+  if (!emails.length) return false;
+  const results = await Promise.all(emails.map((email, index) =>
+    classAdmissionMail(email, subject, text, index ? key + "-" + index : key, scheduledAt)));
+  return results.every(Boolean);
+}

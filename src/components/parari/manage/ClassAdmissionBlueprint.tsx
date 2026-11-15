@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { classRequest } from "@/lib/classRequests";
+import type { AdmissionsData } from "@/lib/classAdmissions";
 import ClassBookingCalendar, { bookingDate, bookingTime } from "@/components/parari/classes/ClassBookingCalendar";
 
 const routes = {
@@ -16,7 +18,7 @@ const fields = {
 type Field = keyof typeof fields;
 type Rule = "required" | "optional" | "hidden";
 type Route = keyof typeof routes;
-type Mail = "received" | "paid" | "booked" | "briefing" | "invite" | "paymentRequest" | "firstDay" | "onsitePayment";
+type Mail = "received" | "paid" | "booked" | "briefing" | "invite" | "paymentRequest" | "firstDay" | "onsitePayment" | "reminder";
 const messages: Record<Mail, { subject: string; body: string }> = {
   received: { subject: "{教室名}の入会申込を受け付けました", body: "お申し込みありがとうございます。以下のボタンから次の手続きへお進みください。" },
   onsitePayment: { subject: "{教室名}の当日のお支払い", body: "初日に会場でお支払いをお願いします。" },
@@ -24,6 +26,7 @@ const messages: Record<Mail, { subject: string; body: string }> = {
   firstDay: { subject: "{教室名}の初日の手続きができます", body: "以下のボタンから、初日の手続きへお進みください。" },
   paid: { subject: "{教室名}のお支払いを確認しました", body: "お支払いありがとうございます。初回の参加日をお選びください。" },
   booked: { subject: "{教室名}の初日のご案内", body: "初日の日時：{日時}\n集合場所：{会場}" },
+  reminder: { subject: "{教室名}の説明会・体験は明日です", body: "ご予約の日時をご確認ください。" },
   briefing: { subject: "{教室名}の説明会・体験の予約を受け付けました", body: "日時：{日時}\n集合場所：教室（サンプル）" },
   invite: { subject: "{教室名}からの入会案内", body: "ご参加ありがとうございました。入会をご希望の場合は、以下からお申し込みください。" },
 };
@@ -36,7 +39,7 @@ type Audience = "adult" | "minor";
 type FormProfile = { rules: Record<Field, Rule>; schoolLabel: string };
 type Draft = {
   route: Route; audience: Audience | null; forms: Record<Audience, FormProfile>; firstDay: "choose" | "assigned";
-  introduction: string; arrival: string; amount: string; mail: Record<Mail, { subject: string; body: string }>;
+  allowTrials: boolean; introduction: string; arrival: string; amount: string; mail: Record<Mail, { subject: string; body: string }>;
 };
 const audienceLabels = { adult: "成人向け", minor: "未成年向け" } as const;
 const adultRules: FormProfile["rules"] = {
@@ -47,7 +50,7 @@ const defaults: Draft = {
   route: "onsite", audience: null,
   forms: { adult: { rules: adultRules, schoolLabel: fields.school },
     minor: { rules: { ...adultRules, email: "optional" }, schoolLabel: fields.school } },
-  firstDay: "choose", introduction: "", arrival: "", amount: "", mail: messages,
+  firstDay: "choose", allowTrials: true, introduction: "", arrival: "", amount: "", mail: messages,
 };
 
 function readDraft(raw: string): Draft {
@@ -64,7 +67,7 @@ const steps = ["入会方法", "申込フォーム", "初日・メール", "申�
 const samples = ["最初のクラス開催日 16:00", "次のクラス開催日 16:00"];
 
 function mailSequence(route: Route, minor: boolean): Mail[] {
-  if (route === "briefing") return ["briefing", "invite", "received", "booked"];
+  if (route === "briefing") return ["briefing", "reminder", "invite", "received", "booked"];
   if (route === "onsite") return minor ? ["received", "booked", "onsitePayment"] : ["received", "booked"];
   return minor ? ["received", "paymentRequest", "paid", "firstDay", "booked"] : ["received", "paid", "booked"];
 }
@@ -72,18 +75,26 @@ function mailSequence(route: Route, minor: boolean): Mail[] {
 export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
   const [draft, setDraft] = useState(defaults);
   const [step, setStep] = useState(0);
-  const [phase, setPhase] = useState<Mail | "form" | "account" | "payment" | "date" | "briefingDate">("form");
+  const [phase, setPhase] = useState<Mail | "form" | "account" | "payment" | "date" | "briefingDate" | "meeting" | "trial">("form");
   const [briefingSlot, setBriefingSlot] = useState("");
   const [sameAddress, setSameAddress] = useState(false);
   const [date, setDate] = useState(samples[0]);
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const key = "parari:class-admission-blueprint:v1:" + schoolId;
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(key);
-      if (!saved) return;
-      setDraft(readDraft(saved));
+      if (saved) setDraft(readDraft(saved));
+      else {
+        const controller = new AbortController();
+        void classRequest<AdmissionsData>("/admissions?settings=1", undefined, controller.signal).then(result => {
+          const design = result.briefingDesign;
+          if (design && !controller.signal.aborted) setDraft(readDraft(JSON.stringify({ ...design, route: "briefing" })));
+        }).catch(() => {});
+        return () => controller.abort();
+      }
     } catch {
       setNotice("このブラウザーの下書きを読み込めませんでした。");
     }
@@ -96,6 +107,18 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     } catch {
       setNotice("下書きを保存できませんでした。");
     }
+  }
+
+  async function saveBriefing() {
+    if (!draft.audience || saving) return;
+    setSaving(true);
+    setNotice("");
+    try {
+      await classRequest("/admissions", { action: "briefingDesign", design: { ...draft, ...draft.forms[draft.audience] } });
+      setNotice("説明会の設計を教室に保存しました。「説明会・体験の募集」で予約枠と公開設定を確認してください。");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "説明会の設計を保存できませんでした。");
+    } finally { setSaving(false); }
   }
 
   function selectStep(value: number) {
@@ -144,7 +167,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
   return <section className="grid gap-4 rounded-2xl border bg-white p-5" aria-label="入会の設計図">
     <header className="grid gap-1">
       <h3 className="font-bold">入会の設計図</h3>
-      <p className="text-sm text-neutral-600">試作です。このブラウザーに下書きを保存し、架空の内容で申込者の流れを確認できます。</p>
+      <p className="text-sm text-neutral-600">下書きと申込者プレビューを使って設計できます。説明会ルートは教室に保存して運用に使えます。</p>
     </header>
     <nav aria-label="設計図の手順" className="flex flex-wrap gap-2">
       {steps.map((title, index) => <button type="button" aria-current={index === step ? "step" : undefined}
@@ -194,6 +217,9 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     </div>}
 
     {step === 2 && <div className="grid gap-3">
+      {draft.route === "briefing" && <label className="text-sm">
+        <input type="checkbox" checked={draft.allowTrials} onChange={event => setDraft({ ...draft, allowTrials: event.target.checked })} /> 説明会の後に追加の体験日時を登録する
+      </label>}
       <label className="grid gap-1 text-sm">初日の決め方
         <select className={field} value={draft.firstDay} onChange={event => setDraft({ ...draft, firstDay: event.target.value as Draft["firstDay"] })}>
           <option value="choose">申込者が候補日から選ぶ</option><option value="assigned">教室が申込者ごとに指定する</option>
@@ -251,18 +277,24 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
           <p className="text-sm">当日のお支払い　{Number(draft.amount).toLocaleString("ja-JP")}円</p>}
         {phase === "booked" && draft.route === "onsite" && minor &&
           <button type="button" className={action} onClick={() => setPhase("onsitePayment")}>保護者宛ての当日支払い案内を見る</button>}
-        {phase === "briefing" && <button type="button" className={action} onClick={() => setPhase("invite")}>参加後の入会案内を見る</button>}
-        {phase === "invite" && <button type="button" className={action} onClick={() => setPhase("form")}>入会を申し込む</button>}
-        {phase === "received" && <button type="button" className={action} onClick={() => setPhase("account")}>{draft.route === "online" ? minor ? "保護者の手続きに進む" : "支払う" : dateButton}</button>}
+        {phase === "briefing" && <button type="button" className={action} onClick={() => setPhase("meeting")}>説明会の当日へ</button>}
+        {phase === "invite" && <button type="button" className={action} onClick={() => setPhase("account")}>入会を申し込む</button>}
+        {phase === "received" && <button type="button" className={action} onClick={() => setPhase(draft.route === "briefing" ? "date" : "account")}>{draft.route === "online" ? minor ? "保護者の手続きに進む" : "支払う" : dateButton}</button>}
         {phase === "paymentRequest" && <button type="button" className={action} onClick={() => setPhase("payment")}>保護者が支払う</button>}
         {phase === "paid" && <button type="button" className={action} onClick={() => setPhase(minor ? "firstDay" : "date")}>
           {minor ? "初日の案内メールを見る" : dateButton}
         </button>}
         {phase === "firstDay" && <button type="button" className={action} onClick={() => setPhase("date")}>{dateButton}</button>}
       </div>}
+      {(phase === "meeting" || phase === "trial") && <>
+        <h4 className="font-semibold">{phase === "meeting" ? "説明会後の対応（先生の操作）" : "追加の体験日時を登録しました（練習）"}</h4>
+        <button type="button" className={action} onClick={() => setPhase("account")}>その場で入会手続き</button>
+        <button type="button" className={secondary} onClick={() => setPhase("invite")}>入会案内を送る</button>
+        {phase === "meeting" && draft.allowTrials && <button type="button" className={secondary} onClick={() => setPhase("trial")}>体験日時を追加</button>}
+      </>}
       {phase === "account" && <>
         <h4 className="font-semibold">{minor ? "保護者のPARARI登録・ログイン" : "PARARI登録・ログイン"}</h4>
-        <button type="button" className={action} onClick={() => setPhase(draft.route === "online" ? minor ? "paymentRequest" : "payment" : "date")}>紐づけ完了後の画面を見る</button>
+        <button type="button" className={action} onClick={() => setPhase(draft.route === "briefing" ? "form" : draft.route === "online" ? minor ? "paymentRequest" : "payment" : "date")}>紐づけ完了後の画面を見る</button>
       </>}
       {phase === "payment" && <button type="button" className={action} onClick={() => setPhase("paid")}>決済完了メールを見る（練習）</button>}
       {phase === "date" && <>
@@ -278,6 +310,8 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
     <footer className="flex flex-wrap items-center gap-2">
       <button type="button" className={secondary} onClick={persist}>下書きを保存</button>
+      {draft.route === "briefing" && <button type="button" className={action} disabled={!draft.audience || saving}
+        onClick={() => void saveBriefing()}>説明会の設計を教室に保存</button>}
       {step < steps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
       {notice && <p role="status" className="text-sm">{notice}</p>}
     </footer>
