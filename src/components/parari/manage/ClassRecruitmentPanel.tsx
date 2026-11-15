@@ -9,7 +9,7 @@ type Data = { school: string; recruitment: { public_id: string; enabled: boolean
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: "settings" | "flow" | "preview"; onOpenSettings: () => void }) {
+export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: "settings" | "preview"; onOpenSettings: () => void }) {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
@@ -43,25 +43,10 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
   const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(Date.now() + 7 * 86400000).toISOString(), meeting_url: null }] : slots;
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
-  const flow = [
-    ["申込者", kind + "を予約"],
-    ["申込者", kind + "に参加"],
-    ...(settings?.test ? [["教室", "受験・採点を確認"]] : []),
-    ["教室", "確認して入会案内を送る"],
-    ["申込者", "規約に同意して申し込む"],
-    ["教室", "入金を確認して名簿に登録"],
-    ["教室", "初回の日程を案内"],
-  ];
   return <section className="grid gap-3 rounded-2xl border bg-white p-5">
-    <h3 className="font-bold">{view === "flow" ? "入会までのフロー" : view === "preview" ? "申込者として試す" : "説明会・体験の募集"}</h3>
+    <h3 className="font-bold">{view === "preview" ? "申込者として試す" : "説明会・体験の募集"}</h3>
     {error && <p role="alert">{error}</p>}
     {!data && !error && <p role="status">読み込み中…</p>}
-    {data && settings && view === "flow" && <ol className="grid gap-3">
-      {flow.map(([actor, title], index) => <li className="rounded-lg border p-3" key={title}>
-        <span className="mr-2 text-sm text-neutral-600">{index + 1} · {actor}</span>{title}
-      </li>)}
-      <li className="text-sm text-neutral-600">保留・不合格の場合は案内前に止まり、同意・入金待ちは申込者の対応を待ちます。</li>
-    </ol>}
     {data && settings && view === "preview" && <>
       <p className="text-sm text-neutral-600">練習用です。予約・メール・支払い・名簿登録は発生しません。</p>
       {(!recruitment || !slots.length) && <div className="grid gap-2 rounded-lg bg-neutral-50 p-3">

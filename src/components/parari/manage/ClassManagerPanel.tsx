@@ -25,7 +25,7 @@ export default function ClassManagerPanel() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [reload, setReload] = useState(0);
-  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "flow" | "preview">("product");
+  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview">("product");
   const [data, setData] = useState<ClassManagement | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -118,7 +118,7 @@ export default function ClassManagerPanel() {
       <h2 className="text-xl font-bold">{item?.name ?? "クラスを新規作成"}</h2>
     </header>}
     {item && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
-      {([["product", "商品設計"], ["settings", "入会設定"], ["flow", "フロー図"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"]] as const).map(([key, title]) =>
+      {([["product", "商品設計"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"]] as const).map(([key, title]) =>
         <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setMessage(""); setError(""); }}
           className={view === key ? button : "rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm"}>{title}</button>)}
     </nav>}
@@ -151,7 +151,7 @@ export default function ClassManagerPanel() {
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
-      {(view === "settings" || view === "flow" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} onOpenSettings={() => setView("settings")} />}
+      {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} onOpenSettings={() => setView("settings")} />}
       {view === "settings" && <form key={data.applicationId ?? "unlinked"} className={panel} onSubmit={event => {
         const values = formValues(event);
         void save({ action: "admission", applicationId: values.applicationId || null }, "入会受付の設定を保存しました。");
