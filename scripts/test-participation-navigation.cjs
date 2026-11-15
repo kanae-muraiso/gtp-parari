@@ -101,6 +101,7 @@ const { GET } = load("src/app/api/my-participations/route.ts", {
   } }) },
 });
 const classes = load("src/app/api/classes/route.ts", {
+  "@/lib/classProduct": load("src/lib/classProduct.ts"),
   "@/lib/classes": load("src/lib/classes.ts"),
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
 });
