@@ -3,30 +3,32 @@
 import { useEffect, useState } from "react";
 import type { SchoolClass } from "@/lib/classes";
 import ClassWeekTimeline from "./ClassWeekTimeline";
+import { BookingDayTimeline, BookingMonthGrid, bookingDate, bookingDay, bookingTime, type BookingSlot } from "@/components/parari/classes/ClassBookingCalendar";
 import { classRequest } from "@/lib/classRequests";
 
 export type OfficeHour = { weekday: number; channel: "onsite" | "phone"; starts: string; ends: string };
 type Event = { starts_at: string; ends_at: string; label: string; kind: "class" | "booked" | "block" };
-const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+type Block = { starts_at: string; ends_at: string };
 const field = "rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
-const today = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+const today = () => bookingDay(new Date(Date.now()).toISOString());
 const shift = (value: string, days: number) => new Date(Date.parse(value) + days * 86400000).toISOString().slice(0, 10);
 const local = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16);
 
-export default function ClassAvailabilityPanel({ initial, duration, location, busy, save, revision, classes }: {
+export default function ClassAvailabilityPanel({ initial, duration, location, busy, save, revision, classes, slots, blocks }: {
   initial: OfficeHour[]; duration: number; location: string; busy: boolean;
   save: (input: object) => Promise<boolean>; revision: object; classes: SchoolClass[];
+  slots: BookingSlot[]; blocks: Block[];
 }) {
   const [hours, setHours] = useState(initial);
   const [month, setMonth] = useState(() => today().slice(0, 7));
-  const [day, setDay] = useState(today);
+  const [day, setDay] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [blockStart, setBlockStart] = useState("");
   const [blockEnd, setBlockEnd] = useState("");
-  const [allDay, setAllDay] = useState(false);
+  const [blockMessage, setBlockMessage] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     setEvents([]);
@@ -36,27 +38,28 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
   }, [month, revision]);
-  const first = new Date(month + "-01T00:00:00Z");
-  const following = new Date(first);
-  following.setUTCMonth(following.getUTCMonth() + 1);
-  const dayCount = new Date(following.getTime() - 86400000).getUTCDate();
-  const days = Array.from({ length: dayCount }, (_, index) => shift(month + "-01", index));
   const eventsOn = (value: string) => events.filter(event =>
     local(event.starts_at) < shift(value, 1) && local(event.ends_at) > value + "T00:00");
-  const selectDay = (value: string) => {
+  const dayStart = (value: string) => value + "T00:00:00+09:00";
+  const isClosed = (value: string) => blocks.some(block =>
+    Date.parse(block.starts_at) <= Date.parse(dayStart(value)) &&
+    Date.parse(block.ends_at) >= Date.parse(dayStart(shift(value, 1))));
+  const daySlots = slots.filter(slot => bookingDay(slot.starts_at) === day);
+  const daysWithSlots = new Set(slots.map(slot => bookingDay(slot.starts_at)));
+  const past = day < today();
+  const closed = day !== "" && isClosed(day);
+
+  function selectDay(value: string) {
     setDay(value);
     setBlockStart("");
     setBlockEnd("");
-    setAllDay(false);
-  };
+    setBlockMessage("");
+  }
 
-  function changeMonth(offset: number) {
-    const target = new Date(first);
-    target.setUTCMonth(target.getUTCMonth() + offset);
-    const next = target.toISOString().slice(0, 7);
-    setMonth(next);
-    const current = today();
-    selectDay(current.startsWith(next) ? current : next + "-01");
+  async function addBlock(startsAt: string, endsAt: string, message: string) {
+    if (busy) return;
+    setBlockMessage("");
+    if (await save({ action: "block", id: crypto.randomUUID(), startsAt, endsAt })) setBlockMessage(message);
   }
 
   const formatEvent = (event: Event, value: string) => {
@@ -81,54 +84,63 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
     </form>
     <section className="grid gap-3 border-t pt-3" aria-label="教室の月間カレンダー">
       <h4 className="font-semibold">教室の月間カレンダー</h4>
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" className={field} onClick={() => changeMonth(-1)}>前月</button>
-        <span aria-live="polite" className="font-medium">{first.getUTCFullYear()}年{first.getUTCMonth() + 1}月</span>
-        <button type="button" className={field} onClick={() => changeMonth(1)}>翌月</button>
-      </div>
-      {error && <p role="alert">{error}</p>}
-      <div className="grid grid-cols-7 gap-1 text-center text-sm">
-        {weekdays.map(label => <span key={label} className="py-1 text-neutral-600">{label}</span>)}
-        {Array.from({ length: first.getUTCDay() }, (_, index) => <span key={"blank" + index} aria-hidden="true" />)}
-        {days.map((value, index) => {
+      <BookingMonthGrid month={month} day={day} onMonth={value => { setMonth(value); selectDay(""); }} onDay={selectDay}
+        describeDay={value => {
+          const closed = isClosed(value);
           const count = eventsOn(value).length;
-          return <button type="button" key={value} aria-pressed={day === value}
-            aria-label={value + (count ? " 予定" + count + "件" : "")}
-            className="grid min-h-12 content-start justify-items-center rounded border p-1 aria-pressed:border-blue-800 aria-pressed:bg-blue-800 aria-pressed:text-white"
-            onClick={() => selectDay(value)}>
-            <span>{index + 1}</span>
-            {count > 0 && <span className="text-xs">{count}件</span>}
-          </button>;
-        })}
-      </div>
-      <form key={day} className="grid gap-2" onSubmit={async event => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        await save({ action: "block", id: crypto.randomUUID(),
-          startsAt: day + "T" + (allDay ? "00:00" : form.get("starts")) + ":00+09:00",
-          endsAt: (allDay ? shift(day, 1) : day) + "T" + (allDay ? "00:00" : form.get("ends")) + ":00+09:00" });
-      }}>
-        <p className="text-sm">{day}の予約不可を登録</p>
-        {eventsOn(day).map((event, index) => {
-          const from = event.kind === "class" && local(event.starts_at).slice(0, 10) === day ? local(event.starts_at).slice(11) : null;
-          const until = event.kind === "class" && local(event.ends_at).slice(0, 10) === day ? local(event.ends_at).slice(11) : null;
-          return <div key={index} className="flex flex-wrap gap-2 text-sm">
-            <span>{formatEvent(event, day)} {event.label}</span>
-            {from && from !== "00:00" && <button type="button" className="underline" onClick={() => {
-              setAllDay(false); setBlockStart(""); setBlockEnd(from);
-            }}>授業前を指定</button>}
-            {until && <button type="button" className="underline" onClick={() => {
-              setAllDay(false); setBlockStart(until); setBlockEnd("");
-            }}>授業後を指定</button>}
+          const note = closed ? "終日不可" : count ? count + "件" : undefined;
+          return { label: note ? " " + note : "", highlighted: daysWithSlots.has(value), note };
+        }} />
+      {error && <p role="alert">{error}</p>}
+      {blockMessage && <p role="status" className="text-sm">{blockMessage}</p>}
+      {day ? <section className="grid gap-2" aria-label="選んだ日の予定と予約枠">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h5 className="text-sm font-semibold">{bookingDate(dayStart(day))}</h5>
+          {!past && <button type="button" className={field} disabled={busy || closed}
+            onClick={() => void addBlock(dayStart(day), dayStart(shift(day, 1)), day + "を終日予約不可にしました。")}>
+            {closed ? "終日予約不可" : "終日を予約不可にする"}
+          </button>}
+        </div>
+        {daySlots.length > 0 && <p className="text-sm text-neutral-600">指定した時間帯と重なる予約枠が受付対象から外れます。</p>}
+        {!daySlots.length && <p className="text-sm text-neutral-600">この日に受付中の予約枠はありません。</p>}
+        <BookingDayTimeline day={day} slots={daySlots} renderSlot={(slot, time) => {
+          const end = new Date(Date.parse(slot.starts_at) + slot.duration_minutes * 60000);
+          const nextDay = bookingDay(end.toISOString()) !== day ? "翌日 " : "";
+          const label = time + "〜" + nextDay + bookingTime(end.getTime());
+          return <div key={slot.id} className="flex flex-wrap items-center gap-2">
+            <span className="text-xs">{label}{slot.channel === "phone" ? " 電話" : ""}</span>
+            <button type="button" className={field} disabled={busy || past || closed} aria-label={label + "を予約不可にする"}
+              onClick={() => void addBlock(slot.starts_at, end.toISOString(), day + " " + label + "を予約不可にしました。")}>予約不可</button>
           </div>;
-        })}
-        <label><input type="checkbox" checked={allDay} onChange={event => setAllDay(event.target.checked)} /> 終日</label>
-        {!allDay && <div className="flex flex-wrap gap-2">
-          <label>開始 <input type="time" required name="starts" className={field} value={blockStart} onChange={event => setBlockStart(event.target.value)} /></label>
-          <label>終了 <input type="time" required name="ends" className={field} value={blockEnd} onChange={event => setBlockEnd(event.target.value)} /></label>
-        </div>}
-        <button className={button} disabled={busy}>この時間を予約不可にする</button>
-      </form>
+        }} />
+        {eventsOn(day).map((event, index) => <p key={index} className="text-sm">{formatEvent(event, day)} {event.label}</p>)}
+        {!past && !closed && <details key={day} className="text-sm">
+          <summary className="cursor-pointer">開始・終了時刻を指定して予約不可にする</summary>
+          <form className="mt-2 grid gap-2" onSubmit={event => {
+            event.preventDefault();
+            if (!blockStart || !blockEnd) return;
+            void addBlock(day + "T" + blockStart + ":00+09:00", day + "T" + blockEnd + ":00+09:00",
+              day + " " + blockStart + "〜" + blockEnd + "を予約不可にしました。");
+          }}>
+            {eventsOn(day).filter(event => event.kind === "class").map((event, index) => {
+              const from = local(event.starts_at).slice(0, 10) === day ? local(event.starts_at).slice(11) : null;
+              const until = local(event.ends_at).slice(0, 10) === day ? local(event.ends_at).slice(11) : null;
+              return <div key={index} className="flex flex-wrap gap-2">
+                <span>{formatEvent(event, day)} {event.label}</span>
+                {from && from !== "00:00" && <button type="button" className="underline"
+                  onClick={() => { setBlockStart(""); setBlockEnd(from); }}>授業前を指定</button>}
+                {until && <button type="button" className="underline"
+                  onClick={() => { setBlockStart(until); setBlockEnd(""); }}>授業後を指定</button>}
+              </div>;
+            })}
+            <div className="flex flex-wrap gap-2">
+              <label>開始 <input type="time" required className={field} value={blockStart} onChange={event => setBlockStart(event.target.value)} /></label>
+              <label>終了 <input type="time" required className={field} value={blockEnd} onChange={event => setBlockEnd(event.target.value)} /></label>
+            </div>
+            <button className={button} disabled={busy}>この時間を予約不可にする</button>
+          </form>
+        </details>}
+      </section> : <p className="text-sm text-neutral-600">日付を選んでください。</p>}
     </section>
   </div>;
 }
