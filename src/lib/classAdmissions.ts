@@ -1,3 +1,5 @@
+import type { BriefingDesign, BriefingFollowup, ApplicationField } from "./classBriefingWorkflow";
+
 export const defaultAdmissionSettings = {
   labels: { operator: "先生", learner: "生徒", proxy: "保護者", admission: "入会" },
   briefing: true,
@@ -17,7 +19,9 @@ export type AdmissionCase = {
   applicant_phone?: string | null;
   applicant_name?: string | null;
   applicant_email?: string | null;
+  learner_email?: string | null; trial_dates?: string[]; briefing_followup?: BriefingFollowup | null;
+  application_fields?: Partial<Record<ApplicationField, string>> | null; applicant_user_id?: string | null;
   invite_token: string | null;
   enrollment_id: string | null; revision: number;
 };
-export type AdmissionsData = { settings: AdmissionSettings; paymentMode?: AdmissionCase["payment"]; cases: AdmissionCase[] };
+export type AdmissionsData = { settings: AdmissionSettings; paymentMode?: AdmissionCase["payment"]; briefingDesign?: BriefingDesign | null; cases: AdmissionCase[] };

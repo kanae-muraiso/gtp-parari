@@ -1,4 +1,5 @@
 "use client";
+import { applicationFields, type ApplicationField } from "@/lib/classBriefingWorkflow";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { classRequest } from "@/lib/classRequests";
@@ -43,10 +44,11 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
     setError("");
     setMessage("");
     try {
-      await classRequest(path, { action, ...values });
+      const result = await classRequest<{ mailed?: boolean }>(path, { action, ...values });
       setData(await classRequest<AdmissionsData>(mode === "admissions" ? path : path + "?settings=1"));
       if (action === "finish") onRosterChanged?.();
-      setMessage(action === "email" ? "メールを送信しました。" : "保存しました。");
+      setMessage(result.mailed === false ? "案内リンクを作成しました。メールを送信できなかったため、リンクをコピーしてお渡しください。"
+        : result.mailed || action === "email" ? "メールを送信しました。" : "保存しました。");
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");
@@ -141,7 +143,10 @@ function Candidate({ candidate: row, data, busy, save }: {
   const toLocal = (value: string | null) => value ? new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16) : "";
   const canFinish = row.decision === "approved" && row.starts_on &&
     ["skip", "done"].includes(row.briefing) && ["skip", "graded"].includes(row.test);
-  const canInvite = canFinish && row.deadline;
+  const canInvite = canFinish && row.deadline && !row.briefing_followup;
+  const design = data.briefingDesign;
+  const briefingWorkflow = Boolean(design && row.applicant_email && ["booked", "done"].includes(row.briefing) &&
+    !["withdrawn", "rejected"].includes(row.decision));
 
   function update(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -155,6 +160,46 @@ function Candidate({ candidate: row, data, busy, save }: {
 
   return <div className="grid gap-3 border-t pt-3">
     {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}{row.applicant_phone ? " · " + row.applicant_phone : ""}</p>}
+    {briefingWorkflow && design && <section className="grid gap-3 rounded-lg border bg-neutral-50 p-3" aria-label="説明会後の対応">
+      <h4 className="text-sm font-semibold">説明会後の対応</h4>
+      {row.trial_dates?.map(at => <p key={at} className="text-sm">体験日時 {toJapanTime(at)}</p>)}
+      {!agreed && design.allowTrials && <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
+        event.preventDefault();
+        const at = toTimestamp(new FormData(event.currentTarget).get("trial"));
+        void save("trial", { id: row.id, revision: row.revision, at });
+      }}>
+        <label className="text-sm">次の体験日時（日本時間）<input className={field} name="trial" type="datetime-local" required /></label>
+        <button disabled={busy} className={button}>体験日時を追加</button>
+      </form>}
+      {!agreed && <form className="grid gap-2" onSubmit={event => {
+        event.preventDefault();
+        const payload = new FormData(event.currentTarget);
+        const delivery = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value");
+        void save("briefingFollowup", { id: row.id, revision: row.revision, email: delivery === "mail",
+          firstDays: payload.getAll("firstDay").filter(Boolean), deadline: payload.get("deadline") });
+      }}>
+        <label className="text-sm">回答期限<input className={field} name="deadline" type="date" required
+          defaultValue={row.deadline ?? new Date(Date.now() + 7 * 86400000 + 9 * 3600000).toISOString().slice(0, 10)} /></label>
+        {Array.from({ length: design.firstDay === "choose" ? 3 : 1 }, (_, index) =>
+          <label className="text-sm" key={index}>{design.firstDay === "choose" ? "初日の候補 " + (index + 1) : "初日の指定"}
+            <input className={field} name="firstDay" type="date" required={index === 0} defaultValue={row.briefing_followup?.firstDays[index] ?? (index === 0 ? row.starts_on ?? "" : "")} /></label>)}
+        <div className="flex flex-wrap gap-2">
+          <button className={button} disabled={busy} value="onsite">その場で入会手続き</button>
+          <button className={button} disabled={busy} value="mail">入会案内を送る</button>
+        </div>
+      </form>}
+      {!agreed && row.briefing_followup && row.invite_token && <div className="grid gap-1 text-sm">
+        <a className="underline" href={"/class-admission#" + row.invite_token} target="_blank" rel="noreferrer">申込フォームを表示</a>
+        <label>申込者の端末で開くリンク<input className={field} readOnly value={typeof window === "undefined" ? "" :
+          window.location.origin + "/class-admission#" + row.invite_token} onFocus={event => event.currentTarget.select()} /></label>
+      </div>}
+      {agreed && <p className="text-sm">申込受付済み{row.starts_on ? " ／ 初日 " + row.starts_on : ""}</p>}
+      {row.application_fields && <dl className="grid gap-1 text-sm">
+        {Object.entries(row.application_fields).map(([key, value]) => <div key={key} className="flex flex-wrap gap-2">
+          <dt>{applicationFields[key as ApplicationField] ?? key}</dt><dd>{value}</dd>
+        </div>)}
+      </dl>}
+    </section>}
     <button type="button" className="w-fit text-sm underline" onClick={() => setCorrection(value => !value)}>{correction ? "通常の表示に戻る" : "修正する"}</button>
     <form onSubmit={update}>
       <fieldset disabled={busy} className="grid gap-2">
@@ -179,7 +224,7 @@ function Candidate({ candidate: row, data, busy, save }: {
             <label className="text-sm">回答期限<input className={field} type="date" name="deadline" defaultValue={row.deadline ?? ""} /></label>
             <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment === "free" && row.decision === "pending" && row.briefing !== "skip" ? data.paymentMode ?? row.payment : row.payment} />
             {terms && <p className="whitespace-pre-wrap rounded bg-neutral-50 p-2 text-sm">{terms}</p>}
-            {agreed ? <p className="text-sm">同意済み</p> : <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
+            {agreed ? <p className="text-sm">同意済み</p> : !row.briefing_followup && <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
             {row.received_at ? <p className="text-sm">受領記録あり</p> : <label className="text-sm"><input type="checkbox" name="receipt" /> 初回費用を受領した</label>}
           </div>
         </details>

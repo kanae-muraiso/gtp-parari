@@ -214,6 +214,24 @@ async function main() {
     await reserve(aligned[0].id, null);
     assert.equal((await openings()).rows.length, 0);
     await reserve(open[1].id, "01234567890");
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115160000_class_briefing_followup.sql"), "utf8"));
+    await db.exec("set role service_role");
+    for (const audience of ["adult", "minor"]) {
+      const followup = (await db.query(`insert into school_admission_cases(id,school_id,name,source,briefing,test,decision,starts_on,
+        payment,consent_at,agreed_terms,briefing_followup) values(gen_random_uuid(),$1,'説明会後','public','done','skip','approved',current_date,
+        'free',now(),'',$2) returning id`, [school, JSON.stringify({ design: { audience } })])).rows[0].id;
+      const finalize = () => db.query("select finish_class_admission($1,$2,$3)", [owner, school, followup]);
+      await assert.rejects(finalize(), { code: "22023" });
+      await db.query("update school_admission_cases set applicant_user_id=$1, application_fields=$2 where id=$3",
+        [outsider, JSON.stringify({ name: "説明会後" }), followup]);
+      await finalize();
+      const { user_id } = (await db.query(`select e.user_id from school_admission_cases c
+        join school_enrollments e on e.id=c.enrollment_id where c.id=$1`, [followup])).rows[0];
+      assert.equal(user_id, audience === "adult" ? outsider : null);
+    }
+    await db.exec("reset role; set role anon");
+    await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();

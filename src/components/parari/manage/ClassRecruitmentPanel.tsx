@@ -19,6 +19,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
   const [error, setError] = useState("");
+  const [briefingAudience, setBriefingAudience] = useState<"adult" | "minor">();
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
   const [useSample, setUseSample] = useState(false);
   const [slotId, setSlotId] = useState("");
@@ -29,7 +30,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
     const controller = new AbortController();
     void Promise.all([classRequest<Data>("/recruitment", undefined, controller.signal),
       classRequest<AdmissionsData>("/admissions?settings=1", undefined, controller.signal)])
-      .then(([result, admissions]) => { if (!controller.signal.aborted) { setData(result); setSettings(admissions.settings); setRoute(result.recruitment?.route ?? "briefing"); setPaymentMode(result.recruitment?.payment_mode ?? "free"); setScenario(result.recruitment?.payment_mode ?? "advance"); } })
+      .then(([result, admissions]) => { if (!controller.signal.aborted) { setData(result); setSettings(admissions.settings); setBriefingAudience(admissions.briefingDesign?.audience); setRoute(result.recruitment?.route ?? "briefing"); setPaymentMode(result.recruitment?.payment_mode ?? "free"); setScenario(result.recruitment?.payment_mode ?? "advance"); } })
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
   }, []);
@@ -72,7 +73,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
+          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
