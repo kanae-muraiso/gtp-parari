@@ -12,7 +12,7 @@ async function handle(request: NextRequest) {
   try {
     const id = request.nextUrl.searchParams.get("id");
     if (!id || !classIdPattern.test(id)) return missing();
-    const recruitment = await db.from("school_recruitment").select("school_id,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text").eq("public_id", id).eq("enabled", true).maybeSingle();
+    const recruitment = await db.from("school_recruitment").select("school_id,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_duration,office_location").eq("public_id", id).eq("enabled", true).maybeSingle();
     if (recruitment.error) throw recruitment.error;
     if (!recruitment.data) return missing();
     const { school_id: schoolId, information, kind } = recruitment.data;
@@ -77,9 +77,23 @@ async function handle(request: NextRequest) {
         : null;
       return reply({ ok: true, confirmation, reminder });
     }
-    const slots = await db.rpc("available_class_recruitment_slots", { p_school: schoolId });
+    const now = Date.now();
+    const [slots, manual] = await Promise.all([
+      db.rpc("available_class_recruitment_slots", { p_school: schoolId }),
+      db.from("school_recruitment_slots").select("id,duration_minutes,location").eq("school_id", schoolId)
+        .eq("generated", false).eq("closed", false).gte("starts_at", new Date(now).toISOString())
+        .lte("starts_at", new Date(now + (options.booking_weeks * 7 + 1) * 86400000).toISOString()),
+    ]);
     if (slots.error) throw slots.error;
-    return reply({ ok: true, school: school.data.name, information, kind, slots: slots.data });
+    if (manual.error) throw manual.error;
+    const details = new Map(manual.data.map(slot => [slot.id, slot]));
+    return reply({ ok: true, school: school.data.name, information, kind, bookingWeeks: options.booking_weeks,
+      slots: (slots.data as { id: string; starts_at: string; channel: "onsite" | "phone" }[]).map(slot => {
+        const saved = details.get(slot.id);
+        return { ...slot, duration_minutes: saved?.duration_minutes ?? options.office_duration,
+          location: saved ? saved.location : slot.channel === "onsite" ? options.office_location : null };
+      }),
+    });
   } catch {
     return fail("受付を処理できませんでした。", 500);
   }
