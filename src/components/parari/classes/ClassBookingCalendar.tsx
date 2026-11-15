@@ -54,8 +54,9 @@ export function BookingMonthGrid({ month, day, onMonth, onDay, describeDay, prev
   </>;
 }
 
-export function BookingDayTimeline({ day, slots, renderSlot }: {
+export function BookingDayTimeline({ day, slots, renderSlot, renderEmpty }: {
   day: string; slots: BookingSlot[]; renderSlot: (slot: BookingSlot, time: string, count: number) => ReactNode;
+  renderEmpty?: (time: string) => ReactNode;
 }) {
   const timeline = useRef<HTMLDivElement>(null);
   const timesByStart = new Map<string, BookingSlot[]>();
@@ -74,11 +75,12 @@ export function BookingDayTimeline({ day, slots, renderSlot }: {
     {Array.from({ length: 48 }, (_, index) => {
       const time = String(Math.floor(index / 2)).padStart(2, "0") + (index % 2 ? ":30" : ":00");
       const options = timesByStart.get(time) ?? [];
+      const empty = options.length ? null : renderEmpty?.(time);
       return <div key={time} data-available-time={options.length ? "" : undefined}
         className="flex min-h-11 items-center gap-2 border-b px-2 py-1 text-sm">
-        <span className={options.length ? "w-12 shrink-0 tabular-nums" : "w-12 shrink-0 tabular-nums text-neutral-500"}>{time}</span>
+        {empty ?? <><span className={options.length ? "w-12 shrink-0 tabular-nums" : "w-12 shrink-0 tabular-nums text-neutral-500"}>{time}</span>
         {options.length ? <div className="flex flex-wrap gap-1">{options.map(slot => renderSlot(slot, time, options.length))}</div>
-          : <span className="text-neutral-500">—<span className="sr-only">空きなし</span></span>}
+          : <span className="text-neutral-500">—<span className="sr-only">空きなし</span></span>}</>}
       </div>;
     })}
     <div className="px-2 py-2 text-sm tabular-nums text-neutral-500">24:00</div>

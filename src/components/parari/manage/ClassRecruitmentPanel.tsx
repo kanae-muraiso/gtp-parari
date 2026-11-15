@@ -10,7 +10,7 @@ import { classRequest } from "@/lib/classRequests";
 type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
-  slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number }[] };
+  slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
@@ -131,7 +131,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
     {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>
       {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
-        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} slots={slots} blocks={data.blocks ?? []} />}
+        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} slots={slots} blocks={data.blocks ?? []} bookingWeeks={recruitment.booking_weeks}
+        manualSlots={data.slots.filter(slot => !slot.generated && !slot.closed)} />}
       <details className="grid gap-2"><summary className="cursor-pointer text-sm">予約枠を手動で追加</summary>
       <form className="grid gap-2" onSubmit={async event => {
         event.preventDefault();
