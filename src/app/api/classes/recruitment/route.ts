@@ -20,6 +20,20 @@ async function handle(request: NextRequest) {
     const id = school.data.id;
 
     if (request.method === "GET") {
+      const month = request.nextUrl.searchParams.get("month");
+      if (month !== null) {
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || month.startsWith("0000")) return fail("表示する月をご確認ください。");
+        const first = Date.parse(month + "-01T00:00:00Z");
+        const starts = Array.from({ length: 5 }, (_, index) =>
+          new Date(first + index * 7 * 86400000).toISOString().slice(0, 10)).filter(start => start.startsWith(month));
+        const results = await Promise.all(starts.map(start =>
+          db.rpc("class_recruitment_calendar", { p_school: id, p_start: start })));
+        const error = results.find(result => result.error)?.error;
+        if (error) throw error;
+        const events = new Map(results.flatMap(result => result.data ?? []).map(event =>
+          [JSON.stringify([event.starts_at, event.ends_at, event.kind, event.label]), event]));
+        return reply({ ok: true, events: [...events.values()].sort((a, b) => a.starts_at.localeCompare(b.starts_at)) });
+      }
       const week = request.nextUrl.searchParams.get("week");
       if (week !== null) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(week) || !Number.isFinite(Date.parse(week)) ||
