@@ -110,6 +110,7 @@ async function handle(request: NextRequest) {
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || typeof input.startsAt !== "string" ||
         !Number.isFinite(Date.parse(input.startsAt)) || Date.parse(input.startsAt) <= Date.now() ||
         !Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 100) return fail("日時と定員を確認してください。");
+      if (Date.parse(input.startsAt) % 1800000 !== 0) return fail("開始時刻は毎時00分または30分を選んでください。");
       const duration = input.duration ?? 60;
       const location = typeof input.location === "string" ? input.location.trim() : "";
       if (!Number.isInteger(duration) || duration < 5 || duration > 480 || location.length > 300) return fail("会場と所要時間を確認してください。");

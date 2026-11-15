@@ -47,8 +47,14 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
   }
   const recruitment = data?.recruitment;
   const isDirect = recruitment?.route === "direct";
-  const slots = data?.available.map(slot => ({ ...slot, meeting_url: data.slots.find(manual => manual.id === slot.id)?.meeting_url ?? null })) ?? [];
-  const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(Date.now() + 7 * 86400000).toISOString(), meeting_url: null }] : slots;
+  const slots = data?.available.map(slot => {
+    const manual = data.slots.find(entry => entry.id === slot.id);
+    return { ...slot, meeting_url: manual?.meeting_url ?? null,
+      duration_minutes: manual?.duration_minutes ?? recruitment?.office_duration ?? 30,
+      location: manual ? manual.location : slot.channel === "onsite" ? recruitment?.office_location : null };
+  }) ?? [];
+  const sampleStart = Math.floor((Date.now() + 6 * 86400000) / 1800000) * 1800000;
+  const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(sampleStart).toISOString(), meeting_url: null, duration_minutes: 30 }] : slots;
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
   return <section className="grid gap-3 rounded-2xl border bg-white p-5">
@@ -67,7 +73,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
       </div>}
       {(useSample || (recruitment && (isDirect || slots.length > 0))) &&
         <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
+          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
@@ -138,7 +144,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
           delete form.dataset.requestId; form.reset();
         }
       }}>
-        <label>開催日時（日本時間）<input className={field} name="startsAt" type="datetime-local" required /></label>
+        <label>開催日時（日本時間）<input className={field} name="startsAt" type="datetime-local" step={1800} required /></label>
         <label>会場・集合場所<input className={field} name="location" maxLength={300} /></label>
         <label>所要時間（分）<input className={field} name="duration" type="number" min="5" max="480" defaultValue="60" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>

@@ -198,6 +198,22 @@ async function main() {
     assert.equal((await openings()).rows.length, 0);
     const calendar = await db.query("select kind from class_recruitment_calendar($1,$2)", [school,day]);
     for (const kind of ["class","booked","block"]) assert.ok(calendar.rows.some(row => row.kind === kind));
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115100000_class_booking_half_hour.sql"), "utf8"));
+    await db.exec("set role service_role");
+    await db.query("update school_classes set starts_at='20:00' where school_id=$1", [school]);
+    await db.query("update school_recruitment set office_hours=$1, office_duration=45 where school_id=$2", [
+      JSON.stringify([{ channel: "onsite", weekday, starts: "17:10", ends: "18:30" }]), school,
+    ]);
+    const offGrid = (await db.query("insert into school_recruitment_slots(id,school_id,starts_at,capacity) values(gen_random_uuid(),$1,$2,1) returning id", [
+      school, day + "T19:15:00+09:00",
+    ])).rows[0].id;
+    const aligned = (await openings()).rows;
+    assert.deepEqual(aligned.map(row => row.time), ["17:30"]);
+    await assert.rejects(reserve(offGrid, null), { code: "P0001" });
+    await reserve(aligned[0].id, null);
+    assert.equal((await openings()).rows.length, 0);
+    await reserve(open[1].id, "01234567890");
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();
