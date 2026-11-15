@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import ClassAvailabilityPanel, { type OfficeHour } from "./ClassAvailabilityPanel";
+import ClassRecruitmentOffers, { type ClassOffer } from "./ClassRecruitmentOffers";
 import ClassIntakeForm from "@/components/parari/classes/ClassIntakeForm";
 import type { SchoolClass } from "@/lib/classes";
 import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; sharedDisclosure?: boolean; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
+type Data = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
@@ -131,6 +132,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
       <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
       <button className={button} disabled={busy}>募集を保存</button>
     </form>
+    {recruitment && <ClassRecruitmentOffers classes={classes} offers={data.offers ?? []} busy={busy} save={save} />}
     {data.recruitment?.enabled && <a className="underline" href={`/class-intake/${data.recruitment.public_id}`} target="_blank" rel="noreferrer">公開受付ページを開く</a>}
     {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>

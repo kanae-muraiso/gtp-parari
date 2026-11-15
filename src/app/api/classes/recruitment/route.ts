@@ -43,20 +43,45 @@ async function handle(request: NextRequest) {
         if (result.error) throw result.error;
         return reply({ ok: true, events: result.data });
       }
-      const [recruitment, slots, blocks, available, disclosure] = await Promise.all([
+      const [recruitment, slots, blocks, available, disclosure, offers] = await Promise.all([
         db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
         readSellerDisclosure(user.id),
+        db.from("school_recruitment_offers").select("id,name,information,class_ids,enabled").eq("school_id", id).order("name"),
       ]);
-      if (blocks.error || available.error) throw blocks.error ?? available.error;
+      if (blocks.error || available.error || offers.error) throw blocks.error ?? available.error ?? offers.error;
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
-      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data, blocks: blocks.data, available: available.data, sharedDisclosure: sellerDisclosureReady(disclosure) });
+      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data, blocks: blocks.data, available: available.data, sharedDisclosure: sellerDisclosureReady(disclosure), offers: offers.data });
     }
 
     const input = await request.json().catch(() => null);
-    if (input?.action === "settings") {
+    if (input?.action === "offer") {
+      const name = typeof input.name === "string" ? input.name.trim() : "";
+      const information = typeof input.information === "string" ? input.information.trim() : "";
+      const ids: string[] = Array.isArray(input.classIds) ? [...new Set<string>(input.classIds)] : [];
+      if (typeof input.id !== "string" || !classIdPattern.test(input.id) || !name || name.length > 120 || information.length > 4000 ||
+        !ids.length || !ids.every(value => typeof value === "string" && classIdPattern.test(value))) return fail("募集名と対象クラスを確認してください。");
+      const [classes, base] = await Promise.all([
+        db.from("school_classes").select("id").eq("school_id", id).in("id", ids),
+        db.from("school_recruitment").select("enabled").eq("school_id", id).maybeSingle(),
+      ]);
+      if (classes.error || base.error) throw classes.error ?? base.error;
+      if (!base.data || classes.data.length !== ids.length) return fail("教室の募集設定と対象クラスを確認してください。");
+      if (input.enabled === true && (!base.data.enabled ||
+        (!information && !sellerDisclosureReady(await readSellerDisclosure(user.id))))) {
+        return fail("教室の受付を公開し、募集案内または公開済みの共通表記をご用意ください。");
+      }
+      const existing = await db.from("school_recruitment_offers").select("school_id").eq("id", input.id).maybeSingle();
+      if (existing.error) throw existing.error;
+      if (existing.data && existing.data.school_id !== id) return fail("募集を確認してください。", 404);
+      const offer = { name, information, class_ids: ids, enabled: input.enabled === true };
+      const result = existing.data
+        ? await db.from("school_recruitment_offers").update(offer).eq("id", input.id).eq("school_id", id)
+        : await db.from("school_recruitment_offers").insert({ ...offer, id: input.id, school_id: id });
+      if (result.error) throw result.error;
+    } else if (input?.action === "settings") {
       const information = typeof input.information === "string" ? input.information.trim() : "";
       if (information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
       if (!information && !sellerDisclosureReady(await readSellerDisclosure(user.id))) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
-import { classMeetingUrl, classIdPattern } from "@/lib/classes";
+import { classMeetingUrl, classIdPattern, classRunsOn } from "@/lib/classes";
 
 import { classToday, parseApplication, parseBriefingDesign, renderBriefingMail, type BriefingFollowup } from "@/lib/classBriefingWorkflow";
 
@@ -14,7 +14,7 @@ async function handle(request: NextRequest, write: boolean) {
   if (!token || !classIdPattern.test(token)) return missing();
   try {
     const candidate = await db.from("school_admission_cases")
-      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields")
+      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields,requested_class_id")
       .eq("invite_token", token).eq("decision", "approved").is("enrollment_id", null).maybeSingle();
     if (candidate.error) throw candidate.error;
     const row = candidate.data;
@@ -51,7 +51,9 @@ async function handle(request: NextRequest, write: boolean) {
       if (error || !user || !user.email_confirmed_at ||
         (row.applicant_user_id ? row.applicant_user_id !== user.id : user.email?.toLowerCase() !== row.applicant_email.toLowerCase()))
         return send({ ok: false, loginRequired: true, message: "案内を受け取ったメールアドレスで登録・ログインしてください。" }, 401);
-      const schedule = await db.from("school_classes").select("starts_at,location").eq("school_id", row.school_id).limit(1).maybeSingle();
+      const classes = db.from("school_classes").select("starts_at,location,starts_on,cadence").eq("school_id", row.school_id);
+      const schedule = await (row.requested_class_id ? classes.eq("id", row.requested_class_id) : classes.order("starts_on").order("id"))
+        .limit(1).maybeSingle();
       if (schedule.error) throw schedule.error;
       const startTime = schedule.data?.starts_at?.slice(0, 5) ?? "";
       const arrival = design.arrival || schedule.data?.location || "";
@@ -70,6 +72,9 @@ async function handle(request: NextRequest, write: boolean) {
       if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision || !fields || !firstDays.includes(firstDay))
         return send({ ok: false, message: "必須項目、同意、初日をご確認ください。案内が更新された場合は再読み込みしてください。" }, 409);
       if (design.firstDay === "choose") {
+        if (row.requested_class_id && (!schedule.data || !classRunsOn(schedule.data as Parameters<typeof classRunsOn>[0], firstDay))) {
+          return send({ ok: false, message: "希望クラスの予定が変更されました。教室にご確認ください。" }, 409);
+        }
         const occurrence = await db.rpc("class_recurrences", { p_school: row.school_id, p_day: firstDay });
         if (occurrence.error) throw occurrence.error;
         if (!occurrence.data?.length) return send({ ok: false, message: "選んだ初日の予定が変更されました。教室にご確認ください。" }, 409);

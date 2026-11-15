@@ -159,6 +159,7 @@ function Candidate({ candidate: row, data, busy, save }: {
   }
 
   return <div className="grid gap-3 border-t pt-3">
+    {row.requested_class_id && <p className="text-sm">希望クラス　{data.classes?.find(item => item.id === row.requested_class_id)?.name}</p>}
     {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}{row.applicant_phone ? " · " + row.applicant_phone : ""}</p>}
     {briefingWorkflow && design && <section className="grid gap-3 rounded-lg border bg-neutral-50 p-3" aria-label="説明会後の対応">
       <h4 className="text-sm font-semibold">説明会後の対応</h4>

@@ -62,7 +62,7 @@ export default function ClassProductPanel({ classes }: { classes: SchoolClass[] 
         <label>月の受講回数<input className={field} type="number" min={1} max={100} required value={product.monthlyVisits || ""} onChange={event => patch("monthlyVisits", Number(event.target.value))} /></label>
       </div>
       <label>通い方<select className={field} value={product.booking} onChange={event => patch("booking", event.target.value as ClassProduct["booking"])}>
-        <option value="fixed">固定クラス</option><option value="flexible">空席を毎回予約</option>
+        <option value="fixed">固定クラス</option><option value="multiple">複数クラスに所属</option><option value="flexible">空席を毎回予約</option>
       </select></label>
       <label><input type="checkbox" checked={product.extraFee !== null} onChange={event => patch("extraFee", event.target.checked ? 0 : null)} /> 別料金で追加受講を受け付ける</label>
       {product.extraFee !== null && <label>追加受講１回の料金（円）<input className={field} type="number" min={1} max={1000000} required

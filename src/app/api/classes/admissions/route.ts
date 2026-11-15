@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classIdPattern } from "@/lib/classes";
+import { classIdPattern, classRunsOn } from "@/lib/classes";
 import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
 import { classDate, classToday, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
@@ -39,9 +39,12 @@ async function handle(request: NextRequest, write: boolean) {
       if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, briefingDesign: design, cases: [] });
       const cases = await db.from("school_admission_cases").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
       if (cases.error) throw cases.error;
-      const recruitment = await db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle();
-      if (recruitment.error) throw recruitment.error;
-      return send({ ok: true, settings, briefingDesign: design, cases: cases.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
+      const [recruitment, classes] = await Promise.all([
+        db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle(),
+        db.from("school_classes").select("id,name").eq("school_id", schoolId).order("name"),
+      ]);
+      if (recruitment.error || classes.error) throw recruitment.error ?? classes.error;
+      return send({ ok: true, settings, briefingDesign: design, cases: cases.data, classes: classes.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
     }
 
     const input = await request.json().catch(() => null);
@@ -77,6 +80,11 @@ async function handle(request: NextRequest, write: boolean) {
       if (!dates.length || dates.length > 12 || (design.firstDay === "assigned" && dates.length !== 1) ||
           dates.some(day => !classDate(day) || day < classToday())) return fail("初日の候補日を確認してください。");
       if (design.firstDay === "choose") {
+        if (row.requested_class_id) {
+          const target = await db.from("school_classes").select("starts_on,cadence").eq("id", row.requested_class_id).eq("school_id", schoolId).single();
+          if (target.error) throw target.error;
+          if (dates.some(day => !classRunsOn(target.data as Parameters<typeof classRunsOn>[0], day))) return fail("希望クラスの開催日を選んでください。");
+        }
         const occurrences = await Promise.all(dates.map(day => db.rpc("class_recurrences", { p_school: schoolId, p_day: day })));
         const error = occurrences.find(result => result.error)?.error;
         if (error) throw error;

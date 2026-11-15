@@ -31,7 +31,7 @@ async function manage(userId: string) {
   const school = await ownedSchool(userId);
   if (!school) return reply({ ok: true, userId, school, roster: [], applicationId: null, applications: [] });
   const [roster, admission, applications] = await Promise.all([
-    db.from("school_enrollments").select("id,name,status,user_id").eq("school_id", school.id).order("joined_at"),
+    db.from("school_enrollments").select("id,name,status,user_id,class_participation,assignments:school_class_assignments(class_id)").eq("school_id", school.id).order("joined_at"),
     db.from("school_admission_applications").select("application_id").eq("school_id", school.id).maybeSingle(),
     db.from("applications").select("id,title").eq("owner_user_id", userId)
       .eq("application_type", "SCHOOL").eq("origin", "manual").is("calendar_item_id", null)
@@ -74,7 +74,24 @@ export async function GET(request: NextRequest) {
     const { data: school, error } = await db.rpc("read_class_school", { p_school: id, p_user: user.id });
     if (error) throw error;
     if (!school) return fail("教室が見つかりません。", 404);
-    return reply({ ok: true, userId: user.id, school });
+    const member = await db.from("school_enrollments").select("id,class_participation").eq("school_id", id)
+      .eq("user_id", user.id).eq("status", "active").maybeSingle();
+    if (member.error) throw member.error;
+    let visits = null;
+    if (member.data) {
+      const [plan, booked] = await Promise.all([
+        db.from("school_class_product_designs").select("design").eq("school_id", id).maybeSingle(),
+        db.from("school_class_visit_reservations").select("class_id,visit_on").eq("enrollment_id", member.data.id)
+          .gte("visit_on", new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10)),
+      ]);
+      if (plan.error || booked.error) throw plan.error ?? booked.error;
+      visits = { flexible: member.data.class_participation === "flexible", classIds: plan.data?.design?.classIds ?? [],
+        monthlyVisits: plan.data?.design?.monthlyVisits ?? 0, booked: booked.data };
+    }
+    const visible = school as ClassSchool;
+    if (visits?.flexible) visible.classes = visible.classes.map(item =>
+      visits.booked.some(visit => visit.class_id === item.id) ? item : { ...item, meeting_url: null });
+    return reply({ ok: true, userId: user.id, school: visible, visits });
   } catch (error) {
     console.error("[classes] load failed", error);
     return fail("教室を取得できませんでした。", 500);
@@ -96,8 +113,19 @@ export async function POST(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const body = await request.json().catch(() => null);
+    if (body?.action === "visit") {
+      if (![body.schoolId, body.classId].every(value => typeof value === "string" && classIdPattern.test(value)) ||
+        typeof body.day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.day) ||
+        !Number.isFinite(Date.parse(body.day)) || new Date(body.day).toISOString().slice(0, 10) !== body.day) return fail("参加日を確認してください。");
+      const { error } = await db.rpc("manage_class_visit", { p_user: user.id, p_school: body.schoolId,
+        p_class: body.classId, p_day: body.day, p_cancel: body.cancel === true });
+      if (error?.code === "P0001") return fail("定員または月の受講回数の上限に達しています。", 409);
+      if (error?.code === "22023" || error?.code === "P0002") return fail("この開催回は操作できません。", 409);
+      if (error) throw error;
+      return reply({ ok: true });
+    }
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const name = clean(body?.name);
     if (body?.action === "create" || body?.action === "schedule") {
       const schoolName = clean(body.schoolName);
@@ -116,11 +144,14 @@ export async function POST(request: NextRequest) {
           (delivery !== "onsite" && !meeting) || (delivery === "hybrid" && !location)) {
         return fail("開催方法に応じた会場とHTTPS参加リンクを入力してください。");
       }
-      const school = body.action === "schedule" ? await ownedSchool(user.id) : null;
-      if (body.action === "schedule" && !school) return fail("教室が見つかりません。", 404);
-      const { error } = await db.rpc("save_class_delivery_with_duration", {
-        p_owner: user.id, p_school: school?.id ?? null, p_school_name: schoolName, p_class_name: name,
-        p_starts_on: date, p_starts_at: time, p_cadence: body.cadence,
+      const school = await ownedSchool(user.id);
+      const classId = clean(body.classId);
+      if (!classIdPattern.test(classId) || (body.action === "schedule" && !school?.classes.some(item => item.id === classId))) {
+        return fail("クラスを確認してください。");
+      }
+      const { error } = await db.rpc("save_school_class", {
+        p_owner: user.id, p_school: school?.id ?? null, p_class: classId, p_new: body.action === "create",
+        p_school_name: schoolName, p_class_name: name, p_starts_on: date, p_starts_at: time, p_cadence: body.cadence,
         p_location: delivery === "online" ? null : location || null, p_delivery: delivery, p_meeting_url: meeting, p_duration: duration,
       });
       if (error) throw error;
@@ -145,6 +176,17 @@ export async function POST(request: NextRequest) {
       if (account === false) return fail("そのユーザー名のPARARIアカウントが見つかりません。", 404);
       const { error } = await db.rpc("add_class_a_member", {
         p_owner: user.id, p_school: school.id, p_member: memberId, p_name: name, p_user: account,
+      });
+      if (error) throw error;
+    } else if (body?.action === "participation") {
+      const memberId = clean(body.memberId);
+      const ids = Array.isArray(body.classIds) ? [...new Set(body.classIds)] : [];
+      if (!classIdPattern.test(memberId) || !ids.length || !ids.every(id => school.classes.some(item => item.id === id)) ||
+        !["fixed", "multiple", "flexible"].includes(body.mode) || (body.mode === "fixed" && ids.length !== 1)) {
+        return fail("参加方法と対象クラスを確認してください。");
+      }
+      const { error } = await db.rpc("set_school_member_classes", {
+        p_owner: user.id, p_school: school.id, p_member: memberId, p_classes: ids, p_mode: body.mode,
       });
       if (error) throw error;
     } else if (body?.action === "member") {
@@ -179,7 +221,7 @@ export async function POST(request: NextRequest) {
     return await manage(user.id);
   } catch (error) {
     const code = (error as { code?: string })?.code;
-    if (code === "23505") return fail("CLASS Aでは教室と定期クラスを1つ開設できます。", 409);
+    if (code === "23505") return fail("すでに同じ情報が登録されています。再読み込みしてください。", 409);
     if (code === "P0002") return fail("指定した教室または継続クラスの受付が見つかりません。", 404);
     if (code === "22007" || code === "22008") return fail("初回日時を確認してください。");
     console.error("[classes] save failed", error);

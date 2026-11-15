@@ -1,3 +1,4 @@
+import { readClassIntakeSource } from "@/lib/classIntakeSource";
 import { classIdPattern } from "@/lib/classes";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
@@ -14,11 +15,9 @@ export async function GET(request: NextRequest) {
   try {
     let ownerId: string | undefined;
     if (classIntakeId) {
-      const recruitment = await supabaseAdmin.from("school_recruitment").select("school_id")
-        .eq("public_id", classIntakeId).eq("enabled", true).maybeSingle();
-      if (recruitment.error) throw recruitment.error;
-      if (recruitment.data) {
-        const school = await supabaseAdmin.from("class_schools").select("owner_user_id").eq("id", recruitment.data.school_id).maybeSingle();
+      const source = await readClassIntakeSource(classIntakeId);
+      if (source) {
+        const school = await supabaseAdmin.from("class_schools").select("owner_user_id").eq("id", source.recruitment.school_id).maybeSingle();
         if (school.error) throw school.error;
         if (school.data) {
           const profile = await supabaseAdmin.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();
