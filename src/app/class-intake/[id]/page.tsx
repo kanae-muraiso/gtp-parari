@@ -26,7 +26,7 @@ export default function ClassIntakePage() {
     setError("");
     try {
       const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...Object.fromEntries(new FormData(event.currentTarget)), agree: true, information: data?.information, terms: data?.terms }) });
+        body: JSON.stringify({ ...Object.fromEntries(new FormData(event.currentTarget)), agree: true, information: data?.information, disclosureVersion: data?.sharedDisclosure?.version, terms: data?.terms }) });
       const result = await response.json();
       if (!result.ok) throw new Error(result.message);
       if (result.direct) {

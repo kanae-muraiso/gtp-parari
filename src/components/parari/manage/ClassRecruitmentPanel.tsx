@@ -7,7 +7,7 @@ import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
+type Data = { school: string; sharedDisclosure?: boolean; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
@@ -73,7 +73,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
+          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
+            sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
@@ -118,7 +119,9 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
         {[1, 2, 3, 4].map(weeks => <option key={weeks} value={weeks}>{weeks}週間先まで</option>)}
       </select></label>}
       <label>受付の種類<select name="kind" className={field} defaultValue={data.recruitment?.kind}>{["説明会", "体験", "見学"].map(kind => <option key={kind}>{kind}</option>)}</select></label>
-      <label>案内・個人情報の取り扱い<textarea className={field} name="information" maxLength={4000} required defaultValue={data.recruitment?.information} /></label>
+      {data.sharedDisclosure && <p className="text-sm text-neutral-600">公開済みの共通の販売者情報・個人情報の取扱いを申込画面に表示します。<a className="ml-2 underline" href="/my/settings/seller">共通設定を確認</a></p>}
+      <label>{data.sharedDisclosure ? "この募集の補足案内（任意）" : "案内・個人情報の取り扱い"}
+        <textarea className={field} name="information" maxLength={4000} required={!data.sharedDisclosure} defaultValue={data.recruitment?.information} /></label>
       <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
       <label>初回の支払い方法<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
         <option value="free">無料</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>

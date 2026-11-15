@@ -1,3 +1,4 @@
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern, classMeetingUrl } from "@/lib/classes";
@@ -42,21 +43,25 @@ async function handle(request: NextRequest) {
         if (result.error) throw result.error;
         return reply({ ok: true, events: result.data });
       }
-      const [recruitment, slots, blocks, available] = await Promise.all([
+      const [recruitment, slots, blocks, available, disclosure] = await Promise.all([
         db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
+        readSellerDisclosure(user.id),
       ]);
       if (blocks.error || available.error) throw blocks.error ?? available.error;
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
-      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data, blocks: blocks.data, available: available.data });
+      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data, blocks: blocks.data, available: available.data, sharedDisclosure: sellerDisclosureReady(disclosure) });
     }
 
     const input = await request.json().catch(() => null);
     if (input?.action === "settings") {
       const information = typeof input.information === "string" ? input.information.trim() : "";
-      if (!information || information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
+      if (information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
+      if (!information && !sellerDisclosureReady(await readSellerDisclosure(user.id))) {
+        return fail("共通の販売者情報を公開するか、この募集の案内・個人情報の取り扱いを入力してください。");
+      }
       const text = (key: string) => typeof input[key] === "string" ? input[key].trim() : "";
       const route = input.route ?? "briefing";
       const weeks = input.bookingWeeks ?? 4;
@@ -92,9 +97,12 @@ async function handle(request: NextRequest) {
       if (result.error) throw result.error;
       if (!result.data) return fail("先に募集を保存してください。");
     } else if (input?.action === "publish" || input?.action === "unpublish") {
-      const draft = await db.from("school_recruitment").select("route").eq("school_id", id).maybeSingle();
+      const draft = await db.from("school_recruitment").select("route,information").eq("school_id", id).maybeSingle();
       if (draft.error) throw draft.error;
       if (!draft.data) return fail("先に募集設定を保存してください。");
+      if (input.action === "publish" && !draft.data.information.trim() && !sellerDisclosureReady(await readSellerDisclosure(user.id))) {
+        return fail("公開前に、共通の販売者情報を公開するか募集の案内を入力してください。");
+      }
       if (input.action === "publish" && draft.data.route === "briefing") {
         const slots = await db.rpc("available_class_recruitment_slots", { p_school: id });
         if (slots.error) throw slots.error;

@@ -230,6 +230,11 @@ async function main() {
         join school_enrollments e on e.id=c.enrollment_id where c.id=$1`, [followup])).rows[0];
       assert.equal(user_id, audience === "adult" ? outsider : null);
     }
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115170000_class_shared_disclosure.sql"), "utf8"));
+    await db.exec("set role service_role");
+    await db.query("update school_recruitment set information='' where school_id=$1", [school]);
+    await assert.rejects(db.query("update school_recruitment set information=repeat('x',4001) where school_id=$1", [school]), { code: "23514" });
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
