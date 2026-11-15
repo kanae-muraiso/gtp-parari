@@ -84,17 +84,16 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
       <form className="mt-3 grid gap-2" onSubmit={event => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        void save("settings", { terms: form.get("terms"), briefing: form.has("briefing"), test: form.has("test"), proxy: form.has("usesProxy") });
+        void save("settings", { terms: form.get("terms"), briefing: settings.briefing, test: form.has("test"), proxy: form.has("usesProxy") });
       }}>
         <fieldset className="grid gap-2" disabled={busy}>
-          <label className="text-sm"><input type="checkbox" name="briefing" defaultChecked={settings.briefing} /> 説明会・体験を使う</label>
           <label className="text-sm"><input type="checkbox" name="test" defaultChecked={settings.test} /> テストを使う</label>
           <label className="text-sm"><input type="checkbox" name="usesProxy" defaultChecked={settings.proxy} /> 代理申込者の連絡先を使う</label>
           <label className="text-sm">同意する規約<textarea className={field} name="terms" rows={3} maxLength={8000} defaultValue={settings.terms} /></label>
           <button className={button}>設定を保存</button>
         </fieldset>
       </form>
-      <p className="text-sm text-neutral-600">候補者登録 → {settings.briefing ? "説明会・体験 → " : ""}{settings.test ? "テスト・採点 → " : ""}{labels.operator}の確認 → 同意・支払い → 名簿登録</p>
+      <p className="text-sm text-neutral-600">候補者登録 → {settings.test ? "テスト・採点 → " : ""}{labels.operator}の確認 → 同意・支払い → 名簿登録</p>
     </> : <>
     <form className="grid gap-2" onSubmit={async event => {
       event.preventDefault();

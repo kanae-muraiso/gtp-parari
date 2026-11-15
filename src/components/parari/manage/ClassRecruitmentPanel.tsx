@@ -116,8 +116,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
       <button className={button} disabled={busy}>募集を保存</button>
     </form>
     {data.recruitment?.enabled && <a className="underline" href={`/class-intake/${data.recruitment.public_id}`} target="_blank" rel="noreferrer">公開受付ページを開く</a>}
-    {route === "briefing" && !data.recruitment && <p>募集を保存すると、この下で予約枠を設定できます。</p>}
-    {route === "briefing" && data.recruitment && <>
+    {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>
       <form className="grid gap-2" onSubmit={async event => {
         event.preventDefault();
@@ -134,7 +133,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
         <label>所要時間（分）<input className={field} name="duration" type="number" min="5" max="480" defaultValue="60" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>
         <label>説明会・体験のオンライン参加リンク（任意）<input type="url" className={field} name="meetingUrl" maxLength={2000} /></label>
-        <button className={button} disabled={busy}>予約枠を追加</button>
+        {(!recruitment || recruitment.route !== "briefing") && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「募集を保存」を押してください。</p>}
+        <button className={button} disabled={busy || !recruitment || recruitment.route !== "briefing"}>予約枠を追加</button>
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.duration_minutes}分 ／ {slot.capacity}人{slot.location ? " ／ " + slot.location : ""}{" "}
         {slot.closed ? "受付終了" : <button disabled={busy} className="underline" type="button" onClick={() => void save({ action: "close", id: slot.id })}>新規受付を終了</button>}</p>)}
