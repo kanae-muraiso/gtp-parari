@@ -27,12 +27,13 @@ function SellerInfo() {
   const params = useSearchParams();
   const productId = params.get("productId");
   const applicationId = params.get("applicationId");
+  const classIntakeId = params.get("classIntakeId");
   const [data, setData] = React.useState<Disclosure | null>(null);
   const [message, setMessage] = React.useState("読み込んでいます…");
   React.useEffect(() => {
     let active = true;
     const request = productId ? "productId=" + encodeURIComponent(productId)
-      : applicationId ? "applicationId=" + encodeURIComponent(applicationId) : "";
+      : applicationId ? "applicationId=" + encodeURIComponent(applicationId) : classIntakeId ? "classIntakeId=" + encodeURIComponent(classIntakeId) : "";
     if (!request) { setMessage("対象の販売が指定されていません。"); return; }
     fetch("/api/seller/disclosure/public?" + request, { cache: "no-store" })
       .then(async response => {
@@ -41,7 +42,7 @@ function SellerInfo() {
         if (active) { setData(json.disclosure); setMessage(""); }
       }).catch(cause => { if (active) setMessage(cause instanceof Error ? cause.message : "取得できませんでした。"); });
     return () => { active = false; };
-  }, [productId, applicationId]);
+  }, [productId, applicationId, classIntakeId]);
   return (
     <main className="min-h-screen bg-neutral-50 px-4 py-8 text-neutral-950">
       <div className="mx-auto max-w-2xl rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">

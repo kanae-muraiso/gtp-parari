@@ -1,3 +1,4 @@
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern, classMeetingUrl } from "@/lib/classes";
@@ -24,9 +25,15 @@ async function handle(request: NextRequest) {
     const owner = await db.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();
     if (owner.error) throw owner.error;
     if (owner.data?.is_monitor !== true) return missing();
+    const disclosure = await readSellerDisclosure(school.data.owner_user_id);
+    const shared = disclosure && sellerDisclosureReady(disclosure)
+      ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
+    if (!information.trim() && !shared) return missing();
     const options = recruitment.data;
+    const versionMatches = (version: unknown) => version === (shared?.version ?? undefined);
     if (request.method === "POST" && options.route === "direct") {
       const input = await request.json().catch(() => null);
+      if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
       const name = clean(input?.name), applicant = clean(input?.applicant), email = clean(input?.email).toLowerCase();
       if (!name || name.length > 120 || !applicant || applicant.length > 120 || email.length > 254 ||
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || input?.agree !== true ||
@@ -48,7 +55,7 @@ async function handle(request: NextRequest) {
     if (options.route === "direct") {
       const setting = await db.from("school_admission_settings").select("terms").eq("school_id", schoolId).maybeSingle();
       if (setting.error) throw setting.error;
-      return reply({ ok: true, school: school.data.name, information, kind, slots: [], direct: true,
+      return reply({ ok: true, school: school.data.name, information, kind, slots: [], direct: true, sharedDisclosure: shared,
         applicationText: options.application_text, terms: setting.data?.terms ?? "" });
     }
     const settings = await db.from("school_admission_settings").select("briefing_design").eq("school_id", schoolId).maybeSingle();
@@ -57,6 +64,7 @@ async function handle(request: NextRequest) {
     const minor = design?.audience === "minor";
     if (request.method === "POST") {
       const input = await request.json().catch(() => null);
+      if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
       const name = clean(input?.name), applicant = clean(input?.applicant), email = clean(input?.email).toLowerCase();
       if (!name || name.length > 120 || !applicant || applicant.length > 120 || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
         !classIdPattern.test(clean(input?.slot)) || input?.agree !== true || typeof input?.information !== "string" || input.information.length > 4000) return fail("お名前・メール・日時・同意をご確認ください。");
@@ -110,7 +118,7 @@ async function handle(request: NextRequest) {
     if (slots.error) throw slots.error;
     if (manual.error) throw manual.error;
     const details = new Map(manual.data.map(slot => [slot.id, slot]));
-    return reply({ ok: true, school: school.data.name, information, kind, audience: design?.audience, bookingWeeks: options.booking_weeks,
+    return reply({ ok: true, school: school.data.name, information, kind, sharedDisclosure: shared, audience: design?.audience, bookingWeeks: options.booking_weeks,
       slots: (slots.data as { id: string; starts_at: string; channel: "onsite" | "phone" }[]).map(slot => {
         const saved = details.get(slot.id);
         return { ...slot, duration_minutes: saved?.duration_minutes ?? options.office_duration,
