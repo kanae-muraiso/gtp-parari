@@ -2,6 +2,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import ClassAvailabilityPanel, { type OfficeHour } from "./ClassAvailabilityPanel";
 import ClassIntakeForm from "@/components/parari/classes/ClassIntakeForm";
+import type { SchoolClass } from "@/lib/classes";
 import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
@@ -13,7 +14,7 @@ type Data = { school: string; recruitment: (IntakeOptions & { public_id: string;
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: "settings" | "preview"; onOpenSettings: () => void }) {
+export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }: { view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[] }) {
   const [data, setData] = useState<Data | null>(null);
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
@@ -125,7 +126,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
     {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>
       {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
-        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} />}
+        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} />}
       <details className="grid gap-2"><summary className="cursor-pointer text-sm">予約枠を手動で追加</summary>
       <form className="grid gap-2" onSubmit={async event => {
         event.preventDefault();

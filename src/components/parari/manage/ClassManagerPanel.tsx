@@ -155,7 +155,7 @@ export default function ClassManagerPanel() {
     {school && (item || schoolAdmission) && <>
       {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">この入会設定と募集は「{school.name}」の全クラスで共通です。</p>}
       {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
-      {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} onOpenSettings={() => setView("settings")} />}
+      {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} onOpenSettings={() => setView("settings")} />}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
