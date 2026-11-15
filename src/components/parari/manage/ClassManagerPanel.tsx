@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
+import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import ClassProductPanel from "./ClassProductPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
@@ -24,6 +25,7 @@ export default function ClassManagerPanel() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
+  const [showBlueprint, setShowBlueprint] = useState(false);
   const [creating, setCreating] = useState(false);
   const [reload, setReload] = useState(0);
   const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview">("product");
@@ -155,6 +157,11 @@ export default function ClassManagerPanel() {
     {school && (item || schoolAdmission) && <>
       {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">この入会設定と募集は「{school.name}」の全クラスで共通です。</p>}
       {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
+      {view === "settings" && <button type="button" className="w-fit rounded-lg border bg-white px-3 py-2 text-sm"
+        aria-expanded={showBlueprint} onClick={() => setShowBlueprint(value => !value)}>
+        {showBlueprint ? "入会の設計図を閉じる" : "入会の設計図を作る（試作）"}
+      </button>}
+      {view === "settings" && showBlueprint && <ClassAdmissionBlueprint key={school.id} schoolId={school.id} schoolName={school.name} />}
       {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} onOpenSettings={() => setView("settings")} />}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
