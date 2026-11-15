@@ -151,7 +151,7 @@ export default function ClassManagerPanel() {
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
-      {(view === "settings" || view === "flow" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} />}
+      {(view === "settings" || view === "flow" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} onOpenSettings={() => setView("settings")} />}
       {view === "settings" && <form key={data.applicationId ?? "unlinked"} className={panel} onSubmit={event => {
         const values = formValues(event);
         void save({ action: "admission", applicationId: values.applicationId || null }, "入会受付の設定を保存しました。");

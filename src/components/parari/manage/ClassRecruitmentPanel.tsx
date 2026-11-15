@@ -9,10 +9,11 @@ type Data = { school: string; recruitment: { public_id: string; enabled: boolean
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view }: { view: "settings" | "flow" | "preview" }) {
+export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: "settings" | "flow" | "preview"; onOpenSettings: () => void }) {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
+  const [useSample, setUseSample] = useState(false);
   const [slotId, setSlotId] = useState("");
   const [step, setStep] = useState(0);
   const [scenario, setScenario] = useState("advance");
@@ -39,7 +40,8 @@ export default function ClassRecruitmentPanel({ view }: { view: "settings" | "fl
   }
   const recruitment = data?.recruitment;
   const slots = data?.slots.filter(slot => !slot.closed && Date.parse(slot.starts_at) > Date.now()) ?? [];
-  const selectedSlot = slots.find(slot => slot.id === slotId);
+  const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(Date.now() + 7 * 86400000).toISOString(), meeting_url: null }] : slots;
+  const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
   const flow = [
     ["申込者", kind + "を予約"],
@@ -62,9 +64,17 @@ export default function ClassRecruitmentPanel({ view }: { view: "settings" | "fl
     </ol>}
     {data && settings && view === "preview" && <>
       <p className="text-sm text-neutral-600">練習用です。予約・メール・支払い・名簿登録は発生しません。</p>
-      {!recruitment ? <p>入会設定で募集の案内を保存してください。</p> :
+      {(!recruitment || !slots.length) && <div className="grid gap-2 rounded-lg bg-neutral-50 p-3">
+        <p>{!recruitment ? "このクラスの募集案内はまだ保存されていません。" : "受付中の予約枠がまだありません。"}</p>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" className={button} onClick={onOpenSettings}>入会設定で{!recruitment ? "募集案内を書く" : "予約枠を追加する"}</button>
+          {!useSample && <button type="button" className="text-sm underline" onClick={() => { setUseSample(true); setStep(0); }}>サンプルで試す</button>}
+        </div>
+        {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
+      </div>}
+      {(useSample || (recruitment && slots.length > 0)) &&
         <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment.information, kind, slots }}
+          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
