@@ -1,3 +1,4 @@
+import { parseClassProduct } from "@/lib/classProduct";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classMeetingUrl, classIdPattern, type ClassSchool } from "@/lib/classes";
@@ -55,6 +56,13 @@ export async function GET(request: NextRequest) {
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
       return reply({ ok: true, userId: user.id, owned: owned.data,
         enrolled: (enrolled.data ?? []).flatMap(({ school }) => school ? [school] : []) });
+    }
+    if (request.nextUrl.searchParams.get("product") === "1") {
+      const school = await ownedSchool(user.id);
+      if (!school) return fail("教室が見つかりません。", 404);
+      const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
+      if (result.error) throw result.error;
+      return reply({ ok: true, design: result.data?.design ?? null });
     }
     const id = request.nextUrl.searchParams.get("school");
     if (id === null) return await manage(user.id);
@@ -116,6 +124,13 @@ export async function POST(request: NextRequest) {
 
     const school = await ownedSchool(user.id);
     if (!school) return fail("教室が見つかりません。", 404);
+    if (body?.action === "saveProduct") {
+      const design = parseClassProduct(body.design, new Set(school.classes.map(item => item.id)));
+      if (!design) return fail("対象クラス・定員・受講回数・料金を確認してください。");
+      const { error } = await db.from("school_class_product_designs").upsert({ school_id: school.id, design });
+      if (error) throw error;
+      return reply({ ok: true, design });
+    }
     if (body?.action === "add") {
       const memberId = clean(body.memberId);
       if (!name || name.length > 120 || !classIdPattern.test(memberId)) {

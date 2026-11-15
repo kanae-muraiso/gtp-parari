@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
+import ClassProductPanel from "./ClassProductPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { type ClassManagement, type ClassRosterMember } from "@/lib/classes";
@@ -21,7 +22,7 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 
 export default function ClassManagerPanel() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
-  const [view, setView] = useState<"admissions" | "settings" | "roster">("admissions");
+  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product">("admissions");
   const [data, setData] = useState<ClassManagement | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -77,7 +78,7 @@ export default function ClassManagerPanel() {
   return <div className="grid gap-5">
     <h2 className="text-xl font-bold">CLASS A</h2>
     {school && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
-      {([["admissions", "入会手続き"], ["settings", "入会設定"], ["roster", "名簿・クラス"]] as const).map(([key, title]) =>
+      {([["product", "商品設計"], ["admissions", "入会手続き"], ["settings", "入会設定"], ["roster", "名簿・クラス"]] as const).map(([key, title]) =>
         <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setMessage(""); setError(""); }}
           className={view === key ? button : "rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm"}>{title}</button>)}
     </nav>}
@@ -106,7 +107,8 @@ export default function ClassManagerPanel() {
       </div>
     </form>}
     {school && <>
-      {view !== "roster" && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
+      {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
+      {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
       {view === "settings" && <ClassRecruitmentPanel />}
