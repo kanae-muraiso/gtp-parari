@@ -94,6 +94,11 @@ export default function ClassManagerPanel() {
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
   return <div className="grid gap-5">
+    {!item && !creating && school && <details className={panel}>
+      <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
+      <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
+      <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
+    </details>}
     {!item && !creating && <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>
@@ -142,10 +147,7 @@ export default function ClassManagerPanel() {
       </div>
     </form>}
     {school && item && <>
-      {view === "product" && <>
-        <ClassProductPanel key={school.id} classes={school.classes} />
-        <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
-      </>}
+      {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
