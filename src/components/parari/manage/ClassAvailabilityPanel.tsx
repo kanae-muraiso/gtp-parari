@@ -19,7 +19,7 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
   save: (input: object) => Promise<boolean>; revision: object; classes: SchoolClass[];
 }) {
   const [hours, setHours] = useState(initial);
-  const [start, setStart] = useState(today);
+  const [month, setMonth] = useState(() => today().slice(0, 7));
   const [day, setDay] = useState(today);
   const [events, setEvents] = useState<Event[]>([]);
   const [error, setError] = useState("");
@@ -31,18 +31,33 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
     const controller = new AbortController();
     setEvents([]);
     setError("");
-    void classRequest<{ events: Event[] }>("/recruitment?week=" + start, undefined, controller.signal)
+    void classRequest<{ events: Event[] }>("/recruitment?month=" + month, undefined, controller.signal)
       .then(result => { if (!controller.signal.aborted) setEvents(result.events); })
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
-  }, [start, revision]);
-  const days = Array.from({ length: 7 }, (_, index) => shift(start, index));
+  }, [month, revision]);
+  const first = new Date(month + "-01T00:00:00Z");
+  const following = new Date(first);
+  following.setUTCMonth(following.getUTCMonth() + 1);
+  const dayCount = new Date(following.getTime() - 86400000).getUTCDate();
+  const days = Array.from({ length: dayCount }, (_, index) => shift(month + "-01", index));
+  const eventsOn = (value: string) => events.filter(event =>
+    local(event.starts_at) < shift(value, 1) && local(event.ends_at) > value + "T00:00");
   const selectDay = (value: string) => {
     setDay(value);
     setBlockStart("");
     setBlockEnd("");
     setAllDay(false);
   };
+
+  function changeMonth(offset: number) {
+    const target = new Date(first);
+    target.setUTCMonth(target.getUTCMonth() + offset);
+    const next = target.toISOString().slice(0, 7);
+    setMonth(next);
+    const current = today();
+    selectDay(current.startsWith(next) ? current : next + "-01");
+  }
 
   const formatEvent = (event: Event, value: string) => {
     const from = local(event.starts_at), to = local(event.ends_at);
@@ -64,24 +79,27 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
       <button className={button} disabled={busy}>受付時間を保存</button>
       {saved && <p role="status" className="text-sm">受付時間を保存しました。</p>}
     </form>
-    <section className="grid gap-3 border-t pt-3" aria-label="教室のカレンダー">
-      <h4 className="font-semibold">教室のカレンダー</h4>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="underline" onClick={() => { const value = shift(start, -7); setStart(value); selectDay(value); }}>前の7日</button>
-        <label>表示開始日 <input className={field} type="date" value={start} onChange={event => {
-          if (event.target.value) { setStart(event.target.value); selectDay(event.target.value); }
-        }} /></label>
-        <button type="button" className="underline" onClick={() => { const value = shift(start, 7); setStart(value); selectDay(value); }}>次の7日</button>
+    <section className="grid gap-3 border-t pt-3" aria-label="教室の月間カレンダー">
+      <h4 className="font-semibold">教室の月間カレンダー</h4>
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" className={field} onClick={() => changeMonth(-1)}>前月</button>
+        <span aria-live="polite" className="font-medium">{first.getUTCFullYear()}年{first.getUTCMonth() + 1}月</span>
+        <button type="button" className={field} onClick={() => changeMonth(1)}>翌月</button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-7">
-        {days.map(value => <div key={value} className="min-w-0 rounded border p-2">
-          <button type="button" aria-pressed={day === value} className={day === value ? "font-bold text-blue-800 underline" : "underline"} onClick={() => selectDay(value)}>
-            {value.slice(5)}（{weekdays[new Date(value).getUTCDay()]}）
-          </button>
-          {events.filter(event => local(event.starts_at) < shift(value, 1) && local(event.ends_at) > value + "T00:00").map((event, index) =>
-            <p key={index} className="mt-1 break-words text-xs">{formatEvent(event, value)} {event.label}</p>)}
-        </div>)}
+      <div className="grid grid-cols-7 gap-1 text-center text-sm">
+        {weekdays.map(label => <span key={label} className="py-1 text-neutral-600">{label}</span>)}
+        {Array.from({ length: first.getUTCDay() }, (_, index) => <span key={"blank" + index} aria-hidden="true" />)}
+        {days.map((value, index) => {
+          const count = eventsOn(value).length;
+          return <button type="button" key={value} aria-pressed={day === value}
+            aria-label={value + (count ? " 予定" + count + "件" : "")}
+            className="grid min-h-12 content-start justify-items-center rounded border p-1 aria-pressed:border-blue-800 aria-pressed:bg-blue-800 aria-pressed:text-white"
+            onClick={() => selectDay(value)}>
+            <span>{index + 1}</span>
+            {count > 0 && <span className="text-xs">{count}件</span>}
+          </button>;
+        })}
       </div>
       <form key={day} className="grid gap-2" onSubmit={async event => {
         event.preventDefault();
@@ -91,12 +109,12 @@ export default function ClassAvailabilityPanel({ initial, duration, location, bu
           endsAt: (allDay ? shift(day, 1) : day) + "T" + (allDay ? "00:00" : form.get("ends")) + ":00+09:00" });
       }}>
         <p className="text-sm">{day}の予約不可を登録</p>
-        {events.filter(event => event.kind === "class" && local(event.starts_at).slice(0, 10) === day).map(event => {
-          const from = local(event.starts_at).slice(11);
-          const until = local(event.ends_at).slice(0, 10) === day ? local(event.ends_at).slice(11) : null;
-          return <div key={event.starts_at + event.label} className="flex flex-wrap gap-2 text-sm">
+        {eventsOn(day).map((event, index) => {
+          const from = event.kind === "class" && local(event.starts_at).slice(0, 10) === day ? local(event.starts_at).slice(11) : null;
+          const until = event.kind === "class" && local(event.ends_at).slice(0, 10) === day ? local(event.ends_at).slice(11) : null;
+          return <div key={index} className="flex flex-wrap gap-2 text-sm">
             <span>{formatEvent(event, day)} {event.label}</span>
-            {from !== "00:00" && <button type="button" className="underline" onClick={() => {
+            {from && from !== "00:00" && <button type="button" className="underline" onClick={() => {
               setAllDay(false); setBlockStart(""); setBlockEnd(from);
             }}>授業前を指定</button>}
             {until && <button type="button" className="underline" onClick={() => {

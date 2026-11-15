@@ -71,8 +71,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
         </div>
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
-      {(useSample || (recruitment && (isDirect || slots.length > 0))) &&
-        <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
+      <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
           {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind, slots: previewSlots, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
@@ -100,7 +99,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
           </>}
           {step === 4 && <p>{settings.labels.admission}手続きが完了しました。初回の日程は教室からの案内をご確認ください。</p>}
           {step > 0 && <button className="w-fit text-sm underline" type="button" onClick={() => setStep(0)}>最初から試す</button>}
-        </div>}
+      </div>
       {recruitment && <div className="grid gap-2 border-t pt-3">
         {recruitment.enabled ? <>
           <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
