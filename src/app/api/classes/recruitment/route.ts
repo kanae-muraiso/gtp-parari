@@ -13,7 +13,7 @@ async function handle(request: NextRequest) {
     if (!user) return fail("ログインしてください。", 401);
     const [profile, school] = await Promise.all([
       db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
-      db.from("class_schools").select("id").eq("owner_user_id", user.id).eq("tier", "a").maybeSingle(),
+      db.from("class_schools").select("id,name").eq("owner_user_id", user.id).eq("tier", "a").maybeSingle(),
     ]);
     if (profile.error || school.error) throw profile.error ?? school.error;
     if (profile.data?.is_monitor !== true || !school.data) return fail("教室が見つかりません。", 404);
@@ -25,15 +25,26 @@ async function handle(request: NextRequest) {
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url").eq("school_id", id).order("starts_at", { ascending: true }),
       ]);
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
-      return reply({ ok: true, recruitment: recruitment.data, slots: slots.data });
+      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data });
     }
 
     const input = await request.json().catch(() => null);
     if (input?.action === "settings") {
       const information = typeof input.information === "string" ? input.information.trim() : "";
       if (!information || information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
-      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, enabled: input.enabled === true });
+      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind });
       if (result.error) throw result.error;
+    } else if (input?.action === "publish" || input?.action === "unpublish") {
+      if (input.action === "publish") {
+        const slots = await db.from("school_recruitment_slots").select("id").eq("school_id", id)
+          .eq("closed", false).gt("starts_at", new Date().toISOString()).limit(1);
+        if (slots.error) throw slots.error;
+        if (!slots.data?.length) return fail("公開前に、受付中の予約枠を追加してください。");
+      }
+      const result = await db.from("school_recruitment").update({ enabled: input.action === "publish" })
+        .eq("school_id", id).select("public_id").maybeSingle();
+      if (result.error) throw result.error;
+      if (!result.data) return fail("先に募集設定を保存してください。");
     } else if (input?.action === "slot") {
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || typeof input.startsAt !== "string" ||
         !Number.isFinite(Date.parse(input.startsAt)) || Date.parse(input.startsAt) <= Date.now() ||
