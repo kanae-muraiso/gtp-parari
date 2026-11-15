@@ -178,7 +178,7 @@ function Candidate({ candidate: row, data, busy, save }: {
           <div className="mt-2 grid gap-2">
             <label className="text-sm">開始予定日<input className={field} type="date" name="starts_on" defaultValue={row.starts_on ?? ""} /></label>
             <label className="text-sm">回答期限<input className={field} type="date" name="deadline" defaultValue={row.deadline ?? ""} /></label>
-            <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment} />
+            <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment === "free" && row.decision === "pending" && row.briefing !== "skip" ? data.paymentMode ?? row.payment : row.payment} />
             {terms && <p className="whitespace-pre-wrap rounded bg-neutral-50 p-2 text-sm">{terms}</p>}
             {agreed ? <p className="text-sm">同意済み</p> : <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
             {row.received_at ? <p className="text-sm">受領記録あり</p> : <label className="text-sm"><input type="checkbox" name="receipt" /> 初回費用を受領した</label>}

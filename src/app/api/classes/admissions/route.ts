@@ -36,7 +36,9 @@ async function handle(request: NextRequest, write: boolean) {
       if (request.nextUrl.searchParams.get("settings") === "1") return send({ ok: true, settings, cases: [] });
       const cases = await db.from("school_admission_cases").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
       if (cases.error) throw cases.error;
-      return send({ ok: true, settings, cases: cases.data });
+      const recruitment = await db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle();
+      if (recruitment.error) throw recruitment.error;
+      return send({ ok: true, settings, cases: cases.data, paymentMode: recruitment.data?.payment_mode ?? "free" });
     }
 
     const input = await request.json().catch(() => null);

@@ -21,8 +21,8 @@ async function handle(request: NextRequest) {
 
     if (request.method === "GET") {
       const [recruitment, slots] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind").eq("school_id", id).maybeSingle(),
-        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url").eq("school_id", id).order("starts_at", { ascending: true }),
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes").eq("school_id", id).order("starts_at", { ascending: true }),
       ]);
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
       return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data });
@@ -32,10 +32,24 @@ async function handle(request: NextRequest) {
     if (input?.action === "settings") {
       const information = typeof input.information === "string" ? input.information.trim() : "";
       if (!information || information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
-      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind });
+      const text = (key: string) => typeof input[key] === "string" ? input[key].trim() : "";
+      const route = input.route ?? "briefing";
+      const payment = input.paymentMode ?? "free";
+      const paymentUrl = payment === "advance" ? classMeetingUrl(input.paymentUrl) : null;
+      if (!["briefing", "direct"].includes(route) || !["free", "advance", "onsite"].includes(payment) ||
+          (payment === "advance" && !paymentUrl) || (payment === "onsite" && !text("arrivalText")) ||
+          ["applicationText", "arrivalText", "confirmationText"].some(key => text(key).length > 4000)) {
+        return fail("支払いURL、集合案内、申込書の設定をご確認ください。");
+      }
+      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, route,
+        application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
+        arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") });
       if (result.error) throw result.error;
     } else if (input?.action === "publish" || input?.action === "unpublish") {
-      if (input.action === "publish") {
+      const draft = await db.from("school_recruitment").select("route").eq("school_id", id).maybeSingle();
+      if (draft.error) throw draft.error;
+      if (!draft.data) return fail("先に募集設定を保存してください。");
+      if (input.action === "publish" && draft.data.route === "briefing") {
         const slots = await db.from("school_recruitment_slots").select("id").eq("school_id", id)
           .eq("closed", false).gt("starts_at", new Date().toISOString()).limit(1);
         if (slots.error) throw slots.error;
@@ -49,10 +63,13 @@ async function handle(request: NextRequest) {
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || typeof input.startsAt !== "string" ||
         !Number.isFinite(Date.parse(input.startsAt)) || Date.parse(input.startsAt) <= Date.now() ||
         !Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 100) return fail("日時と定員を確認してください。");
+      const duration = input.duration ?? 60;
+      const location = typeof input.location === "string" ? input.location.trim() : "";
+      if (!Number.isInteger(duration) || duration < 5 || duration > 480 || location.length > 300) return fail("会場と所要時間を確認してください。");
       const meeting = classMeetingUrl(input.meetingUrl);
       if (input.meetingUrl && !meeting) return fail("HTTPSの参加リンクを入力してください。");
       const result = await db.from("school_recruitment_slots").upsert({
-        school_id: id, id: input.id, starts_at: input.startsAt, capacity: input.capacity, meeting_url: meeting,
+        school_id: id, id: input.id, starts_at: input.startsAt, capacity: input.capacity, meeting_url: meeting, location: location || null, duration_minutes: duration,
       }, { onConflict: "id", ignoreDuplicates: true });
       if (result.error) throw result.error;
     } else if (input?.action === "close" && typeof input.id === "string" && classIdPattern.test(input.id)) {

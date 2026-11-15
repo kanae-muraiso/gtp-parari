@@ -7,6 +7,8 @@ export default function ClassIntakePage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Intake | null>(null);
   const [error, setError] = useState("");
+  const [arrival, setArrival] = useState("");
+  const [paymentUrl, setPaymentUrl] = useState("");
   const [done, setDone] = useState("");
   const [busy, setBusy] = useState(false);
   const path = "/api/classes/intake?id=" + encodeURIComponent(id);
@@ -24,15 +26,24 @@ export default function ClassIntakePage() {
     setError("");
     try {
       const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...Object.fromEntries(new FormData(event.currentTarget)), agree: true, information: data?.information }) });
+        body: JSON.stringify({ ...Object.fromEntries(new FormData(event.currentTarget)), agree: true, information: data?.information, terms: data?.terms }) });
       const result = await response.json();
       if (!result.ok) throw new Error(result.message);
+      if (result.direct) {
+        setDone(result.confirmation ? "申し込みを受け付けました。確認メールをご覧ください。" : "申し込みを受け付けました。確認メールを送信できませんでした。");
+        setArrival(result.arrival ?? "");
+        setPaymentUrl(result.paymentUrl ?? "");
+        if (result.paymentUrl) window.location.assign(result.paymentUrl);
+        return;
+      }
       setDone(result.confirmation ? "予約を受け付けました。確認メールをご覧ください。" : "予約を受け付けました。確認メールを送信できなかったため、日時をお控えください。");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "予約できませんでした。"); }
     finally { setBusy(false); }
   }
   return <main className="mx-auto max-w-xl space-y-4 px-4 py-10">
     {data && <ClassIntakeForm data={data} busy={busy} done={done} submit={submit} />}
+    {arrival && <p className="whitespace-pre-wrap">{arrival}</p>}
+    {paymentUrl && <a className="underline" href={paymentUrl}>支払いページを開く</a>}
     {error && <p role="alert">{error}</p>}
     {!data && !error && <p role="status">受付を読み込んでいます…</p>}
   </main>;
