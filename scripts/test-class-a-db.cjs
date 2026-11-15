@@ -160,6 +160,24 @@ async function main() {
     await db.query("update school_recruitment set enabled=false where public_id=$1", [intake]);
     await assert.rejects(direct(), { code: "P0002" });
 
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115073141_class_booking_window.sql"), "utf8"));
+    await db.exec("set role service_role");
+    await db.query("update school_recruitment set enabled=true,route='briefing',booking_weeks=1 where public_id=$1", [intake]);
+    const future = (await db.query("insert into school_recruitment_slots(id,school_id,starts_at,capacity) values(gen_random_uuid(),$1,now()+interval '14 days',3) returning id", [school])).rows[0].id;
+    const bookFuture = () => db.query("select * from book_school_intake($1,$2,'将来の日程','保護者','future@example.invalid','申込規約')", [intake, future]);
+    const available = async () => (await db.query("select id from available_class_recruitment_slots($1)", [school])).rows.map(row => row.id);
+    assert.ok(!(await available()).includes(future));
+    await assert.rejects(bookFuture(), { code: "P0001" });
+    const block = (await db.query("insert into school_recruitment_blocks select gen_random_uuid(),school_id,starts_at + interval '10 minutes',starts_at + interval '1 hour' from school_recruitment_slots where id=$1 returning id", [future])).rows[0].id;
+    await db.query("update school_recruitment set booking_weeks=4 where public_id=$1", [intake]);
+    assert.ok(!(await available()).includes(future));
+    await assert.rejects(bookFuture(), { code: "P0001" });
+    await db.query("delete from school_recruitment_blocks where id=$1", [block]);
+    assert.ok((await available()).includes(future));
+    await bookFuture();
+    await db.query("update school_recruitment set booking_weeks=1 where public_id=$1", [intake]);
+    await bookFuture();
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();
