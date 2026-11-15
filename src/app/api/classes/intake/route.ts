@@ -57,7 +57,7 @@ async function handle(request: NextRequest) {
       const { data, error } = await db.rpc("book_school_intake", { p_public: id, p_slot: input.slot, p_name: name,
         p_applicant: applicant, p_email: email, p_agreement: input.information });
       if (error?.code === "P0002") return missing();
-      if (error?.code === "P0001" || error?.code === "22023") return fail("満席か、受付内容が変更されました。再読み込みしてください。", 409);
+      if (error?.code === "P0001" || error?.code === "22023") return fail("満席、受付期間外、または受付内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const booking = data[0];
       const slot = await db.from("school_recruitment_slots").select("meeting_url,location,duration_minutes").eq("id", input.slot).maybeSingle();
@@ -74,7 +74,7 @@ async function handle(request: NextRequest) {
         : null;
       return reply({ ok: true, confirmation, reminder });
     }
-    const slots = await db.from("school_recruitment_slots").select("id,starts_at").eq("school_id", schoolId).eq("closed", false).gt("starts_at", new Date().toISOString()).order("starts_at");
+    const slots = await db.rpc("available_class_recruitment_slots", { p_school: schoolId });
     if (slots.error) throw slots.error;
     return reply({ ok: true, school: school.data.name, information, kind, slots: slots.data });
   } catch {

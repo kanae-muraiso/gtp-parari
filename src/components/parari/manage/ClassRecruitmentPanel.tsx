@@ -5,7 +5,9 @@ import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string }) | null;
+type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number }) | null;
+  blocks: { id: string; starts_at: string; ends_at: string }[];
+  available: { id: string }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number }[] };
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
@@ -39,11 +41,11 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
   function configure(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    void save({ ...Object.fromEntries(form), action: "settings" });
+    void save({ ...Object.fromEntries(form), action: "settings", bookingWeeks: Number(form.get("bookingWeeks") ?? data?.recruitment?.booking_weeks ?? 4) });
   }
   const recruitment = data?.recruitment;
   const isDirect = recruitment?.route === "direct";
-  const slots = data?.slots.filter(slot => !slot.closed && Date.parse(slot.starts_at) > Date.now()) ?? [];
+  const slots = data?.slots.filter(slot => data.available.some(entry => entry.id === slot.id)) ?? [];
   const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(Date.now() + 7 * 86400000).toISOString(), meeting_url: null }] : slots;
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
@@ -104,6 +106,9 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
     {data && view === "settings" && <><form onSubmit={configure} className="grid gap-2">
       <label><input type="checkbox" checked={route === "briefing"} onChange={event => setRoute(event.target.checked ? "briefing" : "direct")} /> 説明会・体験の予約を受け付ける</label>
       <input type="hidden" name="route" value={route} />
+      {route === "briefing" && <label>予約を受け付ける期間<select name="bookingWeeks" className={field} defaultValue={recruitment?.booking_weeks ?? 4}>
+        {[1, 2, 3, 4].map(weeks => <option key={weeks} value={weeks}>{weeks}週間先まで</option>)}
+      </select></label>}
       <label>受付の種類<select name="kind" className={field} defaultValue={data.recruitment?.kind}>{["説明会", "体験", "見学"].map(kind => <option key={kind}>{kind}</option>)}</select></label>
       <label>案内・個人情報の取り扱い<textarea className={field} name="information" maxLength={4000} required defaultValue={data.recruitment?.information} /></label>
       <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
@@ -138,6 +143,29 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.duration_minutes}分 ／ {slot.capacity}人{slot.location ? " ／ " + slot.location : ""}{" "}
         {slot.closed ? "受付終了" : <button disabled={busy} className="underline" type="button" onClick={() => void save({ action: "close", id: slot.id })}>新規受付を終了</button>}</p>)}
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="class-blocked-times">
+        <h4 id="class-blocked-times" className="font-semibold">予約不可の日時</h4>
+        <p className="text-sm text-neutral-600">受付期間より先の日も指定できます。成立済みの予約は維持されます。</p>
+        <form className="grid gap-2 sm:grid-cols-2" onSubmit={async event => {
+          event.preventDefault();
+          const form = event.currentTarget;
+          const values = new FormData(form);
+          const id = form.dataset.requestId || crypto.randomUUID();
+          form.dataset.requestId = id;
+          if (await save({ action: "block", id, startsAt: values.get("starts") + ":00+09:00", endsAt: values.get("ends") + ":00+09:00" })) {
+            delete form.dataset.requestId;
+            form.reset();
+          }
+        }}>
+          <label>開始（日本時間）<input className={field} name="starts" type="datetime-local" required /></label>
+          <label>終了（日本時間）<input className={field} name="ends" type="datetime-local" required /></label>
+          <button className={button} disabled={busy || !recruitment}>予約不可を登録</button>
+        </form>
+        {(data.blocks ?? []).filter(block => Date.parse(block.ends_at) > Date.now()).map(block => <p key={block.id} className="text-sm">
+          {new Date(block.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} 〜 {new Date(block.ends_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}{" "}
+          <button type="button" className="underline" disabled={busy} onClick={() => void save({ action: "unblock", id: block.id })}>解除</button>
+        </p>)}
+      </section>
     </>}</>}
   </section>;
 }

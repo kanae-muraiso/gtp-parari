@@ -20,12 +20,15 @@ async function handle(request: NextRequest) {
     const id = school.data.id;
 
     if (request.method === "GET") {
-      const [recruitment, slots] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text").eq("school_id", id).maybeSingle(),
+      const [recruitment, slots, blocks, available] = await Promise.all([
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes").eq("school_id", id).order("starts_at", { ascending: true }),
+        db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
+        db.rpc("available_class_recruitment_slots", { p_school: id }),
       ]);
+      if (blocks.error || available.error) throw blocks.error ?? available.error;
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
-      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data });
+      return reply({ ok: true, school: school.data.name, recruitment: recruitment.data, slots: slots.data, blocks: blocks.data, available: available.data });
     }
 
     const input = await request.json().catch(() => null);
@@ -34,6 +37,8 @@ async function handle(request: NextRequest) {
       if (!information || information.length > 4000 || !["説明会", "体験", "見学"].includes(input.kind)) return fail("受付の種類と、個人情報の取り扱いを含む案内を入力してください。");
       const text = (key: string) => typeof input[key] === "string" ? input[key].trim() : "";
       const route = input.route ?? "briefing";
+      const weeks = input.bookingWeeks ?? 4;
+      if (!Number.isInteger(weeks) || weeks < 1 || weeks > 4) return fail("予約受付期間は1〜4週間です。");
       const payment = input.paymentMode ?? "free";
       const paymentUrl = payment === "advance" ? classMeetingUrl(input.paymentUrl) : null;
       if (!["briefing", "direct"].includes(route) || !["free", "advance", "onsite"].includes(payment) ||
@@ -41,7 +46,7 @@ async function handle(request: NextRequest) {
           ["applicationText", "arrivalText", "confirmationText"].some(key => text(key).length > 4000)) {
         return fail("支払いURL、集合案内、申込書の設定をご確認ください。");
       }
-      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, route,
+      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, route, booking_weeks: weeks,
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
         arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") });
       if (result.error) throw result.error;
@@ -50,8 +55,7 @@ async function handle(request: NextRequest) {
       if (draft.error) throw draft.error;
       if (!draft.data) return fail("先に募集設定を保存してください。");
       if (input.action === "publish" && draft.data.route === "briefing") {
-        const slots = await db.from("school_recruitment_slots").select("id").eq("school_id", id)
-          .eq("closed", false).gt("starts_at", new Date().toISOString()).limit(1);
+        const slots = await db.rpc("available_class_recruitment_slots", { p_school: id });
         if (slots.error) throw slots.error;
         if (!slots.data?.length) return fail("公開前に、受付中の予約枠を追加してください。");
       }
@@ -59,6 +63,22 @@ async function handle(request: NextRequest) {
         .eq("school_id", id).select("public_id").maybeSingle();
       if (result.error) throw result.error;
       if (!result.data) return fail("先に募集設定を保存してください。");
+    } else if (input?.action === "block" || input?.action === "unblock") {
+      if (typeof input.id !== "string" || !classIdPattern.test(input.id)) return fail("予約不可の指定を確認してください。");
+      if (input.action === "block") {
+        const starts = typeof input.startsAt === "string" ? Date.parse(input.startsAt) : NaN;
+        const ends = typeof input.endsAt === "string" ? Date.parse(input.endsAt) : NaN;
+        if (!Number.isFinite(starts) || !Number.isFinite(ends) || ends <= starts || ends <= Date.now()) {
+          return fail("予約不可の開始と終了をご確認ください。");
+        }
+        const result = await db.from("school_recruitment_blocks").upsert({
+          school_id: id, id: input.id, starts_at: new Date(starts).toISOString(), ends_at: new Date(ends).toISOString(),
+        }, { onConflict: "id", ignoreDuplicates: true });
+        if (result.error) throw result.error;
+      } else {
+        const result = await db.from("school_recruitment_blocks").delete().eq("school_id", id).eq("id", input.id);
+        if (result.error) throw result.error;
+      }
     } else if (input?.action === "slot") {
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || typeof input.startsAt !== "string" ||
         !Number.isFinite(Date.parse(input.startsAt)) || Date.parse(input.startsAt) <= Date.now() ||
