@@ -136,6 +136,7 @@ export default function ClassManagerPanel() {
         <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
         <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
       </div>
+      <label className={label}>所要時間（分）<input className={field} name="duration" type="number" min={5} max={480} required defaultValue={item?.duration_minutes ?? 60} /></label>
       <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
         <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
       </select></label>

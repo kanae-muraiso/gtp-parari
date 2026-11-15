@@ -14,6 +14,7 @@ export type AdmissionCase = {
   decision: "pending" | "approved" | "held" | "rejected" | "waitlist" | "withdrawn";
   starts_on: string | null; deadline: string | null; payment: "free" | "advance" | "onsite";
   received_at: string | null; consent_at: string | null; agreed_terms: string | null;
+  applicant_phone?: string | null;
   applicant_name?: string | null;
   applicant_email?: string | null;
   invite_token: string | null;

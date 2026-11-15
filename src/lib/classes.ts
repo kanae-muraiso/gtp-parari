@@ -9,6 +9,7 @@ export type SchoolClass = {
   location: string | null;
   delivery: "onsite" | "online" | "hybrid";
   meeting_url: string | null;
+  duration_minutes?: number;
 };
 
 export type ClassSchool = {

@@ -178,6 +178,26 @@ async function main() {
     await bookFuture();
     await db.query("update school_recruitment set booking_weeks=1 where public_id=$1", [intake]);
     await bookFuture();
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261115075803_class_office_hours.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const day = (await db.query("select ((now() at time zone 'Asia/Tokyo')::date+1)::text as day")).rows[0].day;
+    const weekday = new Date(day).getUTCDay();
+    const hours = ["onsite","phone"].map(channel => ({ channel, weekday, starts:"10:00", ends:"12:00" }));
+    await db.query("update school_recruitment set office_hours=$1, office_duration=30 where school_id=$2", [JSON.stringify(hours), school]);
+    await db.query("update school_classes set starts_on=$1, starts_at='10:30', cadence='weekly', duration_minutes=60 where school_id=$2", [day, school]);
+    const openings = () => db.query("select id,channel,to_char(starts_at at time zone 'Asia/Tokyo','HH24:MI') as time from available_class_recruitment_slots($1) where (starts_at at time zone 'Asia/Tokyo')::date=$2 order by time,channel", [school, day]);
+    const open = (await openings()).rows;
+    assert.deepEqual(open.map(row => [row.time,row.channel]), [["10:00","onsite"],["10:00","phone"],["11:30","onsite"],["11:30","phone"]]);
+    const reserve = (id, phone) => db.query("select * from book_school_intake($1,$2,'生成枠','保護者','generated@example.invalid','申込規約',$3)", [intake,id,phone]);
+    await assert.rejects(reserve(open[1].id, null), { code: "22023" });
+    await reserve(open[1].id, "01234567890");
+    await assert.rejects(reserve(open[0].id, null), { code: "P0001" });
+    assert.deepEqual((await openings()).rows.map(row => row.time), ["11:30","11:30"]);
+    await db.query("insert into school_recruitment_blocks values(gen_random_uuid(),$1,$2,$3)", [school,day+"T11:45:00+09:00",day+"T12:30:00+09:00"]);
+    assert.equal((await openings()).rows.length, 0);
+    const calendar = await db.query("select kind from class_recruitment_calendar($1,$2)", [school,day]);
+    for (const kind of ["class","booked","block"]) assert.ok(calendar.rows.some(row => row.kind === kind));
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();

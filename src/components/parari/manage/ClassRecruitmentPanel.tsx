@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
+import ClassAvailabilityPanel, { type OfficeHour } from "./ClassAvailabilityPanel";
 import ClassIntakeForm from "@/components/parari/classes/ClassIntakeForm";
 import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number }) | null;
+type Data = { school: string; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
-  available: { id: string }[];
+  available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number }[] };
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
@@ -45,7 +46,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
   }
   const recruitment = data?.recruitment;
   const isDirect = recruitment?.route === "direct";
-  const slots = data?.slots.filter(slot => data.available.some(entry => entry.id === slot.id)) ?? [];
+  const slots = data?.available.map(slot => ({ ...slot, meeting_url: data.slots.find(manual => manual.id === slot.id)?.meeting_url ?? null })) ?? [];
   const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(Date.now() + 7 * 86400000).toISOString(), meeting_url: null }] : slots;
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
@@ -123,6 +124,9 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
     {data.recruitment?.enabled && <a className="underline" href={`/class-intake/${data.recruitment.public_id}`} target="_blank" rel="noreferrer">公開受付ページを開く</a>}
     {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>
+      {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
+        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} />}
+      <details className="grid gap-2"><summary className="cursor-pointer text-sm">予約枠を手動で追加</summary>
       <form className="grid gap-2" onSubmit={async event => {
         event.preventDefault();
         const form = event.currentTarget;
@@ -143,24 +147,10 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings }: { view: 
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.duration_minutes}分 ／ {slot.capacity}人{slot.location ? " ／ " + slot.location : ""}{" "}
         {slot.closed ? "受付終了" : <button disabled={busy} className="underline" type="button" onClick={() => void save({ action: "close", id: slot.id })}>新規受付を終了</button>}</p>)}
+      </details>
       <section className="grid gap-2 border-t pt-3" aria-labelledby="class-blocked-times">
         <h4 id="class-blocked-times" className="font-semibold">予約不可の日時</h4>
         <p className="text-sm text-neutral-600">受付期間より先の日も指定できます。成立済みの予約は維持されます。</p>
-        <form className="grid gap-2 sm:grid-cols-2" onSubmit={async event => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const values = new FormData(form);
-          const id = form.dataset.requestId || crypto.randomUUID();
-          form.dataset.requestId = id;
-          if (await save({ action: "block", id, startsAt: values.get("starts") + ":00+09:00", endsAt: values.get("ends") + ":00+09:00" })) {
-            delete form.dataset.requestId;
-            form.reset();
-          }
-        }}>
-          <label>開始（日本時間）<input className={field} name="starts" type="datetime-local" required /></label>
-          <label>終了（日本時間）<input className={field} name="ends" type="datetime-local" required /></label>
-          <button className={button} disabled={busy || !recruitment}>予約不可を登録</button>
-        </form>
         {(data.blocks ?? []).filter(block => Date.parse(block.ends_at) > Date.now()).map(block => <p key={block.id} className="text-sm">
           {new Date(block.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} 〜 {new Date(block.ends_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}{" "}
           <button type="button" className="underline" disabled={busy} onClick={() => void save({ action: "unblock", id: block.id })}>解除</button>
