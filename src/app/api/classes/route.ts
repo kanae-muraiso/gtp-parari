@@ -61,7 +61,10 @@ export async function GET(request: NextRequest) {
       const school = await ownedSchool(user.id);
       if (!school) return fail("教室が見つかりません。", 404);
       const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error("[classes] product load failed", result.error.code);
+        return fail("商品設定を取得できませんでした。", 500);
+      }
       return reply({ ok: true, design: result.data?.design ?? null });
     }
     const id = request.nextUrl.searchParams.get("school");
