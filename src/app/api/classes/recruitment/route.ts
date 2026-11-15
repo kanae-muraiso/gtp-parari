@@ -20,8 +20,16 @@ async function handle(request: NextRequest) {
     const id = school.data.id;
 
     if (request.method === "GET") {
+      const week = request.nextUrl.searchParams.get("week");
+      if (week !== null) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(week) || !Number.isFinite(Date.parse(week)) ||
+          new Date(week).toISOString().slice(0, 10) !== week) return fail("表示する週をご確認ください。");
+        const result = await db.rpc("class_recruitment_calendar", { p_school: id, p_start: week });
+        if (result.error) throw result.error;
+        return reply({ ok: true, events: result.data });
+      }
       const [recruitment, slots, blocks, available] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
@@ -50,6 +58,25 @@ async function handle(request: NextRequest) {
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
         arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") });
       if (result.error) throw result.error;
+    } else if (input?.action === "hours") {
+      const hours = input.hours;
+      const duration = input.duration;
+      const location = typeof input.location === "string" ? input.location.trim() : "";
+      const time = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+      if (!Array.isArray(hours) || hours.length > 42 || !Number.isInteger(duration) || duration < 5 || duration > 480 ||
+        location.length > 300 || hours.some(row => !row || !Number.isInteger(row.weekday) || row.weekday < 0 || row.weekday > 6 ||
+          !["onsite", "phone"].includes(row.channel) || !time.test(row.starts) || !time.test(row.ends) || row.starts >= row.ends)) {
+        return fail("受付時間と所要時間を確認してください。");
+      }
+      const minutes = (value: string) => Number(value.slice(0, 2))*60 + Number(value.slice(3));
+      if (hours.some((row, index) => minutes(row.ends) - minutes(row.starts) < duration || hours.some((other, otherIndex) =>
+        otherIndex < index && other.weekday === row.weekday && other.channel === row.channel && row.starts < other.ends && row.ends > other.starts))) {
+        return fail("受付時間帯の重なりや、所要時間より短い時間帯を修正してください。");
+      }
+      const result = await db.from("school_recruitment").update({ office_hours: hours.map(({ weekday, channel, starts, ends }) => ({ weekday, channel, starts, ends })),
+        office_duration: duration, office_location: location || null }).eq("school_id", id).select("school_id").maybeSingle();
+      if (result.error) throw result.error;
+      if (!result.data) return fail("先に募集を保存してください。");
     } else if (input?.action === "publish" || input?.action === "unpublish") {
       const draft = await db.from("school_recruitment").select("route").eq("school_id", id).maybeSingle();
       if (draft.error) throw draft.error;

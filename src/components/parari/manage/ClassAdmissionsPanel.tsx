@@ -154,7 +154,7 @@ function Candidate({ candidate: row, data, busy, save }: {
   }
 
   return <div className="grid gap-3 border-t pt-3">
-    {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}</p>}
+    {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}{row.applicant_phone ? " · " + row.applicant_phone : ""}</p>}
     <button type="button" className="w-fit text-sm underline" onClick={() => setCorrection(value => !value)}>{correction ? "通常の表示に戻る" : "修正する"}</button>
     <form onSubmit={update}>
       <fieldset disabled={busy} className="grid gap-2">

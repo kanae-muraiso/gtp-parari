@@ -54,15 +54,18 @@ async function handle(request: NextRequest) {
       const name = clean(input?.name), applicant = clean(input?.applicant), email = clean(input?.email).toLowerCase();
       if (!name || name.length > 120 || !applicant || applicant.length > 120 || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
         !classIdPattern.test(clean(input?.slot)) || input?.agree !== true || typeof input?.information !== "string" || input.information.length > 4000) return fail("お名前・メール・日時・同意をご確認ください。");
+      const phone = clean(input?.phone);
+      if (phone && !/^[+0-9()\s-]{7,30}$/.test(phone)) return fail("電話番号をご確認ください。");
       const { data, error } = await db.rpc("book_school_intake", { p_public: id, p_slot: input.slot, p_name: name,
-        p_applicant: applicant, p_email: email, p_agreement: input.information });
+        p_applicant: applicant, p_email: email, p_agreement: input.information, p_phone: phone || null });
       if (error?.code === "P0002") return missing();
       if (error?.code === "P0001" || error?.code === "22023") return fail("満席、受付期間外、または受付内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const booking = data[0];
-      const slot = await db.from("school_recruitment_slots").select("meeting_url,location,duration_minutes").eq("id", input.slot).maybeSingle();
+      const slot = await db.from("school_recruitment_slots").select("meeting_url,location,duration_minutes,channel").eq("id", input.slot).maybeSingle();
       const meeting = classMeetingUrl(slot.data?.meeting_url);
       const text = `${booking.school_name}の${booking.kind}の日時は、${classDateTime(booking.starts_at)}（日本時間）です。` + [
+        slot.data?.channel === "phone" ? "予約日時に、教室からお電話します。" : "",
         slot.data?.location ? "集合場所 " + slot.data.location : "",
         slot.data?.duration_minutes ? "所要時間 " + slot.data.duration_minutes + "分" : "",
         meeting ? "オンライン参加リンク " + meeting : "", options.confirmation_text,
