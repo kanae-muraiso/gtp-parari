@@ -1,6 +1,7 @@
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
+import { readClassIntakeSource } from "@/lib/classIntakeSource";
 import { classIdPattern, classMeetingUrl } from "@/lib/classes";
 import { classAdmissionMail, classDateTime, classNotice } from "@/lib/classAdmissionMail";
 
@@ -15,10 +16,11 @@ async function handle(request: NextRequest) {
   try {
     const id = request.nextUrl.searchParams.get("id");
     if (!id || !classIdPattern.test(id)) return missing();
-    const recruitment = await db.from("school_recruitment").select("school_id,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_duration,office_location").eq("public_id", id).eq("enabled", true).maybeSingle();
-    if (recruitment.error) throw recruitment.error;
-    if (!recruitment.data) return missing();
-    const { school_id: schoolId, information, kind } = recruitment.data;
+    const source = await readClassIntakeSource(id);
+    if (!source) return missing();
+    const { recruitment, offer } = source;
+    const { school_id: schoolId, kind } = recruitment;
+    const information = offer?.information ?? recruitment.information;
     const school = await db.from("class_schools").select("name,owner_user_id").eq("id", schoolId).maybeSingle();
     if (school.error) throw school.error;
     if (!school.data) return missing();
@@ -29,7 +31,16 @@ async function handle(request: NextRequest) {
     const shared = disclosure && sellerDisclosureReady(disclosure)
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
     if (!information.trim() && !shared) return missing();
-    const options = recruitment.data;
+    const options = recruitment;
+    const targets = offer ? await db.from("school_classes").select("id,name").eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
+    if (targets?.error) throw targets.error;
+    if (offer && !targets?.data?.length) return missing();
+    const offerFields = offer ? { offerName: offer.name, targetClasses: targets?.data ?? [] } : {};
+    function submitOffer(input: Record<string, unknown>, name: string, applicant: string, email: string, slot: string | null, phone: string | null) {
+      return db.rpc("submit_school_offer", { p_public: options.public_id, p_offer: offer!.id, p_class: input.classId,
+        p_slot: slot, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information,
+        p_terms: input.terms ?? "", p_phone: phone });
+    }
     const versionMatches = (version: unknown) => version === (shared?.version ?? undefined);
     if (request.method === "POST" && options.route === "direct") {
       const input = await request.json().catch(() => null);
@@ -39,9 +50,12 @@ async function handle(request: NextRequest) {
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || input?.agree !== true ||
           typeof input.information !== "string" || input.information.length > 4000 ||
           typeof input.terms !== "string" || input.terms.length > 8000) return fail("申込内容と同意を確認してください。");
-      const { data: caseId, error } = await db.rpc("submit_direct_class_application", {
-        p_public: id, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information, p_terms: input.terms,
+      if (offer && !(targets?.data ?? []).some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      const result = offer ? await submitOffer(input, name, applicant, email, null, null) : await db.rpc("submit_direct_class_application", {
+        p_public: options.public_id, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information, p_terms: input.terms,
       });
+      const { error } = result;
+      const caseId = offer ? result.data?.[0]?.case_id : result.data;
       if (error?.code === "P0002") return missing();
       if (error?.code === "22023") return fail("申込内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
@@ -55,7 +69,7 @@ async function handle(request: NextRequest) {
     if (options.route === "direct") {
       const setting = await db.from("school_admission_settings").select("terms").eq("school_id", schoolId).maybeSingle();
       if (setting.error) throw setting.error;
-      return reply({ ok: true, school: school.data.name, information, kind, slots: [], direct: true, sharedDisclosure: shared,
+      return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, slots: [], direct: true, sharedDisclosure: shared,
         applicationText: options.application_text, terms: setting.data?.terms ?? "" });
     }
     const settings = await db.from("school_admission_settings").select("briefing_design").eq("school_id", schoolId).maybeSingle();
@@ -72,7 +86,9 @@ async function handle(request: NextRequest) {
       if (learnerEmail && !validClassEmail(learnerEmail)) return fail("受講者のメールアドレスをご確認ください。");
       const phone = clean(input?.phone);
       if (phone && !/^[+0-9()\s-]{7,30}$/.test(phone)) return fail("電話番号をご確認ください。");
-      const { data, error } = await db.rpc("book_school_intake", { p_public: id, p_slot: input.slot, p_name: name,
+      if (offer && !(targets?.data ?? []).some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      const { data, error } = offer ? await submitOffer(input, name, applicant, email, input.slot, phone || null)
+        : await db.rpc("book_school_intake", { p_public: options.public_id, p_slot: input.slot, p_name: name,
         p_applicant: applicant, p_email: email, p_agreement: input.information, p_phone: phone || null });
       if (error?.code === "P0002") return missing();
       if (error?.code === "P0001" || error?.code === "22023") return fail("満席、受付期間外、または受付内容が変更されました。再読み込みしてください。", 409);
@@ -118,7 +134,7 @@ async function handle(request: NextRequest) {
     if (slots.error) throw slots.error;
     if (manual.error) throw manual.error;
     const details = new Map(manual.data.map(slot => [slot.id, slot]));
-    return reply({ ok: true, school: school.data.name, information, kind, sharedDisclosure: shared, audience: design?.audience, bookingWeeks: options.booking_weeks,
+    return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, sharedDisclosure: shared, audience: design?.audience, bookingWeeks: options.booking_weeks,
       slots: (slots.data as { id: string; starts_at: string; channel: "onsite" | "phone" }[]).map(slot => {
         const saved = details.get(slot.id);
         return { ...slot, duration_minutes: saved?.duration_minutes ?? options.office_duration,

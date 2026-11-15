@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 
 import ClassBookingCalendar, { bookingDate, bookingTime, type BookingSlot } from "./ClassBookingCalendar";
 
-export type Intake = { school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
+export type Intake = { offerName?: string; targetClasses?: { id: string; name: string }[]; school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
 
 const field = "block w-full rounded-lg border p-2";
 
@@ -13,7 +13,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const slot = data.slots.find(entry => entry.id === selected);
   const start = slot ? Date.parse(slot.starts_at) : 0;
   const end = slot ? start + slot.duration_minutes * 60000 : 0;
-  return <><h1 className="text-xl font-bold">{data.school}の{data.direct ? "入会申込" : data.kind + "予約"}</h1>
+  return <><h1 className="text-xl font-bold">{data.offerName ?? data.school}の{data.direct ? "入会申込" : data.kind + "予約"}</h1>
       {data.applicationText && <p className="whitespace-pre-wrap">{data.applicationText}</p>}
       {data.information && <p className="whitespace-pre-wrap rounded-xl bg-emerald-50 p-4">{data.information}</p>}
       {data.sharedDisclosure && <p><a href={data.sharedDisclosure.url} target="_blank" rel="noreferrer" className="text-sm underline">
@@ -30,6 +30,12 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
           {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
         </div>}
         <fieldset disabled={busy || (!data.direct && !slot)} className={data.direct || slot ? "grid min-w-0 gap-3" : "hidden"}>
+        {data.targetClasses && (data.targetClasses.length === 1 ? <>
+          <p className="text-sm">対象クラス　{data.targetClasses[0].name}</p>
+          <input type="hidden" name="classId" value={data.targetClasses[0].id} />
+        </> : <label>希望するクラス<select className={field} name="classId" required defaultValue="">
+          <option value="">クラスを選ぶ</option>{data.targetClasses.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select></label>)}
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
         <label>{data.audience === "minor" ? "保護者のお名前" : "申し込む方のお名前"}<input name="applicant" className={field} maxLength={120} required /></label>
         {!data.direct && slot?.channel === "phone" && <label>連絡先電話番号<input name="phone" className={field} type="tel" required maxLength={30} /></label>}

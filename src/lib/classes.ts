@@ -23,6 +23,8 @@ export type ClassRosterMember = {
   name: string;
   status: "active" | "ended";
   user_id: string | null;
+  class_participation?: "fixed" | "multiple" | "flexible";
+  assignments?: { class_id: string }[];
 };
 
 export type ClassManagement = {
@@ -46,3 +48,19 @@ export function classMeetingUrl(value: unknown): string | null {
     return null;
   }
 }
+
+export function classRunsOn(item: Pick<SchoolClass, "starts_on" | "cadence">, day: string) {
+  if (day < item.starts_on) return false;
+  const current = new Date(day + "T00:00:00Z");
+  if (item.cadence === "weekly") return (current.getTime() - Date.parse(item.starts_on)) % (7 * 86400000) === 0;
+  const monthEnd = new Date(current);
+  monthEnd.setUTCMonth(monthEnd.getUTCMonth() + 1, 0);
+  return current.getUTCDate() === Math.min(Number(item.starts_on.slice(-2)), monthEnd.getUTCDate());
+}
+
+export type ClassVisits = {
+  flexible: boolean;
+  classIds: string[];
+  monthlyVisits: number;
+  booked: { class_id: string; visit_on: string }[];
+};

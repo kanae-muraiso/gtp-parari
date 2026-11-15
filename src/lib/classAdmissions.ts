@@ -19,9 +19,10 @@ export type AdmissionCase = {
   applicant_phone?: string | null;
   applicant_name?: string | null;
   applicant_email?: string | null;
+  recruitment_offer_id?: string | null; requested_class_id?: string | null;
   learner_email?: string | null; trial_dates?: string[]; briefing_followup?: BriefingFollowup | null;
   application_fields?: Partial<Record<ApplicationField, string>> | null; applicant_user_id?: string | null;
   invite_token: string | null;
   enrollment_id: string | null; revision: number;
 };
-export type AdmissionsData = { settings: AdmissionSettings; paymentMode?: AdmissionCase["payment"]; briefingDesign?: BriefingDesign | null; cases: AdmissionCase[] };
+export type AdmissionsData = { settings: AdmissionSettings; paymentMode?: AdmissionCase["payment"]; briefingDesign?: BriefingDesign | null; classes?: { id: string; name: string }[]; cases: AdmissionCase[] };
