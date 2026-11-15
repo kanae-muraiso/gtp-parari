@@ -131,7 +131,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
     {route === "briefing" && <>
       <h4 className="font-semibold">予約パネル</h4>
       {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
-        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} />}
+        location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} slots={slots} blocks={data.blocks ?? []} />}
       <details className="grid gap-2"><summary className="cursor-pointer text-sm">予約枠を手動で追加</summary>
       <form className="grid gap-2" onSubmit={async event => {
         event.preventDefault();
