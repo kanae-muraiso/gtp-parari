@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import ClassEventSchedule from "@/components/parari/manage/ClassEventSchedule";
 import { classEventDate, type ClassEvent } from "@/lib/classEvents";
 
 type View = { event: ClassEvent; schoolName: string; canRegister: boolean; registered: boolean; paymentUrl: string | null };
@@ -76,9 +77,10 @@ export default function ClassEventPage() {
           <p className="text-sm text-neutral-600">{view.schoolName}</p>
           <h1 className="text-2xl font-bold">{event.title}</h1>
         </header>
-        <p>{classEventDate(event.class_event.startsAt)}（日本時間）<br />{event.class_event.location}</p>
+        <ClassEventSchedule settings={event.class_event} />
         {event.description && <p className="whitespace-pre-wrap">{event.description}</p>}
-        <p>{event.payment_amount ? `参加費 ${event.payment_amount.toLocaleString("ja-JP")}円${event.payment_method === "on_site" ? "（当日払い）" : ""}` : "参加費無料"}</p>
+        <p>{event.payment_amount ? `${event.class_event.sessions ? "受講料（全日程）" : "参加費"} ${event.payment_amount.toLocaleString("ja-JP")}円${event.payment_method === "on_site" ? "（当日払い）" : ""}` : event.class_event.sessions ? "受講料無料" : "参加費無料"}</p>
+        {event.class_event.sessions && <p className="text-sm">一度のお申し込みで全日程に参加できます。</p>}
         {view.registered ? <>
           <p className="font-medium">申込受付済み</p>
           {view.paymentUrl && <a className={button} href={view.paymentUrl} rel="noreferrer">参加費を支払う</a>}

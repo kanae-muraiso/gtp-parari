@@ -1,3 +1,4 @@
+import { classEventScheduleText, type ClassEventSettings } from "@/lib/classEvents";
 import {
   NextRequest,
   NextResponse,
@@ -34,6 +35,7 @@ type EntryView = {
   cancellationToken: string;
   status: string;
   title: string;
+  schedule: string[];
 };
 
 function verificationResultUrl(
@@ -93,6 +95,8 @@ function readEntryView(
     cancellationToken,
     status,
     title,
+    schedule: snapshot?.class_event && typeof snapshot.class_event === "object"
+      ? classEventScheduleText(snapshot.class_event as ClassEventSettings) : [],
   };
 }
 
@@ -174,6 +178,7 @@ async function finalizeVerifiedEntry(
     applicationTitle: entryView.title,
     cancellationToken: entryView.cancellationToken,
     entryStatus: entryView.status,
+    schedule: entryView.schedule,
   });
 
   return entryView;

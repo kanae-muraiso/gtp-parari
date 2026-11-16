@@ -360,6 +360,16 @@ async function main() {
     await archive(owner, false);
     assert.equal((await db.query("select status from applications where id=$1", [recital])).rows[0].status, "closed");
     assert.equal((await db.query("select status from applications where id=$1", [special])).rows[0].status, "open");
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261116170000_class_workshop_attendance.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const sharedEntry = (await db.query("select id from application_entries where application_id=$1", [special])).rows[0].id;
+    await db.query("insert into class_workshop_attendance values ($1,'2027-01-01T06:00:00Z','present'), ($1,'2027-01-08T06:00:00Z','absent')", [sharedEntry]);
+    await db.query("insert into class_workshop_attendance values ($1,'2027-01-08T06:00:00Z','present') on conflict (entry_id, session_at) do update set status=excluded.status", [sharedEntry]);
+    await db.query("delete from class_workshop_attendance where entry_id=$1 and session_at='2027-01-01T06:00:00Z'", [sharedEntry]);
+    assert.deepEqual((await db.query("select status from class_workshop_attendance where entry_id=$1", [sharedEntry])).rows,[{status:"present"}]);
+    await db.exec("reset role; set role authenticated");
+    await assert.rejects(db.query("select * from class_workshop_attendance"), {code:"42501"});
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");

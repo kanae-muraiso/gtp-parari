@@ -648,7 +648,7 @@ export async function submitApplication(
       application.cancellation_cutoff_minutes,
     source_context:
       sourceContext,
-    ...(application.class_event ? { class_event: { startsAt: application.class_event.startsAt, location: application.class_event.location } } : {}),
+    ...(application.class_event ? { class_event: { startsAt: application.class_event.startsAt, location: application.class_event.location, sessions: application.class_event.sessions } } : {}),
     version: application.version,
     calendar_occurrence:
       calendarOccurrence

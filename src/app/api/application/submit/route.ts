@@ -1,4 +1,5 @@
-import { classAdmissionMail, classDateTime } from "@/lib/classAdmissionMail";
+import { classEventScheduleText, classEventKind, classEventLabels, type ClassEventSettings } from "@/lib/classEvents";
+import { classAdmissionMail } from "@/lib/classAdmissionMail";
 // src/app/api/application/submit/route.ts
 // 2026-09-17 JST
 //
@@ -179,9 +180,9 @@ export async function POST(
     }
 
     if (snapshot?.class_event && typeof snapshot.class_event === "object" && user.email && typeof entry?.id === "string") {
-      const event = snapshot.class_event as { startsAt: string; location: string };
-      await classAdmissionMail(user.email, "イベント申込受付 · " + String(snapshot.title ?? ""),
-        [classDateTime(event.startsAt) + "（日本時間）", event.location,
+      const event = snapshot.class_event as ClassEventSettings;
+      await classAdmissionMail(user.email, classEventLabels[classEventKind(event)] + "申込受付 · " + String(snapshot.title ?? ""),
+        [...classEventScheduleText(event),
           new URL("/class-event/" + applicationId.trim(), request.nextUrl.origin).href].join("\n"),
         "class-event-registration-" + entry.id);
     }

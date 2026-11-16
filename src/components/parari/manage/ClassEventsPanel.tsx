@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { classRequest } from "@/lib/classRequests";
-import { classEventDate, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
+import ClassEventSchedule from "./ClassEventSchedule";
+import { classEventDate, classEventLabels, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
 
 const input = "w-full rounded-lg border border-neutral-300 px-3 py-2";
@@ -16,7 +17,9 @@ const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "
 
 type Detail = { event: ClassEvent; entries: ClassEventEntry[] };
 
-export default function ClassEventsPanel({ classes, roster }: { classes: SchoolClass[]; roster: ClassRosterMember[] }) {
+export default function ClassEventsPanel({ classes, roster, kind }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind }) {
+  const label = classEventLabels[kind];
+  const [sessionAt, setSessionAt] = useState("");
   const [events, setEvents] = useState<ClassEvent[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [editing, setEditing] = useState(false);
@@ -27,17 +30,18 @@ export default function ClassEventsPanel({ classes, roster }: { classes: SchoolC
 
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<{ events: ClassEvent[] }>("/events", undefined, controller.signal)
+    void classRequest<{ events: ClassEvent[] }>("/events?kind=" + kind, undefined, controller.signal)
       .then(data => setEvents(data.events)).catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
-  }, [refresh]);
+  }, [kind, refresh]);
 
   async function open(id: string) {
     setError("");
     setNotice("");
+    setSessionAt("");
     setBusy(true);
     try { setDetail(await classRequest<Detail>(eventPath(id))); setEditing(false); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "イベントを開けませんでした。"); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : label + "を開けませんでした。"); }
     finally { setBusy(false); }
   }
 
@@ -51,26 +55,28 @@ export default function ClassEventsPanel({ classes, roster }: { classes: SchoolC
       setEditing(false);
       setRefresh(value => value + 1);
       setNotice(notice ?? message);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "イベントを更新できませんでした。"); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : label + "を更新できませんでした。"); }
     finally { setBusy(false); }
   }
 
   const event = detail?.event;
+  const selectedSession = sessionAt || event?.class_event.sessions?.[0]?.startsAt;
+
   return <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
     <header className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-xl font-bold">イベント</h2>
+      <h2 className="text-xl font-bold">{label}</h2>
       {event || editing
-        ? <button className={button} disabled={busy} onClick={() => { setDetail(null); setEditing(false); setNotice(""); setError(""); }}>イベント一覧に戻る</button>
+        ? <button className={button} disabled={busy} onClick={() => { setDetail(null); setEditing(false); setNotice(""); setError(""); }}>{label}一覧に戻る</button>
         : <button className={primary} disabled={busy} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>}
     </header>
     {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
     {notice && <p className="text-sm text-green-800" role="status">{notice}</p>}
-    {editing ? <EventForm key={event?.id ?? "new"} event={event} classes={classes} busy={busy} onSave={values =>
-      void change({ ...values, id: event?.id, action: "save" }, "下書きを保存しました。")} /> : event && detail ? <>
+    {editing ? <EventForm key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
+      void change({ ...values, id: event?.id, kind, action: "save" }, "下書きを保存しました。")} /> : event && detail ? <>
       <article className="grid gap-2 rounded-xl border p-4" aria-label="参加者向けプレビュー">
         <p className="text-sm text-neutral-600">{statuses[event.status]} · {audiences[event.class_event.audience]}</p>
         <h3 className="text-lg font-semibold">{event.title}</h3>
-        <p>{classEventDate(event.class_event.startsAt)} · {event.class_event.location}</p>
+        <ClassEventSchedule settings={event.class_event} />
         {event.description && <p className="whitespace-pre-wrap text-sm">{event.description}</p>}
         <p className="text-sm">{paymentLabels[event.payment_method]}{event.payment_amount && ` · ${event.payment_amount.toLocaleString("ja-JP")}円`}</p>
         {event.class_event.registration ? <p className="text-sm">申込締切 {classEventDate(event.class_event.deadline)}{event.definition.capacity && ` · 定員 ${event.definition.capacity}人`}</p> : <p className="text-sm">申込不要</p>}
@@ -79,11 +85,11 @@ export default function ClassEventsPanel({ classes, roster }: { classes: SchoolC
         {event.status === "draft" && <button className={button} disabled={busy} onClick={() => setEditing(true)}>下書きを編集</button>}
         {event.status === "open"
           ? <button className={button} disabled={busy} onClick={() => void change({ id: event.id, action: "close" }, "受付を終了しました。")}>受付を終了</button>
-          : <button className={primary} disabled={busy} onClick={() => void change({ id: event.id, action: "publish" }, "イベントを公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>}
+          : <button className={primary} disabled={busy} onClick={() => void change({ id: event.id, action: "publish" }, label + "を公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>}
         {event.status !== "draft" && <a className={button} href={`/class-event/${event.id}`} target="_blank" rel="noreferrer">案内ページを開く</a>}
         {event.status === "open" && event.class_event.audience !== "public" && Date.parse(event.class_event.startsAt) > Date.now() &&
           <button className={button} disabled={busy} onClick={() => {
-            if (window.confirm("対象の保護者にイベント案内をメールで送りますか？"))
+            if (window.confirm(`対象の保護者に${label}の案内をメールで送りますか？`))
               void change({ id: event.id, action: "notifyGuardians" }, "保護者に案内を送りました。");
           }}>保護者に案内を送る</button>}
         {event.status === "open" && event.class_event.audience !== "members" && <button className={button} disabled={busy} onClick={() =>
@@ -106,10 +112,19 @@ export default function ClassEventsPanel({ classes, roster }: { classes: SchoolC
           <button className={button} disabled={busy}>追加</button>
         </form>
         {!detail.entries.length && <p className="text-sm text-neutral-600">参加者はまだいません。</p>}
+        {event.class_event.sessions && detail.entries.length > 0 && <label className="grid max-w-sm gap-1 text-sm">
+          出欠を記録する開催回
+          <select className={input} value={selectedSession} onChange={e => setSessionAt(e.target.value)} disabled={busy}>
+            {event.class_event.sessions.map((session, index) => <option key={session.startsAt} value={session.startsAt}>
+              第{index + 1}回 · {classEventDate(session.startsAt)}
+            </option>)}
+          </select>
+        </label>}
         {detail.entries.map(entry => <div key={entry.id} className="flex flex-wrap items-center gap-3 border-t py-3 text-sm">
           <strong>{entry.name}</strong>
           <label className="flex items-center gap-2">出欠<select className={input} disabled={busy}
-            value={entry.class_event_attendance ?? "clear"} onChange={e => void change({ id: event.id, action: "entry", entryId: entry.id, change: e.target.value }, "出欠を更新しました。")}>
+            value={(selectedSession ? entry.class_workshop_attendance?.find(record => Date.parse(record.session_at) === Date.parse(selectedSession))?.status : entry.class_event_attendance) ?? "clear"}
+            onChange={e => void change({ id: event.id, action: "entry", entryId: entry.id, sessionAt: selectedSession, change: e.target.value }, "出欠を更新しました。")}>
             <option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option>
           </select></label>
           {entry.payment_status === "unpaid" && <button className={button} disabled={busy}
@@ -118,17 +133,20 @@ export default function ClassEventsPanel({ classes, roster }: { classes: SchoolC
         </div>)}
       </section>}
     </> : <>
-      {!events.length && <p className="text-sm text-neutral-600">イベントはまだありません。</p>}
+      {!events.length && <p className="text-sm text-neutral-600">{label}はまだありません。</p>}
       {events.map(item => <button key={item.id} type="button" disabled={busy} className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500"
-        onClick={() => void open(item.id)}><strong>{item.title}</strong><span className="text-sm text-neutral-600">{classEventDate(item.class_event.startsAt)} · {statuses[item.status]}</span></button>)}
+        onClick={() => void open(item.id)}><strong>{item.title}</strong><span className="text-sm text-neutral-600">{classEventDate(item.class_event.startsAt)} · {item.class_event.sessions && `全${item.class_event.sessions.length}回 · `}{statuses[item.status]}</span></button>)}
     </>}
   </section>;
 }
 
-function EventForm({ event, classes, busy, onSave }: {
-  event?: ClassEvent; classes: SchoolClass[]; busy: boolean; onSave: (values: object) => void;
+function EventForm({ kind, event, classes, busy, onSave }: {
+  kind: ClassEventKind; event?: ClassEvent; classes: SchoolClass[]; busy: boolean; onSave: (values: object) => void;
 }) {
   const defaults = event?.class_event;
+  const workshop = kind === "workshop";
+  const [rows, setRows] = useState(() => (defaults?.sessions ?? [{ startsAt: "", location: "" }])
+    .map((row, index) => ({ ...row, key: String(index) })));
   const [audience, setAudience] = useState(defaults?.audience ?? "members");
   const [registration, setRegistration] = useState(defaults?.registration ?? true);
   const [payment, setPayment] = useState(event?.payment_method ?? "none");
@@ -136,16 +154,34 @@ function EventForm({ event, classes, busy, onSave }: {
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    onSave({ ...Object.fromEntries(data), classIds: data.getAll("classId"), registration, audience, payment });
+    onSave({ ...Object.fromEntries(data), ...(workshop ? { sessions: rows.map(row => ({
+      startsAt: data.get("start-" + row.key), location: data.get("location-" + row.key),
+    })) } : {}), classIds: data.getAll("classId"), registration, audience, payment });
   }
 
   return <form className="grid gap-4 text-sm" onSubmit={submit}>
-    <label className="grid gap-1">イベント名<input className={input} name="title" required maxLength={120} defaultValue={event?.title} /></label>
+    <label className="grid gap-1">{classEventLabels[kind]}名<input className={input} name="title" required maxLength={120} defaultValue={event?.title} /></label>
     <label className="grid gap-1">案内文<textarea className={input} rows={3} name="description" maxLength={4000} defaultValue={event?.description ?? ""} /></label>
-    <div className="grid gap-3 sm:grid-cols-2">
+    {workshop ? <fieldset className="grid gap-3">
+      <legend className="font-semibold">開催日程（日本時間）</legend>
+      {rows.map((row, index) => <div key={row.key} className="grid gap-2 rounded-lg border p-3">
+        <div className="flex items-center justify-between gap-2">
+          <strong>第{index + 1}回</strong>
+          {rows.length > 1 && <button type="button" className={button} aria-label={`第${index + 1}回を削除`}
+            onClick={() => setRows(current => current.filter(item => item.key !== row.key))}>削除</button>}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1">日時<input className={input} type="datetime-local" name={"start-" + row.key}
+            required defaultValue={row.startsAt ? localDate(row.startsAt) : ""} /></label>
+          <label className="grid gap-1">場所<input className={input} name={"location-" + row.key} required maxLength={200} defaultValue={row.location} /></label>
+        </div>
+      </div>)}
+      {rows.length < maxWorkshopSessions && <button type="button" className={button}
+        onClick={() => setRows(current => [...current, { key: crypto.randomUUID(), startsAt: "", location: "" }])}>開催回を追加</button>}
+    </fieldset> : <div className="grid gap-3 sm:grid-cols-2">
       <label className="grid gap-1">開催日時（日本時間）<input className={input} type="datetime-local" name="startsAt" required defaultValue={defaults && localDate(defaults.startsAt)} /></label>
       <label className="grid gap-1">場所<input className={input} name="location" required maxLength={200} defaultValue={defaults?.location} /></label>
-    </div>
+    </div>}
     <label className="grid gap-1">対象<select className={input} value={audience} onChange={e => setAudience(e.target.value as typeof audience)}>
       {Object.entries(audiences).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
@@ -156,15 +192,15 @@ function EventForm({ event, classes, busy, onSave }: {
         {item.productName ? item.productName + " · " : ""}{item.name}
       </label>)}
     </fieldset>}
-    <label className="flex items-center gap-2"><input type="checkbox" checked={registration} onChange={e => {
+    {!workshop && <label className="flex items-center gap-2"><input type="checkbox" checked={registration} onChange={e => {
       setRegistration(e.target.checked);
       if (!e.target.checked && payment === "payment_link") setPayment("none");
-    }} />申込を受け付ける</label>
+    }} />申込を受け付ける</label>}
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1">定員（任意）<input className={input} type="number" min={1} max={1000} name="capacity" defaultValue={event?.definition.capacity ?? ""} /></label>
-      {registration && <label className="grid gap-1">申込締切（空欄なら開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
+      <label className="grid gap-1">{workshop ? "講習会全体の定員（任意）" : "定員（任意）"}<input className={input} type="number" min={1} max={1000} name="capacity" defaultValue={event?.definition.capacity ?? ""} /></label>
+      {registration && <label className="grid gap-1">申込締切（空欄なら{workshop ? "初回" : ""}開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
     </div>
-    <label className="grid gap-1">参加費<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
+    <label className="grid gap-1">{workshop ? "講習会全体の受講料" : "参加費"}<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
       {Object.entries(paymentLabels).filter(([key]) => registration || key !== "payment_link").map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
     {payment !== "none" && <label className="grid gap-1">金額（円）<input className={input} type="number" min={1} max={10000000} required name="amount" defaultValue={event?.payment_amount ?? ""} /></label>}

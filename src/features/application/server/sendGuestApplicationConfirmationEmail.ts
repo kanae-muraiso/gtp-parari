@@ -9,6 +9,7 @@ type GuestApplicationEmailInput = {
   applicationTitle: string;
   cancellationToken: string;
   entryStatus: string;
+  schedule?: string[];
 };
 
 type GuestApplicationEmailResult =
@@ -84,6 +85,7 @@ export async function sendGuestApplicationConfirmationEmail(
     "",
     `「${input.applicationTitle}」への${acceptedMessage}`,
     "",
+    ...(input.schedule?.length ? ["開催日程", ...input.schedule, ""] : []),
     "申込内容・現在の状況は、次の専用ページから確認できます。",
     "申込の取り下げ・キャンセルが可能な場合も、このページから手続きできます。",
     statusUrl,
@@ -101,6 +103,7 @@ export async function sendGuestApplicationConfirmationEmail(
       <p>${safeName} 様</p>
       <h1 style="font-size: 20px; margin: 24px 0 12px;">${safeTitle}</h1>
       <p>お申し込みについて、${safeAcceptedMessage}</p>
+      ${input.schedule?.length ? `<p>開催日程</p><ul>${input.schedule.map(line => `<li>${escapeHtml(line)}</li>`).join("")}</ul>` : ""}
       <p style="margin-top: 24px;">申込内容・現在の状況は、次の専用ページから確認できます。申込の取り下げ・キャンセルが可能な場合も、このページから手続きできます。</p>
       <p style="margin: 24px 0;">
         <a href="${safeStatusUrl}" style="display: inline-block; border-radius: 9999px; background: #171717; color: #ffffff; padding: 12px 20px; text-decoration: none; font-weight: 700;">申込内容・状況を確認する</a>
