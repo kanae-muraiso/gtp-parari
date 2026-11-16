@@ -1,3 +1,4 @@
+import { classAdmissionMail, classDateTime } from "@/lib/classAdmissionMail";
 // src/app/api/application/submit/route.ts
 // 2026-09-17 JST
 //
@@ -175,6 +176,14 @@ export async function POST(
         checkoutMessage =
           "申込は受け付けましたが、Square決済を開始できませんでした。もう一度お支払いをお試しください。";
       }
+    }
+
+    if (snapshot?.class_event && typeof snapshot.class_event === "object" && user.email && typeof entry?.id === "string") {
+      const event = snapshot.class_event as { startsAt: string; location: string };
+      await classAdmissionMail(user.email, "イベント申込受付 · " + String(snapshot.title ?? ""),
+        [classDateTime(event.startsAt) + "（日本時間）", event.location,
+          new URL("/class-event/" + applicationId.trim(), request.nextUrl.origin).href].join("\n"),
+        "class-event-registration-" + entry.id);
     }
 
     return NextResponse.json({

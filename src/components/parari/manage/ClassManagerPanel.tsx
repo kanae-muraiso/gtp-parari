@@ -7,6 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
+import ClassEventsPanel from "./ClassEventsPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { classSchedule, type ClassManagement, type SchoolClass, type ClassRosterMember } from "@/lib/classes";
@@ -32,6 +33,7 @@ function BusinessClassManager() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
+  const [showEvents, setShowEvents] = useState(false);
   const [showProducts, setShowProducts] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -113,12 +115,17 @@ function BusinessClassManager() {
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
       <strong>{school?.name}</strong>
     </div>
-    {!item && !creating && !schoolAdmission && school && <details className={panel}>
+    {!item && !creating && !schoolAdmission && <nav className="flex flex-wrap gap-2" aria-label="事業の運営">
+      <button type="button" aria-pressed={!showEvents} className={!showEvents ? button : "rounded-lg border bg-white px-4 py-2 text-sm"} onClick={() => setShowEvents(false)}>クラス一覧</button>
+      <button type="button" aria-pressed={showEvents} className={showEvents ? button : "rounded-lg border bg-white px-4 py-2 text-sm"} onClick={() => setShowEvents(true)}>イベント</button>
+    </nav>}
+    {!item && !creating && !schoolAdmission && showEvents && <ClassEventsPanel classes={school.classes} roster={data.roster} />}
+    {!showEvents && !item && !creating && !schoolAdmission && school && <details className={panel}>
       <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
       <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
       <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
     </details>}
-    {!item && !creating && !schoolAdmission && <section className={panel}>
+    {!showEvents && !item && !creating && !schoolAdmission && <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>
         {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {

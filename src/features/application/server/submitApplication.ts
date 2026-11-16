@@ -1,3 +1,5 @@
+import { canRegisterForClassEvent } from "@/lib/classEventAccess";
+import type { ClassEventSettings } from "@/lib/classEvents";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   getEffectivePlan,
@@ -38,6 +40,8 @@ import type {
 type ApplicationRow = {
   id: string;
   owner_user_id: string;
+  class_event_school_id: string | null;
+  class_event: ClassEventSettings | null;
   origin: "manual" | "calendar";
   calendar_item_id: string | null;
   application_type: string;
@@ -220,6 +224,8 @@ export async function submitApplication(
       `
         id,
         owner_user_id,
+        class_event_school_id,
+        class_event,
         origin,
         calendar_item_id,
         application_type,
@@ -257,6 +263,10 @@ export async function submitApplication(
   }
 
   const application = applicationData as ApplicationRow;
+
+  if (application.class_event_school_id && (!application.class_event || !await canRegisterForClassEvent(
+    application.class_event_school_id, application.class_event, input.identity.kind === "member" ? input.identity.userId : null,
+  ))) return fail(403, "このイベントは申し込めません。");
 
   if (application.status !== "open") {
     return fail(
@@ -568,7 +578,9 @@ export async function submitApplication(
 
   let effectiveLimit: number | null = null;
 
-  if (calendarOccurrence) {
+  if (application.class_event) {
+    effectiveLimit = getApplicationCapacity(application.definition);
+  } else if (calendarOccurrence) {
     effectiveLimit =
       calendarOccurrence.capacity === null
         ? null
@@ -636,6 +648,7 @@ export async function submitApplication(
       application.cancellation_cutoff_minutes,
     source_context:
       sourceContext,
+    ...(application.class_event ? { class_event: { startsAt: application.class_event.startsAt, location: application.class_event.location } } : {}),
     version: application.version,
     calendar_occurrence:
       calendarOccurrence
@@ -708,6 +721,7 @@ export async function submitApplication(
     : atomicEntryData;
 
   if (insertError) {
+    if (insertError.message.includes("class_event_registration_closed")) return fail(409, "このイベントの受付は終了しました。");
     if (
       (insertError.message ?? "").includes(
         "application_check_in_started",

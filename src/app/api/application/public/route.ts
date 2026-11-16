@@ -394,6 +394,7 @@ export async function GET(
         "id",
         applicationId,
       )
+      .is("class_event_school_id", null)
       .maybeSingle();
 
     if (

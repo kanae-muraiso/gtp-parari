@@ -70,6 +70,11 @@ export async function GET(request: NextRequest) {
         typeof snapshot?.payment_method === "string"
           ? snapshot.payment_method
           : "none",
+      class_event_payment_url:
+        snapshot?.class_event && snapshot.payment_method === "payment_link" &&
+        result.entry.payment_status === "unpaid" && ["submitted", "confirmed"].includes(result.entry.status) &&
+        typeof snapshot.payment_url === "string" && /^https:\/\//i.test(snapshot.payment_url)
+          ? snapshot.payment_url : null,
       delivery:
         delivery
           ? delivery.kind === "work"
