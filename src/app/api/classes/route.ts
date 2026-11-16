@@ -1,3 +1,4 @@
+import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
 import { NextRequest, NextResponse } from "next/server";
@@ -94,7 +95,17 @@ export async function GET(request: NextRequest) {
 
     const { data: school, error } = await db.rpc("read_class_school", { p_school: id, p_user: user.id });
     if (error) throw error;
-    if (!school) return fail("教室が見つかりません。", 404);
+    if (!school) {
+      const ids = await classGuardianEnrollmentIds(user.id, id);
+      if (!ids.length) return fail("教室が見つかりません。", 404);
+      const [business, enrolled] = await Promise.all([
+        db.from("class_schools").select("id,name").eq("id", id).is("archived_at", null).maybeSingle(),
+        db.from("school_enrollments").select("id").eq("school_id", id).in("id", ids).eq("status", "active").limit(1),
+      ]);
+      if (business.error || enrolled.error) throw business.error ?? enrolled.error;
+      if (!business.data || !enrolled.data?.length) return fail("教室が見つかりません。", 404);
+      return reply({ ok: true, userId: user.id, school: { ...business.data, classes: [] }, visits: null, calendarOnly: true });
+    }
     const visible = school as ClassSchool;
     const [member, products] = await Promise.all([
       db.from("school_enrollments").select("id,class_participation,contract_fee_yen").eq("school_id", id)
@@ -133,8 +144,16 @@ export async function GET(request: NextRequest) {
       }));
       if (flexible) visible.classes = visible.classes.map(item =>
         booked.data.some(visit => visit.class_id === item.id && cleared(visit)) ? item : { ...item, meeting_url: null });
+      const calendarClasses = [...new Set([...visible.classes, ...makeupClasses].map(item => item.id))];
+      const calendar = calendarClasses.length
+        ? await db.from("school_class_monthly_schedules").select("class_id,month,days").in("class_id", calendarClasses)
+          .gte("month", today.slice(0, 7) + "-01")
+          .lte("month", new Date(Date.parse(today) + 63 * 86400000).toISOString().slice(0, 7) + "-01")
+        : null;
+      if (calendar?.error) throw calendar.error;
+      const calendarDays = Object.fromEntries((calendar?.data ?? []).map(row => [row.class_id + ":" + row.month.slice(0, 7), row.days]));
       visits = { flexible, classIds: Object.keys(allowances), monthlyVisits: Object.values(allowances)[0] ?? 0,
-        allowances, contractFee: member.data.contract_fee_yen, booked: booked.data, makeups, makeupClasses };
+        allowances, calendarDays, contractFee: member.data.contract_fee_yen, booked: booked.data, makeups, makeupClasses };
     }
     return reply({ ok: true, userId: user.id, school: visible, visits });
   } catch (error) {

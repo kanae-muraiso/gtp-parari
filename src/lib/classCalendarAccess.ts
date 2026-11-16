@@ -1,0 +1,12 @@
+import "server-only";
+import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
+
+export async function classGuardianEnrollmentIds(user: string, school?: string) {
+  let query = db.from("school_admission_cases").select("enrollment_id")
+    .eq("applicant_user_id", user).not("consent_at", "is", null)
+    .not("enrollment_id", "is", null).not("application_fields->>guardianEmail", "is", null);
+  if (school) query = query.eq("school_id", school);
+  const { data, error } = await query;
+  if (error) throw error;
+  return [...new Set(data.flatMap(row => row.enrollment_id ? [row.enrollment_id as string] : []))];
+}

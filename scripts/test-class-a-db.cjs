@@ -370,6 +370,32 @@ async function main() {
     assert.deepEqual((await db.query("select status from class_workshop_attendance where entry_id=$1", [sharedEntry])).rows,[{status:"present"}]);
     await db.exec("reset role; set role authenticated");
     await assert.rejects(db.query("select * from class_workshop_attendance"), {code:"42501"});
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261116190000_class_monthly_schedule.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const month = next.slice(0, 7) + "-01";
+    await assert.rejects(db.query("insert into school_class_monthly_schedules(class_id,month,days) values($1,$2,'{}')",
+      [otherClass, month]), /class_calendar_reserved_day/);
+    await db.query("insert into school_class_monthly_schedules(class_id,month,days,confirmed) values($1,$2,array[$3::date],true)",
+      [otherClass, month, next]);
+    const isScheduled = day => db.query(
+      "select school_class_runs_on(id,starts_on,cadence,$2) as scheduled from school_classes where id=$1", [otherClass, day]);
+    assert.equal((await isScheduled(next)).rows[0].scheduled, true);
+    const unscheduled = next === month ? next.slice(0, 8) + "02" : month;
+    assert.equal((await isScheduled(unscheduled)).rows[0].scheduled, false);
+    await assert.rejects(db.query("update school_class_monthly_schedules set days='{}' where class_id=$1", [otherClass]),
+      /class_calendar_reserved_day/);
+    await db.exec("reset role");
+    await db.query("delete from school_class_visit_reservations where class_id=$1 and visit_on=$2", [otherClass,next]);
+    await db.exec("set role service_role");
+    const movedDay = (await db.query("select ($1::date+1)::text as day", [next])).rows[0].day;
+    await db.query("update school_class_monthly_schedules set days='{}' where class_id=$1 and month=$2", [otherClass,month]);
+    await db.query("insert into school_class_monthly_schedules(class_id,month,days) values($1,$2,array[$3::date]) " +
+      "on conflict(class_id,month) do update set days=excluded.days", [otherClass,movedDay.slice(0,7)+"-01",movedDay]);
+    await assert.rejects(priced(otherClass,0), {code:"22023"});
+    await db.query("select reserve_priced_class_visit($1,$2,$3,$4,null,0)", [outsider,school,otherClass,movedDay]);
+    await db.exec("reset role; set role authenticated");
+    await assert.rejects(db.query("select * from school_class_monthly_schedules"), {code:"42501"});
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");

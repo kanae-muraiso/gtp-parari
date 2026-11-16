@@ -56,11 +56,11 @@ assert.equal(domain.participationAtLocation("/my/bookshelf", new URLSearchParams
 const users = {
   alumni: { alumni, researcher: { ...researcher, profile_exists: false, required_complete: false, participating: false, admitted: false } },
   researcher: { alumni: { ...alumni, is_alumni: false }, researcher },
-  purchaser: {}, groups: {}, company: {},
+  purchaser: {}, groups: {}, company: {}, guardian: {},
 };
 const tables = {
   class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
-  profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }],
+  profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: true }],
   membership_members: [
     { user_id: "groups", membership_id: a, status: "active" },
     { user_id: "groups", membership_id: b, status: "active" },
@@ -69,7 +69,11 @@ const tables = {
   ],
   school_enrollments: [
     { user_id: "groups", school: { id: a, name: "英語教室" }, status: "active" },
-    { user_id: "purchaser", school: { id: b, name: "ダンス教室" }, status: "active" },
+    { id: b, user_id: "purchaser", school: { id: b, name: "ダンス教室" }, status: "active" },
+  ],
+  school_admission_cases: [
+    { applicant_user_id: "guardian", enrollment_id: b, consent_at: "2026-01-01", "application_fields->>guardianEmail": "test@example.invalid" },
+    { applicant_user_id: "guardian", enrollment_id: a, consent_at: "2026-01-01" },
   ],
   memberships: [{ id: a, name: "A" }, { id: b, name: "B" }, { id: cpp, name: "CPP" }],
   cpp_company_members: [{ user_id: "company", company_id: "co", role: "owner" }, { user_id: "purchaser", company_id: "co", role: "viewer" }],
@@ -87,14 +91,25 @@ function from(table) {
     eq(key, value) { rows = rows.filter(row => row[key] === value); return chain; },
     is(key, value) { rows = rows.filter(row => (row[key] ?? null) === value); return chain; },
     in(key, values) { rows = rows.filter(row => values.includes(row[key])); return chain; },
+    not(key, operator, value) { assert.equal(operator, "is"); rows = rows.filter(row => (row[key] ?? null) !== value); return chain; },
+    or(filter) {
+      const match = /^user_id\.eq\.([^,]+),id\.in\.\(([^)]*)\)$/.exec(filter);
+      assert.ok(match);
+      rows = rows.filter(row => row.user_id === match[1] || match[2].split(",").includes(row.id));
+      return chain;
+    },
     order() { return chain; }, limit(n) { rows = rows.slice(0, n); return chain; },
     then(resolve) { return Promise.resolve({ data: rows, error: table === failTable ? new Error("test DB failure") : null }).then(resolve); },
   };
   return chain;
 }
 const admin = { auth: { getUser: async token => ({ data: { user: users[token] ? { id: token } : null }, error: null }) }, from };
+const calendarAccess = load("src/lib/classCalendarAccess.ts", {
+  "server-only": {}, "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
+});
 const { GET } = load("src/app/api/my-participations/route.ts", {
   "@/lib/participation": domain,
+  "@/lib/classCalendarAccess": calendarAccess,
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
   "@supabase/supabase-js": { createClient: (_url, _key, options) => ({ rpc: async name => {
     const user = users[await options.accessToken()];
@@ -108,6 +123,7 @@ const businessScope = load("src/lib/classBusinessScope.ts", {
 });
 const classes = load("src/app/api/classes/route.ts", {
   "@/lib/classBusinessScope": businessScope,
+  "@/lib/classCalendarAccess": calendarAccess,
   "@/lib/classProduct": load("src/lib/classProduct.ts"),
   "@/lib/classes": load("src/lib/classes.ts"),
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
@@ -131,7 +147,7 @@ async function main() {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations", { headers: token ? { Authorization: `Bearer ${token}` } : {} }));
     assert.equal(response.status, 401); assert.equal(dbCalls, 0);
   }
-  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", []], ["groups", [`membership:${a}`, `membership:${b}`, `class:${a}`]], ["company", ["cpp"]]]) {
+  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", []], ["groups", [`membership:${a}`, `membership:${b}`, `class:${a}`]], ["company", ["cpp"]], ["guardian", [`class:${b}`]]]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations?user_id=groups", { headers: { Authorization: `Bearer ${token}` } }));
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control"), /no-store/);

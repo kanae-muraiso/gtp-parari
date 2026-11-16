@@ -71,6 +71,7 @@ export type ClassVisits = {
   flexible: boolean;
   classIds: string[];
   monthlyVisits: number;
+  calendarDays?: Record<string, string[]>;
   contractFee?: number | null;
   booked: { class_id: string; visit_on: string; makeup_id?: string | null; surcharge_yen?: number; surcharge_paid_at?: string | null }[];
   allowances?: Record<string, number>;

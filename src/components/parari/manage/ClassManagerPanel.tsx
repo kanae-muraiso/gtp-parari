@@ -7,6 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
+import ClassCalendarPanel from "./ClassCalendarPanel";
 import ClassEventsPanel from "./ClassEventsPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
@@ -33,7 +34,7 @@ function BusinessClassManager() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
-  const [section, setSection] = useState<"classes" | "event" | "workshop">("classes");
+  const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop">("classes");
   const [showProducts, setShowProducts] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -115,18 +116,21 @@ function BusinessClassManager() {
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
       <strong>{school?.name}</strong>
     </div>
+    {!item && !creating && !schoolAdmission && <details className="w-fit max-w-full rounded-lg border border-neutral-200 bg-white open:w-full">
+      <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">事業設定</summary>
+      <div className="grid gap-3 border-t border-neutral-200 px-3 py-3">
+        <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
+        <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
+      </div>
+    </details>}
     {!item && !creating && !schoolAdmission && <nav className="flex flex-wrap gap-2" aria-label="事業の運営">
-      {([["classes", "クラス一覧"], ["event", "イベント"], ["workshop", "講習会"]] as const).map(([key, label]) =>
+      {([["classes", "クラス一覧"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"]] as const).map(([key, label]) =>
         <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
           onClick={() => setSection(key)}>{label}</button>)}
     </nav>}
-    {!item && !creating && !schoolAdmission && section !== "classes" &&
+    {!item && !creating && !schoolAdmission && (section === "event" || section === "workshop") &&
       <ClassEventsPanel key={section} kind={section} classes={school.classes} roster={data.roster} />}
-    {section === "classes" && !item && !creating && !schoolAdmission && school && <details className={panel}>
-      <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
-      <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
-      <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
-    </details>}
+    {!item && !creating && !schoolAdmission && section === "calendar" && <ClassCalendarPanel classes={school.classes} />}
     {section === "classes" && !item && !creating && !schoolAdmission && <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>

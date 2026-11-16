@@ -3,26 +3,28 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { isScheduledClassDay } from "@/lib/classCalendar";
+import LearnerClassCalendar from "@/components/parari/manage/LearnerClassCalendar";
 import ClassEventNotices from "@/components/parari/manage/ClassEventNotices";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
-import { classMeetingUrl, classSchedule, classRunsOn, type ClassSchool, type ClassVisits } from "@/lib/classes";
+import { classMeetingUrl, classSchedule, type ClassSchool, type ClassVisits } from "@/lib/classes";
 
 export default function MyClassSchoolPage() {
   const { id } = useParams<{ id: string }>();
   const { userId } = useParticipations();
-  const [result, setResult] = useState<{ id: string; userId: string | null; school?: ClassSchool; visits?: ClassVisits | null; status?: number; error?: string } | null>(null);
+  const [result, setResult] = useState<{ id: string; userId: string | null; school?: ClassSchool; calendarOnly?: boolean; visits?: ClassVisits | null; status?: number; error?: string } | null>(null);
 
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<{ school: ClassSchool; userId: string; visits: ClassVisits | null }>(`?school=${encodeURIComponent(id)}`, undefined, controller.signal)
-      .then(({ school, userId: owner, visits }) => {
-        if (!controller.signal.aborted) setResult({ id, userId: owner, school, visits });
+    void classRequest<{ school: ClassSchool; userId: string; visits: ClassVisits | null; calendarOnly?: boolean }>(`?school=${encodeURIComponent(id)}`, undefined, controller.signal)
+      .then(({ school, userId: owner, visits, calendarOnly }) => {
+        if (!controller.signal.aborted) setResult({ id, userId: owner, school, visits, calendarOnly });
       }).catch((cause: unknown) => {
         if (controller.signal.aborted) return;
         setResult({ id, userId, status: cause instanceof ClassRequestError ? cause.status : 500,
@@ -56,13 +58,14 @@ export default function MyClassSchoolPage() {
   return <main className="min-h-screen bg-neutral-100">
     <div className="mx-auto grid w-full max-w-3xl gap-5 px-4 py-6">
       <MyAreaHeader title="クラス" area="library" navigation={<MyPrimaryTabs active={null} embedded />} />
+      {current?.school && userId && <LearnerClassCalendar key={id + userId} schoolId={id} refresh={refresh} />}
       <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
         {current?.school ? <>
           <h2 className="text-xl font-bold">{current.school.name}</h2>
           <ClassEventNotices key={id} schoolId={id} />
           {notice && <p role="status" className="text-sm">{notice}</p>}
           {current.visits?.flexible && <p className="text-sm">同じ商品の開催枠を横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
-          {current.school.classes.length === 0 && <p>参加できるクラスはありません。</p>}
+          {!current.calendarOnly && current.school.classes.length === 0 && <p>参加できるクラスはありません。</p>}
           {current.school.classes.map(item => <article className="rounded-xl border border-neutral-200 p-4" key={item.id}>
             <h3 className="font-bold">{item.productName && item.productName + " · "}{item.name}</h3>
             <p className="mt-1 text-sm">{classSchedule(item)}</p>
@@ -74,7 +77,7 @@ export default function MyClassSchoolPage() {
               <summary className="cursor-pointer">開催日を予約する</summary>
               <p className="mt-1 text-neutral-600">差額がある場合は教室が入金を確認します。安い枠を選んだ場合や、差額入金後の取消時の返金は教室にご確認ください。</p>
               <div className="mt-2 grid gap-2">
-                {dates.filter(day => classRunsOn(item, day) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now)
+                {dates.filter(day => isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now)
                   .map(day => {
                     const booked = current.visits?.booked.find(visit => visit.class_id === item.id && visit.visit_on === day);
                     const surcharge = quote(item);
@@ -103,7 +106,7 @@ export default function MyClassSchoolPage() {
                     <p className="font-medium">{item.name}{item.location ? " · " + item.location : ""}</p>
                     {Array.from({ length: Math.max(0, Math.round((Date.parse(credit.expires_on) - Date.parse(today)) / 86400000) + 1) },
                       (_, index) => new Date(Date.parse(today) + index * 86400000).toISOString().slice(0, 10))
-                      .filter(day => classRunsOn(item, day) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now).map(day =>
+                      .filter(day => isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now).map(day =>
                       <div className="flex items-center justify-between gap-2" key={day}>
                         <span>{day} {item.starts_at.slice(0, 5)}（日本時間）</span>
                         <button className="rounded border px-3 py-2" type="button" disabled={busy}
