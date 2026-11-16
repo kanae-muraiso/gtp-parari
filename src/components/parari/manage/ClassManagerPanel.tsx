@@ -34,13 +34,13 @@ function BusinessClassManager() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
-  const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop">("classes");
+  const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop" | "roster">("classes");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [newSlot, setNewSlot] = useState<{ id: string; productId: string } | null>(null);
   const creating = newSlot !== null;
   const [reload, setReload] = useState(0);
-  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview" | "schedule">("product");
+  const [view, setView] = useState<"admissions" | "settings" | "preview">("settings");
   const [data, setData] = useState<ClassManagement | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -97,6 +97,7 @@ function BusinessClassManager() {
   const school = data.school;
   if (!school) return <section className={panel}><p>事業を選択してください。</p><Link href="/my/manage?tab=class" className="underline">事業一覧へ</Link></section>;
   const item = school.classes.find(entry => entry.id === selectedId);
+  const itemProductName = item?.productName ?? data.products?.find(product => product.id === item?.product_id)?.name;
   const slotProduct = data.products?.find(product => product.id === newSlot?.productId);
   const reloadProducts = () => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"));
 
@@ -131,7 +132,7 @@ function BusinessClassManager() {
       </div>
     </details>}
     {!item && !creating && !schoolAdmission && <nav className="flex flex-wrap gap-2" aria-label="事業の運営">
-      {([["classes", "クラス一覧"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"]] as const).map(([key, label]) =>
+      {([["classes", "クラス一覧"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"], ["roster", "名簿"]] as const).map(([key, label]) =>
         <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
           onClick={() => setSection(key)}>{label}</button>)}
     </nav>}
@@ -166,7 +167,7 @@ function BusinessClassManager() {
           {product.id && editingProduct === product.id && <ClassProductPanel key={product.id}
             classes={school.classes} initialProduct={product.id} allowProductSelection={false} onSaved={reloadProducts} />}
           {entries.map(entry => <button key={entry.id} type="button"
-            onClick={() => { setSelectedId(entry.id); setView("roster"); }}
+            onClick={() => { setSelectedId(entry.id); setDeliveryDraft(null); setError(""); setMessage(""); }}
             className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500">
             <span>{entry.name}</span><span className="text-sm text-neutral-600">{classSchedule(entry)}{entry.location ? " · " + entry.location : ""}{entry.fee_override_yen != null ? " · " + entry.fee_override_yen.toLocaleString("ja-JP") + "円" : ""}</span>
           </button>)}
@@ -179,47 +180,52 @@ function BusinessClassManager() {
       {!data.products?.length && <p className="text-sm text-neutral-600">開催枠を追加するには、商品を作成してください。</p>}
     </section>}
     {(item || creating || schoolAdmission) && <header className="grid gap-2">
-      <button type="button" className="w-fit text-sm underline" disabled={busy} onClick={backToList}>クラス一覧に戻る</button>
-      <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? school.name : "開催枠を追加")}</h2>
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <button type="button" className="w-fit underline" disabled={busy} onClick={backToList}>クラス一覧に戻る</button>
+        {(item || creating) && <span className="font-medium">{itemProductName ?? slotProduct?.name ?? "商品未設定の開催枠"}</span>}
+      </div>
+      <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? "教室共通の入会設定" : "開催枠を追加")}</h2>
     </header>}
-    {(item || schoolAdmission) && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
-      {([["product", "商品設定"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"], ["schedule", "開催予定・休講"]] as const).filter(([key]) => !schoolAdmission || key === "settings" || key === "preview" || key === "admissions").map(([key, title]) =>
+    {schoolAdmission && <nav aria-label="入会手続き" className="flex flex-wrap gap-2">
+      {([["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"]] as const).map(([key, title]) =>
         <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setMessage(""); setError(""); }}
           className={view === key ? button : "rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm"}>{title}</button>)}
     </nav>}
-    {item && view === "schedule" && <ClassCalendarPanel key={item.id} classes={school.classes} selectedClass={item} />}
-    {(creating || (item && view === "roster")) && <form key={school?.id ?? "new"} className={panel} onSubmit={event => {
-      const values = formValues(event);
-      const slot = newSlot;
-      void save({ ...values, classId: slot?.id ?? item?.id,
-        ...(slot ? { productId: slot.productId } : {}), action: slot ? "create" : "schedule" },
-        slot ? "開催枠を追加しました。" : "開催枠の設定を保存しました。");
-    }}>
-      {creating ? <p className="text-sm">対象の商品 <strong>{slotProduct?.name}</strong></p> : <h3 className="font-bold">開催枠の設定</h3>}
-      <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className={label}>頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
-          <option value="weekly">毎週</option><option value="monthly">毎月</option>
+    {(creating || item) && <section key={newSlot?.id ?? item?.id} className={panel} aria-labelledby="class-slot-settings-heading">
+      <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
+      <form className="grid gap-4" onSubmit={event => {
+        const values = formValues(event);
+        const slot = newSlot;
+        void save({ ...values, classId: slot?.id ?? item?.id,
+          ...(slot ? { productId: slot.productId } : {}), action: slot ? "create" : "schedule" },
+          slot ? "開催枠を追加しました。" : "開催枠の設定を保存しました。");
+      }}>
+        <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className={label}>頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
+            <option value="weekly">毎週</option><option value="monthly">毎月</option>
+          </select></label>
+          <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
+          <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
+        </div>
+        <label className={label}>開催枠の料金（円・空欄なら商品の基本料金）
+          <input className={field} name="feeOverride" type="number" min={0} max={1000000} defaultValue={item?.fee_override_yen ?? ""} />
+        </label>
+        <p className="text-sm text-neutral-600">契約時の料金より高い枠は、予約ごとに差額が発生します。</p>
+        <label className={label}>所要時間（分）<input className={field} name="duration" type="number" min={5} max={480} required defaultValue={item?.duration_minutes ?? 60} /></label>
+        <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
+          <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
         </select></label>
-        <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
-        <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
-      </div>
-      <label className={label}>開催枠の料金（円・空欄なら商品の基本料金）
-        <input className={field} name="feeOverride" type="number" min={0} max={1000000} defaultValue={item?.fee_override_yen ?? ""} />
-      </label>
-      <p className="text-sm text-neutral-600">契約時の料金より高い枠は、予約ごとに差額が発生します。</p>
-      <label className={label}>所要時間（分）<input className={field} name="duration" type="number" min={5} max={480} required defaultValue={item?.duration_minutes ?? 60} /></label>
-      <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
-        <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
-      </select></label>
-      {delivery !== "online" && <label className={label}>会場<input className={field} name="location" maxLength={200} required={delivery === "hybrid"} defaultValue={item?.location ?? ""} /></label>}
-      {delivery !== "onsite" && <label className={label}>授業の参加リンク<input className={field} name="meetingUrl" type="url" maxLength={2000} required defaultValue={item?.meeting_url ?? ""} /></label>}
-      <div className="flex flex-wrap items-center gap-4">
-        <button className={button} disabled={busy || (creating && !slotProduct)}>{creating ? "この商品に追加" : "保存"}</button>
-        {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
-      </div>
-    </form>}
-    {item && view === "roster" && !item.product_id && Boolean(data.otherBusinesses?.length) &&
+        {delivery !== "online" && <label className={label}>会場<input className={field} name="location" maxLength={200} required={delivery === "hybrid"} defaultValue={item?.location ?? ""} /></label>}
+        {delivery !== "onsite" && <label className={label}>授業の参加リンク<input className={field} name="meetingUrl" type="url" maxLength={2000} required defaultValue={item?.meeting_url ?? ""} /></label>}
+        <div className="flex flex-wrap items-center gap-4">
+          <button className={button} disabled={busy || (creating && !slotProduct)}>{creating ? "この商品に追加" : "保存"}</button>
+          {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
+        </div>
+      </form>
+      {item && <ClassCalendarPanel classes={school.classes} selectedClass={item} />}
+    </section>}
+    {item && !item.product_id && Boolean(data.otherBusinesses?.length) &&
       <form className={panel} onSubmit={async event => {
         const values = formValues(event);
         if (await save({ action: "moveSlot", destination: values.destination, classId: item.id }, "開催枠を移動しました。")) setSelectedId(null);
@@ -231,10 +237,8 @@ function BusinessClassManager() {
         </label>
         <button className={button} disabled={busy}>開催枠を移す</button>
       </form>}
-    {school && (item || schoolAdmission) && <>
+    {schoolAdmission && <>
       {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">「{school.name}」の入会手続きを設定します。募集ページごとに対象クラスを選べます。</p>}
-      {view === "product" && <ClassProductPanel key={item?.id ?? school.id} classes={school.classes} initialProduct={item?.product_id}
-        initialClass={item?.id} onSaved={() => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"))} />}
       {view === "settings" && <button type="button" className="w-fit rounded-lg border bg-white px-3 py-2 text-sm"
         aria-expanded={showBlueprint} onClick={() => setShowBlueprint(value => !value)}>
         {showBlueprint ? "入会の設計図を閉じる" : "入会の設計図を作る（試作）"}
@@ -260,20 +264,28 @@ function BusinessClassManager() {
         <p className="text-sm text-neutral-600">選んだ受付で確定した申込を名簿に登録します。過去に確定した申込も対象です。</p>
         <button className={button} disabled={busy}>受付設定を保存</button>
       </form>}
-      {view === "roster" && <section className={panel} aria-labelledby="class-roster-heading">
+    </>}
+    {!item && !creating && !schoolAdmission && section === "roster" && <section className={panel} aria-labelledby="class-roster-heading">
         <h3 id="class-roster-heading" className="font-bold">名簿（在籍 {data.roster.filter(member => member.status === "active").length}名）</h3>
-        <form className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={async event => {
+        <form className="flex flex-wrap items-end gap-3" onSubmit={async event => {
           const form = event.currentTarget;
           const values = formValues(event);
           const requestId = memberId ?? crypto.randomUUID();
           setMemberId(requestId);
-          if (await save({ ...values, action: "add", memberId: requestId, classId: item?.id }, "名簿に登録しました。")) {
+          if (await save({ ...values, action: "add", memberId: requestId }, "名簿に登録しました。")) {
             setMemberId(null);
             form.reset();
           }
         }}>
           <label className={label}>受講者名<input className={field} name="name" required maxLength={120} /></label>
           <label className={label}>PARARIユーザー名（任意）<input className={field} name="username" maxLength={120} /></label>
+          <label className={label}>開催枠
+            <select className={field} name="classId" required defaultValue="">
+              <option value="" disabled>開催枠を選ぶ</option>{school.classes.map(slot => <option key={slot.id} value={slot.id}>
+                {slot.productName ? slot.productName + " · " : ""}{slot.name}
+              </option>)}
+            </select>
+          </label>
           <button className={button} disabled={busy}>追加</button>
         </form>
         {Boolean(data.surcharges?.length) && <section className="grid gap-2 border-t pt-3">
@@ -295,8 +307,7 @@ function BusinessClassManager() {
         <ul className="divide-y divide-neutral-200">
           {data.roster.map(member => <li key={member.id} className="py-3"><RosterRow member={member} classes={school.classes} busy={busy} save={save} /></li>)}
         </ul>
-      </section>}
-    </>}
+    </section>}
     <div aria-live="polite">
       {error && <p className="text-sm text-red-800" role="alert">{error}</p>}
       {message && <p className="text-sm text-emerald-900">{message}</p>}
