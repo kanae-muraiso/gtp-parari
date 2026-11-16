@@ -9,8 +9,8 @@ const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved }: {
-  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: () => void;
+export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, allowProductSelection = true }: {
+  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: () => void; allowProductSelection?: boolean;
 }) {
   const [product, setProduct] = useState<ClassProduct | null>(null);
   const [error, setError] = useState("");
@@ -65,14 +65,14 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
     } catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
-    <h3 className="font-bold">内容別の商品設計</h3>
+    <h3 className="font-bold">{allowProductSelection ? "商品設定" : initialProduct ? "商品設定を編集" : "商品を作成"}</h3>
     <fieldset disabled={busy} className="grid min-w-0 gap-4">
-      <label>商品を選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
+      {allowProductSelection && <label>商品を選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
         const existing = products.find(item => item.id === event.target.value);
         setProductId(existing?.id ?? ""); setName(existing?.name ?? ""); setProduct(existing?.design ?? base); setSaved(false);
       }}>
         <option value="">新しい商品</option>{products.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select></label>
+      </select></label>}
       <label>商品名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
         onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
       <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える開催枠</legend>
