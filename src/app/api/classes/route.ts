@@ -223,14 +223,24 @@ export async function POST(request: NextRequest) {
       const business = await classBusinessId(user.id, body.id);
       return business ? reply({ ok: true, id: business }) : fail("事業を登録できませんでした。");
     }
+    if (body?.action === "renameBusiness") {
+      const expected = clean(body.expectedName);
+      if (!scope || !name || name.length > 120 || !expected) return fail("事業名を確認してください。");
+      const school = await classBusinessId(user.id, scope);
+      if (!school) return fail("事業が見つかりません。", 404);
+      const { data, error } = await db.from("class_schools").update({ name })
+        .eq("id", school).eq("owner_user_id", user.id).eq("name", expected).is("archived_at", null).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return fail("事業名が変更されています。再読み込みしてください。", 409);
+      return await manage(user.id, scope);
+    }
     if (body?.action === "create" || body?.action === "schedule") {
-      const schoolName = clean(body.schoolName);
       const date = clean(body.date);
       const time = clean(body.time);
       const location = clean(body.location);
-      if (!name || name.length > 120 || !schoolName || schoolName.length > 120 || location.length > 200 ||
+      if (!name || name.length > 120 || location.length > 200 ||
           !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ||
-          !["weekly", "monthly"].includes(body.cadence)) return fail("教室名・クラス名・初回日時・頻度を確認してください。");
+          !["weekly", "monthly"].includes(body.cadence)) return fail("開催枠の名前・初回日時・頻度を確認してください。");
 
       const duration = body.duration === undefined ? 60 : Number(body.duration);
       if (!Number.isInteger(duration) || duration < 5 || duration > 480) return fail("授業の所要時間を確認してください。");
@@ -246,6 +256,8 @@ export async function POST(request: NextRequest) {
         return fail("クラスを確認してください。");
       }
       if (!school && scope !== null) return fail("事業を選択してください。", 404);
+      const schoolName = school?.name ?? clean(body.schoolName);
+      if (!schoolName || schoolName.length > 120) return fail("事業名を確認してください。");
       const fee = parseFee(body.feeOverride);
       if (fee === false) return fail("開催枠の料金を確認してください。");
       const { error } = await db.rpc("save_school_priced_slot", {

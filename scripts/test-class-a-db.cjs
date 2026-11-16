@@ -396,6 +396,18 @@ async function main() {
     await db.query("select reserve_priced_class_visit($1,$2,$3,$4,null,0)", [outsider,school,otherClass,movedDay]);
     await db.exec("reset role; set role authenticated");
     await assert.rejects(db.query("select * from school_class_monthly_schedules"), {code:"42501"});
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261116220000_protect_class_business_name.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const saveStudioSlot = (actor, slot, fresh, businessName, slotName) => db.query(
+      "select save_school_priced_slot($1,$2,$3,$4,$5,$6,$7,'16:00','weekly',null,'onsite',null,60,null,null)",
+      [actor, studio, slot, fresh, businessName, slotName, next]);
+    await assert.rejects(saveStudioSlot(outsider,testSlot,false,"不正な更新","別の枠"),{code:"P0002"});
+    await saveStudioSlot(owner,testSlot,false,"金曜クラス","金曜クラス");
+    const extraSlot = (await db.query("select gen_random_uuid() as id")).rows[0].id;
+    await saveStudioSlot(owner,extraSlot,true,"水曜クラス","水曜クラス");
+    assert.equal((await db.query("select name from class_schools where id=$1",[studio])).rows[0].name,"ZUMBA");
+    assert.deepEqual((await db.query("select id from school_classes where school_id=$1 order by name",[studio])).rows.map(row=>row.id),[extraSlot,testSlot]);
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
