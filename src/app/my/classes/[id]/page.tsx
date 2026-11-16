@@ -30,14 +30,14 @@ export default function MyClassSchoolPage() {
     return () => controller.abort();
   }, [id, userId, refresh]);
 
-  async function reserve(classId: string, day: string, cancel: boolean, makeupId?: string) {
+  async function reserve(classId: string, day: string, cancel: boolean, makeupId?: string, expectedSurcharge = 0) {
     if (busy) return;
     setBusy(true);
     setNotice("");
     try {
-      await classRequest("", { action: "visit", schoolId: id, classId, day, cancel, makeupId });
+      await classRequest("", { action: "visit", schoolId: id, classId, day, cancel, makeupId, expectedSurcharge });
       setRefresh(value => value + 1);
-      setNotice(cancel ? "予約を取り消しました。" : "予約しました。");
+      setNotice(cancel ? "予約を取り消しました。" : expectedSurcharge ? "差額の入金待ちで受け付けました。" : "予約しました。");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "予約を更新できませんでした。");
     } finally { setBusy(false); }
@@ -46,6 +46,11 @@ export default function MyClassSchoolPage() {
   const current = result?.id === id && result.userId === userId ? result : null;
   const now = Date.now();
   const today = new Date(now + 9 * 3600000).toISOString().slice(0, 10);
+  function quote(item: { baseFee?: number; fee_override_yen?: number | null }, source?: { fee_override_yen?: number | null }) {
+    const base = item.baseFee ?? 0;
+    return Math.max(0, (item.fee_override_yen ?? base) - (current?.visits?.contractFee ?? source?.fee_override_yen ?? base));
+  }
+  const yen = (value: number) => value.toLocaleString("ja-JP") + "円";
   const dates = Array.from({ length: 43 }, (_, offset) => new Date(Date.parse(today) + offset * 86400000).toISOString().slice(0, 10));
   return <main className="min-h-screen bg-neutral-100">
     <div className="mx-auto grid w-full max-w-3xl gap-5 px-4 py-6">
@@ -65,14 +70,18 @@ export default function MyClassSchoolPage() {
             {item.location && <p className="mt-1 text-sm">{item.location}</p>}
             {current.visits?.flexible && current.visits.classIds.includes(item.id) && <details className="mt-2 text-sm">
               <summary className="cursor-pointer">開催日を予約する</summary>
+              <p className="mt-1 text-neutral-600">差額がある場合は教室が入金を確認します。安い枠を選んだ場合や、差額入金後の取消時の返金は教室にご確認ください。</p>
               <div className="mt-2 grid gap-2">
                 {dates.filter(day => classRunsOn(item, day) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now)
                   .map(day => {
-                    const booked = current.visits?.booked.some(visit => visit.class_id === item.id && visit.visit_on === day);
+                    const booked = current.visits?.booked.find(visit => visit.class_id === item.id && visit.visit_on === day);
+                    const surcharge = quote(item);
                     return <div key={day} className="flex items-center justify-between gap-2">
                       <span>{day} {item.starts_at.slice(0, 5)}（日本時間）</span>
                       <button type="button" disabled={busy} className="rounded border px-3 py-2"
-                        onClick={() => void reserve(item.id, day, Boolean(booked))}>{booked ? "予約済み・取消" : "予約する"}</button>
+                        onClick={() => void reserve(item.id, day, Boolean(booked), undefined, surcharge)}>
+                        {booked ? booked.surcharge_yen && !booked.surcharge_paid_at ? `入金待ち ${yen(booked.surcharge_yen)}・取消` : "予約済み・取消"
+                          : surcharge ? `差額 ${yen(surcharge)}で予約` : "予約する"}</button>
                     </div>;
                   })}
               </div>
@@ -96,7 +105,7 @@ export default function MyClassSchoolPage() {
                       <div className="flex items-center justify-between gap-2" key={day}>
                         <span>{day} {item.starts_at.slice(0, 5)}（日本時間）</span>
                         <button className="rounded border px-3 py-2" type="button" disabled={busy}
-                          onClick={() => void reserve(item.id, day, false, credit.id)}>振替を予約</button>
+                          onClick={() => void reserve(item.id, day, false, credit.id, quote(item, source))}>{quote(item, source) ? `差額 ${yen(quote(item, source))}で振替` : "振替を予約"}</button>
                       </div>)}
                   </div>)}
                 </details>;
@@ -104,7 +113,7 @@ export default function MyClassSchoolPage() {
               {current.visits?.booked.filter(visit => visit.makeup_id).map(visit => {
                 const item = current.visits?.makeupClasses?.find(candidate => candidate.id === visit.class_id);
                 return <div key={visit.makeup_id} className="grid gap-2 rounded border p-3 text-sm">
-                  <p>振替予約済み　{visit.visit_on} {item?.starts_at.slice(0, 5)} {item?.name}</p>
+                  <p>{visit.surcharge_yen && !visit.surcharge_paid_at ? `振替・入金待ち ${yen(visit.surcharge_yen)}` : "振替予約済み"}　{visit.visit_on} {item?.starts_at.slice(0, 5)} {item?.name}</p>
                   {classMeetingUrl(item?.meeting_url) && <a href={item.meeting_url!} target="_blank" rel="noreferrer" className="underline">オンライン授業に参加</a>}
                   <button type="button" disabled={busy} className="w-fit rounded border px-3 py-2"
                     onClick={() => void reserve(visit.class_id, visit.visit_on, true)}>振替予約を取り消す</button>

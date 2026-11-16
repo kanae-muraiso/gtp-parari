@@ -1,3 +1,4 @@
+import { classBusinessId } from "@/lib/classBusinessScope";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern, classRunsOn } from "@/lib/classes";
@@ -21,9 +22,11 @@ async function handle(request: NextRequest, write: boolean) {
     const { data: { user }, error: authError } = await db.auth.getUser(token);
     if (authError || !user) return fail("ログインが必要です。", 401);
 
+    const businessId = await classBusinessId(user.id, request.nextUrl.searchParams.get("business"));
+    if (!businessId) return fail("事業を選択してください。", 404);
     const [profile, school] = await Promise.all([
       db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
-      db.from("class_schools").select("id,name").eq("owner_user_id", user.id).eq("tier", "a").maybeSingle(),
+      db.from("class_schools").select("id,name").eq("id", businessId).eq("owner_user_id", user.id).maybeSingle(),
     ]);
     if (profile.error || school.error) throw profile.error ?? school.error;
     if (profile.data?.is_monitor !== true || !school.data) return fail("教室が見つかりません。", 404);

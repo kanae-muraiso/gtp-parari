@@ -3,6 +3,8 @@ export const classIdPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 export type SchoolClass = {
   product_id?: string | null;
   productName?: string;
+  fee_override_yen?: number | null;
+  baseFee?: number;
   id: string;
   name: string;
   starts_on: string;
@@ -25,6 +27,7 @@ export type ClassRosterMember = {
   name: string;
   status: "active" | "ended";
   user_id: string | null;
+  contract_fee_yen?: number | null;
   class_participation?: "fixed" | "multiple" | "flexible";
   assignments?: { class_id: string }[];
 };
@@ -33,6 +36,9 @@ export type ClassManagement = {
   userId: string;
   school: ClassSchool | null;
   roster: ClassRosterMember[];
+  surcharges?: { enrollment_id: string; class_id: string; visit_on: string; surcharge_yen: number }[];
+  otherBusinesses?: { id: string; name: string }[];
+  receipts?: { id: string; enrollment_id: string; class_id: string; visit_on: string; amount_yen: number; paid_at: string }[];
   products?: { id: string; name: string }[];
   applicationId: string | null;
   applications: { id: string; title: string }[];
@@ -65,7 +71,8 @@ export type ClassVisits = {
   flexible: boolean;
   classIds: string[];
   monthlyVisits: number;
-  booked: { class_id: string; visit_on: string; makeup_id?: string | null }[];
+  contractFee?: number | null;
+  booked: { class_id: string; visit_on: string; makeup_id?: string | null; surcharge_yen?: number; surcharge_paid_at?: string | null }[];
   allowances?: Record<string, number>;
   makeups?: { id: string; source_class_id: string; expires_on: string; missed_on: string }[];
   makeupClasses?: SchoolClass[];

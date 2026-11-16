@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
 import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
+import { useSearchParams } from "next/navigation";
+import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
@@ -22,6 +24,11 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 }
 
 export default function ClassManagerPanel() {
+  const business = useSearchParams().get("business");
+  return business ? <BusinessClassManager key={business} /> : <ClassBusinessPicker />;
+}
+
+function BusinessClassManager() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
@@ -87,7 +94,8 @@ export default function ClassManagerPanel() {
     </div>;
   }
   const school = data.school;
-  const item = school?.classes.find(entry => entry.id === selectedId);
+  if (!school) return <section className={panel}><p>事業を選択してください。</p><Link href="/my/manage?tab=class" className="underline">事業一覧へ</Link></section>;
+  const item = school.classes.find(entry => entry.id === selectedId);
 
   const backToList = () => {
     setSelectedId(null);
@@ -101,6 +109,10 @@ export default function ClassManagerPanel() {
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
   return <div className="grid gap-5">
+    <div className="flex flex-wrap items-center gap-3 text-sm">
+      <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
+      <strong>{school?.name}</strong>
+    </div>
     {!item && !creating && !schoolAdmission && school && <details className={panel}>
       <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
       <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
@@ -124,7 +136,7 @@ export default function ClassManagerPanel() {
           {entries.map(entry => <button key={entry.id} type="button"
             onClick={() => { setSelectedId(entry.id); setView("roster"); }}
             className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500">
-            <span>{entry.name}</span><span className="text-sm text-neutral-600">{classSchedule(entry)}{entry.location ? " · " + entry.location : ""}</span>
+            <span>{entry.name}</span><span className="text-sm text-neutral-600">{classSchedule(entry)}{entry.location ? " · " + entry.location : ""}{entry.fee_override_yen != null ? " · " + entry.fee_override_yen.toLocaleString("ja-JP") + "円" : ""}</span>
           </button>)}
           {!entries.length && <p className="text-sm text-neutral-600">開催枠を追加できます。</p>}
         </section>;
@@ -158,6 +170,10 @@ export default function ClassManagerPanel() {
         <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
         <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
       </div>
+      <label className={label}>開催枠の料金（円・空欄なら商品の基本料金）
+        <input className={field} name="feeOverride" type="number" min={0} max={1000000} defaultValue={item?.fee_override_yen ?? ""} />
+      </label>
+      <p className="text-sm text-neutral-600">契約時の料金より高い枠は、予約ごとに差額が発生します。</p>
       <label className={label}>所要時間（分）<input className={field} name="duration" type="number" min={5} max={480} required defaultValue={item?.duration_minutes ?? 60} /></label>
       <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
         <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
@@ -169,6 +185,18 @@ export default function ClassManagerPanel() {
         {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
       </div>
     </form>}
+    {item && view === "roster" && !item.product_id && Boolean(data.otherBusinesses?.length) &&
+      <form className={panel} onSubmit={async event => {
+        const values = formValues(event);
+        if (await save({ action: "moveSlot", destination: values.destination, classId: item.id }, "開催枠を移動しました。")) setSelectedId(null);
+      }}>
+        <label className={label}>未使用の開催枠を別事業へ移す
+          <select className={field} name="destination" required defaultValue="">
+            <option value="">移動先を選択</option>{data.otherBusinesses?.map(business => <option key={business.id} value={business.id}>{business.name}</option>)}
+          </select>
+        </label>
+        <button className={button} disabled={busy}>開催枠を移す</button>
+      </form>}
     {school && (item || schoolAdmission) && <>
       {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">「{school.name}」の入会手続きを設定します。募集ページごとに対象クラスを選べます。</p>}
       {view === "product" && <ClassProductPanel key={item?.id ?? school.id} classes={school.classes} initialProduct={item?.product_id}
@@ -214,6 +242,21 @@ export default function ClassManagerPanel() {
           <label className={label}>PARARIユーザー名（任意）<input className={field} name="username" maxLength={120} /></label>
           <button className={button} disabled={busy}>追加</button>
         </form>
+        {Boolean(data.surcharges?.length) && <section className="grid gap-2 border-t pt-3">
+          <h4 className="font-semibold">差額の入金待ち</h4>
+          {data.surcharges?.map(charge => <div className="flex flex-wrap items-center gap-2 text-sm"
+            key={charge.enrollment_id + charge.class_id + charge.visit_on}>
+            <span>{data.roster.find(member => member.id === charge.enrollment_id)?.name} · {charge.visit_on} · {school.classes.find(slot => slot.id === charge.class_id)?.name} · {charge.surcharge_yen.toLocaleString("ja-JP")}円</span>
+            <button type="button" className={button} disabled={busy} onClick={() => void save({
+              action: "confirmSurcharge", memberId: charge.enrollment_id, classId: charge.class_id, day: charge.visit_on,
+            }, "差額の入金を記録しました。")}>入金を確認</button>
+          </div>)}
+        </section>}
+        {Boolean(data.receipts?.length) && <details className="text-sm"><summary className="cursor-pointer">最近の差額入金記録</summary>
+          {data.receipts?.map(receipt => <p className="mt-1" key={receipt.id}>
+            {data.roster.find(member => member.id === receipt.enrollment_id)?.name} · {receipt.visit_on} · {receipt.amount_yen.toLocaleString("ja-JP")}円
+          </p>)}
+        </details>}
         {data.roster.length === 0 && <p className="text-sm text-neutral-600">名簿に登録された受講者はいません。</p>}
         <ul className="divide-y divide-neutral-200">
           {data.roster.map(member => <li key={member.id} className="py-3"><RosterRow member={member} classes={school.classes} busy={busy} save={save} /></li>)}
@@ -242,6 +285,8 @@ function RosterRow({ member, classes, busy, save }: {
       <label className={label}>在籍状況<select className={field} name="status" defaultValue={member.status}>
         <option value="active">在籍</option><option value="ended">退会</option>
       </select></label>
+      <label className={label}>契約時の料金（円）<input className={field} name="contractFee" type="number" min={0} max={1000000}
+        defaultValue={member.contract_fee_yen ?? ""} placeholder="商品の基本料金" /></label>
       <button className={button} disabled={busy}>更新</button>
     </form>
     <details className="text-sm">
