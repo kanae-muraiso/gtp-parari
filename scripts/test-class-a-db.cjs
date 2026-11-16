@@ -262,6 +262,35 @@ async function main() {
     await reserveVisit(newClass,true);
     await reserveVisit(otherClass);
     assert.equal((await db.query("select count(*)::int as n from school_class_visit_reservations where enrollment_id=$1",[participant])).rows[0].n,1);
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261116100000_class_content_products.sql"), "utf8"));
+    const makeupUser = (await db.query("insert into auth.users values(gen_random_uuid()) returning id")).rows[0].id;
+    await db.exec("set role service_role");
+    const missed = (await db.query("select ((now() at time zone 'Asia/Tokyo')::date-7)::text as day")).rows[0].day;
+    const oldSlot = (await db.query("select save_school_class($1,$2,gen_random_uuid(),true,'教室','水曜',$3,'18:00','weekly',null,'onsite',null,60) as id", [owner,school,missed])).rows[0].id;
+    const advanced = (await db.query("select save_school_class($1,$2,gen_random_uuid(),true,'教室','高校',$3,'20:00','weekly',null,'onsite',null,60) as id", [owner,school,next])).rows[0].id;
+    const group = ids => db.query("select save_school_content_product($1,$2,gen_random_uuid(),'内容別',$3,$4)", [owner,school,
+      JSON.stringify({ classIds:ids,monthlyVisits:3,capacity:3,makeup:"approval",makeupExpiry:"next_month" }),ids]);
+    await group([newClass,otherClass,oldSlot]);
+    await group([advanced]);
+    const { plan } = (await db.query("select class_product_for_slot($1,$2) as plan",[school,newClass])).rows[0];
+    assert.equal(plan.monthlyVisits,3);
+    assert.ok(!plan.classIds.includes(advanced));
+    await assert.rejects(db.query("select set_school_member_classes($1,$2,$3,$4,'flexible')",
+      [owner,school,participant,[newClass,advanced]]),{code:"22023"});
+    const { id: makeupMember } = (await db.query("insert into school_enrollments(school_id,user_id,name) values($1,$2,'固定') returning id",[school,makeupUser])).rows[0];
+    await db.query("select set_school_member_classes($1,$2,$3,$4,'fixed')",[owner,school,makeupMember,[oldSlot]]);
+    const grant = () => db.query("select grant_school_class_makeup($1,$2,$3,$4,$5)",[owner,school,makeupMember,oldSlot,missed]);
+    await grant();
+    await grant();
+    const credits = (await db.query("select id from school_class_makeups where enrollment_id=$1",[makeupMember])).rows;
+    assert.equal(credits.length,1);
+    const makeup = id => db.query("select reserve_school_class_makeup($1,$2,$3,$4,$5)",[makeupUser,school,id,next,credits[0].id]);
+    await assert.rejects(makeup(advanced),{code:"22023"});
+    await makeup(newClass);
+    await assert.rejects(makeup(otherClass),{code:"22023"});
+    await db.query("select manage_class_visit($1,$2,$3,$4,true)",[makeupUser,school,newClass,next]);
+    await makeup(otherClass);
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");

@@ -10,11 +10,13 @@ export type ClassProduct = {
   makeupExpiry: "same_month" | "next_month";
 };
 
-export function parseClassProduct(value: unknown, allowed: Set<string>): ClassProduct | null {
+export type NamedClassProduct = { id: string; name: string; design: ClassProduct };
+
+export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmpty = false): ClassProduct | null {
   if (!value || typeof value !== "object") return null;
   const p = value as ClassProduct;
   const integer = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
-  if (!Array.isArray(p.classIds) || !p.classIds.length || p.classIds.some(id => !allowed.has(id)) ||
+  if (!Array.isArray(p.classIds) || (!allowEmpty && !p.classIds.length) || p.classIds.some(id => !allowed.has(id)) ||
       typeof p.description !== "string" || p.description.length > 1000 ||
       !integer(p.capacity, 1, 1000) || !integer(p.monthlyFee, 0, 1000000) || !integer(p.monthlyVisits, 1, 100) ||
       !["fixed", "multiple", "flexible"].includes(p.booking) ||

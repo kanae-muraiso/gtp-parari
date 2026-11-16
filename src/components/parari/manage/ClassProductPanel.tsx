@@ -2,29 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
-import { describeClassProduct, type ClassProduct } from "@/lib/classProduct";
+import { describeClassProduct, type ClassProduct, type NamedClassProduct } from "@/lib/classProduct";
 import type { SchoolClass } from "@/lib/classes";
 
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassProductPanel({ classes }: { classes: SchoolClass[] }) {
+export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved }: {
+  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: () => void;
+}) {
   const [product, setProduct] = useState<ClassProduct | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
-  const first = classes[0]?.id;
+  const [products, setProducts] = useState<NamedClassProduct[]>([]);
+  const [productId, setProductId] = useState("");
+  const [name, setName] = useState("");
+  const base: ClassProduct = { classIds: [], description: "", capacity: 10, monthlyFee: 0, monthlyVisits: 4,
+    booking: "fixed", extraFee: null, makeup: "none", makeupExpiry: "next_month" };
 
   useEffect(() => {
     const request = new AbortController();
-    void classRequest<{ design: ClassProduct | null }>("?product=1", undefined, request.signal).then(({ design }) => {
-      if (!request.signal.aborted) setProduct(design ?? { classIds: first ? [first] : [], description: "",
-        capacity: 10, monthlyFee: 0, monthlyVisits: 4, booking: "fixed", extraFee: null, makeup: "none", makeupExpiry: "next_month" });
-    }).catch(cause => { if (!request.signal.aborted) setError(cause.message); });
+    void classRequest<{ design: ClassProduct | null; products: NamedClassProduct[] }>("?product=1", undefined, request.signal)
+      .then(({ design, products }) => {
+        if (request.signal.aborted) return;
+        const initial = products.find(item => item.id === initialProduct);
+        setProducts(products);
+        setProductId(initial?.id ?? "");
+        setName(initial?.name ?? "");
+        setProduct(initial?.design ?? { ...(initialClass && design?.classIds.includes(initialClass) ? design : base),
+          classIds: initialClass ? [initialClass] : [] });
+      }).catch(cause => { if (!request.signal.aborted) setError(cause.message); });
     return () => request.abort();
-  }, [first, retry]);
+  }, [initialProduct, initialClass, retry]);
 
   if (!product) return <section className={panel}>
     <p role={error ? "alert" : "status"}>{error || "商品設定を読み込んでいます…"}</p>
@@ -35,24 +47,38 @@ export default function ClassProductPanel({ classes }: { classes: SchoolClass[] 
     setProduct(current => current ? { ...current, [key]: value } : current);
     setSaved(false);
   }
-  const selected = classes.filter(item => product.classIds.includes(item.id));
+  const available = classes.filter(item => !item.product_id || item.product_id === productId);
+  const selected = available.filter(item => product.classIds.includes(item.id));
   return <form className={panel} onSubmit={async event => {
     event.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const result = await classRequest<{ design: ClassProduct }>("", { action: "saveProduct", design: { ...product, classIds: selected.map(item => item.id) } });
+      const id = productId || crypto.randomUUID();
+      setProductId(id);
+      const result = await classRequest<{ design: ClassProduct }>("", { action: "saveContentProduct", productId: id, name,
+        design: { ...product, classIds: selected.map(item => item.id) } });
+      setProducts(current => [...current.filter(item => item.id !== id), { id, name, design: result.design }]);
+      onSaved?.();
       setProduct(result.design);
       setSaved(true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
-    <h3 className="font-bold">クラス商品の設計</h3>
+    <h3 className="font-bold">内容別の商品設計</h3>
     <fieldset disabled={busy} className="grid min-w-0 gap-4">
-      <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">対象クラス</legend>
-        {classes.map(item => <label key={item.id} className="text-sm">
+      <label>商品を選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
+        const existing = products.find(item => item.id === event.target.value);
+        setProductId(existing?.id ?? ""); setName(existing?.name ?? ""); setProduct(existing?.design ?? base); setSaved(false);
+      }}>
+        <option value="">新しい商品</option>{products.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select></label>
+      <label>商品名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
+        onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
+      <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える開催枠</legend>
+        {available.map(item => <label key={item.id} className="text-sm">
           <input type="checkbox" checked={product.classIds.includes(item.id)} onChange={event => patch("classIds",
-            event.target.checked ? [...product.classIds, item.id] : product.classIds.filter(id => id !== item.id))} /> {item.name}
+            event.target.checked ? [...product.classIds, item.id] : product.classIds.filter(id => id !== item.id))} /> {item.name} · {item.starts_at.slice(0, 5)}{item.location ? " · " + item.location : ""}
         </label>)}
       </fieldset>
       <label>内容<textarea className={field} rows={3} maxLength={1000} value={product.description} onChange={event => patch("description", event.target.value)} /></label>
@@ -62,7 +88,7 @@ export default function ClassProductPanel({ classes }: { classes: SchoolClass[] 
         <label>月の受講回数<input className={field} type="number" min={1} max={100} required value={product.monthlyVisits || ""} onChange={event => patch("monthlyVisits", Number(event.target.value))} /></label>
       </div>
       <label>通い方<select className={field} value={product.booking} onChange={event => patch("booking", event.target.value as ClassProduct["booking"])}>
-        <option value="fixed">固定クラス</option><option value="multiple">複数クラスに所属</option><option value="flexible">空席を毎回予約</option>
+        <option value="fixed">固定の開催枠</option><option value="multiple">複数の指定枠に所属</option><option value="flexible">同じ商品の空席を毎回予約</option>
       </select></label>
       <label><input type="checkbox" checked={product.extraFee !== null} onChange={event => patch("extraFee", event.target.checked ? 0 : null)} /> 別料金で追加受講を受け付ける</label>
       {product.extraFee !== null && <label>追加受講１回の料金（円）<input className={field} type="number" min={1} max={1000000} required
@@ -78,7 +104,7 @@ export default function ClassProductPanel({ classes }: { classes: SchoolClass[] 
         <h4 className="mb-2 font-medium">受講条件の案内文</h4>
         <p className="whitespace-pre-line text-sm leading-6">{describeClassProduct(product, selected.map(item => item.name))}</p>
       </section>}
-      <button className={button} disabled={!selected.length}>商品設定を保存</button>
+      <button className={button}>商品設定を保存</button>
     </fieldset>
     {saved && <p role="status">商品設定を保存しました。</p>}
     {error && <p role="alert">{error}</p>}
