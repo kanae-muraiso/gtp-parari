@@ -28,7 +28,7 @@ export default function ClassRecruitmentOffers({ classes, offers, busy, save }: 
       <label className="text-sm">募集名<input name="name" className={field} required maxLength={120} defaultValue={current?.name} /></label>
       <fieldset className="grid gap-1 rounded border p-2 text-sm"><legend>対象クラス</legend>
         {classes.map(item => <label key={item.id}><input type="checkbox" name="classId" value={item.id}
-          defaultChecked={current?.class_ids.includes(item.id) ?? classes.length === 1} /> {item.name}</label>)}
+          defaultChecked={current?.class_ids.includes(item.id) ?? classes.length === 1} /> {item.productName ? item.productName + " · " : ""}{item.name}</label>)}
       </fieldset>
       <label className="text-sm">この募集の案内<textarea name="information" className={field} maxLength={4000} defaultValue={current?.information} /></label>
       <label className="text-sm"><input type="checkbox" name="enabled" defaultChecked={current?.enabled} /> この募集を公開する</label>

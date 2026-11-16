@@ -25,6 +25,7 @@ export default function ClassManagerPanel() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
+  const [showProducts, setShowProducts] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newClassId, setNewClassId] = useState("");
@@ -111,14 +112,23 @@ export default function ClassManagerPanel() {
         {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {
           setSchoolAdmission(true); setView("settings");
         }}>教室共通の入会設定</button>}
-        <button type="button" className={button} onClick={() => { setNewClassId(crypto.randomUUID()); setCreating(true); }}>クラスを新規作成</button>
+        {school && <button type="button" className={button} onClick={() => setShowProducts(value => !value)}>商品を作成・編集</button>}
+        <button type="button" className={button} onClick={() => { setNewClassId(crypto.randomUUID()); setCreating(true); }}>{school ? "開催枠を追加" : "教室を開設"}</button>
       </div>
-      {school?.classes.map(entry => <button key={entry.id} type="button"
-        onClick={() => { setSelectedId(entry.id); setView("product"); }}
-        className="grid gap-1 rounded-xl border border-neutral-200 p-4 text-left hover:border-neutral-500">
-        <span className="font-semibold">{entry.name}</span>
-        <span className="text-sm text-neutral-600">{classSchedule(entry)}</span>
-      </button>)}
+      {school && showProducts && <ClassProductPanel classes={school.classes} onSaved={() => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"))} />}
+      {[...(data.products ?? []), { id: "", name: "商品未設定の開催枠" }].map(product => {
+        const entries = school?.classes.filter(item => (item.product_id ?? "") === product.id) ?? [];
+        if (!entries.length && !product.id) return null;
+        return <section key={product.id || "unassigned"} className="grid gap-2 rounded-lg border p-3">
+          <h3 className="font-semibold">{product.name}</h3>
+          {entries.map(entry => <button key={entry.id} type="button"
+            onClick={() => { setSelectedId(entry.id); setView("roster"); }}
+            className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500">
+            <span>{entry.name}</span><span className="text-sm text-neutral-600">{classSchedule(entry)}{entry.location ? " · " + entry.location : ""}</span>
+          </button>)}
+          {!entries.length && <p className="text-sm text-neutral-600">開催枠を追加できます。</p>}
+        </section>;
+      })}
       {!school?.classes.length && <p className="text-sm text-neutral-600">クラスはまだありません。</p>}
     </section>}
     {(item || creating || schoolAdmission) && <header className="grid gap-2">
@@ -137,7 +147,10 @@ export default function ClassManagerPanel() {
     }}>
       <h3 className="font-bold">{school ? "教室・定期クラス" : "教室を開設"}</h3>
       <label className={label}>教室名<input className={field} name="schoolName" required maxLength={120} defaultValue={school?.name} /></label>
-      <label className={label}>クラス名<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
+      {creating && Boolean(data.products?.length) && <label className={label}>商品<select className={field} name="productId" defaultValue="">
+        <option value="">後で設定する</option>{data.products?.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+      </select></label>}
+      <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className={label}>頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
           <option value="weekly">毎週</option><option value="monthly">毎月</option>
@@ -158,7 +171,8 @@ export default function ClassManagerPanel() {
     </form>}
     {school && (item || schoolAdmission) && <>
       {(view === "settings" || view === "preview") && <p className="text-sm text-neutral-600">「{school.name}」の入会手続きを設定します。募集ページごとに対象クラスを選べます。</p>}
-      {view === "product" && <ClassProductPanel key={school.id} classes={school.classes} />}
+      {view === "product" && <ClassProductPanel key={item?.id ?? school.id} classes={school.classes} initialProduct={item?.product_id}
+        initialClass={item?.id} onSaved={() => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"))} />}
       {view === "settings" && <button type="button" className="w-fit rounded-lg border bg-white px-3 py-2 text-sm"
         aria-expanded={showBlueprint} onClick={() => setShowBlueprint(value => !value)}>
         {showBlueprint ? "入会の設計図を閉じる" : "入会の設計図を作る（試作）"}
@@ -191,7 +205,7 @@ export default function ClassManagerPanel() {
           const values = formValues(event);
           const requestId = memberId ?? crypto.randomUUID();
           setMemberId(requestId);
-          if (await save({ ...values, action: "add", memberId: requestId }, "名簿に登録しました。")) {
+          if (await save({ ...values, action: "add", memberId: requestId, classId: item?.id }, "名簿に登録しました。")) {
             setMemberId(null);
             form.reset();
           }
@@ -247,6 +261,21 @@ function RosterRow({ member, classes, busy, save }: {
         <button className={button} disabled={busy}>参加方法を保存</button>
       </form>
     </details>
+    {member.status === "active" && member.class_participation !== "flexible" && classes.some(item => item.product_id &&
+      member.assignments?.some(row => row.class_id === item.id)) && <details className="text-sm">
+      <summary className="cursor-pointer">欠席分の振替を付与</summary>
+      <form className="mt-2 grid gap-2" onSubmit={event => {
+        const values = formValues(event);
+        void save({ ...values, action: "grantMakeup", memberId: member.id }, "振替を1回分付与しました。");
+      }}>
+        <label>欠席した開催枠<select className={field} name="classId" required>
+          {classes.filter(item => item.product_id && member.assignments?.some(row => row.class_id === item.id)).map(item =>
+            <option value={item.id} key={item.id}>{item.name}</option>)}
+        </select></label>
+        <label>欠席日<input className={field} type="date" name="day" required /></label>
+        <button className={button} disabled={busy}>振替を付与</button>
+      </form>
+    </details>}
     {!member.user_id && <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
       const values = formValues(event);
       void save({ ...values, action: "link", memberId: member.id }, "アカウントを連携しました。");

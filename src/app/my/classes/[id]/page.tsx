@@ -30,12 +30,12 @@ export default function MyClassSchoolPage() {
     return () => controller.abort();
   }, [id, userId, refresh]);
 
-  async function reserve(classId: string, day: string, cancel: boolean) {
+  async function reserve(classId: string, day: string, cancel: boolean, makeupId?: string) {
     if (busy) return;
     setBusy(true);
     setNotice("");
     try {
-      await classRequest("", { action: "visit", schoolId: id, classId, day, cancel });
+      await classRequest("", { action: "visit", schoolId: id, classId, day, cancel, makeupId });
       setRefresh(value => value + 1);
       setNotice(cancel ? "予約を取り消しました。" : "予約しました。");
     } catch (error) {
@@ -54,10 +54,10 @@ export default function MyClassSchoolPage() {
         {current?.school ? <>
           <h2 className="text-xl font-bold">{current.school.name}</h2>
           {notice && <p role="status" className="text-sm">{notice}</p>}
-          {current.visits?.flexible && <p className="text-sm">対象クラスを横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
+          {current.visits?.flexible && <p className="text-sm">同じ商品の開催枠を横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
           {current.school.classes.length === 0 && <p>参加できるクラスはありません。</p>}
           {current.school.classes.map(item => <article className="rounded-xl border border-neutral-200 p-4" key={item.id}>
-            <h3 className="font-bold">{item.name}</h3>
+            <h3 className="font-bold">{item.productName && item.productName + " · "}{item.name}</h3>
             <p className="mt-1 text-sm">{classSchedule(item)}</p>
             {item.delivery !== "onsite" && classMeetingUrl(item.meeting_url) && <a
               className="mt-3 inline-flex rounded-lg bg-blue-800 px-4 py-2 text-sm text-white"
@@ -78,6 +78,39 @@ export default function MyClassSchoolPage() {
               </div>
             </details>}
           </article>)}
+          {(Boolean(current.visits?.makeups?.length) || current.visits?.booked.some(visit => visit.makeup_id)) &&
+            <section className="grid gap-3 border-t pt-4" aria-label="振替予約">
+              <h3 className="font-bold">振替予約</h3>
+              {current.visits?.makeups?.map(credit => {
+                const source = current.school?.classes.find(item => item.id === credit.source_class_id);
+                if (!source?.product_id) return null;
+                const eligible = current.visits?.makeupClasses?.filter(item => item.product_id === source.product_id) ?? [];
+                return <details className="rounded border p-3 text-sm" key={credit.id}>
+                  <summary className="cursor-pointer">{source.productName} · {credit.missed_on}の欠席分（{credit.expires_on}まで）</summary>
+                  {!eligible.length && <p className="mt-2">振替対象の開催枠はありません。</p>}
+                  {eligible.map(item => <div className="mt-2 grid gap-2" key={item.id}>
+                    <p className="font-medium">{item.name}{item.location ? " · " + item.location : ""}</p>
+                    {Array.from({ length: Math.max(0, Math.round((Date.parse(credit.expires_on) - Date.parse(today)) / 86400000) + 1) },
+                      (_, index) => new Date(Date.parse(today) + index * 86400000).toISOString().slice(0, 10))
+                      .filter(day => classRunsOn(item, day) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now).map(day =>
+                      <div className="flex items-center justify-between gap-2" key={day}>
+                        <span>{day} {item.starts_at.slice(0, 5)}（日本時間）</span>
+                        <button className="rounded border px-3 py-2" type="button" disabled={busy}
+                          onClick={() => void reserve(item.id, day, false, credit.id)}>振替を予約</button>
+                      </div>)}
+                  </div>)}
+                </details>;
+              })}
+              {current.visits?.booked.filter(visit => visit.makeup_id).map(visit => {
+                const item = current.visits?.makeupClasses?.find(candidate => candidate.id === visit.class_id);
+                return <div key={visit.makeup_id} className="grid gap-2 rounded border p-3 text-sm">
+                  <p>振替予約済み　{visit.visit_on} {item?.starts_at.slice(0, 5)} {item?.name}</p>
+                  {classMeetingUrl(item?.meeting_url) && <a href={item.meeting_url!} target="_blank" rel="noreferrer" className="underline">オンライン授業に参加</a>}
+                  <button type="button" disabled={busy} className="w-fit rounded border px-3 py-2"
+                    onClick={() => void reserve(visit.class_id, visit.visit_on, true)}>振替予約を取り消す</button>
+                </div>;
+              })}
+            </section>}
         </> : <p role={current?.error ? "alert" : "status"}>{current?.error ?? "教室を読み込んでいます…"}</p>}
         {current?.status === 401 && <Link className="underline" href={`/login?returnTo=${encodeURIComponent(`/my/classes/${id}`)}`}>ログイン</Link>}
       </section>

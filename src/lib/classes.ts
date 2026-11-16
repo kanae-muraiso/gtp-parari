@@ -1,6 +1,8 @@
 export const classIdPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export type SchoolClass = {
+  product_id?: string | null;
+  productName?: string;
   id: string;
   name: string;
   starts_on: string;
@@ -31,6 +33,7 @@ export type ClassManagement = {
   userId: string;
   school: ClassSchool | null;
   roster: ClassRosterMember[];
+  products?: { id: string; name: string }[];
   applicationId: string | null;
   applications: { id: string; title: string }[];
 };
@@ -62,5 +65,8 @@ export type ClassVisits = {
   flexible: boolean;
   classIds: string[];
   monthlyVisits: number;
-  booked: { class_id: string; visit_on: string }[];
+  booked: { class_id: string; visit_on: string; makeup_id?: string | null }[];
+  allowances?: Record<string, number>;
+  makeups?: { id: string; source_class_id: string; expires_on: string; missed_on: string }[];
+  makeupClasses?: SchoolClass[];
 };
