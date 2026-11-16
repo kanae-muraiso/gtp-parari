@@ -59,6 +59,7 @@ const users = {
   purchaser: {}, groups: {}, company: {},
 };
 const tables = {
+  class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
   profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }],
   membership_members: [
     { user_id: "groups", membership_id: a, status: "active" },
@@ -100,7 +101,12 @@ const { GET } = load("src/app/api/my-participations/route.ts", {
     return { data: row ? [row] : [], error: null };
   } }) },
 });
+const businessScope = load("src/lib/classBusinessScope.ts", {
+  "server-only": {}, "@/lib/classes": load("src/lib/classes.ts"),
+  "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
+});
 const classes = load("src/app/api/classes/route.ts", {
+  "@/lib/classBusinessScope": businessScope,
   "@/lib/classProduct": load("src/lib/classProduct.ts"),
   "@/lib/classes": load("src/lib/classes.ts"),
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
@@ -111,6 +117,12 @@ async function main() {
     const response = await classes.GET(new NextRequest(`https://www.parari.app/api/classes${query}`, hidden));
     assert.equal(response.status, 404);
   }
+  assert.equal(await businessScope.classBusinessId("groups", null), null);
+  assert.equal(await businessScope.classBusinessId("groups", a), a);
+  assert.equal(await businessScope.classBusinessId("groups", cpp), null);
+  const businessList = await classes.GET(new NextRequest("https://www.parari.app/api/classes?businesses=1",
+    { headers: { Authorization: "Bearer groups" } }));
+  assert.deepEqual((await businessList.json()).businesses.map(item => item.id), [a,b]);
   const mutation = await classes.POST(new NextRequest("https://www.parari.app/api/classes", { ...hidden, method: "POST" }));
   assert.equal(mutation.status, 404);
   dbCalls = 0;

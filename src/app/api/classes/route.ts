@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const scope = request.nextUrl.searchParams.get("business");
     if (request.nextUrl.searchParams.get("businesses") === "1") {
-      if (!user.isMonitor) return fail("事業を取得できません。", 404);
       const { data, error } = await db.from("class_schools").select("id,name,business_type").eq("owner_user_id", user.id).eq("tier", "a").order("name");
       if (error) throw error;
       return reply({ ok: true, businesses: data });
@@ -71,11 +71,11 @@ export async function GET(request: NextRequest) {
           .returns<{ school: { id: string; name: string } | null }[]>(),
       ]);
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
-      return reply({ ok: true, userId: user.id, owned: user.isMonitor ? (owned.data?.[0] ?? null) : null, businesses: user.isMonitor ? owned.data : [],
+      return reply({ ok: true, userId: user.id, owned: owned.data?.[0] ?? null, businesses: owned.data,
         enrolled: (enrolled.data ?? []).flatMap(({ school }) => school ? [school] : []) });
     }
     if (request.nextUrl.searchParams.get("product") === "1") {
-      const school = user.isMonitor ? await ownedSchool(user.id, scope) : null;
+      const school = await ownedSchool(user.id, scope);
       if (!school) return fail("教室が見つかりません。", 404);
       const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
       if (result.error) {
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       })) });
     }
     const id = request.nextUrl.searchParams.get("school");
-    if (id === null) return user.isMonitor ? await manage(user.id, scope) : fail("事業を取得できません。", 404);
+    if (id === null) return await manage(user.id, scope);
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
 
     const { data: school, error } = await db.rpc("read_class_school", { p_school: id, p_user: user.id });
@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const scope = request.nextUrl.searchParams.get("business");
     const body = await request.json().catch(() => null);
     if (body?.action === "visit") {
@@ -184,7 +185,6 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       return reply({ ok: true });
     }
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const name = clean(body?.name);
     if (body?.action === "createBusiness") {
       if (!name || name.length > 120 || !["school", "studio", "other"].includes(body.businessType) ||
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
           (delivery !== "onsite" && !meeting) || (delivery === "hybrid" && !location)) {
         return fail("開催方法に応じた会場とHTTPS参加リンクを入力してください。");
       }
-      const school = user.isMonitor ? await ownedSchool(user.id, scope) : null;
+      const school = await ownedSchool(user.id, scope);
       const classId = clean(body.classId);
       if (!classIdPattern.test(classId) || (body.action === "schedule" && !school?.classes.some(item => item.id === classId))) {
         return fail("クラスを確認してください。");
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       return await manage(user.id, scope);
     }
 
-    const school = user.isMonitor ? await ownedSchool(user.id, scope) : null;
+    const school = await ownedSchool(user.id, scope);
     if (!school) return fail("教室が見つかりません。", 404);
     if (body?.action === "moveSlot") {
       if (![body.destination, body.classId].every(value => typeof value === "string" && classIdPattern.test(value))) return fail("移動先と開催枠を確認してください。");
