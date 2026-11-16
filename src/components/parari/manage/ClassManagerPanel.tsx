@@ -119,6 +119,13 @@ function BusinessClassManager() {
     {!item && !creating && !schoolAdmission && <details className="w-fit max-w-full rounded-lg border border-neutral-200 bg-white open:w-full">
       <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">事業設定</summary>
       <div className="grid gap-3 border-t border-neutral-200 px-3 py-3">
+        <form key={school.name} className="flex flex-wrap items-end gap-2" onSubmit={event => {
+          const { name } = formValues(event);
+          void save({ action: "renameBusiness", name, expectedName: school.name }, "事業名を変更しました。");
+        }}>
+          <label className={label}>事業名<input className={field} name="name" required maxLength={120} defaultValue={school.name} /></label>
+          <button className={button} disabled={busy}>事業名を変更</button>
+        </form>
         <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
         <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
       </div>
@@ -185,13 +192,10 @@ function BusinessClassManager() {
       const values = formValues(event);
       const slot = newSlot;
       void save({ ...values, classId: slot?.id ?? item?.id,
-        ...(slot ? { productId: slot.productId, schoolName: school.name } : {}), action: slot ? "create" : "schedule" },
+        ...(slot ? { productId: slot.productId } : {}), action: slot ? "create" : "schedule" },
         slot ? "開催枠を追加しました。" : "開催枠の設定を保存しました。");
     }}>
-      {creating ? <p className="text-sm">対象の商品 <strong>{slotProduct?.name}</strong></p> : <>
-        <h3 className="font-bold">開催枠の設定</h3>
-        <label className={label}>教室名<input className={field} name="schoolName" required maxLength={120} defaultValue={school.name} /></label>
-      </>}
+      {creating ? <p className="text-sm">対象の商品 <strong>{slotProduct?.name}</strong></p> : <h3 className="font-bold">開催枠の設定</h3>}
       <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className={label}>頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
