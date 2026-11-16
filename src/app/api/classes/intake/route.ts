@@ -21,7 +21,7 @@ async function handle(request: NextRequest) {
     const { recruitment, offer } = source;
     const { school_id: schoolId, kind } = recruitment;
     const information = offer?.information ?? recruitment.information;
-    const school = await db.from("class_schools").select("name,owner_user_id").eq("id", schoolId).maybeSingle();
+    const school = await db.from("class_schools").select("name,owner_user_id").eq("id", schoolId).is("archived_at", null).maybeSingle();
     if (school.error) throw school.error;
     if (!school.data) return missing();
     const owner = await db.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();

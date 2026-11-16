@@ -85,6 +85,7 @@ function from(table) {
     maybeSingle() { return Promise.resolve({ data: rows[0] ?? null, error: null }); },
     select() { return chain; }, returns() { return chain; },
     eq(key, value) { rows = rows.filter(row => row[key] === value); return chain; },
+    is(key, value) { rows = rows.filter(row => (row[key] ?? null) === value); return chain; },
     in(key, values) { rows = rows.filter(row => values.includes(row[key])); return chain; },
     order() { return chain; }, limit(n) { rows = rows.slice(0, n); return chain; },
     then(resolve) { return Promise.resolve({ data: rows, error: table === failTable ? new Error("test DB failure") : null }).then(resolve); },
