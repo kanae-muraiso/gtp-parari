@@ -953,6 +953,7 @@ export async function GET(
       "owner_user_id",
       auth.user.id,
     )
+    .is("class_event_school_id", null)
     .order(
       "created_at",
       {
@@ -1111,6 +1112,7 @@ export async function POST(
         "owner_user_id",
         auth.user.id,
       )
+      .is("class_event_school_id", null)
       .eq(
         "origin",
         "manual",
@@ -2289,6 +2291,7 @@ export async function PATCH(
       "id",
       applicationId,
     )
+    .is("class_event_school_id", null)
     .eq(
       "owner_user_id",
       auth.user.id,

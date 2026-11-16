@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ClassEventNotices from "@/components/parari/manage/ClassEventNotices";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
@@ -58,6 +59,7 @@ export default function MyClassSchoolPage() {
       <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
         {current?.school ? <>
           <h2 className="text-xl font-bold">{current.school.name}</h2>
+          <ClassEventNotices key={id} schoolId={id} />
           {notice && <p role="status" className="text-sm">{notice}</p>}
           {current.visits?.flexible && <p className="text-sm">同じ商品の開催枠を横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
           {current.school.classes.length === 0 && <p>参加できるクラスはありません。</p>}

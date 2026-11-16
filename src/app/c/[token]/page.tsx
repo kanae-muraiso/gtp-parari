@@ -14,6 +14,7 @@ type CancellationInfo = {
   entry_status: string;
   payment_status: string;
   payment_method: string;
+  class_event_payment_url: string | null;
   pass_code: string | null;
   can_cancel: boolean;
   action: "withdraw" | "cancel";
@@ -128,6 +129,7 @@ export default function GuestApplicationCancellationPage() {
             result.payment_status ?? "not_required",
           payment_method:
             result.payment_method ?? "none",
+          class_event_payment_url: result.class_event_payment_url ?? null,
           pass_code:
             typeof result.pass_code === "string"
               ? result.pass_code
@@ -341,6 +343,9 @@ export default function GuestApplicationCancellationPage() {
                 </p>
               ) : null}
             </div>
+
+            {info.class_event_payment_url && !completed && <a className="mt-6 block w-fit rounded-full bg-neutral-950 px-5 py-3 text-sm font-bold text-white"
+              href={info.class_event_payment_url} rel="noreferrer">参加費を支払う</a>}
 
             {info.payment_method === "parari" &&
             info.payment_status === "unpaid" &&

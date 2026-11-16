@@ -1,3 +1,5 @@
+import { canRegisterForClassEvent } from "@/lib/classEventAccess";
+import type { ClassEventSettings } from "@/lib/classEvents";
 // src/app/api/application/guest-submit/route.ts
 // Guest APPLICATION starts as a short-lived verification request.
 // The real application_entry is created only after the email link is opened.
@@ -32,6 +34,8 @@ const RESEND_COOLDOWN_MS = 60_000;
 type ApplicationRow = {
   id: string;
   title: string;
+  class_event_school_id: string | null;
+  class_event: ClassEventSettings | null;
   status: "draft" | "open" | "closed";
   definition: ApplicationDefinition | null;
 };
@@ -157,7 +161,7 @@ export async function POST(
     } = await supabaseAdmin
       .from("applications")
       .select(
-        "id,title,status,definition",
+        "id,title,status,definition,class_event_school_id,class_event",
       )
       .eq("id", applicationId)
       .maybeSingle();
@@ -183,6 +187,10 @@ export async function POST(
 
     const application =
       applicationData as ApplicationRow;
+
+    if (application.class_event_school_id && (!application.class_event || !await canRegisterForClassEvent(
+      application.class_event_school_id, application.class_event, null,
+    ))) return NextResponse.json({ ok: false, message: "このイベントは申し込めません。" }, { status: 403 });
 
     if (application.status !== "open") {
       return NextResponse.json(

@@ -27,14 +27,16 @@ async function main() {
       grant select on public.profiles to service_role;
       create table public.applications (
         id uuid primary key, owner_user_id uuid not null, application_type text not null,
-        origin text not null default 'manual', calendar_item_id uuid, archived_at timestamptz
+        origin text not null default 'manual', calendar_item_id uuid, archived_at timestamptz,
+        status text not null default 'draft', definition jsonb not null default '{}'::jsonb
       );
       create table public.application_entries (
         id uuid primary key default gen_random_uuid(), application_id uuid not null references applications(id),
         user_id uuid, applicant_name text, status text not null, calendar_occurrence_id uuid,
-        calendar_recurring_booking_id uuid, created_at timestamptz not null default now()
+        calendar_recurring_booking_id uuid, application_snapshot jsonb not null default '{}'::jsonb, created_at timestamptz not null default now()
       );
-      grant select, update on public.applications to service_role;
+      alter table public.applications enable row level security;
+      grant select, insert, update on public.applications to service_role;
       grant select, insert, update on public.application_entries to service_role;
     `);
     const migration = path.join(__dirname, "../supabase/migrations/20261113134158_class_a_roster.sql");
@@ -331,6 +333,33 @@ async function main() {
     await archive(owner,false);
     assert.ok((await db.query("select read_class_school($1,$2) as result",[school,outsider])).rows[0].result);
     assert.equal((await db.query("select enabled from school_recruitment where school_id=$1",[school])).rows[0].enabled,false);
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261116150000_class_business_events.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const makeEvent = async (schoolId, settings, capacity) => (await db.query(
+      "insert into applications(id,owner_user_id,application_type,status,definition,class_event_school_id,class_event) " +
+      "values(gen_random_uuid(),$1,'EVENT','open',$2,$3,$4) returning id",
+      [owner, JSON.stringify({ capacity }), schoolId, JSON.stringify(settings)],
+    )).rows[0].id;
+    const settings = { registration: true, deadline: new Date(Date.now() + 86400000).toISOString() };
+    const recital = await makeEvent(school, { ...settings, audience: "members", classIds: [newClass] }, 2);
+    const special = await makeEvent(studio, { ...settings, audience: "mixed", classIds: [] }, 1);
+    const registerEvent = (id, account, snapshot = {}) => db.query(
+      "insert into application_entries(application_id,user_id,status,application_snapshot) values($1,$2,'confirmed',$3)",
+      [id, account, JSON.stringify(snapshot)],
+    );
+    await assert.rejects(registerEvent(recital, null), /class_event_registration_closed/);
+    await assert.rejects(registerEvent(recital, makeupUser), /class_event_registration_closed/);
+    await registerEvent(recital, outsider);
+    await registerEvent(recital, null, { class_event_staff: true });
+    await assert.rejects(registerEvent(recital, outsider), /application_capacity_reached/);
+    await registerEvent(special, null);
+    await assert.rejects(registerEvent(special, outsider), /application_capacity_reached/);
+    await archive(owner, true);
+    await assert.rejects(registerEvent(recital, outsider), /class_event_registration_closed/);
+    await archive(owner, false);
+    assert.equal((await db.query("select status from applications where id=$1", [recital])).rows[0].status, "closed");
+    assert.equal((await db.query("select status from applications where id=$1", [special])).rows[0].status, "open");
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
