@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (classIntakeId) {
       const source = await readClassIntakeSource(classIntakeId);
       if (source) {
-        const school = await supabaseAdmin.from("class_schools").select("owner_user_id").eq("id", source.recruitment.school_id).maybeSingle();
+        const school = await supabaseAdmin.from("class_schools").select("owner_user_id").eq("id", source.recruitment.school_id).is("archived_at", null).maybeSingle();
         if (school.error) throw school.error;
         if (school.data) {
           const profile = await supabaseAdmin.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();

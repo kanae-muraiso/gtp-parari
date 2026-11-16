@@ -32,7 +32,7 @@ async function handle(request: NextRequest, write: boolean) {
     }
     const [setting, school, recruitment] = await Promise.all([
       db.from("school_admission_settings").select("labels,terms").eq("school_id", row.school_id).maybeSingle(),
-      db.from("class_schools").select("name,owner_user_id").eq("id", row.school_id).maybeSingle(),
+      db.from("class_schools").select("name,owner_user_id").eq("id", row.school_id).is("archived_at", null).maybeSingle(),
       db.from("school_recruitment").select("application_text,payment_url,arrival_text,payment_mode").eq("school_id", row.school_id).maybeSingle(),
     ]);
     if (setting.error || school.error || recruitment.error) throw setting.error ?? school.error ?? recruitment.error;

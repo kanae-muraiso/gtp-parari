@@ -44,7 +44,7 @@ async function manage(userId: string, scope: string | null) {
       .eq("school_id", school.id).gt("surcharge_yen", 0).is("surcharge_paid_at", null).order("visit_on"),
     db.from("school_class_surcharge_receipts").select("id,enrollment_id,class_id,visit_on,amount_yen,paid_at")
       .eq("school_id", school.id).order("paid_at", { ascending: false }).limit(30),
-    db.from("class_schools").select("id,name").eq("owner_user_id", userId).neq("id", school.id).order("name"),
+    db.from("class_schools").select("id,name").eq("owner_user_id", userId).neq("id", school.id).is("archived_at", null).order("name"),
   ]);
   for (const result of [roster, admission, applications, products, surcharges, receipts, otherBusinesses]) if (result.error) throw result.error;
   const names = new Map(products.data.map(item => [item.id, item.name]));
@@ -59,20 +59,20 @@ export async function GET(request: NextRequest) {
     if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const scope = request.nextUrl.searchParams.get("business");
     if (request.nextUrl.searchParams.get("businesses") === "1") {
-      const { data, error } = await db.from("class_schools").select("id,name,business_type").eq("owner_user_id", user.id).eq("tier", "a").order("name");
+      const { data, error } = await db.from("class_schools").select("id,name,business_type,archived_at").eq("owner_user_id", user.id).eq("tier", "a").order("name");
       if (error) throw error;
       return reply({ ok: true, businesses: data });
     }
     if (request.nextUrl.searchParams.get("home") === "1") {
       const [owned, enrolled] = await Promise.all([
-        db.from("class_schools").select("id,name").eq("owner_user_id", user.id).order("name"),
-        db.from("school_enrollments").select("school:class_schools(id,name)")
+        db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name"),
+        db.from("school_enrollments").select("school:class_schools(id,name,archived_at)")
           .eq("user_id", user.id).eq("status", "active")
-          .returns<{ school: { id: string; name: string } | null }[]>(),
+          .returns<{ school: { id: string; name: string; archived_at?: string | null } | null }[]>(),
       ]);
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
       return reply({ ok: true, userId: user.id, owned: owned.data?.[0] ?? null, businesses: owned.data,
-        enrolled: (enrolled.data ?? []).flatMap(({ school }) => school ? [school] : []) });
+        enrolled: (enrolled.data ?? []).flatMap(({ school }) => school && !school.archived_at ? [{ id: school.id, name: school.name }] : []) });
     }
     if (request.nextUrl.searchParams.get("product") === "1") {
       const school = await ownedSchool(user.id, scope);
@@ -186,6 +186,15 @@ export async function POST(request: NextRequest) {
       return reply({ ok: true });
     }
     const name = clean(body?.name);
+    if (body?.action === "archiveBusiness" || body?.action === "restoreBusiness") {
+      if (typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業を確認してください。");
+      const { error } = await db.rpc("set_class_business_archived", {
+        p_owner: user.id, p_school: body.id, p_archived: body.action === "archiveBusiness",
+      });
+      if (error?.code === "P0002") return fail("事業が見つかりません。", 404);
+      if (error) throw error;
+      return reply({ ok: true });
+    }
     if (body?.action === "createBusiness") {
       if (!name || name.length > 120 || !["school", "studio", "other"].includes(body.businessType) ||
         typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業名と形態を確認してください。");
