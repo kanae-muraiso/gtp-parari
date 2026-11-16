@@ -32,12 +32,12 @@ async function handle(request: NextRequest) {
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
     if (!information.trim() && !shared) return missing();
     const options = recruitment;
-    const targets = offer ? await db.from("school_classes").select("id,name,product:school_class_products(name)").eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
+    const targets = offer ? await db.from("school_classes").select("id,name,fee_override_yen,product:school_class_products(name,design)").eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
     if (targets?.error) throw targets.error;
     if (offer && !targets?.data?.length) return missing();
     const offerFields = offer ? { offerName: offer.name, targetClasses: (targets?.data ?? []).map(item => {
-      const product = Array.isArray(item.product) ? item.product[0] : item.product as { name: string } | null;
-      return { id: item.id, name: product?.name ? product.name + " · " + item.name : item.name };
+      const product = Array.isArray(item.product) ? item.product[0] : item.product as { name: string; design?: { monthlyFee?: number } } | null;
+      return { id: item.id, name: product?.name ? product.name + " · " + item.name : item.name, fee: item.fee_override_yen ?? product?.design?.monthlyFee ?? null };
     }) } : {};
     function submitOffer(input: Record<string, unknown>, name: string, applicant: string, email: string, slot: string | null, phone: string | null) {
       return db.rpc("submit_school_offer", { p_public: options.public_id, p_offer: offer!.id, p_class: input.classId,

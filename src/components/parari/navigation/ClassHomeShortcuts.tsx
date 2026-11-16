@@ -6,7 +6,7 @@ import { classRequest } from "@/lib/classRequests";
 import { useParticipations } from "./ParticipationProvider";
 
 type School = { id: string; name: string };
-type Destinations = { userId: string; owned: School | null; enrolled: School[] };
+type Destinations = { userId: string; owned: School | null; businesses?: School[]; enrolled: School[] };
 
 export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: boolean }) {
   const { userId } = useParticipations();
@@ -24,11 +24,11 @@ export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: b
   if (!destinations || destinations.userId !== userId) return null;
   return (
     <section aria-label="クラス" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {(studioEnabled || destinations.owned) && <Shortcut
-        title={destinations.owned?.name ?? "クラスを開設"}
-        action={destinations.owned ? "教室を運営" : "CLASS A"}
-        href={studioEnabled ? "/my/manage?tab=class" : "/my/start-studio"}
-      />}
+      {(destinations.businesses ?? (destinations.owned ? [destinations.owned] : [])).map(school =>
+        <Shortcut key={school.id} title={school.name} action="事業を運営"
+          href={studioEnabled ? "/my/manage?tab=class&business=" + school.id : "/my/start-studio"} />)}
+      {studioEnabled && !(destinations.businesses?.length || destinations.owned) &&
+        <Shortcut title="事業を登録" action="クラス運営" href="/my/manage?tab=class" />}
       {destinations.enrolled.map(school => <Shortcut key={school.id} title={school.name}
         action="クラスの予定" href={`/my/classes/${school.id}`} />)}
     </section>

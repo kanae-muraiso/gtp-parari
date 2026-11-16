@@ -2,13 +2,15 @@ import { useState, type FormEvent } from "react";
 
 import ClassBookingCalendar, { bookingDate, bookingTime, type BookingSlot } from "./ClassBookingCalendar";
 
-export type Intake = { offerName?: string; targetClasses?: { id: string; name: string }[]; school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
+export type Intake = { offerName?: string; targetClasses?: { id: string; name: string; fee?: number | null }[]; school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
 
 const field = "block w-full rounded-lg border p-2";
 
 export default function ClassIntakeForm({ data, busy = false, done = "", submit }: {
   data: Intake; busy?: boolean; done?: string; submit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const targetLabel = (item: { name: string; fee?: number | null }) =>
+    item.fee == null ? item.name : item.name + " · " + item.fee.toLocaleString("ja-JP") + "円";
   const [selected, setSelected] = useState("");
   const slot = data.slots.find(entry => entry.id === selected);
   const start = slot ? Date.parse(slot.starts_at) : 0;
@@ -31,10 +33,10 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         </div>}
         <fieldset disabled={busy || (!data.direct && !slot)} className={data.direct || slot ? "grid min-w-0 gap-3" : "hidden"}>
         {data.targetClasses && (data.targetClasses.length === 1 ? <>
-          <p className="text-sm">対象クラス　{data.targetClasses[0].name}</p>
+          <p className="text-sm">対象クラス　{targetLabel(data.targetClasses[0])}</p>
           <input type="hidden" name="classId" value={data.targetClasses[0].id} />
         </> : <label>希望するクラス<select className={field} name="classId" required defaultValue="">
-          <option value="">クラスを選ぶ</option>{data.targetClasses.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          <option value="">クラスを選ぶ</option>{data.targetClasses.map(item => <option key={item.id} value={item.id}>{targetLabel(item)}</option>)}
         </select></label>)}
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
         <label>{data.audience === "minor" ? "保護者のお名前" : "申し込む方のお名前"}<input name="applicant" className={field} maxLength={120} required /></label>
