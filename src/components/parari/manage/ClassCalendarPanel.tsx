@@ -9,7 +9,7 @@ import ClassMonthGrid from "./ClassMonthGrid";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50";
 
-export default function ClassCalendarPanel({ classes, selectedClass }: { classes: SchoolClass[]; selectedClass?: SchoolClass }) {
+export default function ClassCalendarPanel({ classes, selectedClass, expectedVisits }: { classes: SchoolClass[]; selectedClass?: SchoolClass; expectedVisits?: number }) {
   const [classId, setClassId] = useState(classes[0]?.id ?? "");
   const [month, setMonth] = useState(() => shiftCalendarMonth(classCalendarToday().slice(0, 7), selectedClass ? 0 : 1));
   const item = selectedClass ?? classes.find(row => row.id === classId);
@@ -23,12 +23,12 @@ export default function ClassCalendarPanel({ classes, selectedClass }: { classes
         <label className="grid gap-1 text-sm">対象月<input className={button} type="month" value={month}
           onChange={e => { if (calendarMonthPattern.test(e.target.value)) setMonth(e.target.value); }} /></label>
       </div>
-      <CalendarEditor key={item.id + month} item={item} month={month} />
+      <CalendarEditor key={item.id + month} item={item} month={month} expectedVisits={expectedVisits} />
     </>}
   </section>;
 }
 
-function CalendarEditor({ item, month }: { item: SchoolClass; month: string }) {
+function CalendarEditor({ item, month, expectedVisits }: { item: SchoolClass; month: string; expectedVisits?: number }) {
   const [schedule, setSchedule] = useState<ClassMonthSchedule | null>();
   const [selectedDay, setSelectedDay] = useState("");
   const days = schedule?.days ?? generateClassDays(item, month, false);
@@ -106,6 +106,9 @@ function CalendarEditor({ item, month }: { item: SchoolClass; month: string }) {
             void update("save", schedule?.confirmed ?? false, nextDays, held ? "休講にしました。" : "開催日にしました。");
           }}>{days.includes(selectedDay) ? "開催 → 休講にする" : regularDays.includes(selectedDay) ? "休講 → 開催に戻す" : "この日に開催する"}</button>
       </div>}
+      {expectedVisits !== undefined && days.length < expectedVisits && <p className="text-sm text-amber-900">
+        月{expectedVisits}回の設定に対して、開催日が{days.length}回です。
+      </p>}
       {!schedule?.confirmed && <button type="button" className={primary} disabled={busy} onClick={() => void update("save", true)}>
         この月を確定
       </button>}

@@ -7,6 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
+import ClassScheduleRulesPanel from "./ClassScheduleRulesPanel";
 import ClassCalendarPanel from "./ClassCalendarPanel";
 import ClassEventsPanel from "./ClassEventsPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
@@ -97,7 +98,8 @@ function BusinessClassManager() {
   const school = data.school;
   if (!school) return <section className={panel}><p>事業を選択してください。</p><Link href="/my/manage?tab=class" className="underline">事業一覧へ</Link></section>;
   const item = school.classes.find(entry => entry.id === selectedId);
-  const itemProductName = item?.productName ?? data.products?.find(product => product.id === item?.product_id)?.name;
+  const itemProduct = data.products?.find(product => product.id === item?.product_id);
+  const itemProductName = item?.productName ?? itemProduct?.name;
   const slotProduct = data.products?.find(product => product.id === newSlot?.productId);
   const reloadProducts = () => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"));
 
@@ -164,6 +166,8 @@ function BusinessClassManager() {
               {editingProduct === product.id ? "商品設定を閉じる" : "商品設定を編集"}
             </button>}
           </div>
+          {"walkInFee" in product && product.walkInFee != null && <Link className="w-fit text-sm underline"
+            href={`/class-schedule/${product.id}`} target="_blank" rel="noreferrer">自由参加の日程案内を開く</Link>}
           {product.id && editingProduct === product.id && <ClassProductPanel key={product.id}
             classes={school.classes} initialProduct={product.id} allowProductSelection={false} onSaved={reloadProducts} />}
           {entries.map(entry => <button key={entry.id} type="button"
@@ -202,7 +206,7 @@ function BusinessClassManager() {
       }}>
         <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className={label}>頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
+          <label className={label}>基本頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
             <option value="weekly">毎週</option><option value="monthly">毎月</option>
           </select></label>
           <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
@@ -223,7 +227,10 @@ function BusinessClassManager() {
           {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
         </div>
       </form>
-      {item && <ClassCalendarPanel classes={school.classes} selectedClass={item} />}
+      {item && <ClassScheduleRulesPanel item={item} walkIn={itemProduct?.walkInFee != null} busy={busy}
+        save={rules => save({ action: "saveScheduleRules", classId: item.id, rules }, "開催ルールを保存しました。")} />}
+      {item && <ClassCalendarPanel classes={school.classes} selectedClass={item}
+        expectedVisits={itemProduct?.walkInFee == null && itemProduct?.booking === "fixed" ? itemProduct.monthlyVisits : undefined} />}
     </section>}
     {item && !item.product_id && Boolean(data.otherBusinesses?.length) &&
       <form className={panel} onSubmit={async event => {

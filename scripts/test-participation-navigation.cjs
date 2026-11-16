@@ -17,7 +17,9 @@ function load(relative, mocks = {}) {
   mod._compile(ts.transpileModule(fs.readFileSync(filename, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, filename);
   return mod.exports;
 }
-const domain = load("src/lib/participation.ts", { "@/lib/classes": load("src/lib/classes.ts") });
+const recurrence = load("src/lib/classRecurrence.ts");
+const classModule = load("src/lib/classes.ts", { "./classRecurrence": recurrence });
+const domain = load("src/lib/participation.ts", { "@/lib/classes": classModule });
 const a = "11111111-1111-1111-1111-111111111111";
 const b = "22222222-2222-2222-2222-222222222222";
 const cpp = "33333333-3333-3333-3333-333333333333";
@@ -118,14 +120,15 @@ const { GET } = load("src/app/api/my-participations/route.ts", {
   } }) },
 });
 const businessScope = load("src/lib/classBusinessScope.ts", {
-  "server-only": {}, "@/lib/classes": load("src/lib/classes.ts"),
+  "server-only": {}, "@/lib/classes": classModule,
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
 });
 const classes = load("src/app/api/classes/route.ts", {
+  "@/lib/classRecurrence": recurrence,
   "@/lib/classBusinessScope": businessScope,
   "@/lib/classCalendarAccess": calendarAccess,
   "@/lib/classProduct": load("src/lib/classProduct.ts"),
-  "@/lib/classes": load("src/lib/classes.ts"),
+  "@/lib/classes": classModule,
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
 });
 async function main() {

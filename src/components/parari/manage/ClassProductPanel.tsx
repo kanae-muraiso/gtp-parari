@@ -82,14 +82,25 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         </label>)}
       </fieldset>
       <label>内容<textarea className={field} rows={3} maxLength={1000} value={product.description} onChange={event => patch("description", event.target.value)} /></label>
+      <label>通い方<select className={field} value={product.walkInFee != null ? "walkIn" : product.booking} onChange={event => {
+        const value = event.target.value;
+        setSaved(false);
+        setProduct(current => current ? { ...current, walkInFee: value === "walkIn" ? 0 : null,
+          booking: value === "walkIn" ? "fixed" : value as ClassProduct["booking"] } : current);
+      }}>
+        <option value="fixed">固定の開催枠に所属</option><option value="multiple">複数の指定枠に所属</option>
+        <option value="flexible">同じ商品の空席を毎回予約</option><option value="walkIn">自由参加（予約不要）</option>
+      </select></label>
+      {product.walkInFee != null ? <>
+        <label>当日の基本参加費（円）<input className={field} type="number" min={0} max={1000000} required
+          value={product.walkInFee} onChange={event => patch("walkInFee", Number(event.target.value))} /></label>
+        <p className="text-sm">保存すると、事業名・クラス名・日程・会場・参加費を案内ページに掲載します。</p>
+      </> : <>
       <div className="grid gap-3 sm:grid-cols-3">
         <label>各回の定員<input className={field} type="number" min={1} max={1000} required value={product.capacity || ""} onChange={event => patch("capacity", Number(event.target.value))} /></label>
         <label>月謝（円）<input className={field} type="number" min={0} max={1000000} required value={product.monthlyFee} onChange={event => patch("monthlyFee", Number(event.target.value))} /></label>
-        <label>月の受講回数<input className={field} type="number" min={1} max={100} required value={product.monthlyVisits || ""} onChange={event => patch("monthlyVisits", Number(event.target.value))} /></label>
+        <label>{product.booking === "flexible" ? "月謝に含まれる予約回数" : "月の標準受講回数"}<input className={field} type="number" min={1} max={100} required value={product.monthlyVisits || ""} onChange={event => patch("monthlyVisits", Number(event.target.value))} /></label>
       </div>
-      <label>通い方<select className={field} value={product.booking} onChange={event => patch("booking", event.target.value as ClassProduct["booking"])}>
-        <option value="fixed">固定の開催枠</option><option value="multiple">複数の指定枠に所属</option><option value="flexible">同じ商品の空席を毎回予約</option>
-      </select></label>
       <label><input type="checkbox" checked={product.extraFee !== null} onChange={event => patch("extraFee", event.target.checked ? 0 : null)} /> 別料金で追加受講を受け付ける</label>
       {product.extraFee !== null && <label>追加受講１回の料金（円）<input className={field} type="number" min={1} max={1000000} required
         value={product.extraFee || ""} onChange={event => patch("extraFee", Number(event.target.value))} /></label>}
@@ -100,6 +111,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         onChange={event => patch("makeupExpiry", event.target.value as ClassProduct["makeupExpiry"])}>
         <option value="same_month">欠席した月の末日</option><option value="next_month">欠席した月の翌月末</option>
       </select></label>}
+      </>}
       {selected.length > 0 && <section className="rounded-lg bg-neutral-50 p-4">
         <h4 className="mb-2 font-medium">受講条件の案内文</h4>
         <p className="whitespace-pre-line text-sm leading-6">{describeClassProduct(product, selected.map(item => item.name))}</p>

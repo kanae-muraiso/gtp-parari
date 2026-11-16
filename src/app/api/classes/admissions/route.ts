@@ -1,7 +1,7 @@
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classIdPattern, classRunsOn } from "@/lib/classes";
+import { classIdPattern } from "@/lib/classes";
 import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
 import { classDate, classToday, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
@@ -86,7 +86,12 @@ async function handle(request: NextRequest, write: boolean) {
         if (row.requested_class_id) {
           const target = await db.from("school_classes").select("starts_on,cadence").eq("id", row.requested_class_id).eq("school_id", schoolId).single();
           if (target.error) throw target.error;
-          if (dates.some(day => !classRunsOn(target.data as Parameters<typeof classRunsOn>[0], day))) return fail("希望クラスの開催日を選んでください。");
+          const wanted = await Promise.all(dates.map(day => db.rpc("school_class_runs_on", {
+            p_class: row.requested_class_id, p_first: target.data.starts_on, p_cadence: target.data.cadence, p_day: day,
+          })));
+          const checkError = wanted.find(result => result.error)?.error;
+          if (checkError) throw checkError;
+          if (wanted.some(result => result.data !== true)) return fail("希望クラスの開催日を選んでください。");
         }
         const occurrences = await Promise.all(dates.map(day => db.rpc("class_recurrences", { p_school: schoolId, p_day: day })));
         const error = occurrences.find(result => result.error)?.error;

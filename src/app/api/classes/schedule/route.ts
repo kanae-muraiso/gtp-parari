@@ -10,7 +10,7 @@ const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers });
 const fail = (message: string, status = 400) => reply({ ok: false, message }, status);
 const missing = () => fail("開催予定が見つかりません。", 404);
-const classColumns = "id,name,starts_on,starts_at,cadence,location,product_id";
+const classColumns = "id,name,starts_on,starts_at,cadence,location,product_id,schedule_rules";
 const reservedDayMessage = "予約済みの開催日は外せません。対象の予約を確認してください。";
 const monthColumns = "days,confirmed,revision";
 
