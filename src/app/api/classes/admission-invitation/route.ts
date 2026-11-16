@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
-import { classMeetingUrl, classIdPattern, classRunsOn } from "@/lib/classes";
+import { classMeetingUrl, classIdPattern } from "@/lib/classes";
 
 import { classToday, parseApplication, parseBriefingDesign, renderBriefingMail, type BriefingFollowup } from "@/lib/classBriefingWorkflow";
 
@@ -72,8 +72,12 @@ async function handle(request: NextRequest, write: boolean) {
       if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision || !fields || !firstDays.includes(firstDay))
         return send({ ok: false, message: "必須項目、同意、初日をご確認ください。案内が更新された場合は再読み込みしてください。" }, 409);
       if (design.firstDay === "choose") {
-        if (row.requested_class_id && (!schedule.data || !classRunsOn(schedule.data as Parameters<typeof classRunsOn>[0], firstDay))) {
-          return send({ ok: false, message: "希望クラスの予定が変更されました。教室にご確認ください。" }, 409);
+        if (row.requested_class_id) {
+          const valid = schedule.data ? await db.rpc("school_class_runs_on", {
+            p_class: row.requested_class_id, p_first: schedule.data.starts_on, p_cadence: schedule.data.cadence, p_day: firstDay,
+          }) : null;
+          if (valid?.error) throw valid.error;
+          if (valid?.data !== true) return send({ ok: false, message: "希望クラスの予定が変更されました。教室にご確認ください。" }, 409);
         }
         const occurrence = await db.rpc("class_recurrences", { p_school: row.school_id, p_day: firstDay });
         if (occurrence.error) throw occurrence.error;

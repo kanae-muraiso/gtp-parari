@@ -1,3 +1,4 @@
+import { parseClassScheduleRules } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
@@ -7,7 +8,7 @@ import { classMeetingUrl, classIdPattern, type ClassSchool, type SchoolClass } f
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
-const scheduleColumns = "id,product_id,name,starts_on,starts_at,cadence,location,delivery,meeting_url,duration_minutes,fee_override_yen";
+const scheduleColumns = "id,product_id,name,starts_on,starts_at,cadence,location,delivery,meeting_url,duration_minutes,fee_override_yen,schedule_rules";
 const reply = (data: object, status = 200) => NextResponse.json(data, { status, headers });
 const fail = (message: string, status = 400) => reply({ ok: false, message }, status);
 
@@ -40,7 +41,7 @@ async function manage(userId: string, scope: string | null) {
     db.from("applications").select("id,title").eq("owner_user_id", userId)
       .eq("application_type", "SCHOOL").eq("origin", "manual").is("calendar_item_id", null)
       .is("archived_at", null).order("created_at", { ascending: false }),
-    db.from("school_class_products").select("id,name").eq("school_id", school.id).order("name"),
+    db.from("school_class_products").select("id,name,design").eq("school_id", school.id).order("name"),
     db.from("school_class_visit_reservations").select("enrollment_id,class_id,visit_on,surcharge_yen")
       .eq("school_id", school.id).gt("surcharge_yen", 0).is("surcharge_paid_at", null).order("visit_on"),
     db.from("school_class_surcharge_receipts").select("id,enrollment_id,class_id,visit_on,amount_yen,paid_at")
@@ -50,7 +51,7 @@ async function manage(userId: string, scope: string | null) {
   for (const result of [roster, admission, applications, products, surcharges, receipts, otherBusinesses]) if (result.error) throw result.error;
   const names = new Map(products.data.map(item => [item.id, item.name]));
   school.classes = school.classes.map(item => ({ ...item, productName: names.get(item.product_id) }));
-  return reply({ ok: true, userId, school, products: products.data, surcharges: surcharges.data, receipts: receipts.data, otherBusinesses: otherBusinesses.data, roster: roster.data, applicationId: admission.data?.application_id ?? null, applications: applications.data });
+  return reply({ ok: true, userId, school, products: products.data.map(({ id, name, design }) => ({ id, name, walkInFee: design.walkInFee ?? null, monthlyVisits: design.monthlyVisits, booking: design.booking })), surcharges: surcharges.data, receipts: receipts.data, otherBusinesses: otherBusinesses.data, roster: roster.data, applicationId: admission.data?.application_id ?? null, applications: applications.data });
 }
 
 export async function GET(request: NextRequest) {
@@ -271,6 +272,16 @@ export async function POST(request: NextRequest) {
 
     const school = await ownedSchool(user.id, scope);
     if (!school) return fail("教室が見つかりません。", 404);
+    if (body?.action === "saveScheduleRules") {
+      const rules = parseClassScheduleRules(body.rules);
+      if (!rules || !school.classes.some(item => item.id === body.classId)) return fail("開催ルールを確認してください。");
+      const { error } = await db.rpc("save_class_schedule_rules", {
+        p_owner: user.id, p_school: school.id, p_class: body.classId, p_rules: rules,
+      });
+      if (error?.code === "P0001") return fail("予約が入っている開催日はルールから外せません。", 409);
+      if (error) throw error;
+      return await manage(user.id, scope);
+    }
     if (body?.action === "moveSlot") {
       if (![body.destination, body.classId].every(value => typeof value === "string" && classIdPattern.test(value))) return fail("移動先と開催枠を確認してください。");
       const { error } = await db.rpc("move_unassigned_school_slot", { p_owner: user.id, p_source: school.id, p_destination: body.destination, p_class: body.classId });

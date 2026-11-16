@@ -1,5 +1,6 @@
 export type ClassProduct = {
   classIds: string[];
+  walkInFee?: number | null;
   description: string;
   capacity: number;
   monthlyFee: number;
@@ -18,6 +19,7 @@ export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmp
   const integer = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
   if (!Array.isArray(p.classIds) || (!allowEmpty && !p.classIds.length) || p.classIds.some(id => !allowed.has(id)) ||
       typeof p.description !== "string" || p.description.length > 1000 ||
+      (p.walkInFee != null && !integer(p.walkInFee, 0, 1000000)) ||
       !integer(p.capacity, 1, 1000) || !integer(p.monthlyFee, 0, 1000000) || !integer(p.monthlyVisits, 1, 100) ||
       !["fixed", "multiple", "flexible"].includes(p.booking) ||
       (p.extraFee !== null && !integer(p.extraFee, 1, 1000000)) ||
@@ -25,11 +27,12 @@ export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmp
       !["same_month", "next_month"].includes(p.makeupExpiry)) return null;
   return { classIds: [...new Set(p.classIds)], description: p.description.trim(), capacity: p.capacity,
     monthlyFee: p.monthlyFee, monthlyVisits: p.monthlyVisits, booking: p.booking, extraFee: p.extraFee,
-    makeup: p.makeup, makeupExpiry: p.makeupExpiry };
+    makeup: p.makeup, makeupExpiry: p.makeupExpiry, walkInFee: p.walkInFee ?? null };
 }
 
 export function describeClassProduct(p: ClassProduct, names: string[]) {
   const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
+  if (p.walkInFee != null) return `予約不要・当日参加。基本参加費は1回${yen(p.walkInFee)}です。開催日ごとの会場と料金は日程表をご確認ください。`;
   const fee = p.monthlyFee ? "月謝" + yen(p.monthlyFee) + "で、" : "無料で、";
   const expiry = p.makeupExpiry === "same_month" ? "欠席した月の末日" : "欠席した月の翌月末";
   return [

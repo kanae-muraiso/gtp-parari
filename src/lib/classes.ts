@@ -1,3 +1,5 @@
+import { matchesClassDateRule, type ClassScheduleRules } from "./classRecurrence";
+
 export const classIdPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export type SchoolClass = {
@@ -5,6 +7,7 @@ export type SchoolClass = {
   productName?: string;
   fee_override_yen?: number | null;
   baseFee?: number;
+  schedule_rules?: ClassScheduleRules | null;
   id: string;
   name: string;
   starts_on: string;
@@ -39,7 +42,7 @@ export type ClassManagement = {
   surcharges?: { enrollment_id: string; class_id: string; visit_on: string; surcharge_yen: number }[];
   otherBusinesses?: { id: string; name: string }[];
   receipts?: { id: string; enrollment_id: string; class_id: string; visit_on: string; amount_yen: number; paid_at: string }[];
-  products?: { id: string; name: string }[];
+  products?: { id: string; name: string; walkInFee?: number | null; monthlyVisits?: number; booking?: string }[];
   applicationId: string | null;
   applications: { id: string; title: string }[];
 };
@@ -58,8 +61,9 @@ export function classMeetingUrl(value: unknown): string | null {
   }
 }
 
-export function classRunsOn(item: Pick<SchoolClass, "starts_on" | "cadence">, day: string) {
+export function classRunsOn(item: Pick<SchoolClass, "starts_on" | "cadence" | "schedule_rules">, day: string) {
   if (day < item.starts_on) return false;
+  if (item.schedule_rules?.rules.length) return item.schedule_rules.rules.some(rule => matchesClassDateRule(rule, day));
   const current = new Date(day + "T00:00:00Z");
   if (item.cadence === "weekly") return (current.getTime() - Date.parse(item.starts_on)) % (7 * 86400000) === 0;
   const monthEnd = new Date(current);

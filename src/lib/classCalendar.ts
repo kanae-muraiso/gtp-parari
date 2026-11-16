@@ -15,9 +15,9 @@ export function classCalendarDays(month: string) {
   return Array.from({ length: count }, (_, index) => new Date(start + index * dayLength).toISOString().slice(0, 10));
 }
 
-export function generateClassDays(item: Pick<SchoolClass, "starts_on" | "cadence">, month: string, skipFifth: boolean) {
+export function generateClassDays(item: Pick<SchoolClass, "starts_on" | "cadence" | "schedule_rules">, month: string, skipFifth: boolean) {
   return classCalendarDays(month).filter(day => classRunsOn(item, day) &&
-    !(skipFifth && item.cadence === "weekly" && Number(day.slice(-2)) >= 29));
+    !(skipFifth && (item.schedule_rules?.rules.length ? item.schedule_rules.rules.every(rule => rule.kind === "weekly") : item.cadence === "weekly") && Number(day.slice(-2)) >= 29));
 }
 
 export type ClassMonthSchedule = {
@@ -34,7 +34,7 @@ export type LearnerCalendarEntry = {
   label: string;
 };
 
-export function isScheduledClassDay(item: Pick<SchoolClass, "id" | "starts_on" | "cadence">, day: string,
+export function isScheduledClassDay(item: Pick<SchoolClass, "id" | "starts_on" | "cadence" | "schedule_rules">, day: string,
   calendar?: Record<string, string[]>) {
   const scheduled = calendar?.[item.id + ":" + day.slice(0, 7)];
   return scheduled ? scheduled.includes(day) : classRunsOn(item, day);
