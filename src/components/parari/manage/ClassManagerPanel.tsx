@@ -251,7 +251,7 @@ function BusinessClassManager() {
         {showBlueprint ? "入会の設計図を閉じる" : "入会の設計図を作る（試作）"}
       </button>}
       {view === "settings" && showBlueprint && <ClassAdmissionBlueprint key={school.id} schoolId={school.id} schoolName={school.name} />}
-      {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} onOpenSettings={() => setView("settings")} />}
+      {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} products={data.products} onOpenSettings={() => setView("settings")} />}
       {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}

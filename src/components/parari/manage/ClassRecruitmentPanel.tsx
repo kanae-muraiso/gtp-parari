@@ -3,7 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import ClassAvailabilityPanel, { type OfficeHour } from "./ClassAvailabilityPanel";
 import ClassRecruitmentOffers, { type ClassOffer } from "./ClassRecruitmentOffers";
 import ClassIntakeForm from "@/components/parari/classes/ClassIntakeForm";
-import type { SchoolClass } from "@/lib/classes";
+import { classIntakeTarget } from "@/lib/classIntakeTargets";
+import type { ClassManagement, SchoolClass } from "@/lib/classes";
 import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
@@ -15,7 +16,7 @@ type Data = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[];
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }: { view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[] }) {
+export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products }: { view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
   const [data, setData] = useState<Data | null>(null);
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
@@ -24,6 +25,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
   const [useSample, setUseSample] = useState(false);
   const [slotId, setSlotId] = useState("");
+  const [previewOfferId, setPreviewOfferId] = useState("");
   const [step, setStep] = useState(0);
   const [scenario, setScenario] = useState("advance");
   const [busy, setBusy] = useState(false);
@@ -59,13 +61,28 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
   const previewSlots = useSample ? [{ id: "sample", starts_at: new Date(sampleStart).toISOString(), meeting_url: null, duration_minutes: 30 }] : slots;
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
+  const previewOffer = data?.offers?.find(offer => offer.id === previewOfferId);
+  const previewClasses = previewOffer ? classes.filter(item => previewOffer.class_ids.includes(item.id)) : [];
+  const previewProducts = new Map(products?.map(product => [product.id, product]));
+  const previewTargets = previewClasses.filter(item => previewProducts.get(item.product_id ?? "")?.walkInFee == null)
+    .map(item => classIntakeTarget(item, previewProducts.get(item.product_id ?? "")));
+  const previewWalkIn = [...new Set(previewClasses.map(item => item.product_id))].flatMap(id => {
+    const product = previewProducts.get(id ?? "");
+    return product?.walkInFee != null ? [{ id: product.id, name: product.name }] : [];
+  });
   return <section className="grid gap-3 rounded-2xl border bg-white p-5">
     <h3 className="font-bold">{view === "preview" ? "申込者として試す" : "説明会・体験の募集"}</h3>
     {error && <p role="alert">{error}</p>}
     {!data && !error && <p role="status">読み込み中…</p>}
     {data && settings && view === "preview" && <>
       <p className="text-sm text-neutral-600">練習用です。予約・メール・支払い・名簿登録は発生しません。</p>
-      {(!recruitment || (!isDirect && !slots.length)) && <div className="grid gap-2 rounded-lg bg-neutral-50 p-3">
+      {Boolean(data.offers?.length) && <label>試す募集ページ
+        <select className={field} value={previewOfferId} onChange={event => { setPreviewOfferId(event.target.value); setStep(0); setSlotId(""); }}>
+          <option value="">教室共通の募集</option>
+          {data.offers?.map(offer => <option value={offer.id} key={offer.id}>{offer.name}</option>)}
+        </select>
+      </label>}
+      {(!recruitment || (!isDirect && !slots.length && (!previewOffer || !!previewTargets.length))) && <div className="grid gap-2 rounded-lg bg-neutral-50 p-3">
         <p>{!recruitment ? "このクラスの募集案内はまだ保存されていません。" : "受付中の予約枠がまだありません。"}</p>
         <div className="flex flex-wrap gap-3">
           <button type="button" className={button} onClick={onOpenSettings}>入会設定で{!recruitment ? "募集案内を書く" : "予約枠を追加する"}</button>
@@ -74,7 +91,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes }:
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm data={{ school: data.school, information: recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
+          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information ?? recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
             sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>

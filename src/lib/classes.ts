@@ -42,7 +42,7 @@ export type ClassManagement = {
   surcharges?: { enrollment_id: string; class_id: string; visit_on: string; surcharge_yen: number }[];
   otherBusinesses?: { id: string; name: string }[];
   receipts?: { id: string; enrollment_id: string; class_id: string; visit_on: string; amount_yen: number; paid_at: string }[];
-  products?: { id: string; name: string; walkInFee?: number | null; monthlyVisits?: number; booking?: string }[];
+  products?: { id: string; name: string; walkInFee?: number | null; monthlyFee?: number; monthlyVisits?: number; booking?: string }[];
   applicationId: string | null;
   applications: { id: string; title: string }[];
 };
