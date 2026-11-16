@@ -1,3 +1,4 @@
+import { classIntakeTarget } from "@/lib/classIntakeTargets";
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
@@ -32,13 +33,24 @@ async function handle(request: NextRequest) {
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
     if (!information.trim() && !shared) return missing();
     const options = recruitment;
-    const targets = offer ? await db.from("school_classes").select("id,name,fee_override_yen,product:school_class_products(name,design)").eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
+    const targets = offer ? await db.from("school_classes")
+      .select("id,name,starts_on,starts_at,cadence,location,delivery,schedule_rules,fee_override_yen,product:school_class_products(id,name,design)")
+      .eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
     if (targets?.error) throw targets.error;
     if (offer && !targets?.data?.length) return missing();
-    const offerFields = offer ? { offerName: offer.name, targetClasses: (targets?.data ?? []).map(item => {
-      const product = Array.isArray(item.product) ? item.product[0] : item.product as { name: string; design?: { monthlyFee?: number } } | null;
-      return { id: item.id, name: product?.name ? product.name + " · " + item.name : item.name, fee: item.fee_override_yen ?? product?.design?.monthlyFee ?? null };
-    }) } : {};
+    const targetClasses = [];
+    const walkInSchedules = new Map<string, { id: string; name: string }>();
+    for (const item of targets?.data ?? []) {
+      const product = (Array.isArray(item.product) ? item.product[0] : item.product) as {
+        id: string; name: string; design?: { monthlyFee?: number; monthlyVisits?: number; booking?: string; walkInFee?: number | null };
+      } | null;
+      if (product?.design?.walkInFee != null) {
+        walkInSchedules.set(product.id, { id: product.id, name: product.name });
+      } else {
+        targetClasses.push(classIntakeTarget(item, product ? { name: product.name, ...product.design } : null));
+      }
+    }
+    const offerFields = offer ? { offerName: offer.name, targetClasses, walkInSchedules: [...walkInSchedules.values()] } : {};
     function submitOffer(input: Record<string, unknown>, name: string, applicant: string, email: string, slot: string | null, phone: string | null) {
       return db.rpc("submit_school_offer", { p_public: options.public_id, p_offer: offer!.id, p_class: input.classId,
         p_slot: slot, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information,
@@ -53,7 +65,7 @@ async function handle(request: NextRequest) {
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || input?.agree !== true ||
           typeof input.information !== "string" || input.information.length > 4000 ||
           typeof input.terms !== "string" || input.terms.length > 8000) return fail("申込内容と同意を確認してください。");
-      if (offer && !(targets?.data ?? []).some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const result = offer ? await submitOffer(input, name, applicant, email, null, null) : await db.rpc("submit_direct_class_application", {
         p_public: options.public_id, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information, p_terms: input.terms,
       });
@@ -89,7 +101,7 @@ async function handle(request: NextRequest) {
       if (learnerEmail && !validClassEmail(learnerEmail)) return fail("受講者のメールアドレスをご確認ください。");
       const phone = clean(input?.phone);
       if (phone && !/^[+0-9()\s-]{7,30}$/.test(phone)) return fail("電話番号をご確認ください。");
-      if (offer && !(targets?.data ?? []).some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const { data, error } = offer ? await submitOffer(input, name, applicant, email, input.slot, phone || null)
         : await db.rpc("book_school_intake", { p_public: options.public_id, p_slot: input.slot, p_name: name,
         p_applicant: applicant, p_email: email, p_agreement: input.information, p_phone: phone || null });
