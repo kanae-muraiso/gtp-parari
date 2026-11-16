@@ -40,7 +40,7 @@ function BusinessClassManager() {
   const [newSlot, setNewSlot] = useState<{ id: string; productId: string } | null>(null);
   const creating = newSlot !== null;
   const [reload, setReload] = useState(0);
-  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview">("product");
+  const [view, setView] = useState<"admissions" | "settings" | "roster" | "product" | "preview" | "schedule">("product");
   const [data, setData] = useState<ClassManagement | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -176,10 +176,11 @@ function BusinessClassManager() {
       <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? school.name : "開催枠を追加")}</h2>
     </header>}
     {(item || schoolAdmission) && <nav aria-label="クラス運営" className="flex flex-wrap gap-2">
-      {([["product", "商品設定"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"]] as const).filter(([key]) => !schoolAdmission || key === "settings" || key === "preview" || key === "admissions").map(([key, title]) =>
+      {([["product", "商品設定"], ["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"], ["roster", "名簿・クラス"], ["schedule", "開催予定・休講"]] as const).filter(([key]) => !schoolAdmission || key === "settings" || key === "preview" || key === "admissions").map(([key, title]) =>
         <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setMessage(""); setError(""); }}
           className={view === key ? button : "rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm"}>{title}</button>)}
     </nav>}
+    {item && view === "schedule" && <ClassCalendarPanel key={item.id} classes={school.classes} selectedClass={item} />}
     {(creating || (item && view === "roster")) && <form key={school?.id ?? "new"} className={panel} onSubmit={event => {
       const values = formValues(event);
       const slot = newSlot;
