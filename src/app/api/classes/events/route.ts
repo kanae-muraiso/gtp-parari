@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import { classAdmissionMail, classDateTime } from "@/lib/classAdmissionMail";
+import { classAdmissionMail } from "@/lib/classAdmissionMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { classIdPattern } from "@/lib/classes";
 import { activeEventSchool, isClassEventMember } from "@/lib/classEventAccess";
-import type { ClassEvent, ClassEventSettings } from "@/lib/classEvents";
+import { classEventKind, classEventLabels, classEventScheduleText, maxWorkshopSessions, type ClassEvent, type ClassEventSession, type ClassEventSettings } from "@/lib/classEvents";
 
 const columns = "id,title,description,status,class_event_school_id,class_event,definition,payment_method,payment_amount,payment_url,payment_currency,payment_confirmation_required,acceptance_mode,version";
 const send = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store", Vary: "Authorization" } });
@@ -28,10 +28,15 @@ async function ownBusiness(request: NextRequest, user: string | null) {
   return data?.is_monitor ? classBusinessId(user, scope) : null;
 }
 
-async function eventList(school: string, publishedOnly: boolean) {
+async function eventList(school: string, publishedOnly: boolean, kind?: string | null) {
   let query = db.from("applications").select(columns).eq("class_event_school_id", school).is("archived_at", null)
     .order("class_event->>startsAt", { ascending: publishedOnly }).limit(100);
-  if (publishedOnly) query = query.eq("status", "open").gte("class_event->>startsAt", new Date().toISOString());
+  if (kind === "workshop") query = query.not("class_event->sessions", "is", null);
+  if (kind === "event") query = query.is("class_event->sessions", null);
+  if (publishedOnly) {
+    const now = new Date().toISOString();
+    query = query.eq("status", "open").or(`class_event->>startsAt.gte.${now},class_event->>lastStartsAt.gte.${now}`);
+  }
   const { data, error } = await query;
   if (error) throw error;
   return data;
@@ -85,11 +90,11 @@ export async function GET(request: NextRequest) {
     }
     const school = await ownBusiness(request, user);
     if (!school) return missing();
-    if (!id) return send({ ok: true, events: await eventList(school, false) });
+    if (!id) return send({ ok: true, events: await eventList(school, false, request.nextUrl.searchParams.get("kind")) });
     const event = await getEvent(id);
     if (!event || event.class_event_school_id !== school) return missing();
     const { data, error } = await db.from("application_entries")
-      .select("id,user_id,applicant_name,payment_status,status,class_event_attendance")
+      .select("id,user_id,applicant_name,payment_status,status,class_event_attendance,class_workshop_attendance(session_at,status)")
       .eq("application_id", id).in("status", ["submitted", "confirmed"]).order("created_at");
     if (error) throw error;
     const users = [...new Set(data.flatMap(entry => entry.user_id ? [entry.user_id] : []))];
@@ -146,8 +151,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       const guardianCases = data.filter(row => row.applicant_email && row.application_fields?.guardianEmail === row.applicant_email);
       const recipients = new Set<string>();
-      const text = [event.title, classDateTime(event.class_event.startsAt) + "（日本時間）",
-        event.class_event.location, new URL("/class-event/" + id, request.nextUrl.origin).href].join("\n");
+      const text = [event.title, ...classEventScheduleText(event.class_event), new URL("/class-event/" + id, request.nextUrl.origin).href].join("\n");
       for (const row of guardianCases) {
         if (recipients.has(row.applicant_email) ||
           !await isClassEventMember(school, event.class_event.classIds, row.applicant_user_id)) continue;
@@ -157,7 +161,7 @@ export async function POST(request: NextRequest) {
       let sent = 0;
       for (let index = 0; index < emails.length; index += 8) {
         const results = await Promise.all(emails.slice(index, index + 8).map(email => classAdmissionMail(email,
-          "イベントのご案内 · " + event.title, text, "class-event-" + id + "-" + createHash("sha256").update(email).digest("hex"))));
+          classEventLabels[classEventKind(event.class_event)] + "のご案内 · " + event.title, text, "class-event-" + id + "-" + createHash("sha256").update(email).digest("hex"))));
         sent += results.filter(Boolean).length;
       }
       return send({ ok: true, id, notice: emails.length ? `保護者への案内 ${sent}/${emails.length}件を送信しました。` : "案内先の保護者メールアドレスが登録されていません。" });
@@ -166,6 +170,23 @@ export async function POST(request: NextRequest) {
     if (event && body.action === "entry") {
       const entry = clean(body.entryId, 36);
       if (!classIdPattern.test(entry)) return fail("参加者を選択してください。");
+      if (event.class_event.sessions && body.change !== "paid") {
+        const session = event.class_event.sessions.find(item => item.startsAt === body.sessionAt);
+        const status = body.change;
+        if (!session || (status !== "present" && status !== "absent" && status !== "clear")) {
+          return fail("開催回と出欠を選択してください。");
+        }
+        const { data, error } = await db.from("application_entries").select("id")
+          .eq("id", entry).eq("application_id", id).in("status", ["submitted", "confirmed"]).maybeSingle();
+        if (error) throw error;
+        if (!data) return fail("参加者が見つかりません。", 404);
+        const attendance = db.from("class_workshop_attendance");
+        const result = status === "clear"
+          ? await attendance.delete().eq("entry_id", entry).eq("session_at", session.startsAt)
+          : await attendance.upsert({ entry_id: entry, session_at: session.startsAt, status });
+        if (result.error) throw result.error;
+        return send({ ok: true, id });
+      }
       const change = body.change === "paid" && event.payment_method !== "none" ? { payment_status: "paid", status: "confirmed", payment_confirmed_at: new Date().toISOString() }
         : body.change === "present" || body.change === "absent" || body.change === "clear"
           ? { class_event_attendance: body.change === "clear" ? null : body.change } : null;
@@ -207,9 +228,28 @@ export async function POST(request: NextRequest) {
     if (body.action !== "save" || (event && event.status !== "draft")) return fail("下書きで内容を設定できます。", 409);
     const title = clean(body.title, 120);
     const description = clean(body.description, 4000);
-    const location = clean(body.location, 200);
-    const startsAt = parseDate(body.startsAt);
-    const registration = body.registration === true;
+    const kind = body.kind ?? "event";
+    if ((kind !== "event" && kind !== "workshop") || (event && kind !== classEventKind(event.class_event))) {
+      return fail("開催の種類を確認してください。");
+    }
+    let sessions: ClassEventSession[] | undefined;
+    if (kind === "workshop") {
+      if (!Array.isArray(body.sessions) || body.sessions.length < 1 || body.sessions.length > maxWorkshopSessions) {
+        return fail(`開催日程を1〜${maxWorkshopSessions}回分入力してください。`);
+      }
+      sessions = [];
+      for (const row of body.sessions) {
+        const startsAt = parseDate(row?.startsAt);
+        const location = clean(row?.location, 200);
+        if (!startsAt || !location) return fail("すべての回の日時と場所を入力してください。");
+        sessions.push({ startsAt, location });
+      }
+      sessions.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      if (new Set(sessions.map(row => row.startsAt)).size !== sessions.length) return fail("同じ開始日時が重複しています。");
+    }
+    const location = sessions?.[0]?.location ?? clean(body.location, 200);
+    const startsAt = sessions?.[0]?.startsAt ?? parseDate(body.startsAt);
+    const registration = kind === "workshop" || body.registration === true;
     const deadline = registration && body.deadline ? parseDate(body.deadline) : startsAt;
     const audience = body.audience;
     if (!title || !location || !startsAt || !deadline || deadline > startsAt ||
@@ -234,7 +274,8 @@ export async function POST(request: NextRequest) {
       const parsed = URL.parse(url);
       if (!parsed || parsed.protocol !== "https:" || parsed.username || parsed.password) return fail("HTTPSの決済URLを入力してください。");
     }
-    const settings: ClassEventSettings = { startsAt, location, audience, classIds, registration, deadline };
+    const settings: ClassEventSettings = { startsAt, location, audience, classIds, registration, deadline,
+      ...(sessions ? { sessions, lastStartsAt: sessions.at(-1)?.startsAt } : {}) };
     const payload = { owner_user_id: user, origin: "manual", application_type: "EVENT", status: "draft", acceptance_mode: "instant",
       title, description, class_event_school_id: school, class_event: settings, definition: { mode: "lite", fields: [], blocks: [], capacity },
       payment_method: payment, payment_amount: amount, payment_url: url, payment_currency: "JPY",

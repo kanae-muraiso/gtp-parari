@@ -33,7 +33,7 @@ function BusinessClassManager() {
   const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
-  const [showEvents, setShowEvents] = useState(false);
+  const [section, setSection] = useState<"classes" | "event" | "workshop">("classes");
   const [showProducts, setShowProducts] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -116,16 +116,18 @@ function BusinessClassManager() {
       <strong>{school?.name}</strong>
     </div>
     {!item && !creating && !schoolAdmission && <nav className="flex flex-wrap gap-2" aria-label="事業の運営">
-      <button type="button" aria-pressed={!showEvents} className={!showEvents ? button : "rounded-lg border bg-white px-4 py-2 text-sm"} onClick={() => setShowEvents(false)}>クラス一覧</button>
-      <button type="button" aria-pressed={showEvents} className={showEvents ? button : "rounded-lg border bg-white px-4 py-2 text-sm"} onClick={() => setShowEvents(true)}>イベント</button>
+      {([["classes", "クラス一覧"], ["event", "イベント"], ["workshop", "講習会"]] as const).map(([key, label]) =>
+        <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
+          onClick={() => setSection(key)}>{label}</button>)}
     </nav>}
-    {!item && !creating && !schoolAdmission && showEvents && <ClassEventsPanel classes={school.classes} roster={data.roster} />}
-    {!showEvents && !item && !creating && !schoolAdmission && school && <details className={panel}>
+    {!item && !creating && !schoolAdmission && section !== "classes" &&
+      <ClassEventsPanel key={section} kind={section} classes={school.classes} roster={data.roster} />}
+    {section === "classes" && !item && !creating && !schoolAdmission && school && <details className={panel}>
       <summary className="cursor-pointer font-semibold">事業設定 · {school.name}</summary>
       <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
       <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
     </details>}
-    {!showEvents && !item && !creating && !schoolAdmission && <section className={panel}>
+    {section === "classes" && !item && !creating && !schoolAdmission && <section className={panel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>
         {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {
