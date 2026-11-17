@@ -1,3 +1,4 @@
+import type { ClassSlotDefaults } from "./classProduct";
 import { matchesClassDateRule, type ClassScheduleRules } from "./classRecurrence";
 
 export const classIdPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -42,7 +43,7 @@ export type ClassManagement = {
   surcharges?: { enrollment_id: string; class_id: string; visit_on: string; surcharge_yen: number }[];
   otherBusinesses?: { id: string; name: string }[];
   receipts?: { id: string; enrollment_id: string; class_id: string; visit_on: string; amount_yen: number; paid_at: string }[];
-  products?: { id: string; name: string; walkInFee?: number | null; monthlyFee?: number; monthlyVisits?: number; booking?: string }[];
+  products?: { id: string; name: string; walkInFee?: number | null; monthlyFee?: number; monthlyVisits?: number; booking?: string; slotDefaults?: ClassSlotDefaults }[];
   applicationId: string | null;
   applications: { id: string; title: string }[];
 };

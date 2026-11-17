@@ -1,6 +1,17 @@
+import type { SchoolClass } from "./classes";
+
+export type ClassSlotDefaults = {
+  duration: number;
+  delivery: SchoolClass["delivery"];
+  location: string;
+};
+
+export const defaultClassSlotSettings: ClassSlotDefaults = { duration: 60, delivery: "onsite", location: "" };
+
 export type ClassProduct = {
   classIds: string[];
   walkInFee?: number | null;
+  slotDefaults?: ClassSlotDefaults;
   description: string;
   capacity: number;
   monthlyFee: number;
@@ -25,9 +36,16 @@ export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmp
       (p.extraFee !== null && !integer(p.extraFee, 1, 1000000)) ||
       !["none", "approval", "notice"].includes(p.makeup) ||
       !["same_month", "next_month"].includes(p.makeupExpiry)) return null;
+  const slotDefaults = p.slotDefaults;
+  if (slotDefaults !== undefined && (!slotDefaults || typeof slotDefaults !== "object" ||
+    !integer(slotDefaults.duration, 5, 480) || !["onsite", "online", "hybrid"].includes(slotDefaults.delivery) ||
+    typeof slotDefaults.location !== "string" || slotDefaults.location.length > 200 ||
+    (slotDefaults.delivery === "hybrid" && !slotDefaults.location.trim()))) return null;
   return { classIds: [...new Set(p.classIds)], description: p.description.trim(), capacity: p.capacity,
     monthlyFee: p.monthlyFee, monthlyVisits: p.monthlyVisits, booking: p.booking, extraFee: p.extraFee,
-    makeup: p.makeup, makeupExpiry: p.makeupExpiry, walkInFee: p.walkInFee ?? null };
+    makeup: p.makeup, makeupExpiry: p.makeupExpiry, walkInFee: p.walkInFee ?? null,
+    ...(slotDefaults ? { slotDefaults: { duration: slotDefaults.duration, delivery: slotDefaults.delivery,
+      location: slotDefaults.delivery === "online" ? "" : slotDefaults.location.trim() } } : {}) };
 }
 
 export function describeClassProduct(p: ClassProduct, names: string[]) {

@@ -102,6 +102,7 @@ function BusinessClassManager() {
   const itemProduct = data.products?.find(product => product.id === item?.product_id);
   const itemProductName = item?.productName ?? itemProduct?.name;
   const slotProduct = data.products?.find(product => product.id === newSlot?.productId);
+  const activeProduct = itemProduct ?? slotProduct;
   const reloadProducts = () => void classRequest<ClassManagement>().then(setData).catch(() => setError("一覧を更新できませんでした。"));
 
   const backToList = () => {
@@ -199,7 +200,8 @@ function BusinessClassManager() {
     {(creating || item) && <section key={newSlot?.id ?? item?.id} className={panel} aria-labelledby="class-slot-settings-heading">
       <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
       <ClassSlotSettingsPanel item={item} additionalSlots={additionalSlots} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
-        walkIn={(itemProduct ?? slotProduct)?.walkInFee != null} busy={busy}
+        slotDefaults={activeProduct?.slotDefaults} basicFee={activeProduct?.walkInFee ?? activeProduct?.monthlyFee}
+        walkIn={activeProduct?.walkInFee != null} busy={busy}
         save={(rows, onError) => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。", onError)} />
       <Link className="w-fit text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>
       {item && <ClassCalendarPanel classes={[item, ...additionalSlots]} selectedClass={item}
