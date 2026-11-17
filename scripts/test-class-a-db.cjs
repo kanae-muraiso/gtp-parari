@@ -432,15 +432,18 @@ async function main() {
       cadence: "monthly", rules: { rules: [{ kind: "nth", weekday: 5, ordinal: 3 }], overrides: [] } };
     const wednesday = { ...friday, id: "00000000-0000-4000-8000-000000000082", name: "水曜日",
       date: "2027-01-13", time: "20:00", location: "Bスタ", fee: 500, cadence: "weekly",
-      rules: { rules: [{ kind: "weekly", weekday: 3 }], overrides: [] } };
+      rules: { parentSlotId: friday.id, rules: [{ kind: "weekly", weekday: 3 }], overrides: [] } };
     const saveRows = (actor, rows) => db.query("select save_class_slot_rows($1,$2,$3)", [actor,studio,JSON.stringify(rows)]);
     await assert.rejects(saveRows(outsider,[friday,wednesday]), {code:"P0002"});
     await assert.rejects(saveRows(owner,[friday,{ ...wednesday, productId: school }]), {code:"22023"});
     assert.equal((await db.query("select count(*)::int as n from school_classes where id=$1",[friday.id])).rows[0].n,0);
     await saveRows(owner,[friday,wednesday]);
     await saveRows(owner,[friday,wednesday]);
-    const series = (await db.query("select location,fee_override_yen from school_classes where product_id=$1 order by id",[studioProduct])).rows;
-    assert.deepEqual(series,[{location:"Aスタ",fee_override_yen:1000},{location:"Bスタ",fee_override_yen:500}]);
+    const series = (await db.query("select id,starts_at,location,fee_override_yen,schedule_rules->>'parentSlotId' as parent_slot_id from school_classes where product_id=$1 order by id",[studioProduct])).rows;
+    assert.deepEqual(series,[
+      {id:friday.id,starts_at:"21:00:00",location:"Aスタ",fee_override_yen:1000,parent_slot_id:null},
+      {id:wednesday.id,starts_at:"20:00:00",location:"Bスタ",fee_override_yen:500,parent_slot_id:friday.id},
+    ]);
     assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-19') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,true);
     assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-12') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,false);
     await db.exec("reset role; set role anon");

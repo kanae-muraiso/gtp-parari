@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SchoolClass } from "@/lib/classes";
+import { classSchedule, type SchoolClass } from "@/lib/classes";
 import { classRequest } from "@/lib/classRequests";
 import { calendarMonthPattern, classCalendarToday, generateClassDays, shiftCalendarMonth, type ClassMonthSchedule } from "@/lib/classCalendar";
 import ClassMonthGrid from "./ClassMonthGrid";
@@ -12,13 +12,13 @@ const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold tex
 export default function ClassCalendarPanel({ classes, selectedClass, expectedVisits }: { classes: SchoolClass[]; selectedClass?: SchoolClass; expectedVisits?: number }) {
   const [classId, setClassId] = useState(classes[0]?.id ?? "");
   const [month, setMonth] = useState(() => shiftCalendarMonth(classCalendarToday().slice(0, 7), selectedClass ? 0 : 1));
-  const item = selectedClass ?? classes.find(row => row.id === classId);
+  const item = classes.find(row => row.id === classId) ?? selectedClass;
   return <section className={selectedClass ? "grid gap-4 border-t border-neutral-200 pt-4" : "grid gap-4 rounded-2xl border bg-white p-5"}>
     {selectedClass ? <h4 className="font-semibold">開催予定・休講</h4> : <h2 className="text-xl font-bold">開催予定</h2>}
     {!item ? <p className="text-sm">開催枠を登録すると、年間予定を作れます。</p> : <>
       <div className="flex flex-wrap gap-3">
-        {!selectedClass && <label className="grid gap-1 text-sm">開催枠<select className={button} value={classId} onChange={e => setClassId(e.target.value)}>
-          {classes.map(row => <option value={row.id} key={row.id}>{row.productName ? row.productName + " · " : ""}{row.name}</option>)}
+        {(!selectedClass || classes.length > 1) && <label className="grid gap-1 text-sm">開催枠<select className={button} value={classId} onChange={e => setClassId(e.target.value)}>
+          {classes.map(row => <option value={row.id} key={row.id}>{row.productName ? row.productName + " · " : ""}{row.name}{selectedClass ? " · " + classSchedule(row) : ""}</option>)}
         </select></label>}
         <label className="grid gap-1 text-sm">対象月<input className={button} type="month" value={month}
           onChange={e => { if (calendarMonthPattern.test(e.target.value)) setMonth(e.target.value); }} /></label>

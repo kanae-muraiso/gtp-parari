@@ -1,4 +1,4 @@
-import { hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
+import { classDateRuleKey, hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
@@ -285,12 +285,14 @@ export async function POST(request: NextRequest) {
         const duration = Number(row?.duration);
         const fee = parseFee(row?.feeOverride);
         const rules = parseClassScheduleRules(row?.rules);
+        const parentSlotId = current ? current.schedule_rules?.parentSlotId : row?.rules?.parentSlotId;
         const delivery = row?.delivery;
         const meetingUrl = delivery === "onsite" ? null : classMeetingUrl(row?.meetingUrl);
         const isNew = row?.new === true;
         const productId = isNew ? clean(row?.productId) : null;
         const parsedDate = new Date(date + "T00:00:00Z");
         if (!classIdPattern.test(id) || ids.has(id) || (isNew ? !classIdPattern.test(productId ?? "") : !current) ||
+          (parentSlotId !== undefined && (typeof parentSlotId !== "string" || !classIdPattern.test(parentSlotId) || parentSlotId === id)) ||
           !name || name.length > 120 || location.length > 200 || !rules || (isNew && !rules.rules.length) || fee === false ||
           !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) ||
           parsedDate.toISOString().slice(0, 10) !== date || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ||
@@ -305,9 +307,31 @@ export async function POST(request: NextRequest) {
           return fail(`${index + 1}行目の初回日を、設定した頻度に合う日にしてください。`);
         }
         ids.add(id);
-        normalized.push({ id, name, date, time, delivery, duration, meetingUrl, fee, rules, productId, new: isNew,
+        normalized.push({ id, name, date, time, delivery, duration, meetingUrl, fee, rules: { ...rules, parentSlotId }, productId, new: isNew,
           location: delivery === "online" ? null : location || null,
           cadence: rules.rules.length ? (rules.rules[0].kind === "weekly" ? "weekly" : "monthly") : current?.cadence ?? "weekly" });
+      }
+      const submitted = new Map(normalized.map(row => [row.id, row]));
+      const scheduleConditions = new Map<string, string>();
+      for (const row of normalized) {
+        const parentId = row.rules.parentSlotId;
+        if (parentId && row.new) {
+          const submittedParent = submitted.get(parentId);
+          const savedParent = byId.get(parentId);
+          const parentProduct = savedParent ? savedParent.product_id : submittedParent?.productId;
+          if (parentProduct !== row.productId || submittedParent?.rules.parentSlotId || savedParent?.schedule_rules?.parentSlotId) {
+            return fail("追加先の開催枠と商品を確認してください。");
+          }
+        }
+        const first = new Date(row.date + "T00:00:00Z");
+        const ruleKeys = row.rules.rules.length ? row.rules.rules.map(classDateRuleKey) :
+          [classDateRuleKey(row.cadence === "weekly" ? { kind: "weekly", weekday: first.getUTCDay() } : { kind: "date", date: first.getUTCDate() })];
+        for (const key of ruleKeys) {
+          const conditions = JSON.stringify([parentId ?? row.id, key, row.date, row.time, row.duration, row.delivery, row.location, row.meetingUrl, row.fee]);
+          const match = scheduleConditions.get(conditions);
+          if (match && match !== row.id) return fail("同じ条件の頻度があります。追加した行の日時・会場・費用などを変更してください。");
+          scheduleConditions.set(conditions, row.id);
+        }
       }
       const { error } = await db.rpc("save_class_slot_rows", { p_owner: user.id, p_school: school.id, p_rows: normalized });
       if (error?.code === "P0001") return fail("予約が入っている開催日は変更できません。", 409);
@@ -317,10 +341,11 @@ export async function POST(request: NextRequest) {
     }
     if (body?.action === "saveScheduleRules") {
       const rules = parseClassScheduleRules(body.rules);
-      if (!rules || !school.classes.some(item => item.id === body.classId)) return fail("開催ルールを確認してください。");
+      const item = school.classes.find(item => item.id === body.classId);
+      if (!rules || !item) return fail("開催ルールを確認してください。");
       if (hasDuplicateClassDateRules(rules.rules)) return fail("同じ頻度が複数あります。");
       const { error } = await db.rpc("save_class_schedule_rules", {
-        p_owner: user.id, p_school: school.id, p_class: body.classId, p_rules: rules,
+        p_owner: user.id, p_school: school.id, p_class: body.classId, p_rules: { ...rules, parentSlotId: item.schedule_rules?.parentSlotId },
       });
       if (error?.code === "P0001") return fail("予約が入っている開催日はルールから外せません。", 409);
       if (error) throw error;

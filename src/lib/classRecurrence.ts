@@ -4,6 +4,7 @@ export type ClassDateRule =
   | { kind: "date"; date: number };
 
 export type ClassScheduleRules = {
+  parentSlotId?: string;
   rules: (ClassDateRule & { name?: string })[];
   overrides: { rule: ClassDateRule; location: string; fee: number }[];
 };
