@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { classCalendarToday } from "@/lib/classCalendar";
-import { hasDuplicateClassDateRules, type ClassDateRule, type ClassScheduleRules } from "@/lib/classRecurrence";
+import { hasDuplicateClassDateRules, matchesClassDateRule, type ClassDateRule, type ClassScheduleRules } from "@/lib/classRecurrence";
 import { defaultClassSlotSettings, type ClassSlotDefaults } from "@/lib/classProduct";
 import type { SchoolClass } from "@/lib/classes";
 import { ClassDateRuleFields } from "./ClassDateRuleFields";
@@ -13,6 +13,7 @@ type SlotRow = {
   productId?: string;
   name: string;
   date: string;
+  customDate?: boolean;
   time: string;
   duration: string;
   delivery: SchoolClass["delivery"];
@@ -37,10 +38,21 @@ function standardFields(defaults: ClassSlotDefaults) {
     location: defaults.delivery === "online" ? "" : defaults.location, feeOverride: "" };
 }
 
+function firstMatchingDate(rules: ClassDateRule[], from: string) {
+  const date = new Date(from + "T00:00:00Z");
+  for (let offset = 0; offset < 366; offset++) {
+    const day = date.toISOString().slice(0, 10);
+    if (rules.some(rule => matchesClassDateRule(rule, day))) return day;
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+  return from;
+}
+
 function newRow(id: string, productId: string | undefined, defaults: ClassSlotDefaults): SlotRow {
-  return { id, productId, new: true, name: "", date: "", time: "", ...standardFields(defaults),
+  const today = classCalendarToday();
+  return { id, productId, new: true, name: "", date: today, time: "", ...standardFields(defaults),
     meetingUrl: "", useLegacy: false,
-    rules: { rules: [originalRule("weekly", classCalendarToday())], overrides: [] } };
+    rules: { rules: [originalRule("weekly", today)], overrides: [] } };
 }
 
 export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save }: {
@@ -52,7 +64,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
   basicFee?: number;
   walkIn: boolean;
   busy: boolean;
-  save: (slots: Omit<SlotRow, "useLegacy">[], onError: (message: string) => void) => Promise<boolean>;
+  save: (slots: Omit<SlotRow, "useLegacy" | "customDate">[], onError: (message: string) => void) => Promise<boolean>;
 }) {
   const [rows, setRows] = useState<SlotRow[]>(() => item
     ? [item, ...additionalSlots].map(item => ({
@@ -76,11 +88,14 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
   function addFrequency() {
     const first = rows[0];
     const id = crypto.randomUUID();
+    const today = classCalendarToday();
+    const rules = [{ ...first.rules.rules[0] }];
     setSaveError("");
     setRows(current => [...current, {
       ...first, ...(slotDefaults ? standardFields(slotDefaults) : {}), id, productId, new: true, useLegacy: false,
+      date: firstMatchingDate(rules, first.date > today ? first.date : today), customDate: false,
       meetingUrl: !slotDefaults || slotDefaults.delivery === first.delivery ? first.meetingUrl : "",
-      rules: { parentSlotId: first.id, rules: [{ ...first.rules.rules[0] }], overrides: [] },
+      rules: { parentSlotId: first.id, rules, overrides: [] },
     }]);
   }
 
@@ -92,7 +107,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
       return;
     }
     setSaveError("");
-    void save(rows.map(({ useLegacy, ...slot }, index) => ({
+    void save(rows.map(({ useLegacy, customDate, ...slot }, index) => ({
       ...slot, name: index ? slot.rules.rules[0].name?.trim() || rows[0].name : slot.name,
       rules: useLegacy ? { ...slot.rules, rules: [] } : slot.rules,
     })), setSaveError).then(ok => {
@@ -104,8 +119,10 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
         <input className={field} required maxLength={120} value={rows[0].name} onChange={e => patch(rows[0].id, { name: e.target.value })} />
       </label>
       {rows.map((row, index) => {
-        function setFrequencies(rules: ClassScheduleRules["rules"]) {
-          patch(row.id, { useLegacy: false, rules: { ...row.rules, rules } });
+        function setFrequencies(rules: ClassScheduleRules["rules"], datesChanged = true) {
+          patch(row.id, { useLegacy: false, rules: { ...row.rules, rules },
+            ...(row.new && !row.customDate && datesChanged ? { date: firstMatchingDate(rules, classCalendarToday()) } : {}),
+          });
         }
         const standard = standardFields(slotDefaults ?? defaultClassSlotSettings);
         const customized = row.duration !== standard.duration || row.delivery !== standard.delivery ||
@@ -115,30 +132,16 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
           {row.rules.rules.map((rule, ruleIndex) => <div key={ruleIndex} className="flex flex-wrap items-end gap-2">
             <ClassDateRuleFields rule={rule} change={next => setFrequencies(row.rules.rules.map((value, i) =>
               i === ruleIndex ? { ...next, name: value.name } : value))} />
-            <label>頻度の名前（任意）
-              <input className={field} maxLength={120} value={rule.name ?? ""} onChange={e => setFrequencies(
-                row.rules.rules.map((value, i) => i === ruleIndex ? { ...value, name: e.target.value } : value))} />
-            </label>
+            {ruleIndex === 0 && <label>開始時刻
+              <input className={field} type="time" required value={row.time} onChange={e => patch(row.id, { time: e.target.value })} />
+            </label>}
             {row.rules.rules.length > 1 && <button type="button" className={secondary}
               onClick={() => setFrequencies(row.rules.rules.filter((_, i) => i !== ruleIndex))}>頻度を外す</button>}
-            {index > 0 && row.new && <button type="button" className={secondary} onClick={() => {
+            {ruleIndex === 0 && index > 0 && row.new && <button type="button" className={secondary} onClick={() => {
               setSaveError("");
               setRows(current => current.filter(value => value.id !== row.id));
             }}>追加を取り消す</button>}
           </div>)}
-          <div className="grid items-end gap-3 sm:grid-cols-2">
-            <label className="grid gap-1">初回日
-              <input className={field} type="date" required value={row.date} onChange={e => {
-                const date = e.target.value;
-                patch(row.id, { date, ...(row.useLegacy && date ? {
-                  rules: { ...row.rules, rules: [originalRule(row.rules.rules[0].kind === "weekly" ? "weekly" : "monthly", date)] },
-                } : {}) });
-              }} />
-            </label>
-            <label className="grid gap-1">開始時刻
-              <input className={field} type="time" required value={row.time} onChange={e => patch(row.id, { time: e.target.value })} />
-            </label>
-          </div>
           {row.delivery !== "onsite" && <label className="grid gap-1">授業の参加リンク
             <input className={field} type="url" required maxLength={2000} value={row.meetingUrl} onChange={e => patch(row.id, { meetingUrl: e.target.value })} />
           </label>}
@@ -146,6 +149,21 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
             <summary className="w-fit cursor-pointer font-medium">
               オプション{customized && <span className="ml-2 text-xs font-normal text-neutral-600">個別設定あり</span>}
             </summary>
+            <div className="mt-3 grid items-end gap-3 sm:grid-cols-2">
+              {row.rules.rules.map((rule, ruleIndex) => <label key={ruleIndex} className="grid gap-1">
+                {row.rules.rules.length > 1 ? `頻度 ${ruleIndex + 1} の名前（任意）` : "頻度の名前（任意）"}
+                <input className={field} maxLength={120} value={rule.name ?? ""} onChange={e => setFrequencies(
+                  row.rules.rules.map((value, i) => i === ruleIndex ? { ...value, name: e.target.value } : value), false)} />
+              </label>)}
+              <label className="grid gap-1">初回日
+                <input className={field} type="date" required value={row.date} onChange={e => {
+                  const date = e.target.value;
+                  patch(row.id, { date, customDate: true, ...(row.useLegacy && date ? {
+                    rules: { ...row.rules, rules: [originalRule(row.rules.rules[0].kind === "weekly" ? "weekly" : "monthly", date)] },
+                  } : {}) });
+                }} />
+              </label>
+            </div>
             <div className="mt-3 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="grid gap-1">所要時間（分）
                 <input className={field} type="number" min={5} max={480} required value={row.duration} onChange={e => patch(row.id, { duration: e.target.value })} />
