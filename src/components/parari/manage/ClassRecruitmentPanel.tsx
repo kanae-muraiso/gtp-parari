@@ -3,13 +3,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import ClassAvailabilityPanel, { type OfficeHour } from "./ClassAvailabilityPanel";
 import ClassRecruitmentOffers, { type ClassOffer } from "./ClassRecruitmentOffers";
 import ClassIntakeForm from "@/components/parari/classes/ClassIntakeForm";
-import { classIntakeTarget } from "@/lib/classIntakeTargets";
+import { classIntakeTarget, type ClassIntakeMonth } from "@/lib/classIntakeTargets";
 import type { ClassManagement, SchoolClass } from "@/lib/classes";
 import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
+type Data = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; show_class_schedule?: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
@@ -21,6 +21,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
   const [error, setError] = useState("");
+  const [calendar, setCalendar] = useState<{ today: string; months: ClassIntakeMonth[] }>();
   const [notice, setNotice] = useState("");
   const [briefingAudience, setBriefingAudience] = useState<"adult" | "minor">();
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
@@ -38,6 +39,14 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    if (view !== "preview") return;
+    const controller = new AbortController();
+    void classRequest<{ calendar: { today: string; months: ClassIntakeMonth[] } }>("/recruitment?previewSchedule=1", undefined, controller.signal)
+      .then(result => { if (!controller.signal.aborted) setCalendar(result.calendar); })
+      .catch(() => { if (!controller.signal.aborted) setError("開催予定を取得できませんでした。"); });
+    return () => controller.abort();
+  }, [view]);
   async function save(values: object) {
     setBusy(true);
     setError("");
@@ -58,7 +67,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   function configure(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    void save({ ...Object.fromEntries(form), action: "settings", bookingWeeks: Number(form.get("bookingWeeks") ?? data?.recruitment?.booking_weeks ?? 4) });
+    void save({ ...Object.fromEntries(form), action: "settings", showClassSchedule: form.has("showClassSchedule"), bookingWeeks: Number(form.get("bookingWeeks") ?? data?.recruitment?.booking_weeks ?? 4) });
   }
   const recruitment = data?.recruitment;
   const isDirect = recruitment?.route === "direct";
@@ -73,10 +82,12 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const selectedSlot = previewSlots.find(slot => slot.id === slotId);
   const kind = recruitment?.kind ?? "説明会";
   const previewOffer = data?.offers?.find(offer => offer.id === previewOfferId);
-  const previewClasses = previewOffer ? classes.filter(item => previewOffer.class_ids.includes(item.id)) : [];
+  const showGeneralSchedule = !previewOffer && (recruitment?.show_class_schedule ?? !recruitment);
+  const previewClasses = previewOffer ? classes.filter(item => previewOffer.class_ids.includes(item.id)) :
+    showGeneralSchedule ? classes.filter(item => item.product_id) : [];
   const previewProducts = new Map(products?.map(product => [product.id, product]));
   const previewTargets = previewClasses.filter(item => previewProducts.get(item.product_id ?? "")?.walkInFee == null)
-    .map(item => classIntakeTarget(item, previewProducts.get(item.product_id ?? "")));
+    .map(item => classIntakeTarget(item, previewProducts.get(item.product_id ?? ""), calendar));
   const previewWalkIn = [...new Set(previewClasses.map(item => item.product_id))].flatMap(id => {
     const product = previewProducts.get(id ?? "");
     return product?.walkInFee != null ? [{ id: product.id, name: product.name }] : [];
@@ -103,7 +114,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information ?? recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
+          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : showGeneralSchedule ? { classSchedules: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information ?? recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
             sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
@@ -147,6 +158,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
       {data.sharedDisclosure && <p className="text-sm text-neutral-600">公開済みの共通の販売者情報・個人情報の取扱いを申込画面に表示します。<a className="ml-2 underline" href="/my/settings/seller">共通設定を確認</a></p>}
       <label>{data.sharedDisclosure ? "この募集の補足案内（任意）" : "案内・個人情報の取り扱い"}
         <textarea className={field} name="information" maxLength={4000} required={!data.sharedDisclosure} defaultValue={data.recruitment?.information} /></label>
+      <label className="text-sm"><input type="checkbox" name="showClassSchedule" defaultChecked={recruitment?.show_class_schedule ?? !recruitment} /> 教室共通の募集にクラスの曜日・会場・開催予定を載せる</label>
       <details className="grid gap-2 rounded-lg border p-3" open={paymentMode !== "free" || undefined}
         onInvalidCapture={event => { event.currentTarget.open = true; }}>
         <summary className="cursor-pointer text-sm font-medium">支払い・申込書・確認メールの設定</summary>

@@ -1,3 +1,4 @@
+import { readClassIntakeCalendar } from "@/lib/classIntakeCalendarServer";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
@@ -24,6 +25,9 @@ async function handle(request: NextRequest) {
     const id = school.data.id;
 
     if (request.method === "GET") {
+      if (request.nextUrl.searchParams.get("previewSchedule") === "1") {
+        return reply({ ok: true, calendar: await readClassIntakeCalendar(id) });
+      }
       const month = request.nextUrl.searchParams.get("month");
       if (month !== null) {
         if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || month.startsWith("0000")) return fail("表示する月をご確認ください。");
@@ -47,7 +51,7 @@ async function handle(request: NextRequest) {
         return reply({ ok: true, events: result.data });
       }
       const [recruitment, slots, blocks, available, disclosure, offers] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location,show_class_schedule").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
@@ -102,6 +106,7 @@ async function handle(request: NextRequest) {
         return fail("支払いURL、集合案内、申込書の設定をご確認ください。");
       }
       const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, route, booking_weeks: weeks,
+        ...(typeof input.showClassSchedule === "boolean" ? { show_class_schedule: input.showClassSchedule } : {}),
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
         arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") });
       if (result.error) throw result.error;
