@@ -1,4 +1,4 @@
-import { classDateRuleKey, hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
+import { classDateRuleKey, classDateRulesOverlap, hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules, type ClassDateRule } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
@@ -52,6 +52,13 @@ async function manage(userId: string, scope: string | null) {
   const names = new Map(products.data.map(item => [item.id, item.name]));
   school.classes = school.classes.map(item => ({ ...item, productName: names.get(item.product_id) }));
   return reply({ ok: true, userId, school, products: products.data.map(({ id, name, design }) => ({ id, name, walkInFee: design.walkInFee ?? null, monthlyFee: design.monthlyFee, monthlyVisits: design.monthlyVisits, booking: design.booking })), surcharges: surcharges.data, receipts: receipts.data, otherBusinesses: otherBusinesses.data, roster: roster.data, applicationId: admission.data?.application_id ?? null, applications: applications.data });
+}
+
+function regularSlotRules(date: string, cadence: SchoolClass["cadence"], rules?: ClassDateRule[]) {
+  const first = new Date(date + "T00:00:00Z");
+  const fallback: ClassDateRule = cadence === "weekly" ? { kind: "weekly", weekday: first.getUTCDay() } :
+    { kind: "date", date: first.getUTCDate() };
+  return { rules: rules?.length ? rules : [fallback], clampsToMonthEnd: !rules?.length && cadence === "monthly" };
 }
 
 export async function GET(request: NextRequest) {
@@ -312,7 +319,6 @@ export async function POST(request: NextRequest) {
           cadence: rules.rules.length ? (rules.rules[0].kind === "weekly" ? "weekly" : "monthly") : current?.cadence ?? "weekly" });
       }
       const submitted = new Map(normalized.map(row => [row.id, row]));
-      const scheduleConditions = new Map<string, string>();
       for (const row of normalized) {
         const parentId = row.rules.parentSlotId;
         if (parentId && row.new) {
@@ -323,15 +329,25 @@ export async function POST(request: NextRequest) {
             return fail("追加先の開催枠と商品を確認してください。");
           }
         }
-        const first = new Date(row.date + "T00:00:00Z");
-        const ruleKeys = row.rules.rules.length ? row.rules.rules.map(classDateRuleKey) :
-          [classDateRuleKey(row.cadence === "weekly" ? { kind: "weekly", weekday: first.getUTCDay() } : { kind: "date", date: first.getUTCDate() })];
-        for (const key of ruleKeys) {
-          const conditions = JSON.stringify([parentId ?? row.id, key, row.date, row.time, row.duration, row.delivery, row.location, row.meetingUrl, row.fee]);
-          const match = scheduleConditions.get(conditions);
-          if (match && match !== row.id) return fail("同じ条件の頻度があります。追加した行の日時・会場・費用などを変更してください。");
-          scheduleConditions.set(conditions, row.id);
+      }
+      const schedules = school.classes.filter(item => !submitted.has(item.id)).map(item => ({
+        group: item.schedule_rules?.parentSlotId ?? item.id, time: item.starts_at.slice(0, 5),
+        ...regularSlotRules(item.starts_on, item.cadence, item.schedule_rules?.rules), changed: false,
+      }));
+      for (const row of normalized) {
+        const group = row.rules.parentSlotId ?? row.id;
+        const schedule = regularSlotRules(row.date, row.cadence, row.rules.rules);
+        const previous = byId.get(row.id);
+        const previousSchedule = previous && regularSlotRules(previous.starts_on, previous.cadence, previous.schedule_rules?.rules);
+        const changed = !previous || !previousSchedule || previous.starts_at.slice(0, 5) !== row.time ||
+          previousSchedule.clampsToMonthEnd !== schedule.clampsToMonthEnd ||
+          previousSchedule.rules.map(classDateRuleKey).sort().join() !== schedule.rules.map(classDateRuleKey).sort().join();
+        if (schedules.some(other => other.group === group && other.time === row.time && (other.changed || changed) &&
+          other.rules.some(first => schedule.rules.some(second =>
+            classDateRulesOverlap(first, second, other.clampsToMonthEnd, schedule.clampsToMonthEnd))))) {
+          return fail("同じ条件の頻度があります。追加した行の日時を変更してください。");
         }
+        schedules.push({ group, time: row.time, ...schedule, changed });
       }
       const { error } = await db.rpc("save_class_slot_rows", { p_owner: user.id, p_school: school.id, p_rows: normalized });
       if (error?.code === "P0001") return fail("予約が入っている開催日は変更できません。", 409);

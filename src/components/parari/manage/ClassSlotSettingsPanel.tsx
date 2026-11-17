@@ -44,7 +44,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
   productId?: string;
   walkIn: boolean;
   busy: boolean;
-  save: (slots: Omit<SlotRow, "useLegacy">[]) => Promise<boolean>;
+  save: (slots: Omit<SlotRow, "useLegacy">[], onError: (message: string) => void) => Promise<boolean>;
 }) {
   const [rows, setRows] = useState<SlotRow[]>(() => item
     ? [item, ...additionalSlots].map(item => ({
@@ -59,16 +59,16 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
       },
     }))
     : [newRow(startId, productId)]);
-  const [frequencyError, setFrequencyError] = useState("");
+  const [saveError, setSaveError] = useState("");
   function patch(id: string, values: Partial<SlotRow>) {
-    setFrequencyError("");
+    setSaveError("");
     setRows(current => current.map(row => row.id === id ? { ...row, ...values } : row));
   }
 
   function addFrequency() {
     const first = rows[0];
     const id = crypto.randomUUID();
-    setFrequencyError("");
+    setSaveError("");
     setRows(current => [...current, {
       ...first, id, productId, new: true, useLegacy: false,
       rules: { parentSlotId: first.id, rules: [{ ...first.rules.rules[0] }], overrides: [] },
@@ -79,13 +79,14 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
     event.preventDefault();
     if (busy) return;
     if (rows.some(row => hasDuplicateClassDateRules(row.rules.rules))) {
-      setFrequencyError("同じ行に同じ頻度が複数あります。頻度を変更してください。");
+      setSaveError("同じ行に同じ頻度が複数あります。頻度を変更してください。");
       return;
     }
+    setSaveError("");
     void save(rows.map(({ useLegacy, ...slot }, index) => ({
       ...slot, name: index ? slot.rules.rules[0].name?.trim() || rows[0].name : slot.name,
       rules: useLegacy ? { ...slot.rules, rules: [] } : slot.rules,
-    }))).then(ok => {
+    })), setSaveError).then(ok => {
       if (ok) setRows(current => current.map(row => ({ ...row, new: false })));
     });
   }}>
@@ -108,7 +109,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
             {row.rules.rules.length > 1 && <button type="button" className={secondary}
               onClick={() => setFrequencies(row.rules.rules.filter((_, i) => i !== ruleIndex))}>頻度を外す</button>}
             {index > 0 && row.new && <button type="button" className={secondary} onClick={() => {
-              setFrequencyError("");
+              setSaveError("");
               setRows(current => current.filter(value => value.id !== row.id));
             }}>追加を取り消す</button>}
           </div>)}
@@ -168,7 +169,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
       })}
       {productId && rows.length < 12 && <button type="button" className={secondary} onClick={addFrequency}>＋ 頻度を追加</button>}
       {!productId && <p className="text-xs text-neutral-600">頻度ごとに日時や料金を設定するには、商品に登録した開催枠を開いてください。</p>}
-      {frequencyError && <p role="alert" className="text-red-700">{frequencyError}</p>}
+      {saveError && <p role="alert" className="text-red-700">{saveError}</p>}
       <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white">開催枠を保存</button>
     </fieldset>
   </form>;
