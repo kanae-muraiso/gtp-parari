@@ -13,7 +13,9 @@ type FrontSettings = { front: ClassBusinessFront; links: ClassBusinessFrontLink[
 type FrontAction = "saveFront" | "publishFront" | "unpublishFront";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 
-export default function ClassBusinessFrontPanel({ schoolId, name }: { schoolId: string; name: string }) {
+export default function ClassBusinessFrontPanel({ schoolId, name, onOpenRecruitment, onOpenSchedule }: {
+  schoolId: string; name: string; onOpenRecruitment: () => void; onOpenSchedule: () => void;
+}) {
   const [settings, setSettings] = useState<FrontSettings | null>(null);
   const [content, setContent] = useState<ClassBusinessFrontContent>({ introduction: "", entries: [] });
   const [preview, setPreview] = useState(false);
@@ -34,7 +36,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name }: { schoolId: 
   }, [schoolId, reload]);
 
   async function save(action: FrontAction) {
-    if (!settings || busy) return;
+    if (!settings || busy) return false;
     setBusy(true);
     setError("");
     setNotice("");
@@ -44,9 +46,16 @@ export default function ClassBusinessFrontPanel({ schoolId, name }: { schoolId: 
       if (action !== "unpublishFront") setContent(front.draft);
       setNotice({ saveFront: "下書きを保存しました。", publishFront: "フロントページを公開しました。",
         unpublishFront: "フロントページを非公開にしました。" }[action]);
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "フロントページを保存できませんでした。");
+      return false;
     } finally { setBusy(false); }
+  }
+
+  async function openSettings(open: () => void) {
+    if (!settings) return;
+    if (JSON.stringify(content) === JSON.stringify(settings.front.draft) || await save("saveFront")) open();
   }
 
   function retry() {
@@ -81,7 +90,13 @@ export default function ClassBusinessFrontPanel({ schoolId, name }: { schoolId: 
               : content.entries.filter(key => key !== link.key) })} />
           <span>{link.title}{link.title !== link.label && <span className="ml-2 text-neutral-600">{link.label}</span>}</span>
         </label>)}
-        {!settings.links.length && <p className="text-neutral-600">募集を公開するか、自由参加の商品・公開イベントを作ると選べるようになります。</p>}
+        {!settings.links.length && <div className="grid gap-2">
+          <p className="text-neutral-600">公開ページに載せたい内容から設定できます。</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={button} onClick={() => void openSettings(onOpenSchedule)}>日程・会場・参加費を見せる</button>
+            <button type="button" className={button} onClick={() => void openSettings(onOpenRecruitment)}>申し込みを受け付ける</button>
+          </div>
+        </div>}
         {unavailable > 0 && <div className="flex flex-wrap items-center gap-2 text-neutral-600">
           <p>現在掲載できない項目が{unavailable}件あります。</p>
           <button type="button" className="underline" onClick={() => setContent({ ...content, entries: chosen.map(link => link.key) })}>

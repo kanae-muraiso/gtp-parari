@@ -115,7 +115,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     setNotice("");
     try {
       await classRequest("/admissions", { action: "briefingDesign", design: { ...draft, ...draft.forms[draft.audience] } });
-      setNotice("説明会の設計を教室に保存しました。「説明会・体験の募集」で予約枠と公開設定を確認してください。");
+      setNotice("説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "説明会の設計を保存できませんでした。");
     } finally { setSaving(false); }
