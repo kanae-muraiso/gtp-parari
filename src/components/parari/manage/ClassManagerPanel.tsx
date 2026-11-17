@@ -5,6 +5,7 @@ import Link from "next/link";
 import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
 import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
+import ClassBusinessFrontPanel from "./ClassBusinessFrontPanel";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
 import ClassSlotSettingsPanel from "./ClassSlotSettingsPanel";
@@ -36,6 +37,7 @@ function BusinessClassManager() {
   const [schoolAdmission, setSchoolAdmission] = useState(false);
   const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop" | "roster">("classes");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [showFront, setShowFront] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [newSlot, setNewSlot] = useState<{ id: string; productId: string } | null>(null);
   const creating = newSlot !== null;
@@ -129,6 +131,11 @@ function BusinessClassManager() {
           <label className={label}>事業名<input className={field} name="name" required maxLength={120} defaultValue={school.name} /></label>
           <button className={button} disabled={busy}>事業名を変更</button>
         </form>
+        <button type="button" className="w-fit rounded-lg border bg-white px-3 py-2 text-sm"
+          aria-expanded={showFront} onClick={() => setShowFront(value => !value)}>
+          {showFront ? "フロントページを閉じる" : "フロントページを編集"}
+        </button>
+        {showFront && <ClassBusinessFrontPanel schoolId={school.id} name={school.name} />}
         <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
         <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
       </div>
