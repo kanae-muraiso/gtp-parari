@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
-import { describeClassProduct, type ClassProduct, type NamedClassProduct } from "@/lib/classProduct";
+import { defaultClassSlotSettings, describeClassProduct, type ClassSlotDefaults, type ClassProduct, type NamedClassProduct } from "@/lib/classProduct";
 import type { SchoolClass } from "@/lib/classes";
 
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
@@ -47,6 +47,10 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
     setProduct(current => current ? { ...current, [key]: value } : current);
     setSaved(false);
   }
+  const slotDefaults = product.slotDefaults ?? defaultClassSlotSettings;
+  function patchSlotDefaults(values: Partial<ClassSlotDefaults>) {
+    patch("slotDefaults", { ...slotDefaults, ...values });
+  }
   const available = classes.filter(item => !item.product_id || item.product_id === productId);
   const selected = available.filter(item => product.classIds.includes(item.id));
   return <form className={panel} onSubmit={async event => {
@@ -57,7 +61,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       const id = productId || crypto.randomUUID();
       setProductId(id);
       const result = await classRequest<{ design: ClassProduct }>("", { action: "saveContentProduct", productId: id, name,
-        design: { ...product, classIds: selected.map(item => item.id) } });
+        design: { ...product, slotDefaults, classIds: selected.map(item => item.id) } });
       setProducts(current => [...current.filter(item => item.id !== id), { id, name, design: result.design }]);
       onSaved?.();
       setProduct(result.design);
@@ -91,6 +95,20 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         <option value="fixed">固定の開催枠に所属</option><option value="multiple">複数の指定枠に所属</option>
         <option value="flexible">同じ商品の空席を毎回予約</option><option value="walkIn">自由参加（予約不要）</option>
       </select></label>
+      <fieldset className="grid gap-2">
+        <legend className="mb-2 text-sm font-semibold">開催枠の標準設定</legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label>所要時間（分）<input className={field} type="number" min={5} max={480} required
+            value={slotDefaults.duration || ""} onChange={event => patchSlotDefaults({ duration: Number(event.target.value) })} /></label>
+          <label>方法<select className={field} value={slotDefaults.delivery}
+            onChange={event => patchSlotDefaults({ delivery: event.target.value as ClassSlotDefaults["delivery"] })}>
+            <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
+          </select></label>
+          {slotDefaults.delivery !== "online" && <label>会場<input className={field} maxLength={200} required={slotDefaults.delivery === "hybrid"}
+            value={slotDefaults.location} onChange={event => patchSlotDefaults({ location: event.target.value })} /></label>}
+        </div>
+        <p className="text-sm text-neutral-600">新しい開催枠や頻度に、ここで設定した内容と{product.walkInFee != null ? "基本参加費" : "月謝"}を使います。</p>
+      </fieldset>
       {product.walkInFee != null ? <>
         <label>当日の基本参加費（円）<input className={field} type="number" min={0} max={1000000} required
           value={product.walkInFee} onChange={event => patch("walkInFee", Number(event.target.value))} /></label>

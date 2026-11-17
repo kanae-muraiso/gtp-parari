@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { classCalendarToday } from "@/lib/classCalendar";
 import { hasDuplicateClassDateRules, type ClassDateRule, type ClassScheduleRules } from "@/lib/classRecurrence";
+import { defaultClassSlotSettings, type ClassSlotDefaults } from "@/lib/classProduct";
 import type { SchoolClass } from "@/lib/classes";
 import { ClassDateRuleFields } from "./ClassDateRuleFields";
 
@@ -31,17 +32,24 @@ function originalRule(cadence: SchoolClass["cadence"], day: string): ClassDateRu
   return cadence === "monthly" ? { kind: "date", date: date.getUTCDate() } : { kind: "weekly", weekday: date.getUTCDay() };
 }
 
-function newRow(id: string, productId?: string): SlotRow {
-  return { id, productId, new: true, name: "", date: "", time: "", duration: "60", delivery: "onsite",
-    location: "", meetingUrl: "", feeOverride: "", useLegacy: false,
+function standardFields(defaults: ClassSlotDefaults) {
+  return { duration: String(defaults.duration), delivery: defaults.delivery,
+    location: defaults.delivery === "online" ? "" : defaults.location, feeOverride: "" };
+}
+
+function newRow(id: string, productId: string | undefined, defaults: ClassSlotDefaults): SlotRow {
+  return { id, productId, new: true, name: "", date: "", time: "", ...standardFields(defaults),
+    meetingUrl: "", useLegacy: false,
     rules: { rules: [originalRule("weekly", classCalendarToday())], overrides: [] } };
 }
 
-export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, walkIn, busy, save }: {
+export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save }: {
   item?: SchoolClass;
   additionalSlots: SchoolClass[];
   startId: string;
   productId?: string;
+  slotDefaults?: ClassSlotDefaults;
+  basicFee?: number;
   walkIn: boolean;
   busy: boolean;
   save: (slots: Omit<SlotRow, "useLegacy">[], onError: (message: string) => void) => Promise<boolean>;
@@ -58,7 +66,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
         overrides: item.schedule_rules?.overrides ?? [],
       },
     }))
-    : [newRow(startId, productId)]);
+    : [newRow(startId, productId, slotDefaults ?? defaultClassSlotSettings)]);
   const [saveError, setSaveError] = useState("");
   function patch(id: string, values: Partial<SlotRow>) {
     setSaveError("");
@@ -70,7 +78,8 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
     const id = crypto.randomUUID();
     setSaveError("");
     setRows(current => [...current, {
-      ...first, id, productId, new: true, useLegacy: false,
+      ...first, ...(slotDefaults ? standardFields(slotDefaults) : {}), id, productId, new: true, useLegacy: false,
+      meetingUrl: !slotDefaults || slotDefaults.delivery === first.delivery ? first.meetingUrl : "",
       rules: { parentSlotId: first.id, rules: [{ ...first.rules.rules[0] }], overrides: [] },
     }]);
   }
@@ -98,6 +107,10 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
         function setFrequencies(rules: ClassScheduleRules["rules"]) {
           patch(row.id, { useLegacy: false, rules: { ...row.rules, rules } });
         }
+        const standard = standardFields(slotDefaults ?? defaultClassSlotSettings);
+        const customized = row.duration !== standard.duration || row.delivery !== standard.delivery ||
+          (row.delivery !== "online" && row.location !== standard.location) ||
+          row.feeOverride !== "" || row.rules.overrides.length > 0;
         return <div key={row.id} className="grid min-w-0 gap-3 border-t border-neutral-200 pt-3">
           {row.rules.rules.map((rule, ruleIndex) => <div key={ruleIndex} className="flex flex-wrap items-end gap-2">
             <ClassDateRuleFields rule={rule} change={next => setFrequencies(row.rules.rules.map((value, i) =>
@@ -113,7 +126,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
               setRows(current => current.filter(value => value.id !== row.id));
             }}>追加を取り消す</button>}
           </div>)}
-          <div className="grid items-end gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid items-end gap-3 sm:grid-cols-2">
             <label className="grid gap-1">初回日
               <input className={field} type="date" required value={row.date} onChange={e => {
                 const date = e.target.value;
@@ -125,46 +138,55 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
             <label className="grid gap-1">開始時刻
               <input className={field} type="time" required value={row.time} onChange={e => patch(row.id, { time: e.target.value })} />
             </label>
-            <label className="grid gap-1">所要時間（分）
-              <input className={field} type="number" min={5} max={480} required value={row.duration} onChange={e => patch(row.id, { duration: e.target.value })} />
-            </label>
-            <label className="grid gap-1">方法
-              <select className={field} value={row.delivery} onChange={e => patch(row.id, { delivery: e.target.value as SlotRow["delivery"] })}>
-                <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
-              </select>
-            </label>
-            <label className="grid gap-1">会場
-              <input className={field} maxLength={200} required={row.delivery === "hybrid"} disabled={row.delivery === "online"}
-                value={row.location} onChange={e => patch(row.id, { location: e.target.value })} />
-            </label>
-            <label className="grid gap-1">費用（円）
-              <input className={field} type="number" min={0} max={1000000} placeholder="商品の基本料金" value={row.feeOverride}
-                onChange={e => patch(row.id, { feeOverride: e.target.value })} />
-            </label>
-            {row.delivery !== "onsite" && <label className="grid gap-1 sm:col-span-full">授業の参加リンク
-              <input className={field} type="url" required maxLength={2000} value={row.meetingUrl} onChange={e => patch(row.id, { meetingUrl: e.target.value })} />
-            </label>}
           </div>
-          {walkIn && <details>
-            <summary className="cursor-pointer font-medium">特定の回だけ会場・費用を変更</summary>
-            <div className="mt-2 grid gap-2">
-              {row.rules.overrides.map((override, i) => {
-                function change(values: Partial<typeof override>) {
-                  patch(row.id, { rules: { ...row.rules,
-                    overrides: row.rules.overrides.map((value, index) => index === i ? { ...value, ...values } : value) } });
-                }
-                return <div className="flex flex-wrap items-end gap-2" key={i}>
-                  <ClassDateRuleFields rule={override.rule} change={rule => change({ rule })} />
-                  <label>会場<input className={field} required maxLength={200} value={override.location} onChange={e => change({ location: e.target.value })} /></label>
-                  <label>費用（円）<input className={field} type="number" required min={0} max={1000000} value={override.fee} onChange={e => change({ fee: Number(e.target.value) })} /></label>
-                  <button type="button" className={secondary} onClick={() => patch(row.id, { rules: { ...row.rules,
-                    overrides: row.rules.overrides.filter((_, index) => index !== i) } })}>変更を削除</button>
-                </div>;
-              })}
-              {row.rules.overrides.length < 20 && <button type="button" className={secondary} onClick={() =>
-                patch(row.id, { rules: { ...row.rules, overrides: [...row.rules.overrides, newOverride] } })}>＋ 会場・費用の変更を追加</button>}
+          {row.delivery !== "onsite" && <label className="grid gap-1">授業の参加リンク
+            <input className={field} type="url" required maxLength={2000} value={row.meetingUrl} onChange={e => patch(row.id, { meetingUrl: e.target.value })} />
+          </label>}
+          <details onInvalidCapture={event => { event.currentTarget.open = true; }}>
+            <summary className="w-fit cursor-pointer font-medium">
+              オプション{customized && <span className="ml-2 text-xs font-normal text-neutral-600">個別設定あり</span>}
+            </summary>
+            <div className="mt-3 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="grid gap-1">所要時間（分）
+                <input className={field} type="number" min={5} max={480} required value={row.duration} onChange={e => patch(row.id, { duration: e.target.value })} />
+              </label>
+              <label className="grid gap-1">方法
+                <select className={field} value={row.delivery} onChange={e => patch(row.id, { delivery: e.target.value as SlotRow["delivery"] })}>
+                  <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
+                </select>
+              </label>
+              <label className="grid gap-1">会場
+                <input className={field} maxLength={200} required={row.delivery === "hybrid"} disabled={row.delivery === "online"}
+                  value={row.location} onChange={e => patch(row.id, { location: e.target.value })} />
+              </label>
+              <label className="grid gap-1">{walkIn ? "参加費（円）" : "月謝（円）"}
+                <input className={field} type="number" min={0} max={1000000} placeholder={basicFee === undefined ? "商品の基本料金" : String(basicFee)} value={row.feeOverride}
+                  onChange={e => patch(row.id, { feeOverride: e.target.value })} />
+              </label>
             </div>
-          </details>}
+            {slotDefaults && <button type="button" className="mt-2 text-sm underline"
+              onClick={() => patch(row.id, standard)}>商品の標準設定を使う</button>}
+            {walkIn && <details className="mt-3" onInvalidCapture={event => { event.currentTarget.open = true; }}>
+              <summary className="cursor-pointer font-medium">特定の回だけ会場・費用を変更</summary>
+              <div className="mt-2 grid gap-2">
+                {row.rules.overrides.map((override, i) => {
+                  function change(values: Partial<typeof override>) {
+                    patch(row.id, { rules: { ...row.rules,
+                      overrides: row.rules.overrides.map((value, index) => index === i ? { ...value, ...values } : value) } });
+                  }
+                  return <div className="flex flex-wrap items-end gap-2" key={i}>
+                    <ClassDateRuleFields rule={override.rule} change={rule => change({ rule })} />
+                    <label>会場<input className={field} required maxLength={200} value={override.location} onChange={e => change({ location: e.target.value })} /></label>
+                    <label>費用（円）<input className={field} type="number" required min={0} max={1000000} value={override.fee} onChange={e => change({ fee: Number(e.target.value) })} /></label>
+                    <button type="button" className={secondary} onClick={() => patch(row.id, { rules: { ...row.rules,
+                      overrides: row.rules.overrides.filter((_, index) => index !== i) } })}>変更を削除</button>
+                  </div>;
+                })}
+                {row.rules.overrides.length < 20 && <button type="button" className={secondary} onClick={() =>
+                  patch(row.id, { rules: { ...row.rules, overrides: [...row.rules.overrides, newOverride] } })}>＋ 会場・費用の変更を追加</button>}
+              </div>
+            </details>}
+          </details>
         </div>;
       })}
       {productId && rows.length < 12 && <button type="button" className={secondary} onClick={addFrequency}>＋ 頻度を追加</button>}

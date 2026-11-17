@@ -51,7 +51,7 @@ async function manage(userId: string, scope: string | null) {
   for (const result of [roster, admission, applications, products, surcharges, receipts, otherBusinesses]) if (result.error) throw result.error;
   const names = new Map(products.data.map(item => [item.id, item.name]));
   school.classes = school.classes.map(item => ({ ...item, productName: names.get(item.product_id) }));
-  return reply({ ok: true, userId, school, products: products.data.map(({ id, name, design }) => ({ id, name, walkInFee: design.walkInFee ?? null, monthlyFee: design.monthlyFee, monthlyVisits: design.monthlyVisits, booking: design.booking })), surcharges: surcharges.data, receipts: receipts.data, otherBusinesses: otherBusinesses.data, roster: roster.data, applicationId: admission.data?.application_id ?? null, applications: applications.data });
+  return reply({ ok: true, userId, school, products: products.data.map(({ id, name, design }) => ({ id, name, walkInFee: design.walkInFee ?? null, monthlyFee: design.monthlyFee, monthlyVisits: design.monthlyVisits, booking: design.booking, slotDefaults: design.slotDefaults })), surcharges: surcharges.data, receipts: receipts.data, otherBusinesses: otherBusinesses.data, roster: roster.data, applicationId: admission.data?.application_id ?? null, applications: applications.data });
 }
 
 function regularSlotRules(date: string, cadence: SchoolClass["cadence"], rules?: ClassDateRule[]) {
