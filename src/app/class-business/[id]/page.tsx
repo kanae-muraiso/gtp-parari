@@ -17,9 +17,9 @@ export default async function ClassBusinessPage({ params }: { params: Promise<{ 
   if (!school) notFound();
   const { published } = await readClassBusinessFront(id);
   if (!published) notFound();
-  const links = published.entries.length ? await classBusinessFrontLinks(id, school.owner_user_id) : [];
+  const links = published.entries.length ? await classBusinessFrontLinks(id, school.owner_user_id, published.entries) : [];
   return <main className="min-h-screen bg-neutral-50 px-5 py-12 sm:py-20">
     <ClassBusinessFrontView name={school.name} introduction={published.introduction}
-      links={selectClassBusinessFrontLinks(published.entries, links)} />
+      links={selectClassBusinessFrontLinks(published.entries, links)} schoolId={id} />
   </main>;
 }
