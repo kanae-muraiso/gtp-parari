@@ -66,7 +66,7 @@ function BusinessClassManager() {
     return () => controller.abort();
   }, [userId, reload]);
 
-  async function save(body: object, success: string) {
+  async function save(body: object, success: string, onError = setError) {
     setError("");
     setMessage("");
     setBusy(true);
@@ -80,7 +80,7 @@ function BusinessClassManager() {
       setMessage(success);
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "保存できませんでした。");
+      onError(cause instanceof Error ? cause.message : "保存できませんでした。");
       return false;
     } finally {
       setBusy(false);
@@ -200,7 +200,7 @@ function BusinessClassManager() {
       <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
       <ClassSlotSettingsPanel item={item} additionalSlots={additionalSlots} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
         walkIn={(itemProduct ?? slotProduct)?.walkInFee != null} busy={busy}
-        save={rows => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。")} />
+        save={(rows, onError) => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。", onError)} />
       <Link className="w-fit text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>
       {item && <ClassCalendarPanel classes={[item, ...additionalSlots]} selectedClass={item}
         expectedVisits={itemProduct?.walkInFee == null && itemProduct?.booking === "fixed" ? itemProduct.monthlyVisits : undefined} />}

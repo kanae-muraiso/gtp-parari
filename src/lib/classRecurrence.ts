@@ -21,6 +21,24 @@ export function hasDuplicateClassDateRules(rules: ClassDateRule[]) {
   return new Set(rules.map(classDateRuleKey)).size !== rules.length;
 }
 
+export function classDateRulesOverlap(
+  first: ClassDateRule, second: ClassDateRule, firstClampsToMonthEnd = false, secondClampsToMonthEnd = false,
+): boolean {
+  if (first.kind !== "date" && second.kind !== "date") {
+    return first.weekday === second.weekday &&
+      (first.kind === "weekly" || second.kind === "weekly" || first.ordinal === second.ordinal);
+  }
+  if (first.kind !== "date") return classDateRulesOverlap(second, first, secondClampsToMonthEnd, firstClampsToMonthEnd);
+
+  // Each possible month length recurs with every weekday alignment in the Gregorian calendar.
+  return [28, 29, 30, 31].some(length => {
+    const day = firstClampsToMonthEnd ? Math.min(first.date, length) : first.date;
+    if (day > length) return false;
+    if (second.kind === "date") return day === (secondClampsToMonthEnd ? Math.min(second.date, length) : second.date);
+    return second.kind === "weekly" || Math.ceil(day / 7) === second.ordinal;
+  });
+}
+
 export function matchesClassDateRule(rule: ClassDateRule, day: string) {
   const date = new Date(day + "T00:00:00Z");
   const number = date.getUTCDate();
