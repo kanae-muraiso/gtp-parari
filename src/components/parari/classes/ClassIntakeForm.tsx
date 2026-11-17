@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 
+import { classWeekdays } from "@/lib/classRecurrence";
 import type { ClassIntakeTarget } from "@/lib/classIntakeTargets";
 
 import ClassBookingCalendar, { bookingDate, bookingTime, type BookingSlot } from "./ClassBookingCalendar";
 
-export type Intake = { offerName?: string; targetClasses?: ClassIntakeTarget[]; walkInSchedules?: { id: string; name: string }[]; school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
+export type Intake = { offerName?: string; targetClasses?: ClassIntakeTarget[]; classSchedules?: ClassIntakeTarget[]; walkInSchedules?: { id: string; name: string }[]; school: string; information: string; kind: string; direct?: boolean; applicationText?: string; terms?: string; bookingWeeks?: number; sharedDisclosure?: { url: string; version?: string } | null; audience?: "adult" | "minor"; slots: BookingSlot[] };
 
 const field = "block w-full rounded-lg border p-2";
 
@@ -31,6 +32,13 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
       {data.sharedDisclosure && <p><a href={data.sharedDisclosure.url} target="_blank" rel="noreferrer" className="text-sm underline">
         特定商取引法に基づく表記・個人情報の取扱い
       </a></p>}
+      {!!data.classSchedules?.length && <section className="grid gap-3 rounded-xl border p-4">
+        <h2 className="font-semibold">入会後のクラスと開催予定</h2>
+        {data.classSchedules.map(item => <div key={item.id} className="grid gap-1 border-b pb-3 last:border-b-0 last:pb-0">
+          <TargetSummary item={item} />
+          <UpcomingDates item={item} />
+        </div>)}
+      </section>}
       {data.direct && data.terms && <p className="whitespace-pre-wrap rounded-xl border p-4">{data.terms}</p>}
       {Boolean(data.walkInSchedules?.length) && <section className="grid gap-2 rounded-xl border p-4">
         <h2 className="font-semibold">予約なしで参加できるクラス</h2>
@@ -45,7 +53,11 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         submit(event);
       }}>
         {targets?.length === 1 && <>
-          <section className="grid gap-2 rounded-xl border p-4" aria-label="対象クラス"><TargetSummary item={targets[0]} /></section>
+          <section className="grid gap-2 rounded-xl border p-4" aria-label="対象クラス">
+            <h2 className="font-semibold">入会後のクラスと開催予定</h2>
+            <TargetSummary item={targets[0]} />
+            <UpcomingDates item={targets[0]} />
+          </section>
           <input type="hidden" name="classId" value={targets[0].id} />
         </>}
         {targets && targets.length > 1 && <fieldset className="grid gap-2" disabled={busy}>
@@ -56,6 +68,10 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
             <span className="grid gap-1"><TargetSummary item={item} /></span>
           </label>)}
         </fieldset>}
+        {targets && targets.length > 1 && target && <section className="grid gap-2 rounded-xl border p-4">
+          <h2 className="font-semibold">選んだクラスの開催予定</h2>
+          <UpcomingDates item={target} />
+        </section>}
         {targetReady && !data.direct && <section className="grid gap-3">
           <h2 className="font-semibold">{data.kind}の日時</h2>
           {data.slots.length ? <ClassBookingCalendar slots={data.slots} bookingWeeks={data.bookingWeeks ?? 4} selected={selected} onSelect={setSelected} />
@@ -86,4 +102,19 @@ function TargetSummary({ item }: { item: ClassIntakeTarget }) {
     {item.booking === "flexible" && item.monthlyVisits !== undefined &&
       <span className="text-sm">入会後、対象クラスの空席を月{item.monthlyVisits}回まで予約できます。</span>}
   </>;
+}
+
+function UpcomingDates({ item }: { item: ClassIntakeTarget }) {
+  if (!item.upcoming) return null;
+  if (!item.upcoming.length) return <p className="text-sm text-neutral-600">今月・来月の開催予定はありません。</p>;
+  return <ul className="grid gap-1 text-sm">
+    {item.upcoming.map(({ day, time, location, confirmed }) => {
+      const date = new Date(day + "T00:00:00Z");
+      return <li key={day}>
+        {date.getUTCMonth() + 1}/{date.getUTCDate()}（{classWeekdays[date.getUTCDay()]}）{time}
+        {location !== item.location && location ? " · " + location : ""}
+        {!confirmed && <span className="ml-2 text-xs text-neutral-600">予定</span>}
+      </li>;
+    })}
+  </ul>;
 }

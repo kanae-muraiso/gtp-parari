@@ -1,3 +1,4 @@
+import { readClassIntakeCalendar } from "@/lib/classIntakeCalendarServer";
 import { classIntakeTarget } from "@/lib/classIntakeTargets";
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,9 +34,14 @@ async function handle(request: NextRequest) {
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
     if (!information.trim() && !shared) return missing();
     const options = recruitment;
-    const targets = offer ? await db.from("school_classes")
+    const showGeneralSchedule = !offer && request.method === "GET" && options.show_class_schedule === true;
+    const query = db.from("school_classes")
       .select("id,name,starts_on,starts_at,cadence,location,delivery,schedule_rules,fee_override_yen,product:school_class_products(id,name,design)")
-      .eq("school_id", schoolId).in("id", offer.class_ids).order("name") : null;
+      .eq("school_id", schoolId).order("name");
+    const [targets, calendar] = await Promise.all([
+      offer ? query.in("id", offer.class_ids) : showGeneralSchedule ? query.not("product_id", "is", null) : null,
+      request.method === "GET" && (offer || showGeneralSchedule) ? readClassIntakeCalendar(schoolId) : undefined,
+    ]);
     if (targets?.error) throw targets.error;
     if (offer && !targets?.data?.length) return missing();
     const targetClasses = [];
@@ -47,10 +53,11 @@ async function handle(request: NextRequest) {
       if (product?.design?.walkInFee != null) {
         walkInSchedules.set(product.id, { id: product.id, name: product.name });
       } else {
-        targetClasses.push(classIntakeTarget(item, product ? { name: product.name, ...product.design } : null));
+        targetClasses.push(classIntakeTarget(item, product ? { name: product.name, ...product.design } : null, calendar));
       }
     }
-    const offerFields = offer ? { offerName: offer.name, targetClasses, walkInSchedules: [...walkInSchedules.values()] } : {};
+    const offerFields = offer ? { offerName: offer.name, targetClasses, walkInSchedules: [...walkInSchedules.values()] } :
+      showGeneralSchedule ? { classSchedules: targetClasses, walkInSchedules: [...walkInSchedules.values()] } : {};
     function submitOffer(input: Record<string, unknown>, name: string, applicant: string, email: string, slot: string | null, phone: string | null) {
       return db.rpc("submit_school_offer", { p_public: options.public_id, p_offer: offer!.id, p_class: input.classId,
         p_slot: slot, p_name: name, p_applicant: applicant, p_email: email, p_information: input.information,

@@ -1,5 +1,10 @@
-import { classWeekdays } from "./classRecurrence";
+import { classCalendarToday, generateClassDays, shiftCalendarMonth } from "./classCalendar";
+import { classWeekdays, matchesClassDateRule } from "./classRecurrence";
 import type { SchoolClass } from "./classes";
+
+export type ClassIntakeMonth = { class_id: string; month: string; days: string[]; confirmed: boolean };
+
+type UpcomingClass = { day: string; time: string; location: string | null; confirmed: boolean };
 
 export type ClassIntakeTarget = {
   id: string;
@@ -9,12 +14,14 @@ export type ClassIntakeTarget = {
   fee: number | null;
   monthlyVisits?: number;
   booking?: string;
+  upcoming?: UpcomingClass[];
 };
 
 type TargetSlot = Pick<SchoolClass, "id" | "name" | "starts_on" | "starts_at" | "cadence" | "location" | "fee_override_yen" | "schedule_rules" | "delivery">;
 type TargetProduct = { name: string; monthlyFee?: number; monthlyVisits?: number; booking?: string };
 
-export function classIntakeTarget(slot: TargetSlot, product?: TargetProduct | null): ClassIntakeTarget {
+export function classIntakeTarget(slot: TargetSlot, product?: TargetProduct | null,
+  calendar?: { today: string; months: ClassIntakeMonth[] }): ClassIntakeTarget {
   const rules = slot.schedule_rules?.rules;
   const initialDay = new Date(slot.starts_on + "T00:00:00Z");
   const cadence = rules?.length ? rules.map(rule => {
@@ -30,5 +37,20 @@ export function classIntakeTarget(slot: TargetSlot, product?: TargetProduct | nu
     fee: slot.fee_override_yen ?? product?.monthlyFee ?? null,
     monthlyVisits: product?.monthlyVisits,
     booking: product?.booking,
+    ...(calendar ? { upcoming: classIntakeUpcoming(slot, calendar.months, calendar.today) } : {}),
   };
+}
+
+function classIntakeUpcoming(slot: TargetSlot, saved: ClassIntakeMonth[], today = classCalendarToday()): UpcomingClass[] {
+  const month = today.slice(0, 7);
+  const time = slot.starts_at.slice(0, 5);
+  return [month, shiftCalendarMonth(month, 1)].flatMap(value => {
+    const plan = saved.find(row => row.class_id === slot.id && row.month === value + "-01");
+    const days = plan?.days ?? generateClassDays(slot, value, false);
+    return [...days].sort().filter(day => day >= today).map(day => {
+      const override = slot.schedule_rules?.overrides.findLast(entry => matchesClassDateRule(entry.rule, day));
+      return { day, time, location: slot.delivery === "online" ? "オンライン" : override?.location ?? slot.location,
+        confirmed: plan?.confirmed === true };
+    });
+  }).slice(0, 4);
 }
