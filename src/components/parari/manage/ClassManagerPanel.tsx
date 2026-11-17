@@ -142,7 +142,7 @@ function BusinessClassManager() {
         <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
           onClick={() => { setReturnToFront(false); setSection(key); }}>{label}</button>)}
     </nav>}
-    {!item && !creating && !schoolAdmission && section === "front" && <ClassBusinessFrontPanel schoolId={school.id} name={school.name}
+    {!item && !creating && !schoolAdmission && section === "front" && <ClassBusinessFrontPanel schoolId={school.id} name={school.name} products={data.products ?? []}
       onOpenRecruitment={() => { setSchoolAdmission(true); setView("settings"); }}
       onOpenSchedule={() => {
         setReturnToFront(true);
