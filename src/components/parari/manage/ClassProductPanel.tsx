@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
 import { defaultClassSlotSettings, describeClassProduct, type ClassSlotDefaults, type ClassProduct, type NamedClassProduct } from "@/lib/classProduct";
+import { classParticipationFormat, classParticipationFormats } from "@/lib/classBusinessFront";
 import type { SchoolClass } from "@/lib/classes";
 
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
@@ -95,6 +96,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         <option value="fixed">固定の開催枠に所属</option><option value="multiple">複数の指定枠に所属</option>
         <option value="flexible">同じ商品の空席を毎回予約</option><option value="walkIn">自由参加（予約不要）</option>
       </select></label>
+      <p className="text-sm text-neutral-600">公開ページでは「{classParticipationFormats[classParticipationFormat(product)]}」に表示します。</p>
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm font-semibold">開催枠の標準設定</legend>
         <div className="grid gap-3 sm:grid-cols-3">

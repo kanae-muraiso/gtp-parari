@@ -104,7 +104,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
           const title = kind === "intake" ? "募集ページ" : kind === "schedule"
             ? (product ? product.name + "の日程案内" : "以前追加したクラスの日程案内") : "イベント・講習会";
           const reason = kind === "schedule"
-            ? (product ? "このクラスは現在、自由参加（予約不要）の日程案内を公開できる設定ではありません。入会前の予定は募集ページに載せられます。"
+            ? (product ? "このクラスの通い方が変わりました。上の掲載項目で現在のクラスを選ぶと、紹介文と開催予定を載せられます。"
               : "この事業に該当のクラスが見つかりません。")
             : kind === "intake" ? "募集の公開状態と案内文を「募集・入会設定」で確認してください。"
               : "公開中の開催予定にこのイベント・講習会が見つかりません。";
@@ -112,7 +112,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
             <p className="font-medium">{title}（掲載停止中）</p>
             <p className="text-neutral-600">{reason}</p>
             <div className="flex flex-wrap gap-3">
-              {(kind === "intake" || product) && <button type="button" className="underline"
+              {kind === "intake" && <button type="button" className="underline"
                 onClick={() => void openSettings(onOpenRecruitment)}>募集・入会設定を開く</button>}
               <button type="button" className="underline"
                 onClick={() => setContent({ ...content, entries: content.entries.filter(value => value !== key) })}>
