@@ -1,4 +1,4 @@
-import { matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
+import { hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
@@ -298,6 +298,9 @@ export async function POST(request: NextRequest) {
           (delivery !== "onsite" && !meetingUrl) || (delivery === "hybrid" && !location)) {
           return fail(`${index + 1}行目の名前・日時・会場・費用を確認してください。`);
         }
+        if (hasDuplicateClassDateRules(rules.rules)) {
+          return fail("同じ頻度が複数あります。頻度を変更するか、重複した頻度を削除してください。");
+        }
         if ((isNew || date !== current?.starts_on) && rules.rules.length && !rules.rules.some(rule => matchesClassDateRule(rule, date))) {
           return fail(`${index + 1}行目の初回日を、設定した頻度に合う日にしてください。`);
         }
@@ -315,6 +318,7 @@ export async function POST(request: NextRequest) {
     if (body?.action === "saveScheduleRules") {
       const rules = parseClassScheduleRules(body.rules);
       if (!rules || !school.classes.some(item => item.id === body.classId)) return fail("開催ルールを確認してください。");
+      if (hasDuplicateClassDateRules(rules.rules)) return fail("同じ頻度が複数あります。");
       const { error } = await db.rpc("save_class_schedule_rules", {
         p_owner: user.id, p_school: school.id, p_class: body.classId, p_rules: rules,
       });
