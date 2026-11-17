@@ -7,7 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
-import ClassSlotRowsPanel from "./ClassSlotRowsPanel";
+import ClassSlotSettingsPanel from "./ClassSlotSettingsPanel";
 import ClassCalendarPanel from "./ClassCalendarPanel";
 import ClassEventsPanel from "./ClassEventsPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
@@ -193,9 +193,9 @@ function BusinessClassManager() {
     </nav>}
     {(creating || item) && <section key={newSlot?.id ?? item?.id} className={panel} aria-labelledby="class-slot-settings-heading">
       <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
-      <ClassSlotRowsPanel item={item} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
+      <ClassSlotSettingsPanel item={item} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
         walkIn={(itemProduct ?? slotProduct)?.walkInFee != null} busy={busy}
-        save={rows => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。")} />
+        save={slot => save({ action: "saveSlotRows", rows: [slot] }, "開催枠を保存しました。")} />
       <Link className="w-fit text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>
       {item && <ClassCalendarPanel classes={school.classes} selectedClass={item}
         expectedVisits={itemProduct?.walkInFee == null && itemProduct?.booking === "fixed" ? itemProduct.monthlyVisits : undefined} />}

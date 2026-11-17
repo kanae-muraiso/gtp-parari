@@ -4,11 +4,21 @@ export type ClassDateRule =
   | { kind: "date"; date: number };
 
 export type ClassScheduleRules = {
-  rules: ClassDateRule[];
+  rules: (ClassDateRule & { name?: string })[];
   overrides: { rule: ClassDateRule; location: string; fee: number }[];
 };
 
 export const classWeekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+export function classDateRuleKey(rule: ClassDateRule) {
+  if (rule.kind === "date") return `date:${rule.date}`;
+  if (rule.kind === "weekly") return `weekly:${rule.weekday}`;
+  return `nth:${rule.weekday}:${rule.ordinal}`;
+}
+
+export function hasDuplicateClassDateRules(rules: ClassDateRule[]) {
+  return new Set(rules.map(classDateRuleKey)).size !== rules.length;
+}
 
 export function matchesClassDateRule(rule: ClassDateRule, day: string) {
   const date = new Date(day + "T00:00:00Z");
@@ -32,12 +42,14 @@ export function parseClassScheduleRules(value: unknown): ClassScheduleRules | nu
     if (rule.kind === "nth" && integer(rule.ordinal, 1, 5)) return { kind: rule.kind, weekday: rule.weekday, ordinal: rule.ordinal };
     return null;
   }
-  const rules: ClassDateRule[] = [];
+  const rules: ClassScheduleRules["rules"] = [];
   const overrides: ClassScheduleRules["overrides"] = [];
   for (const value of source.rules) {
     const rule = parseRule(value);
     if (!rule) return null;
-    rules.push(rule);
+    if (value.name !== undefined && (typeof value.name !== "string" || value.name.trim().length > 120)) return null;
+    const name = value.name?.trim();
+    rules.push(name ? { ...rule, name } : rule);
   }
   for (const value of source.overrides) {
     const rule = parseRule(value?.rule);
