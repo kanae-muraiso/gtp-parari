@@ -21,6 +21,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [briefingAudience, setBriefingAudience] = useState<"adult" | "minor">();
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
   const [useSample, setUseSample] = useState(false);
@@ -40,7 +41,17 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   async function save(values: object) {
     setBusy(true);
     setError("");
-    try { await classRequest("/recruitment", values); setData(await classRequest<Data>("/recruitment")); return true; }
+    setNotice("");
+    try {
+      await classRequest("/recruitment", values);
+      setData(await classRequest<Data>("/recruitment"));
+      if ("action" in values) {
+        if (values.action === "settings") setNotice("募集の設定を保存しました。");
+        if (values.action === "publish") setNotice("募集を公開しました。");
+        if (values.action === "unpublish") setNotice("募集を非公開にしました。");
+      }
+      return true;
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); return false; }
     finally { setBusy(false); }
   }
@@ -71,8 +82,9 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     return product?.walkInFee != null ? [{ id: product.id, name: product.name }] : [];
   });
   return <section className="grid gap-3 rounded-2xl border bg-white p-5">
-    <h3 className="font-bold">{view === "preview" ? "申込者として試す" : "説明会・体験の募集"}</h3>
+    <h3 className="font-bold">{view === "preview" ? "申込者として試す" : "公開する募集の設定"}</h3>
     {error && <p role="alert">{error}</p>}
+    {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
     {!data && !error && <p role="status">読み込み中…</p>}
     {data && settings && view === "preview" && <>
       <p className="text-sm text-neutral-600">練習用です。予約・メール・支払い・名簿登録は発生しません。</p>
@@ -120,39 +132,49 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
           {step === 4 && <p>{settings.labels.admission}手続きが完了しました。初回の日程は教室からの案内をご確認ください。</p>}
           {step > 0 && <button className="w-fit text-sm underline" type="button" onClick={() => setStep(0)}>最初から試す</button>}
       </div>
-      {recruitment && <div className="grid gap-2 border-t pt-3">
-        {recruitment.enabled ? <>
-          <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
-          <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>募集を非公開にする</button>
-        </> : <>
-          {!isDirect && !slots.length && <p className="text-sm">発行には受付中の予約枠が必要です。</p>}
-          <button type="button" className={button} disabled={busy || (!isDirect && !slots.length)} onClick={() => void save({ action: "publish" })}>募集を発行</button>
-        </>}
-      </div>}
     </>}
     {data && view === "settings" && <><form onSubmit={configure} className="grid gap-2">
-      <label><input type="checkbox" checked={route === "briefing"} onChange={event => setRoute(event.target.checked ? "briefing" : "direct")} /> 説明会・体験の予約を受け付ける</label>
-      <input type="hidden" name="route" value={route} />
+      <fieldset className="grid gap-2 rounded-lg border p-3">
+        <legend className="px-1 font-semibold">受付方法</legend>
+        <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま入会を申し込む</label>
+        <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 先に説明会・体験を予約する</label>
+      </fieldset>
+      {route === "direct" && <input type="hidden" name="kind" value={kind} />}
       {route === "briefing" && <label>予約を受け付ける期間<select name="bookingWeeks" className={field} defaultValue={recruitment?.booking_weeks ?? 4}>
         {[1, 2, 3, 4].map(weeks => <option key={weeks} value={weeks}>{weeks}週間先まで</option>)}
       </select></label>}
-      <label>受付の種類<select name="kind" className={field} defaultValue={data.recruitment?.kind}>{["説明会", "体験", "見学"].map(kind => <option key={kind}>{kind}</option>)}</select></label>
+      {route === "briefing" && <label>予約の種類<select name="kind" className={field} defaultValue={data.recruitment?.kind}>{["説明会", "体験", "見学"].map(kind => <option key={kind}>{kind}</option>)}</select></label>}
       {data.sharedDisclosure && <p className="text-sm text-neutral-600">公開済みの共通の販売者情報・個人情報の取扱いを申込画面に表示します。<a className="ml-2 underline" href="/my/settings/seller">共通設定を確認</a></p>}
       <label>{data.sharedDisclosure ? "この募集の補足案内（任意）" : "案内・個人情報の取り扱い"}
         <textarea className={field} name="information" maxLength={4000} required={!data.sharedDisclosure} defaultValue={data.recruitment?.information} /></label>
-      <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
-      <label>初回の支払い方法<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
-        <option value="free">無料</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>
-      </select></label>
-      {paymentMode === "advance" && <label>決済ページのURL<input name="paymentUrl" type="url" required className={field} defaultValue={recruitment?.payment_url ?? ""} /></label>}
-      {paymentMode === "onsite" && <label>当日の集合・支払い案内<textarea name="arrivalText" className={field} maxLength={4000} required defaultValue={recruitment?.arrival_text} /></label>}
-      <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
-      <button className={button} disabled={busy}>募集を保存</button>
+      <details className="grid gap-2 rounded-lg border p-3" open={paymentMode !== "free" || undefined}
+        onInvalidCapture={event => { event.currentTarget.open = true; }}>
+        <summary className="cursor-pointer text-sm font-medium">支払い・申込書・確認メールの設定</summary>
+        <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
+        <label>初回の支払い方法<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
+          <option value="free">無料</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>
+        </select></label>
+        {paymentMode === "advance" && <label>決済ページのURL<input name="paymentUrl" type="url" required className={field} defaultValue={recruitment?.payment_url ?? ""} /></label>}
+        {paymentMode === "onsite" && <label>当日の集合・支払い案内<textarea name="arrivalText" className={field} maxLength={4000} required defaultValue={recruitment?.arrival_text} /></label>}
+        <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
+      </details>
+      <button className={button} disabled={busy}>募集の設定を保存</button>
     </form>
-    {recruitment && <ClassRecruitmentOffers classes={classes} offers={data.offers ?? []} busy={busy} save={save} />}
-    {data.recruitment?.enabled && <a className="underline" href={`/class-intake/${data.recruitment.public_id}`} target="_blank" rel="noreferrer">公開受付ページを開く</a>}
-    {route === "briefing" && <>
-      <h4 className="font-semibold">予約パネル</h4>
+      <div className="grid gap-2 rounded-lg border p-4">
+        <h4 className="font-semibold">募集の公開</h4>
+        {!recruitment ? <p className="text-sm text-neutral-600">上の「募集の設定を保存」を押すと公開できます。</p> :
+        recruitment.enabled ? <>
+          <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
+          <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>募集を非公開にする</button>
+        </> : <>
+          {route !== recruitment.route ? <p className="text-sm">変更した受付方法を保存してください。</p> :
+            !isDirect && !slots.length && <p className="text-sm">下の「予約枠を設定」で、受付できる日時を追加してください。</p>}
+          <button type="button" className={button} disabled={busy || route !== recruitment.route || (!isDirect && !slots.length)} onClick={() => void save({ action: "publish" })}>募集を公開する</button>
+        </>}
+      </div>
+    {route === "briefing" && <details className="rounded-lg border p-4" open={Boolean(recruitment && !slots.length) || undefined}>
+      <summary className="cursor-pointer font-semibold">予約枠を設定</summary>
+      <div className="mt-3 grid gap-3">
       {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
         location={recruitment.office_location ?? ""} busy={busy} save={save} revision={data} classes={classes} slots={slots} blocks={data.blocks ?? []} bookingWeeks={recruitment.booking_weeks}
         manualSlots={data.slots.filter(slot => !slot.generated && !slot.closed)} />}
@@ -172,7 +194,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         <label>所要時間（分）<input className={field} name="duration" type="number" min="5" max="480" defaultValue="60" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>
         <label>説明会・体験のオンライン参加リンク（任意）<input type="url" className={field} name="meetingUrl" maxLength={2000} /></label>
-        {(!recruitment || recruitment.route !== "briefing") && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「募集を保存」を押してください。</p>}
+        {(!recruitment || recruitment.route !== "briefing") && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「募集の設定を保存」を押してください。</p>}
         <button className={button} disabled={busy || !recruitment || recruitment.route !== "briefing"}>予約枠を追加</button>
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.duration_minutes}分 ／ {slot.capacity}人{slot.location ? " ／ " + slot.location : ""}{" "}
@@ -186,6 +208,10 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
           <button type="button" className="underline" disabled={busy} onClick={() => void save({ action: "unblock", id: block.id })}>解除</button>
         </p>)}
       </section>
-    </>}</>}
+      </div>
+    </details>}
+    {recruitment && <details><summary className="cursor-pointer text-sm">対象クラス別の募集を設定</summary>
+      <ClassRecruitmentOffers classes={classes} offers={data.offers ?? []} busy={busy} save={save} />
+    </details>}</>}
   </section>;
 }

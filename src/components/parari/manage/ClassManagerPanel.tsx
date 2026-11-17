@@ -35,9 +35,9 @@ export default function ClassManagerPanel() {
 function BusinessClassManager() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
-  const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop" | "roster">("classes");
+  const [section, setSection] = useState<"classes" | "front" | "calendar" | "event" | "workshop" | "roster">("classes");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
-  const [showFront, setShowFront] = useState(false);
+  const [returnToFront, setReturnToFront] = useState(false);
   const [showBlueprint, setShowBlueprint] = useState(false);
   const [newSlot, setNewSlot] = useState<{ id: string; productId: string } | null>(null);
   const creating = newSlot !== null;
@@ -132,19 +132,23 @@ function BusinessClassManager() {
           <button className={button} disabled={busy}>事業名を変更</button>
         </form>
         <button type="button" className="w-fit rounded-lg border bg-white px-3 py-2 text-sm"
-          aria-expanded={showFront} onClick={() => setShowFront(value => !value)}>
-          {showFront ? "フロントページを閉じる" : "フロントページを編集"}
-        </button>
-        {showFront && <ClassBusinessFrontPanel schoolId={school.id} name={school.name} />}
+          onClick={() => setSection("front")}>フロントページを編集</button>
         <p className="text-sm text-neutral-600">この事業のクラスで共通して使う呼び方を設定します。</p>
         <ClassAdmissionsPanel key={school.id + ":labels"} mode="labels" />
       </div>
     </details>}
     {!item && !creating && !schoolAdmission && <nav className="flex flex-wrap gap-2" aria-label="事業の運営">
-      {([["classes", "クラス一覧"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"], ["roster", "名簿"]] as const).map(([key, label]) =>
+      {([["classes", "クラス一覧"], ["front", "公開ページ"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"], ["roster", "名簿"]] as const).map(([key, label]) =>
         <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
-          onClick={() => setSection(key)}>{label}</button>)}
+          onClick={() => { setReturnToFront(false); setSection(key); }}>{label}</button>)}
     </nav>}
+    {!item && !creating && !schoolAdmission && section === "front" && <ClassBusinessFrontPanel schoolId={school.id} name={school.name}
+      onOpenRecruitment={() => { setSchoolAdmission(true); setView("settings"); }}
+      onOpenSchedule={() => {
+        setReturnToFront(true);
+        setEditingProduct(data.products?.length === 1 ? data.products[0].id : null);
+        setSection("classes");
+      }} />}
     {!item && !creating && !schoolAdmission && (section === "event" || section === "workshop") &&
       <ClassEventsPanel key={section} kind={section} classes={school.classes} roster={data.roster} />}
     {!item && !creating && !schoolAdmission && section === "calendar" && <ClassCalendarPanel classes={school.classes} />}
@@ -153,12 +157,18 @@ function BusinessClassManager() {
         <h2 className="text-xl font-bold">クラス一覧</h2>
         {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {
           setSchoolAdmission(true); setView("settings");
-        }}>教室共通の入会設定</button>}
+        }}>募集・入会設定</button>}
         <button type="button" className={button} aria-expanded={editingProduct === ""}
           onClick={() => setEditingProduct(current => current === "" ? null : "")}>
           {editingProduct === "" ? "商品作成を閉じる" : "商品を作成"}
         </button>
       </div>
+      {returnToFront && <div className="grid gap-1 rounded-lg bg-neutral-50 p-3 text-sm">
+        <p>日程を案内するクラスの「通い方」を<strong>自由参加（予約不要）</strong>にして、参加費を保存します。</p>
+        <button type="button" className="w-fit underline" onClick={() => {
+          setReturnToFront(false); setEditingProduct(null); setSection("front");
+        }}>公開ページに戻る</button>
+      </div>}
       <p className="text-sm text-neutral-600">「中学英語」のように教える内容を商品として作り、商品ごとに曜日・時間・会場の組み合わせを開催枠として追加します。</p>
       {editingProduct === "" && <ClassProductPanel classes={school.classes} allowProductSelection={false} onSaved={() => { setEditingProduct(null); reloadProducts(); }} />}
       {[...(data.products ?? []), { id: "", name: "商品未設定の開催枠" }].map(product => {
@@ -178,7 +188,14 @@ function BusinessClassManager() {
           {"walkInFee" in product && product.walkInFee != null && <Link className="w-fit text-sm underline"
             href={`/class-schedule/${product.id}`} target="_blank" rel="noreferrer">自由参加の日程案内を開く</Link>}
           {product.id && editingProduct === product.id && <ClassProductPanel key={product.id}
-            classes={school.classes} initialProduct={product.id} allowProductSelection={false} onSaved={reloadProducts} />}
+            classes={school.classes} initialProduct={product.id} allowProductSelection={false} onSaved={() => {
+              reloadProducts();
+              if (returnToFront) {
+                setReturnToFront(false);
+                setEditingProduct(null);
+                setSection("front");
+              }
+            }} />}
           {entries.map(entry => <button key={entry.id} type="button"
             onClick={() => { setSelectedId(entry.id); setError(""); setMessage(""); }}
             className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500">
@@ -194,10 +211,10 @@ function BusinessClassManager() {
     </section>}
     {(item || creating || schoolAdmission) && <header className="grid gap-2">
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <button type="button" className="w-fit underline" disabled={busy} onClick={backToList}>クラス一覧に戻る</button>
+        <button type="button" className="w-fit underline" disabled={busy} onClick={backToList}>{schoolAdmission && section === "front" ? "公開ページに戻る" : "クラス一覧に戻る"}</button>
         {(item || creating) && <span className="font-medium">{itemProductName ?? slotProduct?.name ?? "商品未設定の開催枠"}</span>}
       </div>
-      <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? "教室共通の入会設定" : "開催枠を追加")}</h2>
+      <h2 className="text-xl font-bold">{item?.name ?? (schoolAdmission ? "募集・入会設定" : "開催枠を追加")}</h2>
     </header>}
     {schoolAdmission && <nav aria-label="入会手続き" className="flex flex-wrap gap-2">
       {([["settings", "入会設定"], ["preview", "申込者として試す"], ["admissions", "申込者・入会対応"]] as const).map(([key, title]) =>
@@ -234,15 +251,20 @@ function BusinessClassManager() {
       </button>}
       {view === "settings" && showBlueprint && <ClassAdmissionBlueprint key={school.id} schoolId={school.id} schoolName={school.name} />}
       {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} products={data.products} onOpenSettings={() => setView("settings")} />}
-      {(view === "admissions" || view === "settings") && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
+      {view === "settings" && <details className={panel}>
+        <summary className="cursor-pointer font-medium">入会条件・手続きの詳細設定</summary>
+        <ClassAdmissionsPanel key={school.id + ":settings"} mode="settings" />
+      </details>}
+      {view === "admissions" && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}
 
-      {view === "settings" && <form key={data.applicationId ?? "unlinked"} className={panel} onSubmit={event => {
+      {view === "settings" && <details className={panel}>
+        <summary className="cursor-pointer font-medium">既存のAPPLICATIONとの接続</summary>
+        <form key={data.applicationId ?? "unlinked"} className={panel} onSubmit={event => {
         const values = formValues(event);
         void save({ action: "admission", applicationId: values.applicationId || null }, "入会受付の設定を保存しました。");
       }}>
-        <h3 className="font-bold">既存のAPPLICATIONとの接続</h3>
         <label className={label}>APPLICATIONの「継続クラス」
           <select className={field} name="applicationId" defaultValue={data.applicationId ?? ""}>
             <option value="">入会受付を接続しない</option>
@@ -252,7 +274,8 @@ function BusinessClassManager() {
         </label>
         <p className="text-sm text-neutral-600">選んだ受付で確定した申込を名簿に登録します。過去に確定した申込も対象です。</p>
         <button className={button} disabled={busy}>受付設定を保存</button>
-      </form>}
+        </form>
+      </details>}
     </>}
     {!item && !creating && !schoolAdmission && section === "roster" && <section className={panel} aria-labelledby="class-roster-heading">
         <h3 id="class-roster-heading" className="font-bold">名簿（在籍 {data.roster.filter(member => member.status === "active").length}名）</h3>
