@@ -42,9 +42,9 @@ async function learnerCalendar(school: string, user: string, month: string) {
   const owner = business.owner_user_id === user;
   const guardianIds = await classGuardianEnrollmentIds(user, school);
   const [direct, related, classes] = await Promise.all([
-    db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id)")
+    db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id,self_selected)")
       .eq("school_id", school).eq("user_id", user).eq("status", "active"),
-    guardianIds.length ? db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id)")
+    guardianIds.length ? db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id,self_selected)")
       .eq("school_id", school).in("id", guardianIds).eq("status", "active") : null,
     db.from("school_classes").select(classColumns).eq("school_id", school),
   ]);
@@ -75,12 +75,13 @@ async function learnerCalendar(school: string, user: string, month: string) {
   }
   for (const member of members) {
     const assigned = new Set(member.assignments.map(row => row.class_id));
+    const selfSelected = new Set(member.assignments.filter(row => row.self_selected).map(row => row.class_id));
     const groupAssigned = classes.data.some(item => assigned.has(item.id) && item.product_id);
     const displayName = members.length > 1 ? member.name : undefined;
     for (const item of classes.data) {
       const schedule = byClass.get(item.id);
-      const fixed = member.class_participation !== "flexible" &&
-        (assigned.has(item.id) || (member.participation_mode === "open" && !groupAssigned && !item.product_id));
+      const fixed = selfSelected.has(item.id) || (member.class_participation !== "flexible" &&
+        (assigned.has(item.id) || (member.participation_mode === "open" && !groupAssigned && !item.product_id)));
       const booked = (visits?.data ?? []).filter(row => row.enrollment_id === member.id && row.class_id === item.id);
       const byDay = new Map(booked.map(row => [row.visit_on, row]));
       const dates = new Set([...(fixed ? schedule?.days ?? generateClassDays(item, month, false) : []), ...byDay.keys()]);

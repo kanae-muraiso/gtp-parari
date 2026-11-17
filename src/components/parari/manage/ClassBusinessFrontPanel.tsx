@@ -100,11 +100,11 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
         </div>}
         {unavailable.map(key => {
           const [kind, id] = key.split(":");
-          const product = kind === "schedule" ? products.find(item => item.id === id) : undefined;
-          const title = kind === "intake" ? "募集ページ" : kind === "schedule"
+          const product = (kind === "schedule" || kind === "product") ? products.find(item => item.id === id) : undefined;
+          const title = kind === "intake" ? "募集ページ" : (kind === "schedule" || kind === "product")
             ? (product ? product.name + "の日程案内" : "以前追加したクラスの日程案内") : "イベント・講習会";
-          const reason = kind === "schedule"
-            ? (product ? "このクラスの通い方が変わりました。上の掲載項目で現在のクラスを選ぶと、紹介文と開催予定を載せられます。"
+          const reason = (kind === "schedule" || kind === "product")
+            ? (product ? "このクラスの設定を読み直すと、現在の掲載状態を確認できます。"
               : "この事業に該当のクラスが見つかりません。")
             : kind === "intake" ? "募集の公開状態と案内文を「募集・入会設定」で確認してください。"
               : "公開中の開催予定にこのイベント・講習会が見つかりません。";
