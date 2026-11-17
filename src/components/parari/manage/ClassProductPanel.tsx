@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
 import { defaultClassSlotSettings, describeClassProduct, type ClassSlotDefaults, type ClassProduct, type NamedClassProduct } from "@/lib/classProduct";
-import { classParticipationFormat, classParticipationFormats } from "@/lib/classBusinessFront";
+import { classParticipationFormat } from "@/lib/classBusinessFront";
 import type { SchoolClass } from "@/lib/classes";
 
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
@@ -87,16 +87,22 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         </label>)}
       </fieldset>
       <label>内容<textarea className={field} rows={3} maxLength={1000} value={product.description} onChange={event => patch("description", event.target.value)} /></label>
-      <label>通い方<select className={field} value={product.walkInFee != null ? "walkIn" : product.booking} onChange={event => {
+      <label>通い方<select className={field} value={classParticipationFormat(product)} onChange={event => {
         const value = event.target.value;
         setSaved(false);
-        setProduct(current => current ? { ...current, walkInFee: value === "walkIn" ? 0 : null,
-          booking: value === "walkIn" ? "fixed" : value as ClassProduct["booking"] } : current);
+        setProduct(current => current ? { ...current, walkInFee: null,
+          booking: value === "open" ? "flexible" : current.booking === "multiple" ? "multiple" : "fixed" } : current);
       }}>
-        <option value="fixed">固定の開催枠に所属</option><option value="multiple">複数の指定枠に所属</option>
-        <option value="flexible">同じ商品の空席を毎回予約</option><option value="walkIn">自由参加（予約不要）</option>
+        <option value="open">好きな回を予約する</option><option value="fixed">決まった枠に通う</option>
       </select></label>
-      <p className="text-sm text-neutral-600">公開ページでは「{classParticipationFormats[classParticipationFormat(product)]}」に表示します。</p>
+      {product.walkInFee != null && <div className="grid gap-2 text-sm">
+        <p>現在は予約不要の当日参加で案内中です。</p>
+        <button className="w-fit underline" type="button" onClick={() => {
+          setProduct({ ...product, booking: "flexible", walkInFee: null });
+          setSaved(false);
+        }}>都度予約に切り替える</button>
+      </div>}
+      {product.booking === "multiple" && <p className="text-sm text-neutral-600">登録済みの複数枠は名簿で確認できます。</p>}
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm font-semibold">開催枠の標準設定</legend>
         <div className="grid gap-3 sm:grid-cols-3">

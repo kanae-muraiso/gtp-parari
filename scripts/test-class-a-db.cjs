@@ -446,7 +446,37 @@ async function main() {
     ]);
     assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-19') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,true);
     assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-12') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,false);
+    await db.exec("reset role");
+    for (const migration of ["20261117110000_class_business_front.sql", "20261117160000_class_front_participation.sql"]) {
+      await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations", migration), "utf8"));
+    }
+    await db.exec("set role service_role");
+    const openProduct = (await db.query("select gen_random_uuid() as id")).rows[0].id;
+    const openSlot = { ...wednesday, id: "00000000-0000-4000-8000-000000000083", productId: openProduct,
+      date: next, time: "19:00", rules: { rules: [], overrides: [] } };
+    await db.query("select save_school_content_product($1,$2,$3,'都度予約クラス',$4,$5)", [owner,studio,openProduct,
+      JSON.stringify({ monthlyFee: 500, monthlyVisits: 4, capacity: 1, booking: "flexible" }),[]]);
+    await saveRows(owner,[openSlot]);
+    const front = { introduction: "", entries: ["product:" + studioProduct, "schedule:" + openProduct] };
+    await db.query("insert into class_business_fronts values($1,$2,$2,1)",[studio,JSON.stringify(front)]);
+    const choose = (account, slot, day = null, cancel = false) => db.query(
+      "select choose_class_from_front($1,$2,$3,$4,$5)",[account,studio,slot,day,cancel]);
+    await assert.rejects(choose(outsider,openSlot.id,next), {code:"P0002"});
+    for (const user of [learner, oldLearner]) {
+      await db.query("insert into school_enrollments(school_id,user_id,name,participation_mode,class_participation) values($1,$2,'テスト会員','assigned','flexible')",
+        [studio,user]);
+    }
+    await assert.rejects(choose(learner,extraSlot,next), {code:"22023"});
+    await choose(learner,openSlot.id,next);
+    await choose(learner,openSlot.id,next);
+    await assert.rejects(choose(oldLearner,openSlot.id,next), {code:"P0001"});
+    await choose(learner,friday.id);
+    await assert.rejects(choose(learner,wednesday.id), {code:"P0004"});
+    assert.equal((await db.query("select class_fixed_seat_count($1,$2) as count",[studio,friday.id])).rows[0].count,1);
+    await choose(learner,openSlot.id,next,true);
+    await choose(oldLearner,openSlot.id,next);
     await db.exec("reset role; set role anon");
+    await assert.rejects(choose(learner,openSlot.id,next), {code:"42501"});
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
