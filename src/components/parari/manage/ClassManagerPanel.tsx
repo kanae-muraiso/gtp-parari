@@ -74,6 +74,7 @@ function BusinessClassManager() {
       const result = await classRequest<ClassManagement>("", body);
       setData(result);
       if ("action" in body && body.action === "saveSlotRows") {
+        if (newSlot) setSelectedId(newSlot.id);
         setNewSlot(null);
       }
       setMessage(success);
@@ -96,6 +97,8 @@ function BusinessClassManager() {
   const school = data.school;
   if (!school) return <section className={panel}><p>事業を選択してください。</p><Link href="/my/manage?tab=class" className="underline">事業一覧へ</Link></section>;
   const item = school.classes.find(entry => entry.id === selectedId);
+  const additionalSlots = item ? school.classes.filter(row =>
+    row.product_id === item.product_id && row.schedule_rules?.parentSlotId === item.id) : [];
   const itemProduct = data.products?.find(product => product.id === item?.product_id);
   const itemProductName = item?.productName ?? itemProduct?.name;
   const slotProduct = data.products?.find(product => product.id === newSlot?.productId);
@@ -151,7 +154,9 @@ function BusinessClassManager() {
       <p className="text-sm text-neutral-600">「中学英語」のように教える内容を商品として作り、商品ごとに曜日・時間・会場の組み合わせを開催枠として追加します。</p>
       {editingProduct === "" && <ClassProductPanel classes={school.classes} allowProductSelection={false} onSaved={() => { setEditingProduct(null); reloadProducts(); }} />}
       {[...(data.products ?? []), { id: "", name: "商品未設定の開催枠" }].map(product => {
-        const entries = school?.classes.filter(item => (item.product_id ?? "") === product.id) ?? [];
+        const productSlots = school.classes.filter(item => (item.product_id ?? "") === product.id);
+        const slotIds = new Set(productSlots.map(item => item.id));
+        const entries = productSlots.filter(item => !slotIds.has(item.schedule_rules?.parentSlotId ?? ""));
         if (!entries.length && !product.id) return null;
         return <section key={product.id || "unassigned"} className="grid gap-2 rounded-lg border p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -193,11 +198,11 @@ function BusinessClassManager() {
     </nav>}
     {(creating || item) && <section key={newSlot?.id ?? item?.id} className={panel} aria-labelledby="class-slot-settings-heading">
       <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
-      <ClassSlotSettingsPanel item={item} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
+      <ClassSlotSettingsPanel item={item} additionalSlots={additionalSlots} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
         walkIn={(itemProduct ?? slotProduct)?.walkInFee != null} busy={busy}
-        save={slot => save({ action: "saveSlotRows", rows: [slot] }, "開催枠を保存しました。")} />
+        save={rows => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。")} />
       <Link className="w-fit text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>
-      {item && <ClassCalendarPanel classes={school.classes} selectedClass={item}
+      {item && <ClassCalendarPanel classes={[item, ...additionalSlots]} selectedClass={item}
         expectedVisits={itemProduct?.walkInFee == null && itemProduct?.booking === "fixed" ? itemProduct.monthlyVisits : undefined} />}
     </section>}
     {item && !item.product_id && Boolean(data.otherBusinesses?.length) &&
