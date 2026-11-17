@@ -7,7 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
-import ClassScheduleRulesPanel from "./ClassScheduleRulesPanel";
+import ClassSlotRowsPanel from "./ClassSlotRowsPanel";
 import ClassCalendarPanel from "./ClassCalendarPanel";
 import ClassEventsPanel from "./ClassEventsPanel";
 import ClassAdmissionsPanel from "./ClassAdmissionsPanel";
@@ -32,7 +32,6 @@ export default function ClassManagerPanel() {
 }
 
 function BusinessClassManager() {
-  const [deliveryDraft, setDeliveryDraft] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
   const [section, setSection] = useState<"classes" | "calendar" | "event" | "workshop" | "roster">("classes");
@@ -74,9 +73,8 @@ function BusinessClassManager() {
     try {
       const result = await classRequest<ClassManagement>("", body);
       setData(result);
-      if ("action" in body && body.action === "create") {
+      if ("action" in body && body.action === "saveSlotRows") {
         setNewSlot(null);
-        setDeliveryDraft(null);
       }
       setMessage(success);
       return true;
@@ -107,11 +105,9 @@ function BusinessClassManager() {
     setSelectedId(null);
     setSchoolAdmission(false);
     setNewSlot(null);
-    setDeliveryDraft(null);
     setError("");
     setMessage("");
   };
-  const delivery = deliveryDraft ?? item?.delivery ?? "onsite";
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
   return <div className="grid gap-5">
@@ -171,7 +167,7 @@ function BusinessClassManager() {
           {product.id && editingProduct === product.id && <ClassProductPanel key={product.id}
             classes={school.classes} initialProduct={product.id} allowProductSelection={false} onSaved={reloadProducts} />}
           {entries.map(entry => <button key={entry.id} type="button"
-            onClick={() => { setSelectedId(entry.id); setDeliveryDraft(null); setError(""); setMessage(""); }}
+            onClick={() => { setSelectedId(entry.id); setError(""); setMessage(""); }}
             className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500">
             <span>{entry.name}</span><span className="text-sm text-neutral-600">{classSchedule(entry)}{entry.location ? " · " + entry.location : ""}{entry.fee_override_yen != null ? " · " + entry.fee_override_yen.toLocaleString("ja-JP") + "円" : ""}</span>
           </button>)}
@@ -197,38 +193,10 @@ function BusinessClassManager() {
     </nav>}
     {(creating || item) && <section key={newSlot?.id ?? item?.id} className={panel} aria-labelledby="class-slot-settings-heading">
       <h3 id="class-slot-settings-heading" className="font-bold">開催枠の設定</h3>
-      <form className="grid gap-4" onSubmit={event => {
-        const values = formValues(event);
-        const slot = newSlot;
-        void save({ ...values, classId: slot?.id ?? item?.id,
-          ...(slot ? { productId: slot.productId } : {}), action: slot ? "create" : "schedule" },
-          slot ? "開催枠を追加しました。" : "開催枠の設定を保存しました。");
-      }}>
-        <label className={label}>開催枠の名前<input className={field} name="name" required maxLength={120} defaultValue={item?.name} /></label>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className={label}>基本頻度<select className={field} name="cadence" defaultValue={item?.cadence ?? "weekly"}>
-            <option value="weekly">毎週</option><option value="monthly">毎月</option>
-          </select></label>
-          <label className={label}>初回日<input className={field} type="date" name="date" required defaultValue={item?.starts_on} /></label>
-          <label className={label}>開始時刻（日本時間）<input className={field} type="time" name="time" required defaultValue={item?.starts_at.slice(0, 5)} /></label>
-        </div>
-        <label className={label}>開催枠の料金（円・空欄なら商品の基本料金）
-          <input className={field} name="feeOverride" type="number" min={0} max={1000000} defaultValue={item?.fee_override_yen ?? ""} />
-        </label>
-        <p className="text-sm text-neutral-600">契約時の料金より高い枠は、予約ごとに差額が発生します。</p>
-        <label className={label}>所要時間（分）<input className={field} name="duration" type="number" min={5} max={480} required defaultValue={item?.duration_minutes ?? 60} /></label>
-        <label className={label}>開催方法<select className={field} name="delivery" value={delivery} onChange={event => setDeliveryDraft(event.target.value)}>
-          <option value="onsite">対面</option><option value="online">オンライン</option><option value="hybrid">対面とオンライン</option>
-        </select></label>
-        {delivery !== "online" && <label className={label}>会場<input className={field} name="location" maxLength={200} required={delivery === "hybrid"} defaultValue={item?.location ?? ""} /></label>}
-        {delivery !== "onsite" && <label className={label}>授業の参加リンク<input className={field} name="meetingUrl" type="url" maxLength={2000} required defaultValue={item?.meeting_url ?? ""} /></label>}
-        <div className="flex flex-wrap items-center gap-4">
-          <button className={button} disabled={busy || (creating && !slotProduct)}>{creating ? "この商品に追加" : "保存"}</button>
-          {school && <Link className="text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>}
-        </div>
-      </form>
-      {item && <ClassScheduleRulesPanel item={item} walkIn={itemProduct?.walkInFee != null} busy={busy}
-        save={rules => save({ action: "saveScheduleRules", classId: item.id, rules }, "開催ルールを保存しました。")} />}
+      <ClassSlotRowsPanel item={item} startId={newSlot?.id ?? item!.id} productId={newSlot?.productId ?? item?.product_id ?? undefined}
+        walkIn={(itemProduct ?? slotProduct)?.walkInFee != null} busy={busy}
+        save={rows => save({ action: "saveSlotRows", rows }, "開催枠を保存しました。")} />
+      <Link className="w-fit text-sm underline" href={`/my/classes/${school.id}`}>受講者ページを開く</Link>
       {item && <ClassCalendarPanel classes={school.classes} selectedClass={item}
         expectedVisits={itemProduct?.walkInFee == null && itemProduct?.booking === "fixed" ? itemProduct.monthlyVisits : undefined} />}
     </section>}

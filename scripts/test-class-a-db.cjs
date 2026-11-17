@@ -421,6 +421,28 @@ async function main() {
     await db.query("insert into school_class_monthly_schedules(class_id,month,days) values($1,'2027-01-01',array['2027-01-08'::date])",[extraSlot]);
     assert.equal((await rule("2027-01-15")).rows[0].runs,false);
     assert.equal((await rule("2027-01-08")).rows[0].runs,true);
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261117090000_save_class_slot_rows.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const studioProduct = (await db.query("select gen_random_uuid() as id")).rows[0].id;
+    await db.query("select save_school_content_product($1,$2,$3,'ZUMBA通常クラス',$4,$5)", [owner,studio,studioProduct,
+      JSON.stringify({ monthlyFee: 500, monthlyVisits: 4, capacity: 10, booking: "fixed" }),[]]);
+    const friday = { id: "00000000-0000-4000-8000-000000000081", new: true, productId: studioProduct,
+      name: "第3金曜", date: "2027-01-15", time: "21:00", duration: 60, delivery: "onsite", location: "Aスタ", fee: 1000,
+      cadence: "monthly", rules: { rules: [{ kind: "nth", weekday: 5, ordinal: 3 }], overrides: [] } };
+    const wednesday = { ...friday, id: "00000000-0000-4000-8000-000000000082", name: "水曜日",
+      date: "2027-01-13", time: "20:00", location: "Bスタ", fee: 500, cadence: "weekly",
+      rules: { rules: [{ kind: "weekly", weekday: 3 }], overrides: [] } };
+    const saveRows = (actor, rows) => db.query("select save_class_slot_rows($1,$2,$3)", [actor,studio,JSON.stringify(rows)]);
+    await assert.rejects(saveRows(outsider,[friday,wednesday]), {code:"P0002"});
+    await assert.rejects(saveRows(owner,[friday,{ ...wednesday, productId: school }]), {code:"22023"});
+    assert.equal((await db.query("select count(*)::int as n from school_classes where id=$1",[friday.id])).rows[0].n,0);
+    await saveRows(owner,[friday,wednesday]);
+    await saveRows(owner,[friday,wednesday]);
+    const series = (await db.query("select location,fee_override_yen from school_classes where product_id=$1 order by id",[studioProduct])).rows;
+    assert.deepEqual(series,[{location:"Aスタ",fee_override_yen:1000},{location:"Bスタ",fee_override_yen:500}]);
+    assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-19') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,true);
+    assert.equal((await db.query("select school_class_runs_on(id,starts_on,cadence,'2027-02-12') as runs from school_classes where id=$1",[friday.id])).rows[0].runs,false);
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");

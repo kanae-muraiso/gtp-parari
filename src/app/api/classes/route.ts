@@ -1,4 +1,4 @@
-import { parseClassScheduleRules } from "@/lib/classRecurrence";
+import { matchesClassDateRule, parseClassScheduleRules } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
@@ -272,6 +272,46 @@ export async function POST(request: NextRequest) {
 
     const school = await ownedSchool(user.id, scope);
     if (!school) return fail("教室が見つかりません。", 404);
+    if (body?.action === "saveSlotRows") {
+      if (!Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > 12) return fail("開催枠を確認してください。");
+      const byId = new Map(school.classes.map(item => [item.id, item]));
+      const ids = new Set<string>();
+      const normalized = [];
+      for (const [index, row] of body.rows.entries()) {
+        const id = clean(row?.id), date = clean(row?.date), time = clean(row?.time);
+        const current = byId.get(id);
+        const name = clean(row?.name);
+        const location = clean(row?.location);
+        const duration = Number(row?.duration);
+        const fee = parseFee(row?.feeOverride);
+        const rules = parseClassScheduleRules(row?.rules);
+        const delivery = row?.delivery;
+        const meetingUrl = delivery === "onsite" ? null : classMeetingUrl(row?.meetingUrl);
+        const isNew = row?.new === true;
+        const productId = isNew ? clean(row?.productId) : null;
+        const parsedDate = new Date(date + "T00:00:00Z");
+        if (!classIdPattern.test(id) || ids.has(id) || (isNew ? !classIdPattern.test(productId ?? "") : !current) ||
+          !name || name.length > 120 || location.length > 200 || !rules || (isNew && !rules.rules.length) || fee === false ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) ||
+          parsedDate.toISOString().slice(0, 10) !== date || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) ||
+          !Number.isInteger(duration) || duration < 5 || duration > 480 || !["onsite", "online", "hybrid"].includes(delivery) ||
+          (delivery !== "onsite" && !meetingUrl) || (delivery === "hybrid" && !location)) {
+          return fail(`${index + 1}行目の名前・日時・会場・費用を確認してください。`);
+        }
+        if ((isNew || date !== current?.starts_on) && rules.rules.length && !rules.rules.some(rule => matchesClassDateRule(rule, date))) {
+          return fail(`${index + 1}行目の初回日を、設定した頻度に合う日にしてください。`);
+        }
+        ids.add(id);
+        normalized.push({ id, name, date, time, delivery, duration, meetingUrl, fee, rules, productId, new: isNew,
+          location: delivery === "online" ? null : location || null,
+          cadence: rules.rules.length ? (rules.rules[0].kind === "weekly" ? "weekly" : "monthly") : current?.cadence ?? "weekly" });
+      }
+      const { error } = await db.rpc("save_class_slot_rows", { p_owner: user.id, p_school: school.id, p_rows: normalized });
+      if (error?.code === "P0001") return fail("予約が入っている開催日は変更できません。", 409);
+      if (error?.code === "22023" || error?.code === "P0002") return fail("事業・商品・開催枠を確認して再読み込みしてください。", 409);
+      if (error) throw error;
+      return await manage(user.id, scope);
+    }
     if (body?.action === "saveScheduleRules") {
       const rules = parseClassScheduleRules(body.rules);
       if (!rules || !school.classes.some(item => item.id === body.classId)) return fail("開催ルールを確認してください。");
