@@ -13,8 +13,8 @@ type FrontSettings = { front: ClassBusinessFront; links: ClassBusinessFrontLink[
 type FrontAction = "saveFront" | "publishFront" | "unpublishFront";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 
-export default function ClassBusinessFrontPanel({ schoolId, name, onOpenRecruitment, onOpenSchedule }: {
-  schoolId: string; name: string; onOpenRecruitment: () => void; onOpenSchedule: () => void;
+export default function ClassBusinessFrontPanel({ schoolId, name, products, onOpenRecruitment, onOpenSchedule }: {
+  schoolId: string; name: string; products: { id: string; name: string }[]; onOpenRecruitment: () => void; onOpenSchedule: () => void;
 }) {
   const [settings, setSettings] = useState<FrontSettings | null>(null);
   const [content, setContent] = useState<ClassBusinessFrontContent>({ introduction: "", entries: [] });
@@ -71,7 +71,8 @@ export default function ClassBusinessFrontPanel({ schoolId, name, onOpenRecruitm
 
   const href = classBusinessFrontPath(schoolId);
   const chosen = selectClassBusinessFrontLinks(content.entries, settings.links);
-  const unavailable = content.entries.length - chosen.length;
+  const visibleKeys = new Set(chosen.map(link => link.key));
+  const unavailable = content.entries.filter(key => !visibleKeys.has(key));
   return <section className="grid gap-4 rounded-xl border p-4" aria-labelledby="class-front-settings">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 id="class-front-settings" className="font-semibold">フロントページ</h3>
@@ -97,12 +98,29 @@ export default function ClassBusinessFrontPanel({ schoolId, name, onOpenRecruitm
             <button type="button" className={button} onClick={() => void openSettings(onOpenRecruitment)}>申し込みを受け付ける</button>
           </div>
         </div>}
-        {unavailable > 0 && <div className="flex flex-wrap items-center gap-2 text-neutral-600">
-          <p>現在掲載できない項目が{unavailable}件あります。</p>
-          <button type="button" className="underline" onClick={() => setContent({ ...content, entries: chosen.map(link => link.key) })}>
-            掲載項目から外す
-          </button>
-        </div>}
+        {unavailable.map(key => {
+          const [kind, id] = key.split(":");
+          const product = kind === "schedule" ? products.find(item => item.id === id) : undefined;
+          const title = kind === "intake" ? "募集ページ" : kind === "schedule"
+            ? (product ? product.name + "の日程案内" : "以前追加したクラスの日程案内") : "イベント・講習会";
+          const reason = kind === "schedule"
+            ? (product ? "このクラスは現在、自由参加（予約不要）の日程案内を公開できる設定ではありません。入会前の予定は募集ページに載せられます。"
+              : "この事業に該当のクラスが見つかりません。")
+            : kind === "intake" ? "募集の公開状態と案内文を「募集・入会設定」で確認してください。"
+              : "公開中の開催予定にこのイベント・講習会が見つかりません。";
+          return <div key={key} className="grid gap-2 rounded-lg bg-neutral-50 p-3">
+            <p className="font-medium">{title}（掲載停止中）</p>
+            <p className="text-neutral-600">{reason}</p>
+            <div className="flex flex-wrap gap-3">
+              {(kind === "intake" || product) && <button type="button" className="underline"
+                onClick={() => void openSettings(onOpenRecruitment)}>募集・入会設定を開く</button>}
+              <button type="button" className="underline"
+                onClick={() => setContent({ ...content, entries: content.entries.filter(value => value !== key) })}>
+                この項目を下書きから外す
+              </button>
+            </div>
+          </div>;
+        })}
       </fieldset>
       {error && <p role="alert" className="text-sm text-red-700">{error} <button type="button" className="underline" onClick={retry}>再読み込み</button></p>}
       {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
