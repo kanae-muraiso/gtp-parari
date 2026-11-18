@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
-import { classSetupSteps, classFrontPublishIssues } from "@/lib/classSetup";
+import { classSetupSteps, classFrontPublishIssues, classRegistrationIssues } from "@/lib/classSetup";
 import { selectClassBusinessFrontLinks } from "@/lib/classBusinessFront";
 import { classSchedule, type ClassManagement } from "@/lib/classes";
 import type { NamedClassProduct } from "@/lib/classProduct";
@@ -114,13 +114,13 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   const missingContent = products.filter(product => !product.design.description?.trim());
   const missingUpcoming = products.filter(product => !front.links.some(link => link.course?.id === product.id && link.course.slots.some(slot => slot.upcoming?.length)));
   const intake = recruitment.recruitment;
-  const registrationReady = Boolean(intake && (intake.information.trim() || recruitment.sharedDisclosure) &&
-    (intake.route === "direct" || (recruitment.available.length > 0 && admissions.briefingDesign)));
+  const registrationIssues = classRegistrationIssues(intake, recruitment.sharedDisclosure === true, recruitment.available.length, Boolean(admissions.briefingDesign));
+  const registrationReady = registrationIssues.length === 0;
   const statuses = [
     school.name.trim() && draft.introduction.trim() ? "設定済み" : "紹介文を保存してください",
     products.length && !missingContent.length ? "設定済み" : "内容と料金を保存してください",
     products.length && !missingDates.length && !missingUpcoming.length ? "設定済み" : "各クラスの開催日を登録してください",
-    registrationReady ? "設定済み" : "申込画面・予約日時を用意してください",
+    registrationReady ? "設定済み" : registrationIssues[0],
     reviewed ? "確認済み" : "申込者の画面を確認してください",
     front.front.published && !classFrontPublishIssues(front.front.published, front.links).length ? "公開中" : "公開状態を確認してください",
   ];
@@ -220,6 +220,10 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         </section>}
       </>}
       {step === 3 && <>
+        {registrationIssues.length > 0 && <section className="grid gap-2 rounded-lg bg-amber-50 p-3 text-sm" aria-label="入会方法で必要な設定">
+          <h4 className="font-semibold">次へ進むために必要な設定</h4>
+          <ul className="grid gap-1">{registrationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>
+        </section>}
         <ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
           onDraftChange={() => markDirty("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} />
         {intake?.route === "briefing" && <div onChangeCapture={() => markDirty("briefing")}>

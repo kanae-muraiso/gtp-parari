@@ -145,9 +145,22 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
           {step > 0 && <button className="w-fit text-sm underline" type="button" onClick={() => setStep(0)}>最初から試す</button>}
       </div>
     </>}
-    {data && view === "settings" && <>{!publicationOnly && <form onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
+    {data && view === "settings" && <>{!publicationOnly && <section className="grid gap-2 rounded-lg bg-emerald-50 p-3 text-sm" aria-label="入会時の費用とクラスの料金">
+      <h4 className="font-semibold">事業への入会と、クラスの受講料</h4>
+      <p>まず「{data.school}」への入会方法を決めます。入会時の費用と、入会後に選ぶクラスの受講料を確認してください。</p>
+      <p className="font-medium">入会時の費用は、{paymentMode === "free" ? "支払いなし" : paymentMode === "advance" ? "決済ページで支払い" : "現地で支払い"}の設定です。</p>
+      {!!products?.length && <table className="w-full text-left">
+        <thead><tr><th className="py-1 pr-3">入会後に選ぶクラス</th><th className="py-1">受講料</th></tr></thead>
+        <tbody>{products.map(product => <tr className="border-t border-emerald-200" key={product.id}>
+          <td className="py-2 pr-3">{product.name}</td>
+          <td className="py-2">{product.walkInFee != null ? "1回 " + product.walkInFee.toLocaleString("ja-JP") + "円" :
+            product.monthlyFee ? "月額 " + product.monthlyFee.toLocaleString("ja-JP") + "円" : "無料"}</td>
+        </tr>)}</tbody>
+      </table>}
+      <p>無料で入会し、無料の交流会と有料のクラスを用意する場合は、入会時の支払いを「なし」にします。各クラスの料金は「クラスの内容・料金」で設定します。</p>
+    </section>}{!publicationOnly && <form onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
       <fieldset className="grid gap-2 rounded-lg border p-3">
-        <legend className="px-1 font-semibold">受付方法</legend>
+        <legend className="px-1 font-semibold">この事業への入会方法</legend>
         <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま入会を申し込む</label>
         <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 先に説明会・体験を予約する</label>
       </fieldset>
@@ -164,18 +177,18 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         onInvalidCapture={event => { event.currentTarget.open = true; }}>
         <summary className="cursor-pointer text-sm font-medium">支払い・申込書・確認メールの設定</summary>
         <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
-        <label>初回の支払い方法<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
-          <option value="free">無料</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>
+        <label>入会時の支払い<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
+          <option value="free">なし（入会は無料）</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>
         </select></label>
         {paymentMode === "advance" && <label>決済ページのURL<input name="paymentUrl" type="url" required className={field} defaultValue={recruitment?.payment_url ?? ""} /></label>}
         {paymentMode === "onsite" && <label>当日の集合・支払い案内<textarea name="arrivalText" className={field} maxLength={4000} required defaultValue={recruitment?.arrival_text} /></label>}
         <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
       </details>
-      <button className={button} disabled={busy}>募集の設定を保存</button>
+      <button className={button} disabled={busy}>入会方法を保存</button>
     </form>}
       {!hidePublication && <div className="grid gap-2 rounded-lg border p-4">
         <h4 className="font-semibold">{publicationOnly ? "受付を開く" : "募集の公開"}</h4>
-        {!recruitment ? <p className="text-sm text-neutral-600">{publicationOnly ? "「入会方法」で申込画面を保存すると、ここで受付を公開できます。" : "上の「募集の設定を保存」を押すと公開できます。"}</p> :
+        {!recruitment ? <p className="text-sm text-neutral-600">{publicationOnly ? "「入会方法」で申込画面を保存すると、ここで受付を公開できます。" : "上の「入会方法を保存」を押すと公開できます。"}</p> :
         recruitment.enabled ? <>
           <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
           <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>募集を非公開にする</button>
@@ -208,7 +221,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         <label>所要時間（分）<input className={field} name="duration" type="number" min="5" max="480" defaultValue="60" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>
         <label>説明会・体験のオンライン参加リンク（任意）<input type="url" className={field} name="meetingUrl" maxLength={2000} /></label>
-        {(!recruitment || recruitment.route !== "briefing") && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「募集の設定を保存」を押してください。</p>}
+        {(!recruitment || recruitment.route !== "briefing") && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「入会方法を保存」を押してください。</p>}
         <button className={button} disabled={busy || !recruitment || recruitment.route !== "briefing"}>予約枠を追加</button>
       </form>
       {data.slots.map(slot => <p className="text-sm" key={slot.id}>{new Date(slot.starts_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })} ／ {slot.duration_minutes}分 ／ {slot.capacity}人{slot.location ? " ／ " + slot.location : ""}{" "}

@@ -41,13 +41,18 @@ const state = {
     { id: "slot", name: "金曜", product_id: "product", starts_at: "18:00", starts_on: "2026-11-20", cadence: "weekly" },
   ] }, products: [{ id: "product", name: "英語" }], roster: [] },
   products: [{ id: "product", name: "英語", design: { description: "英語を学ぶ", booking: "fixed" } }],
-  recruitment: { recruitment: { route: "direct", information: "規約", payment_mode: "onsite" }, available: [] },
+  recruitment: { school: "副業トーク", recruitment: { route: "direct", information: "", payment_mode: "free", payment_url: null, arrival_text: "" }, sharedDisclosure: true, available: [], slots: [], blocks: [], offers: [] },
   front: { front: { draft: { ...content, introduction: "" }, published: null, revision: 1 }, links: [course, intake] },
   admissions: { settings: {}, briefingDesign: null },
 };
+assert.deepEqual(setup.classRegistrationIssues(state.recruitment.recruitment, true, 0, false), []);
+assert.match(setup.classRegistrationIssues(state.recruitment.recruitment, false, 0, false)[0], /個人情報/);
+assert.equal(setup.classRegistrationIssues({ ...state.recruitment.recruitment, route: "briefing" }, true, 0, false).length, 2);
+let lastBody;
 let rejectSave = false;
 async function request(url = "", body) {
   if (body) {
+    lastBody = body;
     if (rejectSave) throw Error("保存エラー");
     if (url === "/front") state.front.front = { ...state.front.front, draft: body.content, revision: state.front.front.revision + 1 };
     return { ok: true };
@@ -102,6 +107,29 @@ async function main() {
   assert.equal(find("次へ").disabled, false);
   await click("日々の運営へ");
   assert.equal(operated, true);
+  const RealRecruitment = load("src/components/parari/manage/ClassRecruitmentPanel.tsx", {
+    "./ClassAvailabilityPanel": { __esModule: true, default: stub },
+    "./ClassRecruitmentOffers": { __esModule: true, default: stub },
+    "@/components/parari/classes/ClassIntakeForm": { __esModule: true, default: stub },
+    "@/lib/classIntakeTargets": { classIntakeTarget: item => item },
+    "@/lib/classRequests": { classRequest: request },
+  }).default;
+  let settingsSaved = false;
+  await act(async () => root.render(React.createElement(RealRecruitment, {
+    view: "settings", classes: [], products: [{ id: "free", name: "おしゃべり会", monthlyFee: 0 },
+      { id: "paid", name: "勉強会", monthlyFee: 10000 }], onOpenSettings() {},
+    onSaved: action => { settingsSaved = action === "settings"; },
+  })));
+  await tick();
+  const feeSummary = document.querySelector('[aria-label="入会時の費用とクラスの料金"]');
+  assert.match(feeSummary.textContent, /支払いなし/);
+  assert.match(feeSummary.textContent, /おしゃべり会無料/);
+  assert.match(feeSummary.textContent, /勉強会月額 10,000円/);
+  await act(async () => document.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
+  await tick();
+  assert.equal(settingsSaved, true);
+  assert.equal(lastBody.paymentMode, "free");
+  assert.equal("monthlyFee" in lastBody, false);
   await act(async () => root.unmount());
   console.log("PASS: setup sequence, saved-state progress, unsaved changes, failed saves, review confirmation, operating entry and publication prerequisites.");
 }

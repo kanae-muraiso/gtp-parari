@@ -23,3 +23,18 @@ export function classFrontPublishIssues(content: ClassBusinessFrontContent, link
   if (content.entries.some(key => !links.some(link => link.key === key))) issues.push("掲載停止中の項目を確認してください。");
   return issues;
 }
+
+export function classRegistrationIssues(intake: { route: string; information: string; payment_mode: string;
+  payment_url: string | null; arrival_text: string } | null, sharedDisclosure: boolean,
+  availableCount: number, hasBriefingDesign: boolean) {
+  if (!intake) return ["受付方法を選び、「入会方法を保存」を押してください。"];
+  const issues: string[] = [];
+  if (!intake.information.trim() && !sharedDisclosure) issues.push("案内・個人情報の取り扱いを入力するか、共通の販売者情報を公開してください。");
+  if (intake.route === "briefing") {
+    if (!availableCount) issues.push("説明会・体験を予約できる日時を設定してください。");
+    if (!hasBriefingDesign) issues.push("説明会後の申込書で受講対象を選び、「申込書とメールを保存」を押してください。");
+  }
+  if (intake.payment_mode === "advance" && !intake.payment_url) issues.push("入会時の支払いに使う決済ページのURLを保存してください。");
+  if (intake.payment_mode === "onsite" && !intake.arrival_text.trim()) issues.push("入会時の集合・支払い案内を保存してください。");
+  return issues;
+}
