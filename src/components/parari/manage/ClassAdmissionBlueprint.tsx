@@ -44,12 +44,12 @@ type Draft = {
 const audienceLabels = { adult: "成人向け", minor: "未成年向け" } as const;
 const adultRules: FormProfile["rules"] = {
   name: "required", email: "required", phone: "optional", address: "optional", school: "hidden",
-  guardianName: "required", guardianEmail: "required", guardianPhone: "optional", guardianAddress: "optional",
+  guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required",
 };
 const defaults: Draft = {
   route: "onsite", audience: null,
   forms: { adult: { rules: adultRules, schoolLabel: fields.school },
-    minor: { rules: { ...adultRules, email: "optional" }, schoolLabel: fields.school } },
+    minor: { rules: { ...adultRules, email: "required" }, schoolLabel: fields.school } },
   firstDay: "choose", allowTrials: true, introduction: "", arrival: "", amount: "", mail: messages,
 };
 
@@ -58,7 +58,8 @@ function readDraft(raw: string): Draft {
   const restoreForm = (kind: Audience): FormProfile => ({
     schoolLabel: forms?.[kind]?.schoolLabel ?? schoolLabel ?? defaults.forms[kind].schoolLabel,
     rules: { ...defaults.forms[kind].rules, ...rules,
-      ...(kind === "minor" && !forms?.minor ? { email: "optional" as const } : {}), ...forms?.[kind]?.rules },
+      ...forms?.[kind]?.rules, name: "required", email: "required",
+      ...(kind === "minor" ? { guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required" } as const : {}) },
   });
   return { ...defaults, ...saved, audience: audience === "adult" || audience === "minor" ? audience : null, forms: { adult: restoreForm("adult"), minor: restoreForm("minor") },
     mail: { ...messages, ...saved.mail } };
@@ -137,7 +138,8 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
   const sampleSlot = { id: "briefing-sample", starts_at: new Date(sampleBriefing).toISOString(), duration_minutes: 30 };
   const audience = draft.audience ?? "adult";
   const minor = audience === "minor";
-  const form = draft.forms[audience];
+  const form = { ...draft.forms[audience], rules: { ...draft.forms[audience].rules, name: "required" as const, email: "required" as const,
+    ...(minor ? { guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required" } as const : {}) } };
   const routeMails = mailSequence(draft.route, minor);
   const label = (id: Field) => id === "school" ? form.schoolLabel.trim() || fields.school : fields[id];
   function updateForm(next: FormProfile) {
@@ -145,14 +147,14 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
   }
   function recipients(mail: Mail) {
     if (!minor) return "受講者本人";
-    if (mail === "paymentRequest" || mail === "paid" || mail === "onsitePayment" || form.rules.email === "hidden") return "保護者";
-    return form.rules.email === "optional" ? "保護者と受講者（受講者のメール入力がある場合）" : "保護者と受講者";
+    if (mail === "paymentRequest" || mail === "onsitePayment") return "保護者（支払手続き）・受講者（案内）";
+    return "保護者と受講者";
   }
   const resolved = (value: string) => value.replaceAll("{教室名}", schoolName)
     .replaceAll("{日時}", phase === "briefing" ? bookingDate(sampleSlot.starts_at) + " " + bookingTime(sampleBriefing) : date).replaceAll("{会場}", draft.arrival || "教室（サンプル）");
   const dateButton = draft.firstDay === "choose" ? "初日を予約する" : "先生が指定した初日を確認する";
   const fieldControl = (id: Field) => {
-    const locked = id === "name" || (minor ? id === "guardianEmail" : id === "email");
+    const locked = id === "name" || id === "email" || (minor && id.startsWith("guardian"));
     return <label key={id} className="grid grid-cols-[1fr_8rem] items-center gap-2 text-sm">
       <span>{label(id)}</span>
       <select className={field} disabled={locked} value={locked ? "required" : form.rules[id]}
@@ -192,7 +194,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
     </fieldset>}
 
     {step === 1 && <div className="grid gap-4">
-      <label className="grid gap-1 text-sm font-medium">受講対象
+      <label className="grid gap-1 text-sm font-medium">フォームの確認（申込者は最初に成人・未成年を選びます）
         <select className={field} value={draft.audience ?? ""} onChange={event => {
           const value = event.target.value;
           setDraft(current => ({ ...current, audience: value === "adult" || value === "minor" ? value : null }));
@@ -214,7 +216,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
         {fieldIds.filter(id => id.startsWith("guardian")).map(fieldControl)}
       </fieldset>}
       <p className="text-sm text-neutral-600">{minor
-        ? "受付や日程の案内は、メールアドレスの登録がある受講者と保護者に届きます。決済の案内は保護者宛てです。"
+        ? "本人の氏名・メールと、保護者の氏名・メール・電話・住所が必須です。先生からの連絡は必ず両者に届きます。正式な入会には保護者のPARARI登録・ログインが必要です。"
         : "受講者本人のメール宛てに案内し、本人のPARARIアカウントを申込に紐づけます。"}</p>
       </>}
     </div>}

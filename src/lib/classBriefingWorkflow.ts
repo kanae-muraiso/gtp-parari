@@ -34,11 +34,10 @@ export function parseBriefingDesign(value: unknown): BriefingDesign | null {
     if (rule !== "required" && rule !== "optional" && rule !== "hidden") return null;
     rules[key] = key.startsWith("guardian") && input.audience === "adult" ? "hidden" : rule;
   }
-  rules.name = "required";
+  rules.name = rules.email = "required";
   if (input.audience === "minor") {
-    rules.guardianName = "required";
-    rules.guardianEmail = "required";
-  } else rules.email = "required";
+    rules.guardianName = rules.guardianEmail = rules.guardianPhone = rules.guardianAddress = "required";
+  }
   const mail: BriefingDesign["mail"] = {};
   for (const kind of mailKinds) {
     const subject = cleanClassText(input.mail?.[kind]?.subject);
@@ -72,4 +71,21 @@ export function renderBriefingMail(design: BriefingDesign | null | undefined, ki
   const render = (value: string) => value.replaceAll("{教室名}", () => values.school)
     .replaceAll("{日時}", () => values.when ?? "").replaceAll("{会場}", () => values.where ?? "");
   return { subject: render(template.subject), body: render(template.body) };
+}
+
+// The applicant chooses their own audience; a teacher's preview selection never decides it.
+export function designForApplicant(design: BriefingDesign, audience: "adult" | "minor"): BriefingDesign {
+  return parseBriefingDesign({ ...design, audience })!;
+}
+
+export function parseIntakeProfile(input: Record<string, unknown>) {
+  if (input.audience !== "adult" && input.audience !== "minor") return null;
+  const rules = Object.fromEntries(applicationFieldIds.map(key => [key, "optional"])) as BriefingDesign["rules"];
+  const design = parseBriefingDesign({ audience: input.audience, rules, firstDay: "assigned" })!;
+  const contact = cleanClassText(input.audience === "minor" ? input.guardianEmail : input.email).toLowerCase();
+  const fields = parseApplication(design, input, contact);
+  return fields ? { audience: input.audience, fields, contact,
+    applicant: input.audience === "minor" ? fields.guardianName! : fields.name!,
+    phone: input.audience === "minor" ? fields.guardianPhone : fields.phone,
+    recipients: [contact, ...(input.audience === "minor" ? [fields.email!] : [])] } : null;
 }

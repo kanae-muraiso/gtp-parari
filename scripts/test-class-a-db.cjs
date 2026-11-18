@@ -495,6 +495,53 @@ async function main() {
     await applyOffer(directOffer,null,'direct-under-briefing@example.invalid');
     await db.query("update school_recruitment_offers set enabled=false where id=$1",[briefingOffer]);
     await assert.rejects(applyOffer(briefingOffer,sharedBriefingSlot,'hidden@example.invalid'),{code:'P0002'});
+    await db.exec("reset role");
+    await db.exec("alter table auth.users add column email text, add column email_confirmed_at timestamptz");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261118052117_class_minor_applicant_profiles.sql"), "utf8"));
+    await db.exec("set role service_role");
+    const minorFields = { name: "未成年テスト", email: "child@example.invalid", guardianName: "保護者テスト",
+      guardianEmail: "guardian@example.invalid", guardianPhone: "09012345678", guardianAddress: "テスト住所" };
+    const profileApply = (fields, audience = "minor", offer = directOffer, slot = null) => db.query(
+      "select * from submit_school_intake_profile($1,$2,$3,$4,$5,$6,'案内','')",[intake,offer,newClass,slot,audience,JSON.stringify(fields)]);
+    for (const field of ["name", "email", "guardianName", "guardianEmail", "guardianPhone", "guardianAddress"]) {
+      const incomplete = { ...minorFields }; delete incomplete[field];
+      await assert.rejects(profileApply(incomplete),{code:"22023"});
+    }
+    const minorCase = (await profileApply(minorFields)).rows[0].case_id;
+    assert.equal((await profileApply(minorFields)).rows[0].case_id, minorCase);
+    const savedProfile = (await db.query("select applicant_audience,application_fields,learner_email,applicant_email from school_admission_cases where id=$1",[minorCase])).rows[0];
+    assert.deepEqual(savedProfile,{ applicant_audience:"minor",application_fields:minorFields,learner_email:minorFields.email,applicant_email:minorFields.guardianEmail });
+    await assert.rejects(profileApply({ name:minorFields.name,email:minorFields.guardianEmail },"adult"),{code:"22023"});
+    await assert.rejects(profileApply({...minorFields,guardianAddress:"変更"}),{code:"22023"});
+    const adultProfile = { name:"成人テスト", email:"adult-profile@example.invalid" };
+    const adultCase = (await profileApply(adultProfile,"adult")).rows[0].case_id;
+    assert.equal((await db.query("select learner_email from school_admission_cases where id=$1",[adultCase])).rows[0].learner_email,null);
+    await db.query("update school_admission_cases set decision='approved',starts_on=$2,payment='free' where id=$1",[minorCase,next]);
+    await assert.rejects(db.query("select finish_class_admission($1,$2,$3)",[owner,school,minorCase]),{code:"P0006"});
+    await db.exec("reset role");
+    await db.query("update auth.users set email=$2,email_confirmed_at=now() where id=$1",[outsider,minorFields.guardianEmail]);
+    await db.exec("set role service_role");
+    await db.query("update school_admission_cases set applicant_user_id=$2 where id=$1",[minorCase,outsider]);
+    await db.exec("reset role");
+    await db.query("update auth.users set email='wrong@example.invalid' where id=$1",[outsider]);
+    await db.exec("set role service_role");
+    await assert.rejects(db.query("select finish_class_admission($1,$2,$3)",[owner,school,minorCase]),{code:"P0006"});
+    await db.exec("reset role");
+    await db.query("update auth.users set email=$2 where id=$1",[outsider,minorFields.guardianEmail]);
+    await db.exec("set role service_role");
+    await db.query("select finish_class_admission($1,$2,$3)",[owner,school,minorCase]);
+    assert.ok((await db.query("select enrollment_id from school_admission_cases where id=$1",[minorCase])).rows[0].enrollment_id);
+    await db.query("update school_recruitment_offers set enabled=true where id=$1",[briefingOffer]);
+    const profileSlot = (await db.query("insert into school_recruitment_slots(id,school_id,starts_at,capacity) values(gen_random_uuid(),$1,((now() at time zone 'Asia/Tokyo')::date+11+time '12:00') at time zone 'Asia/Tokyo',1) returning id",[school])).rows[0].id;
+    const beforeProfileCount = (await db.query("select count(*)::int as n from school_admission_cases where intake_slot_id=$1",[profileSlot])).rows[0].n;
+    await assert.rejects(profileApply({...minorFields,guardianPhone:""},"minor",briefingOffer,profileSlot),{code:"22023"});
+    assert.equal((await db.query("select count(*)::int as n from school_admission_cases where intake_slot_id=$1",[profileSlot])).rows[0].n,beforeProfileCount);
+    const bookedMinor = (await profileApply(minorFields,"minor",briefingOffer,profileSlot)).rows[0].case_id;
+    assert.equal((await db.query("select briefing from school_admission_cases where id=$1",[bookedMinor])).rows[0].briefing,"booked");
+    await db.exec("reset role; set role anon");
+    await assert.rejects(profileApply(minorFields),{code:"42501"});
+    await db.exec("reset role; set role authenticated");
+    await assert.rejects(profileApply(minorFields),{code:"42501"});
     await db.exec("reset role; set role anon");
     await assert.rejects(choose(learner,openSlot.id,next), {code:"42501"});
     await assert.rejects(db.query("select book_school_offer_intake($1,null,'x','x','x@example.invalid','x',null,$2)",[intake,directOffer]), {code:"42501"});

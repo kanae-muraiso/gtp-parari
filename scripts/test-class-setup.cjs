@@ -193,6 +193,78 @@ async function main() {
   await click("この受付を公開する");
   assert.equal(savedOffer.enabled, true);
   assert.equal(savedOffer.routeOverride, "briefing");
+  const workflow = load("src/lib/classBriefingWorkflow.ts");
+  const profile = { audience:"minor",name:"受講者",email:"learner@example.invalid",guardianName:"保護者",
+    guardianEmail:"guardian@example.invalid",guardianPhone:"09012345678",guardianAddress:"住所" };
+  for (const key of ["email","guardianName","guardianEmail","guardianPhone","guardianAddress"]) {
+    const missing = { ...profile }; delete missing[key];
+    assert.equal(workflow.parseIntakeProfile(missing),null);
+  }
+  assert.deepEqual(workflow.parseIntakeProfile(profile).recipients,[profile.guardianEmail,profile.email]);
+  assert.ok(workflow.parseIntakeProfile({audience:"adult",name:"成人",email:"adult@example.invalid"}));
+  const Applicant = load("src/components/parari/classes/ClassIntakeForm.tsx", {
+    "@/lib/classRecurrence": { classWeekdays: [] }, "./ClassBookingCalendar": { default: stub },
+  }).default;
+  await act(async () => root.render(React.createElement(Applicant,{ data:{school:"事業",information:"",kind:"説明会",direct:true,slots:[]},submit:()=>{} })));
+  assert.equal(document.querySelector('input[name="name"]'),null);
+  await act(async () => document.querySelector('input[name="audience"][value="minor"]').click());
+  for (const key of ["email","guardianName","guardianEmail","guardianPhone","guardianAddress"]) assert.equal(document.querySelector(`input[name="${key}"]`).required,true);
+  await act(async () => document.querySelector('input[name="audience"][value="adult"]').click());
+  assert.equal(document.querySelector('input[name="guardianName"]'),null);
+  assert.ok(document.querySelector('input[name="email"]'));
+  let rpcArgs, rpcCalls=0;
+  const deliveries=[];
+  let route="direct";
+  const intakeDb={from(table) {
+    const result = table === "class_schools" ? {name:"事業",owner_user_id:"teacher"} : table === "profiles" ? {is_monitor:true}
+      : table === "school_admission_settings" ? {} : table === "school_recruitment_slots" ? {location:"会場",duration_minutes:30,channel:"onsite"} : [];
+    const chain = new Proxy({}, {get(_,key) { if(key==="then") return resolve => resolve({data:result,error:null}); return () => chain; }});
+    return chain;
+  }, async rpc(name,args) {rpcArgs=args;rpcCalls++;assert.equal(name,"submit_school_intake_profile");return {data:[{case_id:"test-case",starts_at:new Date(Date.now()+2*86400000).toISOString(),school_name:"事業",kind:"説明会"}],error:null};}};
+  const api = load("src/app/api/classes/intake/route.ts", {
+    "@/lib/classIntakeCalendarServer":{}, "@/lib/classIntakeTargets":{},
+    "@/lib/parari/sales/sellerDisclosure":{readSellerDisclosure:async()=>null,sellerDisclosureReady:()=>false},
+    "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
+    "@/lib/billing/supabaseAdmin":{supabaseAdmin:intakeDb},
+    "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
+    "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},
+    "@/lib/classAdmissionMail":{classDateTime:String,classNotice:async(to)=>{deliveries.push(to);return true;}},
+    "@/lib/classBriefingWorkflow":workflow,
+  });
+  const post=body=>api.POST({method:"POST",nextUrl:{searchParams:new URLSearchParams({id:"test"})},json:async()=>body});
+  const invalid=await post({ ...profile, guardianPhone:"",agree:true,information:"案内",terms:"" });
+  assert.equal(invalid.status,400);assert.equal(rpcCalls,0);
+  assert.equal((await post({...profile,agree:true,information:"案内",terms:""})).status,200);
+  assert.equal(rpcArgs.p_audience,"minor");assert.equal(rpcArgs.p_fields.guardianAddress,"住所");
+  assert.deepEqual(deliveries[0],[profile.guardianEmail,profile.email]);
+  route="briefing";
+  assert.equal((await post({...profile,slot:"test-slot",agree:true,information:"案内"})).status,200);
+  assert.equal(deliveries.length,3);
+  deliveries.forEach(to=>assert.deepEqual(to,[profile.guardianEmail,profile.email]));
+  let guardianAccount = null, linkedGuardian = null;
+  const invitationRow={id:"candidate",school_id:"school",starts_on:"2027-01-01",deadline:"2099-01-01",briefing:"skip",test:"skip",
+    applicant_email:profile.guardianEmail,learner_email:profile.email,applicant_audience:"minor",revision:1,
+    consent_at:"2026-01-01",agreed_terms:"規約",payment:"onsite",applicant_user_id:null};
+  const invitationDb={auth:{getUser:async()=>({data:{user:guardianAccount},error:null})},from(table) {
+    const result=table==="school_admission_cases"?invitationRow:table==="school_admission_settings"?{terms:"規約",labels:{admission:"入会"}}
+      :table==="class_schools"?{name:"事業",owner_user_id:"teacher"}:table==="profiles"?{is_monitor:true}:{};
+    const chain=new Proxy({}, {get(_,key){if(key==="then")return resolve=>resolve({data:result,error:null});
+      if(key==="update")return changes=>{linkedGuardian=changes.applicant_user_id;return chain;};return ()=>chain;}});return chain;
+  }};
+  const invitationApi=load("src/app/api/classes/admission-invitation/route.ts",{
+    "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},"@/lib/billing/supabaseAdmin":{supabaseAdmin:invitationDb},
+    "@/lib/classAdmissionMail":{classNotice:async(to)=>{deliveries.push(to);return true;}},
+    "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},"@/lib/classBriefingWorkflow":workflow,
+  });
+  const inviteRequest=()=>({headers:new Headers({"x-class-invitation":"invitation",...(guardianAccount?{authorization:"Bearer test"}:{})}),
+    json:async()=>({agree:true,terms:"規約",revision:1})});
+  assert.equal((await invitationApi.GET(inviteRequest())).status,401);
+  guardianAccount={id:"wrong",email:"other@example.invalid",email_confirmed_at:"2026-01-01"};
+  assert.equal((await invitationApi.POST(inviteRequest())).status,401);assert.equal(linkedGuardian,null);
+  guardianAccount={id:"guardian",email:profile.guardianEmail,email_confirmed_at:"2026-01-01"};
+  assert.equal((await invitationApi.GET(inviteRequest())).body.agreed,false);
+  assert.equal((await invitationApi.POST(inviteRequest())).status,200);assert.equal(linkedGuardian,"guardian");
+  assert.deepEqual(deliveries.at(-1),[profile.guardianEmail,profile.email]);
   await act(async () => root.unmount());
   console.log("PASS: setup sequence, saved-state progress, unsaved changes, failed saves, review confirmation, operating entry and publication prerequisites.");
 }

@@ -2,9 +2,9 @@ import { classBusinessId } from "@/lib/classBusinessScope";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
-import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
+import { classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
-import { classDate, classToday, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
+import { classDate, classToday, designForApplicant, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
 const send = (body: object, status = 200) => NextResponse.json(body, { status, headers });
@@ -61,15 +61,17 @@ async function handle(request: NextRequest, write: boolean) {
       if (result.error) throw result.error;
     } else if ((input?.action === "briefingFollowup" || input?.action === "trial") && validId(input.id) && Number.isInteger(input.revision)) {
       if (!design) return fail("入会設定で説明会の設計図を保存してください。");
+      const savedDesign = design;
       const result = await db.from("school_admission_cases").select("*").eq("id", input.id).eq("school_id", schoolId).maybeSingle();
       if (result.error) throw result.error;
       const row = result.data;
+      const candidateDesign = row?.applicant_audience ? designForApplicant(savedDesign, row.applicant_audience) : savedDesign;
       if (!row?.applicant_email || !row.intake_slot_id || row.enrollment_id || row.consent_at ||
         !["booked", "done"].includes(row.briefing) || ["withdrawn", "rejected"].includes(row.decision)) return fail("説明会の予約情報を確認してください。");
       if (row.revision !== input.revision) return fail("申込情報が更新されています。再読み込みしてください。", 409);
       if (input.action === "trial") {
         const time = typeof input.at === "string" ? Date.parse(input.at) : NaN;
-        if (!design.allowTrials || !Number.isFinite(time) || time <= Date.now() || row.trial_dates.length >= 24) return fail("体験日時を確認してください。");
+        if (!candidateDesign.allowTrials || !Number.isFinite(time) || time <= Date.now() || row.trial_dates.length >= 24) return fail("体験日時を確認してください。");
         const at = new Date(time).toISOString();
         if (row.trial_dates.includes(at)) return fail("この体験日時は登録済みです。");
         const update = await db.from("school_admission_cases").update({ trial_dates: [...row.trial_dates, at].sort(), revision: row.revision + 1 })
@@ -80,9 +82,9 @@ async function handle(request: NextRequest, write: boolean) {
       }
       if (!["skip", "graded"].includes(row.test)) return fail("テストの結果を先に確認してください。");
       const dates: string[] = Array.isArray(input.firstDays) ? [...new Set<string>(input.firstDays.filter((value: unknown) => typeof value === "string"))] : [];
-      if (!dates.length || dates.length > 12 || (design.firstDay === "assigned" && dates.length !== 1) ||
+      if (!dates.length || dates.length > 12 || (candidateDesign.firstDay === "assigned" && dates.length !== 1) ||
           dates.some(day => !classDate(day) || day < classToday())) return fail("初日の候補日を確認してください。");
-      if (design.firstDay === "choose") {
+      if (candidateDesign.firstDay === "choose") {
         if (row.requested_class_id) {
           const target = await db.from("school_classes").select("starts_on,cadence").eq("id", row.requested_class_id).eq("school_id", schoolId).single();
           if (target.error) throw target.error;
@@ -100,10 +102,10 @@ async function handle(request: NextRequest, write: boolean) {
       }
       const deadline = trim(input.deadline);
       if (!classDate(deadline) || deadline < classToday()) return fail("回答期限を確認してください。");
-      const followup = { design, invitedAt: new Date().toISOString(), firstDays: dates.sort() };
+      const followup = { design: candidateDesign, invitedAt: new Date().toISOString(), firstDays: dates.sort() };
       const invitation = row.invite_token ?? crypto.randomUUID();
       const update = await db.from("school_admission_cases").update({
-        briefing: "done", decision: "approved", starts_on: design.firstDay === "assigned" ? dates[0] : null,
+        briefing: "done", decision: "approved", starts_on: candidateDesign.firstDay === "assigned" ? dates[0] : null,
         deadline, invite_token: invitation, briefing_followup: followup, revision: row.revision + 1,
       }).eq("id", row.id).eq("school_id", schoolId).eq("revision", row.revision).select("id").maybeSingle();
       if (update.error) throw update.error;
@@ -111,13 +113,13 @@ async function handle(request: NextRequest, write: boolean) {
       const link = new URL("/class-admission#" + invitation, origin).href;
       let mailed: boolean | undefined;
       if (input.email === true) {
-        const mail = renderBriefingMail(design, "invite", { subject: school.data.name + "からの入会案内",
+        const mail = renderBriefingMail(candidateDesign, "invite", { subject: school.data.name + "からの入会案内",
           body: "入会をご希望の場合は、期限までに以下のフォームからお申し込みください。" }, { school: school.data.name });
         // The application link is delivered to the account holder who can submit it.
         const key = `briefing-invite-${row.id}-${row.revision + 1}`;
         const [primary, learner] = await Promise.all([
           classNotice([row.applicant_email], mail.subject, mail.body + "\n" + link, key),
-          design.audience === "minor" && row.learner_email && row.learner_email !== row.applicant_email
+          candidateDesign.audience === "minor" && row.learner_email && row.learner_email !== row.applicant_email
             ? classNotice([row.learner_email], mail.subject, mail.body + "\n保護者に申込フォームをお送りしました。", key + "-learner")
             : Promise.resolve(true),
         ]);
@@ -185,10 +187,10 @@ async function handle(request: NextRequest, write: boolean) {
         body = `在籍開始日 ${candidate.starts_on}\n${instructions}`;
       } else return fail("手続きの状態を確認してください。");
       const key = `class-${input.kind}-${candidate.id}-${candidate.revision}`;
-      if (!(input.kind === "start" ? await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key)
-        : await classAdmissionMail(candidate.applicant_email, subject, body, key))) return fail("メールを送信できませんでした。", 502);
+      if (!await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key)) return fail("メールを送信できませんでした。", 502);
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
+      if (error?.code === "P0006") return fail("保護者が入会案内リンクからPARARIに登録・ログインし、同意を完了してください。");
       if (error?.code === "22023") return fail("工程・承認・開始日・同意・支払条件と期限を確認してください。");
       if (error?.code === "P0002") return fail("候補者が見つかりません。", 404);
       if (error) throw error;
@@ -208,9 +210,9 @@ async function handle(request: NextRequest, write: boolean) {
 
       const now = new Date().toISOString();
       if (input.confirmConsent === true) {
-        const candidate = await db.from("school_admission_cases").select("briefing_followup").eq("school_id", schoolId).eq("id", input.id).maybeSingle();
+        const candidate = await db.from("school_admission_cases").select("briefing_followup,applicant_audience").eq("school_id", schoolId).eq("id", input.id).maybeSingle();
         if (candidate.error) throw candidate.error;
-        if (candidate.data?.briefing_followup) return fail("申込者がご自身のアカウントで同意してください。");
+        if (candidate.data?.briefing_followup || candidate.data?.applicant_audience === "minor") return fail("申込者がご自身のアカウントで同意してください。");
       }
       const changes = {
         name, contact, score, briefing: input.briefing, briefing_at: input.briefing_at || null,
