@@ -86,6 +86,22 @@ const find = text => buttons().find(button => button.textContent.includes(text))
 const click = async text => { const button = find(text); assert.ok(button, text); await act(async () => { button.click(); }); };
 const tick = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 async function main() {
+  const sourceRows = {
+    school_recruitment_offers: [{ id: "specific", school_id: "school", enabled: true, route_override: "briefing" }],
+    school_recruitment: [{ public_id: "common", school_id: "school", enabled: true, route: "direct" }],
+  };
+  const sourceDb = { from(table) {
+    const filters = [];
+    return { select() { return this; }, eq(key, value) { filters.push([key, value]); return this; },
+      async maybeSingle() { return { data: sourceRows[table].find(row => filters.every(([key, value]) => row[key] === value)) ?? null, error: null }; } };
+  } };
+  const { readClassIntakeSource } = load("src/lib/classIntakeSource.ts", { "server-only": {}, "@/lib/billing/supabaseAdmin": { supabaseAdmin: sourceDb } });
+  assert.equal((await readClassIntakeSource("specific")).recruitment.route, "briefing");
+  assert.equal((await readClassIntakeSource("common")).recruitment.route, "direct");
+  sourceRows.school_recruitment_offers[0].route_override = null;
+  assert.equal((await readClassIntakeSource("specific")).recruitment.route, "direct");
+  sourceRows.school_recruitment_offers[0].enabled = false;
+  assert.equal(await readClassIntakeSource("specific"), null);
   let operated = false;
   await act(async () => root.render(React.createElement(Setup, { schoolId: "school", onOperate: () => { operated = true; } })));
   await tick();
@@ -153,6 +169,30 @@ async function main() {
   assert.equal(settingsSaved, true);
   assert.equal(lastBody.paymentMode, "free");
   assert.equal("monthlyFee" in lastBody, false);
+  const Offers = load("src/components/parari/manage/ClassRecruitmentOffers.tsx").default;
+  let savedOffer;
+  const offerClasses = [{ id: "free-a", name: "水曜日", product_id: "free" },
+    { id: "free-b", name: "金曜日", product_id: "free" }, { id: "paid-a", name: "土曜日", product_id: "paid" }];
+  const offerProps = { classes: offerClasses, products: [{ id: "free", name: "交流会" }, { id: "paid", name: "勉強会" }],
+    offers: [], busy: false, commonRoute: "direct", save: async value => { savedOffer = value; return true; } };
+  await act(async () => root.render(React.createElement(Offers, offerProps)));
+  await click("この内容の申込ページを作る");
+  const routeSelect = document.querySelector('select[name="routeOverride"]');
+  await act(async () => { routeSelect.value = "briefing"; routeSelect.dispatchEvent(new window.Event("change", { bubbles: true })); });
+  await act(async () => document.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
+  assert.equal(savedOffer.routeOverride, "briefing");
+  assert.deepEqual(savedOffer.classIds, ["free-a", "free-b"]);
+  assert.equal(savedOffer.enabled, false);
+  const grouped = { id: "grouped", name: "まとめた募集", information: "案内", class_ids: ["free-a", "paid-a"], enabled: false, route_override: "briefing" };
+  await act(async () => root.render(React.createElement(Offers, { ...offerProps, offers: [grouped] })));
+  await click("設定を編集");
+  await act(async () => document.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
+  assert.deepEqual(savedOffer.classIds, grouped.class_ids);
+  assert.equal(savedOffer.routeOverride, "briefing");
+  await act(async () => root.render(React.createElement(Offers, { ...offerProps, offers: [grouped], publicationOnly: true })));
+  await click("この受付を公開する");
+  assert.equal(savedOffer.enabled, true);
+  assert.equal(savedOffer.routeOverride, "briefing");
   await act(async () => root.unmount());
   console.log("PASS: setup sequence, saved-state progress, unsaved changes, failed saves, review confirmation, operating entry and publication prerequisites.");
 }

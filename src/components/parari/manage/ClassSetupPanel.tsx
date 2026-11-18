@@ -24,7 +24,7 @@ const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold
 const blockLabels: Record<string, string> = {
   name: "教室・事業名", introduction: "紹介文", labels: "呼び方", product: "クラスの内容・料金",
   slot: "開催日時・会場", recruitment: "入会方法", briefing: "説明会後の申込書・メール",
-  terms: "規約・テスト・代理申込者", front: "公開ページ",
+  offer: "クラスごとの入会方法", terms: "規約・テスト・代理申込者", front: "公開ページ",
 };
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 
@@ -187,7 +187,8 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   const missingContent = products.filter(product => !product.design.description?.trim());
   const missingUpcoming = products.filter(product => !front.links.some(link => link.course?.id === product.id && link.course.slots.some(slot => slot.upcoming?.length)));
   const intake = recruitment.recruitment;
-  const registrationIssues = classRegistrationIssues(intake, recruitment.sharedDisclosure === true, recruitment.available.length, Boolean(admissions.briefingDesign));
+  const usesBriefing = intake?.route === "briefing" || Boolean(recruitment.offers?.some(offer => offer.route_override === "briefing"));
+  const registrationIssues = classRegistrationIssues(intake && usesBriefing ? { ...intake, route: "briefing" } : intake, recruitment.sharedDisclosure === true, recruitment.available.length, Boolean(admissions.briefingDesign));
   const registrationReady = registrationIssues.length === 0;
   const statuses = [
     school.name.trim() && draft.introduction.trim() ? "設定済み" : "紹介文を保存してください",
@@ -299,8 +300,9 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <ul className="grid gap-1">{registrationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>
         </section>}
         <div data-setup-block="recruitment"><ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
+          onOfferDraftChange={() => markDirty("offer")} onOfferSaved={() => saved("offer")} onOfferSaveError={() => saveFailed("offer")}
           onDraftChange={() => markDirty("recruitment")} onSaveError={() => saveFailed("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} /></div>
-        {intake?.route === "briefing" && <div data-setup-block="briefing" onChangeCapture={() => markDirty("briefing")}>
+        {usesBriefing && <div data-setup-block="briefing" onChangeCapture={() => markDirty("briefing")}>
           <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} guided onSaveError={() => saveFailed("briefing")} onSaved={() => saved("briefing")} />
         </div>}
         <details className={panel}>
@@ -325,7 +327,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         </section>
       </>}
       {step === 5 && <>
-        <ClassRecruitmentPanel view="settings" publicationOnly classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} onSaved={() => saved(undefined, false)} />
+        <ClassRecruitmentPanel view="settings" publicationOnly classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} onSaved={() => saved(undefined, false)} onOfferSaved={() => saved(undefined, false)} />
         <div data-setup-block="front" onChangeCapture={() => markDirty("front")}>
           <ClassBusinessFrontPanel schoolId={schoolId} name={school.name} products={products} guided publicationBlockers={publicationBlockers} availableLinks={front.links}
             onOpenRecruitment={() => navigate(3)} onOpenSchedule={() => navigate(2)} onSaveError={() => saveFailed("front")} onSaved={() => saved("front")} />

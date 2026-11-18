@@ -26,7 +26,7 @@ export type ClassBusinessFrontLink = {
   href?: string;
   format?: ClassParticipationFormat;
   startsAt?: string;
-  course?: { id: string; description: string; walkIn: boolean; explanation: string; slots: ClassIntakeTarget[] };
+  course?: { id: string; description: string; walkIn: boolean; explanation: string; slots: ClassIntakeTarget[]; intakes?: { title: string; label: string; href: string }[] };
 };
 
 export const emptyClassBusinessFront: ClassBusinessFront = {
