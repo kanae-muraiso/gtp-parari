@@ -299,7 +299,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <h4 className="font-semibold">次へ進むために必要な設定</h4>
           <ul className="grid gap-1">{registrationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>
         </section>}
-        <div data-setup-block="recruitment"><ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
+        <div><ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
           onOfferDraftChange={() => markDirty("offer")} onOfferSaved={() => saved("offer")} onOfferSaveError={() => saveFailed("offer")}
           onDraftChange={() => markDirty("recruitment")} onSaveError={() => saveFailed("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} /></div>
         {usesBriefing && <div data-setup-block="briefing" onChangeCapture={() => markDirty("briefing")}>

@@ -89,6 +89,7 @@ async function main() {
   const sourceRows = {
     school_recruitment_offers: [{ id: "specific", school_id: "school", enabled: true, route_override: "briefing" }],
     school_recruitment: [{ public_id: "common", school_id: "school", enabled: true, route: "direct" }],
+    school_admission_settings: [{ school_id: "school", briefing_design: {audience:"minor"} }],
   };
   const sourceDb = { from(table) {
     const filters = [];
@@ -100,6 +101,11 @@ async function main() {
   assert.equal((await readClassIntakeSource("common")).recruitment.route, "direct");
   sourceRows.school_recruitment_offers[0].route_override = null;
   assert.equal((await readClassIntakeSource("specific")).recruitment.route, "direct");
+  assert.equal((await readClassIntakeSource("specific")).recruitment.audience,"minor");
+  sourceRows.school_recruitment[0].audience="adult";
+  assert.equal((await readClassIntakeSource("specific")).recruitment.audience,"adult");
+  sourceRows.school_recruitment_offers[0].audience_override="minor";
+  assert.equal((await readClassIntakeSource("specific")).recruitment.audience,"minor");
   sourceRows.school_recruitment_offers[0].enabled = false;
   assert.equal(await readClassIntakeSource("specific"), null);
   let operated = false;
@@ -138,6 +144,10 @@ async function main() {
     Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(applicationText, "入会フォームの説明");
     applicationText.dispatchEvent(new window.Event("input", { bubbles: true }));
   });
+  const unrelatedForm=document.createElement("form");
+  let unrelatedSaves=0;
+  unrelatedForm.addEventListener("submit",event=>{event.preventDefault();unrelatedSaves++;});
+  document.querySelector('[data-setup-block="recruitment"]').before(unrelatedForm);
   await click("5. お客様として確認");
   assert.match(document.querySelector('[role="alert"]').textContent, /「入会方法」/);
   rejectSave = true;
@@ -148,6 +158,7 @@ async function main() {
   await click("保存して次へ");
   await tick();
   assert.equal(lastBody.applicationText, "入会フォームの説明");
+  assert.equal(unrelatedSaves,0);unrelatedForm.remove();
   assert.equal(find("次へ").disabled, true);
   await act(async () => document.querySelector('input[type="checkbox"]').click());
   assert.equal(find("次へ").disabled, false);
@@ -169,6 +180,10 @@ async function main() {
   assert.equal(settingsSaved, true);
   assert.equal(lastBody.paymentMode, "free");
   assert.equal("monthlyFee" in lastBody, false);
+  await click("全クラスをこの設定に統一して保存");
+  assert.equal(lastBody.applyAll,true);
+  assert.equal(lastBody.audience,"adult");
+
   const Offers = load("src/components/parari/manage/ClassRecruitmentOffers.tsx").default;
   let savedOffer;
   const offerClasses = [{ id: "free-a", name: "水曜日", product_id: "free" },
@@ -176,13 +191,17 @@ async function main() {
   const offerProps = { classes: offerClasses, products: [{ id: "free", name: "交流会" }, { id: "paid", name: "勉強会" }],
     offers: [], busy: false, commonRoute: "direct", save: async value => { savedOffer = value; return true; } };
   await act(async () => root.render(React.createElement(Offers, offerProps)));
-  await click("この内容の申込ページを作る");
+  await click("入会方法を設定");
   const routeSelect = document.querySelector('select[name="routeOverride"]');
+  assert.equal(routeSelect.options.length,2);
+  const audienceSelect=document.querySelector('select[name="audienceOverride"]');
+  await act(async()=>{audienceSelect.value="minor";audienceSelect.dispatchEvent(new window.Event("change",{bubbles:true}));});
   await act(async () => { routeSelect.value = "briefing"; routeSelect.dispatchEvent(new window.Event("change", { bubbles: true })); });
   await act(async () => document.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
   assert.equal(savedOffer.routeOverride, "briefing");
   assert.deepEqual(savedOffer.classIds, ["free-a", "free-b"]);
   assert.equal(savedOffer.enabled, false);
+  assert.equal(savedOffer.audienceOverride,"minor");
   const grouped = { id: "grouped", name: "まとめた募集", information: "案内", class_ids: ["free-a", "paid-a"], enabled: false, route_override: "briefing" };
   await act(async () => root.render(React.createElement(Offers, { ...offerProps, offers: [grouped] })));
   await click("設定を編集");
@@ -205,11 +224,11 @@ async function main() {
   const Applicant = load("src/components/parari/classes/ClassIntakeForm.tsx", {
     "@/lib/classRecurrence": { classWeekdays: [] }, "./ClassBookingCalendar": { default: stub },
   }).default;
-  await act(async () => root.render(React.createElement(Applicant,{ data:{school:"事業",information:"",kind:"説明会",direct:true,slots:[]},submit:()=>{} })));
-  assert.equal(document.querySelector('input[name="name"]'),null);
-  await act(async () => document.querySelector('input[name="audience"][value="minor"]').click());
+  const applicantData={school:"事業",information:"",kind:"説明会",direct:true,slots:[]};
+  await act(async()=>root.render(React.createElement(Applicant,{data:{...applicantData,audience:"minor"},submit:()=>{}})));
+  assert.equal(document.querySelector('input[name="audience"]'),null);
   for (const key of ["email","guardianName","guardianEmail","guardianPhone","guardianAddress"]) assert.equal(document.querySelector(`input[name="${key}"]`).required,true);
-  await act(async () => document.querySelector('input[name="audience"][value="adult"]').click());
+  await act(async()=>root.render(React.createElement(Applicant,{data:{...applicantData,audience:"adult"},submit:()=>{}})));
   assert.equal(document.querySelector('input[name="guardianName"]'),null);
   assert.ok(document.querySelector('input[name="email"]'));
   let rpcArgs, rpcCalls=0;
@@ -226,12 +245,14 @@ async function main() {
     "@/lib/parari/sales/sellerDisclosure":{readSellerDisclosure:async()=>null,sellerDisclosureReady:()=>false},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:intakeDb},
-    "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
+    "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,audience:"minor",information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
     "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},
     "@/lib/classAdmissionMail":{classDateTime:String,classNotice:async(to)=>{deliveries.push(to);return true;}},
     "@/lib/classBriefingWorkflow":workflow,
   });
   const post=body=>api.POST({method:"POST",nextUrl:{searchParams:new URLSearchParams({id:"test"})},json:async()=>body});
+  const forged=await post({audience:"adult",name:"受講者",email:"learner@example.invalid",agree:true,information:"案内",terms:""});
+  assert.equal(forged.status,400);assert.equal(rpcCalls,0);
   const invalid=await post({ ...profile, guardianPhone:"",agree:true,information:"案内",terms:"" });
   assert.equal(invalid.status,400);assert.equal(rpcCalls,0);
   assert.equal((await post({...profile,agree:true,information:"案内",terms:""})).status,200);

@@ -93,7 +93,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved, o
         <fieldset className="grid gap-2" disabled={busy}>
           <label className="text-sm"><input type="checkbox" name="test" defaultChecked={settings.test} /> 説明会・体験の場でテストを実施する</label>
           <p className="text-sm text-neutral-600">テストは先生が対面で実施し、結果を記録します。オンライン試験・自動採点はビジネスパックの範囲として扱います。</p>
-          <p className="text-sm text-neutral-600">申込時に成人・未成年を選択します。未成年は保護者の氏名・メール・電話・住所が必須で、連絡は本人と保護者の両方に届きます。</p>
+          <p className="text-sm text-neutral-600">主催者が各クラスを成人向け・未成年向けに設定します。未成年は保護者の氏名・メール・電話・住所が必須で、連絡は本人と保護者の両方に届きます。</p>
           <label className="text-sm">同意する規約<textarea className={field} name="terms" rows={3} maxLength={8000} defaultValue={settings.terms} /></label>
           <button className={button}>設定を保存</button>
         </fieldset>

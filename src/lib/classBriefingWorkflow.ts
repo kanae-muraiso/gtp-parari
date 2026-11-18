@@ -73,7 +73,7 @@ export function renderBriefingMail(design: BriefingDesign | null | undefined, ki
   return { subject: render(template.subject), body: render(template.body) };
 }
 
-// The applicant chooses their own audience; a teacher's preview selection never decides it.
+// Follow-up forms inherit the audience saved when the teacher configured admission.
 export function designForApplicant(design: BriefingDesign, audience: "adult" | "minor"): BriefingDesign {
   return parseBriefingDesign({ ...design, audience })!;
 }

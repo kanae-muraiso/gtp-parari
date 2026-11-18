@@ -19,11 +19,12 @@ const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabl
 export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products, publicationOnly = false, hidePublication = false, onSaved, onSaveError, onDraftChange, onOfferDraftChange, onOfferSaved, onOfferSaveError }: {
   onOfferDraftChange?: () => void; onOfferSaved?: () => void; onOfferSaveError?: () => void; publicationOnly?: boolean; hidePublication?: boolean; onSaved?: (action: string) => void; onSaveError?: () => void; onDraftChange?: () => void; view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
   const [data, setData] = useState<ClassRecruitmentData | null>(null);
-  const [route, setRoute] = useState("briefing");
+  const [route, setRoute] = useState("direct");
   const [paymentMode, setPaymentMode] = useState("free");
   const [error, setError] = useState("");
   const [calendar, setCalendar] = useState<{ today: string; months: ClassIntakeMonth[] }>();
   const [notice, setNotice] = useState("");
+  const [audience, setAudience] = useState<"adult" | "minor">("adult");
   const [briefingAudience, setBriefingAudience] = useState<"adult" | "minor">();
   const [settings, setSettings] = useState<AdmissionsData["settings"] | null>(null);
   const [useSample, setUseSample] = useState(false);
@@ -32,11 +33,12 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const [step, setStep] = useState(0);
   const [scenario, setScenario] = useState("advance");
   const [busy, setBusy] = useState(false);
+  const [offerEditing, setOfferEditing] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     void Promise.all([classRequest<ClassRecruitmentData>("/recruitment", undefined, controller.signal),
       classRequest<AdmissionsData>("/admissions?settings=1", undefined, controller.signal)])
-      .then(([result, admissions]) => { if (!controller.signal.aborted) { setData(result); setSettings(admissions.settings); setBriefingAudience(admissions.briefingDesign?.audience); setRoute(result.recruitment?.route ?? "briefing"); setPaymentMode(result.recruitment?.payment_mode ?? "free"); setScenario(result.recruitment?.payment_mode ?? "advance"); } })
+      .then(([result, admissions]) => { if (!controller.signal.aborted) { setData(result); setSettings(admissions.settings); setBriefingAudience(admissions.briefingDesign?.audience); setAudience(result.recruitment?.audience ?? admissions.briefingDesign?.audience ?? "adult"); setRoute(result.recruitment?.route ?? "direct"); setPaymentMode(result.recruitment?.payment_mode ?? "free"); setScenario(result.recruitment?.payment_mode ?? "advance"); } })
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
   }, []);
@@ -54,7 +56,12 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     setNotice("");
     try {
       await classRequest("/recruitment", values);
-      setData(await classRequest<ClassRecruitmentData>("/recruitment"));
+      const refreshed = await classRequest<ClassRecruitmentData>("/recruitment");
+      setData(refreshed);
+      if (!data?.recruitment && refreshed.recruitment) {
+        setRoute(refreshed.recruitment.route);
+        setAudience(refreshed.recruitment.audience ?? briefingAudience ?? "adult");
+      }
       if ("action" in values) {
         if (values.action === "settings") setNotice("募集の設定を保存しました。");
         if (values.action === "publish") setNotice("募集を公開しました。");
@@ -72,7 +79,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   function configure(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    void save({ ...Object.fromEntries(form), action: "settings", showClassSchedule: form.has("showClassSchedule"), bookingWeeks: Number(form.get("bookingWeeks") ?? data?.recruitment?.booking_weeks ?? 4) });
+    void save({ ...Object.fromEntries(form), action: "settings", audience, applyAll: (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "all", showClassSchedule: form.has("showClassSchedule"), bookingWeeks: Number(form.get("bookingWeeks") ?? data?.recruitment?.booking_weeks ?? 4) });
   }
   const recruitment = data?.recruitment;
   const previewOffer = data?.offers?.find(offer => offer.id === previewOfferId);
@@ -120,8 +127,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : showGeneralSchedule ? { classSchedules: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information ?? recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
-            sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: !isDirect ? briefingAudience : undefined, bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
+          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : showGeneralSchedule ? { classSchedules: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information?.trim() ? previewOffer.information : recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
+            sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: previewOffer?.audience_override ?? recruitment?.audience ?? briefingAudience ?? "adult", bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
@@ -152,7 +159,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     </>}
     {data && view === "settings" && <>{!publicationOnly && <section className="grid gap-2 rounded-lg bg-emerald-50 p-3 text-sm" aria-label="入会時の費用とクラスの料金">
       <h4 className="font-semibold">事業への入会と、クラスの受講料</h4>
-      <p>まず「{data.school}」への入会方法を決めます。入会時の費用と、入会後に選ぶクラスの受講料を確認してください。</p>
+      <p>各クラスの受講対象と入会方法を決めます。入会時の費用と、入会後に選ぶクラスの受講料を確認してください。</p>
       <p className="font-medium">入会時の費用は、{paymentMode === "free" ? "支払いなし" : paymentMode === "advance" ? "決済ページで支払い" : "現地で支払い"}の設定です。</p>
       {!!products?.length && <table className="w-full text-left">
         <thead><tr><th className="py-1 pr-3">入会後に選ぶクラス</th><th className="py-1">受講料</th></tr></thead>
@@ -163,12 +170,19 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         </tr>)}</tbody>
       </table>}
       <p>無料で入会し、無料の交流会と有料のクラスを用意する場合は、入会時の支払いを「なし」にします。各クラスの料金は「クラスの内容・料金」で設定します。</p>
-    </section>}{!publicationOnly && <form onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
+    </section>}
+    <ClassRecruitmentOffers classes={classes} products={products} offers={data.offers ?? []} busy={busy} save={save}
+      commonRoute={recruitment?.route ?? "direct"} commonAudience={recruitment?.audience ?? briefingAudience ?? "adult"}
+      commonInformation={recruitment?.information ?? ""} publicationOnly={publicationOnly} onDraftChange={onOfferDraftChange} onEditingChange={setOfferEditing} />
+    {!publicationOnly && <form data-setup-block="recruitment" onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
       <fieldset className="grid gap-2 rounded-lg border p-3">
-        <legend className="px-1 font-semibold">事業共通の入会方法</legend>
-        <p className="text-sm text-neutral-600">共通の方法を決めます。内容によって変える場合は、下の「クラスごとの入会方法」で設定します。</p>
-        <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま入会を申し込む</label>
-        <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 先に説明会・体験を予約する</label>
+        <legend className="px-1 font-semibold">標準設定・全クラスをまとめて設定</legend>
+        <p className="text-sm text-neutral-600">新しいクラスに使う標準設定です。「全クラスをこの設定に統一して保存」を押すと、既にあるクラスの個別設定も置き換えます。</p>
+        <label>受講対象<select className={field} name="audience" value={audience} onChange={event => setAudience(event.target.value as "adult" | "minor")}>
+          <option value="adult">成人向け</option><option value="minor">未成年向け（保護者の情報が必須）</option>
+        </select></label>
+        <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま申込</label>
+        <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 対面の体験・説明会から申込</label>
       </fieldset>
       {route === "direct" && <input type="hidden" name="kind" value={kind} />}
       {needsBriefing && <label>予約を受け付ける期間<select name="bookingWeeks" className={field} defaultValue={recruitment?.booking_weeks ?? 4}>
@@ -190,10 +204,11 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         {paymentMode === "onsite" && <label>当日の集合・支払い案内<textarea name="arrivalText" className={field} maxLength={4000} required defaultValue={recruitment?.arrival_text} /></label>}
         <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
       </details>
-      <button className={button} disabled={busy}>入会方法を保存</button>
+      <div className="flex flex-wrap gap-2">
+        <button className={button} disabled={busy}>入会方法を保存</button>
+        <button className={button} disabled={busy || offerEditing} value="all">全クラスをこの設定に統一して保存</button>
+      </div>
     </form>}
-    {recruitment && <ClassRecruitmentOffers classes={classes} products={products} offers={data.offers ?? []} busy={busy} save={save}
-      commonRoute={recruitment.route} publicationOnly={publicationOnly} onDraftChange={onOfferDraftChange} />}
       {!hidePublication && <div className="grid gap-2 rounded-lg border p-4">
         <h4 className="font-semibold">{publicationOnly ? "受付を開く" : "募集の公開"}</h4>
         {!recruitment ? <p className="text-sm text-neutral-600">{publicationOnly ? "「入会方法」で申込画面を保存すると、ここで受付を公開できます。" : "上の「入会方法を保存」を押すと公開できます。"}</p> :
@@ -220,7 +235,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         const values = new FormData(form);
         const id = form.dataset.requestId || crypto.randomUUID();
         form.dataset.requestId = id;
-        if (await save({ action: "slot", id, startsAt: values.get("startsAt") + ":00+09:00", capacity: Number(values.get("capacity")), meetingUrl: values.get("meetingUrl"), duration: Number(values.get("duration")), location: values.get("location") })) {
+        if (await save({ action: "slot", id, startsAt: values.get("startsAt") + ":00+09:00", capacity: Number(values.get("capacity")), duration: Number(values.get("duration")), location: values.get("location") })) {
           delete form.dataset.requestId; form.reset();
         }
       }}>
@@ -228,7 +243,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         <label>会場・集合場所<input className={field} name="location" maxLength={300} /></label>
         <label>所要時間（分）<input className={field} name="duration" type="number" min="5" max="480" defaultValue="60" required /></label>
         <label>定員<input className={field} name="capacity" type="number" min="1" max="100" defaultValue="1" required /></label>
-        <label>説明会・体験のオンライン参加リンク（任意）<input type="url" className={field} name="meetingUrl" maxLength={2000} /></label>
+        <p className="text-sm text-neutral-600">体験・説明会は対面で実施します。オンラインで完結する申込の自動化は、ビジネスパックの範囲です。</p>
         {(!recruitment || !needsBriefing) && <p className="text-sm text-neutral-600">日時などを入力できます。予約枠を追加する前に、上の「入会方法を保存」を押してください。</p>}
         <button className={button} disabled={busy || !recruitment || !needsBriefing}>予約枠を追加</button>
       </form>

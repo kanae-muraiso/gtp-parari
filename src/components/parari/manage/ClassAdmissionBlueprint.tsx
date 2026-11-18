@@ -194,12 +194,12 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
     </fieldset>}
 
     {step === 1 && <div className="grid gap-4">
-      <label className="grid gap-1 text-sm font-medium">フォームの確認（申込者は最初に成人・未成年を選びます）
+      <label className="grid gap-1 text-sm font-medium">申込書の表示確認（受講対象はクラスごとの入会方法で主催者が設定します）
         <select className={field} value={draft.audience ?? ""} onChange={event => {
           const value = event.target.value;
           setDraft(current => ({ ...current, audience: value === "adult" || value === "minor" ? value : null }));
         }}>
-          <option value="">受講対象を選ぶ</option>
+          <option value="">確認する対象を選ぶ</option>
           <option value="adult">成人向け</option><option value="minor">未成年向け</option>
         </select>
       </label>
@@ -252,7 +252,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
     </div>}
 
     {step === 3 && !draft.audience && <button type="button" className={secondary}
-      onClick={() => selectStep(1)}>申込フォームで受講対象を選ぶ</button>}
+      onClick={() => selectStep(1)}>申込フォームで確認する対象を選ぶ</button>}
     {step === 3 && draft.audience && <div className="mx-auto grid w-full max-w-md gap-3 rounded-xl border p-4">
       <p className="text-sm font-medium">{routes[draft.route]}のプレビュー</p>
       {(phase === "form" || phase === "briefingDate") && draft.introduction &&

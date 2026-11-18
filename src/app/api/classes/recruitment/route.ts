@@ -51,12 +51,12 @@ async function handle(request: NextRequest) {
         return reply({ ok: true, events: result.data });
       }
       const [recruitment, slots, blocks, available, disclosure, offers] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location,show_class_schedule").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location,show_class_schedule,audience").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
         readSellerDisclosure(user.id),
-        db.from("school_recruitment_offers").select("id,name,information,class_ids,enabled,route_override").eq("school_id", id).order("name"),
+        db.from("school_recruitment_offers").select("id,name,information,class_ids,enabled,route_override,audience_override").eq("school_id", id).order("name"),
       ]);
       if (blocks.error || available.error || offers.error) throw blocks.error ?? available.error ?? offers.error;
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
@@ -68,18 +68,25 @@ async function handle(request: NextRequest) {
       const name = typeof input.name === "string" ? input.name.trim() : "";
       const information = typeof input.information === "string" ? input.information.trim() : "";
       const override = input.routeOverride;
+      const audienceOverride = input.audienceOverride;
+      if (audienceOverride != null && !["adult", "minor"].includes(audienceOverride)) return fail("受講対象を選んでください。");
       if (override != null && !["direct", "briefing"].includes(override)) return fail("申込方法を選んでください。");
       const ids: string[] = Array.isArray(input.classIds) ? [...new Set<string>(input.classIds)] : [];
       if (typeof input.id !== "string" || !classIdPattern.test(input.id) || !name || name.length > 120 || information.length > 4000 ||
         !ids.length || !ids.every(value => typeof value === "string" && classIdPattern.test(value))) return fail("募集名と対象クラスを確認してください。");
+      // A class can be configured before the shared invitation text/calendar is filled in.
+      // This creates a private draft only; publishing still validates disclosures and available dates.
+      const initial = await db.from("school_recruitment").upsert({ school_id: id, information: "", kind: "説明会",
+        route: override ?? "direct", audience: audienceOverride ?? "adult" }, { onConflict: "school_id", ignoreDuplicates: true });
+      if (initial.error) throw initial.error;
       const [classes, base] = await Promise.all([
         db.from("school_classes").select("id").eq("school_id", id).in("id", ids),
-        db.from("school_recruitment").select("enabled,route").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment").select("enabled,route,information").eq("school_id", id).maybeSingle(),
       ]);
       if (classes.error || base.error) throw classes.error ?? base.error;
       if (!base.data || classes.data.length !== ids.length) return fail("教室の募集設定と対象クラスを確認してください。");
       if (input.enabled === true && (!base.data.enabled ||
-        (!information && !sellerDisclosureReady(await readSellerDisclosure(user.id))))) {
+        (!information && !base.data.information?.trim() && !sellerDisclosureReady(await readSellerDisclosure(user.id))))) {
         return fail("教室の受付を公開し、募集案内または公開済みの共通表記をご用意ください。");
       }
       if (input.enabled === true && (override ?? base.data.route) === "briefing") {
@@ -91,7 +98,8 @@ async function handle(request: NextRequest) {
       if (existing.error) throw existing.error;
       if (existing.data && existing.data.school_id !== id) return fail("募集を確認してください。", 404);
       const offer = { name, information, class_ids: ids, enabled: input.enabled === true,
-        ...(Object.prototype.hasOwnProperty.call(input, "routeOverride") ? { route_override: override ?? null } : {}) };
+        ...(Object.prototype.hasOwnProperty.call(input, "routeOverride") ? { route_override: override ?? null } : {}),
+        ...(Object.prototype.hasOwnProperty.call(input, "audienceOverride") ? { audience_override: audienceOverride ?? null } : {}) };
       const result = existing.data
         ? await db.from("school_recruitment_offers").update(offer).eq("id", input.id).eq("school_id", id)
         : await db.from("school_recruitment_offers").insert({ ...offer, id: input.id, school_id: id });
@@ -103,7 +111,9 @@ async function handle(request: NextRequest) {
         return fail("共通の販売者情報を公開するか、この募集の案内・個人情報の取り扱いを入力してください。");
       }
       const text = (key: string) => typeof input[key] === "string" ? input[key].trim() : "";
-      const route = input.route ?? "briefing";
+      const route = input.route ?? "direct";
+      const audience = input.audience ?? "adult";
+      if (!["adult", "minor"].includes(audience)) return fail("受講対象を選んでください。");
       const weeks = input.bookingWeeks ?? 4;
       if (!Number.isInteger(weeks) || weeks < 1 || weeks > 4) return fail("予約受付期間は1〜4週間です。");
       const payment = input.paymentMode ?? "free";
@@ -113,10 +123,10 @@ async function handle(request: NextRequest) {
           ["applicationText", "arrivalText", "confirmationText"].some(key => text(key).length > 4000)) {
         return fail("支払いURL、集合案内、申込書の設定をご確認ください。");
       }
-      const result = await db.from("school_recruitment").upsert({ school_id: id, information, kind: input.kind, route, booking_weeks: weeks,
+      const result = await db.rpc("save_class_intake_settings", { p_owner: user.id, p_school: id, p_all: input.applyAll === true, p_settings: { information, kind: input.kind, route, audience, booking_weeks: weeks,
         ...(typeof input.showClassSchedule === "boolean" ? { show_class_schedule: input.showClassSchedule } : {}),
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
-        arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") });
+        arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") } });
       if (result.error) throw result.error;
     } else if (input?.action === "hours") {
       const hours = input.hours;

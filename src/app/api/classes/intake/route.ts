@@ -67,9 +67,9 @@ async function handle(request: NextRequest) {
     if (request.method === "POST" && options.route === "direct") {
       const input = await request.json().catch(() => null);
       if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
-      const profile = input && parseIntakeProfile(input);
+      const profile = input && parseIntakeProfile({ ...input, audience: options.audience });
       if (!profile || input.agree !== true || typeof input.information !== "string" || input.information.length > 4000 ||
-          typeof input.terms !== "string" || input.terms.length > 8000) return fail("成人・未成年、必須の連絡先と同意を確認してください。");
+          typeof input.terms !== "string" || input.terms.length > 8000) return fail("必須の連絡先と同意を確認してください。");
       if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const result = await submitProfile(input, profile, null);
       const { error } = result;
@@ -87,7 +87,7 @@ async function handle(request: NextRequest) {
     if (options.route === "direct") {
       const setting = await db.from("school_admission_settings").select("terms").eq("school_id", schoolId).maybeSingle();
       if (setting.error) throw setting.error;
-      return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, slots: [], direct: true, sharedDisclosure: shared,
+      return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, slots: [], direct: true, audience: options.audience, sharedDisclosure: shared,
         applicationText: options.application_text, terms: setting.data?.terms ?? "" });
     }
     const settings = await db.from("school_admission_settings").select("briefing_design").eq("school_id", schoolId).maybeSingle();
@@ -96,9 +96,9 @@ async function handle(request: NextRequest) {
     if (request.method === "POST") {
       const input = await request.json().catch(() => null);
       if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
-      const profile = input && parseIntakeProfile(input);
+      const profile = input && parseIntakeProfile({ ...input, audience: options.audience });
       if (!profile || !classIdPattern.test(clean(input.slot)) || input.agree !== true ||
-          typeof input.information !== "string" || input.information.length > 4000) return fail("成人・未成年、必須の連絡先・日時・同意をご確認ください。");
+          typeof input.information !== "string" || input.information.length > 4000) return fail("必須の連絡先・日時・同意をご確認ください。");
       if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const { data, error } = await submitProfile(input, profile, input.slot);
       if (error?.code === "P0002") return missing();
@@ -134,7 +134,7 @@ async function handle(request: NextRequest) {
     if (slots.error) throw slots.error;
     if (manual.error) throw manual.error;
     const details = new Map(manual.data.map(slot => [slot.id, slot]));
-    return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, sharedDisclosure: shared, audience: design?.audience, bookingWeeks: options.booking_weeks,
+    return reply({ ok: true, school: school.data.name, information, kind, ...offerFields, sharedDisclosure: shared, audience: options.audience, bookingWeeks: options.booking_weeks,
       slots: (slots.data as { id: string; starts_at: string; channel: "onsite" | "phone" }[]).map(slot => {
         const saved = details.get(slot.id);
         return { ...slot, duration_minutes: saved?.duration_minutes ?? options.office_duration,

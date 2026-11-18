@@ -12,7 +12,7 @@ const field = "block w-full rounded-lg border p-2";
 export default function ClassIntakeForm({ data, busy = false, done = "", submit }: {
   data: Intake; busy?: boolean; done?: string; submit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [audience, setAudience] = useState<"adult" | "minor" | "">("");
+  const audience = data.audience ?? "adult";
   const minor = audience === "minor";
   const targets = data.targetClasses;
   const [targetId, setTargetId] = useState("");
@@ -54,15 +54,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         if (busy || !ready) { event.preventDefault(); return; }
         submit(event);
       }}>
-        <fieldset className="grid gap-2" disabled={busy}>
-          <legend className="mb-2 font-semibold">受講する方は成人ですか、未成年ですか？</legend>
-          {([['adult', '成人'], ['minor', '未成年']] as const).map(([value, label]) =>
-            <label key={value} className="flex items-center gap-2 rounded-lg border p-3">
-              <input type="radio" name="audience" value={value} checked={audience === value} required onChange={() => setAudience(value)} />{label}
-            </label>)}
-          {minor && <p className="text-sm">保護者の情報が必要です。予約・入会・日程などの連絡は、受講者本人と保護者の両方に届きます。正式な入会手続きには保護者のPARARI登録・ログインが必要です。</p>}
-        </fieldset>
-        {audience && <>
+        {minor && <p className="rounded-lg bg-blue-50 p-3 text-sm">このクラスは未成年向けです。保護者の方がお申し込みください。本人と保護者の両方に予約・入会・日程の案内が届きます。正式入会には保護者のPARARI登録・ログインが必要です。</p>}
         {targets?.length === 1 && <>
           <section className="grid gap-2 rounded-xl border p-4" aria-label="対象クラス">
             <h2 className="font-semibold">入会後のクラスと開催予定</h2>
@@ -109,7 +101,6 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         <label><input type="checkbox" required /> {data.sharedDisclosure && !data.information ? "個人情報の取扱いを確認し、同意します" : "案内と個人情報の取り扱いを確認し、同意します"}{data.direct && data.terms ? "。教室規約にも同意します" : ""}</label>
         <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white" disabled={busy}>{data.direct ? "申し込む" : "この日時で予約する"}</button>
         </fieldset>
-        </>}
       </form>}</>;
 }
 
