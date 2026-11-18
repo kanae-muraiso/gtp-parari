@@ -9,8 +9,10 @@ import { classEventDate } from "@/lib/classEvents";
 import { classWeekdays } from "@/lib/classRecurrence";
 import ClassBusinessFrontAction from "./ClassBusinessFrontAction";
 
+import type { ClassParticipantMember } from "@/lib/classCalendarAccess";
+
 type Visit = { class_id: string; visit_on: string; surcharge_yen: number; surcharge_paid_at: string | null; makeup_id: string | null };
-type Member = { userId: string; enrolled: boolean; fixed: string[]; visits: Visit[] };
+type Member = { userId: string; enrolled: boolean; members?: ClassParticipantMember[]; memberId?: string; startsOn?: string | null; fixed: string[]; visits: Visit[] };
 type Action = "fixed" | "reserve" | "cancel";
 const button = "w-fit rounded-md border border-neutral-300 bg-white px-3 py-1.5 font-medium text-neutral-900 hover:border-neutral-600 disabled:opacity-50";
 const yen = (fee: number) => fee.toLocaleString("ja-JP") + "円";
@@ -19,7 +21,9 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
   name: string; introduction: string; links: ClassBusinessFrontLink[]; schoolId?: string;
 }) {
   const { userId, loading } = useParticipations();
-  const path = schoolId ? "/front-participation?school=" + schoolId : "";
+  const [selectedMember, setSelectedMember] = useState("");
+  useEffect(() => { setSelectedMember(""); }, [schoolId, userId]);
+  const path = schoolId ? "/front-participation?school=" + schoolId + (selectedMember ? "&member=" + selectedMember : "") : "";
   const [result, setResult] = useState<{ path: string; member: Member } | null>(null);
   const member = result?.path === path && result.member.userId === userId ? result.member : null;
   const [pending, setPending] = useState(false);
@@ -31,6 +35,7 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
     if (!path || !userId) return;
     const request = new AbortController();
     classRequest<Member>(path, undefined, request.signal).then(member => {
+      if (request.signal.aborted) return;
       setResult({ path, member });
       setLoadError(false);
     }).catch(() => {
@@ -65,6 +70,12 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
       {path && userId && loadError && <div className="text-sm">
         参加状況を確認できませんでした。 <button type="button" className="underline" onClick={() => setAttempt(attempt + 1)}>再読み込み</button>
       </div>}
+      {member?.members && member.members.length > 1 && <label className="grid gap-2 text-sm">参加する受講者
+        <select className="rounded border bg-white p-2" disabled={pending} value={member.memberId ?? ""} onChange={event => setSelectedMember(event.target.value)}>
+          {member.members.map(item => <option key={item.id} value={item.id}>{item.name}{item.role === "guardian" ? "（保護者として操作）" : ""}</option>)}
+        </select>
+      </label>}
+      {member?.enrolled && schoolId && <Link className="text-sm underline" href={"/my/classes/" + schoolId}>自分の予定・欠席連絡・振替を開く</Link>}
       {message && <p role="status" className="text-sm">{message}</p>}
     </header>
     {(Object.keys(classParticipationFormats) as ClassParticipationFormat[]).map(format => {
@@ -92,7 +103,7 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
               {slot.upcoming?.length ? <ul className="grid gap-1 text-neutral-600">{slot.upcoming.map(day => {
                 const date = new Date(day.day + "T00:00:00Z");
                 const visit = member?.visits.find(visit => visit.class_id === slot.id && visit.visit_on === day.day);
-                const canReserve = format === "open" && !link.course?.walkIn && member?.enrolled &&
+                const canReserve = format === "open" && !link.course?.walkIn && member?.enrolled && (!member.startsOn || day.day >= member.startsOn) &&
                   Date.parse(day.day + "T" + day.time + "+09:00") > Date.now() &&
                   Date.parse(day.day + "T00:00+09:00") <= Date.now() + 42 * 86400000;
                 return <li key={day.day} className="flex flex-wrap items-center gap-x-2 gap-y-1">

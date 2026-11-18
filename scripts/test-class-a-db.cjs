@@ -618,6 +618,9 @@ async function main() {
     await assert.rejects(choose(learner,openSlot.id,next), {code:"42501"});
     await assert.rejects(db.query("select book_school_offer_intake($1,null,'x','x','x@example.invalid','x',null,$2)",[intake,directOffer]), {code:"42501"});
     await assert.rejects(db.query("select application_fields from school_admission_cases"), { code: "42501" });
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261118095053_class_participant_accounts.sql"),"utf8"));
+    await require("./test-class-participant-db.cjs")(db, { owner, learner, outsider, oldLearner });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
     await db.close();

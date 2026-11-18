@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { isScheduledClassDay } from "@/lib/classCalendar";
+import ClassAbsencesPanel from "@/components/parari/manage/ClassAbsencesPanel";
+import type { ClassParticipantMember } from "@/lib/classCalendarAccess";
 import LearnerClassCalendar from "@/components/parari/manage/LearnerClassCalendar";
 import ClassEventNotices from "@/components/parari/manage/ClassEventNotices";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -15,30 +17,32 @@ import { classMeetingUrl, classSchedule, type ClassSchool, type ClassVisits } fr
 export default function MyClassSchoolPage() {
   const { id } = useParams<{ id: string }>();
   const { userId } = useParticipations();
-  const [result, setResult] = useState<{ id: string; userId: string | null; school?: ClassSchool; calendarOnly?: boolean; visits?: ClassVisits | null; status?: number; error?: string } | null>(null);
+  const [result, setResult] = useState<{ id: string; userId: string | null; requestedMember: string; school?: ClassSchool; members?: ClassParticipantMember[]; memberId?: string | null; startsOn?: string | null; calendarOnly?: boolean; visits?: ClassVisits | null; status?: number; error?: string } | null>(null);
 
+  const [memberId, setMemberId] = useState("");
+  useEffect(() => { setMemberId(""); }, [id, userId]);
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<{ school: ClassSchool; userId: string; visits: ClassVisits | null; calendarOnly?: boolean }>(`?school=${encodeURIComponent(id)}`, undefined, controller.signal)
-      .then(({ school, userId: owner, visits, calendarOnly }) => {
-        if (!controller.signal.aborted) setResult({ id, userId: owner, school, visits, calendarOnly });
+    void classRequest<{ school: ClassSchool; userId: string; visits: ClassVisits | null; calendarOnly?: boolean; members: ClassParticipantMember[]; memberId: string | null; startsOn: string | null }>(`?school=${encodeURIComponent(id)}${memberId ? "&member=" + memberId : ""}`, undefined, controller.signal)
+      .then(({ school, userId: owner, visits, calendarOnly, members, memberId: selectedMemberId, startsOn }) => {
+        if (!controller.signal.aborted) setResult({ id, requestedMember: memberId, userId: owner, school, visits, calendarOnly, members, memberId: selectedMemberId, startsOn });
       }).catch((cause: unknown) => {
         if (controller.signal.aborted) return;
-        setResult({ id, userId, status: cause instanceof ClassRequestError ? cause.status : 500,
+        setResult({ id, requestedMember: memberId, userId, status: cause instanceof ClassRequestError ? cause.status : 500,
           error: cause instanceof Error ? cause.message : "教室を取得できませんでした。" });
       });
     return () => controller.abort();
-  }, [id, userId, refresh]);
+  }, [id, userId, refresh, memberId]);
 
   async function reserve(classId: string, day: string, cancel: boolean, makeupId?: string, expectedSurcharge = 0) {
     if (busy) return;
     setBusy(true);
     setNotice("");
     try {
-      await classRequest("", { action: "visit", schoolId: id, classId, day, cancel, makeupId, expectedSurcharge });
+      await classRequest("", { action: "visit", schoolId: id, memberId: current?.memberId, classId, day, cancel, makeupId, expectedSurcharge });
       setRefresh(value => value + 1);
       setNotice(cancel ? "予約を取り消しました。" : expectedSurcharge ? "差額の入金待ちで受け付けました。" : "予約しました。");
     } catch (error) {
@@ -46,7 +50,7 @@ export default function MyClassSchoolPage() {
     } finally { setBusy(false); }
   }
 
-  const current = result?.id === id && result.userId === userId ? result : null;
+  const current = result?.id === id && result.userId === userId && result.requestedMember === memberId ? result : null;
   const now = Date.now();
   const today = new Date(now + 9 * 3600000).toISOString().slice(0, 10);
   function quote(item: { baseFee?: number; fee_override_yen?: number | null }, source?: { fee_override_yen?: number | null }) {
@@ -58,10 +62,17 @@ export default function MyClassSchoolPage() {
   return <main className="min-h-screen bg-neutral-100">
     <div className="mx-auto grid w-full max-w-3xl gap-5 px-4 py-6">
       <MyAreaHeader title="クラス" area="library" navigation={<MyPrimaryTabs active={null} embedded />} />
-      {current?.school && userId && <LearnerClassCalendar key={id + userId} schoolId={id} refresh={refresh} />}
+      {current?.members && current.members.length > 1 && <label className="grid gap-2 rounded-xl border bg-white p-4">予定を確認する受講者
+        <select className="rounded border p-2" value={current.memberId ?? ""} onChange={event => setMemberId(event.target.value)}>
+          {current.members.map(member => <option key={member.id} value={member.id}>{member.name}{member.role === "guardian" ? "（保護者として確認）" : ""}</option>)}
+        </select>
+      </label>}
+      {current?.school && userId && <LearnerClassCalendar key={id + userId + current.memberId} schoolId={id} memberId={current.memberId} refresh={refresh} />}
       <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
         {current?.school ? <>
           <h2 className="text-xl font-bold">{current.school.name}</h2>
+          {current.startsOn && <p className="rounded-lg bg-blue-50 p-3 text-sm">参加開始日 {current.startsOn}</p>}
+          <ClassAbsencesPanel key={current.memberId ?? "owner"} schoolId={id} memberId={current.memberId} classes={current.school.classes} calendarDays={current.visits?.calendarDays} startsOn={current.startsOn} onChanged={() => setRefresh(value => value+1)} />
           <ClassEventNotices key={id} schoolId={id} />
           {notice && <p role="status" className="text-sm">{notice}</p>}
           {current.visits?.flexible && <p className="text-sm">同じ商品の開催枠を横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
@@ -77,7 +88,7 @@ export default function MyClassSchoolPage() {
               <summary className="cursor-pointer">開催日を予約する</summary>
               <p className="mt-1 text-neutral-600">差額がある場合は教室が入金を確認します。安い枠を選んだ場合や、差額入金後の取消時の返金は教室にご確認ください。</p>
               <div className="mt-2 grid gap-2">
-                {dates.filter(day => isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now)
+                {dates.filter(day => (!current.startsOn || day >= current.startsOn) && isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now)
                   .map(day => {
                     const booked = current.visits?.booked.find(visit => visit.class_id === item.id && visit.visit_on === day);
                     const surcharge = quote(item);
@@ -106,7 +117,7 @@ export default function MyClassSchoolPage() {
                     <p className="font-medium">{item.name}{item.location ? " · " + item.location : ""}</p>
                     {Array.from({ length: Math.max(0, Math.round((Date.parse(credit.expires_on) - Date.parse(today)) / 86400000) + 1) },
                       (_, index) => new Date(Date.parse(today) + index * 86400000).toISOString().slice(0, 10))
-                      .filter(day => isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now).map(day =>
+                      .filter(day => (!current.startsOn || day >= current.startsOn) && isScheduledClassDay(item, day, current?.visits?.calendarDays) && Date.parse(day + "T" + item.starts_at.slice(0, 5) + ":00+09:00") > now).map(day =>
                       <div className="flex items-center justify-between gap-2" key={day}>
                         <span>{day} {item.starts_at.slice(0, 5)}（日本時間）</span>
                         <button className="rounded border px-3 py-2" type="button" disabled={busy}

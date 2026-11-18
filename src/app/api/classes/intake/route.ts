@@ -7,6 +7,8 @@ import { readClassIntakeSource } from "@/lib/classIntakeSource";
 import { classIdPattern, classMeetingUrl } from "@/lib/classes";
 import { classDateTime, classNotice } from "@/lib/classAdmissionMail";
 
+import { classRegistrationMail } from "@/lib/classRegistrationMail";
+
 import { parseBriefingDesign, parseIntakeProfile, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -79,7 +81,7 @@ async function handle(request: NextRequest) {
       if (error?.code === "22023") return fail("申込内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const paymentUrl = options.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
-      const confirmation = await classNotice(profile.recipients, school.data.name + "の申込確認",
+      const confirmation = await classRegistrationMail(schoolId, caseId, request.nextUrl.origin, school.data.name + "の申込確認",
         [options.confirmation_text || "お申し込みを受け付けました。", options.payment_mode === "onsite" ? options.arrival_text : "",
           paymentUrl ? "支払いページ " + paymentUrl : ""].filter(Boolean).join("\n\n"), `class-application-${caseId}`);
       return reply({ ok: true, direct: true, confirmation, paymentUrl,
@@ -119,7 +121,7 @@ async function handle(request: NextRequest) {
       const confirmationMail = renderBriefingMail(design, "briefing", { subject: booking.kind + "の予約確認", body: "" }, mailValues);
       const reminderMail = renderBriefingMail(design, "reminder", { subject: booking.kind + "の前日のお知らせ", body: "" }, mailValues);
       const withDetails = (body: string) => [body, text].filter(Boolean).join("\n\n");
-      const confirmation = await classNotice(recipients, confirmationMail.subject, withDetails(confirmationMail.body), `class-booking-${booking.case_id}`);
+      const confirmation = await classRegistrationMail(schoolId, booking.case_id, request.nextUrl.origin, confirmationMail.subject, withDetails(confirmationMail.body), `class-booking-${booking.case_id}`);
       const remind = Date.parse(booking.starts_at) - 86400000;
       const reminder = remind > Date.now() && remind < Date.now() + 29 * 86400000
         ? await classNotice(recipients, reminderMail.subject, withDetails(reminderMail.body), `class-reminder-${booking.case_id}`, new Date(remind).toISOString()) : null;

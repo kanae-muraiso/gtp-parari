@@ -10,3 +10,11 @@ export async function classGuardianEnrollmentIds(user: string, school?: string) 
   if (error) throw error;
   return [...new Set(data.flatMap(row => row.enrollment_id ? [row.enrollment_id as string] : []))];
 }
+
+export type ClassParticipantMember = { id: string; name: string; role: "learner" | "guardian"; startsOn: string | null };
+
+export async function classParticipantMembers(user: string, school: string): Promise<ClassParticipantMember[]> {
+  const { data, error } = await db.rpc("class_participant_members", { p_actor: user, p_school: school });
+  if (error) throw error;
+  return data ?? [];
+}

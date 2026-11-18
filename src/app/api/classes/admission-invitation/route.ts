@@ -1,3 +1,4 @@
+import { classRegistrationMail } from "@/lib/classRegistrationMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classNotice } from "@/lib/classAdmissionMail";
@@ -100,19 +101,19 @@ async function handle(request: NextRequest, write: boolean) {
         body: "初日のご案内です。" }, mailValues);
       const [confirmed, scheduled] = await Promise.all([
         classNotice(recipients, receipt.subject, receipt.body, `briefing-receipt-${row.id}-${row.revision}`),
-        classNotice(recipients, start.subject, start.body + "\n初日 " + when + (arrival ? "\n集合場所 " + arrival : ""),
+        classRegistrationMail(row.school_id, row.id, request.nextUrl.origin, start.subject, start.body + "\n初日 " + when + (arrival ? "\n集合場所 " + arrival : ""),
           `briefing-first-day-${row.id}-${row.revision}`),
       ]);
       return send({ ok: true, startsOn: firstDay, confirmation: confirmed && scheduled });
     }
     let guardianUserId: string | null = null;
-    if (row.applicant_audience === "minor") {
+    if (row.applicant_audience === "minor" || row.applicant_audience === "adult") {
       const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
       const account = token ? await db.auth.getUser(token) : null;
       const user = account?.data.user;
       if (account?.error || !user?.email_confirmed_at || !row.applicant_email ||
         (row.applicant_user_id ? row.applicant_user_id !== user.id : user.email?.toLowerCase() !== row.applicant_email.toLowerCase()))
-        return send({ ok: false, loginRequired: true, message: "保護者のメールアドレスでPARARIに登録・ログインし、入会手続きをしてください。" }, 401);
+        return send({ ok: false, loginRequired: true, message: (row.applicant_audience === "minor" ? "保護者" : "本人") + "のメールアドレスでPARARIに登録・ログインし、入会手続きをしてください。" }, 401);
       guardianUserId = user.id;
     }
     const options = recruitment.data;
@@ -120,7 +121,7 @@ async function handle(request: NextRequest, write: boolean) {
     const arrival = row.payment === "onsite" && options?.payment_mode === "onsite" ? options.arrival_text : null;
     if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
       startsOn: row.starts_on, deadline: row.deadline, payment: row.payment, revision: row.revision,
-      applicationText: options?.application_text, paymentUrl, arrival, agreed: Boolean(row.consent_at && row.agreed_terms === terms && (row.applicant_audience !== "minor" || row.applicant_user_id)) });
+      applicationText: options?.application_text, paymentUrl, arrival, agreed: Boolean(row.consent_at && row.agreed_terms === terms && (!row.applicant_audience || row.applicant_user_id)) });
 
     const input = await request.json().catch(() => null);
     if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision) {

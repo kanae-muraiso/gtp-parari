@@ -7,6 +7,7 @@ import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessFrontPanel from "./ClassBusinessFrontPanel";
 import ClassSetupPanel from "./ClassSetupPanel";
+import ClassAbsencesPanel from "./ClassAbsencesPanel";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
 import ClassSlotSettingsPanel from "./ClassSlotSettingsPanel";
@@ -140,6 +141,7 @@ function BusinessClassManager() {
       <button type="button" className="ml-auto underline" onClick={() => { backToList(); setWorkspace("setup"); }}>開設準備・設定を見直す</button>
     </div>
     <h2 className="text-xl font-bold">日々の運営</h2>
+    <details className={panel}><summary className="cursor-pointer font-semibold">受講者からの欠席連絡</summary><ClassAbsencesPanel schoolId={school.id} classes={school.classes} /></details>
     {!item && !creating && !schoolAdmission && <details className="w-fit max-w-full rounded-lg border border-neutral-200 bg-white open:w-full">
       <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">事業設定</summary>
       <div className="grid gap-3 border-t border-neutral-200 px-3 py-3">

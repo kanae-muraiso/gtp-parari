@@ -1,5 +1,5 @@
 import { classDateRuleKey, classDateRulesOverlap, hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules, type ClassDateRule } from "@/lib/classRecurrence";
-import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
+import { classGuardianEnrollmentIds, classParticipantMembers } from "@/lib/classCalendarAccess";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
 import { NextRequest, NextResponse } from "next/server";
@@ -65,25 +65,27 @@ export async function GET(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const scope = request.nextUrl.searchParams.get("business");
     if (request.nextUrl.searchParams.get("businesses") === "1") {
+      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
       const { data, error } = await db.from("class_schools").select("id,name,business_type,archived_at").eq("owner_user_id", user.id).eq("tier", "a").order("name");
       if (error) throw error;
       return reply({ ok: true, businesses: data });
     }
     if (request.nextUrl.searchParams.get("home") === "1") {
+      const guardianIds = await classGuardianEnrollmentIds(user.id);
+      let enrolledQuery = db.from("school_enrollments").select("school:class_schools(id,name,archived_at)").eq("status", "active");
+      enrolledQuery = guardianIds.length ? enrolledQuery.or(`user_id.eq.${user.id},id.in.(${guardianIds.join(",")})`) : enrolledQuery.eq("user_id", user.id);
       const [owned, enrolled] = await Promise.all([
-        db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name"),
-        db.from("school_enrollments").select("school:class_schools(id,name,archived_at)")
-          .eq("user_id", user.id).eq("status", "active")
-          .returns<{ school: { id: string; name: string; archived_at?: string | null } | null }[]>(),
+        user.isMonitor ? db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name") : Promise.resolve({ data: [], error: null }),
+        enrolledQuery.returns<{ school: { id: string; name: string; archived_at?: string | null } | null }[]>(),
       ]);
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
-      return reply({ ok: true, userId: user.id, owned: owned.data?.[0] ?? null, businesses: owned.data,
-        enrolled: (enrolled.data ?? []).flatMap(({ school }) => school && !school.archived_at ? [{ id: school.id, name: school.name }] : []) });
+      return reply({ ok: true, userId: user.id, canManage: user.isMonitor, owned: owned.data?.[0] ?? null, businesses: owned.data,
+        enrolled: [...new Map((enrolled.data ?? []).flatMap(({ school }) => school && !school.archived_at ? [[school.id, { id: school.id, name: school.name }] as const] : [])).values()] });
     }
     if (request.nextUrl.searchParams.get("product") === "1") {
+      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
       const school = await ownedSchool(user.id, scope);
       if (!school) return fail("教室が見つかりません。", 404);
       const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
@@ -98,26 +100,22 @@ export async function GET(request: NextRequest) {
       })) });
     }
     const id = request.nextUrl.searchParams.get("school");
-    if (id === null) return await manage(user.id, scope);
+    if (id === null) return user.isMonitor ? await manage(user.id, scope) : fail("教室が見つかりません。", 404);
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
 
-    const { data: school, error } = await db.rpc("read_class_school", { p_school: id, p_user: user.id });
+    const members = await classParticipantMembers(user.id, id);
+    const requestedMember = request.nextUrl.searchParams.get("member");
+    const selected = requestedMember ? members.find(member => member.id === requestedMember) : members[0];
+    if (requestedMember && !selected) return fail("教室が見つかりません。", 404);
+    const { data: school, error } = selected
+      ? await db.rpc("read_class_school_member", { p_actor: user.id, p_school: id, p_member: selected.id })
+      : user.isMonitor ? await db.rpc("read_class_school", { p_school: id, p_user: user.id }) : { data: null, error: null };
     if (error) throw error;
-    if (!school) {
-      const ids = await classGuardianEnrollmentIds(user.id, id);
-      if (!ids.length) return fail("教室が見つかりません。", 404);
-      const [business, enrolled] = await Promise.all([
-        db.from("class_schools").select("id,name").eq("id", id).is("archived_at", null).maybeSingle(),
-        db.from("school_enrollments").select("id").eq("school_id", id).in("id", ids).eq("status", "active").limit(1),
-      ]);
-      if (business.error || enrolled.error) throw business.error ?? enrolled.error;
-      if (!business.data || !enrolled.data?.length) return fail("教室が見つかりません。", 404);
-      return reply({ ok: true, userId: user.id, school: { ...business.data, classes: [] }, visits: null, calendarOnly: true });
-    }
+    if (!school) return fail("教室が見つかりません。", 404);
     const visible = school as ClassSchool;
     const [member, products] = await Promise.all([
       db.from("school_enrollments").select("id,class_participation,contract_fee_yen").eq("school_id", id)
-        .eq("user_id", user.id).eq("status", "active").maybeSingle(),
+        .eq("id", selected?.id ?? "00000000-0000-0000-0000-000000000000").eq("status", "active").maybeSingle(),
       db.from("school_class_products").select("id,name,design").eq("school_id", id),
     ]);
     if (member.error || products.error) throw member.error ?? products.error;
@@ -163,7 +161,7 @@ export async function GET(request: NextRequest) {
       visits = { flexible, classIds: Object.keys(allowances), monthlyVisits: Object.values(allowances)[0] ?? 0,
         allowances, calendarDays, contractFee: member.data.contract_fee_yen, booked: booked.data, makeups, makeupClasses };
     }
-    return reply({ ok: true, userId: user.id, school: visible, visits });
+    return reply({ ok: true, userId: user.id, school: visible, visits, members, memberId: selected?.id ?? null, startsOn: selected?.startsOn ?? null });
   } catch (error) {
     console.error("[classes] load failed", error);
     return fail("教室を取得できませんでした。", 500);
@@ -192,26 +190,29 @@ export async function POST(request: NextRequest) {
   try {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const scope = request.nextUrl.searchParams.get("business");
     const body = await request.json().catch(() => null);
     if (body?.action === "visit") {
       if (![body.schoolId, body.classId].every(value => typeof value === "string" && classIdPattern.test(value)) ||
         typeof body.day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.day) ||
         !Number.isFinite(Date.parse(body.day)) || new Date(body.day).toISOString().slice(0, 10) !== body.day) return fail("参加日を確認してください。");
-      const args = { p_user: user.id, p_school: body.schoolId, p_class: body.classId, p_day: body.day };
+      const members = await classParticipantMembers(user.id, body.schoolId);
+      const member = body.memberId ? members.find(item => item.id === body.memberId) : members[0];
+      if (!member || (member.startsOn && body.day < member.startsOn)) return fail("参加日と受講者を確認してください。", 404);
+      const args = { p_actor: user.id, p_member: member.id, p_school: body.schoolId, p_class: body.classId, p_day: body.day };
       if (body.makeupId && (typeof body.makeupId !== "string" || !classIdPattern.test(body.makeupId))) return fail("振替を確認してください。");
       const expected = body.expectedSurcharge ?? 0;
       if (!Number.isInteger(expected) || expected < 0 || expected > 1000000) return fail("差額を確認してください。");
       const { error } = body.cancel === true
-        ? await db.rpc("manage_class_visit", { ...args, p_cancel: true })
-        : await db.rpc("reserve_priced_class_visit", { ...args, p_makeup: body.makeupId ?? null, p_expected: expected });
+        ? await db.rpc("manage_class_member_visit", { ...args, p_cancel: true })
+        : await db.rpc("reserve_priced_member_class_visit", { ...args, p_makeup: body.makeupId ?? null, p_expected: expected });
       if (error?.code === "P0003") return fail("料金が更新されました。再読み込みして差額をご確認ください。", 409);
       if (error?.code === "P0001") return fail("定員または月の受講回数の上限に達しています。", 409);
       if (error?.code === "22023" || error?.code === "P0002") return fail("この開催回は操作できません。", 409);
       if (error) throw error;
       return reply({ ok: true });
     }
+    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
     const name = clean(body?.name);
     if (body?.action === "archiveBusiness" || body?.action === "restoreBusiness") {
       if (typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業を確認してください。");

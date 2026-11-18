@@ -20,6 +20,7 @@ import {
 
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import MyClassCalendars from "@/components/parari/navigation/MyClassCalendars";
 import PersonalCalendarEntryForm from "@/components/parari/calendar/PersonalCalendarEntryForm";
 
 
@@ -937,6 +938,7 @@ export default function MyCalendarPage() {
       <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
         <MyAreaHeader title="カレンダー" area="library" navigation={<MyPrimaryTabs active="calendar" embedded />} />
 
+        <MyClassCalendars />
         <div className="mt-6 w-full">
           {/* VIEW SWITCH */}
           <div className="grid grid-cols-2 rounded-2xl bg-neutral-200 p-1">

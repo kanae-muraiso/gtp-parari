@@ -33,6 +33,12 @@ jobs:
       - name: Participation navigation regression check
         run: npm run test:participation-navigation
 
+      - name: Class learner and guardian access
+        run: npm run test:class-participant-access
+
+      - name: Class admission setup and isolated database checks
+        run: npm run test:class-setup && npm run test:class-a-db
+
       - name: Legacy PAGE URL and authorization check
         run: npm run test:legacy-page-routes
 

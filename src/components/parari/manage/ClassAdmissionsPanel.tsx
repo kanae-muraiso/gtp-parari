@@ -137,11 +137,12 @@ function Candidate({ candidate: row, data, busy, save }: {
   const [correction, setCorrection] = useState(false);
   const { labels, terms } = data.settings;
   if (row.enrollment_id) return <div className="grid gap-2"><p>名簿に登録済みです。</p>
+    {row.applicant_email && <button type="button" className={button} disabled={busy} onClick={() => void save("email", { id: row.id, kind: "account" })}>受講者ページの登録案内を送る</button>}
     {row.applicant_email && <MailForm title="初回の日程をメールで案内" busy={busy} onSend={instructions => save("email", { id: row.id, kind: "start", instructions })} />}
   </div>;
   const showBriefing = row.briefing !== "skip" || correction;
   const showTest = row.test !== "skip" || correction;
-  const agreed = row.consent_at && row.agreed_terms === terms && (row.applicant_audience !== "minor" || row.applicant_user_id);
+  const agreed = row.consent_at && row.agreed_terms === terms && (!row.applicant_audience || row.applicant_user_id);
   const toTimestamp = (value: FormDataEntryValue | null) => value ? String(value) + ":00+09:00" : null;
   const toLocal = (value: string | null) => value ? new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16) : "";
   const canFinish = row.decision === "approved" && row.starts_on &&
@@ -164,6 +165,7 @@ function Candidate({ candidate: row, data, busy, save }: {
   return <div className="grid gap-3 border-t pt-3">
     {row.requested_class_id && <p className="text-sm">希望クラス　{data.classes?.find(item => item.id === row.requested_class_id)?.name}</p>}
     {row.applicant_audience === "minor" && !row.applicant_user_id && <p className="text-sm">正式な入会には、保護者が案内リンクからPARARIに登録・ログインして同意する必要があります。</p>}
+    {row.applicant_email && !row.applicant_user_id && <div className="grid gap-2 rounded border p-3 text-sm"><p>PARARIの申込情報との接続は確認待ちです。</p><button type="button" className={button} disabled={busy} onClick={() => void save("email", { id: row.id, kind: "account" })}>アカウントの登録案内を送る</button></div>}
     {row.applicant_name && <p className="text-sm">申込者 {row.applicant_name} · {row.applicant_email}{row.applicant_phone ? " · " + row.applicant_phone : ""}</p>}
       {row.applicant_audience && <p className="text-sm">{row.applicant_audience === "minor" ? "未成年 · 本人と保護者へ連絡" : "成人"}</p>}
       {row.application_fields && <dl className="grid gap-1 text-sm">
@@ -232,7 +234,7 @@ function Candidate({ candidate: row, data, busy, save }: {
             <label className="text-sm">回答期限<input className={field} type="date" name="deadline" defaultValue={row.deadline ?? ""} /></label>
             <Select name="payment" label="初回費用の方法" values={options.payment} initial={row.payment === "free" && row.decision === "pending" && row.briefing !== "skip" ? data.paymentMode ?? row.payment : row.payment} />
             {terms && <p className="whitespace-pre-wrap rounded bg-neutral-50 p-2 text-sm">{terms}</p>}
-            {agreed ? <p className="text-sm">同意済み</p> : !row.briefing_followup && row.applicant_audience !== "minor" && <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
+            {agreed ? <p className="text-sm">同意済み</p> : !row.briefing_followup && !row.applicant_audience && <label className="text-sm"><input type="checkbox" name="consent" /> 本人または{data.settings.proxy ? labels.proxy : labels.learner}の同意を確認した</label>}
             {row.received_at ? <p className="text-sm">受領記録あり</p> : <label className="text-sm"><input type="checkbox" name="receipt" /> 初回費用を受領した</label>}
           </div>
         </details>
