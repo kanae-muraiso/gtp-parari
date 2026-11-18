@@ -97,7 +97,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const kind = recruitment?.kind ?? "説明会";
   const showGeneralSchedule = !previewOffer && (recruitment?.show_class_schedule ?? !recruitment);
   const previewClasses = previewOffer ? classes.filter(item => previewOffer.class_ids.includes(item.id)) :
-    showGeneralSchedule ? classes.filter(item => item.product_id) : [];
+    classes.filter(item => item.product_id);
   const previewProducts = new Map(products?.map(product => [product.id, product]));
   const previewTargets = previewClasses.filter(item => previewProducts.get(item.product_id ?? "")?.walkInFee == null)
     .map(item => classIntakeTarget(item, previewProducts.get(item.product_id ?? ""), calendar));
@@ -127,8 +127,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         {useSample && <p className="text-sm">サンプルの予約枠を表示しています。</p>}
       </div>}
       <div className="mx-auto grid w-full max-w-sm gap-3 rounded-2xl border p-4">
-          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : showGeneralSchedule ? { classSchedules: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information?.trim() ? previewOffer.information : recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
-            sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: previewOffer?.audience_override ?? recruitment?.audience ?? briefingAudience ?? "adult", bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
+          {step === 0 && <ClassIntakeForm key={previewOfferId} data={{ school: data.school, ...(previewOffer ? { offerName: previewOffer.name, targetClasses: previewTargets, walkInSchedules: previewWalkIn } : previewTargets.length ? { targetClasses: previewTargets, walkInSchedules: previewWalkIn } : {}), information: previewOffer?.information?.trim() ? previewOffer.information : recruitment?.information ?? "これは練習用の案内です。日時を選んで説明会の予約をお試しください。", kind,
+            sharedDisclosure: data.sharedDisclosure ? { url: "/my/settings/seller" } : null, slots: previewSlots, audience: recruitment?.audience ?? briefingAudience ?? "adult", bookingWeeks: recruitment?.booking_weeks, direct: isDirect, terms: settings.terms, applicationText: isDirect ? recruitment?.application_text : undefined }}
             submit={event => { event.preventDefault(); setSlotId(String(new FormData(event.currentTarget).get("slot"))); setStep(isDirect ? 3 : 1); }} />}
           {step === 1 && <>
             <h4 className="font-bold">予約を受け付けました</h4>
@@ -177,10 +177,8 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     {!publicationOnly && <form data-setup-block="recruitment" onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
       <fieldset className="grid gap-2 rounded-lg border p-3">
         <legend className="px-1 font-semibold">標準設定・全クラスをまとめて設定</legend>
-        <p className="text-sm text-neutral-600">新しいクラスに使う標準設定です。「全クラスをこの設定に統一して保存」を押すと、既にあるクラスの個別設定も置き換えます。</p>
-        <label>受講対象<select className={field} name="audience" value={audience} onChange={event => setAudience(event.target.value as "adult" | "minor")}>
-          <option value="adult">成人向け</option><option value="minor">未成年向け（保護者の情報が必須）</option>
-        </select></label>
+        <p className="text-sm text-neutral-600">新しいクラスに使う標準設定です。「全クラスをこの設定に統一して保存」を押すと、既にあるクラスの入会方法も置き換えます。受講対象はクラス設定を維持します。</p>
+        <input type="hidden" name="audience" value={audience} />
         <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま申込</label>
         <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 対面の体験・説明会から申込</label>
       </fieldset>

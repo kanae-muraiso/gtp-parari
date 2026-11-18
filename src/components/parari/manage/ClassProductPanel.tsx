@@ -80,6 +80,11 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       </select></label>}
       <label>商品名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
         onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
+      <label>受講対象<select name="classAudience" className={field} required value={product.audience ?? ""}
+        onChange={event => patch("audience", event.target.value as ClassProduct["audience"])}>
+        <option value="">受講対象を選んでください</option><option value="adult">成人向け</option><option value="minor">未成年向け</option>
+      </select></label>
+      <p className="text-sm text-neutral-600">申込書はこの設定を引き継ぎます。未成年向けは保護者の氏名・メール・電話・住所が必須になり、連絡は本人と保護者の両方に届きます。</p>
       <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える開催枠</legend>
         {available.map(item => <label key={item.id} className="text-sm">
           <input type="checkbox" checked={product.classIds.includes(item.id)} onChange={event => patch("classIds",

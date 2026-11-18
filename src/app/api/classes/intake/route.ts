@@ -34,7 +34,7 @@ async function handle(request: NextRequest) {
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
     if (!information.trim() && !shared) return missing();
     const options = recruitment;
-    const showGeneralSchedule = !offer && request.method === "GET" && options.show_class_schedule === true;
+    const showGeneralSchedule = !offer;
     const query = db.from("school_classes")
       .select("id,name,starts_on,starts_at,cadence,location,delivery,schedule_rules,fee_override_yen,product:school_class_products(id,name,design)")
       .eq("school_id", schoolId).order("name");
@@ -48,7 +48,7 @@ async function handle(request: NextRequest) {
     const walkInSchedules = new Map<string, { id: string; name: string }>();
     for (const item of targets?.data ?? []) {
       const product = (Array.isArray(item.product) ? item.product[0] : item.product) as {
-        id: string; name: string; design?: { monthlyFee?: number; monthlyVisits?: number; booking?: string; walkInFee?: number | null };
+        id: string; name: string; design?: { audience?: "adult" | "minor"; monthlyFee?: number; monthlyVisits?: number; booking?: string; walkInFee?: number | null };
       } | null;
       if (product?.design?.walkInFee != null) {
         walkInSchedules.set(product.id, { id: product.id, name: product.name });
@@ -57,20 +57,21 @@ async function handle(request: NextRequest) {
       }
     }
     const offerFields = offer ? { offerName: offer.name, targetClasses, walkInSchedules: [...walkInSchedules.values()] } :
-      showGeneralSchedule ? { classSchedules: targetClasses, walkInSchedules: [...walkInSchedules.values()] } : {};
+      showGeneralSchedule && targetClasses.length ? { targetClasses, walkInSchedules: [...walkInSchedules.values()] } : {};
     function submitProfile(input: Record<string, unknown>, profile: NonNullable<ReturnType<typeof parseIntakeProfile>>, slot: string | null) {
       return db.rpc("submit_school_intake_profile", { p_public: options.public_id, p_offer: offer?.id ?? null,
-        p_class: offer ? input.classId : null, p_slot: slot, p_audience: profile.audience,
+        p_class: targetClasses.length ? input.classId : null, p_slot: slot, p_audience: profile.audience,
         p_fields: profile.fields, p_information: input.information, p_terms: input.terms ?? "" });
     }
+    const audienceFor = (input: Record<string, unknown>) => targetClasses.find(item => item.id === input.classId)?.audience ?? options.audience;
     const versionMatches = (version: unknown) => version === (shared?.version ?? undefined);
     if (request.method === "POST" && options.route === "direct") {
       const input = await request.json().catch(() => null);
       if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
-      const profile = input && parseIntakeProfile({ ...input, audience: options.audience });
+      const profile = input && parseIntakeProfile({ ...input, audience: audienceFor(input) });
       if (!profile || input.agree !== true || typeof input.information !== "string" || input.information.length > 4000 ||
           typeof input.terms !== "string" || input.terms.length > 8000) return fail("必須の連絡先と同意を確認してください。");
-      if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      if ((offer || targetClasses.length) && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const result = await submitProfile(input, profile, null);
       const { error } = result;
       const caseId = result.data?.[0]?.case_id;
@@ -96,10 +97,10 @@ async function handle(request: NextRequest) {
     if (request.method === "POST") {
       const input = await request.json().catch(() => null);
       if (!versionMatches(input?.disclosureVersion)) return fail("案内が更新されました。再読み込みして内容をご確認ください。", 409);
-      const profile = input && parseIntakeProfile({ ...input, audience: options.audience });
+      const profile = input && parseIntakeProfile({ ...input, audience: audienceFor(input) });
       if (!profile || !classIdPattern.test(clean(input.slot)) || input.agree !== true ||
           typeof input.information !== "string" || input.information.length > 4000) return fail("必須の連絡先・日時・同意をご確認ください。");
-      if (offer && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
+      if ((offer || targetClasses.length) && !targetClasses.some(item => item.id === input.classId)) return fail("対象クラスを選んでください。");
       const { data, error } = await submitProfile(input, profile, input.slot);
       if (error?.code === "P0002") return missing();
       if (error?.code === "P0001" || error?.code === "22023") return fail("満席、受付期間外、または受付内容が変更されました。再読み込みしてください。", 409);

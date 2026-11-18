@@ -12,11 +12,11 @@ const field = "block w-full rounded-lg border p-2";
 export default function ClassIntakeForm({ data, busy = false, done = "", submit }: {
   data: Intake; busy?: boolean; done?: string; submit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const audience = data.audience ?? "adult";
-  const minor = audience === "minor";
   const targets = data.targetClasses;
   const [targetId, setTargetId] = useState("");
   const target = targets?.length === 1 ? targets[0] : targets?.find(item => item.id === targetId);
+  const audience = target?.audience ?? data.audience ?? "adult";
+  const minor = audience === "minor";
   const targetReady = !targets || Boolean(target);
   const onlyWalkIn = targets?.length === 0 && Boolean(data.walkInSchedules?.length);
   const [selected, setSelected] = useState("");
@@ -84,7 +84,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
             {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
           </div>}
         </section>}
-        <fieldset disabled={busy || !ready} className={ready ? "grid min-w-0 gap-3" : "hidden"}>
+        <fieldset key={audience} disabled={busy || !ready} className={ready ? "grid min-w-0 gap-3" : "hidden"}>
         <legend className="mb-2 font-semibold">お名前と連絡先</legend>
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
         <label>受講する方のメールアドレス（必須）<input name="email" className={field} type="email" maxLength={254} required /></label>

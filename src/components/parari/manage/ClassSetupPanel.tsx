@@ -184,7 +184,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   const content = draft.entries.length ? draft : { ...draft, entries: front.links.map(link => link.key) };
   const selected = selectClassBusinessFrontLinks(content.entries, front.links);
   const missingDates = products.filter(product => !school.classes.some(item => item.product_id === product.id));
-  const missingContent = products.filter(product => !product.design.description?.trim());
+  const missingContent = products.filter(product => !product.design.description?.trim() || !product.design.audience);
   const missingUpcoming = products.filter(product => !front.links.some(link => link.course?.id === product.id && link.course.slots.some(slot => slot.upcoming?.length)));
   const intake = recruitment.recruitment;
   const usesBriefing = intake?.route === "briefing" || Boolean(recruitment.offers?.some(offer => offer.route_override === "briefing"));
@@ -192,7 +192,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   const registrationReady = registrationIssues.length === 0;
   const statuses = [
     school.name.trim() && draft.introduction.trim() ? "設定済み" : "紹介文を保存してください",
-    products.length && !missingContent.length ? "設定済み" : "内容と料金を保存してください",
+    products.length && !missingContent.length ? "設定済み" : "内容・受講対象・料金を保存してください",
     products.length && !missingDates.length && !missingUpcoming.length ? "設定済み" : "各クラスの開催日を登録してください",
     registrationReady ? "設定済み" : registrationIssues[0],
     reviewed ? "確認済み" : "申込者の画面を確認してください",
@@ -265,6 +265,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         <button type="button" className={primary} disabled={editingProduct !== null} onClick={() => setEditingProduct("")}>クラスを作る</button>
         {products.map(product => <section className={panel} key={product.id}>
           <h4 className="font-semibold">{product.name}</h4>
+          <p className="text-sm">{product.design.audience === "minor" ? "未成年向け" : product.design.audience === "adult" ? "成人向け" : "受講対象を設定してください"}</p>
           <p className="whitespace-pre-wrap text-sm">{product.design.description || "内容を入力してください。"}</p>
           <p className="text-sm">{product.design.walkInFee != null ? "予約不要の当日参加" : product.design.booking === "flexible" ? "好きな回を予約する" : "決まった枠に通う"}</p>
           <button type="button" className={button} disabled={editingProduct !== null} onClick={() => setEditingProduct(product.id)}>内容・料金を編集</button>
@@ -302,8 +303,8 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         <div><ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
           onOfferDraftChange={() => markDirty("offer")} onOfferSaved={() => saved("offer")} onOfferSaveError={() => saveFailed("offer")}
           onDraftChange={() => markDirty("recruitment")} onSaveError={() => saveFailed("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} /></div>
-        {usesBriefing && <div data-setup-block="briefing" onChangeCapture={() => markDirty("briefing")}>
-          <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} guided onSaveError={() => saveFailed("briefing")} onSaved={() => saved("briefing")} />
+        {usesBriefing && <div data-setup-block="briefing" onChangeCapture={event => { if ((event.target as HTMLElement).getAttribute("name") !== "previewClass") markDirty("briefing"); }}>
+          <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} classProducts={management.products} guided onSaveError={() => saveFailed("briefing")} onSaved={() => saved("briefing")} />
         </div>}
         <details className={panel}>
           <summary className="cursor-pointer font-semibold">規約・テスト・代理申込者</summary>

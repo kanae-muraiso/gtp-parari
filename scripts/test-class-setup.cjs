@@ -40,7 +40,7 @@ const state = {
   management: { userId: "teacher", school: { id: "school", name: "英語教室", classes: [
     { id: "slot", name: "金曜", product_id: "product", starts_at: "18:00", starts_on: "2026-11-20", cadence: "weekly" },
   ] }, products: [{ id: "product", name: "英語" }], roster: [] },
-  products: [{ id: "product", name: "英語", design: { description: "英語を学ぶ", booking: "fixed" } }],
+  products: [{ id: "product", name: "英語", design: { audience:"adult", description: "英語を学ぶ", booking: "fixed" } }],
   recruitment: { school: "副業トーク", recruitment: { route: "direct", information: "", payment_mode: "free", payment_url: null, arrival_text: "" }, sharedDisclosure: true, available: [], slots: [], blocks: [], offers: [] },
   front: { front: { draft: { ...content, introduction: "" }, published: null, revision: 1 }, links: [course, intake] },
   admissions: { settings: {}, briefingDesign: null },
@@ -194,14 +194,13 @@ async function main() {
   await click("入会方法を設定");
   const routeSelect = document.querySelector('select[name="routeOverride"]');
   assert.equal(routeSelect.options.length,2);
-  const audienceSelect=document.querySelector('select[name="audienceOverride"]');
-  await act(async()=>{audienceSelect.value="minor";audienceSelect.dispatchEvent(new window.Event("change",{bubbles:true}));});
+  assert.equal(document.querySelector('select[name="audienceOverride"]'),null);
   await act(async () => { routeSelect.value = "briefing"; routeSelect.dispatchEvent(new window.Event("change", { bubbles: true })); });
   await act(async () => document.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
   assert.equal(savedOffer.routeOverride, "briefing");
   assert.deepEqual(savedOffer.classIds, ["free-a", "free-b"]);
   assert.equal(savedOffer.enabled, false);
-  assert.equal(savedOffer.audienceOverride,"minor");
+  assert.equal("audienceOverride" in savedOffer,false);
   const grouped = { id: "grouped", name: "まとめた募集", information: "案内", class_ids: ["free-a", "paid-a"], enabled: false, route_override: "briefing" };
   await act(async () => root.render(React.createElement(Offers, { ...offerProps, offers: [grouped] })));
   await click("設定を編集");
@@ -212,6 +211,34 @@ async function main() {
   await click("この受付を公開する");
   assert.equal(savedOffer.enabled, true);
   assert.equal(savedOffer.routeOverride, "briefing");
+  const productDomain=load("src/lib/classProduct.ts");
+  const productDesign={classIds:[],audience:"minor",description:"英語",capacity:10,monthlyFee:0,monthlyVisits:4,
+    booking:"fixed",extraFee:null,makeup:"none",makeupExpiry:"next_month"};
+  assert.equal(productDomain.parseClassProduct(productDesign,new Set(),true).audience,"minor");
+  assert.equal(productDomain.parseClassProduct({...productDesign,audience:"invalid"},new Set(),true),null);
+  const ProductEditor=load("src/components/parari/manage/ClassProductPanel.tsx",{
+    "@/lib/classRequests":{classRequest:async(url,body)=>{if(body){lastBody=body;return {design:body.design};}
+      return {design:null,products:[{id:"english",name:"英語",design:productDesign}]};}},
+    "@/lib/classProduct":productDomain,"@/lib/classBusinessFront":{classParticipationFormat:()=>"fixed"},
+  }).default;
+  await act(async()=>root.render(React.createElement(ProductEditor,{classes:[],initialProduct:"english",allowProductSelection:false})));
+  await tick();
+  const productAudience=document.querySelector('select[name="classAudience"]');
+  assert.equal(productAudience.value,"minor");assert.equal(productAudience.required,true);
+  await act(async()=>{productAudience.value="adult";productAudience.dispatchEvent(new window.Event("change",{bubbles:true}));});
+  await act(async()=>document.querySelector("form").dispatchEvent(new window.Event("submit",{bubbles:true,cancelable:true})));
+  assert.equal(lastBody.design.audience,"adult");
+  const Blueprint=load("src/components/parari/manage/ClassAdmissionBlueprint.tsx",{
+    "@/lib/classRequests":{classRequest:async()=>({briefingDesign:null})},
+    "@/components/parari/classes/ClassBookingCalendar":{__esModule:true,default:stub,bookingDate:String,bookingTime:String},
+  }).default;
+  await act(async()=>root.render(React.createElement(Blueprint,{schoolId:"school",schoolName:"事業",guided:true,
+    classProducts:[{id:"child",name:"子ども英語",audience:"minor"},{id:"adult",name:"大人英語",audience:"adult"}]})));
+  await tick();await click("申込フォーム");
+  assert.match(document.body.textContent,/未成年向け/);assert.match(document.body.textContent,/保護者の項目/);
+  const previewClass=document.querySelector('select[name="previewClass"]');
+  await act(async()=>{previewClass.value="adult";previewClass.dispatchEvent(new window.Event("change",{bubbles:true}));});
+  assert.doesNotMatch(document.body.textContent,/保護者の項目/);
   const workflow = load("src/lib/classBriefingWorkflow.ts");
   const profile = { audience:"minor",name:"受講者",email:"learner@example.invalid",guardianName:"保護者",
     guardianEmail:"guardian@example.invalid",guardianPhone:"09012345678",guardianAddress:"住所" };
@@ -231,21 +258,29 @@ async function main() {
   await act(async()=>root.render(React.createElement(Applicant,{data:{...applicantData,audience:"adult"},submit:()=>{}})));
   assert.equal(document.querySelector('input[name="guardianName"]'),null);
   assert.ok(document.querySelector('input[name="email"]'));
+  const childTarget={id:"child-slot",name:"子ども英語",schedule:"毎週",location:null,fee:0,audience:"minor"};
+  const adultTarget={...childTarget,id:"adult-slot",name:"大人英語",audience:"adult"};
+  await act(async()=>root.render(React.createElement(Applicant,{data:{...applicantData,audience:"adult",targetClasses:[childTarget,adultTarget]},submit:()=>{}})));
+  await act(async()=>document.querySelector('input[name="classId"][value="child-slot"]').click());
+  assert.ok(document.querySelector('input[name="guardianAddress"]'));
+  await act(async()=>document.querySelector('input[name="classId"][value="adult-slot"]').click());
+  assert.equal(document.querySelector('input[name="guardianAddress"]'),null);
   let rpcArgs, rpcCalls=0;
   const deliveries=[];
-  let route="direct";
+  let route="direct", intakeAudience="minor";
+  let intakeTargets=[];
   const intakeDb={from(table) {
     const result = table === "class_schools" ? {name:"事業",owner_user_id:"teacher"} : table === "profiles" ? {is_monitor:true}
-      : table === "school_admission_settings" ? {} : table === "school_recruitment_slots" ? {location:"会場",duration_minutes:30,channel:"onsite"} : [];
+      : table === "school_admission_settings" ? {} : table === "school_classes" ? intakeTargets : table === "school_recruitment_slots" ? {location:"会場",duration_minutes:30,channel:"onsite"} : [];
     const chain = new Proxy({}, {get(_,key) { if(key==="then") return resolve => resolve({data:result,error:null}); return () => chain; }});
     return chain;
   }, async rpc(name,args) {rpcArgs=args;rpcCalls++;assert.equal(name,"submit_school_intake_profile");return {data:[{case_id:"test-case",starts_at:new Date(Date.now()+2*86400000).toISOString(),school_name:"事業",kind:"説明会"}],error:null};}};
   const api = load("src/app/api/classes/intake/route.ts", {
-    "@/lib/classIntakeCalendarServer":{}, "@/lib/classIntakeTargets":{},
+    "@/lib/classIntakeCalendarServer":{readClassIntakeCalendar:async()=>({today:"2026-11-18",months:[]})}, "@/lib/classIntakeTargets":{classIntakeTarget:(slot,product)=>({id:slot.id,audience:product?.audience})},
     "@/lib/parari/sales/sellerDisclosure":{readSellerDisclosure:async()=>null,sellerDisclosureReady:()=>false},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:intakeDb},
-    "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,audience:"minor",information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
+    "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,audience:intakeAudience,information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
     "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},
     "@/lib/classAdmissionMail":{classDateTime:String,classNotice:async(to)=>{deliveries.push(to);return true;}},
     "@/lib/classBriefingWorkflow":workflow,
@@ -262,6 +297,13 @@ async function main() {
   assert.equal((await post({...profile,slot:"test-slot",agree:true,information:"案内"})).status,200);
   assert.equal(deliveries.length,3);
   deliveries.forEach(to=>assert.deepEqual(to,[profile.guardianEmail,profile.email]));
+  route="direct";intakeAudience="adult";
+  intakeTargets=[{id:"child-slot",product:{id:"child",name:"子ども英語",design:{audience:"minor"}}}];
+  const requestTarget={method:"GET",nextUrl:{searchParams:new URLSearchParams({id:"test"})}};
+  assert.equal((await api.GET(requestTarget)).body.targetClasses[0].audience,"minor");
+  assert.equal((await post({classId:"child-slot",audience:"adult",name:"子ども",email:"child@example.invalid",agree:true,information:"案内",terms:""})).status,400);
+  assert.equal((await post({...profile,classId:"child-slot",agree:true,information:"案内",terms:""})).status,200);
+  assert.equal(rpcArgs.p_audience,"minor");assert.equal(rpcArgs.p_class,"child-slot");
   let guardianAccount = null, linkedGuardian = null;
   const invitationRow={id:"candidate",school_id:"school",starts_on:"2027-01-01",deadline:"2099-01-01",briefing:"skip",test:"skip",
     applicant_email:profile.guardianEmail,learner_email:profile.email,applicant_audience:"minor",revision:1,

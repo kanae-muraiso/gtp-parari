@@ -10,6 +10,7 @@ export async function readClassIntakeSource(id: string) {
   const query = db.from("school_recruitment").select(columns).eq("enabled", true);
   const recruitment = await (offer.data ? query.eq("school_id", offer.data.school_id) : query.eq("public_id", id)).maybeSingle();
   if (recruitment.error) throw recruitment.error;
+  // Legacy business audiences are fallback only; class-specific audiences come from the product.
   let audience = offer.data?.audience_override ?? recruitment.data?.audience;
   if (recruitment.data && !audience) {
     const setting = await db.from("school_admission_settings").select("briefing_design").eq("school_id", recruitment.data.school_id).maybeSingle();
