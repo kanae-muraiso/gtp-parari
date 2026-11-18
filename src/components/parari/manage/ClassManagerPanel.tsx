@@ -271,10 +271,6 @@ function BusinessClassManager() {
       </button>}
       {view === "settings" && showBlueprint && <ClassAdmissionBlueprint key={school.id} schoolId={school.id} schoolName={school.name} />}
       {(view === "settings" || view === "preview") && <ClassRecruitmentPanel key={view} view={view} classes={school.classes} products={data.products} onOpenSettings={() => setView("settings")} />}
-      {view === "settings" && <details className={panel}>
-        <summary className="cursor-pointer font-medium">入会条件・手続きの詳細設定</summary>
-        <ClassAdmissionsPanel key={school.id + ":settings"} mode="settings" />
-      </details>}
       {view === "admissions" && <ClassAdmissionsPanel key={school.id + view} mode={view} onRosterChanged={() => {
         void classRequest<ClassManagement>().then(setData).catch(() => setError("名簿を再読み込みしてください。"));
       }} />}

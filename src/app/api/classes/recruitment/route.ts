@@ -111,6 +111,7 @@ async function handle(request: NextRequest) {
         return fail("共通の販売者情報を公開するか、この募集の案内・個人情報の取り扱いを入力してください。");
       }
       const text = (key: string) => typeof input[key] === "string" ? input[key].trim() : "";
+      if (Object.prototype.hasOwnProperty.call(input,"terms") && (typeof input.terms !== "string" || input.terms.length > 8000)) return fail("規約は8000文字以内で入力してください。");
       const route = input.route ?? "direct";
       const audience = input.audience ?? "adult";
       if (!["adult", "minor"].includes(audience)) return fail("受講対象を選んでください。");
@@ -124,6 +125,7 @@ async function handle(request: NextRequest) {
         return fail("支払いURL、集合案内、申込書の設定をご確認ください。");
       }
       const result = await db.rpc("save_class_intake_settings", { p_owner: user.id, p_school: id, p_all: input.applyAll === true, p_settings: { information, kind: input.kind, route, audience, booking_weeks: weeks,
+        ...(typeof input.terms === "string" ? { terms: text("terms") } : {}),
         ...(typeof input.showClassSchedule === "boolean" ? { show_class_schedule: input.showClassSchedule } : {}),
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
         arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") } });

@@ -24,7 +24,7 @@ const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold
 const blockLabels: Record<string, string> = {
   name: "教室・事業名", introduction: "紹介文", labels: "呼び方", product: "クラスの内容・料金",
   slot: "開催日時・会場", recruitment: "入会方法", briefing: "説明会後の申込書・メール",
-  offer: "クラスごとの入会方法", terms: "規約・テスト・代理申込者", front: "公開ページ",
+  offer: "クラスごとの入会方法", front: "公開ページ",
 };
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 
@@ -306,10 +306,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         {usesBriefing && <div data-setup-block="briefing" onChangeCapture={event => { if ((event.target as HTMLElement).getAttribute("name") !== "previewClass") markDirty("briefing"); }}>
           <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} classProducts={management.products} guided onSaveError={() => saveFailed("briefing")} onSaved={() => saved("briefing")} />
         </div>}
-        <details className={panel}>
-          <summary className="cursor-pointer font-semibold">規約・テスト・代理申込者</summary>
-          <div data-setup-block="terms" onChangeCapture={() => markDirty("terms")}><ClassAdmissionsPanel mode="settings" onSaveError={() => saveFailed("terms")} onSaved={() => saved("terms")} /></div>
-        </details>
+
       </>}
       {step === 4 && <>
         <section className={panel} aria-label="紹介ページの確認">

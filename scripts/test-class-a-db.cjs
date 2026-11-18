@@ -592,6 +592,20 @@ async function main() {
     await db.query("update school_recruitment_offers set audience_override='minor' where id=$1",[directOffer]);
     const fromAdultProduct=(await profileApply({name:"商品から成人反映",email:"product-adult@example.invalid"},"adult")).rows[0].case_id;
     assert.equal((await db.query("select applicant_audience from school_admission_cases where id=$1",[fromAdultProduct])).rows[0].applicant_audience,"adult");
+    await db.exec("reset role");
+    await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261118071456_class_application_terms_in_form.sql"),"utf8"));
+    await db.exec("set role service_role");
+
+    await savePolicy(owner,{...commonPolicy,terms:"申込書の規約"});
+    assert.equal((await db.query("select terms from school_admission_settings where school_id=$1",[school])).rows[0].terms,"申込書の規約");
+    await db.query("update school_admission_settings set labels=$2,briefing=false,test=true,proxy=false where school_id=$1",[school,JSON.stringify({operator:"主催者",learner:"参加者",proxy:"保護者",admission:"登録"})]);
+    const previousAdmissionSettings=(await db.query("select labels,briefing,test,proxy from school_admission_settings where school_id=$1",[school])).rows[0];
+    await savePolicy(owner,{...commonPolicy,terms:"申込書の規約"});
+    assert.deepEqual((await db.query("select labels,briefing,test,proxy from school_admission_settings where school_id=$1",[school])).rows[0],previousAdmissionSettings);
+    await savePolicy(owner,commonPolicy);
+    assert.equal((await db.query("select terms from school_admission_settings where school_id=$1",[school])).rows[0].terms,"申込書の規約");
+    await assert.rejects(savePolicy(owner,{...commonPolicy,information:"変更を残さない",terms:"x".repeat(8001)}),{code:"22023"});
+    assert.equal((await db.query("select information from school_recruitment where school_id=$1",[school])).rows[0].information,commonPolicy.information);
     await db.exec("reset role; set role anon");
     await assert.rejects(savePolicy(owner,commonPolicy,true),{code:"42501"});
     await db.exec("reset role; set role authenticated");

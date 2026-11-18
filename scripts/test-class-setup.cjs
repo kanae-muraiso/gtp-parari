@@ -140,6 +140,13 @@ async function main() {
   assert.equal(state.front.front.draft.introduction, "初めての方も歓迎します。");
   await click("4. 入会方法");
   const applicationText = document.querySelector('textarea[name="applicationText"]');
+  assert.doesNotMatch(document.body.textContent,/規約・テスト・代理申込者/);
+  const termsField=document.querySelector('textarea[name="terms"]');
+  assert.ok(termsField);
+  await act(async()=>{
+    Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,"value").set.call(termsField,"入会規約");
+    termsField.dispatchEvent(new window.Event("input",{bubbles:true}));
+  });
   await act(async () => {
     Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(applicationText, "入会フォームの説明");
     applicationText.dispatchEvent(new window.Event("input", { bubbles: true }));
@@ -158,6 +165,7 @@ async function main() {
   await click("保存して次へ");
   await tick();
   assert.equal(lastBody.applicationText, "入会フォームの説明");
+  assert.equal(lastBody.terms,"入会規約");
   assert.equal(unrelatedSaves,0);unrelatedForm.remove();
   assert.equal(find("次へ").disabled, true);
   await act(async () => document.querySelector('input[type="checkbox"]').click());

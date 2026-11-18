@@ -195,6 +195,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         onInvalidCapture={event => { event.currentTarget.open = true; }}>
         <summary className="cursor-pointer text-sm font-medium">支払い・申込書・確認メールの設定</summary>
         <label>入会申込書の説明<textarea name="applicationText" className={field} maxLength={4000} defaultValue={recruitment?.application_text} /></label>
+        <label>申込時に同意してもらう規約（必要な場合）<textarea name="terms" className={field} maxLength={8000} rows={3} defaultValue={settings?.terms ?? ""} /></label>
         <label>入会時の支払い<select name="paymentMode" className={field} value={paymentMode} onChange={event => setPaymentMode(event.target.value)}>
           <option value="free">なし（入会は無料）</option><option value="onsite">現地払い</option><option value="advance">オンライン支払い（決済ページのURL）</option>
         </select></label>
