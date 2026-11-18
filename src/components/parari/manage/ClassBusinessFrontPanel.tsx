@@ -14,8 +14,8 @@ export type FrontSettings = { front: ClassBusinessFront; links: ClassBusinessFro
 type FrontAction = "saveFront" | "publishFront" | "unpublishFront";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 
-export default function ClassBusinessFrontPanel({ schoolId, name, products, onOpenRecruitment, onOpenSchedule, guided = false, onSaved, publicationBlockers = [], availableLinks }: {
-  guided?: boolean; onSaved?: () => void; publicationBlockers?: string[]; availableLinks?: ClassBusinessFrontLink[];
+export default function ClassBusinessFrontPanel({ schoolId, name, products, onOpenRecruitment, onOpenSchedule, guided = false, onSaved, onSaveError, publicationBlockers = [], availableLinks }: {
+  guided?: boolean; onSaved?: () => void; onSaveError?: () => void; publicationBlockers?: string[]; availableLinks?: ClassBusinessFrontLink[];
   schoolId: string; name: string; products: { id: string; name: string }[]; onOpenRecruitment: () => void; onOpenSchedule: () => void;
 }) {
   const [settings, setSettings] = useState<FrontSettings | null>(null);
@@ -51,6 +51,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
       onSaved?.();
       return true;
     } catch (cause) {
+      onSaveError?.();
       setError(cause instanceof Error ? cause.message : "フロントページを保存できませんでした。");
       return false;
     } finally { setBusy(false); }
@@ -136,7 +137,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
         <button type="button" className={button} aria-expanded={preview} onClick={() => setPreview(value => !value)}>
           {preview ? "プレビューを閉じる" : "プレビュー"}
         </button>
-        <button type="button" className={button} onClick={() => void save("saveFront")}>下書きを保存</button>
+        <button type="button" data-setup-save className={button} onClick={() => void save("saveFront")}>下書きを保存</button>
         <button type="button" className="w-fit rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           disabled={publicationIssues.length > 0} onClick={() => void save("publishFront")}>{settings.front.published ? "変更を公開する" : "公開する"}</button>
         {settings.front.published && <button type="button" className={button} onClick={() => void save("unpublishFront")}>非公開にする</button>}

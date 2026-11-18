@@ -55,8 +55,9 @@ function newRow(id: string, productId: string | undefined, defaults: ClassSlotDe
     rules: { rules: [originalRule("weekly", today)], overrides: [] } };
 }
 
-export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save, onDraftChange }: {
+export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save, onDraftChange, onSaveError }: {
   onDraftChange?: () => void;
+  onSaveError?: () => void;
   item?: SchoolClass;
   additionalSlots: SchoolClass[];
   startId: string;
@@ -105,6 +106,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
     event.preventDefault();
     if (busy) return;
     if (rows.some(row => hasDuplicateClassDateRules(row.rules.rules))) {
+      onSaveError?.();
       setSaveError("同じ行に同じ頻度が複数あります。頻度を変更してください。");
       return;
     }

@@ -54,6 +54,7 @@ async function request(url = "", body) {
   if (body) {
     lastBody = body;
     if (rejectSave) throw Error("保存エラー");
+    if (body.action === "renameBusiness") state.management.school.name = body.name;
     if (url === "/front") state.front.front = { ...state.front.front, draft: body.content, revision: state.front.front.revision + 1 };
     return { ok: true };
   }
@@ -70,6 +71,14 @@ const mocks = {
 };
 for (const name of ["ClassAdmissionsPanel", "ClassAdmissionBlueprint", "ClassProductPanel", "ClassSlotSettingsPanel", "ClassCalendarPanel", "ClassRecruitmentPanel", "ClassBusinessFrontPanel"]) mocks["./" + name] = { __esModule: true, default: stub };
 mocks["@/components/parari/classes/ClassBusinessFrontView"] = { __esModule: true, default: stub };
+const RealRecruitment = load("src/components/parari/manage/ClassRecruitmentPanel.tsx", {
+    "./ClassAvailabilityPanel": { __esModule: true, default: stub },
+    "./ClassRecruitmentOffers": { __esModule: true, default: stub },
+    "@/components/parari/classes/ClassIntakeForm": { __esModule: true, default: stub },
+    "@/lib/classIntakeTargets": { classIntakeTarget: item => item },
+    "@/lib/classRequests": { classRequest: request },
+  }).default;
+mocks["./ClassRecruitmentPanel"] = { __esModule: true, default: props => props.view === "settings" ? React.createElement(RealRecruitment, props) : stub(props) };
 const Setup = load("src/components/parari/manage/ClassSetupPanel.tsx", mocks).default;
 const root = createRoot(document.getElementById("root"));
 const buttons = () => [...document.querySelectorAll("button")];
@@ -87,33 +96,47 @@ async function main() {
     Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(textarea, "初めての方も歓迎します。");
     textarea.dispatchEvent(new window.Event("input", { bubbles: true }));
   });
+  const businessName = document.querySelector('input[name="name"]');
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(businessName, "副業トーク");
+    businessName.dispatchEvent(new window.Event("input", { bubbles: true }));
+  });
   await click("2. クラスの内容");
-  assert.match(document.querySelector('[role="alert"]').textContent, /保存前の変更/);
+  assert.match(document.querySelector('[role="alert"]').textContent, /「紹介文」.*「教室・事業名」.*まだ保存されていません/);
   assert.equal(document.querySelector('[aria-current="step"]').textContent.startsWith("1."), true);
-  await click("編集を続ける");
   rejectSave = true;
-  await act(async () => textarea.closest("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
-  assert.match(document.body.textContent, /保存エラー/);
-  assert.equal(find("次へ").disabled, true);
+  await click("保存して次へ");
+  assert.match(document.body.textContent, /保存できませんでした/);
+  assert.equal(textarea.value, "初めての方も歓迎します。");
+  assert.equal(document.querySelector('[aria-current="step"]').textContent.startsWith("1."), true);
+  assert.equal(find("保存して次へ").disabled, false);
   rejectSave = false;
-  await act(async () => textarea.closest("form").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })));
+  await click("保存して次へ");
   await tick();
-  assert.equal(find("次へ").disabled, false);
-  await click("次へ");
   assert.equal(document.querySelector('[aria-current="step"]').textContent.startsWith("2."), true);
+  assert.equal(state.management.school.name, "副業トーク");
+  assert.equal(state.front.front.draft.introduction, "初めての方も歓迎します。");
+  await click("4. 入会方法");
+  const applicationText = document.querySelector('textarea[name="applicationText"]');
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(applicationText, "入会フォームの説明");
+    applicationText.dispatchEvent(new window.Event("input", { bubbles: true }));
+  });
   await click("5. お客様として確認");
+  assert.match(document.querySelector('[role="alert"]').textContent, /「入会方法」/);
+  rejectSave = true;
+  await click("保存して次へ");
+  assert.equal(document.querySelector('[aria-current="step"]').textContent.startsWith("4."), true);
+  assert.equal(applicationText.value, "入会フォームの説明");
+  rejectSave = false;
+  await click("保存して次へ");
+  await tick();
+  assert.equal(lastBody.applicationText, "入会フォームの説明");
   assert.equal(find("次へ").disabled, true);
   await act(async () => document.querySelector('input[type="checkbox"]').click());
   assert.equal(find("次へ").disabled, false);
   await click("日々の運営へ");
   assert.equal(operated, true);
-  const RealRecruitment = load("src/components/parari/manage/ClassRecruitmentPanel.tsx", {
-    "./ClassAvailabilityPanel": { __esModule: true, default: stub },
-    "./ClassRecruitmentOffers": { __esModule: true, default: stub },
-    "@/components/parari/classes/ClassIntakeForm": { __esModule: true, default: stub },
-    "@/lib/classIntakeTargets": { classIntakeTarget: item => item },
-    "@/lib/classRequests": { classRequest: request },
-  }).default;
   let settingsSaved = false;
   await act(async () => root.render(React.createElement(RealRecruitment, {
     view: "settings", classes: [], products: [{ id: "free", name: "おしゃべり会", monthlyFee: 0 },

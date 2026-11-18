@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { classRequest } from "@/lib/classRequests";
 import { classSetupSteps, classFrontPublishIssues, classRegistrationIssues } from "@/lib/classSetup";
 import { selectClassBusinessFrontLinks } from "@/lib/classBusinessFront";
@@ -21,9 +21,19 @@ type Snapshot = { management: ClassManagement; products: NamedClassProduct[]; re
 const panel = "grid gap-4 rounded-xl border border-neutral-200 bg-white p-4 sm:p-5";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
+const blockLabels: Record<string, string> = {
+  name: "教室・事業名", introduction: "紹介文", labels: "呼び方", product: "クラスの内容・料金",
+  slot: "開催日時・会場", recruitment: "入会方法", briefing: "説明会後の申込書・メール",
+  terms: "規約・テスト・代理申込者", front: "公開ページ",
+};
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 
 export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: string; onOperate: () => void }) {
+  const container = useRef<HTMLDivElement>(null);
+  const pendingSaves = useRef(new Map<string, (success: boolean) => void>());
+  const editVersions = useRef(new Map<string, number>());
+  const savingVersions = useRef(new Map<string, number>());
+  const [savingChanges, setSavingChanges] = useState(false);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [step, setStep] = useState(0);
   const [dirty, setDirty] = useState<string[]>([]);
@@ -58,6 +68,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   }, [schoolId, refresh]);
 
   const markDirty = useCallback((block: string) => {
+    editVersions.current.set(block, (editVersions.current.get(block) ?? 0) + 1);
     setDirty(current => current.includes(block) ? current : [...current, block]);
     if (block !== "front") setReviewed(false);
   }, []);
@@ -69,15 +80,23 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty.length]);
 
+  useEffect(() => {
+    if (!dirty.length && !savingChanges) setDestination(null);
+  }, [dirty.length, savingChanges]);
+
   function saved(block?: string, invalidateReview = block !== "front") {
-    if (block) setDirty(current => current.filter(value => value !== block));
+    if (block) {
+      const editedDuringSave = savingVersions.current.has(block) && savingVersions.current.get(block) !== editVersions.current.get(block);
+      if (!editedDuringSave) setDirty(current => current.filter(value => value !== block));
+      pendingSaves.current.get(block)?.(!editedDuringSave);
+      pendingSaves.current.delete(block);
+      savingVersions.current.delete(block);
+    }
     if (invalidateReview) setReviewed(false);
     setRefresh(value => value + 1);
   }
 
-  function navigate(next: number | "operate", discard = false) {
-    if (busy || loading) return;
-    if (dirty.length && !discard) { setDestination(next); return; }
+  function moveTo(next: number | "operate") {
     setDestination(null);
     setDirty([]);
     setGeneration(value => value + 1);
@@ -85,6 +104,59 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
     setSlot(null);
     if (next === "operate") onOperate();
     else { setStep(next); setRefresh(value => value + 1); }
+  }
+
+  function navigate(next: number | "operate", discard = false) {
+    if (busy || loading || savingChanges) return;
+    if (dirty.length && !discard) { setDestination(next); return; }
+    moveTo(next);
+  }
+
+  function saveFailed(block: string) {
+    pendingSaves.current.get(block)?.(false);
+    pendingSaves.current.delete(block);
+    savingVersions.current.delete(block);
+  }
+
+  async function saveAndContinue() {
+    if (destination === null || savingChanges || busy || loading) return;
+    const next = destination;
+    const versions = new Map<string, number>();
+    setSavingChanges(true);
+    setError("");
+    try {
+      for (const block of dirty) {
+        if (!container.current) return;
+        versions.set(block, editVersions.current.get(block) ?? 0);
+        const section = container.current?.querySelector<HTMLElement>(`[data-setup-block="${block}"]`);
+        const form = section?.matches("form") ? section as HTMLFormElement : section?.querySelector("form");
+        const saveButton = section?.querySelector<HTMLButtonElement>("[data-setup-save]");
+        const details = section?.closest("details");
+        if (details) details.open = true;
+        if (form && !form.reportValidity()) return;
+        if (!form && (!saveButton || saveButton.disabled)) {
+          setError(`「${blockLabels[block]}」の保存画面を確認してください。`);
+          return;
+        }
+        const success = await new Promise<boolean>(resolve => {
+          pendingSaves.current.set(block, resolve);
+          savingVersions.current.set(block, editVersions.current.get(block) ?? 0);
+          if (form) form.requestSubmit();
+          else saveButton!.click();
+        });
+        if (!success) {
+          setError(`「${blockLabels[block]}」を保存できませんでした。入力内容を確認して、もう一度保存してください。`);
+          return;
+        }
+      }
+      if ([...versions].some(([block, version]) => editVersions.current.get(block) !== version)) {
+        setError("保存中に入力が変更されました。最新の入力内容をもう一度保存してください。");
+        return;
+      }
+      if (container.current) moveTo(next);
+    } catch {
+      setError("保存を完了できませんでした。入力内容を確認して、もう一度保存してください。");
+    } finally { setSavingChanges(false); }
   }
 
   async function store(block: string, path: string, body: object) {
@@ -95,6 +167,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
       saved(block);
       return true;
     } catch (cause) {
+      saveFailed(block);
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");
       return false;
     } finally { setBusy(false); }
@@ -131,18 +204,18 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
   const activeProduct = products.find(item => item.id === slot?.productId);
   const childSlots = activeSlot ? school.classes.filter(item => item.product_id === activeSlot.product_id && item.schedule_rules?.parentSlotId === activeSlot.id) : [];
 
-  return <div className="grid gap-5">
+  return <div ref={container} className="grid gap-5">
     <header className="grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">開設準備</h2>
-        <button type="button" className={button} disabled={busy || loading} onClick={() => navigate("operate")}>日々の運営へ</button>
+        <button type="button" className={button} disabled={busy || loading || savingChanges} onClick={() => navigate("operate")}>日々の運営へ</button>
       </div>
       <p className="text-sm text-neutral-600">順番に設定すると、紹介ページから入会受付までの準備を確認できます。設定済みの内容は各段階で編集できます。</p>
     </header>
     <nav aria-label="開設準備の手順">
       <ol className="grid gap-2 sm:grid-cols-3">
         {classSetupSteps.map((entry, index) => <li key={entry.title}>
-          <button type="button" aria-current={step === index ? "step" : undefined} disabled={loading || busy}
+          <button type="button" aria-current={step === index ? "step" : undefined} disabled={loading || busy || savingChanges}
             onClick={() => navigate(index)} className={`grid h-full w-full gap-1 rounded-lg border px-3 py-3 text-left disabled:opacity-50 ${step === index ? "border-emerald-700 bg-emerald-50" : "border-neutral-200 bg-white"}`}>
             <span className="text-sm font-semibold">{index + 1}. {entry.title}</span>
             <span className="text-xs text-neutral-600">{statuses[index]}</span>
@@ -151,10 +224,11 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
       </ol>
     </nav>
     {destination !== null && <div role="alert" className="grid gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-      <p>保存前の変更があります。各項目を保存してから進んでください。</p>
+      <p>{savingChanges ? "変更を保存しています…" : dirty.map(block => "「" + blockLabels[block] + "」").join("・") + "の変更がまだ保存されていません。"}</p>
       <div className="flex flex-wrap gap-3">
-        <button type="button" className="underline" onClick={() => setDestination(null)}>編集を続ける</button>
-        <button type="button" className="underline" onClick={() => navigate(destination, true)}>変更を破棄して進む</button>
+        <button type="button" className={primary} disabled={savingChanges || busy || loading} onClick={() => void saveAndContinue()}>{savingChanges ? "保存しています…" : "保存して次へ"}</button>
+        <button type="button" className="underline" disabled={savingChanges} onClick={() => setDestination(null)}>この画面で確認する</button>
+        <button type="button" className="underline" disabled={savingChanges} onClick={() => navigate(destination, true)}>保存せずに進む</button>
       </div>
     </div>}
     {error && <div role="alert" className="flex flex-wrap gap-2 text-sm text-red-800">{error}
@@ -166,7 +240,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
     </header>
     <div key={step + ":" + generation} className="grid gap-4">
       {step === 0 && <>
-        <form className={panel} onChange={() => markDirty("name")} onSubmit={event => {
+        <form data-setup-block="name" className={panel} onChange={() => markDirty("name")} onSubmit={event => {
           event.preventDefault();
           const values = new FormData(event.currentTarget);
           void store("name", "", { action: "renameBusiness", name: values.get("name"), expectedName: school.name });
@@ -174,7 +248,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <label className="grid gap-1 text-sm">教室・事業名<input name="name" className={field} defaultValue={school.name} maxLength={120} required /></label>
           <button className={primary} disabled={busy}>名前を保存</button>
         </form>
-        <form className={panel} onChange={() => markDirty("introduction")} onSubmit={event => {
+        <form data-setup-block="introduction" className={panel} onChange={() => markDirty("introduction")} onSubmit={event => {
           event.preventDefault();
           const values = new FormData(event.currentTarget);
           void store("introduction", "/front", { action: "saveFront", revision: front.front.revision,
@@ -184,7 +258,7 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <p className="text-sm text-neutral-600">どんな教室か、どんな方に来てほしいかを書きます。この文章が公開ページに載ります。</p>
           <button className={primary} disabled={busy}>紹介文を保存</button>
         </form>
-        <div onChangeCapture={() => markDirty("labels")}><ClassAdmissionsPanel mode="labels" onSaved={() => saved("labels")} /></div>
+        <div data-setup-block="labels" onChangeCapture={() => markDirty("labels")}><ClassAdmissionsPanel mode="labels" onSaveError={() => saveFailed("labels")} onSaved={() => saved("labels")} /></div>
       </>}
       {step === 1 && <>
         <button type="button" className={primary} disabled={editingProduct !== null} onClick={() => setEditingProduct("")}>クラスを作る</button>
@@ -194,9 +268,9 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <p className="text-sm">{product.design.walkInFee != null ? "予約不要の当日参加" : product.design.booking === "flexible" ? "好きな回を予約する" : "決まった枠に通う"}</p>
           <button type="button" className={button} disabled={editingProduct !== null} onClick={() => setEditingProduct(product.id)}>内容・料金を編集</button>
         </section>)}
-        {editingProduct !== null && <div onChangeCapture={() => markDirty("product")}>
+        {editingProduct !== null && <div data-setup-block="product" onChangeCapture={() => markDirty("product")}>
           <ClassProductPanel key={editingProduct} classes={school.classes} initialProduct={editingProduct || undefined} allowProductSelection={false} onDraftChange={() => markDirty("product")}
-            onSaved={() => { setEditingProduct(null); saved("product"); }} />
+            onSaveError={() => saveFailed("product")} onSaved={() => { setEditingProduct(null); saved("product"); }} />
         </div>}
       </>}
       {step === 2 && <>
@@ -209,10 +283,10 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         </section>)}
         {slot && activeProduct && <section className={panel}>
           <h4 className="font-semibold">{activeProduct.name}の開催日</h4>
-          <div onChangeCapture={() => markDirty("slot")}>
+          <div data-setup-block="slot" onChangeCapture={() => markDirty("slot")}>
             <ClassSlotSettingsPanel key={slot.id} item={activeSlot} additionalSlots={childSlots} startId={slot.id} productId={slot.productId}
               slotDefaults={activeProduct.design.slotDefaults} basicFee={activeProduct.design.walkInFee ?? activeProduct.design.monthlyFee}
-              walkIn={activeProduct.design.walkInFee != null} busy={busy} onDraftChange={() => markDirty("slot")} save={async rows => store("slot", "", { action: "saveSlotRows", rows })} />
+              walkIn={activeProduct.design.walkInFee != null} busy={busy} onDraftChange={() => markDirty("slot")} onSaveError={() => saveFailed("slot")} save={async rows => store("slot", "", { action: "saveSlotRows", rows })} />
           </div>
           {activeSlot && <ClassCalendarPanel classes={[activeSlot, ...childSlots]} selectedClass={activeSlot}
             expectedVisits={activeProduct.design.booking === "fixed" ? activeProduct.design.monthlyVisits : undefined} onSaved={() => saved()} />}
@@ -224,14 +298,14 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
           <h4 className="font-semibold">次へ進むために必要な設定</h4>
           <ul className="grid gap-1">{registrationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>
         </section>}
-        <ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
-          onDraftChange={() => markDirty("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} />
-        {intake?.route === "briefing" && <div onChangeCapture={() => markDirty("briefing")}>
-          <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} guided onSaved={() => saved("briefing")} />
+        <div data-setup-block="recruitment"><ClassRecruitmentPanel view="settings" classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} hidePublication
+          onDraftChange={() => markDirty("recruitment")} onSaveError={() => saveFailed("recruitment")} onSaved={action => saved(action === "settings" ? "recruitment" : undefined)} /></div>
+        {intake?.route === "briefing" && <div data-setup-block="briefing" onChangeCapture={() => markDirty("briefing")}>
+          <ClassAdmissionBlueprint schoolId={schoolId} schoolName={school.name} guided onSaveError={() => saveFailed("briefing")} onSaved={() => saved("briefing")} />
         </div>}
         <details className={panel}>
           <summary className="cursor-pointer font-semibold">規約・テスト・代理申込者</summary>
-          <div onChangeCapture={() => markDirty("terms")}><ClassAdmissionsPanel mode="settings" onSaved={() => saved("terms")} /></div>
+          <div data-setup-block="terms" onChangeCapture={() => markDirty("terms")}><ClassAdmissionsPanel mode="settings" onSaveError={() => saveFailed("terms")} onSaved={() => saved("terms")} /></div>
         </details>
       </>}
       {step === 4 && <>
@@ -252,19 +326,19 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
       </>}
       {step === 5 && <>
         <ClassRecruitmentPanel view="settings" publicationOnly classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} onSaved={() => saved(undefined, false)} />
-        <div onChangeCapture={() => markDirty("front")}>
+        <div data-setup-block="front" onChangeCapture={() => markDirty("front")}>
           <ClassBusinessFrontPanel schoolId={schoolId} name={school.name} products={products} guided publicationBlockers={publicationBlockers} availableLinks={front.links}
-            onOpenRecruitment={() => navigate(3)} onOpenSchedule={() => navigate(2)} onSaved={() => saved("front")} />
+            onOpenRecruitment={() => navigate(3)} onOpenSchedule={() => navigate(2)} onSaveError={() => saveFailed("front")} onSaved={() => saved("front")} />
         </div>
         <p className="text-sm text-neutral-600">公開URLをLINE・SNS・ご自身のWebサイトで案内できます。公開後の申込は「日々の運営 → 申込・入会対応」で確認します。</p>
       </>}
     </div>
     <footer className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-      {step > 0 && <button type="button" className={button} disabled={busy || loading} onClick={() => navigate(step - 1)}>前へ</button>}
-      <span className="text-sm text-neutral-600" role="status">{loading ? "保存状態を確認しています…" : dirty.length ? "保存前の変更があります" : statuses[step]}</span>
+      {step > 0 && <button type="button" className={button} disabled={busy || loading || savingChanges} onClick={() => navigate(step - 1)}>前へ</button>}
+      <span className="text-sm text-neutral-600" role="status">{loading ? "保存状態を確認しています…" : dirty.length ? dirty.map(block => blockLabels[block]).join("・") + "が未保存です" : statuses[step]}</span>
       {step < classSetupSteps.length - 1
-        ? <button type="button" className={primary} disabled={busy || loading || !ready[step]} onClick={() => navigate(step + 1)}>次へ · {classSetupSteps[step + 1].title}</button>
-        : <button type="button" className={primary} disabled={busy || loading} onClick={() => navigate("operate")}>日々の運営へ</button>}
+        ? <button type="button" className={primary} disabled={busy || loading || savingChanges || (!ready[step] && !dirty.length)} onClick={() => navigate(step + 1)}>次へ · {classSetupSteps[step + 1].title}</button>
+        : <button type="button" className={primary} disabled={busy || loading || savingChanges} onClick={() => navigate("operate")}>日々の運営へ</button>}
     </footer>
   </div>;
 }

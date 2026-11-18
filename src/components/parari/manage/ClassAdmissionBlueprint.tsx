@@ -72,7 +72,7 @@ function mailSequence(route: Route, minor: boolean): Mail[] {
   return minor ? ["received", "paymentRequest", "paid", "firstDay", "booked"] : ["received", "paid", "booked"];
 }
 
-export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided = false, onSaved }: { schoolId: string; schoolName: string; guided?: boolean; onSaved?: () => void }) {
+export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided = false, onSaved, onSaveError }: { schoolId: string; schoolName: string; guided?: boolean; onSaved?: () => void; onSaveError?: () => void }) {
   const [draft, setDraft] = useState({ ...defaults, route: guided ? "briefing" as const : defaults.route });
   const visibleSteps = guided ? steps.slice(0, 3) : steps;
   const [step, setStep] = useState(0);
@@ -119,6 +119,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
       onSaved?.();
       setNotice(guided ? "申込書とメールを保存しました。" : "説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
     } catch (error) {
+      onSaveError?.();
       setNotice(error instanceof Error ? error.message : "説明会の設計を保存できませんでした。");
     } finally { setSaving(false); }
   }
@@ -312,7 +313,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided =
 
     <footer className="flex flex-wrap items-center gap-2">
       {!guided && <button type="button" className={secondary} onClick={persist}>下書きを保存</button>}
-      {draft.route === "briefing" && <button type="button" className={action} disabled={!draft.audience || saving}
+      {draft.route === "briefing" && <button type="button" data-setup-save className={action} disabled={!draft.audience || saving}
         onClick={() => void saveBriefing()}>{guided ? "申込書とメールを保存" : "説明会の設計を教室に保存"}</button>}
       {step < visibleSteps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
       {notice && <p role="status" className="text-sm">{notice}</p>}

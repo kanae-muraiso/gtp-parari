@@ -16,7 +16,7 @@ export type ClassRecruitmentData = { school: string; sharedDisclosure?: boolean;
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products, publicationOnly = false, hidePublication = false, onSaved, onDraftChange }: { publicationOnly?: boolean; hidePublication?: boolean; onSaved?: (action: string) => void; onDraftChange?: () => void; view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
+export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products, publicationOnly = false, hidePublication = false, onSaved, onSaveError, onDraftChange }: { publicationOnly?: boolean; hidePublication?: boolean; onSaved?: (action: string) => void; onSaveError?: () => void; onDraftChange?: () => void; view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
   const [data, setData] = useState<ClassRecruitmentData | null>(null);
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
@@ -62,7 +62,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
       if ("action" in values) onSaved?.(String(values.action));
       return true;
     }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); return false; }
+    catch (cause) { onSaveError?.(); setError(cause instanceof Error ? cause.message : "保存できませんでした。"); return false; }
     finally { setBusy(false); }
   }
   function configure(event: FormEvent<HTMLFormElement>) {

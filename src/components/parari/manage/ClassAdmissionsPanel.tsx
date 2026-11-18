@@ -23,7 +23,7 @@ function Select({ name, label, values, initial }: { name: string; label: string;
   </select></label>;
 }
 
-export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved }: { mode: "settings" | "admissions" | "labels"; onRosterChanged?: () => void; onSaved?: () => void }) {
+export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved, onSaveError }: { mode: "settings" | "admissions" | "labels"; onRosterChanged?: () => void; onSaved?: () => void; onSaveError?: () => void }) {
   const [data, setData] = useState<AdmissionsData | null>(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
@@ -52,6 +52,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved }:
       onSaved?.();
       return true;
     } catch (cause) {
+      onSaveError?.();
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");
       return false;
     } finally {

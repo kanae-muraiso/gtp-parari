@@ -10,8 +10,8 @@ const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, onDraftChange, allowProductSelection = true }: {
-  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: (id: string) => void; onDraftChange?: () => void; allowProductSelection?: boolean;
+export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, onSaveError, onDraftChange, allowProductSelection = true }: {
+  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: (id: string) => void; onSaveError?: () => void; onDraftChange?: () => void; allowProductSelection?: boolean;
 }) {
   const [product, setProduct] = useState<ClassProduct | null>(null);
   const [error, setError] = useState("");
@@ -67,7 +67,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       onSaved?.(id);
       setProduct(result.design);
       setSaved(true);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
+    } catch (cause) { onSaveError?.(); setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
     <h3 className="font-bold">{allowProductSelection ? "商品設定" : initialProduct ? "商品設定を編集" : "商品を作成"}</h3>
