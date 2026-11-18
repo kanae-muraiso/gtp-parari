@@ -10,8 +10,8 @@ const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, allowProductSelection = true }: {
-  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: () => void; allowProductSelection?: boolean;
+export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, onDraftChange, allowProductSelection = true }: {
+  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: (id: string) => void; onDraftChange?: () => void; allowProductSelection?: boolean;
 }) {
   const [product, setProduct] = useState<ClassProduct | null>(null);
   const [error, setError] = useState("");
@@ -64,7 +64,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       const result = await classRequest<{ design: ClassProduct }>("", { action: "saveContentProduct", productId: id, name,
         design: { ...product, slotDefaults, classIds: selected.map(item => item.id) } });
       setProducts(current => [...current.filter(item => item.id !== id), { id, name, design: result.design }]);
-      onSaved?.();
+      onSaved?.(id);
       setProduct(result.design);
       setSaved(true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
@@ -98,6 +98,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       {product.walkInFee != null && <div className="grid gap-2 text-sm">
         <p>現在は予約不要の当日参加で案内中です。</p>
         <button className="w-fit underline" type="button" onClick={() => {
+          onDraftChange?.();
           setProduct({ ...product, booking: "flexible", walkInFee: null });
           setSaved(false);
         }}>都度予約に切り替える</button>

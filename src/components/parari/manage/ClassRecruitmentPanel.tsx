@@ -9,15 +9,15 @@ import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-type Data = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; show_class_schedule?: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
+export type ClassRecruitmentData = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; show_class_schedule?: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
 const field = "block w-full rounded border p-2";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products }: { view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
-  const [data, setData] = useState<Data | null>(null);
+export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, products, publicationOnly = false, hidePublication = false, onSaved, onDraftChange }: { publicationOnly?: boolean; hidePublication?: boolean; onSaved?: (action: string) => void; onDraftChange?: () => void; view: "settings" | "preview"; onOpenSettings: () => void; classes: SchoolClass[]; products?: ClassManagement["products"] }) {
+  const [data, setData] = useState<ClassRecruitmentData | null>(null);
   const [route, setRoute] = useState("briefing");
   const [paymentMode, setPaymentMode] = useState("free");
   const [error, setError] = useState("");
@@ -33,7 +33,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    void Promise.all([classRequest<Data>("/recruitment", undefined, controller.signal),
+    void Promise.all([classRequest<ClassRecruitmentData>("/recruitment", undefined, controller.signal),
       classRequest<AdmissionsData>("/admissions?settings=1", undefined, controller.signal)])
       .then(([result, admissions]) => { if (!controller.signal.aborted) { setData(result); setSettings(admissions.settings); setBriefingAudience(admissions.briefingDesign?.audience); setRoute(result.recruitment?.route ?? "briefing"); setPaymentMode(result.recruitment?.payment_mode ?? "free"); setScenario(result.recruitment?.payment_mode ?? "advance"); } })
       .catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
@@ -53,12 +53,13 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     setNotice("");
     try {
       await classRequest("/recruitment", values);
-      setData(await classRequest<Data>("/recruitment"));
+      setData(await classRequest<ClassRecruitmentData>("/recruitment"));
       if ("action" in values) {
         if (values.action === "settings") setNotice("募集の設定を保存しました。");
         if (values.action === "publish") setNotice("募集を公開しました。");
         if (values.action === "unpublish") setNotice("募集を非公開にしました。");
       }
+      if ("action" in values) onSaved?.(String(values.action));
       return true;
     }
     catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); return false; }
@@ -93,7 +94,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
     return product?.walkInFee != null ? [{ id: product.id, name: product.name }] : [];
   });
   return <section className="grid gap-3 rounded-2xl border bg-white p-5">
-    <h3 className="font-bold">{view === "preview" ? "申込者として試す" : "公開する募集の設定"}</h3>
+    <h3 className="font-bold">{view === "preview" ? "申込者として試す" : publicationOnly ? "入会受付の公開" : "入会方法と申込画面"}</h3>
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
     {!data && !error && <p role="status">読み込み中…</p>}
@@ -144,7 +145,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
           {step > 0 && <button className="w-fit text-sm underline" type="button" onClick={() => setStep(0)}>最初から試す</button>}
       </div>
     </>}
-    {data && view === "settings" && <><form onSubmit={configure} className="grid gap-2">
+    {data && view === "settings" && <>{!publicationOnly && <form onSubmit={configure} onChange={() => onDraftChange?.()} className="grid gap-2">
       <fieldset className="grid gap-2 rounded-lg border p-3">
         <legend className="px-1 font-semibold">受付方法</legend>
         <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま入会を申し込む</label>
@@ -171,20 +172,21 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         <label>確認メールに追加する案内<textarea name="confirmationText" className={field} maxLength={4000} defaultValue={recruitment?.confirmation_text} /></label>
       </details>
       <button className={button} disabled={busy}>募集の設定を保存</button>
-    </form>
-      <div className="grid gap-2 rounded-lg border p-4">
-        <h4 className="font-semibold">募集の公開</h4>
-        {!recruitment ? <p className="text-sm text-neutral-600">上の「募集の設定を保存」を押すと公開できます。</p> :
+    </form>}
+      {!hidePublication && <div className="grid gap-2 rounded-lg border p-4">
+        <h4 className="font-semibold">{publicationOnly ? "受付を開く" : "募集の公開"}</h4>
+        {!recruitment ? <p className="text-sm text-neutral-600">{publicationOnly ? "「入会方法」で申込画面を保存すると、ここで受付を公開できます。" : "上の「募集の設定を保存」を押すと公開できます。"}</p> :
         recruitment.enabled ? <>
           <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
           <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>募集を非公開にする</button>
         </> : <>
           {route !== recruitment.route ? <p className="text-sm">変更した受付方法を保存してください。</p> :
-            !isDirect && !slots.length && <p className="text-sm">下の「予約枠を設定」で、受付できる日時を追加してください。</p>}
+            !isDirect && !slots.length && <p className="text-sm">{publicationOnly ? "「入会方法」で説明会・体験を受け付ける日時を追加してください。" : "下の「予約枠を設定」で、受付できる日時を追加してください。"}</p>}
           <button type="button" className={button} disabled={busy || route !== recruitment.route || (!isDirect && !slots.length)} onClick={() => void save({ action: "publish" })}>募集を公開する</button>
         </>}
-      </div>
-    {route === "briefing" && <details className="rounded-lg border p-4" open={Boolean(recruitment && !slots.length) || undefined}>
+        {publicationOnly && <button type="button" className="w-fit text-sm underline" onClick={onOpenSettings}>入会方法を編集する</button>}
+      </div>}
+    {!publicationOnly && route === "briefing" && <details className="rounded-lg border p-4" open={Boolean(recruitment && !slots.length) || undefined}>
       <summary className="cursor-pointer font-semibold">予約枠を設定</summary>
       <div className="mt-3 grid gap-3">
       {recruitment && <ClassAvailabilityPanel initial={recruitment.office_hours} duration={recruitment.office_duration}
@@ -222,7 +224,7 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
       </section>
       </div>
     </details>}
-    {recruitment && <details><summary className="cursor-pointer text-sm">対象クラス別の募集を設定</summary>
+    {!publicationOnly && recruitment && <details><summary className="cursor-pointer text-sm">対象クラス別の募集を設定</summary>
       <ClassRecruitmentOffers classes={classes} offers={data.offers ?? []} busy={busy} save={save} />
     </details>}</>}
   </section>;

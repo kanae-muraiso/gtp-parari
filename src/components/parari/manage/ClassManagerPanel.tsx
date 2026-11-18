@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import ClassRecruitmentPanel from "./ClassRecruitmentPanel";
 import ClassAdmissionBlueprint from "./ClassAdmissionBlueprint";
 import { useSearchParams } from "next/navigation";
 import ClassBusinessFrontPanel from "./ClassBusinessFrontPanel";
+import ClassSetupPanel from "./ClassSetupPanel";
 import ClassBusinessPicker from "./ClassBusinessPicker";
 import ClassProductPanel from "./ClassProductPanel";
 import ClassSlotSettingsPanel from "./ClassSlotSettingsPanel";
@@ -33,6 +34,9 @@ export default function ClassManagerPanel() {
 }
 
 function BusinessClassManager() {
+  const setupRequested = useSearchParams().get("setup") === "1";
+  const workspaceChosen = useRef(setupRequested);
+  const [workspace, setWorkspace] = useState<"setup" | "operation">("setup");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
   const [section, setSection] = useState<"classes" | "front" | "calendar" | "event" | "workshop" | "roster">("classes");
@@ -56,7 +60,13 @@ function BusinessClassManager() {
     setData(null);
     setError("");
     setNeedsLogin(false);
-    void classRequest<ClassManagement>("", undefined, controller.signal).then(result => {
+    void classRequest<ClassManagement>("", undefined, controller.signal).then(async result => {
+      if (!workspaceChosen.current) {
+        const front = await classRequest<{ front: { published: unknown } }>("/front", undefined, controller.signal).catch(() => null);
+        if (controller.signal.aborted) return;
+        setWorkspace(front?.front.published ? "operation" : "setup");
+        workspaceChosen.current = true;
+      }
       if (!controller.signal.aborted) {
         setData(result);
       }
@@ -116,11 +126,20 @@ function BusinessClassManager() {
   };
   const currentAdmissionMissing = data.applicationId && !data.applications.some(application => application.id === data.applicationId);
 
+  if (workspace === "setup") return <div className="grid gap-5">
+    <div className="flex flex-wrap items-center gap-3 text-sm">
+      <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link><strong>{school.name}</strong>
+    </div>
+    <ClassSetupPanel schoolId={school.id} onOperate={() => { setWorkspace("operation"); reloadProducts(); }} />
+  </div>;
+
   return <div className="grid gap-5">
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
       <strong>{school?.name}</strong>
+      <button type="button" className="ml-auto underline" onClick={() => { backToList(); setWorkspace("setup"); }}>開設準備・設定を見直す</button>
     </div>
+    <h2 className="text-xl font-bold">日々の運営</h2>
     {!item && !creating && !schoolAdmission && <details className="w-fit max-w-full rounded-lg border border-neutral-200 bg-white open:w-full">
       <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">事業設定</summary>
       <div className="grid gap-3 border-t border-neutral-200 px-3 py-3">
@@ -141,6 +160,7 @@ function BusinessClassManager() {
       {([["classes", "クラス一覧"], ["front", "公開ページ"], ["calendar", "開催予定"], ["event", "イベント"], ["workshop", "講習会"], ["roster", "名簿"]] as const).map(([key, label]) =>
         <button key={key} type="button" aria-pressed={section === key} className={section === key ? button : "rounded-lg border bg-white px-4 py-2 text-sm"}
           onClick={() => { setReturnToFront(false); setSection(key); }}>{label}</button>)}
+      <button type="button" className="rounded-lg border bg-white px-4 py-2 text-sm" onClick={() => { setSchoolAdmission(true); setView("admissions"); }}>申込・入会対応</button>
     </nav>}
     {!item && !creating && !schoolAdmission && section === "front" && <ClassBusinessFrontPanel schoolId={school.id} name={school.name} products={data.products ?? []}
       onOpenRecruitment={() => { setSchoolAdmission(true); setView("settings"); }}
@@ -164,7 +184,7 @@ function BusinessClassManager() {
         </button>
       </div>
       {returnToFront && <div className="grid gap-1 rounded-lg bg-neutral-50 p-3 text-sm">
-        <p>日程を案内するクラスの「通い方」を<strong>自由参加（予約不要）</strong>にして、参加費を保存します。</p>
+        <p>クラスの内容・通い方・料金と、曜日・時間・会場を保存すると公開ページに掲載できます。</p>
         <button type="button" className="w-fit underline" onClick={() => {
           setReturnToFront(false); setEditingProduct(null); setSection("front");
         }}>公開ページに戻る</button>

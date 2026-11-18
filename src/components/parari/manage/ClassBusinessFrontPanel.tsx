@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ClassBusinessFrontView from "@/components/parari/classes/ClassBusinessFrontView";
+import { classFrontPublishIssues } from "@/lib/classSetup";
 import { classRequest } from "@/lib/classRequests";
 import {
   classBusinessFrontPath, selectClassBusinessFrontLinks,
   type ClassBusinessFront, type ClassBusinessFrontContent, type ClassBusinessFrontLink,
 } from "@/lib/classBusinessFront";
 
-type FrontSettings = { front: ClassBusinessFront; links: ClassBusinessFrontLink[] };
+export type FrontSettings = { front: ClassBusinessFront; links: ClassBusinessFrontLink[] };
 type FrontAction = "saveFront" | "publishFront" | "unpublishFront";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 
-export default function ClassBusinessFrontPanel({ schoolId, name, products, onOpenRecruitment, onOpenSchedule }: {
+export default function ClassBusinessFrontPanel({ schoolId, name, products, onOpenRecruitment, onOpenSchedule, guided = false, onSaved, publicationBlockers = [], availableLinks }: {
+  guided?: boolean; onSaved?: () => void; publicationBlockers?: string[]; availableLinks?: ClassBusinessFrontLink[];
   schoolId: string; name: string; products: { id: string; name: string }[]; onOpenRecruitment: () => void; onOpenSchedule: () => void;
 }) {
   const [settings, setSettings] = useState<FrontSettings | null>(null);
@@ -29,11 +31,11 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
     void classRequest<FrontSettings>("/front", undefined, request.signal).then(result => {
       if (!request.signal.aborted) {
         setSettings(result);
-        setContent(result.front.draft);
+        setContent(guided && !result.front.draft.entries.length ? { ...result.front.draft, entries: result.links.map(link => link.key) } : result.front.draft);
       }
     }).catch(() => { if (!request.signal.aborted) setError("フロントページの設定を取得できませんでした。"); });
     return () => request.abort();
-  }, [schoolId, reload]);
+  }, [schoolId, reload, guided]);
 
   async function save(action: FrontAction) {
     if (!settings || busy) return false;
@@ -41,11 +43,12 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
     setError("");
     setNotice("");
     try {
-      const { front } = await classRequest<{ front: ClassBusinessFront }>("/front", { action, revision: settings.front.revision, content });
+      const { front } = await classRequest<{ front: ClassBusinessFront }>("/front", { action, revision: settings.front.revision, content, validateEnrollment: guided });
       setSettings({ ...settings, front });
       if (action !== "unpublishFront") setContent(front.draft);
       setNotice({ saveFront: "下書きを保存しました。", publishFront: "フロントページを公開しました。",
         unpublishFront: "フロントページを非公開にしました。" }[action]);
+      onSaved?.();
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "フロントページを保存できませんでした。");
@@ -69,9 +72,11 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
     {error && <button type="button" className={button} onClick={retry}>再読み込み</button>}
   </section>;
 
+  const links = availableLinks ?? settings.links;
   const href = classBusinessFrontPath(schoolId);
-  const chosen = selectClassBusinessFrontLinks(content.entries, settings.links);
+  const chosen = selectClassBusinessFrontLinks(content.entries, links);
   const visibleKeys = new Set(chosen.map(link => link.key));
+  const publicationIssues = guided ? [...publicationBlockers, ...classFrontPublishIssues(content, links)] : [];
   const unavailable = content.entries.filter(key => !visibleKeys.has(key));
   return <section className="grid gap-4 rounded-xl border p-4" aria-labelledby="class-front-settings">
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -85,13 +90,13 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
       </label>
       <fieldset className="grid gap-2 text-sm">
         <legend className="mb-2 font-medium">掲載項目</legend>
-        {settings.links.map(link => <label key={link.key} className="flex items-start gap-2">
+        {links.map(link => <label key={link.key} className="flex items-start gap-2">
           <input type="checkbox" className="mt-1" checked={content.entries.includes(link.key)} onChange={event =>
             setContent({ ...content, entries: event.target.checked ? [...content.entries, link.key]
               : content.entries.filter(key => key !== link.key) })} />
           <span>{link.title}{link.title !== link.label && <span className="ml-2 text-neutral-600">{link.label}</span>}</span>
         </label>)}
-        {!settings.links.length && <div className="grid gap-2">
+        {!links.length && <div className="grid gap-2">
           <p className="text-neutral-600">公開ページに載せたい内容から設定できます。</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={button} onClick={() => void openSettings(onOpenSchedule)}>日程・会場・参加費を見せる</button>
@@ -124,13 +129,16 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
       </fieldset>
       {error && <p role="alert" className="text-sm text-red-700">{error} <button type="button" className="underline" onClick={retry}>再読み込み</button></p>}
       {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
+      {publicationIssues.length > 0 && <ul className="grid gap-1 rounded-lg bg-amber-50 p-3 text-sm text-amber-950" aria-label="公開前に必要な設定">
+        {publicationIssues.map(issue => <li key={issue}>{issue}</li>)}
+      </ul>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className={button} aria-expanded={preview} onClick={() => setPreview(value => !value)}>
           {preview ? "プレビューを閉じる" : "プレビュー"}
         </button>
         <button type="button" className={button} onClick={() => void save("saveFront")}>下書きを保存</button>
         <button type="button" className="w-fit rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          onClick={() => void save("publishFront")}>{settings.front.published ? "変更を公開する" : "公開する"}</button>
+          disabled={publicationIssues.length > 0} onClick={() => void save("publishFront")}>{settings.front.published ? "変更を公開する" : "公開する"}</button>
         {settings.front.published && <button type="button" className={button} onClick={() => void save("unpublishFront")}>非公開にする</button>}
       </div>
     </fieldset>

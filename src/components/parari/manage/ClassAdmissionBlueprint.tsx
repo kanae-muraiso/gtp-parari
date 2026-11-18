@@ -72,8 +72,9 @@ function mailSequence(route: Route, minor: boolean): Mail[] {
   return minor ? ["received", "paymentRequest", "paid", "firstDay", "booked"] : ["received", "paid", "booked"];
 }
 
-export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
-  const [draft, setDraft] = useState(defaults);
+export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided = false, onSaved }: { schoolId: string; schoolName: string; guided?: boolean; onSaved?: () => void }) {
+  const [draft, setDraft] = useState({ ...defaults, route: guided ? "briefing" as const : defaults.route });
+  const visibleSteps = guided ? steps.slice(0, 3) : steps;
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Mail | "form" | "account" | "payment" | "date" | "briefingDate" | "meeting" | "trial">("form");
   const [briefingSlot, setBriefingSlot] = useState("");
@@ -85,7 +86,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(key);
+      const saved = guided ? null : window.localStorage.getItem(key);
       if (saved) setDraft(readDraft(saved));
       else {
         const controller = new AbortController();
@@ -98,7 +99,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     } catch {
       setNotice("このブラウザーの下書きを読み込めませんでした。");
     }
-  }, [key]);
+  }, [key, guided]);
 
   function persist() {
     try {
@@ -115,7 +116,8 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     setNotice("");
     try {
       await classRequest("/admissions", { action: "briefingDesign", design: { ...draft, ...draft.forms[draft.audience] } });
-      setNotice("説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
+      onSaved?.();
+      setNotice(guided ? "申込書とメールを保存しました。" : "説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "説明会の設計を保存できませんでした。");
     } finally { setSaving(false); }
@@ -164,19 +166,19 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
         placeholder={/email/i.test(id) ? "sample@example.test" : "サンプル"} />
     </label>;
 
-  return <section className="grid gap-4 rounded-2xl border bg-white p-5" aria-label="入会の設計図">
+  return <section className="grid gap-4 rounded-2xl border bg-white p-5" aria-label={guided ? "説明会後の申込書・メール" : "入会の設計図"}>
     <header className="grid gap-1">
-      <h3 className="font-bold">入会の設計図</h3>
-      <p className="text-sm text-neutral-600">下書きと申込者プレビューを使って設計できます。説明会ルートは教室に保存して運用に使えます。</p>
+      <h3 className="font-bold">{guided ? "説明会後の申込書・メール" : "入会の設計図"}</h3>
+      <p className="text-sm text-neutral-600">{guided ? "受講対象と必要な情報、初日の決め方、送信するメールを設定して保存します。" : "下書きと申込者プレビューを使って設計できます。説明会ルートは教室に保存して運用に使えます。"}</p>
     </header>
     <nav aria-label="設計図の手順" className="flex flex-wrap gap-2">
-      {steps.map((title, index) => <button type="button" aria-current={index === step ? "step" : undefined}
+      {visibleSteps.map((title, index) => <button type="button" aria-current={index === step ? "step" : undefined}
         className={index === step ? action : secondary} key={title} onClick={() => selectStep(index)}>{title}</button>)}
     </nav>
 
     {step === 0 && <fieldset className="grid gap-2">
       <legend className="mb-1 font-semibold">入会案内を見た人が次にすること</legend>
-      {(Object.keys(routes) as Route[]).map(route => <label className="flex gap-2 rounded-lg border p-3 text-sm" key={route}>
+      {!guided && (Object.keys(routes) as Route[]).map(route => <label className="flex gap-2 rounded-lg border p-3 text-sm" key={route}>
         <input type="radio" name="blueprint-route" checked={draft.route === route} onChange={() => setDraft({ ...draft, route })} />{routes[route]}
       </label>)}
       <p className="text-sm">{draft.route === "onsite" ? "申込 → 受付メール → 初日の予約・確認 → 当日支払い" :
@@ -309,10 +311,10 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     </div>}
 
     <footer className="flex flex-wrap items-center gap-2">
-      <button type="button" className={secondary} onClick={persist}>下書きを保存</button>
+      {!guided && <button type="button" className={secondary} onClick={persist}>下書きを保存</button>}
       {draft.route === "briefing" && <button type="button" className={action} disabled={!draft.audience || saving}
-        onClick={() => void saveBriefing()}>説明会の設計を教室に保存</button>}
-      {step < steps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
+        onClick={() => void saveBriefing()}>{guided ? "申込書とメールを保存" : "説明会の設計を教室に保存"}</button>}
+      {step < visibleSteps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
       {notice && <p role="status" className="text-sm">{notice}</p>}
     </footer>
   </section>;

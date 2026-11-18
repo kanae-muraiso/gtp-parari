@@ -23,7 +23,7 @@ function Select({ name, label, values, initial }: { name: string; label: string;
   </select></label>;
 }
 
-export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: "settings" | "admissions" | "labels"; onRosterChanged?: () => void }) {
+export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved }: { mode: "settings" | "admissions" | "labels"; onRosterChanged?: () => void; onSaved?: () => void }) {
   const [data, setData] = useState<AdmissionsData | null>(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
@@ -49,6 +49,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged }: { mode: 
       if (action === "finish") onRosterChanged?.();
       setMessage(result.mailed === false ? "案内リンクを作成しました。メールを送信できなかったため、リンクをコピーしてお渡しください。"
         : result.mailed || action === "email" ? "メールを送信しました。" : "保存しました。");
+      onSaved?.();
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "保存できませんでした。");

@@ -55,7 +55,8 @@ function newRow(id: string, productId: string | undefined, defaults: ClassSlotDe
     rules: { rules: [originalRule("weekly", today)], overrides: [] } };
 }
 
-export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save }: {
+export default function ClassSlotSettingsPanel({ item, additionalSlots, startId, productId, slotDefaults, basicFee, walkIn, busy, save, onDraftChange }: {
+  onDraftChange?: () => void;
   item?: SchoolClass;
   additionalSlots: SchoolClass[];
   startId: string;
@@ -86,6 +87,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
   }
 
   function addFrequency() {
+    onDraftChange?.();
     const first = rows[0];
     const id = crypto.randomUUID();
     const today = classCalendarToday();
@@ -139,6 +141,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
               onClick={() => setFrequencies(row.rules.rules.filter((_, i) => i !== ruleIndex))}>頻度を外す</button>}
             {ruleIndex === 0 && index > 0 && row.new && <button type="button" className={secondary} onClick={() => {
               setSaveError("");
+              onDraftChange?.();
               setRows(current => current.filter(value => value.id !== row.id));
             }}>追加を取り消す</button>}
           </div>)}

@@ -9,7 +9,7 @@ import ClassMonthGrid from "./ClassMonthGrid";
 const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
 const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50";
 
-export default function ClassCalendarPanel({ classes, selectedClass, expectedVisits }: { classes: SchoolClass[]; selectedClass?: SchoolClass; expectedVisits?: number }) {
+export default function ClassCalendarPanel({ classes, selectedClass, expectedVisits, onSaved }: { onSaved?: () => void; classes: SchoolClass[]; selectedClass?: SchoolClass; expectedVisits?: number }) {
   const [classId, setClassId] = useState(classes[0]?.id ?? "");
   const [month, setMonth] = useState(() => shiftCalendarMonth(classCalendarToday().slice(0, 7), selectedClass ? 0 : 1));
   const item = classes.find(row => row.id === classId) ?? selectedClass;
@@ -23,12 +23,12 @@ export default function ClassCalendarPanel({ classes, selectedClass, expectedVis
         <label className="grid gap-1 text-sm">対象月<input className={button} type="month" value={month}
           onChange={e => { if (calendarMonthPattern.test(e.target.value)) setMonth(e.target.value); }} /></label>
       </div>
-      <CalendarEditor key={item.id + month} item={item} month={month} expectedVisits={expectedVisits} />
+      <CalendarEditor key={item.id + month} item={item} month={month} expectedVisits={expectedVisits} onSaved={onSaved} />
     </>}
   </section>;
 }
 
-function CalendarEditor({ item, month, expectedVisits }: { item: SchoolClass; month: string; expectedVisits?: number }) {
+function CalendarEditor({ item, month, expectedVisits, onSaved }: { onSaved?: () => void; item: SchoolClass; month: string; expectedVisits?: number }) {
   const [schedule, setSchedule] = useState<ClassMonthSchedule | null>();
   const [selectedDay, setSelectedDay] = useState("");
   const days = schedule?.days ?? generateClassDays(item, month, false);
@@ -65,6 +65,7 @@ function CalendarEditor({ item, month, expectedVisits }: { item: SchoolClass; mo
         setRefresh(value => value + 1);
         setNotice(result.created ? `新しく${result.created}か月分の予定を作成しました。` : "対象の12か月は登録済みです。");
       }
+      onSaved?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "開催予定を保存できませんでした。");
     } finally { setBusy(false); }
