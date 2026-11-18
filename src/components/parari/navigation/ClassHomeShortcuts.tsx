@@ -6,7 +6,7 @@ import { classRequest } from "@/lib/classRequests";
 import { useParticipations } from "./ParticipationProvider";
 
 type School = { id: string; name: string };
-type Destinations = { userId: string; owned: School | null; businesses?: School[]; enrolled: School[] };
+type Destinations = { canManage?: boolean; userId: string; owned: School | null; businesses?: School[]; enrolled: School[] };
 
 export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: boolean }) {
   const { userId } = useParticipations();
@@ -27,7 +27,7 @@ export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: b
       {(destinations.businesses ?? (destinations.owned ? [destinations.owned] : [])).map(school =>
         <Shortcut key={school.id} title={school.name} action="事業を運営"
           href={studioEnabled ? "/my/manage?tab=class&business=" + school.id : "/my/start-studio"} />)}
-      {studioEnabled && !(destinations.businesses?.length || destinations.owned) &&
+      {studioEnabled && destinations.canManage === true && !(destinations.businesses?.length || destinations.owned) &&
         <Shortcut title="事業を登録" action="クラス運営" href="/my/manage?tab=class" />}
       {destinations.enrolled.map(school => <Shortcut key={school.id} title={school.name}
         action="クラスの予定" href={`/my/classes/${school.id}`} />)}

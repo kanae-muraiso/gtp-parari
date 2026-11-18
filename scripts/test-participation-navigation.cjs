@@ -62,7 +62,7 @@ const users = {
 };
 const tables = {
   class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
-  profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: true }],
+  profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: false }],
   membership_members: [
     { user_id: "groups", membership_id: a, status: "active" },
     { user_id: "groups", membership_id: b, status: "active" },
@@ -133,10 +133,15 @@ const classes = load("src/app/api/classes/route.ts", {
 });
 async function main() {
   const hidden = { headers: { Authorization: "Bearer purchaser" } };
-  for (const query of ["", "?home=1", `?school=${b}`]) {
+  for (const query of ["", "?businesses=1"]) {
     const response = await classes.GET(new NextRequest(`https://www.parari.app/api/classes${query}`, hidden));
     assert.equal(response.status, 404);
   }
+  const home = await classes.GET(new NextRequest("https://www.parari.app/api/classes?home=1", hidden));
+  assert.equal(home.status, 200);
+  const homeBody = await home.json();
+  assert.equal(homeBody.canManage, false); assert.equal(homeBody.owned, null);
+  assert.deepEqual(homeBody.enrolled.map(item => item.id), [b]);
   assert.equal(await businessScope.classBusinessId("groups", null), null);
   assert.equal(await businessScope.classBusinessId("groups", a), a);
   assert.equal(await businessScope.classBusinessId("groups", cpp), null);
@@ -150,7 +155,7 @@ async function main() {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations", { headers: token ? { Authorization: `Bearer ${token}` } : {} }));
     assert.equal(response.status, 401); assert.equal(dbCalls, 0);
   }
-  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", []], ["groups", [`membership:${a}`, `membership:${b}`, `class:${a}`]], ["company", ["cpp"]], ["guardian", [`class:${b}`]]]) {
+  for (const [token, expected] of [["alumni", ["cpp-alumni"]], ["researcher", ["cpp"]], ["purchaser", [`class:${b}`]], ["groups", [`membership:${a}`, `membership:${b}`, `class:${a}`]], ["company", ["cpp"]], ["guardian", [`class:${b}`]]]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations?user_id=groups", { headers: { Authorization: `Bearer ${token}` } }));
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control"), /no-store/);

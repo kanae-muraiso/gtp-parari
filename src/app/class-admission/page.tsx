@@ -24,7 +24,7 @@ export default function ClassAdmissionPage() {
         if (cause.loginRequired) {
           try {
             sessionStorage.setItem("parari:class-invitation", window.location.hash.slice(1));
-            setLogin("/login?returnTo=%2Fclass-admission");
+            setLogin("/login?returnTo=" + encodeURIComponent("/class-admission" + window.location.hash));
           } catch {
             setError("PARARIにログインしてから、元の案内リンクを開いてください。");
           }

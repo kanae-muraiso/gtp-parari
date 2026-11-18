@@ -5,20 +5,21 @@ import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { calendarMonthPattern, classCalendarToday, shiftCalendarMonth, type LearnerCalendarEntry } from "@/lib/classCalendar";
 import ClassMonthGrid from "./ClassMonthGrid";
 
-export default function LearnerClassCalendar({ schoolId, refresh }: { schoolId: string; refresh: number }) {
+export default function LearnerClassCalendar({ schoolId, memberId, refresh }: { schoolId: string; memberId?: string | null; refresh: number }) {
   const [month, setMonth] = useState(() => classCalendarToday().slice(0, 7));
   const [selectedDay, setSelectedDay] = useState("");
-  const [data, setData] = useState<{ month: string; entries: LearnerCalendarEntry[]; error?: string; hidden?: boolean }>();
+  const [data, setData] = useState<{ scope: string; month: string; entries: LearnerCalendarEntry[]; error?: string; hidden?: boolean }>();
+  const scope = schoolId + ":" + (memberId ?? "");
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<{ entries: LearnerCalendarEntry[] }>(`/schedule?school=${encodeURIComponent(schoolId)}&month=${month}`, undefined, controller.signal)
-      .then(result => { if (!controller.signal.aborted) setData({ month, entries: result.entries }); })
-      .catch(cause => { if (!controller.signal.aborted) setData({ month, entries: [], error: cause.message,
+    void classRequest<{ entries: LearnerCalendarEntry[] }>(`/schedule?school=${encodeURIComponent(schoolId)}&month=${month}${memberId ? "&member=" + memberId : ""}`, undefined, controller.signal)
+      .then(result => { if (!controller.signal.aborted) setData({ scope, month, entries: result.entries }); })
+      .catch(cause => { if (!controller.signal.aborted) setData({ scope, month, entries: [], error: cause.message,
         hidden: cause instanceof ClassRequestError && (cause.status === 401 || cause.status === 404) }); });
     return () => controller.abort();
-  }, [schoolId, month, refresh]);
-  if (data?.hidden) return null;
-  const current = data?.month === month ? data : null;
+  }, [schoolId, month, refresh, memberId, scope]);
+  if (data?.scope === scope && data.hidden) return null;
+  const current = data?.scope === scope && data.month === month ? data : null;
   const events = selectedDay ? current?.entries.filter(entry => entry.day === selectedDay) : current?.entries;
   function move(offset: number) {
     const next = shiftCalendarMonth(month, offset);

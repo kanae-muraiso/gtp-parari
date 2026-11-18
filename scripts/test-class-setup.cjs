@@ -290,6 +290,7 @@ async function main() {
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:intakeDb},
     "@/lib/classIntakeSource":{readClassIntakeSource:async()=>({recruitment:{school_id:"school",public_id:"public",kind:"説明会",route,audience:intakeAudience,information:"案内",payment_mode:"onsite",arrival_text:"初日の案内"},offer:null})},
     "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},
+    "@/lib/classRegistrationMail":{classRegistrationMail:async()=>{deliveries.push([profile.guardianEmail,profile.email]);return true;}},
     "@/lib/classAdmissionMail":{classDateTime:String,classNotice:async(to)=>{deliveries.push(to);return true;}},
     "@/lib/classBriefingWorkflow":workflow,
   });
@@ -323,6 +324,7 @@ async function main() {
       if(key==="update")return changes=>{linkedGuardian=changes.applicant_user_id;return chain;};return ()=>chain;}});return chain;
   }};
   const invitationApi=load("src/app/api/classes/admission-invitation/route.ts",{
+    "@/lib/classRegistrationMail":{classRegistrationMail:async()=>true},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},"@/lib/billing/supabaseAdmin":{supabaseAdmin:invitationDb},
     "@/lib/classAdmissionMail":{classNotice:async(to)=>{deliveries.push(to);return true;}},
     "@/lib/classes":{classIdPattern:/^[a-z-]+$/,classMeetingUrl:()=>null},"@/lib/classBriefingWorkflow":workflow,

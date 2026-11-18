@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classBusinessId } from "@/lib/classBusinessScope";
-import { classGuardianEnrollmentIds } from "@/lib/classCalendarAccess";
+import { classParticipantMembers } from "@/lib/classCalendarAccess";
 import { classIdPattern } from "@/lib/classes";
 import { calendarMonthPattern, classCalendarDays, generateClassDays, shiftCalendarMonth,
   type ClassMonthSchedule, type LearnerCalendarEntry } from "@/lib/classCalendar";
@@ -14,14 +14,14 @@ const classColumns = "id,name,starts_on,starts_at,cadence,location,product_id,sc
 const reservedDayMessage = "予約済みの開催日は外せません。対象の予約を確認してください。";
 const monthColumns = "days,confirmed,revision";
 
-async function monitor(request: NextRequest) {
+async function actor(request: NextRequest, requireMonitor = false) {
   const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return null;
   const { data, error } = await db.auth.getUser(token);
   if (error || !data.user) return null;
   const profile = await db.from("profiles").select("is_monitor").eq("user_id", data.user.id).maybeSingle();
   if (profile.error) throw profile.error;
-  return profile.data?.is_monitor ? data.user.id : null;
+  return !requireMonitor || profile.data?.is_monitor ? data.user.id : null;
 }
 
 async function ownedClass(request: NextRequest, user: string, classId: string | null) {
@@ -34,33 +34,36 @@ async function ownedClass(request: NextRequest, user: string, classId: string | 
   return data;
 }
 
-async function learnerCalendar(school: string, user: string, month: string) {
+async function learnerCalendar(school: string, user: string, month: string, selected: string | null, monitor: boolean) {
   const { data: business, error: businessError } = await db.from("class_schools").select("owner_user_id")
     .eq("id", school).is("archived_at", null).maybeSingle();
   if (businessError) throw businessError;
   if (!business) return missing();
-  const owner = business.owner_user_id === user;
-  const guardianIds = await classGuardianEnrollmentIds(user, school);
-  const [direct, related, classes] = await Promise.all([
-    db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id,self_selected)")
-      .eq("school_id", school).eq("user_id", user).eq("status", "active"),
-    guardianIds.length ? db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id,self_selected)")
-      .eq("school_id", school).in("id", guardianIds).eq("status", "active") : null,
+  const owner = monitor && business.owner_user_id === user;
+  const allowed = await classParticipantMembers(user, school);
+  if (selected && !allowed.some(member => member.id === selected)) return missing();
+  const selectedIds = selected ? [selected] : allowed.map(member => member.id);
+  if (!owner && !selectedIds.length) return missing();
+  const [enrollments, classes] = await Promise.all([
+    selectedIds.length ? db.from("school_enrollments").select("id,name,class_participation,participation_mode,assignments:school_class_assignments(class_id,self_selected)")
+      .eq("school_id", school).in("id", selectedIds).eq("status", "active") : null,
     db.from("school_classes").select(classColumns).eq("school_id", school),
   ]);
-  if (direct.error || related?.error || classes.error) throw direct.error ?? related?.error ?? classes.error;
-  const members = [...new Map([...(direct.data ?? []), ...(related?.data ?? [])].map(row => [row.id, row])).values()];
-  if (!owner && members.length === 0) return missing();
+  if (enrollments?.error || classes.error) throw enrollments?.error ?? classes.error;
+  const members = enrollments?.data ?? [];
   const rangeStart = month + "-01";
   const rangeEnd = shiftCalendarMonth(month, 1) + "-01";
   const ids = classes.data.map(row => row.id);
-  const [schedules, visits, credits] = await Promise.all([
+  const [schedules, visits, credits, attendance] = await Promise.all([
     ids.length ? db.from("school_class_monthly_schedules").select("class_id,days,confirmed").in("class_id", ids).eq("month", rangeStart) : null,
     members.length ? db.from("school_class_visit_reservations").select("enrollment_id,class_id,visit_on,makeup_id,surcharge_yen,surcharge_paid_at")
       .eq("school_id", school).in("enrollment_id", members.map(row => row.id)).gte("visit_on", rangeStart).lt("visit_on", rangeEnd) : null,
     members.length ? db.from("school_class_makeups").select("enrollment_id,source_class_id,missed_on,used:school_class_visit_reservations(visit_on)")
       .eq("school_id", school).in("enrollment_id", members.map(row => row.id)).gte("missed_on", rangeStart).lt("missed_on", rangeEnd) : null,
+    members.length ? db.from("school_attendance").select("enrollment_id,class_id,lesson_date,absence_reported")
+      .eq("school_id", school).in("enrollment_id", members.map(row => row.id)).gte("lesson_date", rangeStart).lt("lesson_date", rangeEnd) : null,
   ]);
+  if (attendance?.error) throw attendance.error;
   if (schedules?.error || visits?.error || credits?.error) throw schedules?.error ?? visits?.error ?? credits?.error;
   const byClass = new Map(schedules?.data.map(row => [row.class_id, row]));
   const entries: LearnerCalendarEntry[] = [];
@@ -86,10 +89,12 @@ async function learnerCalendar(school: string, user: string, month: string) {
       const byDay = new Map(booked.map(row => [row.visit_on, row]));
       const dates = new Set([...(fixed ? schedule?.days ?? generateClassDays(item, month, false) : []), ...byDay.keys()]);
       for (const day of dates) {
+        const startsOn = allowed.find(item => item.id === member.id)?.startsOn;
+        if (startsOn && day < startsOn) continue;
         const reservation = byDay.get(day);
         const missed = credits?.data.find(row => row.enrollment_id === member.id && row.source_class_id === item.id && row.missed_on === day);
         const label = reservation ? (reservation.surcharge_yen > 0 && !reservation.surcharge_paid_at ? "差額入金待ち"
-          : reservation.makeup_id ? "振替予約" : "予約済み") : missed ? (Array.isArray(missed.used) ? missed.used.length > 0 : Boolean(missed.used)) ? "振替済み" : "欠席・振替対象" : schedule?.confirmed ? "確定" : "予定";
+          : reservation.makeup_id ? "振替予約" : "予約済み") : missed ? (Array.isArray(missed.used) ? missed.used.length > 0 : Boolean(missed.used)) ? "振替済み" : "欠席・振替対象" : attendance?.data.some(row => row.enrollment_id === member.id && row.class_id === item.id && row.lesson_date === day && row.absence_reported) ? "欠席連絡済み" : schedule?.confirmed ? "確定" : "予定";
         add(item, day, label, displayName);
       }
     }
@@ -100,13 +105,14 @@ async function learnerCalendar(school: string, user: string, month: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await monitor(request);
+    const user = await actor(request);
     if (!user) return missing();
     const query = request.nextUrl.searchParams;
     const month = query.get("month") ?? "";
     if (!calendarMonthPattern.test(month)) return fail("表示する月を選択してください。");
     const school = query.get("school");
-    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month);
+    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month, query.get("member"), Boolean(await actor(request, true)));
+    if (!await actor(request, true)) return missing();
     const item = await ownedClass(request, user, query.get("class"));
     if (!item) return missing();
     const { data, error } = await db.from("school_class_monthly_schedules").select(monthColumns)
@@ -121,7 +127,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await monitor(request);
+    const user = await actor(request, true);
     if (!user) return missing();
     const item = await ownedClass(request, user, request.nextUrl.searchParams.get("class"));
     if (!item) return missing();

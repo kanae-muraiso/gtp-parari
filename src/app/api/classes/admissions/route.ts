@@ -1,4 +1,5 @@
 import { classBusinessId } from "@/lib/classBusinessScope";
+import { classRegistrationMail } from "@/lib/classRegistrationMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
@@ -168,6 +169,12 @@ async function handle(request: NextRequest, write: boolean) {
       const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
       let subject: string;
       let body: string;
+      if (input.kind === "account" && !["withdrawn", "rejected"].includes(candidate.decision)) {
+        const sent = await classRegistrationMail(schoolId, candidate.id, base, "PARARIの受講者ページのご案内",
+          "申込時のメールアドレスでPARARIに登録・ログインし、申込情報との接続を確認してください。", `class-account-${candidate.id}-${candidate.revision}`);
+        if (!sent) return fail("メールを送信できませんでした。", 502);
+        return send({ ok: true, mailed: true });
+      }
       if (input.kind === "invite" && candidate.invite_token && candidate.decision === "approved" &&
           !candidate.enrollment_id && candidate.starts_on && candidate.deadline >= today &&
           ["skip", "done"].includes(candidate.briefing) && ["skip", "graded"].includes(candidate.test)) {
@@ -187,10 +194,12 @@ async function handle(request: NextRequest, write: boolean) {
         body = `在籍開始日 ${candidate.starts_on}\n${instructions}`;
       } else return fail("手続きの状態を確認してください。");
       const key = `class-${input.kind}-${candidate.id}-${candidate.revision}`;
-      if (!await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key)) return fail("メールを送信できませんでした。", 502);
+      if (!(input.kind === "start"
+        ? await classRegistrationMail(schoolId, candidate.id, base, subject, body, key)
+        : await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key))) return fail("メールを送信できませんでした。", 502);
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
-      if (error?.code === "P0006") return fail("保護者が入会案内リンクからPARARIに登録・ログインし、同意を完了してください。");
+      if (error?.code === "P0006") return fail("本人または保護者が案内メールからPARARIに登録・ログインし、手続きを完了してください。");
       if (error?.code === "22023") return fail("工程・承認・開始日・同意・支払条件と期限を確認してください。");
       if (error?.code === "P0002") return fail("候補者が見つかりません。", 404);
       if (error) throw error;
@@ -212,7 +221,7 @@ async function handle(request: NextRequest, write: boolean) {
       if (input.confirmConsent === true) {
         const candidate = await db.from("school_admission_cases").select("briefing_followup,applicant_audience").eq("school_id", schoolId).eq("id", input.id).maybeSingle();
         if (candidate.error) throw candidate.error;
-        if (candidate.data?.briefing_followup || candidate.data?.applicant_audience === "minor") return fail("申込者がご自身のアカウントで同意してください。");
+        if (candidate.data?.briefing_followup || Boolean(candidate.data?.applicant_audience)) return fail("申込者がご自身のアカウントで同意してください。");
       }
       const changes = {
         name, contact, score, briefing: input.briefing, briefing_at: input.briefing_at || null,
