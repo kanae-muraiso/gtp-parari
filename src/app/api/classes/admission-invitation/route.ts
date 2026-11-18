@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classAdmissionMail, classNotice } from "@/lib/classAdmissionMail";
+import { classNotice } from "@/lib/classAdmissionMail";
 import { classMeetingUrl, classIdPattern } from "@/lib/classes";
 
 import { classToday, parseApplication, parseBriefingDesign, renderBriefingMail, type BriefingFollowup } from "@/lib/classBriefingWorkflow";
@@ -14,7 +14,7 @@ async function handle(request: NextRequest, write: boolean) {
   if (!token || !classIdPattern.test(token)) return missing();
   try {
     const candidate = await db.from("school_admission_cases")
-      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields,requested_class_id")
+      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields,requested_class_id,applicant_audience")
       .eq("invite_token", token).eq("decision", "approved").is("enrollment_id", null).maybeSingle();
     if (candidate.error) throw candidate.error;
     const row = candidate.data;
@@ -63,7 +63,7 @@ async function handle(request: NextRequest, write: boolean) {
       if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
         startsOn: row.starts_on, deadline: row.deadline, revision: row.revision, agreed, applicationText: recruitment.data?.application_text,
         followup: { design: { rules: design.rules, schoolLabel: design.schoolLabel, audience: design.audience, firstDay: design.firstDay },
-          firstDays, startTime, arrival, prefill: { name: row.name, ...(minor ? { guardianName: row.applicant_name, guardianEmail: row.applicant_email,
+          firstDays, startTime, arrival, prefill: { ...row.application_fields, name: row.name, ...(minor ? { guardianName: row.applicant_name, guardianEmail: row.applicant_email,
             email: row.learner_email } : { email: row.applicant_email }) } } });
       const input = await request.json().catch(() => null);
       if (agreed && row.applicant_user_id === user.id) return send({ ok: true, startsOn: row.starts_on });
@@ -105,23 +105,34 @@ async function handle(request: NextRequest, write: boolean) {
       ]);
       return send({ ok: true, startsOn: firstDay, confirmation: confirmed && scheduled });
     }
+    let guardianUserId: string | null = null;
+    if (row.applicant_audience === "minor") {
+      const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+      const account = token ? await db.auth.getUser(token) : null;
+      const user = account?.data.user;
+      if (account?.error || !user?.email_confirmed_at || !row.applicant_email ||
+        (row.applicant_user_id ? row.applicant_user_id !== user.id : user.email?.toLowerCase() !== row.applicant_email.toLowerCase()))
+        return send({ ok: false, loginRequired: true, message: "保護者のメールアドレスでPARARIに登録・ログインし、入会手続きをしてください。" }, 401);
+      guardianUserId = user.id;
+    }
     const options = recruitment.data;
     const paymentUrl = row.payment === "advance" && options?.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
     const arrival = row.payment === "onsite" && options?.payment_mode === "onsite" ? options.arrival_text : null;
     if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
       startsOn: row.starts_on, deadline: row.deadline, payment: row.payment, revision: row.revision,
-      applicationText: options?.application_text, paymentUrl, arrival, agreed: Boolean(row.consent_at && row.agreed_terms === terms) });
+      applicationText: options?.application_text, paymentUrl, arrival, agreed: Boolean(row.consent_at && row.agreed_terms === terms && (row.applicant_audience !== "minor" || row.applicant_user_id)) });
 
     const input = await request.json().catch(() => null);
     if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision) {
       return send({ ok: false, message: "案内が更新されました。再読み込みしてください。" }, 409);
     }
     const result = await db.from("school_admission_cases")
-      .update({ consent_at: new Date().toISOString(), agreed_terms: terms, revision: row.revision + 1 })
+      .update({ consent_at: new Date().toISOString(), agreed_terms: terms, revision: row.revision + 1,
+        ...(guardianUserId ? { applicant_user_id: guardianUserId } : {}) })
       .eq("id", row.id).eq("invite_token", token).eq("revision", row.revision).is("enrollment_id", null).select("id").maybeSingle();
     if (result.error) throw result.error;
     if (!result.data) return send({ ok: false, message: "案内が更新されました。再読み込みしてください。" }, 409);
-    if (row.applicant_email) await classAdmissionMail(row.applicant_email, school.data.name + "の申込確認",
+    if (row.applicant_email) await classNotice([row.applicant_email, row.learner_email], school.data.name + "の申込確認",
       ["お申し込みを受け付けました。", arrival, paymentUrl ? "支払いページ " + paymentUrl : null].filter(Boolean).join("\n\n"),
       `class-invite-consent-${row.id}-${row.revision}`);
     return send({ ok: true, paymentUrl, arrival });

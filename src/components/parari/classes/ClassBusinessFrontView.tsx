@@ -114,6 +114,9 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
                 </li>;
               })}</ul> : <p className="text-neutral-600">今月・来月の開催予定はありません。</p>}
             </div>)}
+            {!member?.enrolled && link.course?.intakes?.map(intake => <Link key={intake.href} href={intake.href} prefetch={false} className="w-fit text-sm font-semibold underline">
+              {intake.title} · {intake.label}
+            </Link>)}
             {link.href && <Link href={link.href} prefetch={false} className="w-fit text-sm font-medium underline">
               {link.course ? "詳しい日程を見る" : "開催案内を見る"}
             </Link>}

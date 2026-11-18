@@ -44,12 +44,12 @@ type Draft = {
 const audienceLabels = { adult: "成人向け", minor: "未成年向け" } as const;
 const adultRules: FormProfile["rules"] = {
   name: "required", email: "required", phone: "optional", address: "optional", school: "hidden",
-  guardianName: "required", guardianEmail: "required", guardianPhone: "optional", guardianAddress: "optional",
+  guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required",
 };
 const defaults: Draft = {
   route: "onsite", audience: null,
   forms: { adult: { rules: adultRules, schoolLabel: fields.school },
-    minor: { rules: { ...adultRules, email: "optional" }, schoolLabel: fields.school } },
+    minor: { rules: { ...adultRules, email: "required" }, schoolLabel: fields.school } },
   firstDay: "choose", allowTrials: true, introduction: "", arrival: "", amount: "", mail: messages,
 };
 
@@ -58,7 +58,8 @@ function readDraft(raw: string): Draft {
   const restoreForm = (kind: Audience): FormProfile => ({
     schoolLabel: forms?.[kind]?.schoolLabel ?? schoolLabel ?? defaults.forms[kind].schoolLabel,
     rules: { ...defaults.forms[kind].rules, ...rules,
-      ...(kind === "minor" && !forms?.minor ? { email: "optional" as const } : {}), ...forms?.[kind]?.rules },
+      ...forms?.[kind]?.rules, name: "required", email: "required",
+      ...(kind === "minor" ? { guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required" } as const : {}) },
   });
   return { ...defaults, ...saved, audience: audience === "adult" || audience === "minor" ? audience : null, forms: { adult: restoreForm("adult"), minor: restoreForm("minor") },
     mail: { ...messages, ...saved.mail } };
@@ -72,9 +73,23 @@ function mailSequence(route: Route, minor: boolean): Mail[] {
   return minor ? ["received", "paymentRequest", "paid", "firstDay", "booked"] : ["received", "paid", "booked"];
 }
 
-export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
-  const [draft, setDraft] = useState(defaults);
+export default function ClassAdmissionBlueprint({ schoolId, schoolName, guided = false, classProducts, onSaved, onSaveError }: { classProducts?: { id: string; name: string; audience?: Audience }[]; schoolId: string; schoolName: string; guided?: boolean; onSaved?: () => void; onSaveError?: () => void }) {
+  const [draft, setDraft] = useState({ ...defaults, route: guided ? "briefing" as const : defaults.route });
+  const visibleSteps = guided ? steps.slice(0, 3) : steps;
   const [step, setStep] = useState(0);
+  const [loadedClasses, setLoadedClasses] = useState<{ id: string; name: string; audience?: Audience }[]>([]);
+  const [previewClassId, setPreviewClassId] = useState("");
+  const products = classProducts ?? loadedClasses;
+  const previewClass = products.find(product => product.id === previewClassId) ?? products[0];
+  const selectedAudience = previewClass ? previewClass.audience : draft.audience;
+  useEffect(() => {
+    if (classProducts) return;
+    const controller = new AbortController();
+    void classRequest<{ products: { id: string; name: string; design: { audience?: Audience } }[] }>("?product=1", undefined, controller.signal)
+      .then(result => { if (!controller.signal.aborted) setLoadedClasses(result.products.map(product => ({ id: product.id, name: product.name, audience: product.design.audience }))); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [schoolId, classProducts]);
   const [phase, setPhase] = useState<Mail | "form" | "account" | "payment" | "date" | "briefingDate" | "meeting" | "trial">("form");
   const [briefingSlot, setBriefingSlot] = useState("");
   const [sameAddress, setSameAddress] = useState(false);
@@ -85,7 +100,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(key);
+      const saved = guided ? null : window.localStorage.getItem(key);
       if (saved) setDraft(readDraft(saved));
       else {
         const controller = new AbortController();
@@ -98,7 +113,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     } catch {
       setNotice("このブラウザーの下書きを読み込めませんでした。");
     }
-  }, [key]);
+  }, [key, guided]);
 
   function persist() {
     try {
@@ -110,13 +125,15 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
   }
 
   async function saveBriefing() {
-    if (!draft.audience || saving) return;
+    if (!selectedAudience || saving) return;
     setSaving(true);
     setNotice("");
     try {
-      await classRequest("/admissions", { action: "briefingDesign", design: { ...draft, ...draft.forms[draft.audience] } });
-      setNotice("説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
+      await classRequest("/admissions", { action: "briefingDesign", design: { ...draft, ...draft.forms[selectedAudience], audience: selectedAudience } });
+      onSaved?.();
+      setNotice(guided ? "申込書とメールを保存しました。" : "説明会の設計を教室に保存しました。「公開する募集の設定」で予約枠と公開設定を確認してください。");
     } catch (error) {
+      onSaveError?.();
       setNotice(error instanceof Error ? error.message : "説明会の設計を保存できませんでした。");
     } finally { setSaving(false); }
   }
@@ -132,9 +149,10 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
 
   const sampleBriefing = Math.ceil((Date.now() + 86400000) / 1800000) * 1800000;
   const sampleSlot = { id: "briefing-sample", starts_at: new Date(sampleBriefing).toISOString(), duration_minutes: 30 };
-  const audience = draft.audience ?? "adult";
+  const audience = selectedAudience ?? "adult";
   const minor = audience === "minor";
-  const form = draft.forms[audience];
+  const form = { ...draft.forms[audience], rules: { ...draft.forms[audience].rules, name: "required" as const, email: "required" as const,
+    ...(minor ? { guardianName: "required", guardianEmail: "required", guardianPhone: "required", guardianAddress: "required" } as const : {}) } };
   const routeMails = mailSequence(draft.route, minor);
   const label = (id: Field) => id === "school" ? form.schoolLabel.trim() || fields.school : fields[id];
   function updateForm(next: FormProfile) {
@@ -142,14 +160,14 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
   }
   function recipients(mail: Mail) {
     if (!minor) return "受講者本人";
-    if (mail === "paymentRequest" || mail === "paid" || mail === "onsitePayment" || form.rules.email === "hidden") return "保護者";
-    return form.rules.email === "optional" ? "保護者と受講者（受講者のメール入力がある場合）" : "保護者と受講者";
+    if (mail === "paymentRequest" || mail === "onsitePayment") return "保護者（支払手続き）・受講者（案内）";
+    return "保護者と受講者";
   }
   const resolved = (value: string) => value.replaceAll("{教室名}", schoolName)
     .replaceAll("{日時}", phase === "briefing" ? bookingDate(sampleSlot.starts_at) + " " + bookingTime(sampleBriefing) : date).replaceAll("{会場}", draft.arrival || "教室（サンプル）");
   const dateButton = draft.firstDay === "choose" ? "初日を予約する" : "先生が指定した初日を確認する";
   const fieldControl = (id: Field) => {
-    const locked = id === "name" || (minor ? id === "guardianEmail" : id === "email");
+    const locked = id === "name" || id === "email" || (minor && id.startsWith("guardian"));
     return <label key={id} className="grid grid-cols-[1fr_8rem] items-center gap-2 text-sm">
       <span>{label(id)}</span>
       <select className={field} disabled={locked} value={locked ? "required" : form.rules[id]}
@@ -164,19 +182,19 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
         placeholder={/email/i.test(id) ? "sample@example.test" : "サンプル"} />
     </label>;
 
-  return <section className="grid gap-4 rounded-2xl border bg-white p-5" aria-label="入会の設計図">
+  return <section className="grid gap-4 rounded-2xl border bg-white p-5" aria-label={guided ? "説明会後の申込書・メール" : "入会の設計図"}>
     <header className="grid gap-1">
-      <h3 className="font-bold">入会の設計図</h3>
-      <p className="text-sm text-neutral-600">下書きと申込者プレビューを使って設計できます。説明会ルートは教室に保存して運用に使えます。</p>
+      <h3 className="font-bold">{guided ? "説明会後の申込書・メール" : "入会の設計図"}</h3>
+      <p className="text-sm text-neutral-600">{guided ? "クラス設定から受講対象を引き継ぎ、必要な情報、初日の決め方、送信するメールを確認して保存します。" : "下書きと申込者プレビューを使って設計できます。説明会ルートは教室に保存して運用に使えます。"}</p>
     </header>
     <nav aria-label="設計図の手順" className="flex flex-wrap gap-2">
-      {steps.map((title, index) => <button type="button" aria-current={index === step ? "step" : undefined}
+      {visibleSteps.map((title, index) => <button type="button" aria-current={index === step ? "step" : undefined}
         className={index === step ? action : secondary} key={title} onClick={() => selectStep(index)}>{title}</button>)}
     </nav>
 
     {step === 0 && <fieldset className="grid gap-2">
       <legend className="mb-1 font-semibold">入会案内を見た人が次にすること</legend>
-      {(Object.keys(routes) as Route[]).map(route => <label className="flex gap-2 rounded-lg border p-3 text-sm" key={route}>
+      {!guided && (Object.keys(routes) as Route[]).map(route => <label className="flex gap-2 rounded-lg border p-3 text-sm" key={route}>
         <input type="radio" name="blueprint-route" checked={draft.route === route} onChange={() => setDraft({ ...draft, route })} />{routes[route]}
       </label>)}
       <p className="text-sm">{draft.route === "onsite" ? "申込 → 受付メール → 初日の予約・確認 → 当日支払い" :
@@ -189,16 +207,13 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     </fieldset>}
 
     {step === 1 && <div className="grid gap-4">
-      <label className="grid gap-1 text-sm font-medium">受講対象
-        <select className={field} value={draft.audience ?? ""} onChange={event => {
-          const value = event.target.value;
-          setDraft(current => ({ ...current, audience: value === "adult" || value === "minor" ? value : null }));
-        }}>
-          <option value="">受講対象を選ぶ</option>
-          <option value="adult">成人向け</option><option value="minor">未成年向け</option>
+      {products.length > 0 && <label className="grid gap-1 text-sm font-medium">申込書を確認するクラス
+        <select name="previewClass" className={field} value={previewClass?.id ?? ""} onChange={event => setPreviewClassId(event.target.value)}>
+          {products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
         </select>
-      </label>
-      {draft.audience && <>
+      </label>}
+      <p className="text-sm">受講対象は「クラスの内容・料金」の設定を自動で引き継ぎます。{selectedAudience ? audienceLabels[selectedAudience] : "先にクラスの受講対象を設定してください。"}</p>
+      {selectedAudience && <>
       <fieldset className="grid gap-2 rounded-lg border p-3">
         <legend className="px-1 font-medium">{audienceLabels[audience]}の受講者項目</legend>
         {fieldIds.filter(id => !id.startsWith("guardian")).map(fieldControl)}
@@ -211,7 +226,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
         {fieldIds.filter(id => id.startsWith("guardian")).map(fieldControl)}
       </fieldset>}
       <p className="text-sm text-neutral-600">{minor
-        ? "受付や日程の案内は、メールアドレスの登録がある受講者と保護者に届きます。決済の案内は保護者宛てです。"
+        ? "本人の氏名・メールと、保護者の氏名・メール・電話・住所が必須です。先生からの連絡は必ず両者に届きます。正式な入会には保護者のPARARI登録・ログインが必要です。"
         : "受講者本人のメール宛てに案内し、本人のPARARIアカウントを申込に紐づけます。"}</p>
       </>}
     </div>}
@@ -236,7 +251,7 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
       {routeMails.map(id => <details className="rounded-lg border p-3" key={id}>
         <summary className="cursor-pointer text-sm font-medium">{messages[id].subject.replace("{教室名}の", "").replace("{教室名}からの", "")}</summary>
         <div className="mt-2 grid gap-2 text-sm">
-          {draft.audience && <p>宛先　{recipients(id)}</p>}
+          {selectedAudience && <p>宛先　{recipients(id)}</p>}
           <label>件名<input className={field} maxLength={180} value={draft.mail[id].subject}
             onChange={event => setDraft({ ...draft, mail: { ...draft.mail, [id]: { ...draft.mail[id], subject: event.target.value } } })} /></label>
           <label>本文<textarea className={field} maxLength={4000} rows={3} value={draft.mail[id].body}
@@ -246,9 +261,9 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
       </details>)}
     </div>}
 
-    {step === 3 && !draft.audience && <button type="button" className={secondary}
-      onClick={() => selectStep(1)}>申込フォームで受講対象を選ぶ</button>}
-    {step === 3 && draft.audience && <div className="mx-auto grid w-full max-w-md gap-3 rounded-xl border p-4">
+    {step === 3 && !selectedAudience && <button type="button" className={secondary}
+      onClick={() => selectStep(1)}>申込フォームで確認する対象を選ぶ</button>}
+    {step === 3 && selectedAudience && <div className="mx-auto grid w-full max-w-md gap-3 rounded-xl border p-4">
       <p className="text-sm font-medium">{routes[draft.route]}のプレビュー</p>
       {(phase === "form" || phase === "briefingDate") && draft.introduction &&
         <p className="whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm">{draft.introduction}</p>}
@@ -309,10 +324,10 @@ export default function ClassAdmissionBlueprint({ schoolId, schoolName }: { scho
     </div>}
 
     <footer className="flex flex-wrap items-center gap-2">
-      <button type="button" className={secondary} onClick={persist}>下書きを保存</button>
-      {draft.route === "briefing" && <button type="button" className={action} disabled={!draft.audience || saving}
-        onClick={() => void saveBriefing()}>説明会の設計を教室に保存</button>}
-      {step < steps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
+      {!guided && <button type="button" className={secondary} onClick={persist}>下書きを保存</button>}
+      {draft.route === "briefing" && <button type="button" data-setup-save className={action} disabled={!selectedAudience || saving}
+        onClick={() => void saveBriefing()}>{guided ? "申込書とメールを保存" : "説明会の設計を教室に保存"}</button>}
+      {step < visibleSteps.length - 1 && <button type="button" className={action} onClick={() => selectStep(step + 1)}>次へ</button>}
       {notice && <p role="status" className="text-sm">{notice}</p>}
     </footer>
   </section>;

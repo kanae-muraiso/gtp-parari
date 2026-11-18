@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       if (event.status !== "open" || event.class_event.audience === "public" ||
         Date.parse(event.class_event.startsAt) <= Date.now()) return fail("在籍者向けの開催前イベントを公開してください。");
       const { data, error } = await db.from("school_admission_cases")
-        .select("applicant_email,applicant_user_id,application_fields")
+        .select("applicant_email,applicant_user_id,application_fields,learner_email")
         .eq("school_id", school).not("enrollment_id", "is", null).not("applicant_user_id", "is", null)
         .not("consent_at", "is", null).limit(1000);
       if (error) throw error;
@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
         if (recipients.has(row.applicant_email) ||
           !await isClassEventMember(school, event.class_event.classIds, row.applicant_user_id)) continue;
         recipients.add(row.applicant_email);
+        if (row.learner_email) recipients.add(row.learner_email);
       }
       const emails = [...recipients];
       let sent = 0;

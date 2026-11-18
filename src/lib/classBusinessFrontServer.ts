@@ -19,7 +19,7 @@ export async function classBusinessFrontLinks(school: string, owner: string, sel
   const now = new Date().toISOString();
   const [recruitment, offers, products, events] = await Promise.all([
     db.from("school_recruitment").select("public_id,information,kind,route").eq("school_id", school).eq("enabled", true).maybeSingle(),
-    db.from("school_recruitment_offers").select("id,name,information").eq("school_id", school).eq("enabled", true).order("name"),
+    db.from("school_recruitment_offers").select("id,name,information,route_override,class_ids").eq("school_id", school).eq("enabled", true).order("name"),
     db.from("school_class_products").select("id,name,design").eq("school_id", school).order("name"),
     db.from("applications").select("id,title,class_event").eq("class_event_school_id", school)
       .eq("status", "open").is("archived_at", null).in("class_event->>audience", ["public", "mixed"])
@@ -45,13 +45,13 @@ export async function classBusinessFrontLinks(school: string, owner: string, sel
     if (profile.error) throw profile.error;
     if (profile.data?.is_monitor) {
       const label = source.route === "direct" ? "入会申込" : source.kind + "予約";
-      const candidates = [{ id: source.public_id, title: label, information: source.information },
-        ...(offers.data ?? []).map(offer => ({ id: offer.id, title: offer.name, information: offer.information }))];
+      const candidates = [{ id: source.public_id, title: label, information: source.information, route: source.route },
+        ...(offers.data ?? []).map(offer => ({ id: offer.id, title: offer.name, information: offer.information, route: offer.route_override ?? source.route }))];
       const shared = candidates.some(entry => !entry.information.trim()) &&
         sellerDisclosureReady(await readSellerDisclosure(owner));
       for (const entry of candidates) {
         if (entry.information.trim() || shared) {
-          links.push({ key: "intake:" + entry.id, title: entry.title, label, href: "/class-intake/" + entry.id });
+          links.push({ key: "intake:" + entry.id, title: entry.title, label: entry.route === "direct" ? "入会申込" : source.kind + "予約", href: "/class-intake/" + entry.id });
         }
       }
     }
@@ -66,6 +66,10 @@ export async function classBusinessFrontLinks(school: string, owner: string, sel
       label: classParticipationFormats[format], ...(walkIn ? { href: "/class-schedule/" + product.id } : {}), format,
       course: {
         id: product.id, description: design.description || "", walkIn,
+        intakes: recruitment.data ? (offers.data ?? []).filter(offer => productSlots.some(slot => offer.class_ids.includes(slot.id))).map(offer => ({
+          title: offer.name, label: (offer.route_override ?? recruitment.data!.route) === "direct" ? "入会を申し込む" : recruitment.data!.kind + "を予約する",
+          href: "/class-intake/" + offer.id,
+        })) : [],
         explanation: walkIn ? "予約不要・当日参加" : design.booking === "flexible" ? "空席のある回をその都度予約" :
           design.makeup === "approval" ? "先生の承認で空いている回に振替" :
           design.makeup === "notice" ? "事前連絡した欠席分を空いている回に振替" : "",

@@ -15,6 +15,8 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const targets = data.targetClasses;
   const [targetId, setTargetId] = useState("");
   const target = targets?.length === 1 ? targets[0] : targets?.find(item => item.id === targetId);
+  const audience = target?.audience ?? data.audience ?? "adult";
+  const minor = audience === "minor";
   const targetReady = !targets || Boolean(target);
   const onlyWalkIn = targets?.length === 0 && Boolean(data.walkInSchedules?.length);
   const [selected, setSelected] = useState("");
@@ -22,7 +24,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const start = slot ? Date.parse(slot.starts_at) : 0;
   const end = slot ? start + slot.duration_minutes * 60000 : 0;
   const timeLabel = slot ? `${bookingDate(slot.starts_at)} ${bookingTime(start)}〜${bookingTime(end) <= bookingTime(start) ? "翌日 " : ""}${bookingTime(end)}` : "";
-  const ready = targetReady && (data.direct || Boolean(slot));
+  const ready = Boolean(audience) && targetReady && (data.direct || Boolean(slot));
   return <><header className="grid gap-1">
       <p className="text-sm text-neutral-600">{data.school}</p>
       <h1 className="text-xl font-bold">{data.offerName ? data.offerName + " · " : ""}{onlyWalkIn ? "開催日程のご案内" : data.direct ? "入会申込" : data.kind + "予約"}</h1>
@@ -52,6 +54,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         if (busy || !ready) { event.preventDefault(); return; }
         submit(event);
       }}>
+        {minor && <p className="rounded-lg bg-blue-50 p-3 text-sm">このクラスは未成年向けです。保護者の方がお申し込みください。本人と保護者の両方に予約・入会・日程の案内が届きます。正式入会には保護者のPARARI登録・ログインが必要です。</p>}
         {targets?.length === 1 && <>
           <section className="grid gap-2 rounded-xl border p-4" aria-label="対象クラス">
             <h2 className="font-semibold">入会後のクラスと開催予定</h2>
@@ -81,13 +84,20 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
             {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
           </div>}
         </section>}
-        <fieldset disabled={busy || !ready} className={ready ? "grid min-w-0 gap-3" : "hidden"}>
+        <fieldset key={audience} disabled={busy || !ready} className={ready ? "grid min-w-0 gap-3" : "hidden"}>
         <legend className="mb-2 font-semibold">お名前と連絡先</legend>
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
-        <label>{data.audience === "minor" ? "保護者のお名前" : "申し込む方のお名前"}<input name="applicant" className={field} maxLength={120} required /></label>
-        {!data.direct && slot?.channel === "phone" && <label>連絡先電話番号<input name="phone" className={field} type="tel" required maxLength={30} /></label>}
-        <label>{data.audience === "minor" ? "保護者のメールアドレス" : "連絡先メール"}<input name="email" className={field} type="email" maxLength={254} required /></label>
-        {data.audience === "minor" && <label>受講者のメールアドレス（任意）<input name="learnerEmail" className={field} type="email" maxLength={254} /></label>}
+        <label>受講する方のメールアドレス（必須）<input name="email" className={field} type="email" maxLength={254} required /></label>
+        <label>受講する方の電話番号{!minor && slot?.channel === "phone" ? "（必須）" : "（任意）"}<input name="phone" className={field} type="tel" required={!minor && slot?.channel === "phone"} maxLength={30} /></label>
+        <label>受講する方の住所（任意）<input name="address" className={field} maxLength={300} /></label>
+        <label>所属・学校名（任意）<input name="school" className={field} maxLength={300} /></label>
+        {minor && <fieldset className="grid gap-3 rounded-xl border p-4">
+          <legend className="px-1 font-semibold">保護者の情報（すべて必須）</legend>
+          <label>保護者のお名前<input name="guardianName" className={field} maxLength={120} required /></label>
+          <label>保護者のメールアドレス<input name="guardianEmail" className={field} type="email" maxLength={254} required /></label>
+          <label>保護者の電話番号<input name="guardianPhone" className={field} type="tel" maxLength={30} required /></label>
+          <label>保護者の住所<input name="guardianAddress" className={field} maxLength={300} required /></label>
+        </fieldset>}
         <label><input type="checkbox" required /> {data.sharedDisclosure && !data.information ? "個人情報の取扱いを確認し、同意します" : "案内と個人情報の取り扱いを確認し、同意します"}{data.direct && data.terms ? "。教室規約にも同意します" : ""}</label>
         <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white" disabled={busy}>{data.direct ? "申し込む" : "この日時で予約する"}</button>
         </fieldset>

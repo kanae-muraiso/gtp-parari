@@ -1,4 +1,5 @@
 export type IntakeOptions = {
+  audience?: "adult" | "minor" | null;
   route: "briefing" | "direct";
   application_text: string;
   payment_mode: "free" | "advance" | "onsite";

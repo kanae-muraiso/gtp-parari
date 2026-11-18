@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
+import { classFrontPublishIssues } from "@/lib/classSetup";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { parseClassBusinessFront } from "@/lib/classBusinessFront";
 import { classBusinessFrontLinks, readClassBusinessFront } from "@/lib/classBusinessFrontServer";
@@ -53,6 +54,10 @@ export async function POST(request: NextRequest) {
       const content = parseClassBusinessFront(body.content);
       if (!content) return fail("紹介文と掲載項目を確認してください。");
       const links = await classBusinessFrontLinks(owner.school, owner.user);
+      if (body.action === "publishFront" && body.validateEnrollment === true) {
+        const issues = classFrontPublishIssues(content, links);
+        if (issues.length) return fail(issues.join("\n"), 409);
+      }
       const allowed = new Set([...front.draft.entries, ...links.map(link => link.key)]);
       if (content.entries.some(key => !allowed.has(key))) return fail("掲載先が変わりました。再読み込みしてから保存してください。", 409);
       draft = content;

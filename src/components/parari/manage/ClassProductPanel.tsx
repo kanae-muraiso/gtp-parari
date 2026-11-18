@@ -10,8 +10,8 @@ const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, allowProductSelection = true }: {
-  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: () => void; allowProductSelection?: boolean;
+export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, onSaveError, onDraftChange, allowProductSelection = true }: {
+  classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: (id: string) => void; onSaveError?: () => void; onDraftChange?: () => void; allowProductSelection?: boolean;
 }) {
   const [product, setProduct] = useState<ClassProduct | null>(null);
   const [error, setError] = useState("");
@@ -64,10 +64,10 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       const result = await classRequest<{ design: ClassProduct }>("", { action: "saveContentProduct", productId: id, name,
         design: { ...product, slotDefaults, classIds: selected.map(item => item.id) } });
       setProducts(current => [...current.filter(item => item.id !== id), { id, name, design: result.design }]);
-      onSaved?.();
+      onSaved?.(id);
       setProduct(result.design);
       setSaved(true);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
+    } catch (cause) { onSaveError?.(); setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
     <h3 className="font-bold">{allowProductSelection ? "商品設定" : initialProduct ? "商品設定を編集" : "商品を作成"}</h3>
@@ -80,6 +80,11 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       </select></label>}
       <label>商品名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
         onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
+      <label>受講対象<select name="classAudience" className={field} required value={product.audience ?? ""}
+        onChange={event => patch("audience", event.target.value as ClassProduct["audience"])}>
+        <option value="">受講対象を選んでください</option><option value="adult">成人向け</option><option value="minor">未成年向け</option>
+      </select></label>
+      <p className="text-sm text-neutral-600">申込書はこの設定を引き継ぎます。未成年向けは保護者の氏名・メール・電話・住所が必須になり、連絡は本人と保護者の両方に届きます。</p>
       <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える開催枠</legend>
         {available.map(item => <label key={item.id} className="text-sm">
           <input type="checkbox" checked={product.classIds.includes(item.id)} onChange={event => patch("classIds",
@@ -98,6 +103,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       {product.walkInFee != null && <div className="grid gap-2 text-sm">
         <p>現在は予約不要の当日参加で案内中です。</p>
         <button className="w-fit underline" type="button" onClick={() => {
+          onDraftChange?.();
           setProduct({ ...product, booking: "flexible", walkInFee: null });
           setSaved(false);
         }}>都度予約に切り替える</button>

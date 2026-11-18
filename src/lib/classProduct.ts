@@ -8,7 +8,10 @@ export type ClassSlotDefaults = {
 
 export const defaultClassSlotSettings: ClassSlotDefaults = { duration: 60, delivery: "onsite", location: "" };
 
+export type ClassAudience = "adult" | "minor";
+
 export type ClassProduct = {
+  audience?: ClassAudience;
   classIds: string[];
   walkInFee?: number | null;
   slotDefaults?: ClassSlotDefaults;
@@ -28,7 +31,7 @@ export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmp
   if (!value || typeof value !== "object") return null;
   const p = value as ClassProduct;
   const integer = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
-  if (!Array.isArray(p.classIds) || (!allowEmpty && !p.classIds.length) || p.classIds.some(id => !allowed.has(id)) ||
+  if ((p.audience !== undefined && p.audience !== "adult" && p.audience !== "minor") || !Array.isArray(p.classIds) || (!allowEmpty && !p.classIds.length) || p.classIds.some(id => !allowed.has(id)) ||
       typeof p.description !== "string" || p.description.length > 1000 ||
       (p.walkInFee != null && !integer(p.walkInFee, 0, 1000000)) ||
       !integer(p.capacity, 1, 1000) || !integer(p.monthlyFee, 0, 1000000) || !integer(p.monthlyVisits, 1, 100) ||
@@ -41,7 +44,7 @@ export function parseClassProduct(value: unknown, allowed: Set<string>, allowEmp
     !integer(slotDefaults.duration, 5, 480) || !["onsite", "online", "hybrid"].includes(slotDefaults.delivery) ||
     typeof slotDefaults.location !== "string" || slotDefaults.location.length > 200 ||
     (slotDefaults.delivery === "hybrid" && !slotDefaults.location.trim()))) return null;
-  return { classIds: [...new Set(p.classIds)], description: p.description.trim(), capacity: p.capacity,
+  return { ...(p.audience ? { audience: p.audience } : {}), classIds: [...new Set(p.classIds)], description: p.description.trim(), capacity: p.capacity,
     monthlyFee: p.monthlyFee, monthlyVisits: p.monthlyVisits, booking: p.booking, extraFee: p.extraFee,
     makeup: p.makeup, makeupExpiry: p.makeupExpiry, walkInFee: p.walkInFee ?? null,
     ...(slotDefaults ? { slotDefaults: { duration: slotDefaults.duration, delivery: slotDefaults.delivery,

@@ -8,6 +8,7 @@ type UpcomingClass = { day: string; time: string; location: string | null; confi
 
 export type ClassIntakeTarget = {
   id: string;
+  audience?: "adult" | "minor";
   name: string;
   schedule: string;
   location: string | null;
@@ -18,7 +19,7 @@ export type ClassIntakeTarget = {
 };
 
 type TargetSlot = Pick<SchoolClass, "id" | "name" | "starts_on" | "starts_at" | "cadence" | "location" | "fee_override_yen" | "schedule_rules" | "delivery">;
-type TargetProduct = { name: string; monthlyFee?: number; monthlyVisits?: number; booking?: string };
+type TargetProduct = { name: string; audience?: "adult" | "minor"; monthlyFee?: number; monthlyVisits?: number; booking?: string };
 
 export function classIntakeTarget(slot: TargetSlot, product?: TargetProduct | null,
   calendar?: { today: string; months: ClassIntakeMonth[] }, showVisitFee = false): ClassIntakeTarget {
@@ -31,6 +32,7 @@ export function classIntakeTarget(slot: TargetSlot, product?: TargetProduct | nu
   }).join("・") : slot.cadence === "weekly" ? "毎週" + classWeekdays[initialDay.getUTCDay()] + "曜" : `毎月${initialDay.getUTCDate()}日`;
   return {
     id: slot.id,
+    audience: product?.audience,
     name: product?.name ? product.name + " · " + slot.name : slot.name,
     schedule: cadence + " " + slot.starts_at.slice(0, 5),
     location: slot.delivery === "online" ? "オンライン" : slot.location,
