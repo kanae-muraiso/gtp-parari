@@ -70,6 +70,12 @@ module.exports = async function(db, {owner,learner,outsider,oldLearner}) {
   await confirm(adult.registration_token,learner);
   await q('select finish_class_admission($1,$2,$3)',[owner,adultSchool,adult.id]);
   assert.equal((await q('select user_id from school_enrollments where school_id=$1',[adultSchool])).rows[0].user_id,learner);
+  const legacy=(await q("insert into school_admission_cases(id,school_id,name,source,briefing,test,decision,payment,applicant_email,consent_at,enrollment_id) values(gen_random_uuid(),$1,'旧申込','public','skip','skip','approved','free','parent@example.invalid',now(),$2) returning registration_token",[adultSchool,adult.id])).rows[0];
+  // Existing null-audience applications are linked by the verified applicant relationship, without rewriting their original form.
+  await confirm(legacy.registration_token,outsider);
+  assert.equal((await q('select class_member_access($1,$2,$3) as allowed',[outsider,adultSchool,adult.id])).rows[0].allowed,true);
+  assert.equal((await q("select class_event_member($1,'[]',$2) as allowed",[adultSchool,outsider])).rows[0].allowed,true);
+  assert.equal((await q('select class_participant_members($1,$2) as list',[outsider,adultSchool])).rows[0].list[0].role,'learner');
   for(const role of ['anon','authenticated']) {
     await db.exec('reset role; set role '+role);
     await assert.rejects(access(outsider,members[1]),{code:'42501'});

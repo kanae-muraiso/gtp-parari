@@ -1,10 +1,11 @@
 import "server-only";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 
+// Includes verified primary applicants from older forms as well as guardians.
 export async function classGuardianEnrollmentIds(user: string, school?: string) {
   let query = db.from("school_admission_cases").select("enrollment_id")
     .eq("applicant_user_id", user).not("consent_at", "is", null)
-    .not("enrollment_id", "is", null).not("application_fields->>guardianEmail", "is", null);
+    .not("enrollment_id", "is", null);
   if (school) query = query.eq("school_id", school);
   const { data, error } = await query;
   if (error) throw error;
