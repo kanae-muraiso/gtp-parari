@@ -64,3 +64,13 @@ COMMIT;
 - 既存の短いURLの互換性についてユーザー向け移行方針を確定する。安全性を優先する場合は旧URLの再発行が必要。
 - `/p` 以外のすべての閲覧経路（BOOK/PAGE含む）を一括検証し、ビュー・RLSの全経路をテストしてから切替。
 - 作品テーブルのRLSは複数の permissive policy がOR結合される点に注意し、「公開用ポリシーのみ」を変更して完了扱いしない。
+
+
+## 実装経路の追加調査
+少なくとも次の既存URLも `parari_books` に直接アクセスしているため、`/p/[id]` だけ変更しても十分ではない:
+- `src/app/[username]/[workSlug]/page.tsx`（サーバー側匿名Supabaseクライアント）
+- `src/app/[username]/[workSlug]/[pageSlug]/page.tsx`（同系統）
+- `src/app/[username]/pages/[workId]/view/page.tsx`（ブラウザ側匿名Supabaseクライアント）
+- `src/app/api/works/book-resolve/route.ts`（サービス権限でBOOK内PAGE展開）
+
+**未実施**: エンドツーエンド・テスト、プレビュー環境確認、本番DBのRLS適用。PRは意図的にdraftのまま維持。
