@@ -176,11 +176,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const protectedIds = isVisible && userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
+    // A purchased parent BOOK does not automatically grant a separately sold PAGE.
+    // Check independently of parent visibility (sales normally make the parent private).
+    const protectedIds = userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
     const pageContentById = new Map<string, string>();
 
     for (const page of pages ?? []) {
-      if (page.is_deleted === true || (protectedIds.has(page.id) && !page.is_public && page.visibility === "private")) continue;
+      if (page.is_deleted === true || protectedIds.has(page.id)) continue;
       const rawContent = String(page.content ?? "");
       pageContentById.set(
         String(page.id),
