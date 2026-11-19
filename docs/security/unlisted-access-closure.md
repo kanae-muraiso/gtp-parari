@@ -95,3 +95,21 @@ COMMIT;
 - 旧slug（短いID含む）とBOOK/PAGE参照を検証する。
 - 有料作品の公開メタデータ、作品概要、試し読みは維持しつつ全文が返らないこと。
 - VercelプレビューのREADYはビルド成功を示すだけで、匿名権限の漏洩が塞がった証明ではない。
+
+
+## RLS切替のローカル演習（2026-11-19）
+
+実施ファイル:
+- `supabase/security/unlisted-read-cutover-candidate.sql`（本番自動適用の対象ではない）
+- `scripts/test-unlisted-rls-cutover.cjs`（PGliteで作成した隔離データベース）
+- `npm run test:unlisted-rls`（PRブランチのbuildに追加）
+
+テストでは、従来の `public_can_read_visible`、`paid_source_no_anonymous`、`paid_source_author_only` の複数の許可を用意してから切替を実行する。匿名の `parari_books` と `parari_public_works` には公開作品のみ残り、作者の非公開作品、購入者の有効な権利は残ることを確認する。
+
+**限界**: これは隔離DB上の抜粋スキーマに対する再現テストで、本番全体のRLS、Supabase Auth連携、既存共有URL全件、BOOK/PAGE、実際の決済WebHookを包含するものではない。プレビュー環境は本番Supabaseを参照している可能性があるため、権限切替のプレビュー動作確認をもって本番切替済と誤解しない。
+
+**未解決**:
+- 本番DBの全SELECTポリシー、SECURITY DEFINER関数、ビューを再監査
+- 旧短い共有URLの推測耐性を確保するランダム共有トークンへの移行
+- 実ユーザーのログイン状態で作者/購入者のE2Eを実施（テスト専用アカウント）
+- 本番RLS切替にはバックアップ/切戻し手順と明示的なリリース判断が必要
