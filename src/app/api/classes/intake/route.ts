@@ -78,6 +78,7 @@ async function handle(request: NextRequest) {
       const { error } = result;
       const caseId = result.data?.[0]?.case_id;
       if (error?.code === "P0002") return missing();
+      if (error?.code === "23505") return fail("同じ申込が登録済みか、受付内容が変更されています。教室にご確認ください。", 409);
       if (error?.code === "22023") return fail("申込内容が変更されました。再読み込みしてください。", 409);
       if (error) throw error;
       const paymentUrl = options.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
