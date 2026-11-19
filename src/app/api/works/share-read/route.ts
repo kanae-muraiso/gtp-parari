@@ -48,11 +48,15 @@ export async function GET(request: NextRequest) {
     (byId ? identifier.toLowerCase() === work.id.toLowerCase()
       : [work.slug, work.stable_slug, work.custom_slug].includes(identifier));
   // An active sale must never become readable merely because its listing is public.
-  const { data: activeSale } = await supabaseAdmin
+  const { data: activeSale, error: saleError } = await supabaseAdmin
     .from("commerce_products").select("id")
     .eq("work_id", work.id).eq("product_type", "work")
     .eq("active", true).limit(1).maybeSingle();
-  let authorized = (publicWork || unlistedWithBearer) && !activeSale || isOwner;
+  // A failed sale lookup must never be treated as "not for sale".
+  if (saleError) {
+    return NextResponse.json({ ok: false }, { status: 503, headers });
+  }
+  let authorized = ((publicWork || unlistedWithBearer) && !activeSale) || isOwner;
   let hasPurchasedAccess = false;
 
   if (!authorized && userId) {
