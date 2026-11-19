@@ -113,3 +113,17 @@ COMMIT;
 - 旧短い共有URLの推測耐性を確保するランダム共有トークンへの移行
 - 実ユーザーのログイン状態で作者/購入者のE2Eを実施（テスト専用アカウント）
 - 本番RLS切替にはバックアップ/切戻し手順と明示的なリリース判断が必要
+
+
+## 2026-11-19 統合テスト追加
+
+- `scripts/test-book-resolve-security.cjs` を追加。BOOKと参照PAGEのアクセス制御を模擬Supabaseデータで検証
+- `src/app/api/works/book-resolve/route.ts` の販売PAGE判定を変更。親BOOKが非公開（購入後表示）の場合も、別売りPAGEの保護を維持
+- ビルドで `test:share-access`、`test:unlisted-rls`、`test:book-resolve-security` を実行
+- 2026-11-19 Vercel preview `dpl_7fj5Z6UX3wywin6yCdRPjZUrsiC6`: READY、3テストはログでPASSを確認
+
+残るリリースブロッカー:
+1. 本番RLSを適用していないので、匿名の限定公開一括取得は依然可能
+2. UIの実ブラウザE2E、既存285件の公開URL互換性の広範な検証は未完了
+3. 共有用短い識別子は従来互換のため許容しており、推測耐性の設計が未完了
+4. 本番SupabaseのSQL・ビュー適用は、全経路監査、切戻し、バックアップ検証の後
