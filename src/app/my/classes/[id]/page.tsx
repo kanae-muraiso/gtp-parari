@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { matchesClassDateRule } from "@/lib/classRecurrence";
 import { isScheduledClassDay } from "@/lib/classCalendar";
 import ClassAbsencesPanel from "@/components/parari/manage/ClassAbsencesPanel";
 import type { ClassParticipantMember } from "@/lib/classCalendarAccess";
@@ -59,6 +60,21 @@ export default function MyClassSchoolPage() {
   }
   const yen = (value: number) => value.toLocaleString("ja-JP") + "円";
   const dates = Array.from({ length: 43 }, (_, offset) => new Date(Date.parse(today) + offset * 86400000).toISOString().slice(0, 10));
+  const lessonSlots = [...(current?.school?.classes ?? []), ...(current?.visits?.makeupClasses ?? [])];
+  const nextBooked = (current?.visits?.booked ?? []).flatMap(visit => {
+    const slot = lessonSlots.find(item => item.id === visit.class_id);
+    return slot ? [{ slot, day: visit.visit_on, pendingPayment: Boolean(visit.surcharge_yen && !visit.surcharge_paid_at) }] : [];
+  });
+  const fixedSchedule = current?.visits?.flexible ? [] : (current?.school?.classes ?? []).flatMap(slot =>
+    dates.filter(day => (!current?.startsOn || day >= current.startsOn) && isScheduledClassDay(slot, day, current?.visits?.calendarDays))
+      .map(day => ({ slot, day, pendingPayment: false })));
+  const nextLesson = [...nextBooked, ...fixedSchedule].filter(({ slot, day }) =>
+    Date.parse(day + "T" + slot.starts_at.slice(0, 5) + ":00+09:00") >= now)
+    .sort((a, b) => (a.day + a.slot.starts_at).localeCompare(b.day + b.slot.starts_at))[0];
+  const nextLocation = nextLesson?.slot.schedule_rules?.overrides.findLast(entry =>
+    matchesClassDateRule(entry.rule, nextLesson.day))?.location ?? nextLesson?.slot.location;
+  const nextMeeting = nextLesson && !nextLesson.pendingPayment && nextLesson.slot.delivery !== "onsite"
+    ? classMeetingUrl(nextLesson.slot.meeting_url) : null;
   return <main className="min-h-screen bg-neutral-100">
     <div className="mx-auto grid w-full max-w-3xl gap-5 px-4 py-6">
       <MyAreaHeader title="クラス" area="library" navigation={<MyPrimaryTabs active={null} embedded />} />
@@ -67,24 +83,40 @@ export default function MyClassSchoolPage() {
           {current.members.map(member => <option key={member.id} value={member.id}>{member.name}{member.role === "guardian" ? "（保護者として確認）" : ""}</option>)}
         </select>
       </label>}
-      {current?.school && userId && <LearnerClassCalendar key={id + userId + current.memberId} schoolId={id} memberId={current.memberId} refresh={refresh} />}
+      {current?.school && <section className="grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-label="クラスへの参加">
+        <h2 className="text-xl font-bold">{current.school.name}</h2>
+        {current.startsOn && <p className="text-sm">参加開始日 {current.startsOn}</p>}
+        {nextLesson ? <>
+          <div>
+            <h3 className="text-sm font-semibold">{current.visits?.flexible ? "次の予約" : "次の開催予定"}</h3>
+            <p className="text-lg font-bold">{nextLesson.day} {nextLesson.slot.starts_at.slice(0, 5)}</p>
+            <p>{nextLesson.slot.name} · {nextLesson.slot.delivery === "online" ? "オンライン" : nextLocation || "会場は教室にご確認ください"}</p>
+          </div>
+          {nextMeeting && <a className="w-fit rounded-lg bg-blue-800 px-4 py-2 text-sm text-white" href={nextMeeting} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
+          {nextLesson.pendingPayment && <p className="text-sm">差額の入金確認待ちです。</p>}
+        </> : <p>{current.visits?.flexible ? "参加する回を選んで予約してください。" : "直近の開催予定はカレンダーから確認できます。"}</p>}
+        <nav className="flex flex-wrap gap-3 text-sm" aria-label="クラスの操作">
+          {current.visits?.flexible && <a className="font-semibold underline" href="#class-visit-options">参加日を選ぶ・予約する</a>}
+          <a className="underline" href="#class-calendar">カレンダー</a>
+          <a className="underline" href="#class-absence">欠席連絡</a>
+        </nav>
+      </section>}
+      {current?.school && userId && <div id="class-calendar"><LearnerClassCalendar key={id + userId + current.memberId} schoolId={id} memberId={current.memberId} refresh={refresh} /></div>}
       <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
         {current?.school ? <>
-          <h2 className="text-xl font-bold">{current.school.name}</h2>
-          {current.startsOn && <p className="rounded-lg bg-blue-50 p-3 text-sm">参加開始日 {current.startsOn}</p>}
-          <ClassAbsencesPanel key={current.memberId ?? "owner"} schoolId={id} memberId={current.memberId} classes={current.school.classes} calendarDays={current.visits?.calendarDays} startsOn={current.startsOn} onChanged={() => setRefresh(value => value+1)} />
+          <details id="class-absence" className="rounded-lg border p-3"><summary className="cursor-pointer font-semibold">欠席連絡</summary><ClassAbsencesPanel key={current.memberId ?? "owner"} schoolId={id} memberId={current.memberId} classes={current.school.classes} calendarDays={current.visits?.calendarDays} startsOn={current.startsOn} onChanged={() => setRefresh(value => value+1)} /></details>
           <ClassEventNotices key={id} schoolId={id} />
           {notice && <p role="status" className="text-sm">{notice}</p>}
           {current.visits?.flexible && <p className="text-sm">同じ商品の開催枠を横断して月{current.visits.monthlyVisits}回まで予約できます。</p>}
           {!current.calendarOnly && current.school.classes.length === 0 && <p>参加できるクラスはありません。</p>}
-          {current.school.classes.map(item => <article className="rounded-xl border border-neutral-200 p-4" key={item.id}>
+          <div id="class-visit-options" className="grid gap-3">{current.school.classes.map(item => <article className="rounded-xl border border-neutral-200 p-4" key={item.id}>
             <h3 className="font-bold">{item.productName && item.productName + " · "}{item.name}</h3>
             <p className="mt-1 text-sm">{classSchedule(item)}</p>
             {item.delivery !== "onsite" && classMeetingUrl(item.meeting_url) && <a
               className="mt-3 inline-flex rounded-lg bg-blue-800 px-4 py-2 text-sm text-white"
               href={classMeetingUrl(item.meeting_url)!} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
             {item.location && <p className="mt-1 text-sm">{item.location}</p>}
-            {current.visits?.flexible && current.visits.classIds.includes(item.id) && <details className="mt-2 text-sm">
+            {current.visits?.flexible && current.visits.classIds.includes(item.id) && <details className="mt-2 text-sm" open={!nextLesson || undefined}>
               <summary className="cursor-pointer">開催日を予約する</summary>
               <p className="mt-1 text-neutral-600">差額がある場合は教室が入金を確認します。安い枠を選んだ場合や、差額入金後の取消時の返金は教室にご確認ください。</p>
               <div className="mt-2 grid gap-2">
@@ -102,7 +134,7 @@ export default function MyClassSchoolPage() {
                   })}
               </div>
             </details>}
-          </article>)}
+          </article>)}</div>
           {(Boolean(current.visits?.makeups?.length) || current.visits?.booked.some(visit => visit.makeup_id)) &&
             <section className="grid gap-3 border-t pt-4" aria-label="振替予約">
               <h3 className="font-bold">振替予約</h3>

@@ -1,3 +1,4 @@
+import { classApplicationReturn } from "@/lib/classEnrollmentNotice";
 import { classRegistrationMail } from "@/lib/classRegistrationMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
@@ -15,7 +16,7 @@ async function handle(request: NextRequest, write: boolean) {
   if (!token || !classIdPattern.test(token)) return missing();
   try {
     const candidate = await db.from("school_admission_cases")
-      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields,requested_class_id,applicant_audience")
+      .select("id,school_id,starts_on,deadline,payment,consent_at,agreed_terms,revision,briefing,test,applicant_email,applicant_name,name,learner_email,briefing_followup,applicant_user_id,application_fields,requested_class_id,applicant_audience,recruitment_offer_id")
       .eq("invite_token", token).eq("decision", "approved").is("enrollment_id", null).maybeSingle();
     if (candidate.error) throw candidate.error;
     const row = candidate.data;
@@ -45,6 +46,7 @@ async function handle(request: NextRequest, write: boolean) {
     const owner = await db.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();
     if (owner.error) throw owner.error;
     if (owner.data?.is_monitor !== true) return missing();
+    const returnHref = !write ? await classApplicationReturn(row.school_id, row.recruitment_offer_id).catch(() => null) : null;
     if (row.briefing_followup) {
       const flow = row.briefing_followup as BriefingFollowup;
       const design = parseBriefingDesign(flow.design);
@@ -67,7 +69,7 @@ async function handle(request: NextRequest, write: boolean) {
       const options = recruitment.data;
       const paymentUrl = interview && row.payment === "advance" && options?.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
       const arrivalNotice = interview && row.payment === "onsite" && options?.payment_mode === "onsite" ? options.arrival_text : null;
-      if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
+      if (!write) return send({ ok: true, returnHref, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
         startsOn: row.starts_on, deadline: row.deadline, expiresAt, ...(interview && agreed ? { paymentUrl, arrival: arrivalNotice } : {}), revision: row.revision, agreed, applicationText: recruitment.data?.application_text,
         followup: { interview, design: { rules: design.rules, schoolLabel: design.schoolLabel, audience: design.audience, firstDay: design.firstDay },
           firstDays, startTime, arrival, prefill: { ...row.application_fields, name: row.name, ...(minor ? { guardianName: row.applicant_name, guardianEmail: row.applicant_email,
@@ -133,7 +135,7 @@ async function handle(request: NextRequest, write: boolean) {
     const options = recruitment.data;
     const paymentUrl = row.payment === "advance" && options?.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
     const arrival = row.payment === "onsite" && options?.payment_mode === "onsite" ? options.arrival_text : null;
-    if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
+    if (!write) return send({ ok: true, returnHref, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
       startsOn: row.starts_on, deadline: row.deadline, payment: row.payment, revision: row.revision,
       applicationText: options?.application_text, paymentUrl, arrival, agreed: Boolean(row.consent_at && row.agreed_terms === terms && (!row.applicant_audience || row.applicant_user_id)) });
 

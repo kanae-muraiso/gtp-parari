@@ -1,3 +1,4 @@
+import { sendClassEnrollmentNotice } from "@/lib/classEnrollmentNotice";
 import { classBusinessId } from "@/lib/classBusinessScope";
 import { classRegistrationMail } from "@/lib/classRegistrationMail";
 import { NextRequest, NextResponse } from "next/server";
@@ -203,6 +204,10 @@ async function handle(request: NextRequest, write: boolean) {
         briefing: needsBriefing ? "pending" : "skip", test: settings.test ? "pending" : "skip", decision: "pending", payment: "free",
       }, { onConflict: "id", ignoreDuplicates: true });
       if (result.error) throw result.error;
+    } else if (input?.action === "resendEnrollment" && validId(input.id)) {
+      const mailed = await sendClassEnrollmentNotice(schoolId, input.id, origin, true);
+      if (!mailed) return fail("初回案内を送信できませんでした。", 502);
+      return send({ ok: true, mailed });
     } else if (input?.action === "email" && validId(input.id)) {
       const row = await db.from("school_admission_cases")
         .select("id,applicant_email,invite_token,decision,briefing,test,starts_on,deadline,consent_at,agreed_terms,payment,enrollment_id,revision,learner_email")
@@ -252,12 +257,14 @@ async function handle(request: NextRequest, write: boolean) {
       if (error?.message === "class full") return fail("希望クラスは満席です。", 409);
       if (error?.code === "22023" || error?.code === "23505") return fail("同意・入金・申込の状態をご確認ください。", 409);
       if (error) throw error;
+      return send({ ok: true, enrolled: true, mailed: await sendClassEnrollmentNotice(schoolId, input.id, origin) });
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
       if (error?.code === "P0006") return fail("本人または保護者が案内メールからPARARIに登録・ログインし、手続きを完了してください。");
       if (error?.code === "22023") return fail("工程・承認・開始日・同意・支払条件と期限を確認してください。");
       if (error?.code === "P0002") return fail("候補者が見つかりません。", 404);
       if (error) throw error;
+      return send({ ok: true, enrolled: true, mailed: await sendClassEnrollmentNotice(schoolId, input.id, origin) });
     } else if (input?.action === "update" && validId(input.id) && Number.isInteger(input.revision)) {
       const name = trim(input.name);
       const contact = trim(input.contact);

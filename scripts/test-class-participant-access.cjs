@@ -25,11 +25,13 @@ const tables={
   school_enrollments:[{id:m1,school_id:school,name:'子1',status:'active',class_participation:'fixed',participation_mode:'assigned',assignments:[{class_id:c1,self_selected:false}]},{id:m2,school_id:school,name:'子2',status:'active',class_participation:'fixed',participation_mode:'assigned',assignments:[{class_id:c2,self_selected:false}]}],
   school_classes:[{id:c1,school_id:school,name:'子1クラス',starts_on:today,starts_at:'18:00',cadence:'weekly',location:'本校'},{id:c2,school_id:school,name:'子2クラス',starts_on:today,starts_at:'20:00',cadence:'weekly',location:'分校'}],
   school_class_monthly_schedules:[{class_id:c1,month:day.slice(0,7)+'-01',days:[today,day],confirmed:true},{class_id:c2,month:day.slice(0,7)+'-01',days:[day],confirmed:true}],
+  school_recruitment:[{school_id:school,public_id:id(9)}], class_business_fronts:[{school_id:school,published:{}}],
+  school_class_assignments:[{school_id:school,class_id:c1,enrollment_id:m1,self_selected:false}],
   school_class_products:[],school_class_product_designs:[],
   school_class_visit_reservations:[],school_class_makeups:[],school_attendance:[{school_id:school,enrollment_id:m1,class_id:c1,lesson_date:day,absence_reported:true}],
 };
 const calls=[];
-const db={auth:{getUser:async token=>({data:{user:users[token]??null},error:null})},async rpc(name,args){calls.push({name,args});if(name==='read_class_school_member') {
+const db={auth:{getUser:async token=>({data:{user:users[token]??null},error:null})},async rpc(name,args){calls.push({name,args});if(name==='school_class_runs_on') return {data:true,error:null}; if(name==='read_class_school_member') {
     const allowed=(members[args.p_actor]??[]).some(item=>item.id===args.p_member);
     const assigned=tables.school_enrollments.find(item=>item.id===args.p_member)?.assignments??[];
     return {data:allowed?{id:school,name:'教室',classes:tables.school_classes.filter(item=>assigned.some(a=>a.class_id===item.id))}:null,error:null};
@@ -42,12 +44,28 @@ const classes=load('src/lib/classes.ts',{'./classRecurrence':recurrence});
 const calendar=load('src/lib/classCalendar.ts',{'./classes':classes,'./classRecurrence':recurrence,'@/lib/classes':classes});
 const common={'@/lib/billing/supabaseAdmin':{supabaseAdmin:db},'@/lib/classes':classes,'@/lib/classCalendar':calendar,'@/lib/classRecurrence':recurrence,'@/lib/classProduct':load('src/lib/classProduct.ts'),'@/lib/classCalendarAccess':{classParticipantMembers:async(user,s)=>s===school?(members[user]??[]):[]},'@/lib/classBusinessScope':{classBusinessId:async()=>null}};
 const portal=load('src/app/api/classes/route.ts',common);
-const registration=load('src/app/api/classes/registration/route.ts',common);
+const registration=load('src/app/api/classes/registration/route.ts',{...common,'@/lib/classEnrollmentNotice':{classApplicationReturn:async()=>'/class-intake/test',sendClassEnrollmentNotice:async()=>true}});
 const schedule=load('src/app/api/classes/schedule/route.ts',common);
 const front=load('src/app/api/classes/front-participation/route.ts',common);
 const attendance=load('src/app/api/classes/attendance/route.ts',common);
 const req=(url,user,body,token)=>new NextRequest('https://www.parari.app'+url,{method:body?'POST':'GET',headers:{...(user?{Authorization:'Bearer '+user}:{}),...(token?{'x-class-registration':token}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
 async function main(){
+  const messages=[];
+  const enrollmentNotice=load('src/lib/classEnrollmentNotice.ts',{
+    ...common,'server-only':{},
+    '@/lib/classBusinessFront':{classBusinessFrontPath:school=>'/class-business/'+school},
+    '@/lib/classIntakeSource':{readClassIntakeSource:async key=>key===id(9)?{recruitment:{school_id:school}}:null},
+    '@/lib/classRegistrationMail':{classRegistrationMail:async (...args)=>{messages.push(args);return true;}},
+  });
+  assert.equal(await enrollmentNotice.classApplicationReturn(school),'/class-intake/'+id(9));
+  assert.equal(await enrollmentNotice.classApplicationReturn(school,id(10)),'/class-business/'+school);
+  await enrollmentNotice.sendClassEnrollmentNotice(school,id(8),'https://www.parari.app');
+  assert.ok(messages[0][4].includes(day+' 18:00') && messages[0][4].includes('本校') && messages[0][4].includes('/my/classes/'+school));
+  tables.school_enrollments[0].class_participation='flexible';
+  await enrollmentNotice.sendClassEnrollmentNotice(school,id(8),'https://www.parari.app');
+  assert.match(messages[1][4],/参加する回を予約/);
+  assert.ok(!messages[1][4].includes(day+' 18:00'));
+  tables.school_enrollments[0].class_participation='fixed';
   assert.equal((await registration.GET(req('/api/classes/registration',null,null,primary))).status,401);
   assert.equal((await registration.GET(req('/api/classes/registration','unverified',null,primary))).status,401);
   for(const [user,token] of [['stranger',primary],['child',primary],['parent',child],['reused',primary]]) {

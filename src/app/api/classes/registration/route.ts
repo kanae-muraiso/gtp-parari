@@ -1,3 +1,4 @@
+import { classApplicationReturn, sendClassEnrollmentNotice } from "@/lib/classEnrollmentNotice";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
@@ -11,7 +12,7 @@ async function handle(request: NextRequest, write: boolean) {
     const account = await db.auth.getUser(access);
     const user = account.data.user;
     if (account.error || !user?.email_confirmed_at) return reply({ ok: false, loginRequired: true, message: "メール確認済みのアカウントでログインしてください。" }, 401);
-    const result = await db.from("school_admission_cases").select("id,school_id,name,applicant_email,learner_email,applicant_audience,applicant_user_id,learner_user_id,registration_token,learner_token,enrollment_id,starts_on,decision")
+    const result = await db.from("school_admission_cases").select("id,school_id,name,applicant_email,learner_email,applicant_audience,applicant_user_id,learner_user_id,registration_token,learner_token,enrollment_id,starts_on,decision,recruitment_offer_id,briefing,intake_slot_id")
       .or(`registration_token.eq.${token},learner_token.eq.${token}`).maybeSingle();
     if (result.error) throw result.error;
     let row = result.data;
@@ -23,6 +24,7 @@ async function handle(request: NextRequest, write: boolean) {
     const school = await db.from("class_schools").select("name,owner_user_id").eq("id", row.school_id).is("archived_at", null).maybeSingle();
     if (school.error) throw school.error;
     if (!school.data) return reply({ ok: false, message: "この案内は利用できません。" }, 404);
+    let mailed: boolean | null = null;
     if (write) {
       const input = await request.json().catch(() => null);
       if (input?.agree !== true) return reply({ ok: false, message: "申込情報との接続に同意してください。" }, 400);
@@ -31,9 +33,11 @@ async function handle(request: NextRequest, write: boolean) {
       if (updated.error) return reply({ ok: false, message: "登録情報が変更されました。案内をご確認ください。" }, 409);
       const current = await db.from("school_admission_cases").select("enrollment_id,starts_on").eq("id", row.id).single();
       if (current.error) throw current.error;
+      if (!row.enrollment_id && current.data.enrollment_id) mailed = await sendClassEnrollmentNotice(row.school_id, row.id, request.nextUrl.origin);
       row = { ...row, ...current.data };
     }
-    return reply({ ok: true, school: school.data.name, name: row.name, schoolId: row.school_id, startsOn: row.starts_on,
+    const returnHref = await classApplicationReturn(row.school_id, row.recruitment_offer_id).catch(() => null);
+    return reply({ ok: true, returnHref, mailed, interviewReserved: Boolean(row.intake_slot_id && row.briefing === "booked"), school: school.data.name, name: row.name, schoolId: row.school_id, startsOn: row.starts_on,
       enrolled: Boolean(row.enrollment_id), connected: write || (learner ? row.learner_user_id === user.id : row.applicant_user_id === user.id),
       role: learner ? "learner" : row.applicant_audience === "minor" ? "guardian" : "learner" });
   } catch {
