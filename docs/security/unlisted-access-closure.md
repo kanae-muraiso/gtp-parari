@@ -74,3 +74,24 @@ COMMIT;
 - `src/app/api/works/book-resolve/route.ts`（サービス権限でBOOK内PAGE展開）
 
 **未実施**: エンドツーエンド・テスト、プレビュー環境確認、本番DBのRLS適用。PRは意図的にdraftのまま維持。
+
+
+## 2026-11-19 コード変更の追加（未マージ）
+
+追加で以下をサーバー側の経路に変更:
+- `src/app/[username]/[workSlug]/page.tsx`
+- `src/app/[username]/[workSlug]/[pageSlug]/page.tsx`
+- `src/app/[username]/pages/[workId]/view/page.tsx`
+- `src/app/[username]/page.tsx` のHOME転送
+- `src/app/api/works/book-resolve/route.ts` の有効販売判定
+
+`src/app/api/works/share-read/route.ts` は旧slugの完全一致を移行期間中維持する。**「DBの一括列挙を塞ぐ」ことと「短い旧slugが推測されない」ことは別問題**である。既存URLを維持するために、旧slugの推測耐性については残余リスクとして記録する。
+
+上記APIでは販売情報の照会エラーで拒否する（fail closed）。ただしAPI実動作確認・本番データへのRLS反映は未実施。
+
+### 統合確認の追加
+- DB RLS移行後、公開一覧 `/{username}/works` が動くこと。
+- 旧URL `/{username}/{workSlug}`, `/{username}/{workSlug}/{pageSlug}`, `/{username}/pages/{workId}/view`, `/p/{id}` が動くこと。
+- 旧slug（短いID含む）とBOOK/PAGE参照を検証する。
+- 有料作品の公開メタデータ、作品概要、試し読みは維持しつつ全文が返らないこと。
+- VercelプレビューのREADYはビルド成功を示すだけで、匿名権限の漏洩が塞がった証明ではない。
