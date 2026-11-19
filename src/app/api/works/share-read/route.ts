@@ -41,10 +41,12 @@ export async function GET(request: NextRequest) {
   const isOwner = Boolean(userId && userId === work.owner);
 
   const publicWork = work.visibility === "public";
-  // A random, opaque UUID is the legacy bearer link; short or human-readable
-  // slugs MUST NOT authorize access to an unlisted work.
+  // Legacy share links may use a short stable_slug or custom_slug. Keep
+  // exact-link compatibility during migration. This prevents enumeration but
+  // does NOT make a guessable short URL into a cryptographic secret.
   const unlistedWithBearer = work.visibility === "unlisted" &&
-    byId && identifier.toLowerCase() === work.id.toLowerCase();
+    (byId ? identifier.toLowerCase() === work.id.toLowerCase()
+      : [work.slug, work.stable_slug, work.custom_slug].includes(identifier));
   // An active sale must never become readable merely because its listing is public.
   const { data: activeSale } = await supabaseAdmin
     .from("commerce_products").select("id")
