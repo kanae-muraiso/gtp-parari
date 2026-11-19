@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   // Use the privileged key ONLY inside this server route. Never return hidden
   // rows or entire result sets to a browser.
   let query = supabaseAdmin.from("parari_books")
-    .select("id,content,owner,is_public,visibility,slug,stable_slug,custom_slug,render_mode,physical_pagination,is_deleted,expires_at");
+    .select("id,title,content,owner,is_public,visibility,slug,stable_slug,custom_slug,render_mode,physical_pagination,entry_mode,updated_at,is_deleted,expires_at");
   query = byId
     ? query.eq("id", identifier)
     : query.or(["slug", "stable_slug", "custom_slug"]
@@ -78,11 +78,12 @@ export async function GET(request: NextRequest) {
   }
   return NextResponse.json({
     ok: true, book: {
-      id: work.id, content: work.content, owner: work.owner,
+      id: work.id, title: work.title, content: work.content, owner: work.owner,
       is_public: work.is_public, visibility: work.visibility,
       slug: work.slug, stable_slug: work.stable_slug,
       custom_slug: work.custom_slug, render_mode: work.render_mode,
-      physical_pagination: work.physical_pagination, is_deleted: work.is_deleted
+      physical_pagination: work.physical_pagination, entry_mode: work.entry_mode,
+      updated_at: work.updated_at, is_deleted: work.is_deleted
     }, hasPurchasedAccess
   }, { headers });
 }
