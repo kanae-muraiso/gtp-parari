@@ -45,7 +45,12 @@ export async function GET(request: NextRequest) {
   // slugs MUST NOT authorize access to an unlisted work.
   const unlistedWithBearer = work.visibility === "unlisted" &&
     byId && identifier.toLowerCase() === work.id.toLowerCase();
-  let authorized = publicWork || unlistedWithBearer || isOwner;
+  // An active sale must never become readable merely because its listing is public.
+  const { data: activeSale } = await supabaseAdmin
+    .from("commerce_products").select("id")
+    .eq("work_id", work.id).eq("product_type", "work")
+    .eq("active", true).limit(1).maybeSingle();
+  let authorized = (publicWork || unlistedWithBearer) && !activeSale || isOwner;
   let hasPurchasedAccess = false;
 
   if (!authorized && userId) {
