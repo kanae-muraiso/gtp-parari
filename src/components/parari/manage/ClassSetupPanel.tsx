@@ -317,9 +317,10 @@ export default function ClassSetupPanel({ schoolId, initialStep = 0, onOperate }
           <h4 className="font-semibold">申込後の対応</h4>
           <p className="text-sm">{intake?.route === "briefing"
             ? "説明会・体験の後、先生が入会案内を送ります。申込者が同意した後、先生が名簿に登録します。"
-            : "直接申込を受け付けた後、先生が申込内容・同意・初日を確認し、名簿に登録します。"}</p>
+            : intake?.direct_completion === "automatic"
+              ? "直接申込では、申込者のアカウント確認後に名簿へ登録します。事前払いの入金確認や、先生の確認が必要な募集は「日々の運営」で対応します。"
+              : "直接申込では、申込者のアカウント確認後、先生が内容と開始日を確認して名簿に登録します。"}</p>
           <p className="text-sm">{intake?.payment_mode === "advance" ? "オンライン支払いは指定した決済ページへの案内です。入金確認は先生が行います。" : intake?.payment_mode === "onsite" ? "現地支払いの案内を送ります。" : "初回の支払いは無料の設定です。"}</p>
-          {intake?.route === "direct" && <p className="text-sm">直接申込の公開フォームは名前とメールを受け付けます。住所などの追加項目や、PARARI登録からの一括手続きは今後の対応です。</p>}
           {intake?.route === "briefing" && !admissions.briefingDesign && <p className="text-sm text-amber-900">説明会後の申込書が未設定です。「入会方法」で受講対象・必要項目を保存してください。</p>}
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} />紹介・日程・申込画面と、申込後に先生が行う対応を確認した</label>
         </section>

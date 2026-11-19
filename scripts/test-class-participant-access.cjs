@@ -55,7 +55,7 @@ async function main(){
   }
   assert.equal((await registration.GET(req('/api/classes/registration','parent',null,primary))).status,200);
   assert.equal((await registration.POST(req('/api/classes/registration','child',{agree:true},child))).status,200);
-  assert.equal(calls.at(-1).args.p_user,'child');assert.equal(calls.at(-1).name,'confirm_class_registration');
+  assert.equal(calls.at(-1).args.p_user,'child');assert.equal(calls.at(-1).name,'connect_and_complete_class_registration');
   for(const user of ['parent','child']) {
     const result=await portal.GET(req(`/api/classes?school=${school}&member=${m1}`,user));
     assert.equal(result.status,200);const body=await result.json();assert.equal(body.memberId,m1);assert.deepEqual(body.school.classes.map(item=>item.id),[c1]);

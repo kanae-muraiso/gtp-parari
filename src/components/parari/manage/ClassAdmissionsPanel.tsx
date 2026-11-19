@@ -46,7 +46,7 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved, o
     try {
       const result = await classRequest<{ mailed?: boolean }>(path, { action, ...values });
       setData(await classRequest<AdmissionsData>(mode === "admissions" ? path : path + "?settings=1"));
-      if (action === "finish") onRosterChanged?.();
+      if (action === "finish" || action === "completeDirect") onRosterChanged?.();
       setMessage(result.mailed === false ? "案内リンクを作成しました。メールを送信できなかったため、リンクをコピーしてお渡しください。"
         : result.mailed || action === "email" ? "メールを送信しました。" : "保存しました。");
       onSaved?.();
@@ -139,6 +139,30 @@ function Candidate({ candidate: row, data, busy, save }: {
   if (row.enrollment_id) return <div className="grid gap-2"><p>名簿に登録済みです。</p>
     {row.applicant_email && <button type="button" className={button} disabled={busy} onClick={() => void save("email", { id: row.id, kind: "account" })}>受講者ページの登録案内を送る</button>}
     {row.applicant_email && <MailForm title="初回の日程をメールで案内" busy={busy} onSend={instructions => save("email", { id: row.id, kind: "start", instructions })} />}
+  </div>;
+  const simpleDirect = row.source === "public" && row.applicant_audience && row.briefing === "skip" &&
+    row.test === "skip" && !row.invite_token && !row.briefing_followup && ["pending", "approved"].includes(row.decision);
+  if (simpleDirect && !correction) return <div className="grid gap-3 border-t pt-3 text-sm">
+    {row.requested_class_id && <p>希望クラス　{data.classes?.find(item => item.id === row.requested_class_id)?.name}</p>}
+    {row.application_fields && <dl className="grid gap-1">
+      {Object.entries(row.application_fields).map(([key, value]) => <div className="flex flex-wrap gap-2" key={key}>
+        <dt>{applicationFields[key as ApplicationField] ?? key}</dt><dd>{value}</dd>
+      </div>)}
+    </dl>}
+    {!row.applicant_user_id ? <>
+      <p>申込者のアカウント確認を待っています。</p>
+      {row.applicant_email && <button type="button" className={button} disabled={busy}
+        onClick={() => void save("email", { id: row.id, kind: "account" })}>アカウントの登録案内を再送する</button>}
+    </> : <form className="grid gap-2" onSubmit={event => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      void save("completeDirect", { id: row.id, startsOn: form.get("startsOn"), receipt: form.has("receipt") });
+    }}>
+      <label>参加開始日<input className={field} type="date" name="startsOn" defaultValue={row.starts_on ?? ""} required /></label>
+      {row.payment === "advance" && !row.received_at && <label><input name="receipt" type="checkbox" required /> 初回費用の入金を確認した</label>}
+      <button type="submit" className={button} disabled={busy}>内容を確認して名簿に登録</button>
+    </form>}
+    <button type="button" className="w-fit underline" onClick={() => setCorrection(true)}>詳細を修正する</button>
   </div>;
   const showBriefing = row.briefing !== "skip" || correction;
   const showTest = row.test !== "skip" || correction;

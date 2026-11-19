@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import type { SchoolClass } from "@/lib/classes";
 
-export type ClassOffer = { id: string; name: string; information: string; class_ids: string[]; enabled: boolean; route_override?: "direct" | "briefing" | null; audience_override?: "adult" | "minor" | null };
+export type ClassOffer = { id: string; name: string; information: string; class_ids: string[]; enabled: boolean; direct_completion?: "review" | "automatic" | null; link_only?: boolean; route_override?: "direct" | "briefing" | null; audience_override?: "adult" | "minor" | null };
 const routeLabel = (route: string) => route === "direct" ? "そのまま申込" : "対面の体験・説明会から申込";
 const field = "block w-full rounded border p-2 text-sm";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
@@ -44,10 +44,13 @@ export default function ClassRecruitmentOffers({ classes, products = [], offers,
     })}
     {!publicationOnly && <details className="text-sm"><summary className="cursor-pointer">複数のクラスをまとめる場合</summary><button type="button" className="mt-2 w-fit underline" disabled={busy || editing !== null} onClick={() => edit()}>複数の内容をまとめた申込ページを作る</button></details>}
     {offers.filter(offer => publicationOnly || !products.some(product => classes.some(item => item.product_id === product.id && offer.class_ids.includes(item.id)))).map(offer => <div key={offer.id} className="grid gap-2 rounded border p-3 text-sm">
-      <strong>{offer.name}</strong><p> {routeLabel(offer.route_override ?? commonRoute)} · {offer.enabled ? "受付公開中" : "下書き"}</p>
+      <strong>{offer.name}</strong><p> {routeLabel(offer.route_override ?? commonRoute)}{offer.link_only ? "（URLで案内）" : ""} · {offer.enabled ? "受付公開中" : "下書き"}</p>
       {publicationOnly ? <button className={button} type="button" disabled={busy} onClick={() => void save({ action: "offer", id: offer.id, name: offer.name, information: offer.information,
         classIds: offer.class_ids, routeOverride: offer.route_override ?? null, audienceOverride: offer.audience_override ?? null, enabled: !offer.enabled })}>{offer.enabled ? "この受付を非公開にする" : "この受付を公開する"}</button>
         : <button className="w-fit underline" type="button" disabled={busy || editing !== null} onClick={() => edit(offer)}>設定を編集</button>}
+      {offer.enabled && offer.link_only && <label>面接後に渡す入会URL
+        <input className={field} readOnly value={typeof window === "undefined" ? "" : window.location.origin + "/class-intake/" + offer.id} onFocus={event => event.currentTarget.select()} />
+      </label>}
       {offer.enabled && <a className="underline" href={"/class-intake/" + offer.id} target="_blank" rel="noreferrer">この申込ページを開く</a>}
     </div>)}
     {editing && <form key={current?.id ?? editing.productId ?? "new"} data-setup-offer-form className="grid gap-3 rounded-lg border p-3" onChange={() => onDraftChange?.()} onSubmit={async event => {
@@ -55,7 +58,9 @@ export default function ClassRecruitmentOffers({ classes, products = [], offers,
       const form = new FormData(event.currentTarget);
       draftId.current ||= crypto.randomUUID();
       if (await save({ action: "offer", id: current?.id ?? draftId.current, name: form.get("name"), information: form.get("information"),
-        classIds: form.getAll("classId"), routeOverride: route, enabled: current?.enabled ?? false })) {
+        classIds: form.getAll("classId"), routeOverride: route,
+        directCompletion: form.has("linkOnly") ? "review" : form.get("directCompletion") || null, linkOnly: form.has("linkOnly"),
+        enabled: current?.enabled ?? false })) {
         setEditing(null); onEditingChange?.(false); draftId.current = ""; onSaved?.();
       }
     }}>
@@ -63,8 +68,14 @@ export default function ClassRecruitmentOffers({ classes, products = [], offers,
       <label className="text-sm">入会方法<select name="routeOverride" className={field} value={route} onChange={event => setRoute(event.target.value)}>
         <option value="direct">そのまま申込</option><option value="briefing">対面の体験・説明会から申込</option>
       </select></label>
+      {route === "direct" && <>
+        <label className="text-sm">入会の確定方法<select className={field} name="directCompletion" defaultValue={current?.direct_completion ?? ""}>
+          <option value="">事業の標準設定を使う</option><option value="review">先生が確認して入会</option><option value="automatic">本人確認後に自動で入会</option>
+        </select></label>
+        <label className="text-sm"><input type="checkbox" name="linkOnly" defaultChecked={current?.link_only} /> 面接後など、入会URLを渡した方から受け付ける</label>
+        <p className="text-sm text-neutral-600">この場合はURLを普段の連絡手段で渡してください。教室トップページには掲載されず、申込後は先生が確認して入会を確定します。</p>
+      </>}
       <label className="text-sm">申込ページの名前<input name="name" className={field} required maxLength={120} defaultValue={current?.name ?? products.find(product => product.id === editing.productId)?.name} /></label>
-      <p className="text-sm">{routeLabel(route || commonRoute)} → 入会対応 → 名簿登録</p>
       <fieldset className="grid gap-1 rounded border p-2 text-sm"><legend>対象の曜日・時間</legend>
         {productClasses.map(item => <label key={item.id}><input type="checkbox" name="classId" value={item.id} defaultChecked={initialIds.includes(item.id)} /> {item.productName ? item.productName + " · " : ""}{item.name}</label>)}
       </fieldset>

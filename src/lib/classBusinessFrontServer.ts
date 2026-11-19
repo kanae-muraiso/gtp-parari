@@ -19,7 +19,7 @@ export async function classBusinessFrontLinks(school: string, owner: string, sel
   const now = new Date().toISOString();
   const [recruitment, offers, products, events] = await Promise.all([
     db.from("school_recruitment").select("public_id,information,kind,route").eq("school_id", school).eq("enabled", true).maybeSingle(),
-    db.from("school_recruitment_offers").select("id,name,information,route_override,class_ids").eq("school_id", school).eq("enabled", true).order("name"),
+    db.from("school_recruitment_offers").select("id,name,information,route_override,class_ids").eq("school_id", school).eq("enabled", true).eq("link_only", false).order("name"),
     db.from("school_class_products").select("id,name,design").eq("school_id", school).order("name"),
     db.from("applications").select("id,title,class_event").eq("class_event_school_id", school)
       .eq("status", "open").is("archived_at", null).in("class_event->>audience", ["public", "mixed"])
