@@ -623,6 +623,16 @@ async function main() {
     await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261118101628_class_legacy_applicant_access.sql"),"utf8"));
     await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261119113000_class_simple_admission.sql"),"utf8"));
     await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261119124500_class_first_lesson.sql"),"utf8"));
+    await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/migrations/20261119133500_class_direct_intake_per_class.sql"),"utf8"));
+    await db.exec("set role service_role");
+    const termsForRetry=(await db.query("select terms from school_admission_settings where school_id=$1",[school])).rows[0].terms;
+    const sharedApplicant=JSON.stringify({name:"別クラスにも申し込む人",email:"multi-class@example.invalid"});
+    const byClass=async cls=>(await db.query("select * from submit_school_intake_profile($1,null,$2,null,'adult',$3,$4,$5)",[intake,cls,sharedApplicant,commonPolicy.information,termsForRetry])).rows[0].case_id;
+    const firstGeneral=await byClass(newClass);
+    const secondGeneral=await byClass(otherClass);
+    assert.notEqual(firstGeneral,secondGeneral);
+    assert.equal(await byClass(newClass),firstGeneral);
+    await db.exec("reset role");
     await require("./test-class-participant-db.cjs")(db, { owner, learner, outsider, oldLearner });
     console.log("PASS: CLASS A setup, admission confirmation and guest claim, roster, authorization and CLASS B assignment cases.");
   } finally {
