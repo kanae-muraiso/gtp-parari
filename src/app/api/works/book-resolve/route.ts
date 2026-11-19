@@ -15,6 +15,7 @@ type BookRow = {
   is_public: boolean | null;
   visibility: string | null;
   is_deleted: boolean | null;
+  expires_at: string | null;
 };
 
 function getBearerToken(request: NextRequest): string | null {
@@ -64,21 +65,23 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from("parari_books")
-      .select("id,owner,content,is_public,visibility,is_deleted")
+      .select("id,owner,content,is_public,visibility,is_deleted,expires_at")
       .eq("id", workId)
       .maybeSingle<BookRow>();
 
-    if (error || !data || data.is_deleted === true) {
+    if (error || !data || data.is_deleted === true ||
+        (data.expires_at && Date.parse(data.expires_at) <= Date.now())) {
       return NextResponse.json(
         { ok: false, message: "BOOKが見つかりませんでした。" },
         { status: 404 },
       );
     }
 
+    // Canonical visibility takes priority; legacy is_public is only a fallback.
     const isVisible =
-      data.is_public === true ||
       data.visibility === "public" ||
-      data.visibility === "unlisted";
+      data.visibility === "unlisted" ||
+      (!data.visibility && data.is_public === true);
 
     let userId: string | null = null;
     const token = getBearerToken(request);
