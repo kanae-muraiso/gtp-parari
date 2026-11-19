@@ -91,7 +91,23 @@ export async function GET(request: NextRequest) {
     }
 
     const canReadPrivateBook = userId === data.owner;
-    let allowed = isVisible || canReadPrivateBook;
+    // An active sale disables unauthenticated reading, even if the source
+    // BOOK still has public/unlisted visibility.
+    const { data: activeSale, error: saleError } = await supabaseAdmin
+      .from("commerce_products")
+      .select("id")
+      .eq("work_id", data.id)
+      .eq("product_type", "work")
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+    if (saleError) {
+      return NextResponse.json(
+        { ok: false, message: "閲覧権限を確認できませんでした。" },
+        { status: 503 },
+      );
+    }
+    let allowed = (isVisible && !activeSale) || canReadPrivateBook;
 
     if (!allowed && userId) {
       const { data: collaborator } = await supabaseAdmin
