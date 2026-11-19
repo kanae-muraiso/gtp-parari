@@ -4,7 +4,7 @@
 
 ## 確認できた問題
 - `public.parari_books` の `public_can_read_visible` は `unlisted` を匿名に許可。
-- `paid_source_no_anonymous` と `paid_source_author_only` も SELECT を許可する条件を持つため、RLS は **OR 結合** で監査が必要。
+- `paid_source_no_anonymous` と `paid_source_author_only` は **RESTRICTIVE**。これらの条件は許可ポリシーにANDで適用されるため、切替SQLで削除してはならない。
 - `public.parari_public_works` は `security_invoker` が無効なビューで、`unlisted` を列挙可能。
 - `/p/[id]` はブラウザから `parari_books` を直接読む。新しい `/api/works/share-read` を用意したが、他の閲覧経路の棚卸しがまだ必要。
 - 一部の限定公開URLには短い識別子があり、共有認証に使うべきではない。UUIDの直接指定を暫定的な共有鍵として扱うが、将来は専用のランダム共有トークンを設ける。
@@ -31,10 +31,8 @@ CREATE POLICY public_can_read_visible ON public.parari_books
     AND (expires_at IS NULL OR expires_at > now())
   );
 
--- 既存の広い閲覧許可（購入マーカーの有無で許可する）を除去。
--- 作者・共同編集者・購入者向けの狭い専用ポリシーは別途保持。
-DROP POLICY IF EXISTS paid_source_no_anonymous ON public.parari_books;
-DROP POLICY IF EXISTS paid_source_author_only ON public.parari_books;
+-- paid_source_no_anonymous / paid_source_author_only はRESTRICTIVE。
+-- [PAYWALL]本文を守るため削除せず維持する。
 
 -- VIEWを呼び出し元のRLSで実行。公開対象のみ返るかをテスト。
 ALTER VIEW public.parari_public_works SET (security_invoker = true);
@@ -57,13 +55,13 @@ COMMIT;
 - `private` は前者の検証では0件
 - 限定公開285件中、stable_slugが20文字未満のもの154件（これだけで推測容易かまでは断定しない）
 
-**ブロッカー**: 新APIの暫定実装はUUID以外の限定公開URLを拒否する。このままデプロイすると共有リンクの互換性を損なう。さらに、`public.parari_public_works` が SECURITY DEFINER 相当のままで、RLSポリシー `paid_source_no_anonymous` /`paid_source_author_only` に広い許可がある。このブランチだけでは脆弱性は解消しない。
+**ブロッカー**: 新APIの暫定実装はUUID以外の限定公開URLを拒否する。このままデプロイすると共有リンクの互換性を損なう。`public.parari_public_works` は呼び出し元のRLSを適用しない設定で、限定公開を列挙できます。また候補SQLは制限ポリシーを削除していたため、本文保護を弱めるおそれがありました。PRブランチで候補SQLと隔離テストを修正し、制限ポリシーを保持する形へ変更しています。
 
 ### 必須の追加実装
 - 公開用の新規・高エントロピーな共有トークンを別途生成・保管し、トークンの所有確認をサーバーで行う。単なる短いslugを認証情報として使わない。
 - 既存の短いURLの互換性についてユーザー向け移行方針を確定する。安全性を優先する場合は旧URLの再発行が必要。
 - `/p` 以外のすべての閲覧経路（BOOK/PAGE含む）を一括検証し、ビュー・RLSの全経路をテストしてから切替。
-- 作品テーブルのRLSは複数の permissive policy がOR結合される点に注意し、「公開用ポリシーのみ」を変更して完了扱いしない。
+- 複数のPERMISSIVEポリシーはOR結合され、RESTRICTIVEポリシーはそれらの結果にANDで適用される。ポリシーの `permissive` 属性を確認してから変更する。
 
 
 ## 実装経路の追加調査
@@ -104,7 +102,7 @@ COMMIT;
 - `scripts/test-unlisted-rls-cutover.cjs`（PGliteで作成した隔離データベース）
 - `npm run test:unlisted-rls`（PRブランチのbuildに追加）
 
-テストでは、従来の `public_can_read_visible`、`paid_source_no_anonymous`、`paid_source_author_only` の複数の許可を用意してから切替を実行する。匿名の `parari_books` と `parari_public_works` には公開作品のみ残り、作者の非公開作品、購入者の有効な権利は残ることを確認する。
+テストでは本番と同じく `public_can_read_visible` をPERMISSIVE、`paid_source_no_anonymous` と `paid_source_author_only` をRESTRICTIVEとして作成してから候補SQLを実行する。匿名のテーブルとビューから限定公開・非公開・[PAYWALL]本文が取得できず、作者の閲覧権が残ることを確認する。購入権限はサービスAPIの別テストで確認し、RESTRICTIVEな直接DB読取ガードを外して購入者を通すことはしない。
 
 **限界**: これは隔離DB上の抜粋スキーマに対する再現テストで、本番全体のRLS、Supabase Auth連携、既存共有URL全件、BOOK/PAGE、実際の決済WebHookを包含するものではない。プレビュー環境は本番Supabaseを参照している可能性があるため、権限切替のプレビュー動作確認をもって本番切替済と誤解しない。
 
@@ -160,3 +158,10 @@ COMMIT;
 
 これらは専用ブランチのみ。まだ本番の権限切替は実施していない。
 注意: `book-resolve` の限定公開は依然として作品IDによる取得を認めるため、UUID自体を共有の秘密とする既存設計が残る。ランダム共有トークンへの移行方針決定と本番相当E2Eは未完了。
+
+
+## 2026-11-19 RLSポリシーの実態に合わせた候補SQL・テスト修正
+
+本番の読み取り結果で `paid_source_no_anonymous` と `paid_source_author_only` が `RESTRICTIVE` と確認できたため、以前のPGliteテストがこれらをデフォルトのPERMISSIVEとして作っていた点を修正した。候補SQLはこの2ポリシーを削除しない。テストは公開・限定公開・非公開・[PAYWALL]作品を作り、匿名の直接SELECT、SECURITY INVOKER化後のビュー、作者の閲覧、未購入者の本文拒否を確認する。
+
+購入者権限の確認は、購入権利をサーバー側で照会する `share-read` / `book-resolve` APIのテスト範囲とする。隔離RLSテストは購入権限をRLSへ付与しない。今回の変更はPRブランチだけで、本番のSQL・データは変更していない。
