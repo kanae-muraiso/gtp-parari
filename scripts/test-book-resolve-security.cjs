@@ -76,7 +76,11 @@ const req=(token=null)=>route.GET({nextUrl:new URL("https://test.invalid/api/wor
  reset();activeIds.add(bookId);tokenUser=owner;
  r=await req("owner");j=await r.json();assert.equal(r.status,200);
  assert.match(j.resolvedContent,/PAID SECRET/);
+ reset();rows[0].visibility="private";rows[0].is_public=true;
+ r=await req();assert.equal(r.status,403,"private must override stale is_public=true");
+ reset();rows[0].expires_at="2020-01-01T00:00:00.000Z";
+ r=await req();assert.equal(r.status,404,"expired BOOK cannot be resolved");
  reset();brokenSale=true;
  r=await req();assert.notEqual(r.status,200,"sales validation failure must deny body");
- console.log("PASS: BOOK/PAGE resolution respects separate sale and owner permissions");
+ console.log("PASS: BOOK/PAGE permissions, stale visibility, expiry, independent PAGE sale");
 })().catch(e=>{console.error(e);process.exitCode=1});
