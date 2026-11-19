@@ -50,8 +50,8 @@ function load(relative){
   if(name==="@/lib/billing/supabaseAdmin")return {supabaseAdmin:admin};
   if(name==="@/lib/parari/sales/server")return {protectedSaleWorkIds:async ids=>new Set(ids.filter(id=>activeIds.has(id)))};
   if(name==="@/lib/parari/book/pageRefs")return {
-    parseBookPageRefs:ssot=>[...ssot.matchAll(/^\\[PAGE_REF id=([^\\]]+)\\]$/gm)].map(m=>({id:m[1]})),
-    resolveBookPageRefs:(ssot,map)=>ssot.replace(/^\\[PAGE_REF id=([^\\]]+)\\]$/gm,(_,id)=>map.get(id)??"")
+    parseBookPageRefs:ssot=>ssot.split("\n").filter(line=>line.startsWith("[PAGE_REF id=")&&line.endsWith("]")).map(line=>({id:line.slice(13,-1)})),
+    resolveBookPageRefs:(ssot,map)=>ssot.split("\n").map(line=>line.startsWith("[PAGE_REF id=")&&line.endsWith("]")?(map.get(line.slice(13,-1))??""):line).join("\n")
   };
   if(name.startsWith("@/")){const p=path.join(root,"src",name.slice(2)+".ts");if(fs.existsSync(p))return load(path.relative(root,p));}
   return old(name);
