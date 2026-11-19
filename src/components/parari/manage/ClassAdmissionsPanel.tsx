@@ -44,10 +44,10 @@ export default function ClassAdmissionsPanel({ mode, onRosterChanged, onSaved, o
     setError("");
     setMessage("");
     try {
-      const result = await classRequest<{ mailed?: boolean }>(path, { action, ...values });
+      const result = await classRequest<{ mailed?: boolean | null; enrolled?: boolean }>(path, { action, ...values });
       setData(await classRequest<AdmissionsData>(mode === "admissions" ? path : path + "?settings=1"));
       if (action === "finish" || action === "completeDirect") onRosterChanged?.();
-      setMessage(result.mailed === false ? "案内リンクを作成しました。メールを送信できなかったため、リンクをコピーしてお渡しください。"
+      setMessage(result.enrolled ? (result.mailed === false ? "入会は確定しました。初回案内を送信できませんでした。「初回案内を送る」から再試行できます。" : result.mailed ? "入会を確定し、初回案内を送りました。" : "入会を確定しました。") : result.mailed === false ? "案内リンクを作成しました。メールを送信できなかったため、リンクをコピーしてお渡しください。"
         : result.mailed || action === "email" ? "メールを送信しました。" : "保存しました。");
       onSaved?.();
       return true;
@@ -139,11 +139,15 @@ function Candidate({ candidate: row, data, busy, save }: {
   const { labels, terms } = data.settings;
   if (row.enrollment_id) return <div className="grid gap-2"><p>名簿に登録済みです。</p>
     {row.applicant_email && <button type="button" className={button} disabled={busy} onClick={() => void save("email", { id: row.id, kind: "account" })}>受講者ページの登録案内を送る</button>}
+    {row.applicant_email && row.starts_on && <button type="button" className={button} disabled={busy}
+      onClick={() => void save("resendEnrollment", { id: row.id })}>初回案内を送る</button>}
     {row.applicant_email && <MailForm title="初回の日程をメールで案内" busy={busy} onSend={instructions => save("email", { id: row.id, kind: "start", instructions })} />}
   </div>;
   const simpleDirect = row.source === "public" && row.applicant_audience && row.briefing === "skip" &&
     row.test === "skip" && !row.invite_token && !row.briefing_followup && ["pending", "approved"].includes(row.decision);
-  if (simpleDirect && !correction) return <div className="grid gap-3 border-t pt-3 text-sm">
+  const interviewSubmitted = row.briefing === "done" && row.decision === "approved" &&
+    Boolean(row.briefing_followup?.expiresAt && row.consent_at && row.applicant_user_id);
+  if ((simpleDirect || interviewSubmitted) && !correction) return <div className="grid gap-3 border-t pt-3 text-sm">
     {row.requested_class_id && <p>希望クラス　{data.classes?.find(item => item.id === row.requested_class_id)?.name}</p>}
     {row.application_fields && <dl className="grid gap-1">
       {Object.entries(row.application_fields).map(([key, value]) => <div className="flex flex-wrap gap-2" key={key}>

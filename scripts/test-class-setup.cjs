@@ -331,6 +331,7 @@ async function main() {
       if(key==="update")return changes=>{linkedGuardian=changes.applicant_user_id;return chain;};return ()=>chain;}});return chain;
   }};
   const invitationApi=load("src/app/api/classes/admission-invitation/route.ts",{
+    "@/lib/classEnrollmentNotice":{classApplicationReturn:async()=>"/class-intake/test"},
     "@/lib/classRegistrationMail":{classRegistrationMail:async()=>true},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},"@/lib/billing/supabaseAdmin":{supabaseAdmin:invitationDb},
     "@/lib/classAdmissionMail":{classNotice:async(to)=>{deliveries.push(to);return true;}},
@@ -349,7 +350,9 @@ async function main() {
     rules:Object.fromEntries(workflow.applicationFieldIds.map(field=>[field,"optional"])) };
   Object.assign(invitationRow,{ starts_on:null, deadline:null, briefing:"done", consent_at:null, payment:"free",
     briefing_followup:{ design:interviewDesign, firstDays:[], expiresAt:workflow.classInterviewExpiry(24) } });
-  assert.equal((await invitationApi.GET(inviteRequest())).body.followup.interview,true);
+  const openInterview=await invitationApi.GET(inviteRequest());
+  assert.equal(openInterview.body.followup.interview,true);
+  assert.equal(openInterview.body.returnHref,"/class-intake/test");
   const interviewSubmit = () => ({ ...inviteRequest(), nextUrl:{origin:"https://www.parari.app"},
     json:async()=>({agree:true,terms:"規約",revision:1,fields:profile}) });
   assert.equal((await invitationApi.POST(interviewSubmit())).status,200);
@@ -369,6 +372,7 @@ async function main() {
       if(key==="update")return changes=>{decisions.push(changes);return chain;};return ()=>chain;}});return chain;
   }};
   const decisionApi = load("src/app/api/classes/admissions/route.ts",{
+    "@/lib/classEnrollmentNotice":{sendClassEnrollmentNotice:async()=>true},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:decisionDb},
     "@/lib/classBusinessScope":{classBusinessId:async()=>"school"},

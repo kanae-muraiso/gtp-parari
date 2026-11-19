@@ -104,6 +104,13 @@ module.exports = async function(db, {owner,learner,outsider,oldLearner}) {
   await assert.rejects(q("select complete_direct_class_admission($1,$2,$3,$4,false,false)",[owner,adultSchool,paid.id,day]),{code:'22023'});
   await q("select complete_direct_class_admission($1,$2,$3,$4,true,false)",[owner,adultSchool,paid.id,day]);
   assert.ok((await state(paid)).enrollment_id);
+  const interview=await directCase('面接から入会','free',linkOffer);
+  await connect(interview);
+  await q("update school_admission_cases set briefing='done',decision='approved',application_fields='{}'::jsonb,briefing_followup=$2::jsonb where id=$1",
+    [interview.id,JSON.stringify({expiresAt:'2099-01-01T00:00:00.000Z'})]);
+  await assert.rejects(q("select complete_direct_class_admission($1,$2,$3,$4,false,true)",[owner,adultSchool,interview.id,day]),{code:'22023'});
+  await q("select complete_direct_class_admission($1,$2,$3,$4,false,false)",[owner,adultSchool,interview.id,day]);
+  assert.ok((await state(interview)).enrollment_id);
   for(const role of ['anon','authenticated']) {
     await db.exec('reset role; set role '+role);
     await assert.rejects(access(outsider,members[1]),{code:'42501'});

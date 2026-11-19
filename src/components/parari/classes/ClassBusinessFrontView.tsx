@@ -75,7 +75,7 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
           {member.members.map(item => <option key={item.id} value={item.id}>{item.name}{item.role === "guardian" ? "（保護者として操作）" : ""}</option>)}
         </select>
       </label>}
-      {member?.enrolled && schoolId && <Link className="text-sm underline" href={"/my/classes/" + schoolId}>自分の予定・欠席連絡・振替を開く</Link>}
+      {member?.enrolled && schoolId && <Link className="w-fit rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white" href={"/my/classes/" + schoolId}>受講者ページを開く</Link>}
       {message && <p role="status" className="text-sm">{message}</p>}
     </header>
     {(Object.keys(classParticipationFormats) as ClassParticipationFormat[]).map(format => {

@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState, type FormEvent } from "react";
 
 type Followup = { interview?: boolean; design: Pick<BriefingDesign, "rules" | "schoolLabel" | "audience" | "firstDay">; firstDays: string[]; startTime: string; arrival: string; prefill: Partial<Record<ApplicationField, string>> };
-type Invitation = { school: string; terms: string; label: string; startsOn: string | null; deadline: string | null; expiresAt?: string;
+type Invitation = { returnHref?: string | null; school: string; terms: string; label: string; startsOn: string | null; deadline: string | null; expiresAt?: string;
   payment: "free" | "advance" | "onsite"; revision: number; agreed: boolean; applicationText?: string; paymentUrl?: string | null; arrival?: string | null; followup?: Followup; confirmation?: boolean };
 
 export default function ClassAdmissionPage() {
@@ -76,6 +76,7 @@ export default function ClassAdmissionPage() {
       {(done || invitation.agreed) && invitation.arrival && <p className="whitespace-pre-wrap">{invitation.arrival}</p>}
       {(done || invitation.agreed) && invitation.paymentUrl && <a className="underline" href={invitation.paymentUrl}>支払いページを開く</a>}
     </>}
+    {invitation?.returnHref && <a className="w-fit text-sm underline" href={invitation.returnHref}>募集案内を見直す</a>}
     {error && <p role="alert">{error}</p>}
     {login && <a className="w-fit rounded-lg bg-blue-900 px-4 py-2 text-white" href={login}>PARARIに登録・ログイン</a>}
     {!invitation && !error && <p role="status">案内を読み込んでいます…</p>}
