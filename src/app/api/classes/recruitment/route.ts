@@ -51,12 +51,12 @@ async function handle(request: NextRequest) {
         return reply({ ok: true, events: result.data });
       }
       const [recruitment, slots, blocks, available, disclosure, offers] = await Promise.all([
-        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location,show_class_schedule,audience").eq("school_id", id).maybeSingle(),
+        db.from("school_recruitment").select("public_id,enabled,information,kind,route,application_text,payment_mode,payment_url,arrival_text,confirmation_text,booking_weeks,office_hours,office_duration,office_location,show_class_schedule,audience,direct_completion").eq("school_id", id).maybeSingle(),
         db.from("school_recruitment_slots").select("id,starts_at,capacity,closed,meeting_url,location,duration_minutes,generated").eq("school_id", id).order("starts_at", { ascending: true }),
         db.from("school_recruitment_blocks").select("id,starts_at,ends_at").eq("school_id", id).order("starts_at"),
         db.rpc("available_class_recruitment_slots", { p_school: id }),
         readSellerDisclosure(user.id),
-        db.from("school_recruitment_offers").select("id,name,information,class_ids,enabled,route_override,audience_override").eq("school_id", id).order("name"),
+        db.from("school_recruitment_offers").select("id,name,information,class_ids,enabled,route_override,audience_override,direct_completion,link_only").eq("school_id", id).order("name"),
       ]);
       if (blocks.error || available.error || offers.error) throw blocks.error ?? available.error ?? offers.error;
       if (recruitment.error || slots.error) throw recruitment.error ?? slots.error;
@@ -69,6 +69,7 @@ async function handle(request: NextRequest) {
       const information = typeof input.information === "string" ? input.information.trim() : "";
       const override = input.routeOverride;
       const audienceOverride = input.audienceOverride;
+      if (input.directCompletion != null && !["review", "automatic"].includes(input.directCompletion)) return fail("入会の確定方法を選んでください。");
       if (audienceOverride != null && !["adult", "minor"].includes(audienceOverride)) return fail("受講対象を選んでください。");
       if (override != null && !["direct", "briefing"].includes(override)) return fail("申込方法を選んでください。");
       const ids: string[] = Array.isArray(input.classIds) ? [...new Set<string>(input.classIds)] : [];
@@ -98,6 +99,8 @@ async function handle(request: NextRequest) {
       if (existing.error) throw existing.error;
       if (existing.data && existing.data.school_id !== id) return fail("募集を確認してください。", 404);
       const offer = { name, information, class_ids: ids, enabled: input.enabled === true,
+        ...(Object.prototype.hasOwnProperty.call(input, "directCompletion") ? { direct_completion: input.directCompletion } : {}),
+        ...(typeof input.linkOnly === "boolean" ? { link_only: input.linkOnly } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, "routeOverride") ? { route_override: override ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, "audienceOverride") ? { audience_override: audienceOverride ?? null } : {}) };
       const result = existing.data
@@ -115,6 +118,7 @@ async function handle(request: NextRequest) {
       const route = input.route ?? "direct";
       const audience = input.audience ?? "adult";
       if (!["adult", "minor"].includes(audience)) return fail("受講対象を選んでください。");
+      if (input.directCompletion !== undefined && !["review", "automatic"].includes(input.directCompletion)) return fail("入会の確定方法を選んでください。");
       const weeks = input.bookingWeeks ?? 4;
       if (!Number.isInteger(weeks) || weeks < 1 || weeks > 4) return fail("予約受付期間は1〜4週間です。");
       const payment = input.paymentMode ?? "free";
@@ -127,6 +131,7 @@ async function handle(request: NextRequest) {
       const result = await db.rpc("save_class_intake_settings", { p_owner: user.id, p_school: id, p_all: input.applyAll === true, p_settings: { information, kind: input.kind, route, audience, booking_weeks: weeks,
         ...(typeof input.terms === "string" ? { terms: text("terms") } : {}),
         ...(typeof input.showClassSchedule === "boolean" ? { show_class_schedule: input.showClassSchedule } : {}),
+        ...(input.directCompletion ? { direct_completion: input.directCompletion } : {}),
         application_text: text("applicationText"), payment_mode: payment, payment_url: paymentUrl,
         arrival_text: text("arrivalText"), confirmation_text: text("confirmationText") } });
       if (result.error) throw result.error;

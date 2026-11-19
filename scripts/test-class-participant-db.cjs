@@ -76,6 +76,34 @@ module.exports = async function(db, {owner,learner,outsider,oldLearner}) {
   assert.equal((await q('select class_member_access($1,$2,$3) as allowed',[outsider,adultSchool,adult.id])).rows[0].allowed,true);
   assert.equal((await q("select class_event_member($1,'[]',$2) as allowed",[adultSchool,outsider])).rows[0].allowed,true);
   assert.equal((await q('select class_participant_members($1,$2) as list',[outsider,adultSchool])).rows[0].list[0].role,'learner');
+  const slot = (await q("select id from school_classes where school_id=$1",[adultSchool])).rows[0].id;
+  await q("insert into school_recruitment(school_id,information,kind,route,direct_completion) values($1,'案内','説明会','direct','automatic')",[adultSchool]);
+  const linkOffer=(await q("insert into school_recruitment_offers(id,school_id,name,information,class_ids,enabled,route_override,direct_completion,link_only) values(gen_random_uuid(),$1,'面接後','',array[$2::uuid],true,'direct','review',true) returning id",[adultSchool,slot])).rows[0].id;
+  async function directCase(name, payment, offer=null) {
+    const row=(await q("insert into school_admission_cases(id,school_id,name,source,briefing,test,decision,payment,applicant_email,consent_at,agreed_terms,requested_class_id,recruitment_offer_id) values(gen_random_uuid(),$1,$2,'public','skip','skip','pending',$3,'child@example.invalid',now(),'',$4,$5) returning id,registration_token",[adultSchool,name,payment,slot,offer])).rows[0];
+    await q("update school_admission_cases set applicant_audience='adult' where id=$1",[row.id]);
+    return row;
+  }
+  const connect = row => q("select connect_and_complete_class_registration($1,$2)", [row.registration_token,learner]);
+  const state = async row => (await q("select direct_completion,enrollment_id,starts_on::text from school_admission_cases where id=$1",[row.id])).rows[0];
+  const automatic=await directCase('自動入会','free');
+  const review=await directCase('面接後の入会','free',linkOffer);
+  const paid=await directCase('事前払い','advance');
+  await connect(automatic);
+  await connect(automatic);
+  assert.ok((await state(automatic)).enrollment_id);
+  assert.equal((await state(automatic)).starts_on,day);
+  await connect(review);
+  assert.equal((await state(review)).direct_completion,'review');
+  assert.equal((await state(review)).enrollment_id,null);
+  await assert.rejects(q("select complete_direct_class_admission($1,$2,$3,$4,false,false)",[outsider,adultSchool,review.id,day]),{code:'P0002'});
+  await q("select complete_direct_class_admission($1,$2,$3,$4,false,false)",[owner,adultSchool,review.id,day]);
+  assert.ok((await state(review)).enrollment_id);
+  await connect(paid);
+  assert.equal((await state(paid)).enrollment_id,null);
+  await assert.rejects(q("select complete_direct_class_admission($1,$2,$3,$4,false,false)",[owner,adultSchool,paid.id,day]),{code:'22023'});
+  await q("select complete_direct_class_admission($1,$2,$3,$4,true,false)",[owner,adultSchool,paid.id,day]);
+  assert.ok((await state(paid)).enrollment_id);
   for(const role of ['anon','authenticated']) {
     await db.exec('reset role; set role '+role);
     await assert.rejects(access(outsider,members[1]),{code:'42501'});

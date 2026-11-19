@@ -197,6 +197,16 @@ async function handle(request: NextRequest, write: boolean) {
       if (!(input.kind === "start"
         ? await classRegistrationMail(schoolId, candidate.id, base, subject, body, key)
         : await classNotice([candidate.applicant_email, candidate.learner_email], subject, body, key))) return fail("メールを送信できませんでした。", 502);
+    } else if (input?.action === "completeDirect" && validId(input.id) && date(input.startsOn)) {
+      const { error } = await db.rpc("complete_direct_class_admission", {
+        p_owner: user.id, p_school: schoolId, p_case: input.id, p_start: input.startsOn,
+        p_receipt: input.receipt === true, p_auto: false,
+      });
+      if (error?.code === "P0006") return fail("申込者がメールからPARARIアカウントをつなぐまでお待ちください。");
+      if (error?.code === "P0002") return fail("申込が見つかりません。", 404);
+      if (error?.message === "class full") return fail("希望クラスは満席です。", 409);
+      if (error?.code === "22023" || error?.code === "23505") return fail("同意・入金・申込の状態をご確認ください。", 409);
+      if (error) throw error;
     } else if (input?.action === "finish" && validId(input.id)) {
       const { error } = await db.rpc("finish_class_admission", { p_owner: user.id, p_school: schoolId, p_case: input.id });
       if (error?.code === "P0006") return fail("本人または保護者が案内メールからPARARIに登録・ログインし、手続きを完了してください。");

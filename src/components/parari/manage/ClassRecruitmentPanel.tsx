@@ -9,7 +9,7 @@ import type { IntakeOptions } from "@/lib/classIntakeOptions";
 import type { AdmissionsData } from "@/lib/classAdmissions";
 import { classRequest } from "@/lib/classRequests";
 
-export type ClassRecruitmentData = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; show_class_schedule?: boolean; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
+export type ClassRecruitmentData = { school: string; sharedDisclosure?: boolean; offers?: ClassOffer[]; recruitment: (IntakeOptions & { public_id: string; enabled: boolean; show_class_schedule?: boolean; direct_completion?: "review" | "automatic"; information: string; kind: string; booking_weeks: number; office_hours: OfficeHour[]; office_duration: number; office_location: string | null }) | null;
   blocks: { id: string; starts_at: string; ends_at: string }[];
   available: { id: string; starts_at: string; channel: "onsite" | "phone" }[];
   slots: { id: string; starts_at: string; capacity: number; closed: boolean; meeting_url: string | null; location: string | null; duration_minutes: number; generated: boolean }[] };
@@ -182,6 +182,13 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
         <label><input type="radio" name="route" value="direct" checked={route === "direct"} onChange={() => setRoute("direct")} /> そのまま申込</label>
         <label><input type="radio" name="route" value="briefing" checked={route === "briefing"} onChange={() => setRoute("briefing")} /> 対面の体験・説明会から申込</label>
       </fieldset>
+      <label>直接申込の入会確定方法
+        <select className={field} name="directCompletion" defaultValue={recruitment?.direct_completion ?? "review"}>
+          <option value="review">先生が確認して入会</option>
+          <option value="automatic">本人確認後に自動で入会</option>
+        </select>
+      </label>
+      <p className="text-sm text-neutral-600">自動入会は、申込者がメールからPARARIアカウントをつなぐと、選んだクラスの次の開催日を開始日として名簿に登録します。事前払いの場合は先生が入金を確認します。</p>
       {route === "direct" && <input type="hidden" name="kind" value={kind} />}
       {needsBriefing && <label>予約を受け付ける期間<select name="bookingWeeks" className={field} defaultValue={recruitment?.booking_weeks ?? 4}>
         {[1, 2, 3, 4].map(weeks => <option key={weeks} value={weeks}>{weeks}週間先まで</option>)}
