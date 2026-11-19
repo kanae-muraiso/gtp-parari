@@ -127,3 +127,25 @@ COMMIT;
 2. UIの実ブラウザE2E、既存285件の公開URL互換性の広範な検証は未完了
 3. 共有用短い識別子は従来互換のため許容しており、推測耐性の設計が未完了
 4. 本番SupabaseのSQL・ビュー適用は、全経路監査、切戻し、バックアップ検証の後
+
+
+## 2026-11-19 共有URL識別子の本番データ読み取り専用互換性調査
+
+現在有効な `visibility='unlisted'` 作品285件を対象に、`stable_slug` がAPIの入力規則を満たし、`slug` / `stable_slug` / `custom_slug` の検索で1件だけ解決するかを集計（作品本文、slug文字列、URLは取得しない）。
+
+- 対象285件
+- `share-read` の検索条件で一意に解決: **285件**
+- 入力不適合・該当なし: 0件
+- 複数候補で曖昧: 0件
+- UUID形式の `stable_slug`: 0件
+
+**範囲の限界**: 調査対象は `stable_slug` だけであり、利用者に実際に配布済みの個別URL全件の収集や実ブラウザアクセスまでは行っていない。既存短いslugの推測耐性は未解決。
+
+## 追加の公開設定不整合対策
+
+以下は canonical `visibility` を優先し、旧 `is_public` は `visibility` 未設定の場合にだけ使用する:
+- `src/app/[username]/[workSlug]/page.tsx`
+- `src/app/[username]/[workSlug]/[pageSlug]/page.tsx`
+- `src/app/[username]/page.tsx`
+
+これにより `visibility='private'` なのに旧 `is_public=true` が残っている場合は公開側に倒さない。
