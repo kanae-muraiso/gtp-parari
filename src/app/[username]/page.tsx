@@ -127,7 +127,7 @@ export default async function UserTopPage(
   const canView =
     work.visibility === "public" ||
     work.visibility === "unlisted" ||
-    work.is_public === true;
+    (!work.visibility && work.is_public === true);
 
   if (!canView) {
     redirect(`/${encodedUsername}/works`);
