@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && next build",
+    "build": "npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && npm run test:share-access && npm run test:unlisted-rls && npm run test:book-resolve-security && next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test:commerce-work-preview": "node scripts/test-commerce-work-preview.cjs",
@@ -27,7 +27,10 @@
     "test:text-split": "node scripts/test-text-split.cjs",
     "test:paste-envelope": "node scripts/test-paste-envelope.cjs",
     "test:html-conversion": "node scripts/test-html-to-markdown.cjs",
-    "test:text-paste-wiring": "node scripts/test-text-paste-wiring.cjs"
+    "test:text-paste-wiring": "node scripts/test-text-paste-wiring.cjs",
+    "test:share-access": "node scripts/test-work-share-access.cjs",
+    "test:unlisted-rls": "node scripts/test-unlisted-rls-cutover.cjs",
+    "test:book-resolve-security": "node scripts/test-book-resolve-security.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",

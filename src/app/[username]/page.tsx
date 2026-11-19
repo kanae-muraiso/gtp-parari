@@ -4,7 +4,7 @@
 // /{username}/ はプロフィール設定に従って、
 // WEB・旧プロフィール・作品一覧のいずれかへ転送する。
 
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { notFound, redirect } from "next/navigation";
 
 type UserTopPageProps = {
@@ -46,8 +46,7 @@ export default async function UserTopPage(
   const encodedUsername =
     encodeURIComponent(username);
 
-  const supabase =
-    createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const {
     data: profile,
@@ -128,9 +127,21 @@ export default async function UserTopPage(
   const canView =
     work.visibility === "public" ||
     work.visibility === "unlisted" ||
-    work.is_public === true;
+    (!work.visibility && work.is_public === true);
 
   if (!canView) {
+    redirect(`/${encodedUsername}/works`);
+  }
+
+  const { data: activeSale, error: saleError } = await supabase
+    .from("commerce_products")
+    .select("id")
+    .eq("work_id", work.id)
+    .eq("product_type", "work")
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  if (saleError || activeSale) {
     redirect(`/${encodedUsername}/works`);
   }
 
@@ -151,27 +162,3 @@ export default async function UserTopPage(
   );
 }
 
-function createSupabaseServerClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL または NEXT_PUBLIC_SUPABASE_ANON_KEY が設定されていません。",
-    );
-  }
-
-  return createClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    },
-  );
-}

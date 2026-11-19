@@ -54,84 +54,23 @@ export default function PublicPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("parari_books")
-        .select(
-          "id, content, owner, is_public, visibility, slug, stable_slug, custom_slug, render_mode, physical_pagination, is_deleted",
-        )
-        .or(
-          [
-            `id.eq.${id}`,
-            `slug.eq.${id}`,
-            `stable_slug.eq.${id}`,
-            `custom_slug.eq.${id}`,
-          ].join(","),
-        )
-        .limit(1)
-        .maybeSingle<BookRow>();
-
-      if (error || !data) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `/api/works/share-read?id=${encodeURIComponent(id)}`,
+        {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
+          cache: "no-store",
+        },
+      ).catch(() => null);
+      const result = await response?.json().catch(() => null);
+      if (!response?.ok || !result?.ok || !result.book) {
         await showSaleOrNotFound();
         return;
       }
-
-      if (data.is_deleted === true) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      const isVisible =
-        data.is_public === true ||
-        data.visibility === "public" ||
-        data.visibility === "unlisted";
-
-      let purchasedAccess = false;
-      let isOwner = false;
-
-      if (!isVisible) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        isOwner = Boolean(user && user.id === data.owner);
-        if (user && !isOwner) {
-          const now =
-            new Date().toISOString();
-
-          const {
-            data: entitlement,
-            error: entitlementError,
-          } = await supabase
-            .from("commerce_entitlements")
-            .select(
-              "id,status,starts_at,expires_at,remaining_uses",
-            )
-            .eq("user_id", user.id)
-            .eq("work_id", data.id)
-            .eq("status", "active")
-            .lte("starts_at", now)
-            .or(
-              `expires_at.is.null,expires_at.gt.${now}`,
-            )
-            .maybeSingle();
-
-          if (!entitlementError && entitlement) {
-            const remainingUses =
-              entitlement.remaining_uses;
-
-            purchasedAccess =
-              remainingUses === null ||
-              remainingUses === undefined ||
-              Number(remainingUses) > 0;
-          }
-        }
-      }
-
-      if (!isVisible && !purchasedAccess && !isOwner) {
-        await showSaleOrNotFound();
-        return;
-      }
+      const data = result.book as BookRow;
+      const purchasedAccess = result.hasPurchasedAccess === true;
 
       let resolvedBook = data;
 
