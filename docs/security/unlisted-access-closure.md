@@ -149,3 +149,14 @@ COMMIT;
 - `src/app/[username]/page.tsx`
 
 これにより `visibility='private'` なのに旧 `is_public=true` が残っている場合は公開側に倒さない。
+
+
+## 2026-11-19 BOOK参照APIの追加検査
+
+`/api/works/book-resolve` のサーバー側権限判定に以下を追加:
+- `visibility` が `private` の場合、旧 `is_public=true` は無視
+- `expires_at` が過去であれば BOOK の本文取得を拒否
+- 両ケースを `scripts/test-book-resolve-security.cjs` に追加
+
+これらは専用ブランチのみ。まだ本番の権限切替は実施していない。
+注意: `book-resolve` の限定公開は依然として作品IDによる取得を認めるため、UUID自体を共有の秘密とする既存設計が残る。ランダム共有トークンへの移行方針決定と本番相当E2Eは未完了。
