@@ -38,9 +38,16 @@ const admin = {
           const match=[...filter.matchAll(/(slug|stable_slug|custom_slug)\.eq\.([^,]+)/g)];
           selected=selected.filter(x=>match.some(m=>x[m[1]]===m[2]));
         }
+        if (table==="commerce_entitlements" && filter.startsWith("expires_at.")) {
+          const now=filter.slice("expires_at.is.null,expires_at.gt.".length);
+          selected=selected.filter(x=>x.expires_at == null || x.expires_at>now);
+        }
+        if (table==="commerce_entitlements" && filter==="remaining_uses.is.null,remaining_uses.gt.0") {
+          selected=selected.filter(x=>x.remaining_uses == null || x.remaining_uses>0);
+        }
         return query;
       },
-      lte(){return query;},
+      lte(field,value){selected=selected.filter(x=>x[field] && x[field]<=value);return query;},
       limit(n){selected=selected.slice(0,n);return query;},
       maybeSingle:async()=>({data:selected[0]??null,error:table==="commerce_products"&&failSale ? {message:"failure"} : null}),
       then(resolve,reject){return Promise.resolve({data:selected,error:null}).then(resolve,reject);}
@@ -89,16 +96,24 @@ async function check(id, expected, token=null, expectsBody=expected===200) {
   await check(UUID,404);
   await check("legacy-short",404);
   userId="owner";await check(UUID,200,"owner");
-  userId="buyer";entitlement={};
+  userId="buyer";entitlement={starts_at:"2020-01-01T00:00:00.000Z",expires_at:null,remaining_uses:null};
   const purchased=await check(UUID,200,"buyer");
   assert.equal(purchased.hasPurchasedAccess,true);
   reset();activeSale=true;userId="buyer";entitlement=null;
   await check(UUID,404,"buyer");
+  reset();activeSale=true;userId="buyer";entitlement={starts_at:"2099-01-01T00:00:00.000Z"};
+  await check(UUID,404,"buyer");
+  reset();activeSale=true;userId="buyer";entitlement={starts_at:"2020-01-01T00:00:00.000Z",expires_at:"2021-01-01T00:00:00.000Z"};
+  await check(UUID,404,"buyer");
+  reset();activeSale=true;userId="buyer";entitlement={starts_at:"2020-01-01T00:00:00.000Z",remaining_uses:0};
+  await check(UUID,404,"buyer");
+  reset();activeSale=true;userId="buyer";entitlement={starts_at:"2020-01-01T00:00:00.000Z",remaining_uses:1};
+  await check(UUID,200,"buyer");
   reset();failSale=true;
   await check(UUID,503);
   reset();rows[0].expires_at="2020-01-01T00:00:00.000Z";
   await check(UUID,404);
   reset();rows.push({...book,id:otherUUID,stable_slug:"legacy-short",slug:"different",custom_slug:null});
   await check("legacy-short",404); // ambiguous aliases fail closed
-  console.log("PASS: 17 read scenarios for legacy links, anonymous, owner, paid, errors and ambiguity");
+  console.log("PASS: share-read regression scenarios including expired, future and exhausted entitlements");
 })().catch(error=>{console.error(error);process.exitCode=1;});
