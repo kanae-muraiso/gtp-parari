@@ -34,11 +34,14 @@ async function see(db, role, uid = "") {
    "create policy owner_select_own on public.parari_books for select to authenticated using(owner=auth.uid())",
    "create policy commerce_entitlement_select_work on public.parari_books for select to authenticated using(exists(select 1 from public.commerce_entitlements e where e.work_id=parari_books.id and e.user_id=auth.uid() and e.status='active' and e.starts_at<=now() and (e.expires_at is null or e.expires_at>now()) and (e.remaining_uses is null or e.remaining_uses>0)))",
    "create policy public_can_read_visible on public.parari_books for select to anon,authenticated using(visibility in ('public','unlisted'))",
+   "create policy paid_source_no_anonymous on public.parari_books for select to anon using(true)",
+   "create policy paid_source_author_only on public.parari_books for select to authenticated using(true)",
    "create view public.parari_public_works as select id,owner,content,visibility from public.parari_books where visibility in ('public','unlisted')",
    "grant select on public.parari_public_works to anon,authenticated"
   ].join(";")+";");
   const before=await see(db,"anon");
   assert.equal(before.table.unlisted,1); assert.equal(before.view.unlisted,1);
+  assert.equal(before.table.private,2,"reproduce overly permissive legacy SELECT policies");
   await db.exec("reset role");
   await db.exec(fs.readFileSync(path.join(__dirname,"../supabase/security/unlisted-read-cutover-candidate.sql"),"utf8"));
   const anon=await see(db,"anon");
