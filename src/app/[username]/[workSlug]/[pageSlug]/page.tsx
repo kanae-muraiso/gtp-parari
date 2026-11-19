@@ -4,7 +4,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
 
 import {
@@ -14,6 +14,8 @@ import {
 } from "@/lib/parari/metadata/publicWorkMetadata";
 
 
+
+export const dynamic = "force-dynamic";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -130,7 +132,7 @@ async function findPublicPageData(
   username: string,
   workSlug: string,
 ): Promise<PublicPageData | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -183,6 +185,18 @@ async function findPublicPageData(
     return null;
   }
 
+  // Do not return the body of a work that has an active sale, even if the
+  // public/legacy share URL is known. Purchase access uses a separate route.
+  const { data: activeSale, error: saleError } = await supabase
+    .from("commerce_products")
+    .select("id")
+    .eq("work_id", data.id)
+    .eq("product_type", "work")
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  if (saleError || activeSale) return null;
+
   const content = data.content ?? "";
 
   if (!isAuthorVisibleWorkContent(content)) {
@@ -213,24 +227,6 @@ function canViewPublicWork(work: PublicWorkRow): boolean {
   }
 
   return false;
-}
-
-function createSupabaseServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL または NEXT_PUBLIC_SUPABASE_ANON_KEY が設定されていません。",
-    );
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
 }
 
 function escapePostgrestValue(value: string): string {
