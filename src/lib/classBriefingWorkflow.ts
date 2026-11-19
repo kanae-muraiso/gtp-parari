@@ -15,7 +15,7 @@ export type BriefingDesign = {
   allowTrials: boolean;
   mail: Partial<Record<BriefingMail, { subject: string; body: string }>>;
 };
-export type BriefingFollowup = { design: BriefingDesign; invitedAt: string; firstDays: string[] };
+export type BriefingFollowup = { design: BriefingDesign; invitedAt: string; firstDays: string[]; expiresAt?: string };
 export const applicationFieldIds = Object.keys(applicationFields) as ApplicationField[];
 export const cleanClassText = (value: unknown) => typeof value === "string" ? value.trim() : "";
 export const validClassEmail = (value: string) => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -88,4 +88,14 @@ export function parseIntakeProfile(input: Record<string, unknown>) {
     applicant: input.audience === "minor" ? fields.guardianName! : fields.name!,
     phone: input.audience === "minor" ? fields.guardianPhone : fields.phone,
     recipients: [contact, ...(input.audience === "minor" ? [fields.email!] : [])] } : null;
+}
+
+export function classInterviewExpiry(hours: unknown, now = Date.now()) {
+  return hours === 24 || hours === 72 ? new Date(now + hours * 3600000).toISOString() : null;
+}
+
+export function classInterviewExpired(expiresAt: string | undefined, now = Date.now()) {
+  if (expiresAt === undefined) return false;
+  const expiration = Date.parse(expiresAt);
+  return !Number.isFinite(expiration) || expiration <= now;
 }

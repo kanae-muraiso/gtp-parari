@@ -4,7 +4,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classNotice } from "@/lib/classAdmissionMail";
 import { classMeetingUrl, classIdPattern } from "@/lib/classes";
 
-import { classToday, parseApplication, parseBriefingDesign, renderBriefingMail, type BriefingFollowup } from "@/lib/classBriefingWorkflow";
+import { classInterviewExpired, classToday, parseApplication, parseBriefingDesign, renderBriefingMail, type BriefingFollowup } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
 const send = (body: object, status = 200) => NextResponse.json(body, { status, headers });
@@ -20,7 +20,10 @@ async function handle(request: NextRequest, write: boolean) {
     if (candidate.error) throw candidate.error;
     const row = candidate.data;
     const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-    if (!row || (!row.starts_on && !row.briefing_followup) || !row.deadline || row.deadline < today ||
+    const expiresAt = (row?.briefing_followup as BriefingFollowup | null)?.expiresAt;
+    const interview = expiresAt !== undefined;
+    if (interview && classInterviewExpired(expiresAt)) return send({ ok: false, message: "入会案内の有効期限が切れました。教室に再発行をご依頼ください。" }, 410);
+    if (!row || (!row.starts_on && !row.briefing_followup) || (!interview && (!row.deadline || row.deadline < today)) ||
       !["skip", "done"].includes(row.briefing) || !["skip", "graded"].includes(row.test)) return missing();
     if (!row.applicant_email) {
       const accessToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
@@ -61,18 +64,21 @@ async function handle(request: NextRequest, write: boolean) {
       const firstDays = flow.firstDays.filter(day => day >= classToday());
       const agreed = Boolean(row.consent_at && row.agreed_terms === terms && row.application_fields);
       const minor = design.audience === "minor";
+      const options = recruitment.data;
+      const paymentUrl = interview && row.payment === "advance" && options?.payment_mode === "advance" ? classMeetingUrl(options.payment_url) : null;
+      const arrivalNotice = interview && row.payment === "onsite" && options?.payment_mode === "onsite" ? options.arrival_text : null;
       if (!write) return send({ ok: true, school: school.data.name, terms, label: setting.data?.labels?.admission ?? "入会",
-        startsOn: row.starts_on, deadline: row.deadline, revision: row.revision, agreed, applicationText: recruitment.data?.application_text,
-        followup: { design: { rules: design.rules, schoolLabel: design.schoolLabel, audience: design.audience, firstDay: design.firstDay },
+        startsOn: row.starts_on, deadline: row.deadline, expiresAt, ...(interview && agreed ? { paymentUrl, arrival: arrivalNotice } : {}), revision: row.revision, agreed, applicationText: recruitment.data?.application_text,
+        followup: { interview, design: { rules: design.rules, schoolLabel: design.schoolLabel, audience: design.audience, firstDay: design.firstDay },
           firstDays, startTime, arrival, prefill: { ...row.application_fields, name: row.name, ...(minor ? { guardianName: row.applicant_name, guardianEmail: row.applicant_email,
             email: row.learner_email } : { email: row.applicant_email }) } } });
       const input = await request.json().catch(() => null);
-      if (agreed && row.applicant_user_id === user.id) return send({ ok: true, startsOn: row.starts_on });
+      if (agreed && row.applicant_user_id === user.id) return send({ ok: true, startsOn: row.starts_on, ...(interview ? { paymentUrl, arrival: arrivalNotice } : {}) });
       const fields = input?.fields && parseApplication(design, input.fields, row.applicant_email);
-      const firstDay = design.firstDay === "choose" ? input?.firstDay : row.starts_on;
-      if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision || !fields || !firstDays.includes(firstDay))
+      const firstDay = interview ? null : design.firstDay === "choose" ? input?.firstDay : row.starts_on;
+      if (input?.agree !== true || input.terms !== terms || input.revision !== row.revision || !fields || (!interview && !firstDays.includes(firstDay)))
         return send({ ok: false, message: "必須項目、同意、初日をご確認ください。案内が更新された場合は再読み込みしてください。" }, 409);
-      if (design.firstDay === "choose") {
+      if (!interview && design.firstDay === "choose") {
         if (row.requested_class_id) {
           const valid = schedule.data ? await db.rpc("school_class_runs_on", {
             p_class: row.requested_class_id, p_first: schedule.data.starts_on, p_cadence: schedule.data.cadence, p_day: firstDay,
@@ -84,15 +90,23 @@ async function handle(request: NextRequest, write: boolean) {
         if (occurrence.error) throw occurrence.error;
         if (!occurrence.data?.length) return send({ ok: false, message: "選んだ初日の予定が変更されました。教室にご確認ください。" }, 409);
       }
-      const updated = await db.from("school_admission_cases").update({
+      const update = db.from("school_admission_cases").update({
         consent_at: new Date().toISOString(), agreed_terms: terms, application_fields: fields, applicant_user_id: user.id,
         starts_on: firstDay, name: fields.name, applicant_name: minor ? fields.guardianName : fields.name,
         learner_email: minor ? fields.email ?? null : null, revision: row.revision + 1,
       }).eq("id", row.id).eq("invite_token", token).eq("revision", row.revision).eq("decision", "approved")
-        .is("enrollment_id", null).select("id").maybeSingle();
+        .is("enrollment_id", null);
+      if (interview) update.gt("briefing_followup->>expiresAt", new Date().toISOString());
+      const updated = await update.select("id").maybeSingle();
       if (updated.error) throw updated.error;
       if (!updated.data) return send({ ok: false, message: "案内が更新されました。再読み込みしてください。" }, 409);
       const recipients = [row.applicant_email, minor ? fields.email : null];
+      if (interview) {
+        const confirmed = await classRegistrationMail(row.school_id, row.id, request.nextUrl.origin, school.data.name + "の入会申込受付",
+          ["入会申込を受け付けました。初回日程は教室からの案内をお待ちください。", arrivalNotice, paymentUrl ? "支払いページ " + paymentUrl : ""].filter(Boolean).join("\n\n"),
+          "class-interview-received-" + row.id);
+        return send({ ok: true, startsOn: null, confirmation: confirmed, paymentUrl, arrival: arrivalNotice });
+      }
       const when = [firstDay, startTime].filter(Boolean).join(" ");
       const mailValues = { school: school.data.name, when, where: arrival };
       const receipt = renderBriefingMail(design, "received", { subject: school.data.name + "の申込受付",

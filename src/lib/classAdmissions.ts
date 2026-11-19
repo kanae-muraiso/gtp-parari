@@ -18,6 +18,7 @@ export type AdmissionCase = {
   received_at: string | null; consent_at: string | null; agreed_terms: string | null;
   direct_completion?: "review" | "automatic" | null;
   applicant_audience?: "adult" | "minor" | null;
+  intake_slot_id?: string | null;
   applicant_phone?: string | null;
   applicant_name?: string | null;
   applicant_email?: string | null;
