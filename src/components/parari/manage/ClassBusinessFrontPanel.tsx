@@ -81,7 +81,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
   const unavailable = content.entries.filter(key => !visibleKeys.has(key));
   return <section className="grid gap-4 rounded-xl border p-4" aria-labelledby="class-front-settings">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 id="class-front-settings" className="font-semibold">フロントページ</h3>
+      <h3 id="class-front-settings" className="font-semibold">教室トップページ</h3>
       <span className="text-sm text-neutral-600">{settings.front.published ? "公開中" : "非公開"}</span>
     </div>
     <fieldset className="grid min-w-0 gap-4" disabled={busy}>
@@ -139,12 +139,12 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
         </button>
         <button type="button" data-setup-save className={button} onClick={() => void save("saveFront")}>下書きを保存</button>
         <button type="button" className="w-fit rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          disabled={publicationIssues.length > 0} onClick={() => void save("publishFront")}>{settings.front.published ? "変更を公開する" : "公開する"}</button>
+          disabled={publicationIssues.length > 0} onClick={() => void save("publishFront")}>{settings.front.published ? "トップページの変更を公開する" : "教室トップページを公開する"}</button>
         {settings.front.published && <button type="button" className={button} onClick={() => void save("unpublishFront")}>非公開にする</button>}
       </div>
     </fieldset>
     {settings.front.published && <div className="flex flex-wrap items-center gap-3 text-sm">
-      <Link href={href} target="_blank" rel="noreferrer" className="underline">公開ページを開く</Link>
+      <Link href={href} target="_blank" rel="noreferrer" className="underline">公開中の教室トップページを開く</Link>
       <button type="button" className={button} onClick={async () => {
         setError("");
         setNotice("");
@@ -152,7 +152,7 @@ export default function ClassBusinessFrontPanel({ schoolId, name, products, onOp
           await navigator.clipboard.writeText(new URL(href, window.location.origin).href);
           setNotice("公開URLをコピーしました。");
         } catch { setError("公開ページを開き、アドレスをコピーしてください。"); }
-      }}>公開URLをコピー</button>
+      }}>トップページのURLをコピー</button>
     </div>}
     {preview && <section aria-label="フロントページのプレビュー" className="rounded-xl bg-neutral-50 p-4 sm:p-6">
       <ClassBusinessFrontView name={name} introduction={content.introduction} links={chosen} />

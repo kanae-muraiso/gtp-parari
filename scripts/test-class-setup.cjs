@@ -109,7 +109,8 @@ async function main() {
   sourceRows.school_recruitment_offers[0].enabled = false;
   assert.equal(await readClassIntakeSource("specific"), null);
   let operated = false;
-  await act(async () => root.render(React.createElement(Setup, { schoolId: "school", onOperate: () => { operated = true; } })));
+  let operationTarget;
+  await act(async () => root.render(React.createElement(Setup, { schoolId: "school", onOperate: target => { operated = true; operationTarget = target; } })));
   await tick();
   assert.equal(document.querySelectorAll('nav[aria-label="開設準備の手順"] li').length, 6);
   assert.equal(find("次へ").disabled, true);
@@ -172,6 +173,12 @@ async function main() {
   assert.equal(find("次へ").disabled, false);
   await click("日々の運営へ");
   assert.equal(operated, true);
+  assert.equal(operationTarget, undefined);
+  await click("6. 募集を始める");
+  await tick();
+  assert.match(document.querySelector('[aria-label="公開の流れ"]').textContent, /教室トップページを公開する/);
+  await click("日々の運営で申込を確認");
+  assert.equal(operationTarget, "admissions");
   let settingsSaved = false;
   await act(async () => root.render(React.createElement(RealRecruitment, {
     view: "settings", classes: [], products: [{ id: "free", name: "おしゃべり会", monthlyFee: 0 },

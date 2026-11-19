@@ -39,6 +39,7 @@ function BusinessClassManager() {
   const workspaceChosen = useRef(setupRequested);
   const [workspace, setWorkspace] = useState<"setup" | "operation">("setup");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [setupStep, setSetupStep] = useState(0);
   const [schoolAdmission, setSchoolAdmission] = useState(false);
   const [section, setSection] = useState<"classes" | "front" | "calendar" | "event" | "workshop" | "roster">("classes");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -131,14 +132,23 @@ function BusinessClassManager() {
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link><strong>{school.name}</strong>
     </div>
-    <ClassSetupPanel schoolId={school.id} onOperate={() => { setWorkspace("operation"); reloadProducts(); }} />
+    <ClassSetupPanel schoolId={school.id} initialStep={setupStep} onOperate={target => {
+      backToList();
+      setSection("classes");
+      if (target === "admissions") {
+        setSchoolAdmission(true);
+        setView("admissions");
+      }
+      setWorkspace("operation");
+      reloadProducts();
+    }} />
   </div>;
 
   return <div className="grid gap-5">
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
       <strong>{school?.name}</strong>
-      <button type="button" className="ml-auto underline" onClick={() => { backToList(); setWorkspace("setup"); }}>開設準備・設定を見直す</button>
+      <button type="button" className="ml-auto underline" onClick={() => { setSetupStep(schoolAdmission ? 5 : section === "front" ? 5 : 0); backToList(); setWorkspace("setup"); }}>開設準備・設定を見直す</button>
     </div>
     <h2 className="text-xl font-bold">日々の運営</h2>
     <details className={panel}><summary className="cursor-pointer font-semibold">受講者からの欠席連絡</summary><ClassAbsencesPanel schoolId={school.id} classes={school.classes} /></details>
@@ -165,7 +175,7 @@ function BusinessClassManager() {
       <button type="button" className="rounded-lg border bg-white px-4 py-2 text-sm" onClick={() => { setSchoolAdmission(true); setView("admissions"); }}>申込・入会対応</button>
     </nav>}
     {!item && !creating && !schoolAdmission && section === "front" && <ClassBusinessFrontPanel schoolId={school.id} name={school.name} products={data.products ?? []}
-      onOpenRecruitment={() => { setSchoolAdmission(true); setView("settings"); }}
+      onOpenRecruitment={() => { setSetupStep(3); setWorkspace("setup"); }}
       onOpenSchedule={() => {
         setReturnToFront(true);
         setEditingProduct(data.products?.length === 1 ? data.products[0].id : null);
@@ -178,7 +188,7 @@ function BusinessClassManager() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">クラス一覧</h2>
         {school && <button type="button" className="rounded-lg border border-neutral-300 px-4 py-2 text-sm" onClick={() => {
-          setSchoolAdmission(true); setView("settings");
+          setSetupStep(3); setWorkspace("setup");
         }}>募集・入会設定</button>}
         <button type="button" className={button} aria-expanded={editingProduct === ""}
           onClick={() => setEditingProduct(current => current === "" ? null : "")}>

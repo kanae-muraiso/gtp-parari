@@ -209,15 +209,15 @@ export default function ClassRecruitmentPanel({ view, onOpenSettings, classes, p
       </div>
     </form>}
       {!hidePublication && <div className="grid gap-2 rounded-lg border p-4">
-        <h4 className="font-semibold">{publicationOnly ? "受付を開く" : "募集の公開"}</h4>
+        <h4 className="font-semibold">{publicationOnly ? "申込フォームの受付" : "募集の公開"}</h4>
         {!recruitment ? <p className="text-sm text-neutral-600">{publicationOnly ? "「入会方法」で申込画面を保存すると、ここで受付を公開できます。" : "上の「入会方法を保存」を押すと公開できます。"}</p> :
         recruitment.enabled ? <>
-          <a className="underline" href={`/class-intake/${recruitment.public_id}`}>公開受付ページを開く</a>
-          <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>募集を非公開にする</button>
+          <a className="underline" href={`/class-intake/${recruitment.public_id}`}>申込フォームを開く</a>
+          <button type="button" className={button} disabled={busy} onClick={() => void save({ action: "unpublish" })}>共通の申込受付を停止する</button>
         </> : <>
           {route !== recruitment.route ? <p className="text-sm">変更した受付方法を保存してください。</p> :
             !isDirect && !slots.length && <p className="text-sm">{publicationOnly ? "「入会方法」で説明会・体験を受け付ける日時を追加してください。" : "下の「予約枠を設定」で、受付できる日時を追加してください。"}</p>}
-          <button type="button" className={button} disabled={busy || route !== recruitment.route || (!isDirect && !slots.length)} onClick={() => void save({ action: "publish" })}>募集を公開する</button>
+          <button type="button" className={button} disabled={busy || route !== recruitment.route || (!isDirect && !slots.length)} onClick={() => void save({ action: "publish" })}>申込フォームの受付を開始する</button>
         </>}
         {publicationOnly && <button type="button" className="w-fit text-sm underline" onClick={onOpenSettings}>入会方法を編集する</button>}
       </div>}
