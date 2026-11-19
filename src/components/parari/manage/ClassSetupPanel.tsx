@@ -28,16 +28,16 @@ const blockLabels: Record<string, string> = {
 };
 const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
 
-export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: string; onOperate: () => void }) {
+export default function ClassSetupPanel({ schoolId, initialStep = 0, onOperate }: { schoolId: string; initialStep?: number; onOperate: (target?: "admissions") => void }) {
   const container = useRef<HTMLDivElement>(null);
   const pendingSaves = useRef(new Map<string, (success: boolean) => void>());
   const editVersions = useRef(new Map<string, number>());
   const savingVersions = useRef(new Map<string, number>());
   const [savingChanges, setSavingChanges] = useState(false);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(initialStep);
   const [dirty, setDirty] = useState<string[]>([]);
-  const [destination, setDestination] = useState<number | "operate" | null>(null);
+  const [destination, setDestination] = useState<number | "operate" | "admissions" | null>(null);
   const [generation, setGeneration] = useState(0);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [slot, setSlot] = useState<{ id: string; productId: string } | null>(null);
@@ -96,17 +96,17 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
     setRefresh(value => value + 1);
   }
 
-  function moveTo(next: number | "operate") {
+  function moveTo(next: number | "operate" | "admissions") {
     setDestination(null);
     setDirty([]);
     setGeneration(value => value + 1);
     setEditingProduct(null);
     setSlot(null);
-    if (next === "operate") onOperate();
+    if (next === "operate" || next === "admissions") onOperate(next === "admissions" ? next : undefined);
     else { setStep(next); setRefresh(value => value + 1); }
   }
 
-  function navigate(next: number | "operate", discard = false) {
+  function navigate(next: number | "operate" | "admissions", discard = false) {
     if (busy || loading || savingChanges) return;
     if (dirty.length && !discard) { setDestination(next); return; }
     moveTo(next);
@@ -325,12 +325,20 @@ export default function ClassSetupPanel({ schoolId, onOperate }: { schoolId: str
         </section>
       </>}
       {step === 5 && <>
+        <section className={panel} aria-label="公開の流れ">
+          <h4 className="font-semibold">申込フォームを公開してから、教室トップページを公開します</h4>
+          <p className="text-sm">受付を開始すると、申込フォームを開いて確認できます。その下の「教室トップページ」で、紹介文・日程と一緒に掲載する申込フォームを選び、「教室トップページを公開する」を押してください。教室全体を案内するときは、トップページのURLを共有してください。</p>
+        </section>
         <ClassRecruitmentPanel view="settings" publicationOnly classes={school.classes} products={management.products} onOpenSettings={() => navigate(3)} onSaved={() => saved(undefined, false)} onOfferSaved={() => saved(undefined, false)} />
         <div data-setup-block="front" onChangeCapture={() => markDirty("front")}>
           <ClassBusinessFrontPanel schoolId={schoolId} name={school.name} products={products} guided publicationBlockers={publicationBlockers} availableLinks={front.links}
             onOpenRecruitment={() => navigate(3)} onOpenSchedule={() => navigate(2)} onSaveError={() => saveFailed("front")} onSaved={() => saved("front")} />
         </div>
-        <p className="text-sm text-neutral-600">公開URLをLINE・SNS・ご自身のWebサイトで案内できます。公開後の申込は「日々の運営 → 申込・入会対応」で確認します。</p>
+        <section className={panel}>
+          <h4 className="font-semibold">届いた申込を確認する</h4>
+          <p className="text-sm">申込フォームで受け付けた内容を確認し、入会手続きや名簿登録を行えます。</p>
+          <button type="button" className={button} disabled={busy || loading || savingChanges} onClick={() => navigate("admissions")}>日々の運営で申込を確認</button>
+        </section>
       </>}
     </div>
     <footer className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
