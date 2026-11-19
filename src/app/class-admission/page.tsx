@@ -4,8 +4,8 @@ import { applicationFields, applicationFieldIds, type BriefingDesign, type Appli
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState, type FormEvent } from "react";
 
-type Followup = { design: Pick<BriefingDesign, "rules" | "schoolLabel" | "audience" | "firstDay">; firstDays: string[]; startTime: string; arrival: string; prefill: Partial<Record<ApplicationField, string>> };
-type Invitation = { school: string; terms: string; label: string; startsOn: string; deadline: string;
+type Followup = { interview?: boolean; design: Pick<BriefingDesign, "rules" | "schoolLabel" | "audience" | "firstDay">; firstDays: string[]; startTime: string; arrival: string; prefill: Partial<Record<ApplicationField, string>> };
+type Invitation = { school: string; terms: string; label: string; startsOn: string | null; deadline: string | null; expiresAt?: string;
   payment: "free" | "advance" | "onsite"; revision: number; agreed: boolean; applicationText?: string; paymentUrl?: string | null; arrival?: string | null; followup?: Followup; confirmation?: boolean };
 
 export default function ClassAdmissionPage() {
@@ -44,7 +44,7 @@ export default function ClassAdmissionPage() {
       const result = await request({ agree: true, terms: invitation.terms, revision: invitation.revision,
         fields: Object.fromEntries(form), firstDay: form.get("firstDay") });
       if (invitation.followup) {
-        setInvitation({ ...invitation, startsOn: result.startsOn });
+        setInvitation({ ...invitation, startsOn: result.startsOn, paymentUrl: result.paymentUrl, arrival: result.arrival });
         setConfirmation(result.confirmation !== false);
       }
       setDone(true);
@@ -59,20 +59,20 @@ export default function ClassAdmissionPage() {
   return <main className="mx-auto grid max-w-xl gap-4 px-5 py-10">
     {invitation && <>
       <h1 className="text-xl font-bold">{invitation.school}の{invitation.label}手続き</h1>
-      <p>{invitation.startsOn && <>開始予定日 {invitation.startsOn} ／ </>}回答期限 {invitation.deadline}</p>
+      <p>{invitation.startsOn && <>開始予定日 {invitation.startsOn} ／ </>}回答期限 {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) + "（日本時間）" : invitation.deadline}</p>
       {!invitation.followup &&
       <p>{invitation.payment === "advance" ? "事前払い。支払い方法は教室にご確認ください。" : invitation.payment === "onsite" ? "当日払い" : "初回費用なし"}</p>}
       {invitation.applicationText && <p className="whitespace-pre-wrap">{invitation.applicationText}</p>}
       {invitation.terms && <p className="whitespace-pre-wrap rounded-xl border p-4">{invitation.terms}</p>}
       {done || invitation.agreed ? <p role="status">{invitation.followup
-        ? `お申し込みを受け付けました。初日は ${invitation.startsOn} ${invitation.followup.startTime} です。${confirmation ? "" : "メールを送信できなかったため、日時をお控えください。"}`
+        ? invitation.followup.interview ? "入会申込を受け付けました。初回日程は教室からの案内をお待ちください。" : `お申し込みを受け付けました。初日は ${invitation.startsOn} ${invitation.followup.startTime} です。${confirmation ? "" : "メールを送信できなかったため、日時をお控えください。"}`
         : "同意を受け付けました。教室からの案内をお待ちください。"}</p> :
         <form className="grid gap-3" onSubmit={submit}>
           {invitation.followup && <FollowupFields followup={invitation.followup} />}
           <label><input type="checkbox" required /> 案内{invitation.terms ? "と規約" : ""}を確認し、{invitation.label}を申し込みます</label>
           <button disabled={busy} className="w-fit rounded-lg bg-blue-900 px-4 py-2 text-white">同意して申し込む</button>
         </form>}
-      {(done || invitation.agreed) && invitation.followup?.arrival && <p>集合場所 {invitation.followup.arrival}</p>}
+      {(done || invitation.agreed) && invitation.followup?.arrival && !invitation.followup.interview && <p>集合場所 {invitation.followup.arrival}</p>}
       {(done || invitation.agreed) && invitation.arrival && <p className="whitespace-pre-wrap">{invitation.arrival}</p>}
       {(done || invitation.agreed) && invitation.paymentUrl && <a className="underline" href={invitation.paymentUrl}>支払いページを開く</a>}
     </>}
@@ -91,7 +91,7 @@ function FollowupFields({ followup }: { followup: Followup }) {
       <input className="rounded-lg border p-2" name={id} required={design.rules[id] === "required"} readOnly={id === contact}
         type={/email/i.test(id) ? "email" : /phone/i.test(id) ? "tel" : "text"} maxLength={300} defaultValue={prefill[id] ?? ""} />
     </label>)}
-    {design.firstDay === "choose" && <label className="grid gap-1 text-sm">初回の参加日
+    {!followup.interview && design.firstDay === "choose" && <label className="grid gap-1 text-sm">初回の参加日
       <select name="firstDay" className="rounded-lg border p-2" required defaultValue="">
         <option value="">日付を選ぶ</option>
         {firstDays.map(day => <option key={day} value={day}>{day} {startTime}</option>)}

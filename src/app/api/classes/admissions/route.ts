@@ -5,7 +5,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
-import { classDate, classToday, designForApplicant, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
+import { classDate, classInterviewExpiry, classToday, designForApplicant, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
 const send = (body: object, status = 200) => NextResponse.json(body, { status, headers });
@@ -60,6 +60,51 @@ async function handle(request: NextRequest, write: boolean) {
       if (initial.error) throw initial.error;
       const result = await db.from("school_admission_settings").update({ briefing_design: blueprint }).eq("school_id", schoolId);
       if (result.error) throw result.error;
+    } else if (input?.action === "interviewDecision" && validId(input.id) && Number.isInteger(input.revision)) {
+      const decision = input.decision;
+      if (!["approved", "held", "rejected"].includes(decision)) return fail("面接の結果を選んでください。");
+      const found = await db.from("school_admission_cases")
+        .select("id,applicant_email,applicant_audience,intake_slot_id,briefing,test,decision,revision,consent_at,enrollment_id")
+        .eq("id", input.id).eq("school_id", schoolId).maybeSingle();
+      if (found.error) throw found.error;
+      const row = found.data;
+      if (!row?.intake_slot_id || !row.applicant_email || row.consent_at || row.enrollment_id ||
+        row.decision === "withdrawn" || !["booked", "done"].includes(row.briefing)) return fail("面接の予約情報をご確認ください。", 409);
+      if (row.revision !== input.revision) return fail("申込情報が更新されています。再読み込みしてください。", 409);
+
+      const approved = decision === "approved";
+      const expiresAt = approved ? classInterviewExpiry(input.validHours) : null;
+      const invite = approved ? crypto.randomUUID() : null;
+      if (approved && (!design || !expiresAt || !["skip", "graded"].includes(row.test)))
+        return fail("入会設定、リンクの有効期間、テストの結果をご確認ください。", 409);
+      const candidateDesign = approved && design ? designForApplicant(design, row.applicant_audience ?? design.audience) : null;
+      const recruitment = approved ? await db.from("school_recruitment").select("payment_mode").eq("school_id", schoolId).maybeSingle() : null;
+      if (recruitment?.error) throw recruitment.error;
+      const updated = await db.from("school_admission_cases").update({
+        briefing: "done", decision, invite_token: invite, deadline: null, starts_on: null,
+        briefing_followup: candidateDesign ? { design: candidateDesign, invitedAt: new Date().toISOString(), firstDays: [], expiresAt } : null,
+        ...(approved ? { payment: recruitment?.data?.payment_mode ?? "free" } : {}),
+        revision: row.revision + 1,
+      }).eq("school_id", schoolId).eq("id", row.id).eq("revision", row.revision)
+        .is("consent_at", null).is("enrollment_id", null).select("id").maybeSingle();
+      if (updated.error) throw updated.error;
+      if (!updated.data) return fail("申込情報が更新されています。再読み込みしてください。", 409);
+      if (!invite || !candidateDesign || !expiresAt) return send({ ok: true });
+      const link = new URL("/class-admission#" + invite, origin).href;
+      const holder = candidateDesign.audience === "minor" ? "保護者" : "申込者ご本人";
+      const end = new Date(expiresAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+      const mail = renderBriefingMail(candidateDesign, "invite", {
+        subject: school.data.name + "からの入会案内",
+        body: "入会をご希望の場合は、以下のフォームからお申し込みください。",
+      }, { school: school.data.name });
+      const instructions = [
+        mail.body,
+        "手続きにはPARARIのアカウントが必要です。" + holder + "が、このメールを受け取ったアドレスで登録・ログインしてください。",
+        "有効期限 " + end + "（日本時間）",
+        link,
+      ].join("\n\n");
+      const mailed = await classNotice([row.applicant_email], mail.subject, instructions, "class-interview-" + row.id + "-" + (row.revision + 1));
+      return send({ ok: true, link, mailed });
     } else if ((input?.action === "briefingFollowup" || input?.action === "trial") && validId(input.id) && Number.isInteger(input.revision)) {
       if (!design) return fail("入会設定で説明会の設計図を保存してください。");
       const savedDesign = design;

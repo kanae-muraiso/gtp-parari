@@ -135,6 +135,7 @@ function Candidate({ candidate: row, data, busy, save }: {
   candidate: AdmissionCase; data: AdmissionsData; busy: boolean; save: (action: string, values: object) => Promise<boolean>;
 }) {
   const [correction, setCorrection] = useState(false);
+  const [validHours, setValidHours] = useState(72);
   const { labels, terms } = data.settings;
   if (row.enrollment_id) return <div className="grid gap-2"><p>名簿に登録済みです。</p>
     {row.applicant_email && <button type="button" className={button} disabled={busy} onClick={() => void save("email", { id: row.id, kind: "account" })}>受講者ページの登録案内を送る</button>}
@@ -164,6 +165,39 @@ function Candidate({ candidate: row, data, busy, save }: {
     </form>}
     <button type="button" className="w-fit underline" onClick={() => setCorrection(true)}>詳細を修正する</button>
   </div>;
+  const interviewDecision = row.intake_slot_id && row.applicant_email && !row.consent_at &&
+    row.decision !== "withdrawn" && ["booked", "done"].includes(row.briefing);
+  if (interviewDecision && !correction) {
+    const expiresAt = row.briefing_followup?.expiresAt;
+    const decide = (decision: string) => void save("interviewDecision", { id: row.id, revision: row.revision, decision, validHours });
+    return <div className="grid gap-3 border-t pt-3 text-sm">
+      <p>面接申込時のメールアドレス　{row.applicant_email}</p>
+      <p>{row.applicant_user_id ? "申込者のPARARIアカウントを確認済み" : "メールアドレスは手続き時に確認します。"}</p>
+      {row.briefing_at && <p>面接日時　{toJapanTime(row.briefing_at)}</p>}
+      {row.requested_class_id && <p>希望クラス　{data.classes?.find(item => item.id === row.requested_class_id)?.name}</p>}
+      <p>面接後の結果　{row.decision === "approved" ? "入会許可" : row.decision === "held" ? "保留" : row.decision === "rejected" ? "今回は入会しない" : "未確定"}</p>
+      {expiresAt && row.invite_token && <>
+        <p>入会URLの有効期限　{toJapanTime(expiresAt)}（日本時間）</p>
+        <label>入会URL<input className={field} readOnly value={typeof window === "undefined" ? "" : window.location.origin + "/class-admission#" + row.invite_token}
+          onFocus={event => event.currentTarget.select()} /></label>
+      </>}
+      <label>入会URLの有効期間
+        <select className={field} value={validHours} onChange={event => setValidHours(Number(event.target.value))}>
+          <option value={24}>24時間</option><option value={72}>72時間</option>
+        </select>
+      </label>
+      <p>「入会許可」を押すと、上のアドレスにPARARIの登録・ログイン方法と入会URLが届きます。保留・今回は入会しない場合は、結果を記録します。</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={button} disabled={busy || !data.briefingDesign || !["skip", "graded"].includes(row.test)}
+          onClick={() => decide("approved")}>{expiresAt ? "入会URLを再発行して送る" : "入会許可"}</button>
+        <button type="button" className={button} disabled={busy} onClick={() => decide("held")}>保留</button>
+        <button type="button" className={button} disabled={busy} onClick={() => decide("rejected")}>今回は入会しない</button>
+      </div>
+      {!data.briefingDesign && <p>「入会方法」で説明会後の申込書を保存すると、入会案内を送れます。</p>}
+      {!["skip", "graded"].includes(row.test) && <p>テストの結果を「詳細を修正する」で保存してください。</p>}
+      <button type="button" className="w-fit underline" onClick={() => setCorrection(true)}>詳細を修正する</button>
+    </div>;
+  }
   const showBriefing = row.briefing !== "skip" || correction;
   const showTest = row.test !== "skip" || correction;
   const agreed = row.consent_at && row.agreed_terms === terms && (!row.applicant_audience || row.applicant_user_id);
@@ -173,7 +207,7 @@ function Candidate({ candidate: row, data, busy, save }: {
     ["skip", "done"].includes(row.briefing) && ["skip", "graded"].includes(row.test);
   const canInvite = canFinish && row.deadline && !row.briefing_followup;
   const design = data.briefingDesign;
-  const briefingWorkflow = Boolean(design && row.applicant_email && ["booked", "done"].includes(row.briefing) &&
+  const briefingWorkflow = Boolean(!row.briefing_followup?.expiresAt && design && row.applicant_email && ["booked", "done"].includes(row.briefing) &&
     !["withdrawn", "rejected"].includes(row.decision));
 
   function update(event: FormEvent<HTMLFormElement>) {

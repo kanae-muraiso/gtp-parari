@@ -345,6 +345,60 @@ async function main() {
   assert.equal((await invitationApi.GET(inviteRequest())).body.agreed,false);
   assert.equal((await invitationApi.POST(inviteRequest())).status,200);assert.equal(linkedGuardian,"guardian");
   assert.deepEqual(deliveries.at(-1),[profile.guardianEmail,profile.email]);
+  const interviewDesign = { audience:"minor", firstDay:"choose",
+    rules:Object.fromEntries(workflow.applicationFieldIds.map(field=>[field,"optional"])) };
+  Object.assign(invitationRow,{ starts_on:null, deadline:null, briefing:"done", consent_at:null, payment:"free",
+    briefing_followup:{ design:interviewDesign, firstDays:[], expiresAt:workflow.classInterviewExpiry(24) } });
+  assert.equal((await invitationApi.GET(inviteRequest())).body.followup.interview,true);
+  const interviewSubmit = () => ({ ...inviteRequest(), nextUrl:{origin:"https://www.parari.app"},
+    json:async()=>({agree:true,terms:"規約",revision:1,fields:profile}) });
+  assert.equal((await invitationApi.POST(interviewSubmit())).status,200);
+  assert.equal(linkedGuardian,"guardian");
+  invitationRow.briefing_followup.expiresAt = new Date(Date.now()-1).toISOString();
+  assert.equal((await invitationApi.GET(inviteRequest())).status,410);
+  assert.equal((await invitationApi.POST(interviewSubmit())).status,410);
+
+  const decisions = [];
+  const decisionMail = [];
+  const decisionDb = { auth:{getUser:async()=>({data:{user:{id:"teacher"}},error:null})}, from(table) {
+    const result = { profiles:{is_monitor:true}, class_schools:{id:"school",name:"事業"},
+      school_admission_settings:{briefing_design:interviewDesign}, school_recruitment:{payment_mode:"onsite"},
+      school_admission_cases:{id:"candidate",applicant_email:profile.guardianEmail,applicant_audience:"minor",
+        intake_slot_id:"slot",briefing:"booked",test:"skip",decision:"pending",revision:1} }[table];
+    const chain=new Proxy({}, {get(_,key){if(key==="then")return resolve=>resolve({data:result,error:null});
+      if(key==="update")return changes=>{decisions.push(changes);return chain;};return ()=>chain;}});return chain;
+  }};
+  const decisionApi = load("src/app/api/classes/admissions/route.ts",{
+    "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
+    "@/lib/billing/supabaseAdmin":{supabaseAdmin:decisionDb},
+    "@/lib/classBusinessScope":{classBusinessId:async()=>"school"},
+    "@/lib/classRegistrationMail":{classRegistrationMail:async()=>true},
+    "@/lib/classAdmissionMail":{classNotice:async(to,subject,body)=>{decisionMail.push({to,body});return true;}},
+    "@/lib/classes":{classIdPattern:/^[a-z-]+$/},
+    "@/lib/classBriefingWorkflow":workflow,
+    "@/lib/classAdmissions":load("src/lib/classAdmissions.ts"),
+  });
+  const decide = (decision, validHours, revision=1) => decisionApi.POST({
+    headers:new Headers({authorization:"Bearer teacher"}),nextUrl:{searchParams:new URLSearchParams({business:"school"})},
+    json:async()=>({action:"interviewDecision",id:"candidate",revision,decision,validHours}),
+  });
+  assert.equal((await decide("approved",48)).status,409);
+  assert.equal((await decide("approved",24,0)).status,409);
+  const issuedAt=Date.now();
+  assert.equal((await decide("approved",24)).status,200);
+  assert.equal(decisions.at(-1).decision,"approved");
+  const elapsed=Date.parse(decisions.at(-1).briefing_followup.expiresAt)-issuedAt;
+  assert.ok(elapsed>=24*3600000 && elapsed<24*3600000+1000);
+  assert.equal(workflow.classInterviewExpiry(72,0),new Date(72*3600000).toISOString());
+  assert.deepEqual(decisionMail[0].to,[profile.guardianEmail]);
+  assert.match(decisionMail[0].body,/PARARIのアカウントが必要/);
+  assert.match(decisionMail[0].body,/有効期限.+日本時間/);
+  for(const decision of ["held","rejected"]){
+    assert.equal((await decide(decision,72)).status,200);
+    assert.equal(decisions.at(-1).decision,decision);
+    assert.equal(decisions.at(-1).invite_token,null);
+  }
+  assert.equal(decisionMail.length,1);
   await act(async () => root.unmount());
   console.log("PASS: setup sequence, saved-state progress, unsaved changes, failed saves, review confirmation, operating entry and publication prerequisites.");
 }
