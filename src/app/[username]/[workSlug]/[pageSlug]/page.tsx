@@ -218,11 +218,12 @@ function canViewPublicWork(work: PublicWorkRow): boolean {
     return true;
   }
 
-  if (work.is_public === true) {
+  if (work.visibility === "unlisted") {
     return true;
   }
 
-  if (work.visibility === "unlisted") {
+  // Legacy flag is a fallback only when canonical visibility is unset.
+  if (!work.visibility && work.is_public === true) {
     return true;
   }
 
