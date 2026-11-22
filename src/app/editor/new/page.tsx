@@ -242,7 +242,7 @@ export default function EditorNewPage() {
           </div>
 
           <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-            <div className="font-bold text-neutral-900">PDFの文章を取り込む</div>
+            <div className="font-bold text-neutral-900">PDFの文章を取り込む（有料会員向け）</div>
             <p className="mt-1 text-sm leading-6 text-neutral-600">
               PDFの文字を抽出し、編集できる非公開PAGEを作ります。画像やレイアウトは取り込みません。
             </p>
