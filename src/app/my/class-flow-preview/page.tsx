@@ -18,7 +18,8 @@ const newSlot = (name: string, weekday = "月曜"): TimeSlot => ({
   id: crypto.randomUUID(), name, weekday, startsAt: "16:30", duration: 90, capacity: 6, occupied: 0, feeOverride: null,
 });
 type View = "teacher" | "applicant" | "member" | "operator";
-type Phase = "intake" | "pre" | "form" | "selection" | "payment" | "complete";
+type Phase = "intake" | "contact" | "pre" | "booking-received" | "awaiting-event" | "awaiting-approval" | "selection" | "payment" | "complete";
+type SimulatedNotice = { id: number; target: "teacher" | "student"; subject: string; body: string };
 
 const card = "rounded-2xl border border-neutral-200 bg-white p-5";
 const label = "mb-1.5 block text-xs font-semibold text-neutral-600";
@@ -112,6 +113,18 @@ export default function ClassFlowPreview() {
   const [paymentRecorded, setPaymentRecorded] = useState(false);
   const [selectedClass, setSelectedClass] = useState(false);
   const [requestName, setRequestName] = useState("申込者A");
+  const [requestEmail, setRequestEmail] = useState("student@example.com");
+  const [requestPhone, setRequestPhone] = useState("");
+  const [consented, setConsented] = useState(false);
+  const [bookingDate, setBookingDate] = useState("2026-12-05");
+  const [bookingTime, setBookingTime] = useState("10:00");
+  const [bookingIndex, setBookingIndex] = useState(0);
+  const [bookingRecorded, setBookingRecorded] = useState(false);
+  const [eventAttended, setEventAttended] = useState(false);
+  const [approvalGranted, setApprovalGranted] = useState(false);
+  const [allowedSlotIds, setAllowedSlotIds] = useState<string[] | null>(null);
+  const [noticeLog, setNoticeLog] = useState<SimulatedNotice[]>([]);
+  const [enrollmentSubmitted, setEnrollmentSubmitted] = useState(false);
   const [previewMessage, setPreviewMessage] = useState("");
 
   const pres = before === "none" ? [] : before === "both"
@@ -120,10 +133,12 @@ export default function ClassFlowPreview() {
   const available = Math.max(0, capacity - occupied - (classConfirmed && selectedClass ? 1 : 0));
   const serviceOptions = services.filter(service => service.slots.length > 0);
   const admissionSteps = useMemo(() => [
-    "募集ページの申込ボタン", ...pres, "入会フォーム",
-    ...(approval ? ["先生による承認"] : []),
-    ...(admissionFee > 0 ? ["クラス選択・空席確認", "入会金と初回受講料の支払", "入会・クラス参加確定"] : ["入会確定"]),
-    "生徒HOME",
+    "紹介・申込ボタン", "連絡先・申込フォーム",
+    ...(pres.length ? [...pres, "予約受付画面・確認メール", "当日の参加"] : []),
+    ...(approval || pres.length ? ["先生の入会許可・クラス制限"] : []),
+    "参加サービス・時間枠選択",
+    ...(admissionFee > 0 ? ["入会金・受講料の支払確認"] : ["必要な支払案内"]),
+    "受付完了・クラス案内メール", "生徒HOME",
   ], [before, briefingFirst, approval, admissionFee]);
   const recurringSteps = [
     `前月${closeDay}日23:59 キャンセル締切`,
@@ -132,6 +147,15 @@ export default function ClassFlowPreview() {
     payMethod === "card" ? "カード決済結果を記録" : payMethod === "bank" ? "銀行振込を確認・入金記録" : "現金受領・入金記録",
     "翌月の授業・カレンダー",
   ];
+
+  function addNotice(target: "teacher" | "student", subject: string, body: string) {
+    setNoticeLog(current => [...current, { id: current.length + 1, target, subject, body }]);
+  }
+
+  const allSlots = services.flatMap(service => service.slots.map(slot => ({ service, slot })));
+  const permittedServices = services.map(service => ({
+    ...service, slots: service.slots.filter(slot => allowedSlotIds === null || allowedSlotIds.includes(slot.id)),
+  })).filter(service => service.slots.length > 0);
 
   function resetApplicant() {
     const first = serviceOptions[0];
@@ -144,18 +168,74 @@ export default function ClassFlowPreview() {
     setClassConfirmed(false);
     setSelectedClass(false);
     setPaymentRecorded(false);
+    setBookingRecorded(false);
+    setEventAttended(false);
+    setApprovalGranted(false);
+    setAllowedSlotIds(null);
+    setNoticeLog([]);
+    setBookingIndex(0);
+    setEnrollmentSubmitted(false);
+    setConsented(false);
     setPreviewMessage("");
     setView("applicant");
   }
-  function advanceBefore() { setPhase("form"); }
-  function finishForm() {
-    if (admissionFee > 0) setPhase("selection");
-    else { setHasJoined(true); setPhase("complete"); }
+  function submitContact() {
+    if (!requestName.trim() || !/^\\S+@\\S+\\.\\S+$/.test(requestEmail.trim()) || !consented) return;
+    if (pres.length) setPhase("pre");
+    else if (approval) {
+      setPhase("awaiting-approval");
+      addNotice("teacher", "入会希望者の申込", `${requestName}さんから申込がありました。承認してください。`);
+    } else {
+      setApprovalGranted(true);
+      setPhase("selection");
+    }
   }
-  function finishPayment() {
-    setHasJoined(true); setClassConfirmed(true); setPaymentRecorded(true);
+  function reserveEvent() {
+    if (!bookingDate || !bookingTime) return;
+    setBookingRecorded(true);
+    addNotice("student", "説明会・体験の予約受付", `${requestName}様：${pres[bookingIndex]}を${bookingDate} ${bookingTime}で受け付けました。`);
+    addNotice("teacher", "説明会・体験の予約通知", `${requestName}様（${requestEmail}）より${bookingDate} ${bookingTime}の申込がありました。`);
+    setPhase("booking-received");
+  }
+  function advanceBookedEvent() {
+    if (bookingIndex < pres.length - 1) {
+      setBookingIndex(index => index + 1);
+      setPhase("pre");
+    } else {
+      setPhase("awaiting-event");
+    }
+  }
+  function markEventAttended() {
+    setEventAttended(true);
+    setPhase("awaiting-approval");
+  }
+  function grantApproval() {
+    const firstAllowed = allSlots.find(({slot}) => allowedSlotIds === null || allowedSlotIds.includes(slot.id));
+    if (!firstAllowed) { setPreviewMessage("選択できる時間枠がありません。許可するクラスを確認してください。"); return; }
+    setSelectedServiceId(firstAllowed.service.id);
+    setSelectedSlotId(firstAllowed.slot.id);
+    setApprovalGranted(true);
+    addNotice("student", "入会が許可されました", `${school}への入会が許可されました。ご案内の画面から参加クラスをお選びください。`);
+    setPhase("selection");
+    setView("applicant");
+  }
+  function submitSelection() {
+    if (!chosenSlot || available <= 0 || !approvalGranted) return;
+    if (allowedSlotIds !== null && !allowedSlotIds.includes(chosenSlot.id)) return;
+    setSelectedClass(true);
+    setEnrollmentSubmitted(true);
+    if (admissionFee > 0) setPhase("payment");
+    else finishEnrollment(false);
+  }
+  function finishEnrollment(paid: boolean) {
+    setHasJoined(true);
+    setClassConfirmed(true);
+    setPaymentRecorded(paid);
     setPhase("complete");
+    addNotice("student", "クラス受付完了・参加のご案内", `${chosenService?.name} ＞ ${className} を受け付けました。月謝 ${yen(monthlyFee)}、支払方法は ${methodLabel} です。`);
+    addNotice("teacher", "新しいクラス参加受付", `${requestName}様が${chosenService?.name} ＞ ${className}を申し込みました（支払状態：${paid ? "確認済み" : "未払い"}）。`);
   }
+  function finishPayment() { finishEnrollment(true); }
 
   return <main className="min-h-screen bg-neutral-100 text-neutral-950">
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-7">
