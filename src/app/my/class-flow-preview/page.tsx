@@ -91,6 +91,7 @@ export default function ClassFlowPreview() {
     ? briefingFirst ? ["説明会を予約・参加", "体験を予約・参加"] : ["体験を予約・参加", "説明会を予約・参加"]
     : [before === "briefing" ? "説明会を予約・参加" : "体験を予約・参加"];
   const available = Math.max(0, capacity - occupied - (classConfirmed && selectedClass ? 1 : 0));
+  const serviceOptions = services.filter(service => service.slots.length > 0);
   const admissionSteps = useMemo(() => [
     "募集ページの申込ボタン", ...pres, "入会フォーム",
     ...(approval ? ["先生による承認"] : []),
@@ -105,6 +106,11 @@ export default function ClassFlowPreview() {
   ];
 
   function resetApplicant() {
+    const first = serviceOptions[0];
+    if (first) {
+      setSelectedServiceId(first.id);
+      setSelectedSlotId(first.slots[0].id);
+    }
     setPhase("intake");
     setHasJoined(false);
     setClassConfirmed(false);
@@ -286,15 +292,31 @@ export default function ClassFlowPreview() {
           <button className={primary} disabled={!requestName.trim()} onClick={finishForm}>{admissionFee>0?"クラス選択へ":"入会を確定する"}</button>
         </div> : null}
         {phase === "selection" ? <div className="mt-7 space-y-4">
-          <h3 className="text-lg font-bold">参加クラスを選ぶ</h3>
-          <p className="text-sm">{className}／月{monthlyVisits}回／{yen(monthlyFee)} ／ 残り{available}席</p>
-          <button disabled={available===0} className={primary} onClick={()=>{setSelectedClass(true);setPhase("payment");}}>
+          <h3 className="text-lg font-bold">サービスと時間枠を選ぶ</h3>
+          <label className="block"><span className={label}>サービス（受講内容・月謝）</span>
+            <select className={field} value={chosenService?.id ?? ""} onChange={e => {
+              const service = services.find(item => item.id === e.target.value);
+              if (service) { setSelectedServiceId(service.id); setSelectedSlotId(service.slots[0]?.id ?? ""); }
+            }}>{services.map(service => <option key={service.id} value={service.id}>{service.name}／月{service.monthlyVisits}回・{yen(service.monthlyFee)}</option>)}</select>
+          </label>
+          <label className="block"><span className={label}>時間枠（曜日・時刻・残席）</span>
+            <select className={field} value={chosenSlot?.id ?? ""} onChange={e=>setSelectedSlotId(e.target.value)}>
+              {!chosenService?.slots.length ? <option value="">時間枠がありません</option> : null}
+              {chosenService?.slots.map(slot => <option key={slot.id} value={slot.id}>
+                {slot.name}／{slot.weekday} {slot.startsAt} ／残り{Math.max(0,slot.capacity-slot.occupied)}席
+              </option>)}
+            </select>
+          </label>
+          <p className="text-sm">選択中：{school} ＞ {chosenService?.name ?? "未選択"} ＞ {className}</p>
+          <p className="text-sm">月{monthlyVisits}回／{yen(monthlyFee)}／残り{available}席</p>
+          <button disabled={!chosenSlot||available===0} className={primary} onClick={()=>{setSelectedClass(true);setPhase("payment");}}>
             {available===0?"満席です":"このクラスを選ぶ"}
           </button>
           {available===0?<p className="text-sm text-rose-700">入会金がある場合、参加できるクラスがなければ入会を確定しません。</p>:null}
         </div> : null}
         {phase === "payment" ? <div className="mt-7 space-y-4">
           <h3 className="text-lg font-bold">入会時の支払（シミュレーション）</h3>
+          <p className="text-sm">{chosenService?.name} ＞ {className}</p>
           <p className="text-sm">入会金 {yen(admissionFee)} ＋ 初回受講料 {yen(monthlyFee)} ＝ <strong>{yen(admissionFee+monthlyFee)}</strong></p>
           <p className="rounded-lg bg-amber-50 p-3 text-sm">ここでは実際の決済を行いません。現金・振込時の仮受付と入会確定の扱いは実装時に検証します。</p>
           <button className={primary} onClick={finishPayment}>支払確認済みとして入会を確定する</button>
@@ -316,8 +338,23 @@ export default function ClassFlowPreview() {
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-neutral-200 p-4">
             <h3 className="font-bold">クラス</h3>
-            <p className="mt-2 text-sm">{classConfirmed? `${className}：参加確定` : `${className}：残り${available}席`}</p>
-            <button className={secondary+" mt-3"} disabled={!hasJoined||classConfirmed||available===0}
+            <p className="mt-2 text-sm">所属：{school}</p>
+            {!classConfirmed ? <div className="mt-3 space-y-2">
+              <label className="block"><span className={label}>サービスを選ぶ</span>
+                <select className={field} value={chosenService?.id ?? ""} onChange={e => {
+                  const service=services.find(item=>item.id===e.target.value);
+                  if (service) {setSelectedServiceId(service.id);setSelectedSlotId(service.slots[0]?.id??"");}
+                }}>{services.map(service=><option key={service.id} value={service.id}>{service.name}／{yen(service.monthlyFee)}</option>)}</select>
+              </label>
+              <label className="block"><span className={label}>時間枠を選ぶ</span>
+                <select className={field} value={chosenSlot?.id ?? ""} onChange={e=>setSelectedSlotId(e.target.value)}>
+                  {!chosenService?.slots.length ? <option value="">時間枠がありません</option> : null}
+                  {chosenService?.slots.map(slot=><option key={slot.id} value={slot.id}>{slot.name}（{slot.weekday} {slot.startsAt}・残り{Math.max(0,slot.capacity-slot.occupied)}席）</option>)}
+                </select>
+              </label>
+            </div> : null}
+            <p className="mt-2 text-sm">{chosenService?.name} ＞ {classConfirmed? `${className}：参加確定` : `${className}：残り${available}席`}</p>
+            <button className={secondary+" mt-3"} disabled={!hasJoined||classConfirmed||!chosenSlot||available===0}
               onClick={()=>{setSelectedClass(true);setClassConfirmed(true);setPreviewMessage("クラスへの参加を確定しました（試作）。必要な支払は別管理です。");}}>
               {classConfirmed?"参加確定済み":"クラスを選んで参加"}
             </button>
@@ -343,14 +380,22 @@ export default function ClassFlowPreview() {
 
       {view === "operator" ? <section className={`mt-6 ${card}`}>
         <h2 className="text-xl font-bold">運営画面（シミュレーション）</h2>
-        <p className="mt-2 text-sm text-neutral-600">クラス・カレンダー・支払は同じ参加記録を異なる角度から表示します。</p>
+        <p className="mt-2 text-sm text-neutral-600">事業内のサービスと時間枠をまとめて管理します。クラス・カレンダー・支払は同じ参加記録の表示です。</p>
+        <div className="mt-4 space-y-2">
+          {services.map(service => <div className="rounded-xl border border-neutral-200 p-3" key={service.id}>
+            <p className="text-sm font-bold">{school} ＞ {service.name}（月{service.monthlyVisits}回・{yen(service.monthlyFee)}）</p>
+            {service.slots.map(slot=><p key={slot.id} className="mt-1 pl-3 text-xs text-neutral-600">{slot.name} ／ {slot.weekday} {slot.startsAt} ／定員{slot.capacity}名・利用{slot.occupied}名</p>)}
+            {!service.slots.length ? <p className="mt-1 text-xs text-amber-800">時間枠未設定</p> : null}
+          </div>)}
+        </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">クラスの残席</p><p className="mt-2 text-2xl font-bold">{available}{classConfirmed&&selectedClass?"（デモ参加＋1）":""}</p></div>
+          <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">選択中の時間枠の残席</p><p className="mt-2 text-2xl font-bold">{available}</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">翌月の継続確定</p><p className="mt-2 text-lg font-bold">前月{closeDay+1}日</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">支払方法</p><p className="mt-2 text-lg font-bold">{payMethod==="bank"?"振込":payMethod==="cash"?"現金":"カード"}</p></div>
         </div>
         <div className="mt-5 rounded-xl border border-neutral-200 p-4">
           <h3 className="font-bold">月謝の管理例</h3>
+          <p className="mt-1 text-xs text-neutral-600">{school} ＞ {chosenService?.name} ＞ {className}</p>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div><p className="text-sm">{requestName}／翌月分 {yen(monthlyFee)}</p><p className="mt-1 text-xs text-neutral-600">{paymentRecorded?"入金済み":"未入金"}・支払期限：前月末日</p></div>
             {payMethod !== "card" ? <button className={secondary} onClick={()=>setPaymentRecorded(v=>!v)}>{paymentRecorded?"入金記録を取り消す":"入金済みにする"}</button>
