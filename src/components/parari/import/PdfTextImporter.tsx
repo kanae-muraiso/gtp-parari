@@ -105,7 +105,7 @@ export default function PdfTextImporter() {
         body: JSON.stringify({
           createRequestId: requestId.current,
           stableSlug: `pdf-${requestId.current.slice(0, 8)}`,
-          template: { kind: "page", initialTitle: title.trim(), ssot },
+          template: { kind: "page", initialTitle: title.trim(), ssot, privateImport: true },
         }),
       });
       const result = await response.json().catch(() => null) as { ok?: boolean; id?: string; message?: string } | null;
