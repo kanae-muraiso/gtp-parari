@@ -139,7 +139,7 @@ async function handle(request: NextRequest) {
           "申込者：" + clean(input.name),
           "連絡先：" + clean(input.email),
           "入会希望者の詳細はPARARIの教室運営画面でご確認ください。",
-        ].join("\\n"),
+        ].join("\n"),
         "class-booking-owner-" + booking.case_id,
       ) : false;
       return reply({ ok: true, confirmation, reminder, ownerNotified });
