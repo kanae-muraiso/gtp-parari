@@ -109,7 +109,15 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         {data.direct ? <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white disabled:opacity-50" disabled={busy || !ready}>申し込む</button> :
           <button type="button" className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white disabled:opacity-50" disabled={busy || !targetReady} onClick={goToBooking}>連絡先を確認して日時選択へ</button>}
         </fieldset>
-        {calendarUpdated}
+        {targetReady && !data.direct && step === "booking" && <section className="grid gap-3">
+          <h2 className="font-semibold">{data.kind}の日時</h2>
+          {data.slots.length ? <ClassBookingCalendar slots={data.slots} bookingWeeks={data.bookingWeeks ?? 4} selected={selected} onSelect={setSelected} />
+            : <p className="rounded-xl bg-neutral-50 p-4">現在、選べる日時はありません。</p>}
+          {slot && <div className="rounded-lg border bg-blue-50 p-3 text-sm" aria-live="polite">
+            <p className="font-semibold">{timeLabel}</p>
+            {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
+          </div>}
+        </section>}
         {!data.direct && step === "booking" && <div className="flex flex-wrap items-center gap-3">
           <button type="button" className="rounded-lg border px-4 py-2 text-sm" disabled={busy} onClick={() => setStep("contact")}>連絡先を修正する</button>
           <button type="submit" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
