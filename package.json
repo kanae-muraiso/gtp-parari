@@ -3,9 +3,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && next build",
+    "build": "npm run test:pdf-import && npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && next build",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
+    "test:pdf-import": "node scripts/test-pdf-import.cjs",
     "test:commerce-work-preview": "node scripts/test-commerce-work-preview.cjs",
     "test:cpp-routes": "node scripts/test-cpp-routes.cjs",
     "test:class-setup": "node scripts/test-class-setup.cjs",
