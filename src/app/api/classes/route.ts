@@ -98,7 +98,10 @@ export async function GET(request: NextRequest) {
       })) });
     }
     const id = request.nextUrl.searchParams.get("school");
-    if (id === null) return scope && !await ownedSchool(user.id, scope) ? fail("教室が見つかりません。", 404) : await manage(user.id, scope);
+    if (id === null) {
+      if (scope && !await ownedSchool(user.id, scope)) return fail("教室が見つかりません。", 404);
+      return manage(user.id, scope);
+    }
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
 
     const members = await classParticipantMembers(user.id, id);
