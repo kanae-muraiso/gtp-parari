@@ -23,6 +23,7 @@ import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
 import CalendarManagerPanel from "@/components/parari/manage/CalendarManagerPanel";
 import ClassManagerPanel from "@/components/parari/manage/ClassManagerPanel";
+import { classRequest } from "@/lib/classRequests";
 import MembershipManagerPanel from "@/components/parari/manage/MembershipManagerPanel";
 import {
   getEffectivePlan,
@@ -61,6 +62,7 @@ export default function MyManagePage() {
   ] = useState(false);
 
   const [isMonitor, setIsMonitor] = useState(false);
+  const [hasClassBusiness, setHasClassBusiness] = useState(false);
 
   const manageTabs = useMemo(() => {
     const tabs: {
@@ -94,9 +96,9 @@ export default function MyManagePage() {
       });
     }
 
-    if (isMonitor) tabs.push({ key: "class", label: "クラス" });
+    if (isMonitor || hasClassBusiness) tabs.push({ key: "class", label: "クラス" });
     return tabs;
-  }, [entitlements, isMonitor]);
+  }, [entitlements, isMonitor, hasClassBusiness]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +142,15 @@ export default function MyManagePage() {
         );
 
       setIsMonitor(profileResult.data?.is_monitor === true);
+      // Discover only businesses actually owned by this user; the server performs
+      // the same ownership check on every management action.
+      try {
+        const result = await classRequest<{ businesses: { id: string }[] }>("?businesses=1");
+        if (!cancelled) setHasClassBusiness(result.businesses.length > 0);
+      } catch {
+        if (!cancelled) setHasClassBusiness(false);
+      }
+      if (cancelled) return;
       setEntitlements(
         getPlanEntitlements(
           effectivePlan,
@@ -271,7 +282,7 @@ export default function MyManagePage() {
             <CalendarManagerPanel />
           ) : null}
 
-          {accessLoaded && isMonitor && manageMode === "class" ? <ClassManagerPanel /> : null}
+          {accessLoaded && (isMonitor || hasClassBusiness) && manageMode === "class" ? <ClassManagerPanel /> : null}
 
           {accessLoaded &&
           manageMode === "membership" ? (
