@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getEffectivePlan,
   getPlanLimits,
+  getPlanEntitlements,
   isAtOrOverLimit,
 } from "@/lib/billing/plan";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
@@ -268,6 +269,13 @@ export async function POST(request: NextRequest) {
     const billing = await getUserBillingByUserId(user.id);
     const effectivePlan = getEffectivePlan(billing);
     const limits = getPlanLimits(effectivePlan);
+    // PDF import must be authorized at the server, not only hidden in the UI.
+    if (body?.template?.privateImport === true && !getPlanEntitlements(effectivePlan, isMonitor).canExportEpub) {
+      return NextResponse.json({
+        ok: false, code: "PDF_IMPORT_REQUIRES_PAID",
+        message: "PDFインポートは有料会員向け機能です。",
+      }, { status: 403 });
+    }
     const workLimit = isMonitor ? null : limits.workLimit;
 
     if (kind === "web") {

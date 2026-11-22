@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { activateStudioForCurrentUser } from "@/lib/parari/workspace/activateStudio";
@@ -22,8 +22,35 @@ export default function PdfTextImporter() {
   const [pages, setPages] = useState(0);
   const [error, setError] = useState("");
   const requestId = useRef<string | null>(null);
+  const [access, setAccess] = useState<"loading" | "allowed" | "blocked">("loading");
+  const [accessMessage, setAccessMessage] = useState("");
+
+  useEffect(() => {
+    let canceled = false;
+    async function checkAccess() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error("利用するにはログインしてください。");
+        const response = await fetch("/api/pdf/import-access", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        });
+        const result = await response.json() as { allowed?: boolean; message?: string };
+        if (canceled) return;
+        setAccess(response.ok && result.allowed ? "allowed" : "blocked");
+        setAccessMessage(result.message ?? "PDFインポートは有料会員向け機能です。");
+      } catch (cause) {
+        if (canceled) return;
+        setAccess("blocked");
+        setAccessMessage(cause instanceof Error ? cause.message : "利用資格を確認できませんでした。");
+      }
+    }
+    void checkAccess();
+    return () => { canceled = true; };
+  }, []);
 
   async function readPdf(file: File) {
+    if (access !== "allowed") return;
     setError("");
     setText("");
     setPages(0);
@@ -82,7 +109,7 @@ export default function PdfTextImporter() {
   }
 
   async function savePage() {
-    if (stage !== "ready") return;
+    if (stage !== "ready" || access !== "allowed") return;
     setError("");
     let ssot: string;
     try {
@@ -130,13 +157,15 @@ export default function PdfTextImporter() {
         見た目・画像・表・段組は再現しません。スキャン画像のみのPDFやパスワード付きPDFは対象外です。
         原本PDFはPARARIに送信・保存しません。
       </p>
-      <label className="mt-5 block text-sm font-semibold" htmlFor="pdf-import-file">PDFファイル（20MB・40ページまで）</label>
-      <input id="pdf-import-file" type="file" accept=".pdf,application/pdf" disabled={stage === "reading" || stage === "saving"}
+      {access === "loading" ? <p role="status" className="mt-5 text-sm text-neutral-600">利用資格を確認しています…</p> : null}
+      {access === "blocked" ? <p role="alert" className="mt-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{accessMessage} <a href="/billing" className="underline">プランを確認する</a></p> : null}
+      {access === "allowed" ? <label className="mt-5 block text-sm font-semibold" htmlFor="pdf-import-file">PDFファイル（20MB・40ページまで）</label> : null}
+      {access === "allowed" ? <input id="pdf-import-file" type="file" accept=".pdf,application/pdf" disabled={stage === "reading" || stage === "saving"}
         className="mt-2 block w-full text-sm" onChange={event => {
           const file = event.target.files?.[0];
           if (file) void readPdf(file);
           event.currentTarget.value = "";
-        }} />
+        }} /> : null}
       {stage === "reading" ? <p role="status" className="mt-4 text-sm">PDFの文字を読み取っています…</p> : null}
       {stage === "ready" || stage === "saving" ? (
         <div className="mt-5 space-y-3">
