@@ -41,9 +41,8 @@ export async function classBusinessFrontLinks(school: string, owner: string, sel
   const slots = (slotsResult?.data ?? []) as SchoolClass[];
   if (recruitment.data) {
     const source = recruitment.data;
-    const profile = await db.from("profiles").select("is_monitor").eq("user_id", owner).maybeSingle();
-    if (profile.error) throw profile.error;
-    if (profile.data?.is_monitor) {
+    // The owner is already bound to the school by the calling scope.
+    {
       const label = source.route === "direct" ? "入会申込" : source.kind + "予約";
       const candidates = [{ id: source.public_id, title: label, information: source.information, route: source.route },
         ...(offers.data ?? []).map(offer => ({ id: offer.id, title: offer.name, information: offer.information, route: offer.route_override ?? source.route }))];
