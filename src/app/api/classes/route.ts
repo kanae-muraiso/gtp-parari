@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
     if (!user) return fail("ログインが必要です。", 401);
     const scope = request.nextUrl.searchParams.get("business");
     if (request.nextUrl.searchParams.get("businesses") === "1") {
-      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
       const { data, error } = await db.from("class_schools").select("id,name,business_type,archived_at").eq("owner_user_id", user.id).eq("tier", "a").order("name");
       if (error) throw error;
       return reply({ ok: true, businesses: data });
@@ -77,15 +76,14 @@ export async function GET(request: NextRequest) {
       let enrolledQuery = db.from("school_enrollments").select("school:class_schools(id,name,archived_at)").eq("status", "active");
       enrolledQuery = guardianIds.length ? enrolledQuery.or(`user_id.eq.${user.id},id.in.(${guardianIds.join(",")})`) : enrolledQuery.eq("user_id", user.id);
       const [owned, enrolled] = await Promise.all([
-        user.isMonitor ? db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name") : Promise.resolve({ data: [], error: null }),
+        db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name"),
         enrolledQuery.returns<{ school: { id: string; name: string; archived_at?: string | null } | null }[]>(),
       ]);
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
-      return reply({ ok: true, userId: user.id, canManage: user.isMonitor, owned: owned.data?.[0] ?? null, businesses: owned.data,
+      return reply({ ok: true, userId: user.id, canManage: Boolean(owned.data?.length), owned: owned.data?.[0] ?? null, businesses: owned.data,
         enrolled: [...new Map((enrolled.data ?? []).flatMap(({ school }) => school && !school.archived_at ? [[school.id, { id: school.id, name: school.name }] as const] : [])).values()] });
     }
     if (request.nextUrl.searchParams.get("product") === "1") {
-      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
       const school = await ownedSchool(user.id, scope);
       if (!school) return fail("教室が見つかりません。", 404);
       const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
@@ -100,7 +98,7 @@ export async function GET(request: NextRequest) {
       })) });
     }
     const id = request.nextUrl.searchParams.get("school");
-    if (id === null) return user.isMonitor ? await manage(user.id, scope) : fail("教室が見つかりません。", 404);
+    if (id === null) return scope && !await ownedSchool(user.id, scope) ? fail("教室が見つかりません。", 404) : await manage(user.id, scope);
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
 
     const members = await classParticipantMembers(user.id, id);
@@ -109,7 +107,7 @@ export async function GET(request: NextRequest) {
     if (requestedMember && !selected) return fail("教室が見つかりません。", 404);
     const { data: school, error } = selected
       ? await db.rpc("read_class_school_member", { p_actor: user.id, p_school: id, p_member: selected.id })
-      : user.isMonitor ? await db.rpc("read_class_school", { p_school: id, p_user: user.id }) : { data: null, error: null };
+      : await ownedSchool(user.id, id) ? await db.rpc("read_class_school", { p_school: id, p_user: user.id }) : { data: null, error: null };
     if (error) throw error;
     if (!school) return fail("教室が見つかりません。", 404);
     const visible = school as ClassSchool;
@@ -212,7 +210,8 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       return reply({ ok: true });
     }
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
+    if (body?.action === "createBusiness" && !user.isMonitor) return fail("新規事業の開設は準備中です。", 403);
+    if (!user.isMonitor && !await ownedSchool(user.id, scope ?? (typeof body?.id === "string" ? body.id : null))) return fail("教室が見つかりません。", 404);
     const name = clean(body?.name);
     if (body?.action === "archiveBusiness" || body?.action === "restoreBusiness") {
       if (typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業を確認してください。");
