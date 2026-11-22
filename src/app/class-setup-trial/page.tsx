@@ -30,9 +30,9 @@ const defaults: Draft = {
   categoryBusiness: "事業", categoryService: "コース", categorySlot: "クラス",
   teacherLabel: "先生", learnerLabel: "生徒", guardianLabel: "保護者",
   minors: false, gradeExpiry: false, expiryApproval: true,
-  businessMode: "existing", businessName: "村磯優子英語教室",
-  serviceMode: "existing", serviceName: "中1コース",
-  slotMode: "existing", slotName: "月曜クラス",
+  businessMode: "existing", businessName: "カルチャースクール",
+  serviceMode: "existing", serviceName: "初心者向け講座",
+  slotMode: "existing", slotName: "土曜クラス",
   briefing: "briefing", briefingLabel: "説明会",
   briefingFields: ["name", "email", "phone"], approvalMode: "teacher",
   approvalLink: "standard", approvalLinkText: "入会を許可しました。参加クラスを選択してください。",
@@ -86,7 +86,7 @@ function MailEditor({draft,setDraft,kind}:{draft:Draft;setDraft:(next:Draft)=>vo
     "{日時}":"12月5日（土）10:00",
     "{会場}":"教室",
     "{入会URL}":"（入会申込フォームへの専用リンク）",
-    "{クラス名}":draft.slotName||"月曜クラス",
+    "{クラス名}":draft.slotName||"土曜クラス",
     "{HOME_URL}":"（生徒HOMEへのリンク）",
     "{最終受講日}":"2027年3月31日",
   };
@@ -167,13 +167,23 @@ export default function ClassSetupWizardPreview(){
         {step==="hierarchy"&&<div className="space-y-3">
           <p className="text-sm leading-7">教室や講座を整理するための「大きな箱 → 商品 → 開催する曜日・時間」という3段階です。名前は自由に変更できます。</p>
           <div className="rounded-xl bg-emerald-50 p-4 text-sm leading-7">
-            <p className="font-bold">英語教室なら、こんな関係です。</p>
-            <p className="mt-2">① 事業：村磯優子英語教室（教室全体）</p>
-            <p>　↓ その教室で教える内容</p>
-            <p>② コース：中1コース（月謝・月の回数などを設定）</p>
-            <p>　↓ そのコースをいつ受けるか</p>
-            <p>③ クラス：月曜クラス／水曜クラス（曜日・時間・定員などを設定）</p>
-            <p className="mt-2 text-xs text-emerald-900">例えばダンス教室なら「ダンス教室 ＞ ZUMBA ＞ 金曜クラス」。生徒はコースを選んでから、参加できるクラスを選びます。</p>
+            {draft.minors?<>
+              <p className="font-bold">未成年向けの学習教室なら、こんな関係です。</p>
+              <p className="mt-2">① 事業：学習教室（教室全体）</p>
+              <p>　↓ どんな内容を学ぶか</p>
+              <p>② コース：小学生コース（受講料・月の回数などを設定）</p>
+              <p>　↓ いつ通うか</p>
+              <p>③ クラス：水曜クラス／土曜クラス（曜日・時間・定員などを設定）</p>
+              <p className="mt-2 text-xs text-emerald-900">同じコースに曜日の異なるクラスがある場合、それぞれの定員や時間を管理できます。</p>
+            </>:<>
+              <p className="font-bold">成人向けのカルチャースクールなら、こんな関係です。</p>
+              <p className="mt-2">① 事業：カルチャースクール（運営する講座全体）</p>
+              <p>　↓ 何を学ぶ講座か</p>
+              <p>② コース：初心者向け講座（受講料・月の回数などを設定）</p>
+              <p>　↓ いつ参加するか</p>
+              <p>③ クラス：平日夜クラス／土曜クラス（曜日・時間・定員などを設定）</p>
+              <p className="mt-2 text-xs text-emerald-900">同じ講座を異なる曜日・時間帯に開く場合、それぞれを別クラスとして管理できます。</p>
+            </>}
           </div>
           {([["categoryBusiness","① 事業"],["categoryService","② サービス"],["categorySlot","③ 時間枠"]] as const).map(([id,title])=><label className={label} key={id}>{title}<input className={field} maxLength={20} value={draft[id]} onChange={e=>update({[id]:e.target.value} as Partial<Draft>)}/></label>)}
         </div>}
@@ -184,7 +194,18 @@ export default function ClassSetupWizardPreview(){
         </div>}
         {step==="minor"&&<div className="space-y-3">
           <p className="text-sm leading-7">まず受講する人の年齢を確認します。この回答によって、後に表示するフォームやメールの設定項目が変わります。</p>
-          <Radio value={draft.minors?"yes":"no"} onChange={v=>update({minors:v==="yes",withdrawal:v==="yes"?"guardian_teacher":"notice_teacher",admissionFields:v==="yes"?["name","email","guardian","consent"]:draft.admissionFields.filter(id=>id!=="guardian"),briefingFields:draft.briefingFields.filter(id=>v==="yes"||id!=="guardian")})} options={[{value:"no",label:"成人のみ",note:"保護者の氏名・連絡先や同意確認は表示しません。"},{value:"yes",label:"未成年も受け入れる",note:"申込者が未成年の場合、保護者の連絡先・同意や退会時の確認を使えるようにします。"}]}/>
+          <Radio value={draft.minors?"yes":"no"} onChange={v=>{
+            const nextMinors=v==="yes";
+            const familiarNames=["カルチャースクール","初心者向け講座","土曜クラス","学習教室","小学生コース","水曜クラス"];
+            update({
+              minors:nextMinors, withdrawal:nextMinors?"guardian_teacher":"notice_teacher",
+              admissionFields:nextMinors?[...new Set([...draft.admissionFields,"guardian"])]:draft.admissionFields.filter(id=>id!=="guardian"),
+              briefingFields:draft.briefingFields.filter(id=>nextMinors||id!=="guardian"),
+              ...(familiarNames.includes(draft.businessName)?{businessName:nextMinors?"学習教室":"カルチャースクール"}:{}),
+              ...(familiarNames.includes(draft.serviceName)?{serviceName:nextMinors?"小学生コース":"初心者向け講座"}:{}),
+              ...(familiarNames.includes(draft.slotName)?{slotName:nextMinors?"水曜クラス":"土曜クラス"}:{}),
+            });
+          }} options={[{value:"no",label:"成人のみ",note:"保護者の氏名・連絡先や同意確認は表示しません。"},{value:"yes",label:"未成年も受け入れる",note:"申込者が未成年の場合、保護者の連絡先・同意や退会時の確認を使えるようにします。"}]}/>
         </div>}
         {step==="grade"&&<div className="space-y-3">
           <p className="text-sm leading-7">例えば高校3年生が3月に卒業すると、4月以降は通わない可能性があります。退会を忘れて月謝を請求しないよう、学年から「受講終了の予定日」を提案するか決めます。</p>
@@ -233,7 +254,7 @@ export default function ClassSetupWizardPreview(){
             const checked=draft[key].includes(item.id)||locked;
             return <label key={item.id} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
               <input type="checkbox" checked={checked} disabled={locked} onChange={()=>toggle(key,item.id)}/>
-              {item.label}{locked&&<span className="text-xs text-neutral-500">（必須）</span>}
+              {item.id==="school"&&!draft.minors?"所属（任意）":item.label}{locked&&<span className="text-xs text-neutral-500">（必須）</span>}
             </label>;
           })}
           {draft.minors&&<p className="text-xs text-neutral-600">未成年の場合は保護者の本人確認・同意が必要です。成人の方には保護者欄を表示しない想定です。</p>}
