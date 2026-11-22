@@ -14,7 +14,7 @@ import { EpubExportButton } from "@/components/parari/EpubExportButton";
 import { KindlePublishingGuide } from "@/components/parari/KindlePublishingGuide";
 
 import { supabase } from "@/lib/supabaseClient";
-import { getEffectivePlan } from "@/lib/billing/plan";
+import { getEffectivePlan, getPlanEntitlements } from "@/lib/billing/plan";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
@@ -120,6 +120,7 @@ export default function MyWorksPage() {
     
     const [canUseCollaboration, setCanUseCollaboration] =
       React.useState(false);
+    const [canExportPublishing, setCanExportPublishing] = React.useState(false);
     const [categories, setCategories] =
       React.useState<WorkCategoryRow[]>([]);
     const [categoryLinks, setCategoryLinks] =
@@ -244,6 +245,7 @@ export default function MyWorksPage() {
         if (billing.error) console.warn("[my/works] billing load failed:", billing.error);
         const plan = getEffectivePlan(billing.data);
         setCanUseCollaboration(profile.data?.is_monitor === true || plan === "plus" || plan === "pro");
+        setCanExportPublishing(getPlanEntitlements(plan, profile.data?.is_monitor === true).canExportEpub);
       }
 
       async function loadSharedWorks() {
@@ -1815,6 +1817,7 @@ export default function MyWorksPage() {
                       <section className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
                         <h3 className="text-sm font-bold text-neutral-900">出版する</h3>
                         <p className="mt-1 text-xs text-neutral-600">保存済みの作品を出力します。EPUB3とPDFは同じ書き出し権限です。</p>
+                        {canExportPublishing ? (
                         <div className="mt-3 flex flex-wrap gap-2">
                           <EpubExportButton
                             workId={work.id} title={title} label="EPUB3で書き出す"
@@ -1828,6 +1831,12 @@ export default function MyWorksPage() {
                             PDFで保存する
                           </Link>
                         </div>
+                        ) : (
+                          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-900">
+                            EPUB3・PDFの書き出しは有料会員向け機能です。
+                            <Link href="/billing" className="ml-2 font-bold underline">プランを確認する</Link>
+                          </p>
+                        )}
                         <p className="mt-2 text-xs leading-6 text-amber-800">
                           PDFはA4縦・横書きのみ。日本語のルビ・縦書きには対応していません。
                           PDFを選ぶと印刷用画面が開き、ブラウザの「PDFとして保存」で出力できます。
