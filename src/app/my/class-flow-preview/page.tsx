@@ -140,6 +140,54 @@ export default function ClassFlowPreview() {
     setRetire(null);
     setTransferConfirmed(false);
   }
+  function renderRetirePanel(serviceId: string, slotId?: string) {
+    if (!retire || retire.serviceId !== serviceId || (retire.slotId ?? null) !== (slotId ?? null)) return null;
+    return (() => {
+              const sourceService = services.find(service => service.id === retire.serviceId);
+              const movingSlots = retire.slotId ? sourceService?.slots.filter(slot => slot.id === retire.slotId) ?? [] : sourceService?.slots ?? [];
+              const movers = movingSlots.reduce((sum, slot) => sum + slot.occupied, 0);
+              const excluded = new Set(movingSlots.map(slot => slot.id));
+              const targets = services.filter(service => retire.slotId || service.id !== retire.serviceId).flatMap(service => service.slots
+                .filter(slot => !excluded.has(slot.id))
+                .map(slot => ({ service, slot })));
+              const dest = targets.find(item => item.slot.id === transferTargetId);
+              const seats = dest ? dest.slot.capacity - dest.slot.occupied : 0;
+              const sourceFees = [...new Set(movingSlots.map(slot => slot.feeOverride ?? sourceService?.monthlyFee ?? 0))];
+              const nextFee = dest ? feeForSlot(dest.service, dest.slot) : 0;
+              return <section className="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4" aria-label="コース・クラスの終了確認">
+                <h3 className="font-bold">終了・削除の確認</h3>
+                <p className="mt-2 text-sm">対象：{sourceService?.name} ＞ {retire.slotId ? movingSlots[0]?.name : "コース全体（すべての時間枠）"}</p>
+                <p className="mt-1 text-sm">在籍者（デモ）：{movers}名</p>
+                {movers > 0 ? <div className="mt-4 space-y-3">
+                  <p className="text-sm font-semibold">在籍者がいるため、先に全員の移籍先を選んでください。</p>
+                  <label className="block"><span className={label}>移籍先のクラス</span>
+                    <select className={field} value={transferTargetId} onChange={e=>{setTransferTargetId(e.target.value);setTransferConfirmed(false);}}>
+                      <option value="">移籍先を選択</option>
+                      {targets.map(item => <option value={item.slot.id} key={item.slot.id}>
+                        {item.service.name} ＞ {item.slot.name}（空席{Math.max(0,item.slot.capacity-item.slot.occupied)}名）
+                      </option>)}
+                    </select>
+                  </label>
+                  {dest ? <div className="rounded-lg bg-white p-3 text-sm">
+                    <p>移籍対象：{movers}名／移籍先の空席：{seats}名</p>
+                    <p>現在の月謝：{sourceFees.map(yen).join("・")} → 移籍先の月謝：{yen(nextFee)}</p>
+                    {seats < movers ? <p className="mt-2 font-semibold text-rose-700">空席が足りません。移籍できません。</p> : null}
+                    <p className="mt-2 text-xs text-neutral-600">本番では生徒ごとに変更の通知・承諾、適用月、予約・振替・請求の精算が必要です。</p>
+                  </div> : null}
+                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={transferConfirmed} onChange={e=>setTransferConfirmed(e.target.checked)} />
+                    移籍先の定員・料金の違いを確認しました（デモ）</label>
+                </div> : <p className="mt-3 text-sm">在籍者がいないため、すぐに削除できます。</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" className="rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                    disabled={movers>0&&(!dest||seats<movers||!transferConfirmed)} onClick={completeRetire}>
+                    {movers ? "全員を移籍して旧クラスを終了（デモ）" : "削除する（デモ）"}
+                  </button>
+                  <button type="button" className={secondary} onClick={()=>setRetire(null)}>やめる</button>
+                </div>
+              </section>;
+            })();
+
+  }
   function addService() {
     const id = crypto.randomUUID();
     setServices(current => [...current, { id, name: "新しいサービス", monthlyFee: 0, monthlyVisits: 4, slots: [] }]);
@@ -356,6 +404,7 @@ export default function ClassFlowPreview() {
                 <button type="button" className="text-xs text-rose-700 underline" onClick={() => beginRetire(editorService.id)}>
                   このサービス（コース）を終了・削除
                 </button>
+                {renderRetirePanel(editorService.id)}
               </div> : null}
               {editorService ? <div className="mt-5 border-t border-emerald-200 pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -400,53 +449,10 @@ export default function ClassFlowPreview() {
                   </div>
                   <button type="button" className="mt-3 text-xs text-rose-700 underline"
                     onClick={() => beginRetire(editorService.id, slot.id)}>この時間枠を終了・削除</button>
+                  {renderRetirePanel(editorService.id, slot.id)}
                 </div>)}</div>
               </div> : null}
             </div>
-            {retire ? (() => {
-              const sourceService = services.find(service => service.id === retire.serviceId);
-              const movingSlots = retire.slotId ? sourceService?.slots.filter(slot => slot.id === retire.slotId) ?? [] : sourceService?.slots ?? [];
-              const movers = movingSlots.reduce((sum, slot) => sum + slot.occupied, 0);
-              const excluded = new Set(movingSlots.map(slot => slot.id));
-              const targets = services.filter(service => retire.slotId || service.id !== retire.serviceId).flatMap(service => service.slots
-                .filter(slot => !excluded.has(slot.id))
-                .map(slot => ({ service, slot })));
-              const dest = targets.find(item => item.slot.id === transferTargetId);
-              const seats = dest ? dest.slot.capacity - dest.slot.occupied : 0;
-              const sourceFees = [...new Set(movingSlots.map(slot => slot.feeOverride ?? sourceService?.monthlyFee ?? 0))];
-              const nextFee = dest ? feeForSlot(dest.service, dest.slot) : 0;
-              return <section className="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4" aria-label="コース・クラスの終了確認">
-                <h3 className="font-bold">終了・削除の確認</h3>
-                <p className="mt-2 text-sm">対象：{sourceService?.name} ＞ {retire.slotId ? movingSlots[0]?.name : "コース全体（すべての時間枠）"}</p>
-                <p className="mt-1 text-sm">在籍者（デモ）：{movers}名</p>
-                {movers > 0 ? <div className="mt-4 space-y-3">
-                  <p className="text-sm font-semibold">在籍者がいるため、先に全員の移籍先を選んでください。</p>
-                  <label className="block"><span className={label}>移籍先のクラス</span>
-                    <select className={field} value={transferTargetId} onChange={e=>{setTransferTargetId(e.target.value);setTransferConfirmed(false);}}>
-                      <option value="">移籍先を選択</option>
-                      {targets.map(item => <option value={item.slot.id} key={item.slot.id}>
-                        {item.service.name} ＞ {item.slot.name}（空席{Math.max(0,item.slot.capacity-item.slot.occupied)}名）
-                      </option>)}
-                    </select>
-                  </label>
-                  {dest ? <div className="rounded-lg bg-white p-3 text-sm">
-                    <p>移籍対象：{movers}名／移籍先の空席：{seats}名</p>
-                    <p>現在の月謝：{sourceFees.map(yen).join("・")} → 移籍先の月謝：{yen(nextFee)}</p>
-                    {seats < movers ? <p className="mt-2 font-semibold text-rose-700">空席が足りません。移籍できません。</p> : null}
-                    <p className="mt-2 text-xs text-neutral-600">本番では生徒ごとに変更の通知・承諾、適用月、予約・振替・請求の精算が必要です。</p>
-                  </div> : null}
-                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={transferConfirmed} onChange={e=>setTransferConfirmed(e.target.checked)} />
-                    移籍先の定員・料金の違いを確認しました（デモ）</label>
-                </div> : <p className="mt-3 text-sm">在籍者がいないため、すぐに削除できます。</p>}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" className="rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-                    disabled={movers>0&&(!dest||seats<movers||!transferConfirmed)} onClick={completeRetire}>
-                    {movers ? "全員を移籍して旧クラスを終了（デモ）" : "削除する（デモ）"}
-                  </button>
-                  <button type="button" className={secondary} onClick={()=>setRetire(null)}>やめる</button>
-                </div>
-              </section>;
-            })() : null}
             {manageNotice ? <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm">{manageNotice}</p> : null}
             <label className="mt-4 block"><span className={label}>事業全体の入会金（円）</span><input className={field}
               type="number" min="0" max="1000000" value={admissionFee} onChange={e => setAdmissionFee(Math.max(0,Number(e.target.value)||0))} /></label>
