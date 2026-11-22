@@ -439,6 +439,7 @@ export default function ClassFlowPreview() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/my/manage?tab=class" className="text-sm text-neutral-600 underline underline-offset-4">← クラス管理へ</Link>
+        <Link href="/my/class-setup-wizard-preview" className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900">先生の設定を一問ずつ進める</Link>
         <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">設計用プロトタイプ ／ 保存・請求なし</span>
       </div>
       <header className="mt-7">
