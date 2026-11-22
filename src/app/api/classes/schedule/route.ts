@@ -19,9 +19,9 @@ async function actor(request: NextRequest, requireMonitor = false) {
   if (!token) return null;
   const { data, error } = await db.auth.getUser(token);
   if (error || !data.user) return null;
-  const profile = await db.from("profiles").select("is_monitor").eq("user_id", data.user.id).maybeSingle();
-  if (profile.error) throw profile.error;
-  return !requireMonitor || profile.data?.is_monitor ? data.user.id : null;
+  if (!requireMonitor) return data.user.id;
+  const scope = request.nextUrl.searchParams.get("business");
+  return scope && await classBusinessId(data.user.id, scope) ? data.user.id : null;
 }
 
 async function ownedClass(request: NextRequest, user: string, classId: string | null) {
@@ -39,7 +39,7 @@ async function learnerCalendar(school: string, user: string, month: string, sele
     .eq("id", school).is("archived_at", null).maybeSingle();
   if (businessError) throw businessError;
   if (!business) return missing();
-  const owner = monitor && business.owner_user_id === user;
+  const owner = business.owner_user_id === user;
   const allowed = await classParticipantMembers(user, school);
   if (selected && !allowed.some(member => member.id === selected)) return missing();
   const selectedIds = selected ? [selected] : allowed.map(member => member.id);
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     const month = query.get("month") ?? "";
     if (!calendarMonthPattern.test(month)) return fail("表示する月を選択してください。");
     const school = query.get("school");
-    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month, query.get("member"), Boolean(await actor(request, true)));
+    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month, query.get("member"), false);
     if (!await actor(request, true)) return missing();
     const item = await ownedClass(request, user, query.get("class"));
     if (!item) return missing();
