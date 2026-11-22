@@ -6,6 +6,11 @@ import Link from "next/link";
 
 type BeforeAdmission = "none" | "briefing" | "trial" | "both";
 type PaymentMethod = "card" | "bank" | "cash";
+const PAYMENT_METHODS: { id: PaymentMethod; label: string; guidance: string }[] = [
+  { id: "card", label: "クレジットカード", guidance: "決済結果は自動反映する想定" },
+  { id: "bank", label: "銀行振込", guidance: "先生が振込を確認して記録" },
+  { id: "cash", label: "現金", guidance: "先生が受領して入金記録" },
+];
 type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number; feeOverride: number | null };
 type Service = { id: string; name: string; monthlyFee: number; monthlyVisits: number; slots: TimeSlot[] };
 const weekdayOptions = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"];
@@ -84,7 +89,20 @@ export default function ClassFlowPreview() {
   const [before, setBefore] = useState<BeforeAdmission>("briefing");
   const [briefingFirst, setBriefingFirst] = useState(true);
   const [approval, setApproval] = useState(false);
+  const [allowedMethods, setAllowedMethods] = useState<PaymentMethod[]>(["bank", "cash", "card"]);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("bank");
+  const paymentOptions = PAYMENT_METHODS.filter(item => allowedMethods.includes(item.id));
+  const methodLabel = PAYMENT_METHODS.find(item => item.id === payMethod)?.label ?? "未選択";
+  function toggleMethod(method: PaymentMethod) {
+    const next = allowedMethods.includes(method) ? allowedMethods.filter(item => item !== method) : [...allowedMethods, method];
+    if (!next.length) return;
+    setAllowedMethods(next);
+    if (!next.includes(payMethod)) { setPayMethod(PAYMENT_METHODS.find(item => next.includes(item.id))!.id); setPaymentRecorded(false); }
+  }
+  function selectMethod(method: PaymentMethod) {
+    if (!allowedMethods.includes(method)) return;
+    if (payMethod !== method) { setPayMethod(method); setPaymentRecorded(false); }
+  }
   const [closeDay, setCloseDay] = useState(9);
   const [makeup, setMakeup] = useState(true);
   const [flexible, setFlexible] = useState(false);
@@ -110,6 +128,7 @@ export default function ClassFlowPreview() {
   const recurringSteps = [
     `前月${closeDay}日23:59 キャンセル締切`,
     `前月${closeDay + 1}日 翌月の受講枠・請求確定`,
+    "生徒の選択：" + methodLabel,
     payMethod === "card" ? "カード決済結果を記録" : payMethod === "bank" ? "銀行振込を確認・入金記録" : "現金受領・入金記録",
     "翌月の授業・カレンダー",
   ];
@@ -259,11 +278,17 @@ export default function ClassFlowPreview() {
               <label><span className={label}>翌月分のキャンセル締切（前月）</span><select className={field} value={closeDay} onChange={e => setCloseDay(Number(e.target.value))}>
                 {Array.from({length:27},(_,i)=>i+1).map(d=><option key={d} value={d}>{d}日 23:59</option>)}
               </select></label>
-              <label><span className={label}>月謝の受領方法</span><select className={field} value={payMethod} onChange={e => setPayMethod(e.target.value as PaymentMethod)}>
-                <option value="bank">銀行振込（運営者が確認）</option>
-                <option value="cash">現金（運営者が記録）</option>
-                <option value="card">クレジットカード（自動決済）</option>
-              </select></label>
+              <div className="sm:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <p className={label}>この事業で受け付ける集金方法（複数選択可能）</p>
+                <p className="mb-3 text-xs text-neutral-600">先生が対応可能な方法を指定し、生徒がその中から選びます。</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {PAYMENT_METHODS.map(method => <label className="flex items-center gap-2 text-sm" key={method.id}>
+                    <input type="checkbox" checked={allowedMethods.includes(method.id)} onChange={() => toggleMethod(method.id)} />
+                    {method.label}
+                  </label>)}
+                </div>
+                <p className="mt-3 text-xs text-neutral-500">最低1種類を残してください。生徒の選択は運営画面にも表示します。</p>
+              </div>
             </div>
             <label className="mt-4 flex items-center gap-3 text-sm"><input type="checkbox" checked={makeup} onChange={e => setMakeup(e.target.checked)} />振替を受け付ける</label>
             <label className="mt-3 flex items-center gap-3 text-sm"><input type="checkbox" checked={flexible} onChange={e => setFlexible(e.target.checked)} />残席への自由参加を受け付ける</label>
@@ -346,8 +371,15 @@ export default function ClassFlowPreview() {
           <h3 className="text-lg font-bold">入会時の支払（シミュレーション）</h3>
           <p className="text-sm">{chosenService?.name} ＞ {className}</p>
           <p className="text-sm">入会金 {yen(admissionFee)} ＋ 初回受講料 {yen(monthlyFee)} ＝ <strong>{yen(admissionFee+monthlyFee)}</strong></p>
-          <p className="rounded-lg bg-amber-50 p-3 text-sm">ここでは実際の決済を行いません。現金・振込時の仮受付と入会確定の扱いは実装時に検証します。</p>
-          <button className={primary} onClick={finishPayment}>支払確認済みとして入会を確定する</button>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-bold">支払方法を選ぶ</legend>
+            {paymentOptions.map(method => <label key={method.id} className="flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+              <input type="radio" name="admission-payment-method" checked={payMethod === method.id} onChange={() => selectMethod(method.id)} />
+              <span><strong>{method.label}</strong><span className="block text-xs text-neutral-500">{method.guidance}</span></span>
+            </label>)}
+          </fieldset>
+          <p className="rounded-lg bg-amber-50 p-3 text-sm">画面上のデモです。カードの実決済はありません。振込・現金も先生の受領確認が済んだものとして次へ進みます。</p>
+          <button className={primary} onClick={finishPayment}>支払確認済みとして入会を確定する（デモ）</button>
         </div> : null}
         {phase === "complete" ? <div className="mt-7 space-y-4">
           <h3 className="text-xl font-bold">入会手続きが完了しました</h3>
@@ -395,7 +427,13 @@ export default function ClassFlowPreview() {
           <div className="rounded-xl border border-neutral-200 p-4">
             <h3 className="font-bold">支払</h3>
             <p className="mt-2 text-sm">月謝 {yen(monthlyFee)}／{paymentRecorded?"支払済み":"未払い（デモ）"}</p>
-            <p className="mt-2 text-xs text-neutral-500">{payMethod==="card"?"カード決済":payMethod==="bank"?"銀行振込":"現金"} ／ 支払履歴・未納を確認</p>
+            <label className="mt-3 block"><span className={label}>支払方法を選ぶ</span>
+              <select className={field} value={payMethod} disabled={!hasJoined}
+                onChange={e => selectMethod(e.target.value as PaymentMethod)}>
+                {paymentOptions.map(method => <option value={method.id} key={method.id}>{method.label}</option>)}
+              </select>
+            </label>
+            <p className="mt-2 text-xs text-neutral-500">先生が受け付ける方法だけを選べます。変更後の適用月は本実装時に定義します。</p>
           </div>
           <div className="rounded-xl border border-neutral-200 p-4">
             <h3 className="font-bold">お知らせ・連絡</h3>
@@ -419,7 +457,7 @@ export default function ClassFlowPreview() {
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">選択中の時間枠の残席</p><p className="mt-2 text-2xl font-bold">{available}</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">翌月の継続確定</p><p className="mt-2 text-lg font-bold">前月{closeDay+1}日</p></div>
-          <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">支払方法</p><p className="mt-2 text-lg font-bold">{payMethod==="bank"?"振込":payMethod==="cash"?"現金":"カード"}</p></div>
+          <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">生徒が選択した支払方法</p><p className="mt-2 text-lg font-bold">{methodLabel}</p><p className="mt-1 text-xs text-neutral-500">受付可能：{paymentOptions.map(item => item.label).join("・")}</p></div>
         </div>
         <div className="mt-5 rounded-xl border border-neutral-200 p-4">
           <h3 className="font-bold">事業全体の月謝明細（設定値からの試算）</h3>
@@ -444,7 +482,7 @@ export default function ClassFlowPreview() {
           <h3 className="font-bold">月謝の管理例</h3>
           <p className="mt-1 text-xs text-neutral-600">{school} ＞ {chosenService?.name} ＞ {className}</p>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div><p className="text-sm">{requestName}／翌月分 {yen(monthlyFee)}</p><p className="mt-1 text-xs text-neutral-600">{paymentRecorded?"入金済み":"未入金"}・支払期限：前月末日</p></div>
+            <div><p className="text-sm">{requestName}／翌月分 {yen(monthlyFee)}</p><p className="mt-1 text-xs text-neutral-600">支払方法：{methodLabel}／{paymentRecorded?"入金済み":"未入金"}・支払期限：前月末日</p></div>
             {payMethod !== "card" ? <button className={secondary} onClick={()=>setPaymentRecorded(v=>!v)}>{paymentRecorded?"入金記録を取り消す":"入金済みにする"}</button>
               : <span className="text-xs text-neutral-600">カードの決済結果を自動反映（予定）</span>}
           </div>
