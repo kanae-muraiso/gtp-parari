@@ -66,7 +66,7 @@ export default function useParariExperience() {
 
     const row = (Array.isArray(data) ? data[0] : data) as ExperienceRow | null;
     // Derive menu visibility from actual work, not from a separate A/Writer/Class plan.
-    // On a lookup failure keep the entry visible rather than stranding existing users.
+    // If lookup fails, the feature remains available from the shared entry point.
     const [classes, sales] = await Promise.all([
       supabase.from("class_schools").select("id").eq("owner_user_id", user.id).is("archived_at", null).limit(1),
       supabase.from("commerce_products").select("id").eq("owner_user_id", user.id).limit(1),
@@ -77,8 +77,8 @@ export default function useParariExperience() {
       hasApplications: Boolean(row?.has_applications),
       hasCalendar: Boolean(row?.has_calendar),
       hasMessages: Boolean(row?.has_messages),
-      hasClasses: Boolean(classes.error || classes.data?.length),
-      hasSales: Boolean(sales.error || sales.data?.length),
+      hasClasses: Boolean(classes.data?.length),
+      hasSales: Boolean(sales.data?.length),
       loading: false,
     });
   }, []);
