@@ -131,6 +131,7 @@ function BusinessClassManager() {
   if (workspace === "setup") return <div className="grid gap-5">
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link><strong>{school.name}</strong>
+      <Link className="ml-auto rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900" href="/my/class-flow-preview">新しい設計図を試す（保存なし）</Link>
     </div>
     <ClassSetupPanel schoolId={school.id} initialStep={setupStep} onOperate={target => {
       backToList();
