@@ -43,6 +43,7 @@
     "lexical": "^0.43.0",
     "next": "latest",
     "openai": "^6.19.0",
+    "pdfjs-dist": "5.4.624",
     "react": "latest",
     "react-dom": "latest",
     "resend": "6.9.1",
