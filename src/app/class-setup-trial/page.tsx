@@ -111,6 +111,9 @@ export default function ClassSetupWizardPreview(){
   const [draft,setDraft]=useState<Draft>(defaults);
   const [cursor,setCursor]=useState(0);
   const [finished,setFinished]=useState(false);
+  // Sample answer only: never saved or sent anywhere.
+  const [sampleDiscovery,setSampleDiscovery]=useState("ai");
+  const [sampleDiscoveryOther,setSampleDiscoveryOther]=useState("");
   // Trial-only local catalog; the production business/roster database is not accessed.
   const [businesses,setBusinesses]=useState<string[]>([]);
   const [coursesByBusiness,setCoursesByBusiness]=useState<Record<string,string[]>>({});
@@ -343,6 +346,26 @@ export default function ClassSetupWizardPreview(){
         </label>}
         {(step==="briefingFields"||step==="admissionFields")&&<div className="space-y-3">
           <p className="text-sm">必要な項目を選択してください。氏名・メール・同意は必須です。{draft.audience==="mixed"?"成人・未成年で表示する項目は自動的に切り替えます。":""}</p>
+          {(step==="briefingFields"||draft.briefing==="none")&&<div className="rounded-xl border-2 border-emerald-300 bg-emerald-50/40 p-4">
+            <p className="text-sm font-bold">標準で表示する質問（必須）</p>
+            <p className="mt-2 text-sm">「{draft.businessName||"この教室"}」をどのように知りましたか？</p>
+            <p className="mt-1 text-xs text-neutral-600">{step==="briefingFields"?"説明会・体験の予約フォームで一度だけ聞きます。正式な入会申込フォームでは繰り返し聞きません。":"説明会・体験のない直接入会では、入会申込フォームで聞きます。"}</p>
+            <label className="mt-3 block text-xs font-semibold">申込者に見える回答欄の例
+              <select className={field} value={sampleDiscovery} onChange={e=>setSampleDiscovery(e.target.value)}>
+                <option value="ai">ChatGPTなどのAIからの紹介</option>
+                <option value="search">Googleなどの検索</option>
+                <option value="sns">SNS・動画</option>
+                <option value="referral">知人・友人からの紹介</option>
+                <option value="print">チラシ・看板・地域の情報</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
+            {sampleDiscovery==="other"&&<label className="mt-2 block text-xs font-semibold">その他（自由入力）
+              <input className={field} maxLength={120} value={sampleDiscoveryOther} onChange={e=>setSampleDiscoveryOther(e.target.value)} placeholder="どこで知りましたか？"/>
+            </label>}
+            <p className="mt-2 text-xs text-neutral-600">試用版では選択結果を保存しません。実装時は集客経路として生徒ごとに記録します。</p>
+          </div>}
+          {step==="admissionFields"&&draft.briefing!=="none"&&<p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600">「どのように知りましたか？」は説明会・体験の予約時に回答済みなので、ここでは再入力させません。</p>}
           {fields.filter(item=>minorsIncluded||item.id!=="guardian").map(item=>{
             const key=step==="briefingFields"?"briefingFields":"admissionFields";
             const locked=["name","email","consent"].includes(item.id)||(item.id==="guardian"&&minorsIncluded);
@@ -401,6 +424,7 @@ export default function ClassSetupWizardPreview(){
           <p>分類：{draft.categoryBusiness}／{draft.categoryService}／{draft.categorySlot} ・ 呼称：{draft.teacherLabel}／{draft.learnerLabel}{minorsIncluded?"／"+draft.guardianLabel:""}</p>
           <p>対象：{draft.audience==="adults"?"成人のみ":draft.audience==="minors"?"未成年のみ":"成人・未成年の両方"}{minorOnly?" ・ 学年から終了日を提案："+(draft.gradeExpiry?"あり":"なし"):""}</p>
           <p>{draft.serviceName}の説明会・体験：{draft.briefing==="none"?"なし":draft.briefingLabel}{draft.briefing!=="none"?" ・ 先生の入会確認："+(draft.approvalMode==="teacher"?"必要":"不要"):"（直接入会）"}</p>
+          <p>「どのように知りましたか？」：{draft.briefing==="none"?"入会申込フォーム":"説明会・体験の予約フォーム"}で標準質問として受付</p>
           <p>退会の手続き：{minorsIncluded&&draft.withdrawal==="guardian_teacher"?"保護者と先生の確認":draft.withdrawal==="notice_teacher"?"届出と先生の確認":"先生との相談"}</p>
           <div className="border-t pt-3"><p className="font-bold">見直す項目</p>
             <div className="mt-2 flex flex-wrap gap-2">{steps.filter(id=>id!=="review").map(id=><button key={id} type="button" className="rounded-full border px-3 py-1 text-xs" onClick={()=>editCurrent(id)}>{stepTitles[id]}</button>)}</div>
