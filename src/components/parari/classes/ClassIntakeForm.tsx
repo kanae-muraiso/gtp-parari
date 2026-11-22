@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { classWeekdays } from "@/lib/classRecurrence";
 import type { ClassIntakeTarget } from "@/lib/classIntakeTargets";
@@ -20,6 +20,16 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const targetReady = !targets || Boolean(target);
   const onlyWalkIn = targets?.length === 0 && Boolean(data.walkInSchedules?.length);
   const [selected, setSelected] = useState("");
+  const [step, setStep] = useState<"contact" | "booking">("contact");
+  const contactFields = useRef<HTMLFieldSetElement>(null);
+  function goToBooking() {
+    const fields = contactFields.current?.querySelectorAll<HTMLInputElement>("input");
+    if (!fields) return;
+    for (const input of fields) {
+      if (!input.reportValidity()) return;
+    }
+    setStep("booking");
+  }
   const slot = data.slots.find(entry => entry.id === selected);
   const start = slot ? Date.parse(slot.starts_at) : 0;
   const end = slot ? start + slot.duration_minutes * 60000 : 0;
@@ -46,12 +56,17 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         <h2 className="font-semibold">予約なしで参加できるクラス</h2>
         {data.walkInSchedules?.map(schedule => <a className="underline" key={schedule.id} href={`/class-schedule/${schedule.id}`}>{schedule.name}の日程・参加費を見る</a>)}
       </section>}
+      {!data.direct && !onlyWalkIn && !done ? <div className="flex flex-wrap items-center gap-2 text-sm" aria-label="予約手続きの進捗">
+        <span className={step === "contact" ? "rounded-lg bg-emerald-900 px-3 py-2 text-white" : "rounded-lg bg-emerald-50 px-3 py-2 text-emerald-900"}>1. 連絡先・申込情報</span>
+        <span className="text-neutral-400">→</span>
+        <span className={step === "booking" ? "rounded-lg bg-emerald-900 px-3 py-2 text-white" : "rounded-lg bg-neutral-100 px-3 py-2 text-neutral-600"}>2. {data.kind}の日時予約</span>
+      </div> : null}
       {done ? <div role="status" className="grid gap-2 rounded-xl bg-emerald-50 p-4">
         <p className="font-semibold">{done}</p>
         {target && <p>{target.name}</p>}
         {slot && <p>{timeLabel}{slot.location ? " · " + slot.location : ""}</p>}
       </div> : onlyWalkIn ? null : <form className="grid gap-5" onSubmit={event => {
-        if (busy || !ready) { event.preventDefault(); return; }
+        if (busy || !ready || (!data.direct && step !== "booking")) { event.preventDefault(); return; }
         submit(event);
       }}>
         {minor && <p className="rounded-lg bg-blue-50 p-3 text-sm">このクラスは未成年向けです。保護者の方がお申し込みください。本人と保護者の両方に予約・入会・日程の案内が届きます。正式入会には保護者のPARARI登録・ログインが必要です。</p>}
@@ -75,16 +90,8 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
           <h2 className="font-semibold">選んだクラスの開催予定</h2>
           <UpcomingDates item={target} />
         </section>}
-        {targetReady && !data.direct && <section className="grid gap-3">
-          <h2 className="font-semibold">{data.kind}の日時</h2>
-          {data.slots.length ? <ClassBookingCalendar slots={data.slots} bookingWeeks={data.bookingWeeks ?? 4} selected={selected} onSelect={setSelected} />
-            : <p className="rounded-xl bg-neutral-50 p-4">現在、選べる日時はありません。</p>}
-          {slot && <div className="rounded-lg border bg-blue-50 p-3 text-sm" aria-live="polite">
-            <p className="font-semibold">{timeLabel}</p>
-            {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
-          </div>}
-        </section>}
-        <fieldset key={audience} disabled={busy || !ready} className={ready ? "grid min-w-0 gap-3" : "hidden"}>
+        <fieldset ref={contactFields} key={audience} disabled={busy} className={targetReady && (data.direct || step === "contact") ? "grid min-w-0 gap-3" : "hidden"}>
+          {!data.direct && <p className="rounded-lg bg-neutral-50 p-3 text-sm">最初に連絡先を入力してください。次の画面で説明会・体験の日程を選べます。</p>}
         <legend className="mb-2 font-semibold">お名前と連絡先</legend>
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
         <label>受講する方のメールアドレス（必須）<input name="email" className={field} type="email" maxLength={254} required /></label>
@@ -99,8 +106,15 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
           <label>保護者の住所<input name="guardianAddress" className={field} maxLength={300} required /></label>
         </fieldset>}
         <label><input type="checkbox" required /> {data.sharedDisclosure && !data.information ? "個人情報の取扱いを確認し、同意します" : "案内と個人情報の取り扱いを確認し、同意します"}{data.direct && data.terms ? "。教室規約にも同意します" : ""}</label>
-        <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white" disabled={busy}>{data.direct ? "申し込む" : "この日時で予約する"}</button>
+        {data.direct ? <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white disabled:opacity-50" disabled={busy || !ready}>申し込む</button> :
+          <button type="button" className="w-fit rounded-lg bg-neutral-900 px-4 py-2 text-white disabled:opacity-50" disabled={busy || !targetReady} onClick={goToBooking}>連絡先を確認して日時選択へ</button>}
         </fieldset>
+        {calendarUpdated}
+        {!data.direct && step === "booking" && <div className="flex flex-wrap items-center gap-3">
+          <button type="button" className="rounded-lg border px-4 py-2 text-sm" disabled={busy} onClick={() => setStep("contact")}>連絡先を修正する</button>
+          <button type="submit" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            disabled={busy || !ready}>{busy ? "予約中…" : slot ? "この日時で予約する" : "日時を選択してください"}</button>
+        </div>}
       </form>}</>;
 }
 
