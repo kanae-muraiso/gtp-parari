@@ -177,7 +177,7 @@ export default function ClassSetupWizardPreview(){
         {step==="minor"&&<div className="space-y-3">
           <p className="text-sm leading-7">まず受講する人の年齢を確認します。この回答によって、後に表示するフォームやメールの設定項目が変わります。</p>
           <Radio value={draft.minors?"yes":"no"} onChange={v=>update({minors:v==="yes",withdrawal:v==="yes"?"guardian_teacher":"notice_teacher",admissionFields:v==="yes"?["name","email","guardian","consent"]:draft.admissionFields.filter(id=>id!=="guardian"),briefingFields:draft.briefingFields.filter(id=>v==="yes"||id!=="guardian")})} options={[{value:"no",label:"成人のみ",note:"保護者の氏名・連絡先や同意確認は表示しません。"},{value:"yes",label:"未成年も受け入れる",note:"申込者が未成年の場合、保護者の連絡先・同意や退会時の確認を使えるようにします。"}]}/>
-        </div>}}
+        </div>}
         {step==="grade"&&<div className="space-y-3">
           <p className="text-sm leading-7">例えば高校3年生が3月に卒業すると、4月以降は通わない可能性があります。退会を忘れて月謝を請求しないよう、学年から「受講終了の予定日」を提案するか決めます。</p>
           <div className="rounded-xl bg-emerald-50 p-4 text-sm leading-7">
