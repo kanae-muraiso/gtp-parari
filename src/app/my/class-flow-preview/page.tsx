@@ -210,6 +210,10 @@ export default function ClassFlowPreview() {
     setPhase("awaiting-approval");
   }
   function grantApproval() {
+    if (pres.length && !eventAttended) {
+      setPreviewMessage("説明会・体験の参加確認後に入会を許可してください。");
+      return;
+    }
     const firstAllowed = allSlots.find(({slot}) => allowedSlotIds === null || allowedSlotIds.includes(slot.id));
     if (!firstAllowed) { setPreviewMessage("選択できる時間枠がありません。許可するクラスを確認してください。"); return; }
     setSelectedServiceId(firstAllowed.service.id);
@@ -566,6 +570,38 @@ export default function ClassFlowPreview() {
       {view === "operator" ? <section className={`mt-6 ${card}`}>
         <h2 className="text-xl font-bold">運営画面（シミュレーション）</h2>
         <p className="mt-2 text-sm text-neutral-600">事業内のサービスと時間枠をまとめて管理します。クラス・カレンダー・支払は同じ参加記録の表示です。</p>
+        <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
+          <h3 className="font-bold">入会希望者の受付・承認（デモ）</h3>
+          <p className="mt-1 text-xs text-neutral-600">{requestName}／{requestEmail}{requestPhone ? "／"+requestPhone : ""}</p>
+          <p className="mt-2 text-sm">状態：{hasJoined ? "入会・クラス確定" : approvalGranted ? "入会許可済み・クラス選択待ち" : phase==="awaiting-event" ? "説明会・体験の参加待ち" : phase==="awaiting-approval" ? "入会許可待ち" : bookingRecorded ? "予約受付済み" : "申込受付前"}</p>
+          {pres.length > 0 ? <p className="mt-2 text-xs text-neutral-600">説明会・体験：{bookingRecorded ? "予約あり" : "予約前"}／{eventAttended ? "参加確認済み" : "参加未確認"}</p> : null}
+          {phase === "awaiting-event" ? <button className={secondary+" mt-3"} onClick={markEventAttended}>当日の参加を確認する</button> : null}
+          {phase === "awaiting-approval" ? <div className="mt-4 space-y-3">
+            <p className="text-sm font-semibold">参加を許可する時間枠</p>
+            <label className="flex items-center gap-2 text-sm"><input type="radio" name="approval-slots" checked={allowedSlotIds===null} onChange={()=>setAllowedSlotIds(null)} />すべての時間枠を許可</label>
+            <label className="flex items-center gap-2 text-sm"><input type="radio" name="approval-slots" checked={allowedSlotIds!==null} onChange={()=>setAllowedSlotIds(allSlots.map(({slot})=>slot.id))}/>時間枠を制限する</label>
+            {allowedSlotIds!==null ? <div className="space-y-2 rounded-lg bg-white p-3">
+              {allSlots.map(({service,slot})=><label className="flex items-center gap-2 text-sm" key={slot.id}>
+                <input type="checkbox" checked={allowedSlotIds.includes(slot.id)} onChange={e=>setAllowedSlotIds(ids=>e.target.checked?[...(ids??[]),slot.id]:(ids??[]).filter(id=>id!==slot.id))}/>
+                {service.name} ＞ {slot.name}（残り{Math.max(0,slot.capacity-slot.occupied)}席）
+              </label>)}
+            </div> : null}
+            <button className={primary} disabled={allowedSlotIds!==null&&allowedSlotIds.length===0} onClick={grantApproval}>入会を許可してクラス選択画面へ</button>
+          </div> : null}
+          {enrollmentSubmitted ? <div className="mt-4 rounded-lg bg-white p-3 text-sm">
+            <p className="font-bold">申込結果</p>
+            <p>{chosenService?.name} ＞ {className}</p>
+            <p>クラス：{classConfirmed?"受付確定":"支払待ち"} ／ 支払：{paymentRecorded?"確認済み":"未払い"}</p>
+          </div> : null}
+          {noticeLog.some(item=>item.target==="teacher") ? <details className="mt-4 rounded-xl bg-white p-3">
+            <summary className="cursor-pointer text-sm font-bold">先生に届く通知（デモ・{noticeLog.filter(item=>item.target==="teacher").length}件）</summary>
+            <div className="mt-3 space-y-2">
+              {noticeLog.filter(item=>item.target==="teacher").map(item=><div key={item.id} className="border-t border-neutral-100 pt-2 text-xs">
+                <p className="font-bold">{item.subject}</p><p className="mt-1 whitespace-pre-wrap">{item.body}</p>
+              </div>)}
+            </div>
+          </details> : null}
+        </section>
         <div className="mt-4 space-y-2">
           {services.map(service => <div className="rounded-xl border border-neutral-200 p-3" key={service.id}>
             <p className="text-sm font-bold">{school} ＞ {service.name}（月{service.monthlyVisits}回・{yen(service.monthlyFee)}）</p>
