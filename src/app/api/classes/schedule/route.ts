@@ -34,7 +34,7 @@ async function ownedClass(request: NextRequest, user: string, classId: string | 
   return data;
 }
 
-async function learnerCalendar(school: string, user: string, month: string, selected: string | null, monitor: boolean) {
+async function learnerCalendar(school: string, user: string, month: string, selected: string | null) {
   const { data: business, error: businessError } = await db.from("class_schools").select("owner_user_id")
     .eq("id", school).is("archived_at", null).maybeSingle();
   if (businessError) throw businessError;
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     const month = query.get("month") ?? "";
     if (!calendarMonthPattern.test(month)) return fail("表示する月を選択してください。");
     const school = query.get("school");
-    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month, query.get("member"), false);
+    if (school && classIdPattern.test(school)) return await learnerCalendar(school, user, month, query.get("member"));
     if (!await actor(request, true)) return missing();
     const item = await ownedClass(request, user, query.get("class"));
     if (!item) return missing();
