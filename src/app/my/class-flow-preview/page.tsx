@@ -6,6 +6,12 @@ import Link from "next/link";
 
 type BeforeAdmission = "none" | "briefing" | "trial" | "both";
 type PaymentMethod = "card" | "bank" | "cash";
+type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number };
+type Service = { id: string; name: string; monthlyFee: number; monthlyVisits: number; slots: TimeSlot[] };
+const weekdayOptions = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"];
+const newSlot = (name: string, weekday = "月曜"): TimeSlot => ({
+  id: crypto.randomUUID(), name, weekday, startsAt: "16:30", duration: 90, capacity: 6, occupied: 0,
+});
 type View = "teacher" | "applicant" | "member" | "operator";
 type Phase = "intake" | "pre" | "form" | "selection" | "payment" | "complete";
 
@@ -28,17 +34,49 @@ function Track({ steps, active = -1 }: { steps: string[]; active?: number }) {
 export default function ClassFlowPreview() {
   const [view, setView] = useState<View>("teacher");
   const [school, setSchool] = useState("サンプル英語教室");
-  const [className, setClassName] = useState("水曜日 英語クラス");
-  const [capacity, setCapacity] = useState(6);
-  const [occupied, setOccupied] = useState(3);
-  const [monthlyFee, setMonthlyFee] = useState(22000);
+  const [services, setServices] = useState<Service[]>([{
+    id: "junior1", name: "中1コース", monthlyFee: 22000, monthlyVisits: 4,
+    slots: [
+      { id: "monday", name: "月曜クラス", weekday: "月曜", startsAt: "16:30", duration: 90, capacity: 6, occupied: 3 },
+      { id: "wednesday", name: "水曜クラス", weekday: "水曜", startsAt: "17:00", duration: 90, capacity: 6, occupied: 2 },
+    ],
+  }]);
+  const [editingServiceId, setEditingServiceId] = useState("junior1");
+  const [selectedServiceId, setSelectedServiceId] = useState("junior1");
+  const [selectedSlotId, setSelectedSlotId] = useState("monday");
+  const editorService = services.find(item => item.id === editingServiceId) ?? services[0];
+  const chosenService = services.find(item => item.id === selectedServiceId) ?? services[0];
+  const chosenSlot = chosenService?.slots.find(item => item.id === selectedSlotId) ?? chosenService?.slots[0];
+  const className = chosenSlot?.name ?? "時間枠未設定";
+  const monthlyFee = chosenService?.monthlyFee ?? 0;
+  const monthlyVisits = chosenService?.monthlyVisits ?? 0;
+  const capacity = chosenSlot?.capacity ?? 0;
+  const occupied = chosenSlot?.occupied ?? 0;
+
+  function updateService(id: string, change: Partial<Pick<Service, "name" | "monthlyFee" | "monthlyVisits">>) {
+    setServices(current => current.map(item => item.id === id ? { ...item, ...change } : item));
+  }
+  function updateSlot(serviceId: string, slotId: string, change: Partial<Omit<TimeSlot, "id">>) {
+    setServices(current => current.map(service => service.id === serviceId
+      ? { ...service, slots: service.slots.map(slot => slot.id === slotId ? { ...slot, ...change } : slot) }
+      : service));
+  }
+  function addService() {
+    const id = crypto.randomUUID();
+    setServices(current => [...current, { id, name: "新しいサービス", monthlyFee: 0, monthlyVisits: 4, slots: [] }]);
+    setEditingServiceId(id);
+  }
+  function addSlot(serviceId: string) {
+    const slot = newSlot("新しい時間枠");
+    setServices(current => current.map(service => service.id === serviceId
+      ? { ...service, slots: [...service.slots, slot] } : service));
+  }
   const [admissionFee, setAdmissionFee] = useState(0);
   const [before, setBefore] = useState<BeforeAdmission>("briefing");
   const [briefingFirst, setBriefingFirst] = useState(true);
   const [approval, setApproval] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("bank");
   const [closeDay, setCloseDay] = useState(9);
-  const [monthlyVisits, setMonthlyVisits] = useState(4);
   const [makeup, setMakeup] = useState(true);
   const [flexible, setFlexible] = useState(false);
   const [phase, setPhase] = useState<Phase>("intake");
@@ -52,7 +90,7 @@ export default function ClassFlowPreview() {
   const pres = before === "none" ? [] : before === "both"
     ? briefingFirst ? ["説明会を予約・参加", "体験を予約・参加"] : ["体験を予約・参加", "説明会を予約・参加"]
     : [before === "briefing" ? "説明会を予約・参加" : "体験を予約・参加"];
-  const available = Math.max(0, capacity - occupied);
+  const available = Math.max(0, capacity - occupied - (classConfirmed && selectedClass ? 1 : 0));
   const admissionSteps = useMemo(() => [
     "募集ページの申込ボタン", ...pres, "入会フォーム",
     ...(approval ? ["先生による承認"] : []),
@@ -109,17 +147,61 @@ export default function ClassFlowPreview() {
       {view === "teacher" ? <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,.9fr)]">
         <div className="space-y-4">
           <section className={card}>
-            <h2 className="text-lg font-bold">1. 教室・クラス</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label><span className={label}>教室名</span><input className={field} value={school} onChange={e => setSchool(e.target.value)} /></label>
-              <label><span className={label}>クラス名</span><input className={field} value={className} onChange={e => setClassName(e.target.value)} /></label>
-              <label><span className={label}>定員</span><input className={field} type="number" min="1" max="100" value={capacity} onChange={e => setCapacity(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} /></label>
-              <label><span className={label}>すでに埋まっている席（デモ値）</span><input className={field} type="number" min="0" max={capacity} value={occupied} onChange={e => setOccupied(Math.max(0, Math.min(capacity, Number(e.target.value) || 0)))} /></label>
-              <label><span className={label}>月謝（円）</span><input className={field} type="number" min="0" max="1000000" value={monthlyFee} onChange={e => setMonthlyFee(Math.max(0, Number(e.target.value) || 0))} /></label>
-              <label><span className={label}>月の基本参加回数</span><input className={field} type="number" min="1" max="31" value={monthlyVisits} onChange={e => setMonthlyVisits(Math.max(1, Math.min(31, Number(e.target.value) || 1)))} /></label>
-              <label><span className={label}>入会金（円）</span><input className={field} type="number" min="0" max="1000000" value={admissionFee} onChange={e => setAdmissionFee(Math.max(0, Number(e.target.value) || 0))} /></label>
+            <h2 className="text-lg font-bold">1. 事業 → サービス → 時間枠</h2>
+            <p className="mt-2 text-xs text-neutral-600">料金と月の受講回数はサービス、曜日・時刻・定員はその下の時間枠に設定します。</p>
+            <label className="mt-4 block"><span className={label}>① 事業名（教室名）</span>
+              <input className={field} value={school} onChange={e => setSchool(e.target.value)} />
+            </label>
+            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold">② サービス</h3>
+                <button type="button" className={secondary} onClick={addService}>＋ サービスを追加</button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {services.map(service => <button key={service.id} type="button"
+                  className={editorService?.id === service.id ? primary : secondary}
+                  onClick={() => setEditingServiceId(service.id)}>{service.name || "名称未設定"}</button>)}
+              </div>
+              {editorService ? <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2"><span className={label}>サービス名</span><input className={field} value={editorService.name}
+                  onChange={e => updateService(editorService.id, { name: e.target.value })} /></label>
+                <label><span className={label}>月謝（円）</span><input className={field} type="number" min="0" max="1000000"
+                  value={editorService.monthlyFee} onChange={e => updateService(editorService.id, { monthlyFee: Math.max(0, Number(e.target.value) || 0) })} /></label>
+                <label><span className={label}>月の基本受講回数</span><input className={field} type="number" min="1" max="31"
+                  value={editorService.monthlyVisits} onChange={e => updateService(editorService.id, { monthlyVisits: Math.max(1, Math.min(31, Number(e.target.value) || 1)) })} /></label>
+              </div> : null}
+              {editorService ? <div className="mt-5 border-t border-emerald-200 pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">③ {editorService.name || "サービス"}の時間枠</h3>
+                  <button type="button" className={secondary} onClick={() => addSlot(editorService.id)}>＋ 時間枠を追加</button>
+                </div>
+                {!editorService.slots.length ? <p className="mt-3 text-xs text-amber-800">時間枠がまだありません。曜日と開始時刻を設定してください。</p> : null}
+                <div className="mt-3 space-y-3">{editorService.slots.map(slot => <div key={slot.id} className="rounded-xl border border-neutral-200 bg-white p-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="sm:col-span-2"><span className={label}>時間枠名</span><input className={field} value={slot.name}
+                      onChange={e => updateSlot(editorService.id, slot.id, {name:e.target.value})}/></label>
+                    <label><span className={label}>曜日</span><select className={field} value={slot.weekday}
+                      onChange={e => updateSlot(editorService.id, slot.id, {weekday:e.target.value})}>
+                      {weekdayOptions.map(day => <option key={day} value={day}>{day}</option>)}</select></label>
+                    <label><span className={label}>開始時刻</span><input className={field} type="time" value={slot.startsAt}
+                      onChange={e => updateSlot(editorService.id, slot.id, {startsAt:e.target.value})}/></label>
+                    <label><span className={label}>授業時間（分）</span><input className={field} type="number" min="5" max="480" value={slot.duration}
+                      onChange={e => updateSlot(editorService.id, slot.id, {duration:Math.max(5,Number(e.target.value)||5)})}/></label>
+                    <label><span className={label}>定員</span><input className={field} type="number" min="1" max="100" value={slot.capacity}
+                      onChange={e => updateSlot(editorService.id, slot.id, {capacity:Math.max(1,Number(e.target.value)||1)})}/></label>
+                    <label><span className={label}>既存の参加者（デモ）</span><input className={field} type="number" min="0" max={slot.capacity} value={slot.occupied}
+                      onChange={e => updateSlot(editorService.id, slot.id, {occupied:Math.max(0,Math.min(slot.capacity,Number(e.target.value)||0))})}/></label>
+                  </div>
+                  <button type="button" className="mt-3 text-xs text-rose-700 underline" onClick={() => {
+                    setServices(current => current.map(service => service.id === editorService.id ?
+                      {...service, slots:service.slots.filter(item => item.id !== slot.id)} : service));
+                  }}>この時間枠を削除</button>
+                </div>)}</div>
+              </div> : null}
             </div>
-            <p className="mt-3 text-xs text-neutral-500">曜日・日時・会場は既存のクラス開催枠設定を利用する想定です。この試作では省略しています。</p>
+            <label className="mt-4 block"><span className={label}>事業全体の入会金（円）</span><input className={field}
+              type="number" min="0" max="1000000" value={admissionFee} onChange={e => setAdmissionFee(Math.max(0,Number(e.target.value)||0))} /></label>
+            <p className="mt-3 text-xs text-neutral-500">事業名・サービス名・時間枠がそれぞれ独立しているため、同じサービスの曜日違いには料金設定が共通で適用されます。</p>
           </section>
           <section className={card}>
             <h2 className="text-lg font-bold">2. 入会前の手続き</h2>
