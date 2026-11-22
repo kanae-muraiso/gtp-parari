@@ -335,7 +335,7 @@ export default function ClassSetupWizardPreview(){
             {value:"trial",label:"体験を予約してから入会"},
             {value:"both",label:"説明会と体験の両方を実施"},
           ]}/>
-          <p className="text-xs text-neutral-600">コースを追加した場合は、設計の最後に「コースの選択」へ戻ってそれぞれの説明会設定を確認できます。</p>
+          <p className="text-xs text-neutral-600">この回答は「{draft.serviceName}」だけに適用します。別のコースは設計の最後から選択して設定できます。</p>
         </div>}
         {step==="briefingName"&&<label className={label}>参加者に表示する名称
           <input className={field} value={draft.briefingLabel} onChange={e=>update({briefingLabel:e.target.value})}/>
@@ -345,11 +345,11 @@ export default function ClassSetupWizardPreview(){
           <p className="text-sm">必要な項目を選択してください。氏名・メール・同意は必須です。{draft.audience==="mixed"?"成人・未成年で表示する項目は自動的に切り替えます。":""}</p>
           {fields.filter(item=>minorsIncluded||item.id!=="guardian").map(item=>{
             const key=step==="briefingFields"?"briefingFields":"admissionFields";
-            const locked=["name","email","consent"].includes(item.id);
+            const locked=["name","email","consent"].includes(item.id)||(item.id==="guardian"&&minorsIncluded);
             const checked=draft[key].includes(item.id)||locked;
             return <label key={item.id} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
               <input type="checkbox" checked={checked} disabled={locked} onChange={()=>toggle(key,item.id)}/>
-              {item.id==="guardian"&&draft.audience==="mixed"?"保護者情報（未成年の申込時のみ必須）":item.id==="school"&&isAdultOnly?"所属（任意）":item.label}{locked&&<span className="text-xs text-neutral-500">（必須）</span>}
+              {item.id==="guardian"&&draft.audience==="mixed"?"保護者情報":item.id==="school"&&isAdultOnly?"所属（任意）":item.label}{locked&&<span className="text-xs text-neutral-500">（{item.id==="guardian"&&draft.audience==="mixed"?"未成年の場合のみ必須":"必須"}）</span>}
             </label>;
           })}
           {draft.audience==="mixed"&&<p className="rounded-lg bg-emerald-50 p-3 text-sm">申込者が「成人」なら保護者欄は表示しません。「未成年」なら保護者の連絡先と同意が必須です。</p>}
@@ -384,6 +384,20 @@ export default function ClassSetupWizardPreview(){
         ]}/>}
         {step==="review"&&<div className="space-y-3 text-sm">
           <p className="font-bold">{draft.businessName} ＞ {draft.serviceName} ＞ {draft.slotName}</p>
+          <div className="rounded-xl border p-3">
+            <p className="font-semibold">この画面で作成した一覧</p>
+            {businesses.map(business=><div key={business} className="mt-3 border-t pt-2">
+              <p className="font-semibold">{draft.categoryBusiness}：{business}</p>
+              {(coursesByBusiness[business]??[]).map(course=>{
+                const key=courseKey(business,course);
+                const setup=briefingByCourse[key];
+                return <div key={course} className="mt-2 pl-3 text-sm">
+                  <p>{draft.categoryService}：{course} ／ 説明会・体験：{setup?.briefing==="none"?"なし（直接入会）":setup?.briefing==="trial"?"体験":setup?.briefing==="both"?"説明会と体験":"説明会"}</p>
+                  <p className="text-xs text-neutral-600">{draft.categorySlot}：{(slotsByCourse[key]??[]).join("、")||"未設定"}</p>
+                </div>;
+              })}
+            </div>)}
+          </div>
           <p>分類：{draft.categoryBusiness}／{draft.categoryService}／{draft.categorySlot} ・ 呼称：{draft.teacherLabel}／{draft.learnerLabel}{minorsIncluded?"／"+draft.guardianLabel:""}</p>
           <p>対象：{draft.audience==="adults"?"成人のみ":draft.audience==="minors"?"未成年のみ":"成人・未成年の両方"}{minorOnly?" ・ 学年から終了日を提案："+(draft.gradeExpiry?"あり":"なし"):""}</p>
           <p>{draft.serviceName}の説明会・体験：{draft.briefing==="none"?"なし":draft.briefingLabel}{draft.briefing!=="none"?" ・ 先生の入会確認："+(draft.approvalMode==="teacher"?"必要":"不要"):"（直接入会）"}</p>
