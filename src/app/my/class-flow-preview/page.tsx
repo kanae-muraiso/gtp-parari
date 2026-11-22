@@ -403,70 +403,109 @@ export default function ClassFlowPreview() {
       </div> : null}
 
       {view === "applicant" ? <section className={`mt-6 ${card}`}>
-        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-bold">申込者として試す</h2><button className={secondary} onClick={resetApplicant}>最初から試す</button></div>
-        <p className="mt-2 text-sm text-neutral-600">募集ページは外部HPでもPARARIでも同じ入口につながります。</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold">申込者として試す</h2>
+          <button className={secondary} onClick={resetApplicant}>最初から試す</button>
+        </div>
+        <p className="mt-2 text-sm text-neutral-600">募集ページは外部HPでもPARARIでも同じ申込入口へ。画面内の案内やメールはすべてダミーです。</p>
         <div className="mt-4"><Track steps={admissionSteps}/></div>
-        {phase === "intake" ? <div className="mt-7 space-y-3">
+        {phase === "intake" ? <div className="mt-7 space-y-4">
           <h3 className="text-xl font-bold">{school || "教室"}へようこそ</h3>
-          <p className="text-sm">入会をご希望の方は、以下からお進みください。</p>
-          <button className={primary} onClick={()=>setPhase(pres.length?"pre":"form")}>入会を申し込む</button>
+          <p className="text-sm leading-7 text-neutral-700">授業の内容や教室の考え方をご覧ください。ご興味がある方は以下からお申し込みいただけます。</p>
+          <button className={primary} onClick={()=>setPhase("contact")}>入会を申し込む</button>
         </div> : null}
-        {phase === "pre" ? <div className="mt-7 space-y-3">
-          <h3 className="text-lg font-bold">入会前のご案内</h3>
-          <Track steps={pres}/>
-          <p className="text-sm text-neutral-600">ここでは予約・参加・完了を仮にまとめて進めます。実際の運用では日時の選択と受付完了を扱います。</p>
-          <button className={primary} onClick={advanceBefore}>説明会・体験が完了したことにして進む</button>
-        </div> : null}
-        {phase === "form" ? <div className="mt-7 space-y-4">
-          <h3 className="text-lg font-bold">入会フォーム</h3>
+        {phase === "contact" ? <div className="mt-7 space-y-4">
+          <h3 className="text-lg font-bold">申込フォーム・連絡先</h3>
+          <p className="text-sm text-neutral-600">連絡先を登録すると、必要な場合は説明会・体験の予約へ進みます。</p>
           <label className="block"><span className={label}>お名前</span><input className={field} value={requestName} onChange={e=>setRequestName(e.target.value)} /></label>
-          <label className="flex items-start gap-3 text-sm"><input type="checkbox" defaultChecked />教室の規約・個人情報の取り扱いに同意します（試作）</label>
-          {approval ? <p className="rounded-xl bg-amber-50 p-3 text-sm">運営者の承認が必要です。この試作では「承認済み」として次へ進みます。</p> : null}
-          <button className={primary} disabled={!requestName.trim()} onClick={finishForm}>{admissionFee>0?"クラス選択へ":"入会を確定する"}</button>
+          <label className="block"><span className={label}>メールアドレス</span><input className={field} type="email" value={requestEmail} onChange={e=>setRequestEmail(e.target.value)} /></label>
+          <label className="block"><span className={label}>電話番号（任意）</span><input className={field} type="tel" value={requestPhone} onChange={e=>setRequestPhone(e.target.value)} /></label>
+          <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={consented} onChange={e=>setConsented(e.target.checked)} />教室の規約と個人情報の取り扱いに同意する（デモ）</label>
+          <button className={primary} disabled={!requestName.trim()||!/^\\S+@\\S+\\.\\S+$/.test(requestEmail.trim())||!consented} onClick={submitContact}>申込内容を送信して次へ</button>
+        </div> : null}
+        {phase === "pre" ? <div className="mt-7 space-y-4">
+          <h3 className="text-lg font-bold">{pres[bookingIndex]}の予約</h3>
+          <p className="text-sm text-neutral-600">空き日時を選んで予約してください。今回は日時候補を仮表示しています。</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label><span className={label}>参加日</span><select className={field} value={bookingDate} onChange={e=>setBookingDate(e.target.value)}>
+              <option value="2026-12-05">12月5日（土）</option><option value="2026-12-12">12月12日（土）</option>
+              <option value="2026-12-19">12月19日（土）</option>
+            </select></label>
+            <label><span className={label}>開始時刻</span><select className={field} value={bookingTime} onChange={e=>setBookingTime(e.target.value)}>
+              <option value="10:00">10:00</option><option value="14:00">14:00</option><option value="17:00">17:00</option>
+            </select></label>
+          </div>
+          <button className={primary} onClick={reserveEvent}>この日時で予約する</button>
+        </div> : null}
+        {phase === "booking-received" ? <div className="mt-7 space-y-4">
+          <h3 className="text-xl font-bold">予約を受け付けました</h3>
+          <p className="text-sm">{pres[bookingIndex]}：{bookingDate} {bookingTime}</p>
+          <div className="rounded-xl bg-emerald-50 p-4 text-sm leading-7 text-emerald-950">
+            お申込者への確認メールと、先生への予約通知を作成しました（この画面内だけ）。
+          </div>
+          <button className={primary} onClick={advanceBookedEvent}>
+            {bookingIndex < pres.length - 1 ? "次の説明会・体験を予約する" : "当日の参加へ進む"}
+          </button>
+        </div> : null}
+        {phase === "awaiting-event" ? <div className="mt-7 space-y-4">
+          <h3 className="text-lg font-bold">当日：説明会・体験</h3>
+          <p className="text-sm">予約日時に参加します。終了後、先生が参加・入会許可を確認します。</p>
+          <button className={secondary} onClick={()=>{setView("operator");setPreviewMessage("先生側で説明会・体験の参加と入会許可を処理してください。");}}>先生の運営画面で受付を処理する</button>
+        </div> : null}
+        {phase === "awaiting-approval" ? <div className="mt-7 space-y-4">
+          <h3 className="text-lg font-bold">入会の許可を確認しています</h3>
+          <p className="text-sm">先生が許可すると、選択可能なサービス・時間枠の案内が表示されます。</p>
+          <button className={secondary} onClick={()=>{setView("operator");setPreviewMessage("先生側で入会の許可と、必要なら参加クラスの制限を設定してください。");}}>先生の運営画面へ</button>
         </div> : null}
         {phase === "selection" ? <div className="mt-7 space-y-4">
-          <h3 className="text-lg font-bold">サービスと時間枠を選ぶ</h3>
-          <label className="block"><span className={label}>サービス（受講内容・月謝）</span>
-            <select className={field} value={chosenService?.id ?? ""} onChange={e => {
-              const service = services.find(item => item.id === e.target.value);
-              if (service) { setSelectedServiceId(service.id); setSelectedSlotId(service.slots[0]?.id ?? ""); }
-            }}>{services.map(service => <option key={service.id} value={service.id}>{service.name}／月{service.monthlyVisits}回・{yen(service.monthlyFee)}</option>)}</select>
+          <h3 className="text-lg font-bold">入会許可・参加クラスの選択</h3>
+          <p className="text-sm text-emerald-800">入会可能です。以下から参加クラスを選択してください。</p>
+          <label className="block"><span className={label}>サービス</span>
+            <select className={field} value={permittedServices.some(x=>x.id===selectedServiceId)?selectedServiceId:permittedServices[0]?.id??""} onChange={e=>{
+              const service=permittedServices.find(item=>item.id===e.target.value);
+              if(service){setSelectedServiceId(service.id);setSelectedSlotId(service.slots[0]?.id??"");}
+            }}>{permittedServices.map(service=><option key={service.id} value={service.id}>{service.name}／月{service.monthlyVisits}回</option>)}</select>
           </label>
-          <label className="block"><span className={label}>時間枠（曜日・時刻・残席）</span>
-            <select className={field} value={chosenSlot?.id ?? ""} onChange={e=>setSelectedSlotId(e.target.value)}>
-              {!chosenService?.slots.length ? <option value="">時間枠がありません</option> : null}
-              {chosenService?.slots.map(slot => <option key={slot.id} value={slot.id}>
-                {slot.name}／{slot.weekday} {slot.startsAt} ／{yen(feeForSlot(chosenService,slot))}／残り{Math.max(0,slot.capacity-slot.occupied)}席
+          <label className="block"><span className={label}>時間枠</span>
+            <select className={field} value={chosenSlot?.id??""} onChange={e=>setSelectedSlotId(e.target.value)}>
+              {permittedServices.find(x=>x.id===selectedServiceId)?.slots.map(slot=><option key={slot.id} value={slot.id}>
+                {slot.name}／{slot.weekday} {slot.startsAt}／{yen(feeForSlot(chosenService,slot))}／空席{Math.max(0,slot.capacity-slot.occupied)}
               </option>)}
             </select>
           </label>
-          <p className="text-sm">選択中：{school} ＞ {chosenService?.name ?? "未選択"} ＞ {className}</p>
-          <p className="text-sm">月{monthlyVisits}回／{yen(monthlyFee)}／残り{available}席</p>
-          <button disabled={!chosenSlot||available===0} className={primary} onClick={()=>{setSelectedClass(true);setPhase("payment");}}>
-            {available===0?"満席です":"このクラスを選ぶ"}
-          </button>
-          {available===0?<p className="text-sm text-rose-700">入会金がある場合、参加できるクラスがなければ入会を確定しません。</p>:null}
+          <p className="text-sm">選択中：{school} ＞ {chosenService?.name} ＞ {className}／{yen(monthlyFee)}</p>
+          <button className={primary} disabled={!chosenSlot||available<=0||(allowedSlotIds!==null&&!allowedSlotIds.includes(chosenSlot.id))}
+            onClick={submitSelection}>{available<=0?"満席です":"このクラスを申し込む"}</button>
         </div> : null}
         {phase === "payment" ? <div className="mt-7 space-y-4">
-          <h3 className="text-lg font-bold">入会時の支払（シミュレーション）</h3>
-          <p className="text-sm">{chosenService?.name} ＞ {className}</p>
+          <h3 className="text-lg font-bold">入会金と受講料</h3>
           <p className="text-sm">入会金 {yen(admissionFee)} ＋ 初回受講料 {yen(monthlyFee)} ＝ <strong>{yen(admissionFee+monthlyFee)}</strong></p>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-bold">支払方法を選ぶ</legend>
-            {paymentOptions.map(method => <label key={method.id} className="flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
-              <input type="radio" name="admission-payment-method" checked={payMethod === method.id} onChange={() => selectMethod(method.id)} />
+          <fieldset className="space-y-2"><legend className="text-sm font-bold">支払方法</legend>
+            {paymentOptions.map(method=><label key={method.id} className="flex items-start gap-2 rounded-lg border border-neutral-200 p-3 text-sm">
+              <input type="radio" name="admission-payment-method" checked={payMethod===method.id} onChange={()=>selectMethod(method.id)} />
               <span><strong>{method.label}</strong><span className="block text-xs text-neutral-500">{method.guidance}</span></span>
             </label>)}
           </fieldset>
-          <p className="rounded-lg bg-amber-50 p-3 text-sm">画面上のデモです。カードの実決済はありません。振込・現金も先生の受領確認が済んだものとして次へ進みます。</p>
+          <p className="rounded-xl bg-amber-50 p-3 text-sm">実際の支払・決済はしません。入会金のある教室は、必要な支払が確認されるまで正式入会にはしない設計です。</p>
           <button className={primary} onClick={finishPayment}>支払確認済みとして入会を確定する（デモ）</button>
         </div> : null}
         {phase === "complete" ? <div className="mt-7 space-y-4">
-          <h3 className="text-xl font-bold">入会手続きが完了しました</h3>
+          <h3 className="text-xl font-bold">クラス受付・入会完了</h3>
           <p className="text-sm">{requestName}さん、{school}へようこそ。</p>
-          <p className="text-sm text-neutral-600">{admissionFee>0?"参加クラスも確定しました。":"参加するクラスは生徒HOMEから選べます。"}</p>
+          <p className="text-sm">{chosenService?.name} ＞ {className}／支払：{paymentRecorded?"確認済み":"未払い・別途ご案内"}</p>
+          <p className="rounded-xl bg-emerald-50 p-3 text-sm">参加クラスの案内メールを作成し、先生の受付・支払一覧にも反映しました（デモ）。</p>
+          <div className="rounded-xl border border-neutral-200 p-4 text-sm">
+            <p className="font-bold">生徒HOMEについて</p>
+            <p className="mt-2 leading-7">次回の授業、クラス予約、カレンダー、月謝の支払状況、先生からの連絡をまとめて確認できます。</p>
+          </div>
           <button className={primary} onClick={()=>setView("member")}>生徒HOMEへ進む</button>
         </div> : null}
+        {noticeLog.some(x=>x.target==="student") ? <details className="mt-7 rounded-xl border border-neutral-200 p-4">
+          <summary className="cursor-pointer text-sm font-bold">申込者に届くメール（デモ）</summary>
+          <div className="mt-3 space-y-2">{noticeLog.filter(x=>x.target==="student").map(item=><div key={item.id} className="rounded-lg bg-neutral-50 p-3 text-xs">
+            <p className="font-bold">{item.subject}</p><p className="mt-1 whitespace-pre-wrap">{item.body}</p>
+          </div>)}</div>
+        </details> : null}
       </section> : null}
 
       {view === "member" ? <section className={`mt-6 ${card}`}>
