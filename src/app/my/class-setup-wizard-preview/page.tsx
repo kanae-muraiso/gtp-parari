@@ -29,15 +29,15 @@ type StepId = "hierarchy" | "roles" | "minor" | "grade" | "business" | "service"
 const defaults: Draft = {
   categoryBusiness: "事業", categoryService: "コース", categorySlot: "クラス",
   teacherLabel: "先生", learnerLabel: "生徒", guardianLabel: "保護者",
-  minors: true, gradeExpiry: false, expiryApproval: true,
+  minors: false, gradeExpiry: false, expiryApproval: true,
   businessMode: "existing", businessName: "村磯優子英語教室",
   serviceMode: "existing", serviceName: "中1コース",
   slotMode: "existing", slotName: "月曜クラス",
   briefing: "briefing", briefingLabel: "説明会",
   briefingFields: ["name", "email", "phone"], approvalMode: "teacher",
   approvalLink: "standard", approvalLinkText: "入会を許可しました。参加クラスを選択してください。",
-  admissionFields: ["name", "email", "guardian", "consent"],
-  withdrawal: "guardian_teacher",
+  admissionFields: ["name", "email", "consent"],
+  withdrawal: "notice_teacher",
   messages: {
     booking: { custom: false, subject: "{教室名}：{説明会名}の予約受付", body: "{お名前}様\n{日時}のご予約を受け付けました。会場：{会場}。" },
     approval: { custom: false, subject: "{教室名}：入会のご案内", body: "{お名前}様\n入会が許可されました。以下の案内からクラスをお選びください。\n{入会URL}" },
@@ -65,7 +65,7 @@ const stepTitles: Record<StepId,string> = {
   completedMail:"入会完了メール", home:"生徒HOME", withdrawal:"退会届の扱い", withdrawalMail:"退会届受付メール", review:"設計内容の確認",
 };
 const sections: {name:string; ids:StepId[]}[] = [
-  {name:"基本ルール",ids:["hierarchy","roles","minor","grade"]},
+  {name:"基本ルール",ids:["minor","hierarchy","roles","grade"]},
   {name:"事業とサービス",ids:["business","service","slot"]},
   {name:"説明会・入会",ids:["briefing","briefingName","briefingFields","bookingMail","approval","approvalMail","approvalLink","admissionFields","completedMail"]},
   {name:"入会後",ids:["home","withdrawal","withdrawalMail"]},
@@ -97,7 +97,7 @@ export default function ClassSetupWizardPreview(){
   const [cursor,setCursor]=useState(0);
   const [finished,setFinished]=useState(false);
   const steps=useMemo(()=>{
-    const ids:StepId[]=["hierarchy","roles","minor"];
+    const ids:StepId[]=["minor","hierarchy","roles"];
     if(draft.minors)ids.push("grade");
     ids.push("business","service","slot","briefing");
     if(draft.briefing!=="none")ids.push("briefingName","briefingFields","bookingMail");
@@ -107,6 +107,7 @@ export default function ClassSetupWizardPreview(){
     return ids;
   },[draft.minors,draft.briefing,draft.approvalMode]);
   const step=steps[Math.min(cursor,steps.length-1)];
+  const isAdultOnly=!draft.minors;
   const category=sections.find(section=>section.ids.includes(step))?.name??"確認";
   const update=(patch:Partial<Draft>)=>setDraft(previous=>({...previous,...patch}));
   const toggle=(key:"briefingFields"|"admissionFields",id:string)=>{
@@ -131,7 +132,6 @@ export default function ClassSetupWizardPreview(){
       <div className="mt-7 flex flex-wrap gap-2" aria-label="設計の進行状況">
         {sections.map(section=>{
           const members=steps.filter(id=>section.ids.includes(id));if(!members.length)return null;
-          const start=steps.indexOf(members[0]);
           return <span key={section.name} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${category===section.name?"bg-emerald-800 text-white":"bg-white text-neutral-600"}`}>{section.name}</span>;
         })}
       </div>
@@ -144,20 +144,39 @@ export default function ClassSetupWizardPreview(){
         <p className="mt-2 text-sm text-neutral-600">{finished?"この画面の内容は保存されていません。DB接続時には既存の事業・クラス設定と連動させます。":"この項目を設定してから「次へ」を押してください。"}</p>
         <div className="mt-6 space-y-4">
         {step==="hierarchy"&&<div className="space-y-3">
-          <p className="text-sm">事業・サービス・時間枠の3階層です。表示名は教室に合わせて変更できます。</p>
+          <p className="text-sm leading-7">教室や講座を整理するための「大きな箱 → 商品 → 開催する曜日・時間」という3段階です。名前は自由に変更できます。</p>
+          <div className="rounded-xl bg-emerald-50 p-4 text-sm leading-7">
+            <p className="font-bold">英語教室なら、こんな関係です。</p>
+            <p className="mt-2">① 事業：村磯優子英語教室（教室全体）</p>
+            <p>　↓ その教室で教える内容</p>
+            <p>② コース：中1コース（月謝・月の回数などを設定）</p>
+            <p>　↓ そのコースをいつ受けるか</p>
+            <p>③ クラス：月曜クラス／水曜クラス（曜日・時間・定員などを設定）</p>
+            <p className="mt-2 text-xs text-emerald-900">例えばダンス教室なら「ダンス教室 ＞ ZUMBA ＞ 金曜クラス」。生徒はコースを選んでから、参加できるクラスを選びます。</p>
+          </div>
           {([["categoryBusiness","① 事業"],["categoryService","② サービス"],["categorySlot","③ 時間枠"]] as const).map(([id,title])=><label className={label} key={id}>{title}<input className={field} maxLength={20} value={draft[id]} onChange={e=>update({[id]:e.target.value} as Partial<Draft>)}/></label>)}
         </div>}
         {step==="roles"&&<div className="space-y-3">
           <p className="text-sm">申込画面・HOME・メールで使う呼び方です。</p>
-          {([["teacherLabel","先生"],["learnerLabel","生徒"],["guardianLabel","保護者"]] as const).map(([id,title])=><label className={label} key={id}>{title}の呼び方<input className={field} maxLength={20} value={draft[id]} onChange={e=>update({[id]:e.target.value} as Partial<Draft>)}/></label>)}
+          {([["teacherLabel","先生"],["learnerLabel","生徒"],...(draft.minors?[["guardianLabel","保護者"] as const]:[])] as const).map(([id,title])=><label className={label} key={id}>{title}の呼び方<input className={field} maxLength={20} value={draft[id]} onChange={e=>update({[id]:e.target.value} as Partial<Draft>)}/></label>)}
+          {isAdultOnly&&<p className="rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">成人のみの教室なので、保護者の呼び方は設定する必要がありません。</p>}
         </div>}
-        {step==="minor"&&<Radio value={draft.minors?"yes":"no"} onChange={v=>update({minors:v==="yes"})} options={[{value:"yes",label:"未成年も受け入れる",note:"保護者の連絡先・同意・退会時の確認を適用"},{value:"no",label:"成人のみを受け入れる"}]}/>}
+        {step==="minor"&&<div className="space-y-3">
+          <p className="text-sm leading-7">まず受講する人の年齢を確認します。この回答によって、後に表示するフォームやメールの設定項目が変わります。</p>
+          <Radio value={draft.minors?"yes":"no"} onChange={v=>update({minors:v==="yes",withdrawal:v==="yes"?"guardian_teacher":"notice_teacher",admissionFields:v==="yes"?["name","email","guardian","consent"]:draft.admissionFields.filter(id=>id!=="guardian"),briefingFields:draft.briefingFields.filter(id=>v==="yes"||id!=="guardian")})} options={[{value:"no",label:"成人のみ",note:"保護者の氏名・連絡先や同意確認は表示しません。"},{value:"yes",label:"未成年も受け入れる",note:"申込者が未成年の場合、保護者の連絡先・同意や退会時の確認を使えるようにします。"}]}/>
+        </div>}}
         {step==="grade"&&<div className="space-y-3">
+          <p className="text-sm leading-7">例えば高校3年生が3月に卒業すると、4月以降は通わない可能性があります。退会を忘れて月謝を請求しないよう、学年から「受講終了の予定日」を提案するか決めます。</p>
+          <div className="rounded-xl bg-emerald-50 p-4 text-sm leading-7">
+            <p className="font-semibold">高校3年生の例</p>
+            <p>2027年3月31日を「終了予定日」として提案 → 先生が継続・卒業を確認 → 確定した場合だけ翌月以降の定期請求を止めます。</p>
+            <p className="mt-2 text-xs">浪人して継続する場合や卒業後も通う場合は、終了日を変更・解除できます。学年だけで退会を確定しません。</p>
+          </div>
           <Radio value={draft.gradeExpiry?"yes":"no"} onChange={v=>update({gradeExpiry:v==="yes"})} options={[
-            {value:"no",label:"生徒ごとに最終受講日を設定する",note:"おすすめ：学年が変わっても自動終了しません"},
-            {value:"yes",label:"学年から卒業予定日を提案する",note:"高校3年生なら3月末を提案。予定日の確定前に先生が確認します"},
+            {value:"no",label:"学年から終了日を提案しない",note:"必要になった時、先生が生徒ごとに受講終了日を設定します"},
+            {value:"yes",label:"学年から終了予定日を提案する",note:"高3などの最終学年で3月末を提案。先生が確認するまで退会・請求停止は確定しません"},
           ]}/>
-          {draft.gradeExpiry&&<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.expiryApproval} onChange={e=>update({expiryApproval:e.target.checked})}/>卒業予定日を先生が確認してから終了を確定する</label>}
+          {draft.gradeExpiry&&<p className="rounded-lg bg-neutral-50 p-3 text-sm">先生の確認は必須です。卒業予定日から自動的に退会を確定することはありません。</p>}
           <p className="text-xs text-neutral-600">学年だけを理由に無断で退会確定・請求停止はしない設計です。</p>
         </div>}
         {(step==="business"||step==="service"||step==="slot")&&(()=>{
@@ -187,7 +206,7 @@ export default function ClassSetupWizardPreview(){
         </label>}
         {(step==="briefingFields"||step==="admissionFields")&&<div className="space-y-3">
           <p className="text-sm">必要な項目を選択してください。氏名・メール・同意は必須です。</p>
-          {fields.map(item=>{
+          {fields.filter(item=>draft.minors||item.id!=="guardian").map(item=>{
             const key=step==="briefingFields"?"briefingFields":"admissionFields";
             const locked=["name","email","consent"].includes(item.id);
             const checked=draft[key].includes(item.id)||locked;
@@ -196,7 +215,7 @@ export default function ClassSetupWizardPreview(){
               {item.label}{locked&&<span className="text-xs text-neutral-500">（必須）</span>}
             </label>;
           })}
-          {draft.minors&&<p className="text-xs text-neutral-600">未成年者の入会時には、保護者の本人確認・同意が必要です。</p>}
+          {draft.minors&&<p className="text-xs text-neutral-600">未成年の場合は保護者の本人確認・同意が必要です。成人の方には保護者欄を表示しない想定です。</p>}
         </div>}
         {(step==="bookingMail"||step==="approvalMail"||step==="completedMail"||step==="withdrawalMail")&&<MailEditor
           draft={draft} setDraft={setDraft} kind={step==="bookingMail"?"booking":step==="approvalMail"?"approval":step==="completedMail"?"completed":"withdrawal"}/>}
@@ -217,16 +236,16 @@ export default function ClassSetupWizardPreview(){
           <p className="text-xs text-neutral-600">ここは基本構成として固定し、必要な表示だけ自動で出します。</p>
         </div>}
         {step==="withdrawal"&&<Radio value={draft.withdrawal} onChange={v=>update({withdrawal:v as Draft["withdrawal"]})} options={[
-          {value:"guardian_teacher",label:"保護者の確認＋先生の確定",note:"未成年向けのおすすめ。届出時点では契約を終わらせません"},
-          {value:"notice_teacher",label:"生徒から届け出 → 先生が確認",note:"保護者確認が不要な成人向けなど"},
+          ...(draft.minors?[{value:"guardian_teacher",label:"保護者の確認＋先生の確定",note:"未成年向け。子どもだけでは退会を確定できません"}]:[]),
+          {value:"notice_teacher",label:draft.minors?"生徒から届け出 → 先生が確認":"受講者から届け出 → 先生が確認",note:"届出を受理した日から終了予定日を計算し、先生の確認で確定"},
           {value:"teacher",label:"退会希望は先生へ直接相談して手続き"},
         ]}/>}
         {step==="review"&&<div className="space-y-3 text-sm">
           <p className="font-bold">{draft.businessName} ＞ {draft.serviceName} ＞ {draft.slotName}</p>
-          <p>分類：{draft.categoryBusiness}／{draft.categoryService}／{draft.categorySlot} ・ 呼称：{draft.teacherLabel}／{draft.learnerLabel}／{draft.guardianLabel}</p>
-          <p>未成年：{draft.minors?"受け入れる":"受け入れない"} ・ 卒業予定日の提案：{draft.gradeExpiry?"あり":"なし"}</p>
+          <p>分類：{draft.categoryBusiness}／{draft.categoryService}／{draft.categorySlot} ・ 呼称：{draft.teacherLabel}／{draft.learnerLabel}{draft.minors?"／"+draft.guardianLabel:""}</p>
+          <p>未成年：{draft.minors?"受け入れる":"受け入れない"}{draft.minors?" ・ 卒業予定日の提案："+(draft.gradeExpiry?"あり":"なし"):""}</p>
           <p>説明会・体験：{draft.briefing==="none"?"なし":draft.briefingLabel} ・ 先生の入会確認：{draft.approvalMode==="teacher"?"必要":"不要"}</p>
-          <p>退会の手続き：{draft.withdrawal==="guardian_teacher"?"保護者と先生の確認":draft.withdrawal==="notice_teacher"?"届出と先生の確認":"先生との相談"}</p>
+          <p>退会の手続き：{draft.minors&&draft.withdrawal==="guardian_teacher"?"保護者と先生の確認":draft.withdrawal==="notice_teacher"?"届出と先生の確認":"先生との相談"}</p>
           <div className="border-t pt-3"><p className="font-bold">見直す項目</p>
             <div className="mt-2 flex flex-wrap gap-2">{steps.filter(id=>id!=="review").map(id=><button key={id} type="button" className="rounded-full border px-3 py-1 text-xs" onClick={()=>editCurrent(id)}>{stepTitles[id]}</button>)}</div>
           </div>
