@@ -877,6 +877,7 @@ const waitForNextPaint = () =>
 <div className="space-y-0">
           {!hideLeadingInsertSlot && !firstBlockIsBookInfo ? (
             <PanelInsertSlot
+              epubMode={panelSet === "kindle"}
               items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
@@ -1031,7 +1032,6 @@ const waitForNextPaint = () =>
 
                                <PanelInsertSlot
                                  epubMode={panelSet === "kindle"}
-                epubMode={panelSet === "kindle"}
                                  items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
