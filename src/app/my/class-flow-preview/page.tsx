@@ -94,7 +94,8 @@ export default function ClassFlowPreview() {
     const movers = movingSlots.reduce((sum, slot) => sum + slot.occupied, 0);
     const destination = services.flatMap(service => service.slots.map(slot => ({ service, slot })))
       .find(item => item.slot.id === transferTargetId);
-    if (movers > 0 && (!destination || !transferConfirmed || destination.slot.capacity - destination.slot.occupied < movers)) {
+    if (movers > 0 && (!destination || (!retire.slotId && destination.service.id === retire.serviceId) ||
+      !transferConfirmed || destination.slot.capacity - destination.slot.occupied < movers)) {
       setManageNotice("移籍先と空席、料金変更への同意を確認してください。");
       return;
     }
@@ -407,7 +408,7 @@ export default function ClassFlowPreview() {
               const movingSlots = retire.slotId ? sourceService?.slots.filter(slot => slot.id === retire.slotId) ?? [] : sourceService?.slots ?? [];
               const movers = movingSlots.reduce((sum, slot) => sum + slot.occupied, 0);
               const excluded = new Set(movingSlots.map(slot => slot.id));
-              const targets = services.flatMap(service => service.slots
+              const targets = services.filter(service => retire.slotId || service.id !== retire.serviceId).flatMap(service => service.slots
                 .filter(slot => !excluded.has(slot.id))
                 .map(slot => ({ service, slot })));
               const dest = targets.find(item => item.slot.id === transferTargetId);
