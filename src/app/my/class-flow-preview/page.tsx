@@ -13,6 +13,14 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string; guidance: string }[] 
 ];
 type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number; feeOverride: number | null };
 type Service = { id: string; name: string; monthlyFee: number; monthlyVisits: number; slots: TimeSlot[] };
+type DemoStudent = { id: string; name: string; slotId: string; endsOn: string | null };
+const initialStudents: DemoStudent[] = [
+  { id: "learner1", name: "生徒A", slotId: "monday", endsOn: "2027-03-31" },
+  { id: "learner2", name: "生徒B", slotId: "monday", endsOn: null },
+  { id: "learner3", name: "生徒C", slotId: "monday", endsOn: "2027-03-31" },
+  { id: "learner4", name: "生徒D", slotId: "wednesday", endsOn: null },
+  { id: "learner5", name: "生徒E", slotId: "wednesday", endsOn: "2027-03-31" },
+];
 const weekdayOptions = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"];
 const newSlot = (name: string, weekday = "月曜"): TimeSlot => ({
   id: crypto.randomUUID(), name, weekday, startsAt: "16:30", duration: 90, capacity: 6, occupied: 0, feeOverride: null,
@@ -40,6 +48,8 @@ function Track({ steps, active = -1 }: { steps: string[]; active?: number }) {
 export default function ClassFlowPreview() {
   const [view, setView] = useState<View>("teacher");
   const [school, setSchool] = useState("サンプル英語教室");
+  const [students, setStudents] = useState<DemoStudent[]>(initialStudents);
+  const [billingMonth, setBillingMonth] = useState("2027-03");
   const [services, setServices] = useState<Service[]>([{
     id: "junior1", name: "中1コース", monthlyFee: 22000, monthlyVisits: 4,
     slots: [
@@ -63,9 +73,11 @@ export default function ClassFlowPreview() {
   const capacity = chosenSlot?.capacity ?? 0;
   const feeForSlot = (service: Service, slot: TimeSlot) => slot.feeOverride ?? service.monthlyFee;
   // The summary is computed from current settings: no invoice rows are persisted.
+  const isBillable = (student: DemoStudent, month: string) => !student.endsOn || student.endsOn >= month + "-01";
   const billingRows = services.flatMap(service => service.slots.map(slot => ({
+    billableCount: students.filter(student => student.slotId === slot.id && isBillable(student, billingMonth)).length,
     id: slot.id, serviceName: service.name, slotName: slot.name,
-    amount: feeForSlot(service, slot) * slot.occupied,
+    amount: feeForSlot(service, slot) * students.filter(student => student.slotId === slot.id && isBillable(student, billingMonth)).length,
     unitPrice: feeForSlot(service, slot), count: slot.occupied,
     inherited: slot.feeOverride === null,
   })));
@@ -75,7 +87,7 @@ export default function ClassFlowPreview() {
   function updateService(id: string, change: Partial<Pick<Service, "name" | "monthlyFee" | "monthlyVisits">>) {
     setServices(current => current.map(item => item.id === id ? { ...item, ...change } : item));
   }
-  function updateSlot(serviceId: string, slotId: string, change: Partial<Omit<TimeSlot, "id">>) {
+  function updateSlot(serviceId: string, slotId: string, change: Partial<Omit<TimeSlot, "id" | "occupied">>) {
     setServices(current => current.map(service => service.id === serviceId
       ? { ...service, slots: service.slots.map(slot => slot.id === slotId ? { ...slot, ...change } : slot) }
       : service));
@@ -104,6 +116,7 @@ export default function ClassFlowPreview() {
       return;
     }
     const removed = new Set(movingSlots.map(slot => slot.id));
+    setStudents(current => current.map(student => removed.has(student.slotId) && destination ? {...student, slotId: destination.slot.id} : student));
     setServices(current => current.map(service => {
       if (service.id !== retire.serviceId && service.slots.every(slot => slot.id !== transferTargetId)) return service;
       return { ...service, slots: service.slots
@@ -378,7 +391,7 @@ export default function ClassFlowPreview() {
         <div className="space-y-4">
           <section className={card}>
             <h2 className="text-lg font-bold">1. 事業 → サービス → 時間枠</h2>
-            <p className="mt-2 text-xs text-neutral-600">月謝はサービスで設定し、時間枠では原則継承します。例外の場合だけ個別料金に変更します。請求・入金は事業全体でまとめます。</p>
+            <p className="mt-2 text-xs text-neutral-600">月謝はサービスで設定し、時間枠は原則継承。人数は名簿から計算するため、設定画面では変更できません。請求・入金は事業全体でまとめます。</p>
             <label className="mt-4 block"><span className={label}>① 事業名（教室名）</span>
               <input className={field} value={school} onChange={e => setSchool(e.target.value)} />
             </label>
@@ -425,8 +438,9 @@ export default function ClassFlowPreview() {
                       onChange={e => updateSlot(editorService.id, slot.id, {duration:Math.max(5,Number(e.target.value)||5)})}/></label>
                     <label><span className={label}>定員</span><input className={field} type="number" min="1" max="100" value={slot.capacity}
                       onChange={e => updateSlot(editorService.id, slot.id, {capacity:Math.max(1,Number(e.target.value)||1)})}/></label>
-                    <label><span className={label}>既存の参加者（デモ）</span><input className={field} type="number" min="0" max={slot.capacity} value={slot.occupied}
-                      onChange={e => updateSlot(editorService.id, slot.id, {occupied:Math.max(0,Math.min(slot.capacity,Number(e.target.value)||0))})}/></label>
+                    <div><span className={label}>現在の在籍者数（自動集計）</span>
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-2.5 text-sm font-semibold" aria-readonly="true">{slot.occupied}名 <span className="ml-2 text-xs font-normal text-neutral-500">変更不可・名簿で管理</span></div>
+                    </div>
                   </div>
                   <div className="mt-4 rounded-xl bg-neutral-50 p-3">
                     <p className="text-xs font-semibold text-neutral-700">この時間枠の月謝設定</p>
@@ -735,9 +749,27 @@ export default function ClassFlowPreview() {
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">翌月の継続確定</p><p className="mt-2 text-lg font-bold">前月{closeDay+1}日</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">生徒が選択した支払方法</p><p className="mt-2 text-lg font-bold">{methodLabel}</p><p className="mt-1 text-xs text-neutral-500">受付可能：{paymentOptions.map(item => item.label).join("・")}</p></div>
         </div>
+        <section className="mt-5 rounded-xl border border-neutral-200 p-4">
+          <h3 className="font-bold">生徒ごとの受講終了予定（デモ）</h3>
+          <p className="mt-1 text-xs text-neutral-600">高校卒業・転居・期間契約など、理由を限定せず個別に期限を設定します。空欄なら自動終了なし。</p>
+          <div className="mt-4 space-y-3">{students.map(student => {
+            const assignment = services.flatMap(service => service.slots.map(slot => ({ service, slot }))).find(item => item.slot.id === student.slotId);
+            return <div key={student.id} className="grid gap-2 rounded-lg bg-neutral-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div><p className="text-sm font-semibold">{student.name}</p><p className="text-xs text-neutral-600">{assignment ? assignment.service.name + " ＞ " + assignment.slot.name : "所属なし"}</p></div>
+              <label className="text-xs">最終受講日
+                <input type="date" className="mt-1 block rounded-lg border border-neutral-300 bg-white p-2 text-sm" value={student.endsOn ?? ""}
+                  onChange={e=>setStudents(current=>current.map(item=>item.id===student.id ? {...item,endsOn:e.target.value||null}:item))}/>
+              </label>
+            </div>;
+          })}</div>
+          <p className="mt-3 text-xs text-neutral-600">設定した終了日の翌月以降は定期請求の対象外とします。実装時は対象月、退会承認、繰越・既確定請求などの整合性を確認します。</p>
+        </section>
         <div className="mt-5 rounded-xl border border-neutral-200 p-4">
           <h3 className="font-bold">事業全体の月謝明細（設定値からの試算）</h3>
-          <p className="mt-1 text-xs text-neutral-600">各時間枠の既存参加者数 × 適用月謝。実際の請求・入金台帳ではありません。</p>
+          <p className="mt-1 text-xs text-neutral-600">各生徒の受講終了日を考慮した対象月の定期月謝見込みです。実際の請求・入金台帳ではありません。</p>
+          <label className="mt-3 block text-sm">試算する月
+            <input type="month" className="ml-2 rounded-lg border p-2 text-sm" value={billingMonth} onChange={e=>setBillingMonth(e.target.value)}/>
+          </label>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead><tr className="border-b text-xs text-neutral-600"><th className="py-2 pr-3">サービス・時間枠</th><th className="py-2 pr-3 text-right">月謝</th><th className="py-2 pr-3 text-right">人数</th><th className="py-2 text-right">金額</th></tr></thead>
@@ -745,7 +777,7 @@ export default function ClassFlowPreview() {
                 {billingRows.map(row => <tr key={row.id} className="border-b border-neutral-100">
                   <td className="py-2 pr-3">{row.serviceName} ＞ {row.slotName}<span className="ml-1 text-xs text-neutral-500">{row.inherited ? "継承" : "個別"}</span></td>
                   <td className="py-2 pr-3 text-right whitespace-nowrap">{yen(row.unitPrice)}</td>
-                  <td className="py-2 pr-3 text-right">{row.count}名</td>
+                  <td className="py-2 pr-3 text-right">{row.billableCount}名</td>
                   <td className="py-2 text-right whitespace-nowrap">{yen(row.amount)}</td>
                 </tr>)}
               </tbody>
