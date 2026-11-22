@@ -180,7 +180,7 @@ export default function ClassFlowPreview() {
     setView("applicant");
   }
   function submitContact() {
-    if (!requestName.trim() || !/^\\S+@\\S+\\.\\S+$/.test(requestEmail.trim()) || !consented) return;
+    if (!requestName.trim() || !/^\S+@\S+\.\S+$/.test(requestEmail.trim()) || !consented) return;
     if (pres.length) setPhase("pre");
     else if (approval) {
       setPhase("awaiting-approval");
@@ -425,7 +425,10 @@ export default function ClassFlowPreview() {
           <label className="block"><span className={label}>メールアドレス</span><input className={field} type="email" value={requestEmail} onChange={e=>setRequestEmail(e.target.value)} /></label>
           <label className="block"><span className={label}>電話番号（任意）</span><input className={field} type="tel" value={requestPhone} onChange={e=>setRequestPhone(e.target.value)} /></label>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={consented} onChange={e=>setConsented(e.target.checked)} />教室の規約と個人情報の取り扱いに同意する（デモ）</label>
-          <button className={primary} disabled={!requestName.trim()||!/^\\S+@\\S+\\.\\S+$/.test(requestEmail.trim())||!consented} onClick={submitContact}>申込内容を送信して次へ</button>
+          {!requestName.trim() ? <p role="status" className="text-sm text-amber-800">お名前を入力してください。</p> : null}
+          {requestName.trim() && !/^\S+@\S+\.\S+$/.test(requestEmail.trim()) ? <p role="status" className="text-sm text-amber-800">正しいメールアドレスを入力してください。</p> : null}
+          {requestName.trim() && /^\S+@\S+\.\S+$/.test(requestEmail.trim()) && !consented ? <p role="status" className="text-sm text-amber-800">規約・個人情報の取り扱いへの同意にチェックしてください。</p> : null}
+          <button className={primary+" disabled:cursor-not-allowed disabled:opacity-40"} disabled={!requestName.trim()||!/^\S+@\S+\.\S+$/.test(requestEmail.trim())||!consented} onClick={submitContact}>申込内容を送信して次へ</button>
         </div> : null}
         {phase === "pre" ? <div className="mt-7 space-y-4">
           <h3 className="text-lg font-bold">{pres[bookingIndex]}の予約</h3>
