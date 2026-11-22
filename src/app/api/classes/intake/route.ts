@@ -28,9 +28,6 @@ async function handle(request: NextRequest) {
     const school = await db.from("class_schools").select("name,owner_user_id").eq("id", schoolId).is("archived_at", null).maybeSingle();
     if (school.error) throw school.error;
     if (!school.data) return missing();
-    const owner = await db.from("profiles").select("is_monitor").eq("user_id", school.data.owner_user_id).maybeSingle();
-    if (owner.error) throw owner.error;
-    if (owner.data?.is_monitor !== true) return missing();
     const disclosure = await readSellerDisclosure(school.data.owner_user_id);
     const shared = disclosure && sellerDisclosureReady(disclosure)
       ? { url: "/seller-info?classIntakeId=" + encodeURIComponent(id), version: disclosure.updated_at } : null;
