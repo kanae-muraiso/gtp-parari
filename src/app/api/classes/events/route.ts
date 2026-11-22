@@ -23,9 +23,7 @@ async function ownBusiness(request: NextRequest, user: string | null) {
   if (!user) return null;
   const scope = request.nextUrl.searchParams.get("business");
   if (!scope) return null;
-  const { data, error } = await db.from("profiles").select("is_monitor").eq("user_id", user).maybeSingle();
-  if (error) throw error;
-  return data?.is_monitor ? classBusinessId(user, scope) : null;
+  return classBusinessId(user, scope);
 }
 
 async function eventList(school: string, publishedOnly: boolean, kind?: string | null) {
