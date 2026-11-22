@@ -20,6 +20,7 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const targetReady = !targets || Boolean(target);
   const onlyWalkIn = targets?.length === 0 && Boolean(data.walkInSchedules?.length);
   const [selected, setSelected] = useState("");
+  const [phoneValue, setPhoneValue] = useState("");
   const [step, setStep] = useState<"contact" | "booking">("contact");
   const contactFields = useRef<HTMLFieldSetElement>(null);
   function goToBooking() {
@@ -34,7 +35,8 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
   const start = slot ? Date.parse(slot.starts_at) : 0;
   const end = slot ? start + slot.duration_minutes * 60000 : 0;
   const timeLabel = slot ? `${bookingDate(slot.starts_at)} ${bookingTime(start)}〜${bookingTime(end) <= bookingTime(start) ? "翌日 " : ""}${bookingTime(end)}` : "";
-  const ready = Boolean(audience) && targetReady && (data.direct || Boolean(slot));
+  const phoneReady = !slot || slot.channel !== "phone" || minor || Boolean(phoneValue.trim());
+  const ready = Boolean(audience) && targetReady && phoneReady && (data.direct || Boolean(slot));
   return <><header className="grid gap-1">
       <p className="text-sm text-neutral-600">{data.school}</p>
       <h1 className="text-xl font-bold">{data.offerName ? data.offerName + " · " : ""}{onlyWalkIn ? "開催日程のご案内" : data.direct ? "入会申込" : data.kind + "予約"}</h1>
@@ -95,7 +97,10 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
         <legend className="mb-2 font-semibold">お名前と連絡先</legend>
         <label>受講する方のお名前<input name="name" className={field} maxLength={120} required /></label>
         <label>受講する方のメールアドレス（必須）<input name="email" className={field} type="email" maxLength={254} required /></label>
-        <label>受講する方の電話番号{!minor && slot?.channel === "phone" ? "（必須）" : "（任意）"}<input name="phone" className={field} type="tel" required={!minor && slot?.channel === "phone"} maxLength={30} /></label>
+        <label>受講する方の電話番号{!minor && slot?.channel === "phone" ? "（電話予約では必須）" : "（任意）"}
+          <input name="phone" className={field} type="tel" value={phoneValue} onChange={event => setPhoneValue(event.target.value)}
+            required={!minor && slot?.channel === "phone" && (data.direct || step === "contact")} maxLength={30} />
+        </label>
         <label>受講する方の住所（任意）<input name="address" className={field} maxLength={300} /></label>
         <label>所属・学校名（任意）<input name="school" className={field} maxLength={300} /></label>
         {minor && <fieldset className="grid gap-3 rounded-xl border p-4">
@@ -118,6 +123,8 @@ export default function ClassIntakeForm({ data, busy = false, done = "", submit 
             {slot.location && <p className="whitespace-pre-wrap">集合場所 {slot.location}</p>}
           </div>}
         </section>}
+        {!data.direct && step === "booking" && !phoneReady &&
+          <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">電話での説明会・体験には電話番号が必要です。「連絡先を修正する」から入力してください。</p>}
         {!data.direct && step === "booking" && <div className="flex flex-wrap items-center gap-3">
           <button type="button" className="rounded-lg border px-4 py-2 text-sm" disabled={busy} onClick={() => setStep("contact")}>連絡先を修正する</button>
           <button type="submit" className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
