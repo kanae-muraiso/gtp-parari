@@ -79,16 +79,29 @@ function Radio({options,value,onChange}:{options:{value:string;label:string;note
 }
 function MailEditor({draft,setDraft,kind}:{draft:Draft;setDraft:(next:Draft)=>void;kind:MailKey}) {
   const setting=draft.messages[kind];
+  const examples:Record<string,string>={
+    "{教室名}":draft.businessName||"サンプル教室",
+    "{説明会名}":draft.briefingLabel||"説明会",
+    "{お名前}":"申込者A",
+    "{日時}":"12月5日（土）10:00",
+    "{会場}":"教室",
+    "{入会URL}":"（入会申込フォームへの専用リンク）",
+    "{クラス名}":draft.slotName||"月曜クラス",
+    "{HOME_URL}":"（生徒HOMEへのリンク）",
+    "{最終受講日}":"2027年3月31日",
+  };
+  const preview=(value:string)=>Object.entries(examples).reduce((result,[key,example])=>result.split(key).join(example),value);
   const change=(next:Partial<MailSettings>)=>setDraft({...draft,messages:{...draft.messages,[kind]:{...setting,...next}}});
   return <div className="space-y-3">
     <Radio options={[{value:"default",label:"既成の文面を使う",note:"後から変更できます"},{value:"custom",label:"自分で文章を編集する"}]}
       value={setting.custom?"custom":"default"} onChange={v=>change({custom:v==="custom"})}/>
     <div className="rounded-xl bg-neutral-50 p-4">
       <p className="mb-2 text-xs font-semibold text-neutral-600">メールのプレビュー（実際には送信しません）</p>
+      <p className="mb-3 text-xs text-neutral-500">実際に届くメールのイメージです。宛先や文章に保護者情報は含めず、{draft.minors?"未成年の場合だけ保護者への連絡を別途扱います。":"成人向けの案内として表示しています。"}</p>
       {setting.custom?<div className="space-y-3">
         <label className={label}>件名<input className={field} value={setting.subject} onChange={e=>change({subject:e.target.value})}/></label>
         <label className={label}>本文<textarea className={field} rows={5} value={setting.body} onChange={e=>change({body:e.target.value})}/></label>
-      </div>:<><p className="text-sm font-bold">{setting.subject}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7">{setting.body}</p></>}
+      </div>:<><p className="text-sm font-bold">{preview(setting.subject)}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7">{preview(setting.body)}</p></>}
     </div>
   </div>;
 }
@@ -216,6 +229,7 @@ export default function ClassSetupWizardPreview(){
             </label>;
           })}
           {draft.minors&&<p className="text-xs text-neutral-600">未成年の場合は保護者の本人確認・同意が必要です。成人の方には保護者欄を表示しない想定です。</p>}
+          {isAdultOnly&&<p className="text-xs text-neutral-600">成人向けのため保護者情報は含みません。</p>}
         </div>}
         {(step==="bookingMail"||step==="approvalMail"||step==="completedMail"||step==="withdrawalMail")&&<MailEditor
           draft={draft} setDraft={setDraft} kind={step==="bookingMail"?"booking":step==="approvalMail"?"approval":step==="completedMail"?"completed":"withdrawal"}/>}
