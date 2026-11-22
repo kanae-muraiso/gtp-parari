@@ -288,26 +288,55 @@ export default function ClassSetupWizardPreview(){
           <p className="text-xs text-neutral-600">学年だけを理由に無断で退会確定・請求停止はしない設計です。</p>
         </div>}
         {(step==="business"||step==="service"||step==="slot")&&(()=>{
-          const modeKey=step==="business"?"businessMode":step==="service"?"serviceMode":"slotMode";
-          const nameKey=step==="business"?"businessName":step==="service"?"serviceName":"slotName";
-          const term=step==="business"?draft.categoryBusiness:step==="service"?draft.categoryService:draft.categorySlot;
+          const level=step;
+          const term=level==="business"?draft.categoryBusiness:level==="service"?draft.categoryService:draft.categorySlot;
+          const items=level==="business"?businesses:level==="service"?courses:slots;
+          const name=level==="business"?draft.businessName:level==="service"?draft.serviceName:draft.slotName;
+          const isCreating=items.length===0||newEntry;
+          const prompt=items.length===0?`まだ${term}はありません。最初の${term}を作りましょう。`:`登録済みの${term}を選ぶか、新しい${term}を追加できます。`;
+          const choose=(value:string)=>{
+            if(level==="business")chooseBusiness(value);
+            else if(level==="service")chooseCourse(value);
+            else {update({slotName:value});setNewEntry(false);setCatalogMessage("");}
+          };
+          const add=()=>addCatalog(level,name);
           return <div className="space-y-4">
-            <Radio value={draft[modeKey]} onChange={v=>update({[modeKey]:v} as Partial<Draft>)} options={[
-              {value:"existing",label:`既存の${term}を整備する`},
-              {value:"new",label:`新しい${term}を作る`},
-            ]}/>
-            <label className={label}>{term}名
-              <input className={field} maxLength={120} value={draft[nameKey]} onChange={e=>update({[nameKey]:e.target.value} as Partial<Draft>)}/>
-            </label>
-            <p className="text-xs text-neutral-600">試作なので既存データは読み込まず、名前だけで操作を確認します。</p>
+            <p className="text-sm leading-7">{prompt}</p>
+            {level!=="business"&&<p className="rounded-lg bg-neutral-50 p-3 text-sm">現在の設定先：{draft.businessName}{level==="slot"?" ＞ "+draft.serviceName:""}</p>}
+            {items.length>0&&<div className="rounded-xl border border-neutral-200 p-3">
+              <p className="text-xs font-semibold text-neutral-600">この画面で追加した{term}（{items.length}件）</p>
+              <div className="mt-2 flex flex-wrap gap-2">{items.map(item=><button key={item} type="button" onClick={()=>choose(item)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${!newEntry&&item===name?"border-emerald-700 bg-emerald-50 font-semibold":"border-neutral-300"}`}>{item}</button>)}</div>
+            </div>}
+            {isCreating?<div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
+              <label className={label}>新しい{term}の名前
+                <input className={field} value={name} maxLength={120} onChange={e=>{
+                  if(level==="business")update({businessName:e.target.value});
+                  else if(level==="service")update({serviceName:e.target.value});
+                  else update({slotName:e.target.value});
+                }}/>
+              </label>
+              <button type="button" className={primary+" mt-3"} onClick={add}>＋ この{term}を追加</button>
+            </div>:<button type="button" className={secondary} onClick={()=>{
+              setNewEntry(true);setCatalogMessage("");
+              if(level==="business")update({businessName:""});
+              else if(level==="service")update({serviceName:""});
+              else update({slotName:""});
+            }}>＋ 別の{term}を追加</button>}
+            {catalogMessage&&<p role="status" className="text-xs text-emerald-800">{catalogMessage}</p>}
+            <p className="text-xs text-neutral-600">追加した内容はこの試用画面内だけに表示され、PARARIには保存されません。</p>
           </div>;
         })()}
-        {step==="briefing"&&<Radio value={draft.briefing} onChange={v=>update({briefing:v as Draft["briefing"]})} options={[
-          {value:"none",label:"不要：入会申込へ直接進む"},
-          {value:"briefing",label:"説明会を予約してから入会"},
-          {value:"trial",label:"体験を予約してから入会"},
-          {value:"both",label:"説明会と体験の両方を実施"},
-        ]}/>}
+        {step==="briefing"&&<div className="space-y-3">
+          <p className="text-sm">「{draft.serviceName}」の説明会・体験について設定します。別のコースでは異なる設定を選べます。</p>
+          <Radio value={draft.briefing} onChange={v=>update({briefing:v as Briefing})} options={[
+            {value:"none",label:"不要：このコースは直接入会"},
+            {value:"briefing",label:"説明会を予約してから入会"},
+            {value:"trial",label:"体験を予約してから入会"},
+            {value:"both",label:"説明会と体験の両方を実施"},
+          ]}/>
+          <p className="text-xs text-neutral-600">コースを追加した場合は、設計の最後に「コースの選択」へ戻ってそれぞれの説明会設定を確認できます。</p>
+        </div>}
         {step==="briefingName"&&<label className={label}>参加者に表示する名称
           <input className={field} value={draft.briefingLabel} onChange={e=>update({briefingLabel:e.target.value})}/>
           <p className="mt-2 text-xs font-normal text-neutral-500">例：説明会、体験レッスン、個別相談、入会面談</p>
