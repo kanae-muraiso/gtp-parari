@@ -9,6 +9,8 @@ export type ParariExperience = {
   hasApplications: boolean;
   hasCalendar: boolean;
   hasMessages: boolean;
+  hasClasses: boolean;
+  hasSales: boolean;
   loading: boolean;
 };
 
@@ -26,6 +28,8 @@ const EMPTY_STATE: ParariExperience = {
   hasApplications: false,
   hasCalendar: false,
   hasMessages: false,
+  hasClasses: false,
+  hasSales: false,
   loading: true,
 };
 
@@ -61,12 +65,20 @@ export default function useParariExperience() {
     }
 
     const row = (Array.isArray(data) ? data[0] : data) as ExperienceRow | null;
+    // Derive menu visibility from actual work, not from a separate A/Writer/Class plan.
+    // On a lookup failure keep the entry visible rather than stranding existing users.
+    const [classes, sales] = await Promise.all([
+      supabase.from("class_schools").select("id").eq("owner_user_id", user.id).is("archived_at", null).limit(1),
+      supabase.from("commerce_products").select("id").eq("owner_user_id", user.id).limit(1),
+    ]);
 
     setState({
       studioEnabled: Boolean(row?.studio_enabled),
       hasApplications: Boolean(row?.has_applications),
       hasCalendar: Boolean(row?.has_calendar),
       hasMessages: Boolean(row?.has_messages),
+      hasClasses: Boolean(classes.error || classes.data?.length),
+      hasSales: Boolean(sales.error || sales.data?.length),
       loading: false,
     });
   }, []);
