@@ -17,9 +17,7 @@ async function authorize(request: NextRequest) {
   const session = await db.auth.getUser(token);
   const user = session.data.user?.id;
   if (session.error || !user) return fail("ログインが必要です。", 401);
-  const profile = await db.from("profiles").select("is_monitor").eq("user_id", user).maybeSingle();
-  if (profile.error) throw profile.error;
-  const school = scope && profile.data?.is_monitor ? await classBusinessId(user, scope) : null;
+  const school = scope ? await classBusinessId(user, scope) : null;
   return school ? { school, user } : fail("事業が見つかりません。", 404);
 }
 
