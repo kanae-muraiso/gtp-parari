@@ -105,7 +105,7 @@ async function main(){
  assert.ok(document.body.textContent.includes('外部リンクとして出力'));
  const plus=document.querySelector('[aria-label="パネルを追加"]');
  await React.act(async()=>plus.click());
- assert.ok(![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='メディア ▴'));
+ assert.ok([...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='メディア ▴'), 'EPUB変換するメディアも表示する');
  const panels=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='パネル ▴');
  panels.getBoundingClientRect=()=>({top:700,bottom:730,left:200,width:80});
  const originalScrollHeight=Object.getOwnPropertyDescriptor(HTMLElement.prototype,'scrollHeight');
@@ -120,7 +120,11 @@ async function main(){
  if(originalScrollHeight)Object.defineProperty(HTMLElement.prototype,'scrollHeight',originalScrollHeight);
  else delete HTMLElement.prototype.scrollHeight;
  assert.ok([...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='表'));
- assert.ok(![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='QA'));
+ assert.ok([...document.querySelectorAll('button')].some(b=>b.textContent.includes('QA')), 'EPUB非対応のQAは赤色で表示する');
+ const qa=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'));
+ assert.equal(qa.disabled,true);
+ assert.ok(qa.className.includes('red-'));
+ assert.ok([...document.querySelectorAll('button')].some(b=>b.className.includes('amber-')), '変換されるパネルは黄色');
  await React.act(async()=>root.unmount());dom.window.close();
  console.log('PASS: panel sets, non-destructive SSOT, BOOK persistence, actual editor choices, static alternatives and blocked export.');
 }
