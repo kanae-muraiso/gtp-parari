@@ -6,11 +6,11 @@ import Link from "next/link";
 
 type BeforeAdmission = "none" | "briefing" | "trial" | "both";
 type PaymentMethod = "card" | "bank" | "cash";
-type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number };
+type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number; feeOverride: number | null };
 type Service = { id: string; name: string; monthlyFee: number; monthlyVisits: number; slots: TimeSlot[] };
 const weekdayOptions = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"];
 const newSlot = (name: string, weekday = "月曜"): TimeSlot => ({
-  id: crypto.randomUUID(), name, weekday, startsAt: "16:30", duration: 90, capacity: 6, occupied: 0,
+  id: crypto.randomUUID(), name, weekday, startsAt: "16:30", duration: 90, capacity: 6, occupied: 0, feeOverride: null,
 });
 type View = "teacher" | "applicant" | "member" | "operator";
 type Phase = "intake" | "pre" | "form" | "selection" | "payment" | "complete";
@@ -37,8 +37,8 @@ export default function ClassFlowPreview() {
   const [services, setServices] = useState<Service[]>([{
     id: "junior1", name: "中1コース", monthlyFee: 22000, monthlyVisits: 4,
     slots: [
-      { id: "monday", name: "月曜クラス", weekday: "月曜", startsAt: "16:30", duration: 90, capacity: 6, occupied: 3 },
-      { id: "wednesday", name: "水曜クラス", weekday: "水曜", startsAt: "17:00", duration: 90, capacity: 6, occupied: 2 },
+      { id: "monday", name: "月曜クラス", weekday: "月曜", startsAt: "16:30", duration: 90, capacity: 6, occupied: 3, feeOverride: null },
+      { id: "wednesday", name: "水曜クラス", weekday: "水曜", startsAt: "17:00", duration: 90, capacity: 6, occupied: 2, feeOverride: null },
     ],
   }]);
   const [editingServiceId, setEditingServiceId] = useState("junior1");
@@ -48,9 +48,18 @@ export default function ClassFlowPreview() {
   const chosenService = services.find(item => item.id === selectedServiceId) ?? services[0];
   const chosenSlot = chosenService?.slots.find(item => item.id === selectedSlotId) ?? chosenService?.slots[0];
   const className = chosenSlot?.name ?? "時間枠未設定";
-  const monthlyFee = chosenService?.monthlyFee ?? 0;
+  const monthlyFee = chosenSlot?.feeOverride ?? chosenService?.monthlyFee ?? 0;
   const monthlyVisits = chosenService?.monthlyVisits ?? 0;
   const capacity = chosenSlot?.capacity ?? 0;
+  const feeForSlot = (service: Service, slot: TimeSlot) => slot.feeOverride ?? service.monthlyFee;
+  // The summary is computed from current settings: no invoice rows are persisted.
+  const billingRows = services.flatMap(service => service.slots.map(slot => ({
+    id: slot.id, serviceName: service.name, slotName: slot.name,
+    amount: feeForSlot(service, slot) * slot.occupied,
+    unitPrice: feeForSlot(service, slot), count: slot.occupied,
+    inherited: slot.feeOverride === null,
+  })));
+  const billingTotal = billingRows.reduce((sum, row) => sum + row.amount, 0);
   const occupied = chosenSlot?.occupied ?? 0;
 
   function updateService(id: string, change: Partial<Pick<Service, "name" | "monthlyFee" | "monthlyVisits">>) {
@@ -154,7 +163,7 @@ export default function ClassFlowPreview() {
         <div className="space-y-4">
           <section className={card}>
             <h2 className="text-lg font-bold">1. 事業 → サービス → 時間枠</h2>
-            <p className="mt-2 text-xs text-neutral-600">料金と月の受講回数はサービス、曜日・時刻・定員はその下の時間枠に設定します。</p>
+            <p className="mt-2 text-xs text-neutral-600">月謝はサービスで設定し、時間枠では原則継承します。例外の場合だけ個別料金に変更します。請求・入金は事業全体でまとめます。</p>
             <label className="mt-4 block"><span className={label}>① 事業名（教室名）</span>
               <input className={field} value={school} onChange={e => setSchool(e.target.value)} />
             </label>
@@ -198,6 +207,25 @@ export default function ClassFlowPreview() {
                     <label><span className={label}>既存の参加者（デモ）</span><input className={field} type="number" min="0" max={slot.capacity} value={slot.occupied}
                       onChange={e => updateSlot(editorService.id, slot.id, {occupied:Math.max(0,Math.min(slot.capacity,Number(e.target.value)||0))})}/></label>
                   </div>
+                  <div className="mt-4 rounded-xl bg-neutral-50 p-3">
+                    <p className="text-xs font-semibold text-neutral-700">この時間枠の月謝設定</p>
+                    <label className="mt-3 flex items-center gap-2 text-sm">
+                      <input type="radio" name={`fee-${slot.id}`} checked={slot.feeOverride === null}
+                        onChange={() => updateSlot(editorService.id, slot.id, { feeOverride: null })}/>
+                      サービスの月謝を適用（{yen(editorService.monthlyFee)}）
+                    </label>
+                    <label className="mt-2 flex items-center gap-2 text-sm">
+                      <input type="radio" name={`fee-${slot.id}`} checked={slot.feeOverride !== null}
+                        onChange={() => updateSlot(editorService.id, slot.id, { feeOverride: editorService.monthlyFee })}/>
+                      この時間枠だけ個別に設定
+                    </label>
+                    {slot.feeOverride !== null ? <label className="mt-3 block">
+                      <span className={label}>個別月謝（税込・円）</span>
+                      <input className={field} type="number" min="0" max="1000000" value={slot.feeOverride}
+                        onChange={e => updateSlot(editorService.id, slot.id, { feeOverride: Math.max(0,Math.min(1000000,Number(e.target.value)||0)) })}/>
+                    </label> : null}
+                    <p className="mt-3 text-sm font-semibold">適用月謝：{yen(feeForSlot(editorService,slot))}</p>
+                  </div>
                   <button type="button" className="mt-3 text-xs text-rose-700 underline" onClick={() => {
                     setServices(current => current.map(service => service.id === editorService.id ?
                       {...service, slots:service.slots.filter(item => item.id !== slot.id)} : service));
@@ -207,7 +235,7 @@ export default function ClassFlowPreview() {
             </div>
             <label className="mt-4 block"><span className={label}>事業全体の入会金（円）</span><input className={field}
               type="number" min="0" max="1000000" value={admissionFee} onChange={e => setAdmissionFee(Math.max(0,Number(e.target.value)||0))} /></label>
-            <p className="mt-3 text-xs text-neutral-500">事業名・サービス名・時間枠がそれぞれ独立しているため、同じサービスの曜日違いには料金設定が共通で適用されます。</p>
+            <p className="mt-3 text-xs text-neutral-500">サービスの月謝を変更すると、継承している時間枠にはすぐ反映されます。個別料金を設定した時間枠は影響を受けません。</p>
           </section>
           <section className={card}>
             <h2 className="text-lg font-bold">2. 入会前の手続き</h2>
@@ -303,7 +331,7 @@ export default function ClassFlowPreview() {
             <select className={field} value={chosenSlot?.id ?? ""} onChange={e=>setSelectedSlotId(e.target.value)}>
               {!chosenService?.slots.length ? <option value="">時間枠がありません</option> : null}
               {chosenService?.slots.map(slot => <option key={slot.id} value={slot.id}>
-                {slot.name}／{slot.weekday} {slot.startsAt} ／残り{Math.max(0,slot.capacity-slot.occupied)}席
+                {slot.name}／{slot.weekday} {slot.startsAt} ／{yen(feeForSlot(chosenService,slot))}／残り{Math.max(0,slot.capacity-slot.occupied)}席
               </option>)}
             </select>
           </label>
@@ -349,7 +377,7 @@ export default function ClassFlowPreview() {
               <label className="block"><span className={label}>時間枠を選ぶ</span>
                 <select className={field} value={chosenSlot?.id ?? ""} onChange={e=>setSelectedSlotId(e.target.value)}>
                   {!chosenService?.slots.length ? <option value="">時間枠がありません</option> : null}
-                  {chosenService?.slots.map(slot=><option key={slot.id} value={slot.id}>{slot.name}（{slot.weekday} {slot.startsAt}・残り{Math.max(0,slot.capacity-slot.occupied)}席）</option>)}
+                  {chosenService?.slots.map(slot=><option key={slot.id} value={slot.id}>{slot.name}（{slot.weekday} {slot.startsAt}・{yen(feeForSlot(chosenService,slot))}・残り{Math.max(0,slot.capacity-slot.occupied)}席）</option>)}
                 </select>
               </label>
             </div> : null}
@@ -384,7 +412,7 @@ export default function ClassFlowPreview() {
         <div className="mt-4 space-y-2">
           {services.map(service => <div className="rounded-xl border border-neutral-200 p-3" key={service.id}>
             <p className="text-sm font-bold">{school} ＞ {service.name}（月{service.monthlyVisits}回・{yen(service.monthlyFee)}）</p>
-            {service.slots.map(slot=><p key={slot.id} className="mt-1 pl-3 text-xs text-neutral-600">{slot.name} ／ {slot.weekday} {slot.startsAt} ／定員{slot.capacity}名・利用{slot.occupied}名</p>)}
+            {service.slots.map(slot=><p key={slot.id} className="mt-1 pl-3 text-xs text-neutral-600">{slot.name} ／ {slot.weekday} {slot.startsAt} ／月謝{yen(feeForSlot(service,slot))}{slot.feeOverride === null ? "（継承）" : "（個別）"} ／定員{slot.capacity}名・利用{slot.occupied}名</p>)}
             {!service.slots.length ? <p className="mt-1 text-xs text-amber-800">時間枠未設定</p> : null}
           </div>)}
         </div>
@@ -392,6 +420,25 @@ export default function ClassFlowPreview() {
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">選択中の時間枠の残席</p><p className="mt-2 text-2xl font-bold">{available}</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">翌月の継続確定</p><p className="mt-2 text-lg font-bold">前月{closeDay+1}日</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">支払方法</p><p className="mt-2 text-lg font-bold">{payMethod==="bank"?"振込":payMethod==="cash"?"現金":"カード"}</p></div>
+        </div>
+        <div className="mt-5 rounded-xl border border-neutral-200 p-4">
+          <h3 className="font-bold">事業全体の月謝明細（設定値からの試算）</h3>
+          <p className="mt-1 text-xs text-neutral-600">各時間枠の既存参加者数 × 適用月謝。実際の請求・入金台帳ではありません。</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr className="border-b text-xs text-neutral-600"><th className="py-2 pr-3">サービス・時間枠</th><th className="py-2 pr-3 text-right">月謝</th><th className="py-2 pr-3 text-right">人数</th><th className="py-2 text-right">金額</th></tr></thead>
+              <tbody>
+                {billingRows.map(row => <tr key={row.id} className="border-b border-neutral-100">
+                  <td className="py-2 pr-3">{row.serviceName} ＞ {row.slotName}<span className="ml-1 text-xs text-neutral-500">{row.inherited ? "継承" : "個別"}</span></td>
+                  <td className="py-2 pr-3 text-right whitespace-nowrap">{yen(row.unitPrice)}</td>
+                  <td className="py-2 pr-3 text-right">{row.count}名</td>
+                  <td className="py-2 text-right whitespace-nowrap">{yen(row.amount)}</td>
+                </tr>)}
+              </tbody>
+              <tfoot><tr className="font-bold"><td className="pt-3" colSpan={3}>事業全体の月謝合計（試算）</td><td className="pt-3 text-right whitespace-nowrap">{yen(billingTotal)}</td></tr></tfoot>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-neutral-500">実装時は生徒・請求月・入会金・追加料金ごとに明細を確定保存し、支払済み・未納を同じ管理画面で表示します。後の料金変更で過去の請求金額は書き換えません。</p>
         </div>
         <div className="mt-5 rounded-xl border border-neutral-200 p-4">
           <h3 className="font-bold">月謝の管理例</h3>
