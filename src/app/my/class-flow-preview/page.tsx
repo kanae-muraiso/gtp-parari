@@ -14,6 +14,25 @@ const PAYMENT_METHODS: { id: PaymentMethod; label: string; guidance: string }[] 
 type TimeSlot = { id: string; name: string; weekday: string; startsAt: string; duration: number; capacity: number; occupied: number; feeOverride: number | null };
 type Service = { id: string; name: string; monthlyFee: number; monthlyVisits: number; slots: TimeSlot[] };
 type DemoStudent = { id: string; name: string; slotId: string; endsOn: string | null };
+type WithdrawalRequest = {
+  studentId: string; receivedAt: string; finalDay: string; actor: "guardian" | "student";
+  guardianConfirmed: boolean; reason: string; status: "pending" | "approved" | "rejected";
+};
+function tokyoToday(now: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone:"Asia/Tokyo", year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(now);
+  const part = (kind: string) => parts.find(item => item.type === kind)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function lastDayOfMonth(year: number, month: number) {
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}
+// If the notice arrives before the monthly deadline, the current month is the
+// final billing month. Otherwise the next month is already committed.
+function withdrawalFinalDay(receivedAt: string, closeDay: number) {
+  const [year, month, day] = receivedAt.split("-").map(Number);
+  const finalMonth = day <= closeDay ? month : month + 1;
+  return lastDayOfMonth(year, finalMonth);
+}
 const initialStudents: DemoStudent[] = [
   { id: "learner1", name: "生徒A", slotId: "monday", endsOn: "2027-03-31" },
   { id: "learner2", name: "生徒B", slotId: "monday", endsOn: null },
@@ -50,6 +69,13 @@ export default function ClassFlowPreview() {
   const [school, setSchool] = useState("サンプル英語教室");
   const [students, setStudents] = useState<DemoStudent[]>(initialStudents);
   const [billingMonth, setBillingMonth] = useState("2027-03");
+  const [withdrawal, setWithdrawal] = useState<WithdrawalRequest | null>(null);
+  const [withdrawalFormOpen, setWithdrawalFormOpen] = useState(false);
+  const [withdrawalActor, setWithdrawalActor] = useState<"guardian" | "student">("guardian");
+  const [withdrawalReason, setWithdrawalReason] = useState("");
+  const [withdrawalChecked, setWithdrawalChecked] = useState(false);
+  const [withdrawalStudentId, setWithdrawalStudentId] = useState("learner1");
+  const [withdrawalMessage, setWithdrawalMessage] = useState("");
   const [services, setServices] = useState<Service[]>([{
     id: "junior1", name: "中1コース", monthlyFee: 22000, monthlyVisits: 4,
     slots: [
@@ -230,6 +256,8 @@ export default function ClassFlowPreview() {
     if (payMethod !== method) { setPayMethod(method); setPaymentRecorded(false); }
   }
   const [closeDay, setCloseDay] = useState(9);
+  const todayJst = tokyoToday(new Date());
+  const estimatedWithdrawalFinalDay = withdrawalFinalDay(todayJst, closeDay);
   const [makeup, setMakeup] = useState(true);
   const [flexible, setFlexible] = useState(false);
   const [phase, setPhase] = useState<Phase>("intake");
@@ -282,6 +310,47 @@ export default function ClassFlowPreview() {
     ...service, slots: service.slots.filter(slot => allowedSlotIds === null || allowedSlotIds.includes(slot.id)),
   })).filter(service => service.slots.length > 0);
 
+  function submitWithdrawal() {
+    if (withdrawal || !withdrawalChecked) return;
+    const person = students.find(student => student.id === withdrawalStudentId);
+    if (!person) return;
+    const finalDay = estimatedWithdrawalFinalDay;
+    const request: WithdrawalRequest = {
+      studentId: person.id, receivedAt: todayJst, finalDay, actor: withdrawalActor,
+      guardianConfirmed: withdrawalActor === "guardian", reason: withdrawalReason.trim(), status: "pending",
+    };
+    setWithdrawal(request);
+    setWithdrawalFormOpen(false);
+    setWithdrawalChecked(false);
+    setWithdrawalMessage("退会届を受け付けました。まだ退会は確定していません。先生による確認が必要です。");
+    addNotice("student", "退会届の受付", `${person.name}様の届出を${todayJst}に受け付けました。最終受講予定日は${finalDay}です。先生の確認をお待ちください。`);
+    addNotice("teacher", "退会届の確認依頼", `${person.name}様の退会届（${withdrawalActor === "guardian" ? "保護者から" : "生徒本人から"}）が届きました。最終受講予定日：${finalDay}。`);
+  }
+  function confirmWithdrawalGuardian() {
+    if (!withdrawal || withdrawal.status !== "pending") return;
+    setWithdrawal({...withdrawal, guardianConfirmed:true});
+    setWithdrawalMessage("保護者による確認を受け付けました。先生の確定操作をお待ちください。");
+    addNotice("teacher", "保護者による退会届確認", "保護者による退会届の確認が完了しました。");
+  }
+  function decideWithdrawal(approved: boolean) {
+    if (!withdrawal || withdrawal.status !== "pending") return;
+    if (approved && !withdrawal.guardianConfirmed) {
+      setWithdrawalMessage("未成年者の退会届は、保護者の確認がない状態では確定できません。");
+      return;
+    }
+    if (approved) {
+      setStudents(current => current.map(student => student.id === withdrawal.studentId
+        ? {...student, endsOn: student.endsOn && student.endsOn < withdrawal.finalDay ? student.endsOn : withdrawal.finalDay}
+        : student));
+    }
+    setWithdrawal({...withdrawal,status: approved ? "approved" : "rejected"});
+    setWithdrawalMessage(approved ? "先生が退会を確定しました。最終受講日の翌月以降は定期月謝の試算から外れます。" : "退会届は見送りになりました。既存の受講契約は変わりません。");
+    addNotice("student", approved ? "退会日の確定" : "退会届についてのご連絡",
+      approved ? `最終受講日：${withdrawal.finalDay}として先生が確認しました。` : "先生が届出内容について確認を求めています。教室にお問い合わせください。");
+  }
+  function resetWithdrawalDemo() {
+    setWithdrawal(null); setWithdrawalFormOpen(false); setWithdrawalMessage(""); setWithdrawalChecked(false); setWithdrawalReason("");
+  }
   function resetApplicant() {
     const first = serviceOptions[0];
     if (first) {
@@ -699,6 +768,44 @@ export default function ClassFlowPreview() {
             <p className="mt-2 text-xs text-neutral-500">入会済みの人には募集案内より日々の情報を優先します。</p>
           </div>
         </div>
+        <section className="mt-5 rounded-xl border border-neutral-200 p-4">
+          <h3 className="font-bold">クラスの欠席・退会手続き</h3>
+          <p className="mt-2 text-sm text-neutral-600">一回の欠席・振替はカレンダーで連絡します。クラスをやめる場合は「退会届」を提出します。</p>
+          {!withdrawal && <button className={secondary+" mt-3"} onClick={()=>{setWithdrawalFormOpen(value=>!value);setWithdrawalMessage("");}}>退会届を提出する</button>}
+          {!withdrawal && withdrawalFormOpen && <div className="mt-4 space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <h4 className="font-semibold">退会届</h4>
+            <label className="block"><span className={label}>対象となる生徒（デモ名簿）</span>
+              <select className={field} value={withdrawalStudentId} onChange={e=>setWithdrawalStudentId(e.target.value)}>
+                {students.map(student=><option key={student.id} value={student.id}>{student.name}</option>)}
+              </select>
+            </label>
+            <fieldset className="space-y-2"><legend className={label}>届け出る方</legend>
+              <label className="flex items-center gap-2 text-sm"><input type="radio" name="withdrawalActor" checked={withdrawalActor==="guardian"} onChange={()=>setWithdrawalActor("guardian")}/>保護者</label>
+              <label className="flex items-center gap-2 text-sm"><input type="radio" name="withdrawalActor" checked={withdrawalActor==="student"} onChange={()=>setWithdrawalActor("student")}/>生徒本人（保護者の確認が別途必要）</label>
+            </fieldset>
+            <label className="block"><span className={label}>連絡事項（任意）</span><textarea className={field} rows={2} maxLength={500} value={withdrawalReason} onChange={e=>setWithdrawalReason(e.target.value)}/></label>
+            <div className="rounded-xl bg-white p-3 text-sm">
+              <p>届出受付日（日本時間）：<strong>{todayJst}</strong></p>
+              <p>事業の締切：毎月{closeDay}日 23:59</p>
+              <p className="mt-2">自動計算された最終受講予定日：<strong>{estimatedWithdrawalFinalDay}</strong></p>
+              <p className="mt-2 text-xs text-neutral-600">締切後は翌月の受講枠が確定しているため、その翌月末が最終受講日になります。届出を送っても先生の承認前には退会は確定しません。</p>
+            </div>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={withdrawalChecked} onChange={e=>setWithdrawalChecked(e.target.checked)}/>
+              最終受講予定日と、先生による確認が必要なことを理解しました</label>
+            <div className="flex flex-wrap gap-2"><button className={primary+" disabled:opacity-40"} disabled={!withdrawalChecked} onClick={submitWithdrawal}>退会届を送信する（デモ）</button>
+              <button className={secondary} onClick={()=>setWithdrawalFormOpen(false)}>閉じる</button></div>
+          </div>}
+          {withdrawal && <div className="mt-3 space-y-2 rounded-xl bg-neutral-50 p-3 text-sm">
+            <p className="font-semibold">届出：{withdrawal.status==="pending"?"受付済み・先生確認待ち":withdrawal.status==="approved"?"先生確認済み・退会日確定":"確認・相談が必要"}</p>
+            <p>届出受付日：{withdrawal.receivedAt}／最終受講予定日：{withdrawal.finalDay}</p>
+            <p>保護者確認：{withdrawal.guardianConfirmed?"確認済み":"未確認"}</p>
+            {withdrawal.status==="pending" && !withdrawal.guardianConfirmed &&
+              <button className={secondary} onClick={confirmWithdrawalGuardian}>保護者が確認する（デモ）</button>}
+            {withdrawal.status!=="pending" && <button className={secondary} onClick={resetWithdrawalDemo}>別の届出を試す</button>}
+          </div>}
+          {withdrawalMessage && <p role="status" className="mt-3 text-sm text-emerald-900">{withdrawalMessage}</p>}
+          <p className="mt-3 text-xs text-neutral-500">本番では保護者自身の認証・同意の記録を確認します。この画面の保護者確認ボタンは試作用です。</p>
+        </section>
         {previewMessage ? <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm">{previewMessage}</p> : null}
       </section> : null}
 
@@ -749,6 +856,23 @@ export default function ClassFlowPreview() {
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">翌月の継続確定</p><p className="mt-2 text-lg font-bold">前月{closeDay+1}日</p></div>
           <div className="rounded-xl bg-neutral-100 p-4"><p className="text-xs">生徒が選択した支払方法</p><p className="mt-2 text-lg font-bold">{methodLabel}</p><p className="mt-1 text-xs text-neutral-500">受付可能：{paymentOptions.map(item => item.label).join("・")}</p></div>
         </div>
+        <section className="mt-5 rounded-xl border border-amber-200 bg-amber-50/30 p-4">
+          <h3 className="font-bold">退会届の受付・確認（デモ）</h3>
+          {!withdrawal ? <p className="mt-2 text-sm text-neutral-600">現在、確認待ちの退会届はありません。</p> :
+            <div className="mt-3 space-y-2 text-sm">
+              <p>対象：{students.find(student=>student.id===withdrawal.studentId)?.name ?? "生徒"}</p>
+              <p>受付日：{withdrawal.receivedAt}／最終受講予定日：{withdrawal.finalDay}</p>
+              <p>届出者：{withdrawal.actor==="guardian"?"保護者":"生徒本人"}</p>
+              <p>保護者確認：{withdrawal.guardianConfirmed?"確認済み":"未確認"}</p>
+              {withdrawal.reason && <p>連絡事項：{withdrawal.reason}</p>}
+              <p className="font-semibold">状態：{withdrawal.status==="pending"?"受付済み・確認待ち":withdrawal.status==="approved"?"先生が確定済み":"見送り・要相談"}</p>
+              {withdrawal.status==="pending" && <div className="flex flex-wrap gap-2">
+                <button className={primary+" disabled:opacity-40"} disabled={!withdrawal.guardianConfirmed} onClick={()=>decideWithdrawal(true)}>最終受講日を確認して退会を確定</button>
+                <button className={secondary} onClick={()=>decideWithdrawal(false)}>確認・相談が必要</button>
+              </div>}
+              {withdrawal.status==="pending" && !withdrawal.guardianConfirmed && <p className="text-xs text-amber-900">保護者による確認待ちのため、退会を確定できません。</p>}
+            </div>}
+        </section>
         <section className="mt-5 rounded-xl border border-neutral-200 p-4">
           <h3 className="font-bold">生徒ごとの受講終了予定（デモ）</h3>
           <p className="mt-1 text-xs text-neutral-600">高校卒業・転居・期間契約など、理由を限定せず個別に期限を設定します。空欄なら自動終了なし。</p>
