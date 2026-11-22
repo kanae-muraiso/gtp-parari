@@ -3,17 +3,19 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-type Choice = "new" | "existing";
+type Audience = "adults" | "minors" | "mixed";
+type Briefing = "none" | "briefing" | "trial" | "both";
+type BriefingSetup = { briefing: Briefing; briefingLabel: string; briefingFields: string[] };
 type MailKey = "booking" | "approval" | "completed" | "withdrawal";
 type MailSettings = { custom: boolean; subject: string; body: string };
 type Draft = {
   categoryBusiness: string; categoryService: string; categorySlot: string;
   teacherLabel: string; learnerLabel: string; guardianLabel: string;
-  minors: boolean; gradeExpiry: boolean; expiryApproval: boolean;
-  businessMode: Choice; businessName: string;
-  serviceMode: Choice; serviceName: string;
-  slotMode: Choice; slotName: string;
-  briefing: "none" | "briefing" | "trial" | "both";
+  audience: Audience; gradeExpiry: boolean; expiryApproval: boolean;
+  businessName: string;
+  serviceName: string;
+  slotName: string;
+  briefing: Briefing;
   briefingLabel: string; briefingFields: string[];
   approvalMode: "automatic" | "teacher";
   approvalLink: "standard" | "custom";
@@ -29,10 +31,10 @@ type StepId = "hierarchy" | "roles" | "minor" | "grade" | "business" | "service"
 const defaults: Draft = {
   categoryBusiness: "事業", categoryService: "コース", categorySlot: "クラス",
   teacherLabel: "先生", learnerLabel: "生徒", guardianLabel: "保護者",
-  minors: false, gradeExpiry: false, expiryApproval: true,
-  businessMode: "existing", businessName: "カルチャースクール",
-  serviceMode: "existing", serviceName: "初心者向け講座",
-  slotMode: "existing", slotName: "土曜クラス",
+  audience: "adults", gradeExpiry: false, expiryApproval: true,
+  businessName: "カルチャースクール",
+  serviceName: "初心者向け講座",
+  slotName: "土曜クラス",
   briefing: "briefing", briefingLabel: "説明会",
   briefingFields: ["name", "email", "phone"], approvalMode: "teacher",
   approvalLink: "standard", approvalLinkText: "入会を許可しました。参加クラスを選択してください。",
@@ -57,7 +59,7 @@ const label = "text-sm font-semibold text-neutral-700";
 const primary = "rounded-full bg-emerald-800 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-40";
 const secondary = "rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700";
 const stepTitles: Record<StepId,string> = {
-  hierarchy:"分類名", roles:"呼び方", minor:"未成年の参加", grade:"学年と卒業予定",
+  hierarchy:"分類の呼び方", roles:"呼び方", minor:"参加者の年齢", grade:"学年と卒業予定",
   business:"事業の選択", service:"コースの選択", slot:"クラスの選択",
   briefing:"説明会・体験の必要性", briefingName:"説明会・体験の名称", briefingFields:"説明会・体験の申込項目",
   bookingMail:"予約受付メール", approval:"入会許可の方法", approvalMail:"入会許可メール",
@@ -66,7 +68,7 @@ const stepTitles: Record<StepId,string> = {
 };
 const sections: {name:string; ids:StepId[]}[] = [
   {name:"基本ルール",ids:["minor","hierarchy","roles","grade"]},
-  {name:"事業とサービス",ids:["business","service","slot"]},
+  {name:"事業とコース",ids:["business","service","slot"]},
   {name:"説明会・入会",ids:["briefing","briefingName","briefingFields","bookingMail","approval","approvalMail","approvalLink","admissionFields","completedMail"]},
   {name:"入会後",ids:["home","withdrawal","withdrawalMail"]},
   {name:"確認",ids:["review"]},
@@ -97,7 +99,7 @@ function MailEditor({draft,setDraft,kind}:{draft:Draft;setDraft:(next:Draft)=>vo
       value={setting.custom?"custom":"default"} onChange={v=>change({custom:v==="custom"})}/>
     <div className="rounded-xl bg-neutral-50 p-4">
       <p className="mb-2 text-xs font-semibold text-neutral-600">メールのプレビュー（実際には送信しません）</p>
-      <p className="mb-3 text-xs text-neutral-500">実際に届くメールのイメージです。宛先や文章に保護者情報は含めず、{draft.minors?"未成年の場合だけ保護者への連絡を別途扱います。":"成人向けの案内として表示しています。"}</p>
+      <p className="mb-3 text-xs text-neutral-500">送信イメージです。{draft.audience==="adults"?"成人向けです。":draft.audience==="mixed"?"未成年者の申込だけ保護者へ連絡します。":"未成年者向けのため保護者の確認を伴います。"}</p>
       {setting.custom?<div className="space-y-3">
         <label className={label}>件名<input className={field} value={setting.subject} onChange={e=>change({subject:e.target.value})}/></label>
         <label className={label}>本文<textarea className={field} rows={5} value={setting.body} onChange={e=>change({body:e.target.value})}/></label>
@@ -109,27 +111,84 @@ export default function ClassSetupWizardPreview(){
   const [draft,setDraft]=useState<Draft>(defaults);
   const [cursor,setCursor]=useState(0);
   const [finished,setFinished]=useState(false);
+  // Trial-only local catalog; the production business/roster database is not accessed.
+  const [businesses,setBusinesses]=useState<string[]>([]);
+  const [coursesByBusiness,setCoursesByBusiness]=useState<Record<string,string[]>>({});
+  const [slotsByCourse,setSlotsByCourse]=useState<Record<string,string[]>>({});
+  const [briefingByCourse,setBriefingByCourse]=useState<Record<string,BriefingSetup>>({});
+  const [newEntry,setNewEntry]=useState(false);
+  const [catalogMessage,setCatalogMessage]=useState("");
+  const minorsIncluded=draft.audience!=="adults";
+  const minorOnly=draft.audience==="minors";
+  const courseKey=(business:string,course:string)=>JSON.stringify([business,course]);
+  const courses=coursesByBusiness[draft.businessName]??[];
+  const slots=slotsByCourse[courseKey(draft.businessName,draft.serviceName)]??[];
+  const courseBriefing=briefingByCourse[courseKey(draft.businessName,draft.serviceName)]??{
+    briefing:"briefing" as Briefing,briefingLabel:"説明会",briefingFields:["name","email","phone"]};
+  function chooseBusiness(name:string){
+    const nextCourse=(coursesByBusiness[name]??[])[0]??"";
+    setDraft(previous=>({...previous,businessName:name,serviceName:nextCourse,
+      slotName:(slotsByCourse[courseKey(name,nextCourse)]??[])[0]??""}));
+    setNewEntry(false);setCatalogMessage("");
+  }
+  function chooseCourse(name:string){
+    const key=courseKey(draft.businessName,name);
+    const setup=briefingByCourse[key]??{briefing:"briefing" as Briefing,briefingLabel:"説明会",briefingFields:["name","email","phone"]};
+    setDraft(previous=>({...previous,serviceName:name,slotName:(slotsByCourse[key]??[])[0]??"",...setup}));
+    setNewEntry(false);setCatalogMessage("");
+  }
+  function addCatalog(level:"business"|"service"|"slot",value:string){
+    const name=value.trim();
+    if(!name){setCatalogMessage("名前を入力してください。");return;}
+    const collection=level==="business"?businesses:level==="service"?courses:slots;
+    if(collection.includes(name)){setCatalogMessage("同じ名前が既に登録されています。");return;}
+    if(level==="business"){
+      setBusinesses(current=>[...current,name]);
+      setDraft(previous=>({...previous,businessName:name,serviceName:"",slotName:""}));
+    }else if(level==="service"){
+      setCoursesByBusiness(current=>({...current,[draft.businessName]:[...courses,name]}));
+      const key=courseKey(draft.businessName,name);
+      setBriefingByCourse(current=>({...current,[key]:{briefing:"briefing",briefingLabel:"説明会",briefingFields:["name","email","phone"]}}));
+      setDraft(previous=>({...previous,serviceName:name,slotName:"",briefing:"briefing",briefingLabel:"説明会",briefingFields:["name","email","phone"]}));
+    }else{
+      const key=courseKey(draft.businessName,draft.serviceName);
+      setSlotsByCourse(current=>({...current,[key]:[...slots,name]}));
+      setDraft(previous=>({...previous,slotName:name}));
+    }
+    setNewEntry(false);setCatalogMessage("追加しました。続けて追加することもできます。");
+  }
   const steps=useMemo(()=>{
     const ids:StepId[]=["minor","hierarchy","roles"];
-    if(draft.minors)ids.push("grade");
+    if(minorOnly)ids.push("grade");
     ids.push("business","service","slot","briefing");
     if(draft.briefing!=="none")ids.push("briefingName","briefingFields","bookingMail");
-    ids.push("approval");
-    if(draft.approvalMode==="teacher")ids.push("approvalMail","approvalLink");
+    // Direct enrollment needs no separate approval question.
+    if(draft.briefing!=="none") {
+      ids.push("approval");
+      if(draft.approvalMode==="teacher")ids.push("approvalMail","approvalLink");
+    }
     ids.push("admissionFields","completedMail","home","withdrawal","withdrawalMail","review");
     return ids;
-  },[draft.minors,draft.briefing,draft.approvalMode]);
+  },[minorOnly,draft.briefing,draft.approvalMode]);
   const step=steps[Math.min(cursor,steps.length-1)];
-  const isAdultOnly=!draft.minors;
+  const isAdultOnly=draft.audience==="adults";
   const category=sections.find(section=>section.ids.includes(step))?.name??"確認";
-  const update=(patch:Partial<Draft>)=>setDraft(previous=>({...previous,...patch}));
+  const update=(patch:Partial<Draft>)=>{
+    setDraft(previous=>({...previous,...patch}));
+    if("briefing" in patch||"briefingLabel" in patch||"briefingFields" in patch){
+      const key=courseKey(draft.businessName,draft.serviceName);
+      setBriefingByCourse(current=>({...current,[key]:{...courseBriefing,...patch} as BriefingSetup}));
+    }
+  };
   const toggle=(key:"briefingFields"|"admissionFields",id:string)=>{
     const current=draft[key];
     const next=current.includes(id)?current.filter(item=>item!==id):[...current,id];
     update({[key]:next} as Partial<Draft>);
   };
-  const required=step==="business"?draft.businessName.trim():step==="service"?draft.serviceName.trim():step==="slot"?draft.slotName.trim():true;
-  const advance=()=>{if(cursor>=steps.length-1){setFinished(true);return;}setCursor(value=>Math.min(value+1,steps.length-1));};
+  const required=step==="business"?businesses.includes(draft.businessName):
+    step==="service"?courses.includes(draft.serviceName):
+    step==="slot"?slots.includes(draft.slotName):true;
+  const advance=()=>{if(cursor>=steps.length-1){setFinished(true);return;}setCatalogMessage("");setNewEntry(false);setCursor(value=>Math.min(value+1,steps.length-1));};
   const editCurrent=(id:StepId)=>{const index=steps.indexOf(id);if(index>=0){setCursor(index);setFinished(false);}};
   return <main className="min-h-screen bg-neutral-100 py-8 text-neutral-950">
     <div className="mx-auto max-w-3xl px-4 sm:px-6">
