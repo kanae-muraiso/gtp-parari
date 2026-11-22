@@ -241,6 +241,16 @@ export default function EditorNewPage() {
             </p>
           </div>
 
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+            <div className="font-bold text-neutral-900">PDFの文章を取り込む</div>
+            <p className="mt-1 text-sm leading-6 text-neutral-600">
+              PDFの文字を抽出し、編集できる非公開PAGEを作ります。画像やレイアウトは取り込みません。
+            </p>
+            <a href="/my/import-pdf" className="mt-3 inline-flex rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100">
+              PDFから作成
+            </a>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-3">
             {defaultParariTemplates.filter((template) => template.kind !== "web" && template.id !== "blank-basic").map((template) => (
               <button

@@ -27,6 +27,7 @@ type CreateWorkBody = {
     kind?: unknown;
     initialTitle?: unknown;
     ssot?: unknown;
+    privateImport?: unknown;
   };
 };
 
@@ -475,7 +476,7 @@ export async function POST(request: NextRequest) {
           stable_slug: stableSlug,
           create_request_id: createRequestId,
           content: ssot,
-          visibility: "unlisted",
+          visibility: body?.template?.privateImport === true ? "private" : "unlisted",
           is_public: false,
           is_deleted: false,
           render_mode: kind === "book" ? "page" : "scroll",
