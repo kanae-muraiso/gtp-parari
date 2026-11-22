@@ -223,6 +223,7 @@ export function PanelInsertSlot({
                  items={operationItems}
                  onToggle={() => toggleMenu("operation")}
                  onSelect={selectItem}
+                 epubMode={epubMode}
                />
              ) : null}
              
