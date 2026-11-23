@@ -2,6 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { classRequest } from "@/lib/classRequests";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
+import { starterClassEventPageSsot } from "@/lib/classEventPage";
 import ClassEventSchedule from "./ClassEventSchedule";
 import { classEventDate, classEventLabels, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
@@ -15,12 +18,14 @@ const statuses = { draft: "下書き", open: "公開中", closed: "受付終了"
 const audiences = { members: "在籍者のみ", public: "一般のみ", mixed: "在籍者と一般" };
 const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "外部決済リンク" };
 
-type Detail = { event: ClassEvent; entries: ClassEventEntry[] };
+type Detail = { event: ClassEvent; entries: ClassEventEntry[]; eventPageId?: string | null };
 
 export default function ClassEventsPanel({ classes, roster, kind }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind }) {
   const label = classEventLabels[kind];
   const [sessionAt, setSessionAt] = useState("");
   const [events, setEvents] = useState<ClassEvent[]>([]);
+  const [canCreateEvents, setCanCreateEvents] = useState(false);
+  const [pageBusy,setPageBusy]=useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -30,8 +35,8 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
 
   useEffect(() => {
     const controller = new AbortController();
-    void classRequest<{ events: ClassEvent[] }>("/events?kind=" + kind, undefined, controller.signal)
-      .then(data => setEvents(data.events)).catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
+    void classRequest<{ events: ClassEvent[]; canCreateEvents: boolean }>("/events?kind=" + kind, undefined, controller.signal)
+      .then(data => {setEvents(data.events);setCanCreateEvents(data.canCreateEvents===true);}).catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
   }, [kind, refresh]);
 
@@ -59,6 +64,35 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
     finally { setBusy(false); }
   }
 
+  async function createEventPage(){
+    if(!event||pageBusy||!canCreateEvents)return;
+    setPageBusy(true);setError("");setNotice("");
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session?.access_token)throw new Error("ログインしてください。");
+      const result=await fetch("/api/works/create",{
+        method:"POST",cache:"no-store",
+        headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({
+          createRequestId:crypto.randomUUID(),
+          stableSlug:"class-event-page-"+crypto.randomUUID().slice(0,12),
+          template:{kind:"page",initialTitle:event.title,
+            ssot:starterClassEventPageSsot(event.title,event.id,event.description??"")}
+        })
+      });
+      const created=await result.json();
+      if(!result.ok||!created.ok||!created.id)throw new Error(created.message||"PAGEを作成できませんでした。");
+      try{
+        await classRequest("/events",{action:"bindPage",id:event.id,workId:created.id});
+        setDetail(await classRequest<Detail>(eventPath(event.id)));
+        setNotice("専用PAGEを作成して関連付けました。文章・写真はPARARIエディタで編集できます。");
+      }catch(cause){
+        setError("PAGEは作成されましたが関連付けは未完了です。重複して作らず、作品リストからご確認ください。"+
+          (cause instanceof Error?cause.message:""));
+      }
+    }catch(cause){setError(cause instanceof Error?cause.message:"PAGEを作成できませんでした。");}
+    finally{setPageBusy(false);}
+  }
   const event = detail?.event;
   const selectedSession = sessionAt || event?.class_event.sessions?.[0]?.startsAt;
 
@@ -67,8 +101,12 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
       <h2 className="text-xl font-bold">{label}</h2>
       {event || editing
         ? <button className={button} disabled={busy} onClick={() => { setDetail(null); setEditing(false); setNotice(""); setError(""); }}>{label}一覧に戻る</button>
-        : <button className={primary} disabled={busy} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>}
+        : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>}
     </header>
+    {!canCreateEvents&&<p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
+      CLASS Aではイベント・講習会の新規作成・公開はできません。CLASS Bで利用できます。
+      過去の開催記録は引き続き確認できます。
+    </p>}
     {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
     {notice && <p className="text-sm text-green-800" role="status">{notice}</p>}
     {editing ? <EventForm key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
@@ -82,10 +120,10 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
         {event.class_event.registration ? <p className="text-sm">申込締切 {classEventDate(event.class_event.deadline)}{event.definition.capacity && ` · 定員 ${event.definition.capacity}人`}</p> : <p className="text-sm">申込不要</p>}
       </article>
       <div className="flex flex-wrap gap-2">
-        {event.status === "draft" && <button className={button} disabled={busy} onClick={() => setEditing(true)}>下書きを編集</button>}
+        {event.status === "draft" && <button className={button} disabled={busy||!canCreateEvents} onClick={() => setEditing(true)}>下書きを編集</button>}
         {event.status === "open"
           ? <button className={button} disabled={busy} onClick={() => void change({ id: event.id, action: "close" }, "受付を終了しました。")}>受付を終了</button>
-          : <button className={primary} disabled={busy} onClick={() => void change({ id: event.id, action: "publish" }, label + "を公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>}
+          : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => void change({ id: event.id, action: "publish" }, label + "を公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>}
         {event.status !== "draft" && <a className={button} href={`/class-event/${event.id}`} target="_blank" rel="noreferrer">案内ページを開く</a>}
         {event.status === "open" && event.class_event.audience !== "public" && Date.parse(event.class_event.startsAt) > Date.now() &&
           <button className={button} disabled={busy} onClick={() => {
@@ -96,6 +134,14 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
           void navigator.clipboard.writeText(new URL(`/class-event/${event.id}`, window.location.origin).href)
             .then(() => setNotice("案内URLをコピーしました。")).catch(() => setError("案内ページを開き、アドレスをコピーしてください。"))}>案内URLをコピー</button>}
       </div>
+      <section className="rounded-xl border border-neutral-200 p-4">
+        <h4 className="font-semibold">PARARI作品で魅力を伝える（任意）</h4>
+        <p className="mt-1 text-sm text-neutral-600">紹介文・写真を編集できるイベント専用PAGEです。日時・費用・定員・申込はCLASSの設定から自動表示されます。</p>
+        {detail.eventPageId ? <Link href={"/editor-v2/"+detail.eventPageId} className={button+" mt-3 inline-block"}>紹介PAGEを編集する</Link>
+          : <button className={button+" mt-3"} disabled={pageBusy||!canCreateEvents} onClick={()=>void createEventPage()}>
+            {pageBusy?"作成中…":"このイベントの紹介PAGEを作る"}</button>}
+        {detail.eventPageId&&<p className="mt-2 text-xs text-neutral-600">PAGEを一般公開にすると、イベントの申込ページに本文が表示されます。</p>}
+      </section>
       {event.status !== "draft" && <section className="grid gap-3 border-t pt-4">
         <h3 className="font-semibold">参加者 · {detail.entries.length}人</h3>
         <form className="flex flex-wrap items-end gap-2" onSubmit={e => {
@@ -159,7 +205,21 @@ function EventForm({ kind, event, classes, busy, onSave }: {
     })) } : {}), classIds: data.getAll("classId"), registration, audience, payment });
   }
 
+  const steps=[
+    ["○","案内・日時","event-content"],["◎","申込・定員","event-registration"],
+    ["△","費用","event-payment"],["※","開催・出欠","event-operation"]
+  ] as const;
   return <form className="grid gap-4 text-sm" onSubmit={submit}>
+    <nav className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-50 p-3" aria-label="イベント申込フロー">
+      {steps.map(([symbol,label,id],i)=><div key={id} className="flex items-center gap-2">
+        {i>0&&<span aria-hidden className="text-neutral-500">→</span>}
+        <button type="button" className={button} onClick={()=>{
+          document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"center"});
+        }}>{symbol} {label}</button>
+      </div>)}
+    </nav>
+    <p className="text-xs text-neutral-600">工程を押すと、その設定欄へ移動します。※開催・出欠は公開後に管理します。</p>
+    <div id="event-content" className="grid gap-3 scroll-mt-24">
     <label className="grid gap-1">{classEventLabels[kind]}名<input className={input} name="title" required maxLength={120} defaultValue={event?.title} /></label>
     <label className="grid gap-1">案内文<textarea className={input} rows={3} name="description" maxLength={4000} defaultValue={event?.description ?? ""} /></label>
     {workshop ? <fieldset className="grid gap-3">
@@ -182,6 +242,8 @@ function EventForm({ kind, event, classes, busy, onSave }: {
       <label className="grid gap-1">開催日時（日本時間）<input className={input} type="datetime-local" name="startsAt" required defaultValue={defaults && localDate(defaults.startsAt)} /></label>
       <label className="grid gap-1">場所<input className={input} name="location" required maxLength={200} defaultValue={defaults?.location} /></label>
     </div>}
+    </div>
+    <div id="event-registration" className="grid gap-3 scroll-mt-24">
     <label className="grid gap-1">対象<select className={input} value={audience} onChange={e => setAudience(e.target.value as typeof audience)}>
       {Object.entries(audiences).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
@@ -200,11 +262,17 @@ function EventForm({ kind, event, classes, busy, onSave }: {
       <label className="grid gap-1">{workshop ? "講習会全体の定員（任意）" : "定員（任意）"}<input className={input} type="number" min={1} max={1000} name="capacity" defaultValue={event?.definition.capacity ?? ""} /></label>
       {registration && <label className="grid gap-1">申込締切（空欄なら{workshop ? "初回" : ""}開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
     </div>
+    </div>
+    <div id="event-payment" className="grid gap-3 scroll-mt-24">
     <label className="grid gap-1">{workshop ? "講習会全体の受講料" : "参加費"}<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
       {Object.entries(paymentLabels).filter(([key]) => registration || key !== "payment_link").map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
     {payment !== "none" && <label className="grid gap-1">金額（円）<input className={input} type="number" min={1} max={10000000} required name="amount" defaultValue={event?.payment_amount ?? ""} /></label>}
     {payment === "payment_link" && <label className="grid gap-1">外部決済URL<input className={input} type="url" required name="paymentUrl" defaultValue={event?.payment_url ?? ""} /></label>}
+    </div>
+    <p id="event-operation" className="scroll-mt-24 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600">
+      開催後の出欠・入金確認は、公開した企画を選ぶと同じ画面で記録できます。
+    </p>
     <button className={primary} disabled={busy}>保存してプレビュー</button>
   </form>;
 }
