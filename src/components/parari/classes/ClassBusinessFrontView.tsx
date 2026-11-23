@@ -64,7 +64,7 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
   return <article className="mx-auto grid w-full max-w-2xl gap-7">
     <header className="grid gap-4 border-b border-neutral-200 pb-6">
       <h1 className="break-words text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">{name}</h1>
-      {introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
+      {!homePage && introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
       {homePage && <section aria-label="教室の紹介" className="min-w-0">
         <ClassHomePageContent content={homePage.content}/>
       </section>}
