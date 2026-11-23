@@ -54,6 +54,7 @@ export default function ClassUnifiedWorkspace(){
   const [business,setBusiness]=useState("");
   const [schoolName,setSchoolName]=useState("");
   const [businessKind,setBusinessKind]=useState<Business["business_type"]>("school");
+  const [editingBusinessName,setEditingBusinessName]=useState("");
   const [showCreateBusiness,setShowCreateBusiness]=useState(false);
   const [management,setManagement]=useState<ClassManagement|null>(null);
   const [products,setProducts]=useState<NamedClassProduct[]>([]);
@@ -109,6 +110,7 @@ export default function ClassUnifiedWorkspace(){
       if(controller.signal.aborted)return;
       if(m.school?.id!==business)throw new Error("表示中の事業を確認できませんでした。");
       setManagement(m);setProducts(p.products);setDetails(d);setRecruitment(r);
+      setEditingBusinessName(m.school?.name??"");
       setWelcome(typeof d.draft.wizard?.welcome==="string"?d.draft.wizard.welcome:"");
       if(lastModeBusiness.current!==business){lastModeBusiness.current=business;setOperating(Boolean(d.published));}
       setLoading(false);
@@ -137,6 +139,25 @@ export default function ClassUnifiedWorkspace(){
   const activeSlot=selected?.kind==="class"?slots.find(s=>s.id===selected.id):undefined;
   const childSlots=activeSlot?slots.filter(s=>s.schedule_rules?.parentSlotId===activeSlot.id):[];
   const audienceProducts=management?.products??[];
+  const chosenLabel=firstActive?"新しいクラス":newSlot?"クラスの追加":
+    selected?.kind==="course"?(activeProduct?.name??"コース"):
+    selected?.kind==="class"?(activeSlot?.name??"クラス"):(school?.name??"事業");
+  const chosenKind=firstActive||newSlot?"クラス":selected?.kind==="course"?"コース":
+    selected?.kind==="class"?"クラス":"事業";
+
+  async function renameBusiness(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    if(!school || busy || editingBusinessName.trim()===school.name)return;
+    setBusy(true);setError("");setNotice("");
+    try{
+      await classRequest("",{action:"renameBusiness",name:editingBusinessName.trim(),expectedName:school.name});
+      setBusinesses(items=>items.map(item=>item.id===business?{...item,name:editingBusinessName.trim()}:item));
+      setNotice("事業名を変更しました。");
+      refresh();
+    }catch(cause){setError(cause instanceof Error?cause.message:"事業名の変更に失敗しました。");}
+    finally{setBusy(false);}
+  }
+
 
   async function createFirstClass(){
     if(!business||busy)return;
@@ -278,6 +299,7 @@ export default function ClassUnifiedWorkspace(){
           </button>)}
         </div>
         {school&&<div className="space-y-2 rounded-xl bg-neutral-50 p-3 sm:p-4">
+          <p className="text-xs text-neutral-600">■ 事業、□ コース、× クラスを押すと、下の「選択中の設定」が切り替わります。</p>
           <button onClick={()=>{setSelected({kind:"business",id:business});setFirstActive(false);setNewSlot(null);setTab("classes");}}
             className={"text-left font-bold "+(selected?.kind==="business"?"text-emerald-900 underline":"")} type="button">
             ■ {school.name} <span className="text-xs font-normal text-neutral-500">事業</span>
@@ -313,8 +335,17 @@ export default function ClassUnifiedWorkspace(){
       </nav>}
       {loading&&business&&<p role="status" className="text-sm">教室の情報を確認しています…</p>}
 
-      {school&&tab==="classes"&&<section className={panel+" space-y-5"}>
-        <h2 className="text-xl font-bold">クラスを設計する</h2>
+      {school&&tab==="classes"&&<section className={panel+" space-y-5"} aria-labelledby="selected-class-settings">
+        <div className="space-y-2 border-b border-neutral-200 pb-4">
+          <p className="text-xs font-semibold tracking-wide text-emerald-800">上の図で選択中：{chosenKind}</p>
+          <h2 id="selected-class-settings" className="text-xl font-bold">{firstActive?"新しいクラスを作成":newSlot?"クラスの開催日時を設定":
+            selected?.kind==="course"?"□ "+chosenLabel+" の設定":selected?.kind==="class"?"× "+chosenLabel+" の設定":"■ "+chosenLabel+" の事業設定"}</h2>
+          <p className="text-sm text-neutral-600">{firstActive?"質問に答えるとコースと定期開催クラスを作成します。":
+            newSlot?"選んだコースに、日時と場所のあるクラスを追加します。":
+            selected?.kind==="course"?"コース共通の内容・料金・定員などを変更します。日時と場所は各クラスを選ぶと変更できます。":
+            selected?.kind==="class"?"このクラスの日時・場所・開催ルールを変更します。共通の料金と定員はコースの設定で管理します。":
+            "ここは事業全体の設定です。コースの料金を変更する場合は上の「□ コース」、日時を変更する場合は「× クラス」を押してください。"}</p>
+        </div>
         {firstActive?<>
           <div className="flex justify-between gap-2 text-xs font-semibold text-emerald-800">
             <span>質問 {firstStep+1} / {firstQuestions.length}</span><span>最初の1クラス</span>
@@ -427,16 +458,25 @@ export default function ClassUnifiedWorkspace(){
           <p className="text-sm">コースを選択して開催日時・場所を追加します。</p>
           {products.map(product=><button className={button+" mr-2"} key={product.id} onClick={()=>setSelected({kind:"course",id:product.id})}>{product.name}を選ぶ</button>)}
         </>:<>
-          <p className="text-sm text-neutral-600">上の図で事業・コース・クラスを選ぶと、この場所で編集できます。最初のクラスは「＋ クラスを作る」から、一問ずつ設定します。</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{products.length}</strong> コース</div>
-            <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{slots.length}</strong> クラス</div>
-            <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{roster.filter(p=>p.status==="active").length}</strong> 在籍者</div>
-          </div>
+          <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3">
+            <label className="grid gap-1 text-sm font-medium">事業名
+              <input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/>
+            </label>
+            <button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>事業名を保存</button>
+          </form>
           <details className="rounded-xl border p-3">
-            <summary className="cursor-pointer font-semibold">事業名・先生・生徒の呼び方</summary>
+            <summary className="cursor-pointer font-semibold">先生・生徒・手続きの呼び方</summary>
             <div className="mt-3"><ClassAdmissionsPanel mode="labels" /></div>
           </details>
+          <div className="border-t pt-4">
+            <h3 className="font-semibold">この事業の構成</h3>
+            <p className="mt-1 text-xs text-neutral-600">コースやクラスの詳しい設定は、上の図から選ぶとこの場所に表示されます。</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{products.length}</strong> コース</div>
+              <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{slots.length}</strong> クラス</div>
+              <div className="rounded-xl bg-neutral-50 p-3 text-sm"><strong>{roster.filter(p=>p.status==="active").length}</strong> 在籍者</div>
+            </div>
+          </div>
         </>}
       </section>}
 
