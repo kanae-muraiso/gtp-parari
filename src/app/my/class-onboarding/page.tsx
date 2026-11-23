@@ -94,6 +94,7 @@ export default function IntegratedClassOnboarding() {
   const [data,setData]=useState<Details|null>(null);
   const [stage,setStage]=useState(0);
   const [question,setQuestion]=useState(0);
+  const [setupIndex,setSetupIndex]=useState(0);
   const [wizard,setWizard]=useState<Record<string,unknown>>({});
   const [answers,setAnswers]=useState<string[]>(defaultAnswers);
   const [pageId,setPageId]=useState<string|null>(null);
@@ -117,6 +118,8 @@ export default function IntegratedClassOnboarding() {
     void classRequest<Details>("/onboarding?school="+schoolId,undefined,abort.signal).then(result=>{
       if(abort.signal.aborted)return;
       setData(result);setWizard(result.draft.wizard||{});
+      setSetupIndex(typeof result.draft.wizard?._setupStep==="number"
+        ? Math.max(0, Math.min(9,result.draft.wizard._setupStep as number)) : 0);
       setAnswers(Array.from({length:16},(_,i)=>result.draft.sales_answers?.[i]??""));
       setPageId(result.draft.landing_page_id);setRevision(result.draft.revision);
       setLoading(false);
@@ -195,6 +198,34 @@ export default function IntegratedClassOnboarding() {
     }finally{setBusy(false);}
   }
   const view=(i:number)=>{setStage(i);setNotice("");setError("");};
+  const audience=String(wizard.audience??"adults");
+  const setupSteps=[
+    {id:"audience",title:"どんな年齢の方を受け入れますか？",hint:"後から表示される申込項目が変わります。未成年を受け入れる場合だけ保護者情報を扱います。"},
+    {id:"teacherLabel",title:"教える方を何と呼びますか？",hint:"申込画面やメールで使う呼び方です。先生、講師、インストラクターなど。"},
+    {id:"learnerLabel",title:"受講する方を何と呼びますか？",hint:"生徒、受講生、参加者など、普段使う言葉を設定します。"},
+    ...(audience!=="adults"?[{id:"guardianLabel",title:"保護者を何と呼びますか？",hint:"未成年の申込者についてのみ保護者情報・同意を求めます。"}]:[]),
+    ...(audience==="minors"?[{id:"gradeExpiry",title:"学年から卒業予定日を提案しますか？",hint:"例：高校3年生には3月末を提案。退会や請求停止は先生の確認後に確定します。"}]:[]),
+    {id:"courseList",title:"どんなコースを開講していますか？",hint:"既存のコースを確認します。追加・料金変更は正本のクラス管理画面で行います。"},
+    {id:"classList",title:"コースにはどんなクラスがありますか？",hint:"曜日・時間・定員はクラス管理の設定が正本です。ここでは確認だけを行います。"},
+    {id:"intake",title:"入会前の説明会・体験は必要ですか？",hint:"現在の受付設定を表示します。コース別の説明会や予約日時は、募集・入会設定画面で調整してください。"},
+    {id:"review",title:"教室の設計内容を確認しましょう",hint:"ここで回答を確認して保存し、次は教室の魅力を伝える16の質問へ進みます。"},
+  ];
+  const activeSetup=setupSteps[Math.min(setupIndex,setupSteps.length-1)];
+  async function setupMove(next:number){
+    if(busy||!schoolId)return;
+    const destination=Math.max(0,Math.min(next,setupSteps.length-1));
+    const newWizard={...wizard,_setupStep:destination};
+    setBusy(true);setError("");setNotice("");
+    try{
+      const result=await classRequest<{revision:number}>("/onboarding?school="+schoolId,{
+        action:"saveWizard",revision,wizard:newWizard,
+      });
+      setRevision(result.revision);setWizard(newWizard);setSetupIndex(destination);
+      setNotice(destination===setupSteps.length-1?"ここまでの回答を保存しました。":"回答を保存しました。");
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:"設計を保存できませんでした。");
+    }finally{setBusy(false);}
+  }
   const update=(name:string,value:string)=>setWizard(old=>({...old,[name]:value}));
   return <main className="min-h-screen bg-neutral-100 px-4 py-8 text-neutral-950 sm:px-6">
     <div className="mx-auto max-w-4xl space-y-5">
@@ -227,36 +258,78 @@ export default function IntegratedClassOnboarding() {
           <h2 className="text-xl font-bold">{["教室を設計する","教室の魅力を伝える","PARARI作品を関連付ける","募集ページを確認する"][stage]}</h2>
           <p className="mt-2 text-sm text-neutral-600">{stageDescription(stage)}</p>
           {stage===0&&<div className="mt-6 space-y-4">
-            <p className="font-semibold">{data.school.name}</p>
-            <div className="rounded-lg bg-neutral-50 p-4 text-sm">
+            <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
+              <span>教室の設計：質問 {Math.min(setupIndex+1,setupSteps.length)} / {setupSteps.length}</span>
+              <span>{data.school.name}</span>
+            </div>
+            <div className="h-1.5 rounded bg-neutral-100">
+              <div className="h-full rounded bg-emerald-700" style={{width:((Math.min(setupIndex+1,setupSteps.length))/setupSteps.length*100)+"%"}}/>
+            </div>
+            <h3 className="text-lg font-bold">{activeSetup.title}</h3>
+            <p className="rounded-lg bg-emerald-50 p-3 text-sm leading-7 text-emerald-900">{activeSetup.hint}</p>
+            {activeSetup.id==="audience"&&<fieldset className="space-y-2">
+              <legend className="sr-only">受講者の年齢</legend>
+              {([
+                ["adults","成人のみ","保護者情報は不要"],
+                ["minors","未成年のみ","保護者情報が必要。学年からの終了予定日設定も可能"],
+                ["mixed","成人と未成年の両方","未成年者の申込時だけ保護者情報を必須にする"],
+              ] as const).map(([value,title,hint])=><label key={value}
+                className={"flex cursor-pointer gap-3 rounded-xl border p-3 "+(audience===value?"border-emerald-700 bg-emerald-50":"border-neutral-200")}>
+                  <input type="radio" checked={audience===value} onChange={()=>update("audience",value)}/>
+                  <span className="grid gap-1"><span className="text-sm font-semibold">{title}</span><span className="text-xs text-neutral-600">{hint}</span></span>
+                </label>)}
+            </fieldset>}
+            {(["teacherLabel","learnerLabel","guardianLabel"].includes(activeSetup.id))&&<label className="block text-sm font-semibold">呼び方
+              <input className={field+" mt-2"} maxLength={30}
+                value={String(wizard[activeSetup.id]??({teacherLabel:"先生",learnerLabel:"生徒",guardianLabel:"保護者"} as Record<string,string>)[activeSetup.id])}
+                onChange={e=>update(activeSetup.id,e.target.value)}/>
+              <p className="mt-2 text-xs font-normal text-neutral-500">後からいつでも変更できます。</p>
+            </label>}
+            {activeSetup.id==="gradeExpiry"&&<fieldset className="space-y-2">
+              {([["no","学年による終了予定日は設定しない"],["yes","学年から終了予定日を提案する"]] as const).map(([value,title])=>
+                <label key={value} className="flex items-center gap-3 rounded-lg border p-3 text-sm">
+                  <input type="radio" checked={String(wizard.gradeExpiry??"no")===value} onChange={()=>update("gradeExpiry",value)}/>{title}
+                </label>)}
+              <p className="text-xs text-neutral-600">どちらを選んでも、学年だけで退会や月謝停止を確定しません。</p>
+            </fieldset>}
+            {activeSetup.id==="courseList"&&<div className="space-y-3">
+              <p className="text-sm">登録済みのコース：{data.courses.length}件</p>
+              <div className="rounded-xl bg-neutral-50 p-4">
+                {data.courses.length?data.courses.map(course=><p key={course.id} className="border-b py-2 text-sm">{course.name}：月謝 {course.design?.monthlyFee?.toLocaleString("ja-JP")??"未設定"}円／月 {course.design?.monthlyVisits??"未設定"}回</p>):<p className="text-sm">コースはまだありません。</p>}
+              </div>
+              <Link className={button} href={"/my/manage?tab=class&business="+data.school.id}>コースを作成・変更する</Link>
+            </div>}
+            {activeSetup.id==="classList"&&<div className="space-y-3">
+              <p className="text-sm">登録済みのクラス：{data.classes.length}件</p>
+              <div className="rounded-xl bg-neutral-50 p-4">
+                {data.classes.length?data.classes.map(slot=><p key={slot.id} className="border-b py-2 text-sm">
+                  {slot.name}（{slot.starts_at?.slice(0,5)}〜 ／ {slot.duration_minutes}分）
+                </p>):<p className="text-sm">クラスはまだありません。</p>}
+              </div>
+              <Link className={button} href={"/my/manage?tab=class&business="+data.school.id}>クラスを作成・変更する</Link>
+            </div>}
+            {activeSetup.id==="intake"&&<div className="space-y-3">
+              <p className="rounded-xl bg-neutral-50 p-4 text-sm">現在の受付：{data.recruitment?.enabled?(data.recruitment.route==="direct"?"直接入会":"説明会・体験の受付あり"):"受付未設定・停止中"}</p>
+              <p className="text-sm text-neutral-600">コースごとの入会方法や申込項目は、既存の募集・入会設定から編集できます。</p>
+              <Link className={button} href={"/my/manage?tab=class&business="+data.school.id+"&setup=1"}>募集・入会方法を確認する</Link>
+            </div>}
+            {activeSetup.id==="review"&&<div className="space-y-3 rounded-xl border p-4 text-sm">
+              <p>事業：<strong>{data.school.name}</strong></p>
+              <p>対象：{audience==="adults"?"成人のみ":audience==="minors"?"未成年のみ":"成人・未成年の両方"}</p>
+              <p>教える人：{String(wizard.teacherLabel??"先生")} ／ 受講者：{String(wizard.learnerLabel??"生徒")}</p>
+              {audience!=="adults"&&<p>保護者：{String(wizard.guardianLabel??"保護者")}</p>}
+              {audience==="minors"&&<p>卒業予定日の提案：{wizard.gradeExpiry==="yes"?"あり（先生確認必須）":"なし"}</p>}
               <p>コース：{data.courses.length}件 ／ クラス：{data.classes.length}件</p>
-              {data.courses.map(course=><div key={course.id} className="mt-2 border-t pt-2">
-                <p className="font-semibold">{course.name}</p>
-                <p className="text-xs text-neutral-600">{data.classes.filter(slot=>slot.product_id===course.id).map(slot=>slot.name).join("・")||"クラス未設定"}</p>
-              </div>)}
+              <p>入会受付：{data.recruitment?.enabled?"設定済み":"未設定"}</p>
+            </div>}
+            <div className="flex flex-wrap items-center gap-3 border-t pt-5">
+              <button className={button} disabled={busy||setupIndex===0} onClick={()=>void setupMove(setupIndex-1)}>← 前へ</button>
+              {activeSetup.id==="review"?
+                <button className={primary} disabled={busy} onClick={async()=>{if(await save("saveWizard"))view(1);}}>保存して16の質問へ →</button>:
+                <button className={primary} disabled={busy} onClick={()=>void setupMove(setupIndex+1)}>
+                  {busy?"保存中…":"保存して次へ →"}</button>}
             </div>
-            <p className="text-sm">受講者の年齢や、先生・生徒の呼び方を設定できます。実際の料金・クラス・説明会は既存の管理画面が正本です。</p>
-            <label className="block text-sm font-semibold">対象とする受講者
-              <select className={field+" mt-1"} value={String(wizard.audience??"adults")} onChange={e=>update("audience",e.target.value)}>
-                <option value="adults">成人のみ</option><option value="minors">未成年のみ</option><option value="mixed">成人と未成年の両方</option>
-              </select>
-            </label>
-            {([["teacherLabel","先生の呼び方"],["learnerLabel","生徒の呼び方"]] as const).map(([id,text])=>
-              <label key={id} className="block text-sm font-semibold">{text}
-                <input className={field+" mt-1"} maxLength={30} value={String(wizard[id]??(id==="teacherLabel"?"先生":"生徒"))} onChange={e=>update(id,e.target.value)}/>
-              </label>)}
-            {wizard.audience!=="adults"&&<label className="block text-sm font-semibold">保護者の呼び方
-              <input className={field+" mt-1"} maxLength={30} value={String(wizard.guardianLabel??"保護者")} onChange={e=>update("guardianLabel",e.target.value)}/>
-            </label>}
-            {wizard.audience==="minors"&&<label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={wizard.gradeExpiry==="yes"} onChange={e=>update("gradeExpiry",e.target.checked?"yes":"no")}/>
-              学年から卒業予定日を提案する（先生の確認後に確定）
-            </label>}
-            <div className="flex flex-wrap gap-3">
-              <button className={primary} disabled={busy} onClick={()=>void save("saveWizard")}>設計の回答を保存</button>
-              <Link className={button} href={"/my/manage?tab=class&business="+data.school.id}>コース・クラスを編集</Link>
-              <button className={button} onClick={()=>view(1)}>次の工程へ</button>
-            </div>
+            <p className="text-xs text-neutral-500">回答は「次へ」を押すごとに保存します。再び開くと続きから始められます。</p>
           </div>}
           {stage===1&&<div className="mt-6 space-y-4">
             <div className="rounded-xl bg-emerald-50 p-3 text-sm">
