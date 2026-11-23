@@ -226,12 +226,6 @@ export async function POST(request: NextRequest) {
       return reply({ ok: true });
     }
     if (body?.action === "createBusiness") {
-      if (!user.isMonitor) {
-        const { count, error: countError } = await db.from("class_schools")
-          .select("id",{count:"exact",head:true}).eq("owner_user_id",user.id).is("archived_at",null);
-        if(countError)throw countError;
-        if((count??0)>=1)return fail("CLASS Aでは事業は1件までです。",403);
-      }
       if (!name || name.length > 120 || !["school", "studio", "other"].includes(body.businessType) ||
         typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業名と形態を確認してください。");
       const { error } = await db.from("class_schools").upsert({ id: body.id, name, owner_user_id: user.id,
@@ -303,7 +297,7 @@ export async function POST(request: NextRequest) {
     const school = await ownedSchool(user.id, scope);
     if (!school) return fail("教室が見つかりません。", 404);
     if (body?.action === "saveSlotRows") {
-      if(!user.isMonitor && body.rows?.some((row: {new?: boolean})=>row?.new===true)){
+      if(!user.isMonitor && Array.isArray(body.rows) && body.rows.some((row: {new?: boolean})=>row?.new===true)){
         const access=await classFeatureAccess(school.id,user.id);
         if(access.plan!=="b"){
           const count=await db.from("school_classes").select("id",{count:"exact",head:true}).eq("school_id",school.id);
