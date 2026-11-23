@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
-import { classBusinessId } from "@/lib/classBusinessScope";
+import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
 import { eligibleClassHomePage } from "@/lib/classHomePage";
 
 export const runtime = "nodejs";
@@ -21,7 +21,7 @@ async function authorize(request: NextRequest) {
   const school = request.nextUrl.searchParams.get("school");
   if (!school || !classIdPattern.test(school)) return null;
   const owned = await classBusinessId(data.user.id, school);
-  if (!owned) return null;
+  if (!owned || !await canManageClassStudio(data.user.id)) return null;
   return { userId: data.user.id, schoolId: owned };
 }
 const validWizard = (value: unknown): value is Record<string, unknown> => {
