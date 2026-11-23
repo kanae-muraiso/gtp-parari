@@ -26,9 +26,9 @@ export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: b
     <section aria-label="クラス" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {(destinations.businesses ?? (destinations.owned ? [destinations.owned] : [])).map(school =>
         <Shortcut key={school.id} title={school.name} action="事業を運営"
-          href={studioEnabled ? "/my/manage?tab=class&business=" + school.id : "/my/start-studio"} />)}
+          href={studioEnabled ? "/my/class-onboarding?business=" + school.id : "/my/start-studio"} />)}
       {studioEnabled && destinations.canManage === true && !(destinations.businesses?.length || destinations.owned) &&
-        <Shortcut title="事業を登録" action="クラス運営" href="/my/manage?tab=class" />}
+        <Shortcut title="事業を登録" action="クラス運営" href="/my/class-onboarding" />}
       {destinations.enrolled.map(school => <Shortcut key={school.id} title={school.name}
         action="クラスの予定" href={`/my/classes/${school.id}`} />)}
     </section>
