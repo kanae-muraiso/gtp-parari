@@ -28,7 +28,7 @@ export default async function ClassBusinessPage({ params }: { params: Promise<{ 
       .maybeSingle() : null;
   if (page?.error) throw page.error;
   const publicPage = page?.data && !page.data.is_deleted &&
-    (page.data.visibility === "public" || page.data.is_public === true)
+    (page.data.visibility === "public" || (page.data.visibility == null && page.data.is_public === true))
       ? { id: page.data.id, title: page.data.title } : null;
   return <main className="min-h-screen bg-neutral-50 px-5 py-12 sm:py-20">
     <ClassBusinessFrontView name={school.name} introduction={published.introduction}
