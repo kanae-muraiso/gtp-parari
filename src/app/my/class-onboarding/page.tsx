@@ -344,6 +344,27 @@ export default function IntegratedClassOnboarding() {
               <p className="mt-2 leading-7">この教室の紹介・コース・日時・申込が、同じページに表示されます。文章・写真はPARARIで編集でき、コースや申込ボタンはCLASSが管理します。</p>
               <p className="mt-2 text-xs text-emerald-900">公開URL：/class-business/{data.school.id}</p>
             </div>
+            <section aria-label="公開ページの構成イメージ" className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+              <div className="border-b bg-neutral-100 px-4 py-2 text-xs text-neutral-600">このURLに表示される1ページの構造（イメージ）</div>
+              <div className="space-y-4 p-5">
+                <div className="space-y-1">
+                  <h4 className="text-xl font-bold">{data.school.name}</h4>
+                  <p className="text-xs text-neutral-600">教室の公開ページ /class-business/{data.school.id}</p>
+                </div>
+                <div className="rounded-xl border border-dashed border-emerald-400 bg-emerald-50 p-4">
+                  <p className="text-xs font-semibold text-emerald-900">PARARI作品で編集する場所</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{welcome||"先生からのご挨拶・教室の写真・講師紹介など"}</p>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-semibold text-blue-900">CLASSが自動表示する場所</p>
+                  <div className="mt-2 space-y-2">
+                    {data.courses.length?data.courses.map(course=><p key={course.id} className="rounded bg-white px-3 py-2 text-sm">{course.name}</p>):
+                      <p className="rounded bg-white px-3 py-2 text-sm">登録したコース・開催日・料金</p>}
+                    <p className="rounded bg-blue-700 px-3 py-2 text-center text-sm font-semibold text-white">説明会・体験・入会の申込</p>
+                  </div>
+                </div>
+              </div>
+            </section>
             {pageId ? <>
               <div className="rounded-xl border p-4">
                 <p className="font-semibold">この教室の紹介PAGEは準備できています</p>
