@@ -123,6 +123,21 @@ export default function IntegratedClassOnboarding() {
     }).catch(cause=>{if(!abort.signal.aborted){setError(cause instanceof Error?cause.message:"設計の取得に失敗しました。");setLoading(false);}});
     return ()=>abort.abort();
   },[schoolId]);
+  function fillKnownFacts(){
+    if(!data)return;
+    const course=data.courses[0];
+    const places=data.classes.map(slot=>slot.name).join("、");
+    const monthlyFee=course?.design?.monthlyFee;
+    const visits=course?.design?.monthlyVisits;
+    const prefilled:Record<number,string>={
+      1:course?.name||data.school.name,
+      5:[course?.name,visits?"月"+visits+"回":"",places].filter(Boolean).join("／"),
+      13:monthlyFee!=null&&Number.isFinite(monthlyFee)?"月謝 "+monthlyFee.toLocaleString("ja-JP")+"円（詳細の条件を確認してください）":"",
+      15:data.recruitment?.enabled?data.recruitment.route==="direct"?"入会申込へご案内":"説明会・体験の予約をご案内":"",
+    };
+    setAnswers(old=>old.map((answer,i)=>answer.trim()?answer:prefilled[i]||""));
+    setNotice("コース名・回数・料金・受付方法を下書きに反映しました。内容を確認してから保存してください。");
+  }
   async function createStarterPage(){
     if(!data||pageBusy)return;
     setPageBusy(true);setNotice("");setError("");
@@ -244,6 +259,11 @@ export default function IntegratedClassOnboarding() {
             </div>
           </div>}
           {stage===1&&<div className="mt-6 space-y-4">
+            <div className="rounded-xl bg-emerald-50 p-3 text-sm">
+              <p className="font-semibold">入力済みの教室情報を再利用できます</p>
+              <p className="mt-1 text-xs text-neutral-600">コース名・月謝・開催枠・申込方法だけを未回答の質問へ転記します。すでに入力した回答は変更しません。</p>
+              <button className={button+" mt-2"} onClick={fillKnownFacts}>教室の設定から下書きを作る</button>
+            </div>
             <p className="text-xs font-semibold text-emerald-800">質問 {question+1} / 16</p>
             <div className="h-1.5 rounded bg-neutral-100"><div className="h-full rounded bg-emerald-700" style={{width:((question+1)/16*100)+"%"}}/></div>
             <h3 className="text-lg font-bold">{questions[question].title}</h3>
