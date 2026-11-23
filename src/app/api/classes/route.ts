@@ -1,6 +1,7 @@
 import { classDateRuleKey, classDateRulesOverlap, hasDuplicateClassDateRules, matchesClassDateRule, parseClassScheduleRules, type ClassDateRule } from "@/lib/classRecurrence";
 import { classGuardianEnrollmentIds, classParticipantMembers } from "@/lib/classCalendarAccess";
-import { classBusinessId } from "@/lib/classBusinessScope";
+import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
+import { classFeatureAccess } from "@/lib/classFeatureAccess";
 import { parseClassProduct, type NamedClassProduct } from "@/lib/classProduct";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
@@ -66,8 +67,9 @@ export async function GET(request: NextRequest) {
     const user = await currentUser(request);
     if (!user) return fail("ログインが必要です。", 401);
     const scope = request.nextUrl.searchParams.get("business");
+    const canManage = await canManageClassStudio(user.id,user.isMonitor);
     if (request.nextUrl.searchParams.get("businesses") === "1") {
-      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
+      if (!canManage) return fail("STUDIOの利用を開始してください。", 403);
       const { data, error } = await db.from("class_schools").select("id,name,business_type,archived_at").eq("owner_user_id", user.id).eq("tier", "a").order("name");
       if (error) throw error;
       return reply({ ok: true, businesses: data });
@@ -77,15 +79,15 @@ export async function GET(request: NextRequest) {
       let enrolledQuery = db.from("school_enrollments").select("school:class_schools(id,name,archived_at)").eq("status", "active");
       enrolledQuery = guardianIds.length ? enrolledQuery.or(`user_id.eq.${user.id},id.in.(${guardianIds.join(",")})`) : enrolledQuery.eq("user_id", user.id);
       const [owned, enrolled] = await Promise.all([
-        user.isMonitor ? db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name") : Promise.resolve({ data: [], error: null }),
+        canManage ? db.from("class_schools").select("id,name").eq("owner_user_id", user.id).is("archived_at", null).order("name") : Promise.resolve({ data: [], error: null }),
         enrolledQuery.returns<{ school: { id: string; name: string; archived_at?: string | null } | null }[]>(),
       ]);
       if (owned.error || enrolled.error) throw owned.error ?? enrolled.error;
-      return reply({ ok: true, userId: user.id, canManage: user.isMonitor, owned: owned.data?.[0] ?? null, businesses: owned.data,
+      return reply({ ok: true, userId: user.id, canManage, owned: owned.data?.[0] ?? null, businesses: owned.data,
         enrolled: [...new Map((enrolled.data ?? []).flatMap(({ school }) => school && !school.archived_at ? [[school.id, { id: school.id, name: school.name }] as const] : [])).values()] });
     }
     if (request.nextUrl.searchParams.get("product") === "1") {
-      if (!user.isMonitor) return fail("教室が見つかりません。", 404);
+      if (!canManage) return fail("STUDIOの利用を開始してください。", 403);
       const school = await ownedSchool(user.id, scope);
       if (!school) return fail("教室が見つかりません。", 404);
       const result = await db.from("school_class_product_designs").select("design").eq("school_id", school.id).maybeSingle();
@@ -100,7 +102,7 @@ export async function GET(request: NextRequest) {
       })) });
     }
     const id = request.nextUrl.searchParams.get("school");
-    if (id === null) return user.isMonitor ? await manage(user.id, scope) : fail("教室が見つかりません。", 404);
+    if (id === null) return canManage ? await manage(user.id, scope) : fail("STUDIOの利用を開始してください。", 403);
     if (!classIdPattern.test(id)) return fail("教室が見つかりません。", 404);
 
     const members = await classParticipantMembers(user.id, id);
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest) {
     if (requestedMember && !selected) return fail("教室が見つかりません。", 404);
     const { data: school, error } = selected
       ? await db.rpc("read_class_school_member", { p_actor: user.id, p_school: id, p_member: selected.id })
-      : user.isMonitor ? await db.rpc("read_class_school", { p_school: id, p_user: user.id }) : { data: null, error: null };
+      : canManage ? await db.rpc("read_class_school", { p_school: id, p_user: user.id }) : { data: null, error: null };
     if (error) throw error;
     if (!school) return fail("教室が見つかりません。", 404);
     const visible = school as ClassSchool;
@@ -212,7 +214,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       return reply({ ok: true });
     }
-    if (!user.isMonitor) return fail("教室が見つかりません。", 404);
+    if (!await canManageClassStudio(user.id,user.isMonitor)) return fail("STUDIOの利用を開始してください。", 403);
     const name = clean(body?.name);
     if (body?.action === "archiveBusiness" || body?.action === "restoreBusiness") {
       if (typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業を確認してください。");
@@ -224,6 +226,12 @@ export async function POST(request: NextRequest) {
       return reply({ ok: true });
     }
     if (body?.action === "createBusiness") {
+      if (!user.isMonitor) {
+        const { count, error: countError } = await db.from("class_schools")
+          .select("id",{count:"exact",head:true}).eq("owner_user_id",user.id).is("archived_at",null);
+        if(countError)throw countError;
+        if((count??0)>=1)return fail("CLASS Aでは事業は1件までです。",403);
+      }
       if (!name || name.length > 120 || !["school", "studio", "other"].includes(body.businessType) ||
         typeof body.id !== "string" || !classIdPattern.test(body.id)) return fail("事業名と形態を確認してください。");
       const { error } = await db.from("class_schools").upsert({ id: body.id, name, owner_user_id: user.id,
@@ -244,6 +252,20 @@ export async function POST(request: NextRequest) {
       return await manage(user.id, scope);
     }
     if (body?.action === "create" || body?.action === "schedule") {
+      if(body.action==="create" && !user.isMonitor) {
+        const access = scope ? await classFeatureAccess(scope,user.id) : null;
+        if(!access?.canManage) return fail("事業を確認してください。",404);
+        if(access.plan!=="b") {
+          const owned = await db.from("class_schools").select("id").eq("owner_user_id",user.id);
+          if(owned.error)throw owned.error;
+          if(owned.data.length) {
+            const count = await db.from("school_classes").select("id",{count:"exact",head:true})
+              .in("school_id",owned.data.map(item=>item.id));
+            if(count.error)throw count.error;
+            if((count.count??0)>=1)return fail("CLASS Aではクラスは1件までです。",403);
+          }
+        }
+      }
       const date = clean(body.date);
       const time = clean(body.time);
       const location = clean(body.location);
@@ -281,6 +303,14 @@ export async function POST(request: NextRequest) {
     const school = await ownedSchool(user.id, scope);
     if (!school) return fail("教室が見つかりません。", 404);
     if (body?.action === "saveSlotRows") {
+      if(!user.isMonitor && body.rows?.some((row: {new?: boolean})=>row?.new===true)){
+        const access=await classFeatureAccess(school.id,user.id);
+        if(access.plan!=="b"){
+          const count=await db.from("school_classes").select("id",{count:"exact",head:true}).eq("school_id",school.id);
+          if(count.error)throw count.error;
+          if((count.count??0)>=1)return fail("CLASS Aではクラスは1件までです。",403);
+        }
+      }
       if (!Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > 12) return fail("開催枠を確認してください。");
       const byId = new Map(school.classes.map(item => [item.id, item]));
       const ids = new Set<string>();
@@ -388,6 +418,15 @@ export async function POST(request: NextRequest) {
     }
     if (body?.action === "saveContentProduct") {
       const id = clean(body.productId);
+      if(!user.isMonitor) {
+        const access=await classFeatureAccess(school.id,user.id);
+        if(access.plan!=="b") {
+          const existing=await db.from("school_class_products").select("id").eq("school_id",school.id);
+          if(existing.error)throw existing.error;
+          if(existing.data.length && !existing.data.some(item=>item.id===id))
+            return fail("CLASS Aではコースは1件までです。",403);
+        }
+      }
       const design = parseClassProduct(body.design, new Set(school.classes.filter(item => !item.product_id || item.product_id === id).map(item => item.id)), true);
       if (!classIdPattern.test(id) || !name || name.length > 120 || !design) return fail("商品名・開催枠・受講条件を確認してください。");
       const { error } = await db.rpc("save_school_content_product", { p_owner: user.id, p_school: school.id,
@@ -470,6 +509,8 @@ export async function POST(request: NextRequest) {
     return await manage(user.id, scope);
   } catch (error) {
     const code = (error as { code?: string })?.code;
+    if (code === "P0010") return fail("CLASS Aではクラスは1件までです。",403);
+    if (code === "P0011") return fail("CLASS Aでは在籍者は10人までです。",403);
     if (code === "23505") return fail("すでに同じ情報が登録されています。再読み込みしてください。", 409);
     if (code === "P0002") return fail("指定した教室または継続クラスの受付が見つかりません。", 404);
     if (code === "22007" || code === "22008") return fail("初回日時を確認してください。");
