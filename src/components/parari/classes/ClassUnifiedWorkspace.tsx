@@ -31,14 +31,14 @@ type FlowFocus="recruitment"|"agreement"|"blueprint"|"admissions";
 type FirstDraft={
   name:string;cadence:"weekly"|"monthly";date:string;time:string;duration:string;
   delivery:"onsite"|"online"|"hybrid";location:string;meetingUrl:string;
-  fee:string;monthlyVisits:string;capacity:string;audience:"adult"|"minor";
+  feeMode:"monthly"|"per_visit";fee:string;monthlyVisits:string;capacity:string;audience:"adult"|"minor";
 };
 const field="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm";
 const button="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-50";
 const primary="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
 const panel="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5";
 const firstDraft=():FirstDraft=>({name:"",cadence:"weekly",date:classCalendarToday(),time:"",duration:"60",delivery:"onsite",
-  location:"",meetingUrl:"",fee:"0",monthlyVisits:"4",capacity:"10",audience:"adult"});
+  location:"",meetingUrl:"",feeMode:"monthly",fee:"0",monthlyVisits:"4",capacity:"10",audience:"adult"});
 const firstQuestions=[
   ["クラスの名前","まず、どんなクラスを開きますか？"],
   ["開催日時・繰り返し","いつ、どのくらいの頻度で開催しますか？"],
@@ -153,8 +153,8 @@ export default function ClassUnifiedWorkspace(){
     const productId=crypto.randomUUID();
     const classId=crypto.randomUUID();
     const design:ClassProduct={
-      audience:first.audience,classIds:[],description:"",capacity,monthlyFee:fee,monthlyVisits:visits,
-      booking:"fixed",extraFee:null,makeup:"none",makeupExpiry:"next_month",walkInFee:null,
+      audience:first.audience,classIds:[],description:"",capacity,monthlyFee:first.feeMode==="monthly"?fee:0,monthlyVisits:first.feeMode==="monthly"?visits:1,
+      booking:first.feeMode==="monthly"?"fixed":"flexible",extraFee:null,makeup:"none",makeupExpiry:"next_month",walkInFee:first.feeMode==="per_visit"?fee:null,
       slotDefaults:{duration,delivery:first.delivery,location:first.location.trim()},
     };
     try {
@@ -349,13 +349,18 @@ export default function ClassUnifiedWorkspace(){
                 onChange={e=>patchFirst("meetingUrl",e.target.value)}/></label>}
           </div>}
           {firstStep===3&&<div className="grid max-w-lg gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm">月謝（円）
+            <label className="grid gap-1 text-sm sm:col-span-2">費用の決め方
+              <select className={field} value={first.feeMode} onChange={e=>patchFirst("feeMode",e.target.value as FirstDraft["feeMode"])}>
+                <option value="monthly">月謝制</option><option value="per_visit">1回払い（予約不要の当日参加）</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm">{first.feeMode==="monthly"?"月謝（円）":"1回の参加費（円）"}
               <input className={field} inputMode="numeric" type="number" min={0} max={1000000}
                 value={first.fee} onChange={e=>patchFirst("fee",e.target.value)}/></label>
-            <label className="grid gap-1 text-sm">月の受講回数
+            {first.feeMode==="monthly"&&<label className="grid gap-1 text-sm">月の受講回数
               <input className={field} type="number" min={1} max={100} value={first.monthlyVisits}
-                onChange={e=>patchFirst("monthlyVisits",e.target.value)}/></label>
-            <p className="text-xs text-neutral-600 sm:col-span-2">まず月謝制の定期クラスを作ります。1回払いなどの変更は、作成後に「コース」を選んで設定できます。</p>
+                onChange={e=>patchFirst("monthlyVisits",e.target.value)}/></label>}
+            <p className="text-xs text-neutral-600 sm:col-span-2">どちらも定期開催するクラスです。1回払いは予約不要の当日参加として設定されます。</p>
           </div>}
           {firstStep===4&&<div className="grid max-w-lg gap-3">
             <label className="grid gap-1 text-sm">定員
@@ -370,7 +375,7 @@ export default function ClassUnifiedWorkspace(){
             <p><strong>クラス：</strong>{first.name||"未入力"}</p>
             <p><strong>開催：</strong>{first.cadence==="weekly"?"毎週":"毎月"} ／ {first.date} {first.time}〜（{first.duration}分）</p>
             <p><strong>場所：</strong>{first.delivery==="online"?"オンライン":first.location||"未入力"}</p>
-            <p><strong>費用：</strong>月 {first.monthlyVisits}回・{money(Number(first.fee))}</p>
+            <p><strong>費用：</strong>{first.feeMode==="monthly"?"月 "+first.monthlyVisits+"回・月謝 ":"1回払い・参加費 "}{money(Number(first.fee))}</p>
             <p><strong>定員：</strong>{first.capacity}人</p>
             <p className="mt-2 text-xs text-neutral-600">保存すると、内部に初期コースも自動作成され、開催予定と料金が紐付きます。</p>
           </div>}
