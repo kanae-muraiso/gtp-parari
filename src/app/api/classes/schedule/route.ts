@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classBusinessId } from "@/lib/classBusinessScope";
+import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
 import { classParticipantMembers } from "@/lib/classCalendarAccess";
 import { classIdPattern } from "@/lib/classes";
 import { calendarMonthPattern, classCalendarDays, generateClassDays, shiftCalendarMonth,
@@ -19,9 +19,7 @@ async function actor(request: NextRequest, requireMonitor = false) {
   if (!token) return null;
   const { data, error } = await db.auth.getUser(token);
   if (error || !data.user) return null;
-  const profile = await db.from("profiles").select("is_monitor").eq("user_id", data.user.id).maybeSingle();
-  if (profile.error) throw profile.error;
-  return !requireMonitor || profile.data?.is_monitor ? data.user.id : null;
+  return !requireMonitor || await canManageClassStudio(data.user.id) ? data.user.id : null;
 }
 
 async function ownedClass(request: NextRequest, user: string, classId: string | null) {
