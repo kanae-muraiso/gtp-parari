@@ -3,6 +3,8 @@ import { classAdmissionMail } from "@/lib/classAdmissionMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classBusinessId } from "@/lib/classBusinessScope";
+import { classFeatureAccess } from "@/lib/classFeatureAccess";
+import { eligibleClassEventPage } from "@/lib/classEventPage";
 import { classIdPattern } from "@/lib/classes";
 import { activeEventSchool, isClassEventMember } from "@/lib/classEventAccess";
 import { classEventKind, classEventLabels, classEventScheduleText, maxWorkshopSessions, type ClassEvent, type ClassEventSession, type ClassEventSettings } from "@/lib/classEvents";
@@ -23,9 +25,10 @@ async function ownBusiness(request: NextRequest, user: string | null) {
   if (!user) return null;
   const scope = request.nextUrl.searchParams.get("business");
   if (!scope) return null;
-  const { data, error } = await db.from("profiles").select("is_monitor").eq("user_id", user).maybeSingle();
-  if (error) throw error;
-  return data?.is_monitor ? classBusinessId(user, scope) : null;
+  const school = await classBusinessId(user, scope);
+  if (!school) return null;
+  const access = await classFeatureAccess(school,user);
+  return access.canManage ? school : null;
 }
 
 async function eventList(school: string, publishedOnly: boolean, kind?: string | null) {
@@ -84,15 +87,34 @@ export async function GET(request: NextRequest) {
       const entry = user ? await db.from("application_entries").select("id,payment_status").eq("application_id", id)
         .eq("user_id", user).in("status", ["submitted", "confirmed"]).limit(1).maybeSingle() : null;
       if (entry?.error) throw entry.error;
-      return send({ ok: true, event: publicEvent(event), schoolName: school.name, registered: Boolean(entry?.data),
+      const binding=await db.from("class_event_pages").select("work_id").eq("event_id",id).maybeSingle();
+      if(binding.error)throw binding.error;
+      let authoredPage: {id:string;content:string}|null=null;
+      if(binding.data?.work_id){
+        const work=await db.from("parari_books").select("id,content,visibility,is_public,is_deleted,owner")
+          .eq("id",binding.data.work_id).eq("owner",school.owner_user_id).maybeSingle();
+        if(work.error)throw work.error;
+        if(work.data && !work.data.is_deleted && eligibleClassEventPage(work.data.content,id) &&
+          (work.data.visibility==="public" || (work.data.visibility==null&&work.data.is_public===true)))
+          authoredPage={id:work.data.id,content:work.data.content};
+      }
+      return send({ ok: true, event: publicEvent(event), authoredPage, schoolName: school.name, registered: Boolean(entry?.data),
         paymentUrl: entry?.data?.payment_status === "unpaid" ? event.payment_url : null,
         canRegister: event.status === "open" && !owner && event.class_event.registration && Date.parse(event.class_event.deadline) > Date.now() });
     }
     const school = await ownBusiness(request, user);
     if (!school) return missing();
-    if (!id) return send({ ok: true, events: await eventList(school, false, request.nextUrl.searchParams.get("kind")) });
+    if (!id) {
+      const access = await classFeatureAccess(school,user!);
+      return send({ ok: true, canCreateEvents: access.canCreateEvents, classPlan: access.plan,
+        events: await eventList(school, false, request.nextUrl.searchParams.get("kind")) });
+    }
     const event = await getEvent(id);
     if (!event || event.class_event_school_id !== school) return missing();
+    const [eventPage] = await Promise.all([
+      db.from("class_event_pages").select("work_id").eq("event_id",id).maybeSingle(),
+    ]);
+    if (eventPage.error) throw eventPage.error;
     const { data, error } = await db.from("application_entries")
       .select("id,user_id,applicant_name,payment_status,status,class_event_attendance,class_workshop_attendance(session_at,status)")
       .eq("application_id", id).in("status", ["submitted", "confirmed"]).order("created_at");
@@ -101,7 +123,7 @@ export async function GET(request: NextRequest) {
     const profiles = users.length ? await db.from("profiles").select("user_id,display_name,username").in("user_id", users) : null;
     if (profiles?.error) throw profiles.error;
     const names = new Map(profiles?.data.map(profile => [profile.user_id, profile.display_name || profile.username]));
-    return send({ ok: true, event, entries: data.map(({ user_id, applicant_name, ...entry }) => ({
+    return send({ ok: true, event, eventPageId: eventPage.data?.work_id ?? null, entries: data.map(({ user_id, applicant_name, ...entry }) => ({
       ...entry, name: applicant_name || names.get(user_id) || "PARARIユーザー",
     })) });
   } catch (error) {
@@ -126,10 +148,28 @@ export async function POST(request: NextRequest) {
     if (!school || !user) return missing();
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") return fail("イベントの内容を確認してください。");
+    const access = await classFeatureAccess(school,user);
+    if (!access.canManage) return missing();
+    if ((body.action === "save" || body.action === "publish" || body.action === "bindPage") &&
+        !access.canCreateEvents) return fail("イベント・講習会の新規作成と公開はCLASS Bで利用できます。",403);
     const id = clean(body.id, 36);
     const event = id ? await getEvent(id) : null;
     if (id && (!event || event.class_event_school_id !== school)) return missing();
 
+    if (event && body.action === "bindPage") {
+      const workId=body.workId;
+      if (typeof workId !== "string" || !classIdPattern.test(workId)) return fail("PARARI PAGEを確認してください。");
+      const work=await db.from("parari_books").select("id,owner,content,is_deleted")
+        .eq("id",workId).eq("owner",user).maybeSingle();
+      if(work.error)throw work.error;
+      if(!work.data || work.data.is_deleted || !eligibleClassEventPage(work.data.content,event.id))
+        return fail("このイベント用のPARARI PAGEを選んでください。",403);
+      const saved=await db.from("class_event_pages").upsert({
+        event_id:event.id,work_id:workId,updated_at:new Date().toISOString(),
+      },{onConflict:"event_id"});
+      if(saved.error)throw saved.error;
+      return send({ok:true,id:event.id});
+    }
     if (event && ["publish", "close"].includes(body.action)) {
       const publish = body.action === "publish";
       if (!publish && event.status !== "open") return fail("公開中のイベントを選んでください。", 409);
