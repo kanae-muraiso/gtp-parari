@@ -31,9 +31,9 @@ export default async function ClassBusinessPage({ params }: { params: Promise<{ 
   const publicPage = page?.data && !page.data.is_deleted &&
     eligibleClassHomePage(page.data.content, id) &&
     (page.data.visibility === "public" || (page.data.visibility == null && page.data.is_public === true))
-      ? { id: page.data.id, title: page.data.title } : null;
+      ? { id: page.data.id, title: page.data.title, content: page.data.content } : null;
   return <main className="min-h-screen bg-neutral-50 px-5 py-12 sm:py-20">
     <ClassBusinessFrontView name={school.name} introduction={published.introduction}
-      links={selectClassBusinessFrontLinks(published.entries, links)} schoolId={id} introPage={publicPage} />
+      links={selectClassBusinessFrontLinks(published.entries, links)} schoolId={id} homePage={publicPage} />
   </main>;
 }
