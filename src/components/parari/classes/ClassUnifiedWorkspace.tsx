@@ -17,14 +17,15 @@ import ClassAdmissionsPanel from "@/components/parari/manage/ClassAdmissionsPane
 import ClassAbsencesPanel from "@/components/parari/manage/ClassAbsencesPanel";
 import ClassBusinessFrontPanel from "@/components/parari/manage/ClassBusinessFrontPanel";
 import ClassEventsPanel from "@/components/parari/manage/ClassEventsPanel";
+import ClassSalesPanel from "./ClassSalesPanel";
 
 type Business={id:string;name:string;business_type:"school"|"studio"|"other";archived_at?:string|null};
-type HomeDraft={wizard:Record<string,unknown>;landing_page_id:string|null;revision:number};
+type HomeDraft={wizard:Record<string,unknown>;sales_answers:string[];landing_page_id:string|null;revision:number};
 type OwnerDetails={
   draft:HomeDraft;pages:{id:string;title:string;visibility:string|null;is_public:boolean}[];
   published:boolean;recruitment:{enabled:boolean;public_id:string;route:string}|null;
 };
-type Tab="classes"|"admission"|"homepage"|"operation";
+type Tab="classes"|"admission"|"homepage"|"operation"|"improve";
 type Selection={kind:"business"|"course"|"class";id:string};
 type FlowFocus="recruitment"|"agreement"|"blueprint"|"admissions";
 type FirstDraft={
@@ -231,6 +232,7 @@ export default function ClassUnifiedWorkspace(){
   const navs:{id:Tab;label:string}[]=[
     {id:"classes",label:"クラス設計"},{id:"admission",label:"入会フロー"},
     {id:"homepage",label:"募集ページ"},{id:"operation",label:"名簿・日々の運営"},
+    {id:"improve",label:"16問で改善（任意）"},
   ];
 
   return <main className="min-h-screen bg-neutral-100 px-4 py-6 text-neutral-950 sm:px-6">
@@ -474,7 +476,7 @@ export default function ClassUnifiedWorkspace(){
             <textarea className={field} rows={3} value={welcome} maxLength={2000} onChange={e=>setWelcome(e.target.value)}/></label>
           <button type="button" className={primary} disabled={pageBusy||busy} onClick={()=>void createHomePage()}>この教室の紹介PAGEを作る</button>
         </>}
-        <details className="rounded-xl border p-3" open={false}>
+        <details className="rounded-xl border p-3">
           <summary className="cursor-pointer font-bold">募集ページの掲載・公開設定</summary>
           <div className="mt-3"><ClassBusinessFrontPanel key={business+":front"} schoolId={business} name={school.name}
             products={products} onOpenRecruitment={()=>setTab("admission")} onOpenSchedule={()=>setTab("classes")} onSaved={refresh}/></div>
@@ -486,6 +488,8 @@ export default function ClassUnifiedWorkspace(){
         </details>
       </section>}
 
+      {school&&tab==="improve"&&details&&<ClassSalesPanel schoolId={business}
+        answers={details.draft.sales_answers??[]} revision={details.draft.revision} onSaved={refresh}/>}
       {school&&tab==="operation"&&<section className={panel+" space-y-5"}>
         <h2 className="text-xl font-bold">日々の運営</h2>
         <div className="flex flex-wrap gap-2">
