@@ -1,5 +1,5 @@
 import { readClassIntakeCalendar } from "@/lib/classIntakeCalendarServer";
-import { classBusinessId } from "@/lib/classBusinessScope";
+import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
@@ -16,12 +16,12 @@ async function handle(request: NextRequest) {
     if (!user) return fail("ログインしてください。", 401);
     const businessId = await classBusinessId(user.id, request.nextUrl.searchParams.get("business"));
     if (!businessId) return fail("事業を選択してください。", 404);
-    const [profile, school] = await Promise.all([
-      db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
+    const [allowed, school] = await Promise.all([
+      canManageClassStudio(user.id),
       db.from("class_schools").select("id,name").eq("id", businessId).eq("owner_user_id", user.id).maybeSingle(),
     ]);
-    if (profile.error || school.error) throw profile.error ?? school.error;
-    if (profile.data?.is_monitor !== true || !school.data) return fail("教室が見つかりません。", 404);
+    if (school.error) throw school.error;
+    if (!allowed || !school.data) return fail("STUDIOから教室を開設してください。", 403);
     const id = school.data.id;
 
     if (request.method === "GET") {
