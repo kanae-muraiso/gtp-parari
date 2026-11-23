@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { classRequest } from "@/lib/classRequests";
+import { starterClassHomeSsot } from "@/lib/classHomePage";
 
 type School={ id:string; name:string };
 type Course={id:string;name:string;design:{monthlyFee?:number;monthlyVisits?:number}};
@@ -83,9 +84,9 @@ const primary="rounded-full bg-emerald-800 px-5 py-2 text-sm font-semibold text-
 const field="w-full rounded-xl border border-neutral-300 p-3 text-sm";
 function stageDescription(n:number){return [
   "すでにある教室の設定を確認し、先生の言葉を記録します。",
-  "16の質問に答え、募集で伝える内容を整理します。",
-  "PARARI PAGEを教室に関連付けます。PAGEの文章や写真は通常のエディタで編集します。",
+  "16問は不要。教室情報から標準の募集PAGEを作り、挨拶や写真は後から編集できます。",
   "公開ページ・説明会・入会申込の接続を確認します。",
+  "公開後、必要になったときに16の質問で紹介文を育てます。",
 ][n];}
 
 export default function IntegratedClassOnboarding() {
@@ -97,6 +98,7 @@ export default function IntegratedClassOnboarding() {
   const [setupIndex,setSetupIndex]=useState(0);
   const [wizard,setWizard]=useState<Record<string,unknown>>({});
   const [answers,setAnswers]=useState<string[]>(defaultAnswers);
+  const [welcome,setWelcome]=useState("");
   const [pageId,setPageId]=useState<string|null>(null);
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState(false);
@@ -118,6 +120,7 @@ export default function IntegratedClassOnboarding() {
     void classRequest<Details>("/onboarding?school="+schoolId,undefined,abort.signal).then(result=>{
       if(abort.signal.aborted)return;
       setData(result);setWizard(result.draft.wizard||{});
+      setWelcome(typeof result.draft.wizard?.welcome==="string"?result.draft.wizard.welcome:"");
       setSetupIndex(typeof result.draft.wizard?._setupStep==="number"
         ? Math.max(0, Math.min(9,result.draft.wizard._setupStep as number)) : 0);
       setAnswers(Array.from({length:16},(_,i)=>result.draft.sales_answers?.[i]??""));
@@ -148,15 +151,8 @@ export default function IntegratedClassOnboarding() {
       const session=await supabase?.auth.getSession();
       const token=session?.data.session?.access_token;
       if(!token)throw new Error("ログインしてください。");
-      const safe=(value:string)=>value.replace(/^\s*\[/gm,"［").replace(/\r/g,"").slice(0,5000);
-      const title=safe(data.school.name+"のご案内").replace(/\n/g," ").slice(0,120);
-      const selected=answers.map((answer,i)=>({answer:answer.trim(),title:questions[i].title}))
-        .filter(item=>item.answer);
-      const body=selected.length?selected.map(item=>item.title+"\n"+safe(item.answer)).join("\n\n"):
-        "このページは先生が自由に編集できる教室紹介の下書きです。";
-      // Operational fees, schedule, enrollment and CTA URLs are never copied
-      // into editable SSOT; those remain authoritative CLASS data.
-      const ssot="[PAGE]\ntitle: "+title+"\n[T]\n"+body;
+      const title=data.school.name+"のご案内";
+      const ssot=starterClassHomeSsot(title,schoolId,welcome);
       const response=await fetch("/api/works/create",{
         method:"POST",cache:"no-store",
         headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
@@ -188,7 +184,7 @@ export default function IntegratedClassOnboarding() {
     if(busy||!schoolId)return false;
     setBusy(true);setError("");setNotice("");
     try {
-      const body=action==="saveWizard"?{wizard}:action==="saveSales"?{answers}:{pageId};
+      const body=action==="saveWizard"?{wizard:{...wizard,welcome}}:action==="saveSales"?{answers}:{pageId};
       const result=await classRequest<{revision:number}>("/onboarding?school="+schoolId,{action,revision,...body});
       setRevision(result.revision);setNotice("保存しました。");
       return true;
@@ -208,7 +204,7 @@ export default function IntegratedClassOnboarding() {
     {id:"courseList",title:"どんなコースを開講していますか？",hint:"既存のコースを確認します。追加・料金変更は正本のクラス管理画面で行います。"},
     {id:"classList",title:"コースにはどんなクラスがありますか？",hint:"曜日・時間・定員はクラス管理の設定が正本です。ここでは確認だけを行います。"},
     {id:"intake",title:"入会前の説明会・体験は必要ですか？",hint:"現在の受付設定を表示します。コース別の説明会や予約日時は、募集・入会設定画面で調整してください。"},
-    {id:"review",title:"教室の設計内容を確認しましょう",hint:"ここで回答を確認して保存し、次は教室の魅力を伝える16の質問へ進みます。"},
+    {id:"review",title:"教室の設計内容を確認しましょう",hint:"ここで回答を確認して保存し、次は簡単な募集ページの作成に進みます。"},
   ];
   const activeSetup=setupSteps[Math.min(setupIndex,setupSteps.length-1)];
   async function setupMove(next:number){
@@ -233,10 +229,10 @@ export default function IntegratedClassOnboarding() {
         <Link href="/my/manage?tab=class" className="text-sm underline">← 既存のクラス管理へ</Link>
         <p className="text-xs font-bold tracking-widest text-emerald-800">PARARI CLASS · モニター統合検証</p>
         <h1 className="text-2xl font-bold">教室の開設・募集ガイド</h1>
-        <p className="text-sm leading-7 text-neutral-600">教室の設計 → 伝える内容 → PARARI PAGE → 募集公開をつなぐ実データ用の画面です。料金・予約・請求はここから直接変更しません。</p>
+        <p className="text-sm leading-7 text-neutral-600">教室の設計 → 簡単な募集PAGE → 募集公開 → 必要なら16問で改善をつなぐ実データ用の画面です。料金・予約・請求はここから直接変更しません。</p>
       </header>
       <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-sm text-amber-950">
-        <strong>段階的な実装の検証画面です。</strong>既存のモニター事業だけを対象に、設計回答と16問を保存します。
+        <strong>段階的な実装の検証画面です。</strong>既存のモニター事業だけを対象に、設計回答と任意の16問を保存します。
         PARARI作品の公開や実際の入会・請求は、先生がそれぞれの管理画面で確認して操作します。
       </div>
       <section className="rounded-xl bg-white p-5">
@@ -250,12 +246,12 @@ export default function IntegratedClassOnboarding() {
       </section>
       {data&&<>
         <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="開設ガイドの工程">
-          {["1 教室設計","2 魅力を伝える","3 PAGE作品","4 募集公開"].map((title,i)=><button type="button" key={title}
+          {["1 教室設計","2 募集PAGE","3 募集公開","公開後の改善"].map((title,i)=><button type="button" key={title}
             className={"rounded-xl border p-3 text-left text-sm font-semibold "+(stage===i?"border-emerald-700 bg-emerald-50":"border-neutral-200 bg-white")}
             onClick={()=>view(i)}>{title}</button>)}
         </nav>
         <section className="rounded-2xl border bg-white p-5 sm:p-7">
-          <h2 className="text-xl font-bold">{["教室を設計する","教室の魅力を伝える","PARARI作品を関連付ける","募集ページを確認する"][stage]}</h2>
+          <h2 className="text-xl font-bold">{["教室を設計する","簡単な募集ページを作る","募集ページを確認する","16の質問でページを育てる"][stage]}</h2>
           <p className="mt-2 text-sm text-neutral-600">{stageDescription(stage)}</p>
           {stage===0&&<div className="mt-6 space-y-4">
             <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
@@ -325,13 +321,61 @@ export default function IntegratedClassOnboarding() {
             <div className="flex flex-wrap items-center gap-3 border-t pt-5">
               <button className={button} disabled={busy||setupIndex===0} onClick={()=>void setupMove(setupIndex-1)}>← 前へ</button>
               {activeSetup.id==="review"?
-                <button className={primary} disabled={busy} onClick={async()=>{if(await save("saveWizard"))view(1);}}>保存して16の質問へ →</button>:
+                <button className={primary} disabled={busy} onClick={async()=>{if(await save("saveWizard"))view(1);}}>保存して募集ページへ →</button>:
                 <button className={primary} disabled={busy} onClick={()=>void setupMove(setupIndex+1)}>
                   {busy?"保存中…":"保存して次へ →"}</button>}
             </div>
             <p className="text-xs text-neutral-500">回答は「次へ」を押すごとに保存します。再び開くと続きから始められます。</p>
           </div>}
           {stage===1&&<div className="mt-6 space-y-4">
+            <p className="text-sm">教室紹介の文章・写真・レイアウトはPARARI作品で編集します。料金や申込ボタンはCLASSが管理するため、PAGE内にURLを直接書き込む必要はありません。</p>
+            <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">教室の内容・日時・月謝はCLASSの設定から表示されます。最初は短い挨拶だけで十分です。16の質問は公開後に取り組めます。</p>
+            <label className="block text-sm font-semibold">先生からのご挨拶（空欄でも作成できます）
+              <textarea className={field+" mt-2"} rows={3} maxLength={2000} placeholder="例：はじめまして。教室でお待ちしています。" value={welcome} onChange={e=>setWelcome(e.target.value)}/>
+            </label>
+            <label className="block text-sm font-semibold">この教室のトップページに使うCLASS専用PAGE
+              <select className={field+" mt-2"} value={pageId??""} onChange={e=>setPageId(e.target.value||null)}>
+                <option value="">まだPAGEを選択していません</option>
+                {data.pages.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_public||p.visibility==="public"?"（公開）":"（非公開・下書き）"}</option>)}
+              </select>
+            </label>
+            <p className="text-xs text-neutral-600">ここにはSSOTで「CLASSトップ」役割と事業IDが一致するPAGEだけが表示されます。一般の作品は選択できません。</p>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
+              <p className="text-sm font-semibold">この教室のPARARI PAGEを新しく作る</p>
+              <p className="mt-2 text-xs text-neutral-600">16問に答えなくても、教室名とご挨拶から編集可能なCLASS専用PAGEを作れます。通常の作品上限が適用されます。</p>
+              <button type="button" className={primary+" mt-3"} disabled={pageBusy||busy} onClick={()=>void createStarterPage()}>
+                {pageBusy?"PAGEを作成中…":"無料で標準PAGEの下書きを作成"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className={primary} disabled={busy||pageBusy} onClick={()=>void save("bindPage")}>関連付けを保存する</button>
+              <Link className={button} href="/my/works">PARARI作品を作成・編集する</Link>
+              {pageId&&<Link className={button} href={"/editor-v2/"+pageId}>選択したPAGEを編集する</Link>}
+              <button className={button} onClick={()=>view(2)}>公開確認へ</button>
+            </div>
+            <p className="text-xs text-amber-900">新規作成PAGEはSSOTにCLASSトップ用の識別情報を持ち、非公開で始まります。作品を公開し、教室の募集ページを公開すると、紹介リンクに表示されます。CLASSの予約・請求データはPAGEには保存しません。</p>
+          </div>}
+          {stage===2&&<div className="mt-6 space-y-4">
+            <div className="grid gap-2 rounded-xl bg-neutral-50 p-4 text-sm">
+              <p>コース：{data.courses.length}件 ／ クラス：{data.classes.length}件</p>
+              <p>PARARI PAGE：{pageId?"選択済み":"未選択"}</p>
+              <p>募集受付：{data.recruitment?.enabled?"受付設定あり":"受付設定なし"}</p>
+              <p>事業トップページ：{data.published?"公開中":"未公開"}</p>
+            </div>
+            <p className="text-sm">作品は文章・写真の編集に使用します。公開トップページの申込ボタンはCLASSの設定に基づいて生成されます。</p>
+            <div className="flex flex-wrap gap-2">
+              <Link className={primary} href={"/my/manage?tab=class&business="+data.school.id}>募集・公開の設定を確認</Link>
+              <Link className={button} href={"/class-business/"+data.school.id} target="_blank">現在の公開ページを見る</Link>
+            </div>
+            {!data.published&&<p className="text-xs text-amber-900">公開操作は既存のCLASS管理画面で行います。確認せずに自動公開されることはありません。</p>}
+            <div className="rounded-xl bg-emerald-50 p-4 text-sm">
+              <p className="font-semibold">あとから、もっと魅力的なページへ</p>
+              <p className="mt-2 text-neutral-700">募集を始めてから、16問に少しずつ答えて文章を育てられます。いまは答える必要はありません。</p>
+              <button className={button+" mt-3"} onClick={()=>view(3)}>16の質問を開く（任意）</button>
+            </div>
+          </div>}
+          {stage===3&&<div className="mt-6 space-y-4">
+            <p className="text-sm text-neutral-600">すでに募集を開始していても問題ありません。必要なときだけ回答して、紹介文の材料を増やしてください。</p>
             <div className="rounded-xl bg-emerald-50 p-3 text-sm">
               <p className="font-semibold">入力済みの教室情報を再利用できます</p>
               <p className="mt-1 text-xs text-neutral-600">コース名・月謝・開催枠・申込方法だけを未回答の質問へ転記します。すでに入力した回答は変更しません。</p>
@@ -348,48 +392,11 @@ export default function IntegratedClassOnboarding() {
               <button className={button} disabled={question===0} onClick={()=>setQuestion(i=>Math.max(0,i-1))}>前へ</button>
               <button className={button} disabled={question===15} onClick={()=>setQuestion(i=>Math.min(15,i+1))}>次へ</button>
               <button className={primary} disabled={busy} onClick={()=>void save("saveSales")}>16問の回答を保存</button>
-              <button className={button} onClick={()=>view(2)}>PAGE作品へ進む</button>
+              <button className={button} onClick={()=>view(1)}>募集PAGEへ戻る</button>
             </div>
             <details className="rounded-lg border p-3 text-sm"><summary className="cursor-pointer font-semibold">16問の全体を確認する</summary>
               {questions.map((item,i)=><button key={i} className="mt-2 block text-left text-sm text-emerald-800 underline" onClick={()=>setQuestion(i)}>{i+1}. {item.title}{answers[i]?" ✓":""}</button>)}
             </details>
-          </div>}
-          {stage===2&&<div className="mt-6 space-y-4">
-            <p className="text-sm">教室紹介の文章・写真・レイアウトはPARARI作品で編集します。料金や申込ボタンはCLASSが管理するため、PAGE内にURLを直接書き込む必要はありません。</p>
-            <label className="block text-sm font-semibold">この教室のトップページに使う作品
-              <select className={field+" mt-2"} value={pageId??""} onChange={e=>setPageId(e.target.value||null)}>
-                <option value="">まだPAGEを選択していません</option>
-                {data.pages.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_public||p.visibility==="public"?"（公開）":"（非公開・下書き）"}</option>)}
-              </select>
-            </label>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
-              <p className="text-sm font-semibold">この教室のPARARI PAGEを新しく作る</p>
-              <p className="mt-2 text-xs text-neutral-600">16の回答を編集可能な文章の下書きに整理してPAGEを作成します。AI生成はまだ行いません。作成時は通常のPARARI作品上限が適用されます。</p>
-              <button type="button" className={primary+" mt-3"} disabled={pageBusy||busy} onClick={()=>void createStarterPage()}>
-                {pageBusy?"PAGEを作成中…":"回答からPAGEの下書きを作成"}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className={primary} disabled={busy||pageBusy} onClick={()=>void save("bindPage")}>関連付けを保存する</button>
-              <Link className={button} href="/my/works">PARARI作品を作成・編集する</Link>
-              {pageId&&<Link className={button} href={"/editor-v2/"+pageId}>選択したPAGEを編集する</Link>}
-              <button className={button} onClick={()=>view(3)}>公開確認へ</button>
-            </div>
-            <p className="text-xs text-amber-900">新規作成PAGEは非公開で始まります。作品を公開し、教室の募集ページを公開すると、紹介リンクに表示されます。CLASSの予約・請求データはPAGEには保存しません。</p>
-          </div>}
-          {stage===3&&<div className="mt-6 space-y-4">
-            <div className="grid gap-2 rounded-xl bg-neutral-50 p-4 text-sm">
-              <p>コース：{data.courses.length}件 ／ クラス：{data.classes.length}件</p>
-              <p>PARARI PAGE：{pageId?"選択済み":"未選択"}</p>
-              <p>募集受付：{data.recruitment?.enabled?"受付設定あり":"受付設定なし"}</p>
-              <p>事業トップページ：{data.published?"公開中":"未公開"}</p>
-            </div>
-            <p className="text-sm">作品は文章・写真の編集に使用します。公開トップページの申込ボタンはCLASSの設定に基づいて生成されます。</p>
-            <div className="flex flex-wrap gap-2">
-              <Link className={primary} href={"/my/manage?tab=class&business="+data.school.id}>募集・公開の設定を確認</Link>
-              <Link className={button} href={"/class-business/"+data.school.id} target="_blank">現在の公開ページを見る</Link>
-            </div>
-            {!data.published&&<p className="text-xs text-amber-900">公開操作は既存のCLASS管理画面で行います。確認せずに自動公開されることはありません。</p>}
           </div>}
         </section>
       </>}

@@ -4,6 +4,7 @@ import { classIdPattern } from "@/lib/classes";
 import { selectClassBusinessFrontLinks } from "@/lib/classBusinessFront";
 import { classBusinessFrontLinks, readClassBusinessFront } from "@/lib/classBusinessFrontServer";
 import ClassBusinessFrontView from "@/components/parari/classes/ClassBusinessFrontView";
+import { eligibleClassHomePage } from "@/lib/classHomePage";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,12 @@ export default async function ClassBusinessPage({ params }: { params: Promise<{ 
     .eq("school_id", id).maybeSingle();
   if (binding.error) throw binding.error;
   const page = binding.data?.landing_page_id
-    ? await db.from("parari_books").select("id,title,visibility,is_public,is_deleted")
+    ? await db.from("parari_books").select("id,title,visibility,is_public,is_deleted,content")
       .eq("id", binding.data.landing_page_id).eq("owner", school.owner_user_id)
       .maybeSingle() : null;
   if (page?.error) throw page.error;
   const publicPage = page?.data && !page.data.is_deleted &&
+    eligibleClassHomePage(page.data.content, id) &&
     (page.data.visibility === "public" || (page.data.visibility == null && page.data.is_public === true))
       ? { id: page.data.id, title: page.data.title } : null;
   return <main className="min-h-screen bg-neutral-50 px-5 py-12 sm:py-20">
