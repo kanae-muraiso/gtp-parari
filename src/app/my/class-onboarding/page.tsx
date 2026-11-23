@@ -144,6 +144,17 @@ export default function IntegratedClassOnboarding() {
     setAnswers(old=>old.map((answer,i)=>answer.trim()?answer:prefilled[i]||""));
     setNotice("コース名・回数・料金・受付方法を下書きに反映しました。内容を確認してから保存してください。");
   }
+  async function usePreparedPage(id:string){
+    if(!schoolId||busy)return;
+    setBusy(true);setError("");setNotice("");
+    try {
+      const result=await classRequest<{revision:number}>("/onboarding?school="+schoolId,{action:"bindPage",revision,pageId:id});
+      setPageId(id);setRevision(result.revision);
+      setNotice("以前作成した紹介PAGEをこの教室で使うよう設定しました。");
+    } catch(cause) {
+      setError(cause instanceof Error?cause.message:"PAGEの設定に失敗しました。");
+    } finally {setBusy(false);}
+  }
   async function createStarterPage(){
     if(!data||pageBusy)return;
     setPageBusy(true);setNotice("");setError("");
@@ -343,6 +354,12 @@ export default function IntegratedClassOnboarding() {
                 </div>
               </div>
             </> : <>
+              {data.pages.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                <p className="font-semibold">以前作成した教室PAGEがあります</p>
+                <p className="mt-2">作り直す必要はありません。以前のページをそのまま教室の紹介に使えます。</p>
+                <button type="button" className={button+" mt-3"} disabled={busy}
+                  onClick={()=>void usePreparedPage(data.pages[0].id)}>以前のページを使う</button>
+              </div>}
               <p className="text-sm">教室名は設定済みです。ご挨拶は空欄でもかまいません。作った後でも自由に変更できます。</p>
               <label className="block text-sm font-semibold">先生からのご挨拶（任意）
                 <textarea className={field+" mt-2"} rows={3} maxLength={2000}
