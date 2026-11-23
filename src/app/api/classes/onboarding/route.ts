@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { classBusinessId } from "@/lib/classBusinessScope";
+import { eligibleClassHomePage } from "@/lib/classHomePage";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
@@ -44,14 +45,16 @@ export async function GET(request: NextRequest) {
       db.from("class_schools").select("id,name").eq("id", actor.schoolId).single(),
       db.from("school_class_products").select("id,name,design").eq("school_id", actor.schoolId).order("name"),
       db.from("school_classes").select("id,name,product_id,starts_at,duration_minutes").eq("school_id", actor.schoolId).order("name"),
-      db.from("parari_books").select("id,title,is_public,visibility").eq("owner", actor.userId)
+      db.from("parari_books").select("id,title,is_public,visibility,content").eq("owner", actor.userId)
         .or("is_deleted.is.null,is_deleted.eq.false").order("updated_at", { ascending: false }).limit(100),
       db.from("school_recruitment").select("enabled,public_id,route").eq("school_id", actor.schoolId).maybeSingle(),
       db.from("class_business_fronts").select("published").eq("school_id", actor.schoolId).maybeSingle(),
     ]);
     for (const result of [draft, school, courses, classes, pages, recruitment, front]) if (result.error) throw result.error;
     return send({ ok: true, school: school.data, courses: courses.data, classes: classes.data,
-      pages: pages.data, recruitment: recruitment.data, published: Boolean(front.data?.published),
+      pages: (pages.data ?? []).filter(page => eligibleClassHomePage(page.content, actor.schoolId))
+        .map(({ id,title,is_public,visibility }) => ({ id,title,is_public,visibility })),
+      recruitment: recruitment.data, published: Boolean(front.data?.published),
       draft: draft.data ?? { wizard: {}, sales_answers: Array(16).fill(""), landing_page_id: null, revision: 0 } });
   } catch (cause) {
     console.error("[class onboarding] load failed", cause);
@@ -88,8 +91,8 @@ export async function POST(request: NextRequest) {
         const work = await db.from("parari_books").select("id,content").eq("id", body.pageId)
           .eq("owner", actor.userId).or("is_deleted.is.null,is_deleted.eq.false").maybeSingle();
         if (work.error) throw work.error;
-        if (!work.data || /^\s*\[(BOOK|BOOKINFO|WEB|WEBINFO)\b/i.test(work.data.content))
-          return error("自分のPAGE作品を選んでください。", 403);
+        if (!work.data || !eligibleClassHomePage(work.data.content, actor.schoolId))
+          return error("この事業のCLASSトップ専用PAGEではありません。通常の作品は関連付けできません。", 403);
       }
       changes.landing_page_id = body.pageId as string | null;
     }
