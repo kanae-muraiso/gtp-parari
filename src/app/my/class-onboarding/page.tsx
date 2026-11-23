@@ -144,6 +144,17 @@ export default function IntegratedClassOnboarding() {
     setAnswers(old=>old.map((answer,i)=>answer.trim()?answer:prefilled[i]||""));
     setNotice("コース名・回数・料金・受付方法を下書きに反映しました。内容を確認してから保存してください。");
   }
+  async function usePreparedPage(id:string){
+    if(!schoolId||busy)return;
+    setBusy(true);setError("");setNotice("");
+    try {
+      const result=await classRequest<{revision:number}>("/onboarding?school="+schoolId,{action:"bindPage",revision,pageId:id});
+      setPageId(id);setRevision(result.revision);
+      setNotice("以前作成した紹介PAGEをこの教室で使うよう設定しました。");
+    } catch(cause) {
+      setError(cause instanceof Error?cause.message:"PAGEの設定に失敗しました。");
+    } finally {setBusy(false);}
+  }
   async function createStarterPage(){
     if(!data||pageBusy)return;
     setPageBusy(true);setNotice("");setError("");
@@ -171,9 +182,9 @@ export default function IntegratedClassOnboarding() {
           action:"bindPage",revision,pageId:created.id,
         });
         setRevision(bound.revision);
-        setNotice("非公開のPARARI PAGEを作成し、教室に関連付けました。作品の編集画面で文章と写真を整えてください。");
+        setNotice("教室の紹介ページを作成しました。「紹介ページを編集する」から文章や写真を変更できます。");
       }catch(cause){
-        setError("PAGEは作成されましたが、教室への関連付けが未完了です。関連付けを保存してください。"+
+        setError("紹介PAGEは作成されましたが教室への登録が未完了です。別のPAGEを作り直さず、再読み込みして確認してください。"+
           (cause instanceof Error?cause.message:""));
       }
     }catch(cause){
@@ -327,43 +338,76 @@ export default function IntegratedClassOnboarding() {
             </div>
             <p className="text-xs text-neutral-500">回答は「次へ」を押すごとに保存します。再び開くと続きから始められます。</p>
           </div>}
-          {stage===1&&<div className="mt-6 space-y-4">
-            <p className="text-sm">教室紹介の文章・写真・レイアウトはPARARI作品で編集します。料金や申込ボタンはCLASSが管理するため、PAGE内にURLを直接書き込む必要はありません。</p>
-            <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">教室の内容・日時・月謝はCLASSの設定から表示されます。最初は短い挨拶だけで十分です。16の質問は公開後に取り組めます。</p>
-            <label className="block text-sm font-semibold">先生からのご挨拶（空欄でも作成できます）
-              <textarea className={field+" mt-2"} rows={3} maxLength={2000} placeholder="例：はじめまして。教室でお待ちしています。" value={welcome} onChange={e=>setWelcome(e.target.value)}/>
-            </label>
-            <label className="block text-sm font-semibold">この教室のトップページに使うCLASS専用PAGE
-              <select className={field+" mt-2"} value={pageId??""} onChange={e=>setPageId(e.target.value||null)}>
-                <option value="">まだPAGEを選択していません</option>
-                {data.pages.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_public||p.visibility==="public"?"（公開）":"（非公開・下書き）"}</option>)}
-              </select>
-            </label>
-            <p className="text-xs text-neutral-600">ここにはSSOTで「CLASSトップ」役割と事業IDが一致するPAGEだけが表示されます。一般の作品は選択できません。</p>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
-              <p className="text-sm font-semibold">この教室のPARARI PAGEを新しく作る</p>
-              <p className="mt-2 text-xs text-neutral-600">16問に答えなくても、教室名とご挨拶から編集可能なCLASS専用PAGEを作れます。通常の作品上限が適用されます。</p>
-              <button type="button" className={primary+" mt-3"} disabled={pageBusy||busy} onClick={()=>void createStarterPage()}>
-                {pageBusy?"PAGEを作成中…":"無料で標準PAGEの下書きを作成"}
-              </button>
+          {stage===1&&<div className="mt-6 space-y-5">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
+              <p className="font-semibold">教室の公開ページは1つです</p>
+              <p className="mt-2 leading-7">この教室の紹介・コース・日時・申込が、同じページに表示されます。文章・写真はPARARIで編集でき、コースや申込ボタンはCLASSが管理します。</p>
+              <p className="mt-2 text-xs text-emerald-900">公開URL：/class-business/{data.school.id}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button className={primary} disabled={busy||pageBusy} onClick={()=>void save("bindPage")}>関連付けを保存する</button>
-              <Link className={button} href="/my/works">PARARI作品を作成・編集する</Link>
-              {pageId&&<Link className={button} href={"/editor-v2/"+pageId}>選択したPAGEを編集する</Link>}
-              <button className={button} onClick={()=>view(2)}>公開確認へ</button>
-            </div>
-            <p className="text-xs text-amber-900">新規作成PAGEはSSOTにCLASSトップ用の識別情報を持ち、非公開で始まります。作品を公開し、教室の募集ページを公開すると、紹介リンクに表示されます。CLASSの予約・請求データはPAGEには保存しません。</p>
+            <section aria-label="公開ページの構成イメージ" className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+              <div className="border-b bg-neutral-100 px-4 py-2 text-xs text-neutral-600">このURLに表示される1ページの構造（イメージ）</div>
+              <div className="space-y-4 p-5">
+                <div className="space-y-1">
+                  <h4 className="text-xl font-bold">{data.school.name}</h4>
+                  <p className="text-xs text-neutral-600">教室の公開ページ /class-business/{data.school.id}</p>
+                </div>
+                <div className="rounded-xl border border-dashed border-emerald-400 bg-emerald-50 p-4">
+                  <p className="text-xs font-semibold text-emerald-900">PARARI作品で編集する場所</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{welcome||"先生からのご挨拶・教室の写真・講師紹介など"}</p>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-semibold text-blue-900">CLASSが自動表示する場所</p>
+                  <div className="mt-2 space-y-2">
+                    {data.courses.length?data.courses.map(course=><p key={course.id} className="rounded bg-white px-3 py-2 text-sm">{course.name}</p>):
+                      <p className="rounded bg-white px-3 py-2 text-sm">登録したコース・開催日・料金</p>}
+                    <p className="rounded bg-blue-700 px-3 py-2 text-center text-sm font-semibold text-white">説明会・体験・入会の申込</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+            {pageId ? <>
+              <div className="rounded-xl border p-4">
+                <p className="font-semibold">この教室の紹介PAGEは準備できています</p>
+                <p className="mt-2 text-sm text-neutral-600">この作品の文章や写真が教室の公開ページに表示されます。追加のPAGE選択や関連付け操作は必要ありません。</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link className={primary} href={"/editor-v2/"+pageId}>紹介ページを編集する</Link>
+                  <Link className={button} href={"/class-business/"+data.school.id} target="_blank">公開ページを見る</Link>
+                </div>
+              </div>
+            </> : <>
+              {data.pages.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                <p className="font-semibold">以前作成した教室PAGEがあります</p>
+                <p className="mt-2">作り直す必要はありません。以前のページをそのまま教室の紹介に使えます。</p>
+                <button type="button" className={button+" mt-3"} disabled={busy}
+                  onClick={()=>void usePreparedPage(data.pages[0].id)}>以前のページを使う</button>
+              </div>}
+              <p className="text-sm">教室名は設定済みです。ご挨拶は空欄でもかまいません。作った後でも自由に変更できます。</p>
+              <label className="block text-sm font-semibold">先生からのご挨拶（任意）
+                <textarea className={field+" mt-2"} rows={3} maxLength={2000}
+                  placeholder="例：はじめまして。教室でお待ちしています。"
+                  value={welcome} onChange={e=>setWelcome(e.target.value)}/>
+              </label>
+              <div className="rounded-xl border p-4">
+                <p className="font-semibold">教室のページを準備する</p>
+                <p className="mt-2 text-sm text-neutral-600">1回押すだけで、編集可能な専用PAGEの下書きを作成し、この教室に結び付けます。非公開のままなので、勝手に募集は始まりません。</p>
+                <button className={primary+" mt-4"} type="button" disabled={pageBusy||busy} onClick={()=>void createStarterPage()}>
+                  {pageBusy?"作成中…":"この教室のページを作る"}
+                </button>
+              </div>
+            </>}
+            <button className={button} onClick={()=>view(2)}>募集の確認へ進む →</button>
+            <p className="text-xs text-neutral-500">16の質問は必要ありません。ホームページを充実させたくなったら、公開後の改善メニューから取り組めます。</p>
           </div>}
           {stage===2&&<div className="mt-6 space-y-4">
             <div className="grid gap-2 rounded-xl bg-neutral-50 p-4 text-sm">
               <p>コース：{data.courses.length}件 ／ クラス：{data.classes.length}件</p>
-              <p>PARARI PAGE：{pageId?"選択済み":"未選択"}</p>
+              <p>教室紹介PAGE：{pageId?"作成済み":"未作成"}</p>
               <p>募集受付：{data.recruitment?.enabled?"受付設定あり":"受付設定なし"}</p>
               <p>事業トップページ：{data.published?"公開中":"未公開"}</p>
             </div>
-            <p className="text-sm">作品は文章・写真の編集に使用します。公開トップページの申込ボタンはCLASSの設定に基づいて生成されます。</p>
+            <p className="text-sm">先生が書いた紹介文と、CLASSのコース・料金・申込機能は同じ教室ページに並びます。公開の設定はCLASS管理画面で確認します。</p>
             <div className="flex flex-wrap gap-2">
+              {!pageId&&<button className={button} onClick={()=>view(1)}>まず紹介ページを作る</button>}
               <Link className={primary} href={"/my/manage?tab=class&business="+data.school.id}>募集・公開の設定を確認</Link>
               <Link className={button} href={"/class-business/"+data.school.id} target="_blank">現在の公開ページを見る</Link>
             </div>

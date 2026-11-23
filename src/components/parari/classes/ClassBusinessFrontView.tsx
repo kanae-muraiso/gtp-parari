@@ -8,6 +8,7 @@ import { classBusinessFrontPath, classParticipationFormats, type ClassBusinessFr
 import { classEventDate } from "@/lib/classEvents";
 import { classWeekdays } from "@/lib/classRecurrence";
 import ClassBusinessFrontAction from "./ClassBusinessFrontAction";
+import ClassHomePageContent from "./ClassHomePageContent";
 
 import type { ClassParticipantMember } from "@/lib/classCalendarAccess";
 
@@ -17,9 +18,9 @@ type Action = "fixed" | "reserve" | "cancel";
 const button = "w-fit rounded-md border border-neutral-300 bg-white px-3 py-1.5 font-medium text-neutral-900 hover:border-neutral-600 disabled:opacity-50";
 const yen = (fee: number) => fee.toLocaleString("ja-JP") + "円";
 
-export default function ClassBusinessFrontView({ name, introduction, links, schoolId, introPage }: {
+export default function ClassBusinessFrontView({ name, introduction, links, schoolId, homePage }: {
   name: string; introduction: string; links: ClassBusinessFrontLink[]; schoolId?: string;
-  introPage?: { id: string; title: string } | null;
+  homePage?: { id: string; title: string; content: string } | null;
 }) {
   const { userId, loading } = useParticipations();
   const [selectedMember, setSelectedMember] = useState("");
@@ -63,11 +64,10 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
   return <article className="mx-auto grid w-full max-w-2xl gap-7">
     <header className="grid gap-4 border-b border-neutral-200 pb-6">
       <h1 className="break-words text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">{name}</h1>
-      {introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
-      {introPage && <Link href={"/p/"+introPage.id}
-        className="w-fit rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-900">
-        {introPage.title}を読む
-      </Link>}
+      {!homePage && introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
+      {homePage && <section aria-label="教室の紹介" className="min-w-0">
+        <ClassHomePageContent content={homePage.content}/>
+      </section>}
       {schoolId && <ClassBusinessFrontAction schoolId={schoolId} hasIntake={!member?.enrolled && other.length > 0} />}
       {schoolId && !loading && !userId && links.some(link => link.course && !link.course.walkIn) &&
         <Link href={"/login?returnTo=" + encodeURIComponent(classBusinessFrontPath(schoolId))}
