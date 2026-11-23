@@ -55,7 +55,10 @@ export async function GET(request: NextRequest) {
       pages: (pages.data ?? []).filter(page => eligibleClassHomePage(page.content, actor.schoolId))
         .map(({ id,title,is_public,visibility }) => ({ id,title,is_public,visibility })),
       recruitment: recruitment.data, published: Boolean(front.data?.published),
-      draft: draft.data ?? { wizard: {}, sales_answers: Array(16).fill(""), landing_page_id: null, revision: 0 } });
+      draft: draft.data ? { ...draft.data,
+        landing_page_id: (pages.data ?? []).some(page => page.id === draft.data.landing_page_id &&
+          eligibleClassHomePage(page.content, actor.schoolId)) ? draft.data.landing_page_id : null,
+      } : { wizard: {}, sales_answers: Array(16).fill(""), landing_page_id: null, revision: 0 } });
   } catch (cause) {
     console.error("[class onboarding] load failed", cause);
     return error("設計データを取得できませんでした。", 500);
