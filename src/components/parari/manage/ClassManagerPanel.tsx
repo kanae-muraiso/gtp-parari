@@ -131,6 +131,8 @@ function BusinessClassManager() {
   if (workspace === "setup") return <div className="grid gap-5">
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link><strong>{school.name}</strong>
+      <Link className="rounded-lg border border-emerald-700 bg-emerald-50 px-3 py-2 font-semibold text-emerald-900"
+        href="/my/class-onboarding">新しい4段階ガイドを試す</Link>
     </div>
     <ClassSetupPanel schoolId={school.id} initialStep={setupStep} onOperate={target => {
       backToList();
@@ -148,6 +150,8 @@ function BusinessClassManager() {
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link className="underline" href="/my/manage?tab=class">事業一覧へ</Link>
       <strong>{school?.name}</strong>
+      <Link className="rounded-lg border border-emerald-700 bg-emerald-50 px-3 py-2 font-semibold text-emerald-900"
+        href="/my/class-onboarding">4段階の開設ガイド</Link>
       <button type="button" className="ml-auto underline" onClick={() => { setSetupStep(schoolAdmission ? 5 : section === "front" ? 5 : 0); backToList(); setWorkspace("setup"); }}>開設準備・設定を見直す</button>
     </div>
     <h2 className="text-xl font-bold">日々の運営</h2>

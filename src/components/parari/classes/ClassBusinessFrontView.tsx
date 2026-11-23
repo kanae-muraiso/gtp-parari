@@ -17,8 +17,9 @@ type Action = "fixed" | "reserve" | "cancel";
 const button = "w-fit rounded-md border border-neutral-300 bg-white px-3 py-1.5 font-medium text-neutral-900 hover:border-neutral-600 disabled:opacity-50";
 const yen = (fee: number) => fee.toLocaleString("ja-JP") + "円";
 
-export default function ClassBusinessFrontView({ name, introduction, links, schoolId }: {
+export default function ClassBusinessFrontView({ name, introduction, links, schoolId, introPage }: {
   name: string; introduction: string; links: ClassBusinessFrontLink[]; schoolId?: string;
+  introPage?: { id: string; title: string } | null;
 }) {
   const { userId, loading } = useParticipations();
   const [selectedMember, setSelectedMember] = useState("");
@@ -63,6 +64,10 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
     <header className="grid gap-4 border-b border-neutral-200 pb-6">
       <h1 className="break-words text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">{name}</h1>
       {introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
+      {introPage && <Link href={"/p/"+introPage.id}
+        className="w-fit rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-900">
+        {introPage.title}を読む
+      </Link>}
       {schoolId && <ClassBusinessFrontAction schoolId={schoolId} hasIntake={!member?.enrolled && other.length > 0} />}
       {schoolId && !loading && !userId && links.some(link => link.course && !link.course.walkIn) &&
         <Link href={"/login?returnTo=" + encodeURIComponent(classBusinessFrontPath(schoolId))}
