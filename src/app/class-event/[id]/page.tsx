@@ -5,9 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import ClassEventSchedule from "@/components/parari/manage/ClassEventSchedule";
+import ClassHomePageContent from "@/components/parari/classes/ClassHomePageContent";
 import { classEventDate, type ClassEvent } from "@/lib/classEvents";
 
-type View = { event: ClassEvent; schoolName: string; canRegister: boolean; registered: boolean; paymentUrl: string | null };
+type View = { event: ClassEvent; schoolName: string; canRegister: boolean; registered: boolean; paymentUrl: string | null; authoredPage?: {id:string;content:string}|null };
 const field = "rounded-lg border border-neutral-300 px-3 py-2";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50";
 
@@ -78,7 +79,9 @@ export default function ClassEventPage() {
           <h1 className="text-2xl font-bold">{event.title}</h1>
         </header>
         <ClassEventSchedule settings={event.class_event} />
-        {event.description && <p className="whitespace-pre-wrap">{event.description}</p>}
+        {view.authoredPage ? <section aria-label="主催者からのご案内" className="rounded-xl border p-4">
+          <ClassHomePageContent content={view.authoredPage.content}/>
+        </section> : event.description && <p className="whitespace-pre-wrap">{event.description}</p>}
         <p>{event.payment_amount ? `${event.class_event.sessions ? "受講料（全日程）" : "参加費"} ${event.payment_amount.toLocaleString("ja-JP")}円${event.payment_method === "on_site" ? "（当日払い）" : ""}` : event.class_event.sessions ? "受講料無料" : "参加費無料"}</p>
         {event.class_event.sessions && <p className="text-sm">一度のお申し込みで全日程に参加できます。</p>}
         {view.registered ? <>
