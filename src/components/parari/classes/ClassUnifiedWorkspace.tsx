@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { classRequest } from "@/lib/classRequests";
 import { classSchedule, type ClassManagement, type SchoolClass } from "@/lib/classes";
@@ -61,6 +61,7 @@ export default function ClassUnifiedWorkspace(){
   const [recruitment,setRecruitment]=useState<ClassRecruitmentData|null>(null);
   const [tab,setTab]=useState<Tab>("classes");
   const [operating,setOperating]=useState(false);
+  const lastModeBusiness=useRef("");
   const [selected,setSelected]=useState<Selection|null>(null);
   const [first,setFirst]=useState<FirstDraft>(firstDraft);
   const [firstStep,setFirstStep]=useState(0);
@@ -109,7 +110,8 @@ export default function ClassUnifiedWorkspace(){
       if(m.school?.id!==business)throw new Error("表示中の事業を確認できませんでした。");
       setManagement(m);setProducts(p.products);setDetails(d);setRecruitment(r);
       setWelcome(typeof d.draft.wizard?.welcome==="string"?d.draft.wizard.welcome:"");
-      setOperating(Boolean(d.published));setLoading(false);
+      if(lastModeBusiness.current!==business){lastModeBusiness.current=business;setOperating(Boolean(d.published));}
+      setLoading(false);
     }).catch(cause=>{
       if(!controller.signal.aborted){setError(cause instanceof Error?cause.message:"事業を読み込めませんでした。");setLoading(false);}
     });
