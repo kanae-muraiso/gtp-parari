@@ -99,6 +99,7 @@ export default function IntegratedClassOnboarding() {
   const [pageId,setPageId]=useState<string|null>(null);
   const [revision,setRevision]=useState(0);
   const [busy,setBusy]=useState(false);
+  const [pageBusy,setPageBusy]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
@@ -122,6 +123,49 @@ export default function IntegratedClassOnboarding() {
     }).catch(cause=>{if(!abort.signal.aborted){setError(cause instanceof Error?cause.message:"設計の取得に失敗しました。");setLoading(false);}});
     return ()=>abort.abort();
   },[schoolId]);
+  async function createStarterPage(){
+    if(!data||pageBusy)return;
+    setPageBusy(true);setNotice("");setError("");
+    try {
+      const session=await supabase?.auth.getSession();
+      const token=session?.data.session?.access_token;
+      if(!token)throw new Error("ログインしてください。");
+      const safe=(value:string)=>value.replace(/^\\s*\\[/gm,"［").replace(/\\r/g,"").slice(0,5000);
+      const title=safe(data.school.name+"のご案内").replace(/\\n/g," ").slice(0,120);
+      const selected=answers.map((answer,i)=>({answer:answer.trim(),title:questions[i].title}))
+        .filter(item=>item.answer);
+      const body=selected.length?selected.map(item=>item.title+"\\n"+safe(item.answer)).join("\\n\\n"):
+        "このページは先生が自由に編集できる教室紹介の下書きです。";
+      // Operational fees, schedule, enrollment and CTA URLs are never copied
+      // into editable SSOT; those remain authoritative CLASS data.
+      const ssot="[PAGE]\\ntitle: "+title+"\\n[T]\\n"+body;
+      const response=await fetch("/api/works/create",{
+        method:"POST",cache:"no-store",
+        headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+        body:JSON.stringify({
+          createRequestId:crypto.randomUUID(),
+          stableSlug:"class-page-"+crypto.randomUUID().slice(0,12),
+          template:{kind:"page",initialTitle:title,ssot},
+        }),
+      });
+      const created=await response.json() as {ok:boolean;id?:string;message?:string};
+      if(!response.ok||!created.ok||!created.id)throw new Error(created.message||"PAGEを作成できませんでした。");
+      setPageId(created.id);
+      setData(old=>old?{...old,pages:[{id:created.id,title,visibility:"private",is_public:false},...old.pages]}:old);
+      try {
+        const bound=await classRequest<{revision:number}>("/onboarding?school="+schoolId,{
+          action:"bindPage",revision,pageId:created.id,
+        });
+        setRevision(bound.revision);
+        setNotice("非公開のPARARI PAGEを作成し、教室に関連付けました。作品の編集画面で文章と写真を整えてください。");
+      }catch(cause){
+        setError("PAGEは作成されましたが、教室への関連付けが未完了です。関連付けを保存してください。"+
+          (cause instanceof Error?cause.message:""));
+      }
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:"PAGEを作成できませんでした。");
+    }finally{setPageBusy(false);}
+  }
   async function save(action:"saveWizard"|"saveSales"|"bindPage"){
     if(busy||!schoolId)return false;
     setBusy(true);setError("");setNotice("");
@@ -225,13 +269,20 @@ export default function IntegratedClassOnboarding() {
                 {data.pages.map(p=><option key={p.id} value={p.id}>{p.title}{p.is_public||p.visibility==="public"?"（公開）":"（非公開・下書き）"}</option>)}
               </select>
             </label>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
+              <p className="text-sm font-semibold">この教室のPARARI PAGEを新しく作る</p>
+              <p className="mt-2 text-xs text-neutral-600">16の回答を編集可能な文章の下書きに整理してPAGEを作成します。AI生成はまだ行いません。作成時は通常のPARARI作品上限が適用されます。</p>
+              <button type="button" className={primary+" mt-3"} disabled={pageBusy||busy} onClick={()=>void createStarterPage()}>
+                {pageBusy?"PAGEを作成中…":"回答からPAGEの下書きを作成"}
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
-              <button className={primary} disabled={busy} onClick={()=>void save("bindPage")}>関連付けを保存する</button>
+              <button className={primary} disabled={busy||pageBusy} onClick={()=>void save("bindPage")}>関連付けを保存する</button>
               <Link className={button} href="/my/works">PARARI作品を作成・編集する</Link>
               {pageId&&<Link className={button} href={"/editor-v2/"+pageId}>選択したPAGEを編集する</Link>}
               <button className={button} onClick={()=>view(3)}>公開確認へ</button>
             </div>
-            <p className="text-xs text-amber-900">ここでは既存PAGEの関連付けまで行います。PAGEの生成・公開設定とCLASS画面への表示は別途完成検証が必要です。</p>
+            <p className="text-xs text-amber-900">新規作成PAGEは非公開で始まります。作品を公開し、教室の募集ページを公開すると、紹介リンクに表示されます。CLASSの予約・請求データはPAGEには保存しません。</p>
           </div>}
           {stage===3&&<div className="mt-6 space-y-4">
             <div className="grid gap-2 rounded-xl bg-neutral-50 p-4 text-sm">
