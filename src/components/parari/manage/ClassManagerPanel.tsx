@@ -31,7 +31,14 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 
 export default function ClassManagerPanel() {
   const business = useSearchParams().get("business");
-  return business ? <BusinessClassManager key={business} /> : <ClassBusinessPicker />;
+  const destination = "/my/class-onboarding" + (business ? "?business=" + encodeURIComponent(business) : "");
+  useEffect(() => {
+    window.location.replace(destination);
+  }, [destination]);
+  return <section className="rounded-xl border bg-white p-5 text-sm">
+    <p>CLASSの開設と日々の運営を、一つの画面に統合しました。</p>
+    <Link href={destination} className="mt-2 inline-block font-semibold underline">CLASSの操作環境を開く</Link>
+  </section>;
 }
 
 function BusinessClassManager() {
