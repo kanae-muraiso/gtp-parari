@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classParticipantMembers } from "@/lib/classCalendarAccess";
 import { classIdPattern } from "@/lib/classes";
+import { canManageClassStudio } from "@/lib/classBusinessScope";
 const reply = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store", Vary: "Authorization" } });
 async function handle(request: NextRequest, write: boolean) {
   try {
@@ -25,12 +26,12 @@ async function handle(request: NextRequest, write: boolean) {
     }
     let owner = false;
     if (!memberId) {
-      const [business, profile] = await Promise.all([
+      const [business, allowed] = await Promise.all([
         db.from("class_schools").select("id").eq("id", school).eq("owner_user_id", user.id).is("archived_at", null).maybeSingle(),
-        db.from("profiles").select("is_monitor").eq("user_id", user.id).maybeSingle(),
+        canManageClassStudio(user.id),
       ]);
-      if (business.error || profile.error) throw business.error ?? profile.error;
-      owner = Boolean(business.data && profile.data?.is_monitor);
+      if (business.error) throw business.error;
+      owner = Boolean(business.data && allowed);
       if (owner) member = undefined;
     }
     if (!member && !owner) return reply({ ok: false, message: "教室が見つかりません。" }, 404);

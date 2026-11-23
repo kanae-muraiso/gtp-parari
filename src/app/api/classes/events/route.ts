@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { classAdmissionMail } from "@/lib/classAdmissionMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
-import { classBusinessId } from "@/lib/classBusinessScope";
+import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
 import { classFeatureAccess } from "@/lib/classFeatureAccess";
 import { eligibleClassEventPage } from "@/lib/classEventPage";
 import { classIdPattern } from "@/lib/classes";
@@ -28,7 +28,7 @@ async function ownBusiness(request: NextRequest, user: string | null) {
   const school = await classBusinessId(user, scope);
   if (!school) return null;
   const access = await classFeatureAccess(school,user);
-  return access.canManage ? school : null;
+  return access.canManage && await canManageClassStudio(user) ? school : null;
 }
 
 async function eventList(school: string, publishedOnly: boolean, kind?: string | null) {
