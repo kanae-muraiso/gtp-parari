@@ -169,6 +169,14 @@ export default function MyPage() {
         ) : null}
 
         <div className="mt-6 space-y-4">
+          {!loading && !studioEnabled && (
+            <HomeCard
+              title="STUDIOを無料で始める"
+              description="作品を作る・クラスを開く。作品を先に保存しなくても利用開始できます。"
+              href="/my/start-studio"
+              action="STUDIOを始める"
+            />
+          )}
           <ClassHomeShortcuts studioEnabled={studioEnabled} />
           <section aria-labelledby="open-space-heading" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
