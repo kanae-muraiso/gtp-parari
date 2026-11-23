@@ -64,6 +64,7 @@ export default function ClassUnifiedWorkspace(){
   const [first,setFirst]=useState<FirstDraft>(firstDraft);
   const [firstStep,setFirstStep]=useState(0);
   const [firstActive,setFirstActive]=useState(false);
+  const [newSlot,setNewSlot]=useState<{id:string;productId:string}|null>(null);
   const [flowFocus,setFlowFocus]=useState<FlowFocus>("recruitment");
   const [pageBusy,setPageBusy]=useState(false);
   const [welcome,setWelcome]=useState("");
@@ -80,7 +81,7 @@ export default function ClassUnifiedWorkspace(){
     window.history.replaceState(null,"",id?"/my/class-onboarding?business="+encodeURIComponent(id):"/my/class-onboarding");
     setBusiness(id);setManagement(null);setDetails(null);setRecruitment(null);
     setSelected(id?{kind:"business",id}:null);
-    setFirstActive(false);setTab("classes");setError("");setNotice("");
+    setFirstActive(false);setNewSlot(null);setTab("classes");setError("");setNotice("");
   }
 
   useEffect(()=>{
@@ -273,7 +274,7 @@ export default function ClassUnifiedWorkspace(){
           </button>)}
         </div>
         {school&&<div className="space-y-2 rounded-xl bg-neutral-50 p-3 sm:p-4">
-          <button onClick={()=>{setSelected({kind:"business",id:business});setFirstActive(false);setTab("classes");}}
+          <button onClick={()=>{setSelected({kind:"business",id:business});setFirstActive(false);setNewSlot(null);setTab("classes");}}
             className={"text-left font-bold "+(selected?.kind==="business"?"text-emerald-900 underline":"")} type="button">
             ■ {school.name} <span className="text-xs font-normal text-neutral-500">事業</span>
           </button>
@@ -281,12 +282,12 @@ export default function ClassUnifiedWorkspace(){
             const listed=slots.filter(slot=>slot.product_id===product.id);
             return <div key={product.id} className="ml-3 space-y-2 border-l-2 border-neutral-300 pl-4 sm:ml-5">
               <button className={"text-left text-sm font-semibold "+(selected?.kind==="course"&&selected.id===product.id?"text-emerald-900 underline":"")}
-                type="button" onClick={()=>{setTab("classes");setSelected({kind:"course",id:product.id});setFirstActive(false);}}>
+                type="button" onClick={()=>{setTab("classes");setSelected({kind:"course",id:product.id});setFirstActive(false);setNewSlot(null);}}>
                 □ {product.name} <span className="font-normal text-neutral-500">コース · {listed.length}クラス</span>
               </button>
               <div className="flex flex-wrap gap-2 pl-4">
                 {listed.length?listed.map(slot=><button type="button" key={slot.id}
-                  onClick={()=>{setTab("classes");setSelected({kind:"class",id:slot.id});setFirstActive(false);}}
+                  onClick={()=>{setTab("classes");setSelected({kind:"class",id:slot.id});setFirstActive(false);setNewSlot(null);}}
                   className={"rounded-md border px-2 py-1 text-xs "+(selected?.kind==="class"&&selected.id===slot.id?"border-emerald-700 bg-emerald-100":"border-neutral-300 bg-white")}>
                   × {slot.name} · {slot.starts_at.slice(0,5)}
                 </button>):<span className="text-xs text-amber-800">開催日時が未登録です</span>}
@@ -383,12 +384,25 @@ export default function ClassUnifiedWorkspace(){
               <button type="button" className={primary} disabled={busy} onClick={()=>void createFirstClass()}>
                 {busy?"保存中…":"このクラスを作成する"}</button>}
           </div>
+        </>:newSlot&&activeProduct&&newSlot.productId===activeProduct.id?<>
+          <h3 className="font-bold">□ {activeProduct.name}に開催クラスを追加</h3>
+          <p className="text-sm text-neutral-600">曜日・時刻・場所を設定して保存します。費用・定員はこのコースの設定を引き継ぎます。</p>
+          <ClassSlotSettingsPanel key={newSlot.id} startId={newSlot.id} productId={newSlot.productId}
+            additionalSlots={[]} slotDefaults={activeProduct.design.slotDefaults}
+            basicFee={activeProduct.design.walkInFee??activeProduct.design.monthlyFee}
+            walkIn={activeProduct.design.walkInFee!=null} busy={busy}
+            save={async rows=>{
+              const saved=await saveSlotRows(rows);
+              if(saved){setSelected({kind:"class",id:newSlot.id});setNewSlot(null);}
+              return saved;
+            }}/>
+          <button className={button} type="button" onClick={()=>setNewSlot(null)}>追加をやめる</button>
         </>:activeProduct&&selected?.kind==="course"?<>
           <h3 className="font-bold">□ {activeProduct.name} ／ コースの内容・月謝・定員</h3>
           <ClassProductPanel key={selected.id+":"+editorKey} classes={slots} initialProduct={activeProduct.id}
             allowProductSelection={false} onSaved={()=>{setNotice("コースを保存しました。");refresh();}}/>
           <div className="border-t pt-4"><button className={button} onClick={()=>{
-            setSelected({kind:"class",id:crypto.randomUUID()});setEditorKey(k=>k+1);
+            setNewSlot({id:crypto.randomUUID(),productId:activeProduct.id});setEditorKey(k=>k+1);
           }}>＋ このコースにクラスを追加</button></div>
         </>:selected?.kind==="class"&&activeSlot&&activeProduct?<>
           <h3 className="font-bold">× {activeSlot.name} ／ 日時・場所を変更</h3>
