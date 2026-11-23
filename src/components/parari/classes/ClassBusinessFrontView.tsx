@@ -8,7 +8,7 @@ import { classBusinessFrontPath, classParticipationFormats, type ClassBusinessFr
 import { classEventDate } from "@/lib/classEvents";
 import { classWeekdays } from "@/lib/classRecurrence";
 import ClassBusinessFrontAction from "./ClassBusinessFrontAction";
-import { ParariViewer } from "@/components/parari/viewer-v2/ParariViewer";
+import ClassHomePageContent from "./ClassHomePageContent";
 
 import type { ClassParticipantMember } from "@/lib/classCalendarAccess";
 
@@ -66,7 +66,7 @@ export default function ClassBusinessFrontView({ name, introduction, links, scho
       <h1 className="break-words text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">{name}</h1>
       {introduction && <p className="whitespace-pre-wrap break-words text-base leading-8 text-neutral-700">{introduction}</p>}
       {homePage && <section aria-label="教室の紹介" className="min-w-0">
-        <ParariViewer workId={homePage.id} content={homePage.content}/>
+        <ClassHomePageContent content={homePage.content}/>
       </section>}
       {schoolId && <ClassBusinessFrontAction schoolId={schoolId} hasIntake={!member?.enrolled && other.length > 0} />}
       {schoolId && !loading && !userId && links.some(link => link.course && !link.course.walkIn) &&
