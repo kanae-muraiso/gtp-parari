@@ -130,15 +130,15 @@ export default function IntegratedClassOnboarding() {
       const session=await supabase?.auth.getSession();
       const token=session?.data.session?.access_token;
       if(!token)throw new Error("ログインしてください。");
-      const safe=(value:string)=>value.replace(/^\\s*\\[/gm,"［").replace(/\\r/g,"").slice(0,5000);
-      const title=safe(data.school.name+"のご案内").replace(/\\n/g," ").slice(0,120);
+      const safe=(value:string)=>value.replace(/^\s*\[/gm,"［").replace(/\r/g,"").slice(0,5000);
+      const title=safe(data.school.name+"のご案内").replace(/\n/g," ").slice(0,120);
       const selected=answers.map((answer,i)=>({answer:answer.trim(),title:questions[i].title}))
         .filter(item=>item.answer);
-      const body=selected.length?selected.map(item=>item.title+"\\n"+safe(item.answer)).join("\\n\\n"):
+      const body=selected.length?selected.map(item=>item.title+"\n"+safe(item.answer)).join("\n\n"):
         "このページは先生が自由に編集できる教室紹介の下書きです。";
       // Operational fees, schedule, enrollment and CTA URLs are never copied
       // into editable SSOT; those remain authoritative CLASS data.
-      const ssot="[PAGE]\\ntitle: "+title+"\\n[T]\\n"+body;
+      const ssot="[PAGE]\ntitle: "+title+"\n[T]\n"+body;
       const response=await fetch("/api/works/create",{
         method:"POST",cache:"no-store",
         headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
