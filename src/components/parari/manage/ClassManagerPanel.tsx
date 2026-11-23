@@ -30,8 +30,20 @@ function formValues(event: FormEvent<HTMLFormElement>) {
 }
 
 export default function ClassManagerPanel() {
-  const business = useSearchParams().get("business");
-  return business ? <BusinessClassManager key={business} /> : <ClassBusinessPicker />;
+  const params = useSearchParams();
+  const business = params.get("business");
+  // Recovery-only fallback while the unified workspace reaches feature parity.
+  // Normal navigation always uses one shared CLASS environment.
+  const legacy = params.get("legacy") === "1";
+  const destination = "/my/class-onboarding" + (business ? "?business=" + encodeURIComponent(business) : "");
+  useEffect(() => {
+    if (!legacy) window.location.replace(destination);
+  }, [destination, legacy]);
+  if (legacy) return business ? <BusinessClassManager key={business} /> : <ClassBusinessPicker />;
+  return <section className="rounded-xl border bg-white p-5 text-sm">
+    <p>CLASSの開設と日々の運営を、一つの画面に統合しました。</p>
+    <Link href={destination} className="mt-2 inline-block font-semibold underline">CLASSの操作環境を開く</Link>
+  </section>;
 }
 
 function BusinessClassManager() {

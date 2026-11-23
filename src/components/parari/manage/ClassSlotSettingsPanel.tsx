@@ -119,7 +119,7 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
     });
   }}>
     <fieldset disabled={busy} className="grid min-w-0 gap-4">
-      <label className="grid w-full max-w-sm gap-1">開催枠の名前
+      <label className="grid w-full max-w-sm gap-1">クラス名
         <input className={field} required maxLength={120} value={rows[0].name} onChange={e => patch(rows[0].id, { name: e.target.value })} />
       </label>
       {rows.map((row, index) => {
@@ -183,12 +183,12 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
                   value={row.location} onChange={e => patch(row.id, { location: e.target.value })} />
               </label>
               <label className="grid gap-1">{walkIn ? "参加費（円）" : "月謝（円）"}
-                <input className={field} type="number" min={0} max={1000000} placeholder={basicFee === undefined ? "商品の基本料金" : String(basicFee)} value={row.feeOverride}
+                <input className={field} type="number" min={0} max={1000000} placeholder={basicFee === undefined ? "コースの基本料金" : String(basicFee)} value={row.feeOverride}
                   onChange={e => patch(row.id, { feeOverride: e.target.value })} />
               </label>
             </div>
             {slotDefaults && <button type="button" className="mt-2 text-sm underline"
-              onClick={() => patch(row.id, standard)}>商品の標準設定を使う</button>}
+              onClick={() => patch(row.id, standard)}>コースの標準設定を使う</button>}
             {walkIn && <details className="mt-3" onInvalidCapture={event => { event.currentTarget.open = true; }}>
               <summary className="cursor-pointer font-medium">特定の回だけ会場・費用を変更</summary>
               <div className="mt-2 grid gap-2">
@@ -213,9 +213,9 @@ export default function ClassSlotSettingsPanel({ item, additionalSlots, startId,
         </div>;
       })}
       {productId && rows.length < 12 && <button type="button" className={secondary} onClick={addFrequency}>＋ 頻度を追加</button>}
-      {!productId && <p className="text-xs text-neutral-600">頻度ごとに日時や料金を設定するには、商品に登録した開催枠を開いてください。</p>}
+      {!productId && <p className="text-xs text-neutral-600">頻度ごとに日時や料金を設定するには、コースに登録したクラスを開いてください。</p>}
       {saveError && <p role="alert" className="text-red-700">{saveError}</p>}
-      <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white">開催枠を保存</button>
+      <button className="w-fit rounded-lg bg-neutral-900 px-4 py-2 font-semibold text-white">クラスを保存</button>
     </fieldset>
   </form>;
 }

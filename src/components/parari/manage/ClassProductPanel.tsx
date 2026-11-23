@@ -40,7 +40,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
   }, [initialProduct, initialClass, retry]);
 
   if (!product) return <section className={panel}>
-    <p role={error ? "alert" : "status"}>{error || "商品設定を読み込んでいます…"}</p>
+    <p role={error ? "alert" : "status"}>{error || "コース設定を読み込んでいます…"}</p>
     {error && <button className={button} onClick={() => { setError(""); setRetry(value => value + 1); }}>再読み込み</button>}
   </section>;
 
@@ -70,22 +70,22 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
     } catch (cause) { onSaveError?.(); setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
-    <h3 className="font-bold">{allowProductSelection ? "商品設定" : initialProduct ? "商品設定を編集" : "商品を作成"}</h3>
+    <h3 className="font-bold">{allowProductSelection ? "コース設定" : initialProduct ? "コース設定を編集" : "コースを作成"}</h3>
     <fieldset disabled={busy} className="grid min-w-0 gap-4">
-      {allowProductSelection && <label>商品を選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
+      {allowProductSelection && <label>コースを選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
         const existing = products.find(item => item.id === event.target.value);
         setProductId(existing?.id ?? ""); setName(existing?.name ?? ""); setProduct(existing?.design ?? base); setSaved(false);
       }}>
-        <option value="">新しい商品</option>{products.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        <option value="">新しいコース</option>{products.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label>}
-      <label>商品名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
+      <label>コース名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
         onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
       <label>受講対象<select name="classAudience" className={field} required value={product.audience ?? ""}
         onChange={event => patch("audience", event.target.value as ClassProduct["audience"])}>
         <option value="">受講対象を選んでください</option><option value="adult">成人向け</option><option value="minor">未成年向け</option>
       </select></label>
       <p className="text-sm text-neutral-600">申込書はこの設定を引き継ぎます。未成年向けは保護者の氏名・メール・電話・住所が必須になり、連絡は本人と保護者の両方に届きます。</p>
-      <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える開催枠</legend>
+      <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教えるクラス</legend>
         {available.map(item => <label key={item.id} className="text-sm">
           <input type="checkbox" checked={product.classIds.includes(item.id)} onChange={event => patch("classIds",
             event.target.checked ? [...product.classIds, item.id] : product.classIds.filter(id => id !== item.id))} /> {item.name} · {item.starts_at.slice(0, 5)}{item.location ? " · " + item.location : ""}
@@ -110,7 +110,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       </div>}
       {product.booking === "multiple" && <p className="text-sm text-neutral-600">登録済みの複数枠は名簿で確認できます。</p>}
       <fieldset className="grid gap-2">
-        <legend className="mb-2 text-sm font-semibold">開催枠の標準設定</legend>
+        <legend className="mb-2 text-sm font-semibold">クラスの標準設定</legend>
         <div className="grid gap-3 sm:grid-cols-3">
           <label>所要時間（分）<input className={field} type="number" min={5} max={480} required
             value={slotDefaults.duration || ""} onChange={event => patchSlotDefaults({ duration: Number(event.target.value) })} /></label>
@@ -121,7 +121,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
           {slotDefaults.delivery !== "online" && <label>会場<input className={field} maxLength={200} required={slotDefaults.delivery === "hybrid"}
             value={slotDefaults.location} onChange={event => patchSlotDefaults({ location: event.target.value })} /></label>}
         </div>
-        <p className="text-sm text-neutral-600">新しい開催枠や頻度に、ここで設定した内容と{product.walkInFee != null ? "基本参加費" : "月謝"}を使います。</p>
+        <p className="text-sm text-neutral-600">新しいクラスや開催頻度に、ここで設定した内容と{product.walkInFee != null ? "基本参加費" : "月謝"}を使います。</p>
       </fieldset>
       {product.walkInFee != null ? <>
         <label>当日の基本参加費（円）<input className={field} type="number" min={0} max={1000000} required
@@ -148,9 +148,9 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         <h4 className="mb-2 font-medium">受講条件の案内文</h4>
         <p className="whitespace-pre-line text-sm leading-6">{describeClassProduct(product, selected.map(item => item.name))}</p>
       </section>}
-      <button className={button}>商品設定を保存</button>
+      <button className={button}>コース設定を保存</button>
     </fieldset>
-    {saved && <p role="status">商品設定を保存しました。</p>}
+    {saved && <p role="status">コース設定を保存しました。</p>}
     {error && <p role="alert">{error}</p>}
   </form>;
 }
