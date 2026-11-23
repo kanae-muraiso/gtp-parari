@@ -7,94 +7,96 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import { activateStudioForCurrentUser } from "@/lib/parari/workspace/activateStudio";
 import { supabase } from "@/lib/supabaseClient";
 
+type StartGoal = "works" | "class";
+const destinations: Record<StartGoal,string> = {
+  works: "/editor/quick",
+  class: "/my/class-onboarding",
+};
+
+/**
+ * Entering STUDIO is a deliberate, free choice independent of artifact creation.
+ * Both goals activate the SAME workspace. No paid plan or work is created here.
+ */
 export default function StudioCreateEntry() {
-  const router = useRouter();
-  const { studioEnabled, loading, reload } = useParariExperience();
-  const [previouslyPaused, setPreviouslyPaused] = useState<boolean | null>(null);
-  const [activating, setActivating] = useState(false);
-  const [error, setError] = useState("");
+  const router=useRouter();
+  const { studioEnabled, loading, reload }=useParariExperience();
+  const [paused,setPaused]=useState(false);
+  const [checking,setChecking]=useState(true);
+  const [activating,setActivating]=useState<StartGoal|null>(null);
+  const [error,setError]=useState("");
 
-  useEffect(() => {
-    let alive = true;
+  useEffect(()=>{
+    if(!supabase){setChecking(false);return;}
+    let alive=true;
+    void (async()=>{
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user){if(alive)setChecking(false);return;}
+      const {data,error}=await supabase.from("user_workspace_preferences")
+        .select("studio_paused").eq("user_id",user.id).maybeSingle();
+      if(!alive)return;
+      if(error)setError("STUDIOの状態を確認できませんでした。再読み込みしてください。");
+      else setPaused(data?.studio_paused===true);
+      setChecking(false);
+    })();
+    return ()=>{alive=false;};
+  },[]);
 
-    async function checkPause() {
-      if (!supabase) {
-        if (alive) setPreviouslyPaused(false);
+  async function enter(goal:StartGoal){
+    if(activating||loading||checking)return;
+    setActivating(goal);setError("");
+    try{
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if(authError||!user){
+        router.push("/login?returnTo="+encodeURIComponent("/my/start-studio"));
         return;
       }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!alive) return;
-      if (!user) {
-        setPreviouslyPaused(false);
-        return;
-      }
-      const { data, error: readError } = await supabase
-        .from("user_workspace_preferences")
-        .select("studio_paused")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!alive) return;
-      if (readError) {
-        setError("STUDIOの状態を確認できませんでした。画面を再読み込みしてください。");
-        setPreviouslyPaused(null);
-        return;
-      }
-      setPreviouslyPaused(data?.studio_paused === true);
-    }
-
-    void checkPause();
-    return () => { alive = false; };
-  }, []);
-
-  async function startWriting() {
-    if (activating || previouslyPaused === null) return;
-    setActivating(true);
-    setError("");
-    try {
-      if (previouslyPaused) {
-        // Resuming a prior workspace restores access to all saved works.
+      // Explicitly activate STUDIO BEFORE entering either editor or CLASS.
+      if(!studioEnabled){
         await activateStudioForCurrentUser();
         await reload();
-        router.push("/my/works");
-      } else {
-        // Merely opening the blank editor does not make this reader an author.
-        // STUDIO is enabled only after the first meaningful save.
-        router.push("/editor/quick");
       }
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "制作機能を開始できませんでした。");
-    } finally {
-      setActivating(false);
-    }
+      router.push(destinations[goal]);
+    }catch(cause){
+      setError(cause instanceof Error?cause.message:"STUDIOを開始できませんでした。");
+    }finally{setActivating(null);}
   }
 
-  if (loading || studioEnabled) return null;
-
-  return (
-    <section className="rounded-2xl border border-emerald-100 bg-emerald-50/40 px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs leading-6 text-neutral-700">
-          {previouslyPaused
-            ? "以前の作品を残したまま、いつでも編集を再開できます。"
-            : "最初の作品を保存するまでは、STUDIOは有効になりません。"}
-        </p>
-        <button
-          type="button"
-          onClick={() => void startWriting()}
-          disabled={activating || previouslyPaused === null}
-          className="shrink-0 rounded-full border border-emerald-300 bg-white px-4 py-2 text-xs font-bold text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {activating ? "準備しています…" : previouslyPaused ? "STUDIOを再開" : "書き始める"}
+  return <section className="space-y-4">
+    {!loading&&studioEnabled ? (
+      <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+        STUDIOは利用可能です。ここから作品作成・クラス開設を始められます。
+      </p>
+    ) : (
+      <p className="text-sm leading-7 text-neutral-700">
+        {paused?"休止していたSTUDIOを無料で再開できます。作品はそのまま残ります。":
+          "無料でSTUDIOを始められます。先に作品を保存する必要はありません。"}
+      </p>
+    )}
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 p-4">
+        <h2 className="text-base font-bold">作品を作る</h2>
+        <p className="flex-1 text-sm leading-6 text-neutral-600">文章、写真、PAGEやBOOKを作成します。</p>
+        <button type="button" onClick={()=>void enter("works")} disabled={Boolean(activating)||loading||checking}
+          className="rounded-full bg-emerald-800 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+          {activating==="works"?"STUDIOを準備中…":"作品づくりへ"}
         </button>
       </div>
-      {previouslyPaused ? (
-        <p className="mt-2 text-xs leading-6 text-neutral-500">
-          休止中も有料プランの契約は継続します。必要なら
-          <Link href="/billing" className="ml-1 underline underline-offset-4">契約・請求を確認</Link>
-          できます。
-        </p>
-      ) : null}
-      {error ? <p role="alert" className="mt-2 text-xs text-red-700">{error}</p> : null}
-    </section>
-  );
+      <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 p-4">
+        <h2 className="text-base font-bold">クラスを開く</h2>
+        <p className="flex-1 text-sm leading-6 text-neutral-600">教室、コース、クラスの設計と運営を始めます。</p>
+        <button type="button" onClick={()=>void enter("class")} disabled={Boolean(activating)||loading||checking}
+          className="rounded-full bg-emerald-800 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+          {activating==="class"?"STUDIOを準備中…":"CLASSの開設ガイドへ"}
+        </button>
+      </div>
+    </div>
+    <p className="text-xs leading-6 text-neutral-500">
+      どちらも同じSTUDIOです。切り替えに費用はかかりません。
+      CLASS Aの一般会員向け開設機能は別途公開準備中で、STUDIOの開始だけで利用制限が解除されるわけではありません。
+    </p>
+    {paused&&!studioEnabled&&<p className="text-xs leading-6 text-neutral-500">
+      有料契約の終了とは別の操作です。必要なら<Link href="/billing" className="underline">契約・請求</Link>をご確認ください。
+    </p>}
+    {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+  </section>;
 }
