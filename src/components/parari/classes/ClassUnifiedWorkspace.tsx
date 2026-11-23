@@ -503,28 +503,11 @@ export default function ClassUnifiedWorkspace(){
         {operationFocus==="attendance"&&<ClassAbsencesPanel schoolId={business} classes={slots}/>}
         {operationFocus==="calendar"&&<ClassCalendarPanel classes={slots} onSaved={refresh}/>}
         {operationFocus==="roster"&&<div className="space-y-2">
-          <p className="text-sm text-neutral-600">在籍・終了は名簿の正本です。編集する人を選択してください。</p>
-          {roster.map(member=><details key={member.id} className="rounded-xl border p-3">
-            <summary className="cursor-pointer font-semibold">{member.name} · {member.status==="active"?"在籍中":"終了"}</summary>
-            <form className="mt-3 grid gap-2 sm:grid-cols-2" onSubmit={async event=>{
-              event.preventDefault();const form=new FormData(event.currentTarget);
-              setBusy(true);setError("");try{
-                await classRequest("",{action:"member",memberId:member.id,name:form.get("name"),
-                  status:form.get("status")});
-                setNotice("名簿を保存しました。");refresh();
-              }catch(cause){setError(cause instanceof Error?cause.message:"名簿を更新できませんでした。");}
-              finally{setBusy(false);}
-            }}>
-              <label className="grid gap-1 text-sm">名前<input name="name" className={field} required defaultValue={member.name}/></label>
-              <label className="grid gap-1 text-sm">在籍状況
-                <select className={field} name="status" defaultValue={member.status}>
-                  <option value="active">在籍中</option><option value="ended">終了</option>
-                </select>
-              </label>
-              <p className="text-xs text-neutral-600 sm:col-span-2">月謝請求の停止・退会承認は、単なる在籍状況の編集とは別に確認が必要です。</p>
-              <button className={primary} disabled={busy}>変更を保存</button>
-            </form>
-          </details>)}
+          <p className="text-sm text-neutral-600">在籍中の受講者を確認できます。退会や請求停止は、保護者・先生の確認手続きと連動する必要があるため、ここで在籍状況を直接変更しません。</p>
+          {roster.map(member=><div key={member.id} className="rounded-xl border p-3">
+            <p className="font-semibold">{member.name} <span className="text-sm font-normal text-neutral-600">· {member.status==="active"?"在籍中":"終了"}</span></p>
+            <p className="mt-1 text-xs text-neutral-600">登録クラス：{(member.assignments??[]).map(a=>slots.find(s=>s.id===a.class_id)?.name).filter(Boolean).join("、")||"未登録"}</p>
+          </div>)}
           {!roster.length&&<p className="text-sm">登録された受講者はまだいません。</p>}
         </div>}
         {operationFocus==="events"&&<ClassEventsPanel classes={slots} roster={roster} kind="event"/>}
