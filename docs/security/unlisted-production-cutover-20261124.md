@@ -1,6 +1,37 @@
+# 2026-11-24 本番RLS切替：実施記録
+
+**状態：本番RLS・公開用ビューの切替を実施し、匿名取得と共有URLのスモークテスト成功。**
+
+- 先行してアプリPR #290をmainへマージ。アプリ本番 SHA: `4fb26c44fa397fff6bb83417c64c3c55cebcecf3`、Vercel: `dpl_JAG7APiEhqeRj9WNeP87VM1dazJv` (READY)。
+- 本番Supabase `gqlwepkldjxqvlfxsoel` にて1トランザクションで次を実施：
+  1. `public_can_read_visible` を削除し、`visibility='public'` かつ削除済でない・期限内のみのSELECTポリシーとして再作成。
+  2. `parari_public_works` の `security_invoker=true` を設定。
+  3. 有料本文保護のRESTRICTIVEポリシーは維持。
+- 本番変更の前に同じSQLを `BEGIN...ROLLBACK` で予行し、実際に戻ったことを確認。
+- 匿名権限の件数チェック：切替前 `parari_books` 限定公開341件・ビュー288件 → 切替後それぞれ0件。公開作品は15件閲覧可能。
+- 本番の `/api/works/share-read` 匿名テスト：公開・限定URLはHTTP 200、非公開は404。公開作品のSSR本文/noindex設定も正常。
+- **注意：全ユーザーアカウントでのE2Eは未実施。** 既存の短い共有slugの推測耐性と、公開ViewerがSSOT原文をクライアントへ渡す問題は残余リスク。
+- **注意：`anon` と `authenticated` に `TRUNCATE` 等の過剰GRANTが残っている。** 今回はRLS切替に集中し、別途最小権限化を行う。
+
+## 即時切戻しSQL（必要な場合のみ）
+
+```sql
+BEGIN;
+DROP POLICY IF EXISTS public_can_read_visible ON public.parari_books;
+CREATE POLICY public_can_read_visible ON public.parari_books
+  FOR SELECT TO PUBLIC
+  USING (visibility = ANY(ARRAY['public'::text, 'unlisted'::text]));
+ALTER VIEW public.parari_public_works RESET (security_invoker);
+COMMIT;
+```
+
+これは今回変更したRLSとビュー設定のみの復旧手順。アプリ側を元のコミットへ戻すかは症状に応じて別途判断する。切戻しは旧匿名列挙問題を再発させるため、緊急時に限る。
+
+---
+
 # 限定公開の匿名列挙停止：本番切替チェックリスト（2026-11-24）
 
-**状態：準備・プレビュー検証のみ。本番DBには未適用。**
+**以下は切替前の準備計画。上の実施記録を正とする。**
 関連：旧PR #266、新しい統合Draft PR #290。
 
 ## 今回の本番読み取り専用監査
@@ -45,4 +76,4 @@ COMMIT;
 - 検索向けに限定公開・非公開SSOTが出力されない。一般公開だけがサイトマップに載る。
 - 異常があれば直前のGRANT/ポリシー/ビュー定義へ切り戻し、アプリ本番デプロイも前版へ復旧可能とする。
 
-**この手順の承認と実アカウントE2Eの完了前に、本番RLS SQLを実行しない。**
+**上記の本番切替は2026-11-24に実施済み。残余リスクは実施記録参照。**
