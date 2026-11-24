@@ -49,6 +49,11 @@ function extractBookTitle(content: string): string {
       }
     }
 
+    // PAGE作品のSSOTタイトルもSNS向けメタデータに使う。
+    const pageMatch = line.match(/^\[PAGE\]\s*(.+)$/i);
+    if (pageMatch?.[1]) {
+      return pageMatch[1].trim();
+    }
     const titleMatch = line.match(/^title\s*:\s*(.+)$/i);
     if (titleMatch?.[1]) {
       return titleMatch[1].trim();
