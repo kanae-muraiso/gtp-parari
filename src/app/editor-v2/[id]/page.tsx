@@ -1250,7 +1250,7 @@ export default function BookPanelSequenceEditorPage() {
                    この欄は指定された内部管理者用です。SSOT専用保存では改訂番号を確認して保存します。
                  </p>
 
-                 {!canEdit ? (
+                 {!canEdit && !showInternalSsotUi ? (
                    <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
                      <div>
                        {editLockState === "claiming"
