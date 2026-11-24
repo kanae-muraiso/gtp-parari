@@ -84,6 +84,7 @@ export function SafeReaderBody({
           }}
         />;
       case "image": {
+        if (!block.src) return <div key={index} className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">画像なし</div>;
         const img = <img src={block.src} alt={block.caption || ""} className="w-full rounded-xl object-contain"/>;
         return <figure key={index} className="mx-auto max-w-[720px]">
           {block.link ? <a href={block.link} rel="noopener noreferrer">{img}</a> : img}
