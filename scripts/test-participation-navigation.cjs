@@ -152,7 +152,7 @@ async function main() {
     { headers: { Authorization: "Bearer groups" } }));
   assert.deepEqual((await businessList.json()).businesses.map(item => item.id), [a,b]);
   const mutation = await classes.POST(new NextRequest("https://www.parari.app/api/classes", { ...hidden, method: "POST" }));
-  assert.equal(mutation.status, 404);
+  assert.equal(mutation.status, 403);
   dbCalls = 0;
   for (const token of [null, "invalid"]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations", { headers: token ? { Authorization: `Bearer ${token}` } : {} }));
