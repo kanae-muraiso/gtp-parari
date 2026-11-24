@@ -15,6 +15,7 @@ type BookRow = {
   is_public: boolean | null;
   visibility: string | null;
   is_deleted: boolean | null;
+  expires_at: string | null;
 };
 
 function getBearerToken(request: NextRequest): string | null {
@@ -64,21 +65,23 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from("parari_books")
-      .select("id,owner,content,is_public,visibility,is_deleted")
+      .select("id,owner,content,is_public,visibility,is_deleted,expires_at")
       .eq("id", workId)
       .maybeSingle<BookRow>();
 
-    if (error || !data || data.is_deleted === true) {
+    if (error || !data || data.is_deleted === true ||
+        (data.expires_at && Date.parse(data.expires_at) <= Date.now())) {
       return NextResponse.json(
         { ok: false, message: "BOOKが見つかりませんでした。" },
         { status: 404 },
       );
     }
 
+    // Canonical visibility takes priority; legacy is_public is only a fallback.
     const isVisible =
-      data.is_public === true ||
       data.visibility === "public" ||
-      data.visibility === "unlisted";
+      data.visibility === "unlisted" ||
+      (!data.visibility && data.is_public === true);
 
     let userId: string | null = null;
     const token = getBearerToken(request);
@@ -91,7 +94,23 @@ export async function GET(request: NextRequest) {
     }
 
     const canReadPrivateBook = userId === data.owner;
-    let allowed = isVisible || canReadPrivateBook;
+    // An active sale disables unauthenticated reading, even if the source
+    // BOOK still has public/unlisted visibility.
+    const { data: activeSale, error: saleError } = await supabaseAdmin
+      .from("commerce_products")
+      .select("id")
+      .eq("work_id", data.id)
+      .eq("product_type", "work")
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+    if (saleError) {
+      return NextResponse.json(
+        { ok: false, message: "閲覧権限を確認できませんでした。" },
+        { status: 503 },
+      );
+    }
+    let allowed = (isVisible && !activeSale) || canReadPrivateBook;
 
     if (!allowed && userId) {
       const { data: collaborator } = await supabaseAdmin
@@ -160,11 +179,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const protectedIds = isVisible && userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
+    // A purchased parent BOOK does not automatically grant a separately sold PAGE.
+    // Check independently of parent visibility (sales normally make the parent private).
+    const protectedIds = userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
     const pageContentById = new Map<string, string>();
 
     for (const page of pages ?? []) {
-      if (page.is_deleted === true || (protectedIds.has(page.id) && !page.is_public && page.visibility === "private")) continue;
+      if (page.is_deleted === true || protectedIds.has(page.id)) continue;
       const rawContent = String(page.content ?? "");
       pageContentById.set(
         String(page.id),

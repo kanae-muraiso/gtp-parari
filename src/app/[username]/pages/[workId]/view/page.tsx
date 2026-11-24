@@ -97,52 +97,21 @@ export default function UserPageViewPage() {
         return true;
       }
 
-      const isOwner = Boolean(user && profile.user_id === user.id);
-      const { data, error } = await supabase
-        .from("parari_books")
-        .select(
-          [
-            "id",
-            "owner",
-            "title",
-            "content",
-            "visibility",
-            "is_public",
-            "stable_slug",
-            "slug",
-            "entry_mode",
-            "updated_at",
-          ].join(","),
-        )
-        .eq("id", workId)
-        .eq("owner", profile.user_id)
-        .maybeSingle<PageWorkRow>();
-
-      if (error) {
-        setStatus({
-          type: "error",
-          message: `作品取得に失敗しました: ${error.message}`,
-        });
-        return;
-      }
-
-      if (!data) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `/api/works/share-read?id=${encodeURIComponent(workId)}`,
+        {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
+          cache: "no-store",
+        },
+      ).catch(() => null);
+      const result = await response?.json().catch(() => null);
+      const data = result?.book as PageWorkRow | undefined;
+      if (!response?.ok || !result?.ok || !data || data.owner !== profile.user_id) {
         if (await showSale()) return;
-        setStatus({
-          type: "error",
-          message: "指定されたPAGEが見つかりませんでした。",
-        });
-        return;
-      }
-
-      const visibility = normalizeVisibility(data.visibility, data.is_public);
-
-      if (!isOwner && visibility === "private") {
-        if (await showSale()) return;
-        setStatus({
-          type: "error",
-          message: "このPAGEは非公開です。",
-        });
+        setStatus({ type: "error", message: "このPAGEは表示できません。" });
         return;
       }
 

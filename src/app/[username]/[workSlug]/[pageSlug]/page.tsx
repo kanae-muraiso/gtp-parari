@@ -1,10 +1,10 @@
+// 2026-11-24 JST — PART: server-enforced shared URL access prior to RLS cutover
 // src/app/[username]/[workSlug]/[pageSlug]/page.tsx
 // PARARI MVP: public PAGE route via viewer-v2 only
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
-import { createClient } from "@supabase/supabase-js";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
 import { buildPublicReadableText } from "@/lib/parari/seo/publicReadableText";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
@@ -139,7 +139,7 @@ async function findPublicPageData(
   username: string,
   workSlug: string,
 ): Promise<PublicPageData | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -192,6 +192,18 @@ async function findPublicPageData(
     return null;
   }
 
+  // An active sale must never disclose its source through a public share URL.
+  // Keep the search-only HTML and metadata on this route free of paid content.
+  const { data: activeSale, error: saleError } = await supabaseAdmin
+    .from("commerce_products")
+    .select("id")
+    .eq("work_id", data.id)
+    .eq("product_type", "work")
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  if (saleError || activeSale) return null;
+
   const content = data.content ?? "";
 
   if (!isAuthorVisibleWorkContent(content)) {
@@ -213,33 +225,13 @@ function canViewPublicWork(work: PublicWorkRow): boolean {
     return true;
   }
 
-  if (work.is_public === true) {
-    return true;
-  }
-
   if (work.visibility === "unlisted") {
     return true;
   }
 
+  // Legacy public flag applies only when canonical visibility is absent.
+  if (!work.visibility && work.is_public === true) return true;
   return false;
-}
-
-function createSupabaseServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL または NEXT_PUBLIC_SUPABASE_ANON_KEY が設定されていません。",
-    );
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
 }
 
 function escapePostgrestValue(value: string): string {
