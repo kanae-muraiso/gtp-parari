@@ -1166,13 +1166,13 @@ export default function BookPanelSequenceEditorPage() {
                        "現在この作品は編集できません。"}
                </div>
 
-               {editLockState === "idle" ? (
+               {editLockState === "idle" || editLockState === "lost" ? (
                  <button
                    type="button"
                    onClick={handleResumeEditing}
                    className="mt-3 rounded-full bg-amber-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-amber-800"
                  >
-                   編集を再開
+                   編集権を再取得
                  </button>
                ) : null}
              </div>
@@ -1246,8 +1246,29 @@ export default function BookPanelSequenceEditorPage() {
                  </summary>
 
                  <p className="mt-2 text-xs leading-5 text-neutral-400">
-                   この欄は管理者用です。変更内容は下のパネル表示にも反映されます。
+                   この欄は管理者用です。変更内容は下のパネル表示にも反映されます。編集権を取得している間に変更できます。
                  </p>
+
+                 {!canEdit ? (
+                   <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                     <div>
+                       {editLockState === "claiming"
+                         ? "編集権を確認しています..."
+                         : editLockState === "blocked"
+                           ? `現在 ${editLockHolderName} さんが編集中です。編集権が空いてから変更できます。`
+                           : editLockMessage || "SSOTを変更するには編集権が必要です。"}
+                     </div>
+                     {editLockState === "idle" || editLockState === "lost" ? (
+                       <button
+                         type="button"
+                         onClick={handleResumeEditing}
+                         className="mt-2 rounded-full bg-amber-900 px-3 py-1.5 font-bold text-white transition hover:bg-amber-800"
+                       >
+                         編集権を再取得
+                       </button>
+                     ) : null}
+                   </div>
+                 ) : null}
 
                  <textarea
                    value={ssot}

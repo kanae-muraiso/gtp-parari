@@ -42,7 +42,7 @@ const db={auth:{getUser:async token=>({data:{user:users[token]??null},error:null
 const recurrence=load('src/lib/classRecurrence.ts');
 const classes=load('src/lib/classes.ts',{'./classRecurrence':recurrence});
 const calendar=load('src/lib/classCalendar.ts',{'./classes':classes,'./classRecurrence':recurrence,'@/lib/classes':classes});
-const common={'@/lib/billing/supabaseAdmin':{supabaseAdmin:db},'@/lib/classes':classes,'@/lib/classCalendar':calendar,'@/lib/classRecurrence':recurrence,'@/lib/classProduct':load('src/lib/classProduct.ts'),'@/lib/classCalendarAccess':{classParticipantMembers:async(user,s)=>s===school?(members[user]??[]):[]},'@/lib/classBusinessScope':{classBusinessId:async()=>null}};
+const common={'@/lib/billing/supabaseAdmin':{supabaseAdmin:db},'@/lib/classes':classes,'@/lib/classCalendar':calendar,'@/lib/classRecurrence':recurrence,'@/lib/classProduct':load('src/lib/classProduct.ts'),'@/lib/classCalendarAccess':{classParticipantMembers:async(user,s)=>s===school?(members[user]??[]):[]},'@/lib/classBusinessScope':{classBusinessId:async()=>null,canManageClassStudio:async()=>false},'@/lib/classFeatureAccess':{classFeatureAccess:async()=>({canManage:false,canCreateEvents:false,plan:'a'})}};
 const portal=load('src/app/api/classes/route.ts',common);
 const registration=load('src/app/api/classes/registration/route.ts',{...common,'@/lib/classEnrollmentNotice':{classApplicationReturn:async()=>'/class-intake/test',sendClassEnrollmentNotice:async()=>true}});
 const schedule=load('src/app/api/classes/schedule/route.ts',common);
@@ -80,8 +80,8 @@ async function main(){
   }
   assert.equal((await portal.GET(req(`/api/classes?school=${school}&member=${m2}`,'child'))).status,404);
   assert.equal((await portal.GET(req(`/api/classes?school=${school}`,'stranger'))).status,404);
-  assert.equal((await portal.GET(req('/api/classes?businesses=1','parent'))).status,404);
-  assert.equal((await portal.POST(req('/api/classes','parent',{action:'create',name:'権限なし'}))).status,404);
+  assert.equal((await portal.GET(req('/api/classes?businesses=1','parent'))).status,403);
+  assert.equal((await portal.POST(req('/api/classes','parent',{action:'create',name:'権限なし'}))).status,403);
   const uri=`/api/classes/schedule?school=${school}&month=${day.slice(0,7)}`;
   assert.equal((await schedule.GET(req(uri,'stranger'))).status,404);
   assert.equal((await schedule.GET(req(uri+`&member=${m2}`,'child'))).status,404);

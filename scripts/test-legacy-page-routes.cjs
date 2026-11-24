@@ -27,7 +27,10 @@ async function checkReader({ userId = null, visibility = "public", owner = "owne
   const tables = { profiles: [{ user_id: "owner", username: "author" }], parari_books: [work] };
   const queries = [];
   const client = {
-    auth: { getUser: async () => ({ data: { user: userId ? { id: userId } : null } }) },
+    auth: {
+      getUser: async () => ({ data: { user: userId ? { id: userId } : null } }),
+      getSession: async () => ({ data: { session: null } }),
+    },
     from(table) {
       assert.ok(table in tables, `Unexpected table: ${table}`);
       let rows = tables[table];

@@ -61,6 +61,7 @@ const users = {
   purchaser: {}, groups: {}, company: {}, guardian: {},
 };
 const tables = {
+  user_workspace_preferences: [{ user_id: "purchaser", studio_enabled: false, studio_paused: true }], parari_books: [], forms: [], applications: [], calendar_items: [],
   class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
   profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: false }],
   membership_members: [
@@ -92,6 +93,7 @@ function from(table) {
     select() { return chain; }, returns() { return chain; },
     eq(key, value) { rows = rows.filter(row => row[key] === value); return chain; },
     is(key, value) { rows = rows.filter(row => (row[key] ?? null) === value); return chain; },
+    neq(key, value) { rows = rows.filter(row => row[key] !== value); return chain; },
     in(key, values) { rows = rows.filter(row => values.includes(row[key])); return chain; },
     not(key, operator, value) { assert.equal(operator, "is"); rows = rows.filter(row => (row[key] ?? null) !== value); return chain; },
     or(filter) {
@@ -127,15 +129,16 @@ const classes = load("src/app/api/classes/route.ts", {
   "@/lib/classRecurrence": recurrence,
   "@/lib/classBusinessScope": businessScope,
   "@/lib/classCalendarAccess": calendarAccess,
+  "@/lib/classFeatureAccess": { classFeatureAccess: async () => ({ canManage: true, canCreateEvents: false, plan: "a" }) },
   "@/lib/classProduct": load("src/lib/classProduct.ts"),
   "@/lib/classes": classModule,
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
 });
 async function main() {
   const hidden = { headers: { Authorization: "Bearer purchaser" } };
-  for (const query of ["", "?businesses=1"]) {
+  for (const [query, expectedStatus] of [["", 403], ["?businesses=1", 403]]) {
     const response = await classes.GET(new NextRequest(`https://www.parari.app/api/classes${query}`, hidden));
-    assert.equal(response.status, 404);
+    assert.equal(response.status, expectedStatus);
   }
   const home = await classes.GET(new NextRequest("https://www.parari.app/api/classes?home=1", hidden));
   assert.equal(home.status, 200);
@@ -149,7 +152,7 @@ async function main() {
     { headers: { Authorization: "Bearer groups" } }));
   assert.deepEqual((await businessList.json()).businesses.map(item => item.id), [a,b]);
   const mutation = await classes.POST(new NextRequest("https://www.parari.app/api/classes", { ...hidden, method: "POST" }));
-  assert.equal(mutation.status, 404);
+  assert.equal(mutation.status, 403);
   dbCalls = 0;
   for (const token of [null, "invalid"]) {
     const response = await GET(new NextRequest("https://www.parari.app/api/my-participations", { headers: token ? { Authorization: `Bearer ${token}` } : {} }));
