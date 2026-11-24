@@ -61,7 +61,7 @@ const users = {
   purchaser: {}, groups: {}, company: {}, guardian: {},
 };
 const tables = {
-  user_workspace_preferences: [], parari_books: [], forms: [], applications: [], calendar_items: [],
+  user_workspace_preferences: [{ user_id: "purchaser", studio_enabled: false, studio_paused: true }], parari_books: [], forms: [], applications: [], calendar_items: [],
   class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
   profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: false }],
   membership_members: [
