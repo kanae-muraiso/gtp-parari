@@ -72,7 +72,7 @@ async function fetchPublicBook(id: string): Promise<BookRow | null> {
 async function fetchAuthorBrandImages(
   ownerId: string | null,
 ): Promise<AuthorBrandImages | null> {
-  const supabase = getServerSupabase();
+  const supabase = supabaseAdmin;
   if (!ownerId) return null;
 
   const { data, error } = await supabase
