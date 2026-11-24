@@ -1,5 +1,6 @@
 // src/app/mypage/page.tsx
-// 2026/09/15 JST
+// 2026-11-24 JST
+// PART: LIBRARY home panels and per-user Studio guidance dismissal.
 
 "use client";
 
@@ -26,9 +27,20 @@ type HomeCardProps = {
   description: string;
   href: string;
   action: string;
+  onDismiss?: () => void;
+  dismissing?: boolean;
+  dismissError?: string;
 };
 
-function HomeCard({ title, description, href, action }: HomeCardProps) {
+function HomeCard({
+  title,
+  description,
+  href,
+  action,
+  onDismiss,
+  dismissing = false,
+  dismissError,
+}: HomeCardProps) {
   return (
     <section className="rounded-2xl border border-neutral-200 bg-white p-5">
       <div className="flex items-center justify-between gap-4">
@@ -48,6 +60,21 @@ function HomeCard({ title, description, href, action }: HomeCardProps) {
           {action} →
         </Link>
       </div>
+      {onDismiss ? (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={dismissing}
+            aria-label="STUDIOの案内を非表示にする"
+            title="この案内を今後表示しない"
+            className="text-xs font-medium text-neutral-400 underline underline-offset-2 hover:text-neutral-700 disabled:opacity-50"
+          >
+            {dismissing ? "保存中…" : "この案内を今後表示しない"}
+          </button>
+          {dismissError ? <p role="alert" className="mt-2 text-xs text-rose-700">{dismissError}</p> : null}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -65,6 +92,57 @@ export default function MyPage() {
     hasPasses,
     setHasPasses,
   ] = useState(false);
+  const [studioCardDismissed, setStudioCardDismissed] = useState(false);
+  const [studioCardPreferenceLoaded, setStudioCardPreferenceLoaded] = useState(false);
+  const [dismissingStudioCard, setDismissingStudioCard] = useState(false);
+  const [studioCardDismissError, setStudioCardDismissError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStudioCardPreference() {
+      if (!supabase) {
+        setStudioCardPreferenceLoaded(true);
+        return;
+      }
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (cancelled) return;
+
+      if (error || !user) {
+        setStudioCardPreferenceLoaded(true);
+        return;
+      }
+
+      setStudioCardDismissed(user.user_metadata?.studio_start_card_dismissed === true);
+      setStudioCardPreferenceLoaded(true);
+    }
+
+    void loadStudioCardPreference();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function dismissStudioCard() {
+    if (!supabase || dismissingStudioCard) return;
+    setDismissingStudioCard(true);
+    setStudioCardDismissError("");
+
+    const { error } = await supabase.auth.updateUser({
+      data: { studio_start_card_dismissed: true },
+    });
+
+    if (error) {
+      console.error("[LIBRARY HOME] Studio card dismissal save failed:", error);
+      setStudioCardDismissError("非表示設定を保存できませんでした。もう一度お試しください。");
+      setDismissingStudioCard(false);
+      return;
+    }
+
+    setStudioCardDismissed(true);
+    setDismissingStudioCard(false);
+  }
 
   useEffect(() => {
     if (
@@ -169,15 +247,6 @@ export default function MyPage() {
         ) : null}
 
         <div className="mt-6 space-y-4">
-          {!loading && !studioEnabled && (
-            <HomeCard
-              title="STUDIOを無料で始める"
-              description="作品を作る・クラスを開く。作品を先に保存しなくても利用開始できます。"
-              href="/my/start-studio"
-              action="STUDIOを始める"
-            />
-          )}
-          <ClassHomeShortcuts studioEnabled={studioEnabled} />
           <section aria-labelledby="open-space-heading" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="open-space-heading" className="text-base font-bold text-emerald-950">
@@ -196,6 +265,20 @@ export default function MyPage() {
             href="/my/bookshelf"
             action="本棚を見る"
           />
+
+          {!loading && !studioEnabled && studioCardPreferenceLoaded && !studioCardDismissed ? (
+            <HomeCard
+              title="STUDIOを無料で始める"
+              description="作品を作る・クラスを開く。作品を先に保存しなくても利用開始できます。"
+              href="/my/start-studio"
+              action="STUDIOを始める"
+              onDismiss={() => void dismissStudioCard()}
+              dismissing={dismissingStudioCard}
+              dismissError={studioCardDismissError}
+            />
+          ) : null}
+
+          <ClassHomeShortcuts studioEnabled={studioEnabled} />
 
           {!loading && hasApplications ? (
             <HomeCard
