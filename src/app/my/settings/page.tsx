@@ -1,6 +1,6 @@
 // src/app/my/settings/page.tsx
-// 2026/11/10 JST
-// PART: Guide authors through publishing and selling a work.
+// 2026-11-24 JST
+// PART: Account settings and expandable STUDIO entry guidance.
 
 "use client";
 
@@ -9,6 +9,7 @@ import Link from "next/link";
 import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import StudioCreateEntry from "@/components/parari/navigation/StudioCreateEntry";
 import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
 import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
 import StudioPausePanel from "@/components/parari/settings/StudioPausePanel";
@@ -86,6 +87,29 @@ export default function SettingsHomePage() {
             description="氏名や表示名など、アカウントの情報を設定します。"
             href="/my/profile?returnTo=/my/settings"
           />
+
+          {!loading && !studioEnabled ? (
+            <details className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-bold text-neutral-950">STUDIOを始める</div>
+                    <p className="mt-1 text-xs leading-6 text-neutral-500">
+                      作品づくりやクラス運営を始めるときに利用します。
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm text-neutral-400" aria-hidden="true">⌄</span>
+                </div>
+              </summary>
+              <div className="mt-5 border-t border-neutral-100 pt-5">
+                <p className="mb-4 text-sm leading-7 text-neutral-600">
+                  PARARIのSTUDIOは、作品をつくる人も、クラスを開く人も使う共通の制作・運営環境です。
+                  無料で利用を開始でき、何かを作成・保存する前からSTUDIOへ入れます。
+                </p>
+                <StudioCreateEntry />
+              </div>
+            </details>
+          ) : null}
 
           {!loading && studioEnabled ? (
             <SettingsCard
