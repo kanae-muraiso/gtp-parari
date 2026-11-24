@@ -61,6 +61,7 @@ const users = {
   purchaser: {}, groups: {}, company: {}, guardian: {},
 };
 const tables = {
+  user_workspace_preferences: [], parari_books: [], forms: [], applications: [], calendar_items: [],
   class_schools: [{ id: a, name: "英語教室", owner_user_id: "groups", tier: "a" }, { id: b, name: "ダンス教室", owner_user_id: "groups", tier: "a" }, { id: cpp, name: "別の事業", owner_user_id: "purchaser", tier: "a" }],
   profiles: [{ user_id: "groups", is_monitor: true }, { user_id: "purchaser", is_monitor: false }, { user_id: "guardian", is_monitor: false }],
   membership_members: [
@@ -92,6 +93,7 @@ function from(table) {
     select() { return chain; }, returns() { return chain; },
     eq(key, value) { rows = rows.filter(row => row[key] === value); return chain; },
     is(key, value) { rows = rows.filter(row => (row[key] ?? null) === value); return chain; },
+    neq(key, value) { rows = rows.filter(row => row[key] !== value); return chain; },
     in(key, values) { rows = rows.filter(row => values.includes(row[key])); return chain; },
     not(key, operator, value) { assert.equal(operator, "is"); rows = rows.filter(row => (row[key] ?? null) !== value); return chain; },
     or(filter) {
