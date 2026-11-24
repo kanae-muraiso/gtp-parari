@@ -649,9 +649,10 @@ export default function WritingWorkPage() {
         <WorkLimitsNotice source={ssot} />
         {showInternalSsotUi && work ? (
           <details className="mt-4 rounded-xl border border-neutral-300 bg-neutral-50 p-3">
-            <summary className="cursor-pointer text-sm font-semibold text-neutral-700">管理者用：SSOT確認</summary>
-            <textarea readOnly value={ssot} spellCheck={false}
-              aria-label="SSOT（読み取り専用）"
+            <summary className="cursor-pointer text-sm font-semibold text-neutral-700">管理者用：SSOT編集</summary>
+            <p className="mt-2 text-xs text-neutral-500">変更は自動保存されます。</p>
+            <textarea value={ssot} onChange={(event) => scheduleSave(event.target.value)} spellCheck={false}
+              aria-label="SSOT（管理者編集）"
               className="mt-3 h-64 w-full resize-y rounded-lg border border-neutral-200 bg-white p-3 font-mono text-xs text-neutral-800" />
           </details>
         ) : null}
