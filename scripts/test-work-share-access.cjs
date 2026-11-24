@@ -17,7 +17,8 @@ let rows, failSale, activeSale, entitlement, collaborator, userId, compiledReade
 
 function reset() {
   rows = [{...book}]; failSale = false; activeSale = false;
-  entitlement = null; collaborator = false; userId = null; compiledReader = null;
+  entitlement = null; collaborator = false; userId = null;
+  compiledReader = {document:{format:"page",book:{title:"sample"}},blocksBySheetId:{"reader-page-1":[{kind:"text",text:"visible prose"}]}};
 }
 const admin = {
   auth: {getUser: async token => ({data:{user:token ? {id:userId} : null}})},
@@ -63,7 +64,9 @@ const original=mod.require.bind(mod);
 mod.require=name=>{
   if(name==="next/server") return {NextResponse:{json:(body,{status=200,headers={}}={})=>new Response(JSON.stringify(body),{status,headers})}};
   if(name==="@/lib/billing/supabaseAdmin") return {supabaseAdmin:admin};
-  if(name==="@/lib/parari/reader/compileReaderView") return {compileReaderView:()=>compiledReader};
+  if(name==="@/lib/parari/reader/compileAuthorizedWork") return {
+    compileAuthorizedWork:async()=>({reader:compiledReader,missingPageIds:[],error:false})
+  };
   return original(name);
 };
 mod._compile(ts.transpileModule(fs.readFileSync(filename,"utf8"),{
@@ -71,7 +74,7 @@ mod._compile(ts.transpileModule(fs.readFileSync(filename,"utf8"),{
 }).outputText,filename);
 const {GET}=mod.exports;
 const request=(id, token=null)=>GET({nextUrl:new URL("https://test.invalid/api/works/share-read?id="+encodeURIComponent(id)),headers:new Headers(token?{authorization:"Bearer "+token}:{})});
-async function check(id, expected, token=null, expectsBody=expected===200) {
+async function check(id, expected, token=null, expectsBody=false) {
   const response=await request(id,token);
   assert.equal(response.status,expected, id+" status");
   assert.match(response.headers.get("cache-control")??"",/no-store/);
@@ -117,7 +120,6 @@ async function check(id, expected, token=null, expectsBody=expected===200) {
   reset();rows.push({...book,id:otherUUID,stable_slug:"legacy-short",slug:"different",custom_slug:null});
   await check("legacy-short",404); // ambiguous aliases fail closed
   reset();
-  compiledReader = {document:{format:"page",book:{title:"sample"}},blocksBySheetId:{"reader-page-1":[{kind:"text",text:"visible prose"}]}};
   const safe = await request("legacy-short");
   assert.equal(safe.status,200);
   const safeJson = await safe.json();
