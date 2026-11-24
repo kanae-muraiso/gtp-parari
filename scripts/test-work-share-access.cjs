@@ -13,11 +13,11 @@ const book = { id: UUID, title: "sample", content: "SECRET BODY", owner: "owner"
   is_public: false, visibility: "unlisted", slug: "short", stable_slug: "legacy-short",
   custom_slug: "my-custom", render_mode: "scroll", physical_pagination: false,
   is_deleted: false, expires_at: null };
-let rows, failSale, activeSale, entitlement, collaborator, userId;
+let rows, failSale, activeSale, entitlement, collaborator, userId, compiledReader;
 
 function reset() {
   rows = [{...book}]; failSale = false; activeSale = false;
-  entitlement = null; collaborator = false; userId = null;
+  entitlement = null; collaborator = false; userId = null; compiledReader = null;
 }
 const admin = {
   auth: {getUser: async token => ({data:{user:token ? {id:userId} : null}})},
@@ -63,6 +63,7 @@ const original=mod.require.bind(mod);
 mod.require=name=>{
   if(name==="next/server") return {NextResponse:{json:(body,{status=200,headers={}}={})=>new Response(JSON.stringify(body),{status,headers})}};
   if(name==="@/lib/billing/supabaseAdmin") return {supabaseAdmin:admin};
+  if(name==="@/lib/parari/reader/compileReaderView") return {compileReaderView:()=>compiledReader};
   return original(name);
 };
 mod._compile(ts.transpileModule(fs.readFileSync(filename,"utf8"),{
@@ -115,5 +116,13 @@ async function check(id, expected, token=null, expectsBody=expected===200) {
   await check(UUID,404);
   reset();rows.push({...book,id:otherUUID,stable_slug:"legacy-short",slug:"different",custom_slug:null});
   await check("legacy-short",404); // ambiguous aliases fail closed
-  console.log("PASS: share-read regression scenarios including expired, future and exhausted entitlements");
+  reset();
+  compiledReader = {document:{format:"page",book:{title:"sample"}},blocksBySheetId:{"reader-page-1":[{kind:"text",text:"visible prose"}]}};
+  const safe = await request("legacy-short");
+  assert.equal(safe.status,200);
+  const safeJson = await safe.json();
+  assert.equal(safeJson.book.content,null,"Compiled share reader must not send original SSOT");
+  assert.ok(safeJson.reader?.blocksBySheetId?.["reader-page-1"]?.length);
+  assert.ok(!JSON.stringify(safeJson).includes("SECRET BODY"),"Original source must not escape via safe DTO");
+  console.log("PASS: share-read authorization and compiled-reader SSOT isolation");
 })().catch(error=>{console.error(error);process.exitCode=1;});
