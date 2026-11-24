@@ -116,8 +116,9 @@ function compileBlocks(body: string, depth = 0): SafeReaderBlock[] | null {
       }
       case "IMAGE": {
         const data = parseImagePanel(panel.raw, panel);
+        // Empty IMAGE panels are valid legacy authoring placeholders.
+        // They must not make the entire work unreadable.
         const src = safeUrl(data.url);
-        if (!src) return null;
         output.push({ kind: "image", src, caption: data.caption, link: safeUrl(data.linkUrl) });
         break;
       }
