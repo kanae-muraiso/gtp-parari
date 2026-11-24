@@ -94,7 +94,7 @@ export default function WorkspaceLinks({ area }: WorkspaceLinksProps) {
               >
                 設定
               </Link>
-              {isStaff ? (
+              {isStaff && area !== "library" ? (
                 <Link
                   href="/my/operations"
                   onClick={closeAccountMenu}
