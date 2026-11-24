@@ -12,7 +12,7 @@
 
 import type { Metadata } from "next";
 import React from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   type AuthorBrandImages,
   buildDefaultPublicMetadata,
@@ -33,15 +33,6 @@ type LayoutProps = {
   params: Promise<{ id: string }>;
 };
 
-function getServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) return null;
-
-  return createClient(url, anonKey);
-}
-
 /**
  * PART: fetchPublicBook
  * コメント:
@@ -49,8 +40,8 @@ function getServerSupabase() {
  * - 公開 / 限定公開のみ metadata 対象にする
  */
 async function fetchPublicBook(id: string): Promise<BookRow | null> {
-  const supabase = getServerSupabase();
-  if (!supabase || !id) return null;
+  const supabase = supabaseAdmin;
+  if (!id) return null;
 
   const { data, error } = await supabase
     .from("parari_books")
@@ -69,9 +60,9 @@ async function fetchPublicBook(id: string): Promise<BookRow | null> {
   if (error || !data) return null;
 
   const isVisible =
-    data.is_public === true ||
     data.visibility === "public" ||
-    data.visibility === "unlisted";
+    data.visibility === "unlisted" ||
+    (!data.visibility && data.is_public === true);
 
   if (!isVisible) return null;
 
@@ -82,7 +73,7 @@ async function fetchAuthorBrandImages(
   ownerId: string | null,
 ): Promise<AuthorBrandImages | null> {
   const supabase = getServerSupabase();
-  if (!supabase || !ownerId) return null;
+  if (!ownerId) return null;
 
   const { data, error } = await supabase
     .from("profiles")
