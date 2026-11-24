@@ -92,7 +92,8 @@ type ProfileRow = {
 type BookRow = {
     id: string;
     title: string | null;
-    content: string | null;
+    cover_image?: string | null;
+    display_title?: string | null;
     created_at: string | null;
     updated_at: string | null;
     visibility: string | null;
@@ -159,8 +160,7 @@ function formatDateJa(dateString: string | null) {
 
 function getDisplayTitle(book: BookRow) {
     try {
-        const parsedTitle = book.content ? parseParari(book.content).bookTitle : "";
-        return parsedTitle || book.title || "(no title)";
+        return book.display_title || book.title || "(no title)";
     } catch {
         return book.title || "(no title)";
     }
@@ -200,8 +200,7 @@ function WorkCard({
     username: string;
     book: BookRow;
 }) {
-    const doc = parseParari(book.content || "");
-    const cardImage = doc.bookCoverImage || doc.pages?.[0]?.imageUrl || "";
+    const cardImage = book.cover_image || "";
     const displaySlug = book.custom_slug || book.stable_slug || book.slug || "";
     const displayTitle = getDisplayTitle(book);
     const deadline = getDeadlineLabel(book.expires_at);
@@ -348,9 +347,9 @@ export default function UserProfilePage() {
             const {
                 data: booksData, error: booksError
             } = await supabase
-            .from("parari_books")
+            .from("parari_public_work_cards")
             .select(
-                    "id, title, content, created_at, updated_at, visibility, custom_slug, stable_slug, slug, expires_at, show_in_profile_works, profile_works_order"
+                    "id, title, cover_image, display_title, created_at, updated_at, visibility, custom_slug, stable_slug, slug, expires_at, show_in_profile_works, profile_works_order"
                     )
             .eq("owner", profileData.user_id)
             .or("is_public.eq.true,visibility.eq.public")
