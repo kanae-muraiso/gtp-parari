@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
 import { buildPublicReadableText } from "@/lib/parari/seo/publicReadableText";
+import { compileReaderView } from "@/lib/parari/reader/compileReaderView";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 import {
@@ -120,9 +121,14 @@ export default async function PublicWorkPage(props: PublicWorkPageProps) {
       pageData.profile.cover_image_url ??
       null;
 
+    const compiledReader = compileReaderView(pageWork.content ?? "", pageWork.id, {
+      pageSlug: pageSlug, publicBasePath, headerLogoUrl,
+    });
+
     return (
       <PublicViewerShell
-        content={pageWork.content ?? ""}
+        content={compiledReader ? "" : pageWork.content ?? ""}
+        compiledReader={compiledReader}
         renderMode={pageWork.render_mode ?? null}
         physicalPagination={pageWork.physical_pagination ?? false}
         bookId={pageWork.id}
