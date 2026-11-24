@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
 import { buildPublicReadableText } from "@/lib/parari/seo/publicReadableText";
-import { compileReaderView } from "@/lib/parari/reader/compileReaderView";
+import { compileAuthorizedWork } from "@/lib/parari/reader/compileAuthorizedWork";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 
 import {
@@ -121,13 +121,20 @@ export default async function PublicWorkPage(props: PublicWorkPageProps) {
       pageData.profile.cover_image_url ??
       null;
 
-    const compiledReader = compileReaderView(pageWork.content ?? "", pageWork.id, {
+    const compiled = await compileAuthorizedWork(pageWork, null, {
       pageSlug: pageSlug, publicBasePath, headerLogoUrl,
     });
+    const compiledReader = compiled.reader;
+
+    if (!compiledReader) {
+      return <main className="mx-auto max-w-[720px] px-5 py-12 text-sm text-neutral-600">
+        この作品の読者用表示を準備できませんでした。
+      </main>;
+    }
 
     return (
       <PublicViewerShell
-        content={compiledReader ? "" : pageWork.content ?? ""}
+        content=""
         compiledReader={compiledReader}
         renderMode={pageWork.render_mode ?? null}
         physicalPagination={pageWork.physical_pagination ?? false}

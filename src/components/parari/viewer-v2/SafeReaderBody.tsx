@@ -7,6 +7,8 @@
 import React from "react";
 import { ViewerTextBlock } from "./ViewerTextBlock";
 import { QaPanelRenderer } from "@/components/parari/panels/qa/QaPanelRenderer";
+import { getPanelDefinition } from "@/components/parari/panels/registry";
+import { PageTocPanel, type PageTocEntry } from "@/components/parari/reader/PageTocPanel";
 import type { SafeReaderBlock } from "@/lib/parari/reader/compileReaderView";
 import type { ReaderDictionaryMode, ReaderRubyMode } from "./viewerTextStyles";
 
@@ -23,11 +25,28 @@ export function SafeReaderBody({
   dictionaryMode = "off",
   rubyMode = "click",
 }: Props) {
+  const localId = React.useId();
+  const headingIdPrefix = "parari-page-heading-" + localId;
+  const headings: PageTocEntry[] = [];
+  const starts: number[] = [];
+  for (const block of blocks) {
+    starts.push(headings.length);
+    if (block.kind !== "text") continue;
+    for (const paragraph of block.text.replace(/\r\n/g, "\n").split(/\n{2,}/)) {
+      const line = paragraph.trim();
+      const level: 2 | 3 | null = line.startsWith("### ") ? 3 : line.startsWith("## ") ? 2 : null;
+      if (level && !line.includes("\n")) {
+        headings.push({id: headingIdPrefix + "-" + headings.length, level,
+          title: line.slice(level === 3 ? 4 : 3).replace(/\*\*([^*]+)\*\*/g,"$1").trim()});
+      }
+    }
+  }
   return <div className="space-y-5">{blocks.map((block, index) => {
     switch (block.kind) {
       case "text":
         return <ViewerTextBlock key={index} text={block.text} className={className}
-          dictionaryMode={dictionaryMode} rubyMode={rubyMode} />;
+          dictionaryMode={dictionaryMode} rubyMode={rubyMode}
+          headingStartIndex={starts[index]} headingIdPrefix={headingIdPrefix} />;
       case "notice":
         return <aside key={index} className="rounded-xl border-l-4 border-blue-400 bg-blue-50 px-4 py-3">
           {block.title && <strong className="block mb-2">{block.title}</strong>}
@@ -65,6 +84,7 @@ export function SafeReaderBody({
           }}
         />;
       case "image": {
+        if (!block.src) return <div key={index} className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-5 text-center text-sm text-neutral-500">画像なし</div>;
         const img = <img src={block.src} alt={block.caption || ""} className="w-full rounded-xl object-contain"/>;
         return <figure key={index} className="mx-auto max-w-[720px]">
           {block.link ? <a href={block.link} rel="noopener noreferrer">{img}</a> : img}
@@ -79,6 +99,28 @@ export function SafeReaderBody({
         return block.url
           ? <a key={index} href={block.url} className="inline-flex rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white">{block.label || "開く"}</a>
           : <span key={index}>{block.label}</span>;
+      case "toc":
+        return <PageTocPanel key={index} entries={headings} />;
+      case "carousel":
+        return <div key={index} className="w-full overflow-hidden">
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+            {block.cards.map((card) => <article key={card.id}
+              className="w-[82vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm md:w-[320px]">
+              <SafeReaderBody blocks={card.blocks} className={className}
+                dictionaryMode={dictionaryMode} rubyMode={rubyMode}/>
+            </article>)}
+          </div>
+        </div>;
+      case "panel": {
+        const Renderer = getPanelDefinition(block.tag).Renderer;
+        return Renderer ? <Renderer key={index}
+          block={{id:"reader-panel-"+index,kind:"panel",tag:block.tag,raw:"",start:0,end:0,implemented:true}}
+          data={block.data} /> : null;
+      }
+      case "unknown":
+        return <div key={index} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
+          [{block.tag}] は表示用Rendererがまだありません。
+        </div>;
     }
   })}</div>;
 }

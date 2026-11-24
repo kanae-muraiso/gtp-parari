@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { protectedSaleWorkIds } from "@/lib/parari/sales/server";
+import { compileAuthorizedWork } from "@/lib/parari/reader/compileAuthorizedWork";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
-import {
-  parseBookPageRefs,
-  resolveBookPageRefs,
-} from "@/lib/parari/book/pageRefs";
 
 export const runtime = "nodejs";
 
@@ -22,32 +18,6 @@ function getBearerToken(request: NextRequest): string | null {
   const authorization = request.headers.get("authorization") ?? "";
   const matched = authorization.match(/^Bearer\s+(.+)$/i);
   return matched?.[1] ?? null;
-}
-
-function ensurePageSsot(content: string, fallbackTitle: string): string {
-  const source = String(content ?? "").trim();
-
-  if (
-    source
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .some((line) =>
-        /^\s*\[(PAGE|PAGEINFO)(?::[^\]]+)?\](?:\s|$)/i.test(line),
-      )
-  ) {
-    return source;
-  }
-
-  const safeTitle = String(fallbackTitle ?? "")
-    .replace(/\r?\n/g, " ")
-    .trim() || "無題のPAGE";
-
-  return [
-    "[PAGE]",
-    `title: ${safeTitle}`,
-    "",
-    source,
-  ].join("\n");
 }
 
 export async function GET(request: NextRequest) {
@@ -152,62 +122,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const source = String(data.content ?? "");
-    const refs = parseBookPageRefs(source);
-
-    if (refs.length === 0) {
-      return NextResponse.json({
-        ok: true,
-        resolvedContent: source,
-        missingPageIds: [],
-      });
+    const compiled = await compileAuthorizedWork(data, userId);
+    if (compiled.error) {
+      return NextResponse.json({ok:false, message:"BOOKを読み込めませんでした。"}, {status:503});
     }
-
-    const uniqueIds = Array.from(new Set(refs.map((ref) => ref.id)));
-
-    const { data: pages, error: pagesError } = await supabaseAdmin
-      .from("parari_books")
-      .select("id,owner,title,content,is_deleted,visibility,is_public")
-      .in("id", uniqueIds)
-      .eq("owner", data.owner);
-
-    if (pagesError) {
-      console.error("[book-resolve] page load failed:", pagesError);
-      return NextResponse.json(
-        { ok: false, message: "BOOKのPAGEを読み込めませんでした。" },
-        { status: 500 },
-      );
+    if (!compiled.reader) {
+      return NextResponse.json({ok:false, message:"このBOOKの表示形式を準備できませんでした。"}, {status:422});
     }
-
-    // A purchased parent BOOK does not automatically grant a separately sold PAGE.
-    // Check independently of parent visibility (sales normally make the parent private).
-    const protectedIds = userId !== data.owner ? await protectedSaleWorkIds(uniqueIds) : new Set<string>();
-    const pageContentById = new Map<string, string>();
-
-    for (const page of pages ?? []) {
-      if (page.is_deleted === true || protectedIds.has(page.id)) continue;
-      const rawContent = String(page.content ?? "");
-      pageContentById.set(
-        String(page.id),
-        ensurePageSsot(
-          rawContent,
-          String(page.title ?? "").trim() || "無題のPAGE",
-        ),
-      );
-    }
-
-    const missingPageIds = uniqueIds.filter(
-      (id) => !pageContentById.has(id),
-    );
-
     return NextResponse.json({
       ok: true,
-      resolvedContent: resolveBookPageRefs(
-        source,
-        pageContentById,
-      ),
-      missingPageIds,
-    });
+      reader: compiled.reader,
+      missingPageIds: compiled.missingPageIds,
+    }, {headers:{"Cache-Control":"private, no-store"}});
   } catch (error) {
     console.error("[book-resolve] unexpected error:", error);
     return NextResponse.json(

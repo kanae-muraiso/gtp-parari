@@ -19,6 +19,19 @@ import { parseImagePanel } from "@/components/parari/panels/image/parseImagePane
 import { parseLinksPanel } from "@/components/parari/panels/links/parseLinksPanel";
 import { parseButtonPanel } from "@/components/parari/panels/button/parseButtonPanel";
 import type { PanelBlock } from "@/lib/parari/ssot-v2/panelTypes";
+import { parseVideoPanel } from "@/components/parari/panels/video/parseVideoPanel";
+import { parseAudioPanel } from "@/components/parari/panels/audio/parseAudioPanel";
+import { parseYoutubePanel } from "@/components/parari/panels/youtube/parseYoutubePanel";
+import { parseInstagramPanel } from "@/components/parari/panels/instagram/parseInstagramPanel";
+import { parseApplicationPanel } from "@/components/parari/panels/application/parseApplicationPanel";
+import { parseCalendarPanel } from "@/components/parari/panels/calendar/parseCalendarPanel";
+import { parseMembershipPanel } from "@/components/parari/panels/membership/parseMembershipPanel";
+import { parseFormPanel } from "@/components/parari/panels/form/parseFormPanel";
+import { parseMenuPanel } from "@/components/parari/panels/menu/parseMenuPanel";
+import { parseMarkdownPanel } from "@/components/parari/panels/markdown/markdownSsot";
+import { parseEtTextPanelBody } from "@/components/parari/panels/ettext/etTextSsot";
+import { parseCarouselPanel } from "@/components/parari/panels/carousel/parseCarouselPanel";
+
 
 export type SafeReaderBlock =
   | { kind: "text"; text: string }
@@ -28,7 +41,11 @@ export type SafeReaderBlock =
   | { kind: "qa"; type: "yesno" | "select" | "text" | "order"; question: string; options: { text: string; correct: boolean }[]; answer: string; guide: string; placeholder: string }
   | { kind: "image"; src: string; caption: string; link: string }
   | { kind: "links"; items: { label: string; url: string }[] }
-  | { kind: "button"; label: string; url: string };
+  | { kind: "button"; label: string; url: string }
+  | { kind: "panel"; tag: "VIDEO" | "AUDIO" | "YOUTUBE" | "INSTAGRAM" | "APPLICATION" | "CALENDAR" | "MEMBERSHIP" | "FORM" | "MENU" | "MARKDOWN" | "ETTEXT"; data: Record<string, unknown> }
+  | { kind: "carousel"; cards: { id: string; blocks: SafeReaderBlock[] }[] }
+  | { kind: "toc" }
+  | { kind: "unknown"; tag: string };
 
 export type CompiledReaderView = {
   document: ViewerDocument;
@@ -62,9 +79,8 @@ function compileBlocks(body: string, depth = 0): SafeReaderBlock[] | null {
         // Structural metadata is not reader-facing text.
         break;
       case "TOC":
-        // PAGE-scoped table-of-contents has interactive anchors.
-        // Do not lose those anchors during a partial renderer migration.
-        return null;
+        output.push({kind:"toc"});
+        break;
       case "NOTICE": {
         const data = parseNoticePanel(panel.raw, panel);
         const nested = compileBlocks(data.body, depth + 1);
@@ -100,8 +116,9 @@ function compileBlocks(body: string, depth = 0): SafeReaderBlock[] | null {
       }
       case "IMAGE": {
         const data = parseImagePanel(panel.raw, panel);
+        // Empty IMAGE panels are valid legacy authoring placeholders.
+        // They must not make the entire work unreadable.
         const src = safeUrl(data.url);
-        if (!src) return null;
         output.push({ kind: "image", src, caption: data.caption, link: safeUrl(data.linkUrl) });
         break;
       }
@@ -115,10 +132,102 @@ function compileBlocks(body: string, depth = 0): SafeReaderBlock[] | null {
         output.push({ kind: "button", label: data.label, url: safeUrl(data.url) });
         break;
       }
+      case "VIDEO": {
+        const data = parseVideoPanel(panel.raw, panel);
+        output.push({kind:"panel",tag:"VIDEO",data:{
+          url:safeUrl(data.url),title:data.title,poster:safeUrl(data.poster),
+          aspect:data.aspect,videoWidth:data.videoWidth,caption:data.caption,
+          loop:data.loop,muted:data.muted,
+        }});
+        break;
+      }
+      case "AUDIO": {
+        const data = parseAudioPanel(panel.raw, panel);
+        output.push({kind:"panel",tag:"AUDIO",data:{
+          url:safeUrl(data.url),title:data.title,audioWidth:data.audioWidth,
+          caption:data.caption,transcript:data.transcript,
+        }});
+        break;
+      }
+      case "YOUTUBE": {
+        const data = parseYoutubePanel(panel.raw, panel);
+        output.push({kind:"panel",tag:"YOUTUBE",data:{
+          url:safeUrl(data.url),title:data.title,aspect:data.aspect,
+          youtubeWidth:data.youtubeWidth,caption:data.caption,
+        }});
+        break;
+      }
+      case "INSTAGRAM": {
+        const data = parseInstagramPanel(panel.raw);
+        output.push({kind:"panel",tag:"INSTAGRAM",data:{
+          url:safeUrl(data.url),title:data.title,caption:data.caption,
+          thumbnail:safeUrl(data.thumbnail),aspect:data.aspect,
+          instagramWidth:data.instagramWidth,displayMode:data.displayMode,
+        }});
+        break;
+      }
+      case "APPLICATION":
+        output.push({kind:"panel",tag:"APPLICATION",data:{
+          applicationId:parseApplicationPanel(panel.raw).applicationId,
+        }});
+        break;
+      case "CALENDAR":
+        output.push({kind:"panel",tag:"CALENDAR",data:{
+          calendarItemId:parseCalendarPanel(panel.raw).calendarItemId,
+        }});
+        break;
+      case "FORM":
+        output.push({kind:"panel",tag:"FORM",data:{
+          formId:parseFormPanel(panel.raw).formId,
+        }});
+        break;
+      case "MEMBERSHIP":
+        output.push({kind:"panel",tag:"MEMBERSHIP",data:{
+          recruitmentId:parseMembershipPanel(panel.raw).recruitmentId,
+        }});
+        break;
+      case "MENU": {
+        const data = parseMenuPanel(panel.raw, panel);
+        output.push({kind:"panel",tag:"MENU",data:{
+          variant:data.variant,width:data.width,
+          items:data.items.map(item=>({label:item.label,url:safeUrl(item.url)||"#"})),
+        }});
+        break;
+      }
+      case "MARKDOWN": {
+        const data = parseMarkdownPanel(panel.raw);
+        output.push({kind:"panel",tag:"MARKDOWN",data:{
+          source:data.source,format:data.format,
+        }});
+        break;
+      }
+      case "ETTEXT": {
+        const data = parseEtTextPanelBody(panel.raw);
+        output.push({kind:"panel",tag:"ETTEXT",data:{
+          type:"ETTEXT",audioUrl:safeUrl(data.audioUrl),text:data.text,
+          segments:data.segments.map(seg=>({
+            id:seg.id,charStart:seg.charStart,charEnd:seg.charEnd,
+            audioStart:seg.audioStart,audioEnd:seg.audioEnd,selectedText:seg.selectedText,
+          })),
+        }});
+        break;
+      }
+      case "CAROUSEL": {
+        const data = parseCarouselPanel(panel.raw, panel);
+        const cards: { id:string; blocks:SafeReaderBlock[] }[] = [];
+        for(const card of data.cards) {
+          const compiled = compileBlocks(card.bodySsot, depth+1);
+          if (!compiled) return null;
+          cards.push({id:card.id,blocks:compiled});
+        }
+        output.push({kind:"carousel",cards});
+        break;
+      }
       default:
-        // Video, audio, interactive applications and future panels must be
-        // compiled separately rather than silently losing functionality.
-        return null;
+        // Unknown panels have no registered reader UI. Match the existing
+        // viewer's placeholder without exposing their source syntax.
+        output.push({kind:"unknown",tag:panel.tag});
+        break;
     }
   }
   return output;

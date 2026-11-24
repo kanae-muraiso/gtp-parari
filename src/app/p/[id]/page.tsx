@@ -8,7 +8,6 @@ import { useParams } from "next/navigation";
 import PublicViewerShell from "../../../components/parari/PublicViewerShell";
 import { supabase } from "../../../lib/supabaseClient";
 import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
-import { hasBookPageRefs } from "@/lib/parari/book/pageRefs";
 import type { CompiledReaderView } from "@/lib/parari/reader/compileReaderView";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
@@ -75,38 +74,11 @@ export default function PublicPage() {
       const purchasedAccess = result.hasPurchasedAccess === true;
       const readable = (result.reader ?? null) as CompiledReaderView | null;
 
-      let resolvedBook = data;
-
-      if (hasBookPageRefs(String(data.content ?? ""))) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        const response = await fetch(
-          `/api/works/book-resolve?workId=${encodeURIComponent(data.id)}`,
-          {
-            headers: session?.access_token
-              ? {
-                  Authorization: `Bearer ${session.access_token}`,
-                }
-              : undefined,
-            cache: "no-store",
-          },
-        );
-
-        const result = await response.json().catch(() => null);
-
-        if (response.ok && result?.ok && typeof result.resolvedContent === "string") {
-          resolvedBook = {
-            ...data,
-            content: result.resolvedContent,
-          };
-        }
-      }
-
+      // The server has already resolved BOOK PAGE_REF permissions and
+      // supplied the compiled reader. There is no client-side SSOT fetch.
       setHasPurchasedAccess(purchasedAccess);
       setCompiledReader(readable);
-      setBook(resolvedBook);
+      setBook(data);
       setLoading(false);
     };
 
