@@ -9,6 +9,7 @@ import Link from "next/link";
 import SquareConnectionPanel from "@/components/parari/billing/SquareConnectionPanel";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import StudioCreateEntry from "@/components/parari/navigation/StudioCreateEntry";
 import EnglishAuthoringSettings from "@/components/parari/settings/EnglishAuthoringSettings";
 import StartDestinationPanel from "@/components/parari/settings/StartDestinationPanel";
@@ -89,20 +90,20 @@ export default function SettingsHomePage() {
           />
 
           {!loading && !studioEnabled ? (
-            <details className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <details className={`rounded-3xl border p-5 shadow-sm ${WORKSPACE_PALETTE.studio.header}`}>
               <summary className="cursor-pointer list-none">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="text-sm font-bold text-neutral-950">STUDIOを始める</div>
-                    <p className="mt-1 text-xs leading-6 text-neutral-500">
+                    <div className="text-sm font-bold text-blue-950">STUDIOを始める</div>
+                    <p className="mt-1 text-xs leading-6 text-blue-900/75">
                       作品づくりやクラス運営を始めるときに利用します。
                     </p>
                   </div>
-                  <span className="shrink-0 text-sm text-neutral-400" aria-hidden="true">⌄</span>
+                  <span className="shrink-0 text-sm text-blue-700" aria-hidden="true">⌄</span>
                 </div>
               </summary>
-              <div className="mt-5 border-t border-neutral-100 pt-5">
-                <p className="mb-4 text-sm leading-7 text-neutral-600">
+              <div className="mt-5 border-t border-blue-200 pt-5">
+                <p className="mb-4 text-sm leading-7 text-blue-950/80">
                   PARARIのSTUDIOは、作品をつくる人も、クラスを開く人も使う共通の制作・運営環境です。
                   無料で利用を開始でき、何かを作成・保存する前からSTUDIOへ入れます。
                 </p>
