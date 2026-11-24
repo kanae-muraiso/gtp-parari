@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { workSaleHrefForAuthor } from "@/lib/parari/sales/server";
 import { createClient } from "@supabase/supabase-js";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
+import { buildPublicReadableText } from "@/lib/parari/seo/publicReadableText";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import {
   type AuthorBrandImages,
   buildDefaultPublicMetadata,
@@ -61,15 +63,20 @@ export async function generateMetadata(
   const pageData = await findPublicPageData(username, workSlug);
 
   if (!pageData) {
-    return buildDefaultPublicMetadata(publicUrl);
+    return { ...buildDefaultPublicMetadata(publicUrl), robots: { index: false, follow: false } };
   }
 
-  return buildPublicWorkMetadata({
+  const indexable = await isIndexableFreePublicWork(pageData.work);
+  return {
+    ...buildPublicWorkMetadata({
     content: pageData.work.content ?? "",
     fallbackTitle: pageData.work.title,
     brandImages: pageData.profile,
     url: publicUrl,
-  });
+    }),
+    robots: { index: indexable, follow: indexable },
+    alternates: indexable ? { canonical: publicUrl } : undefined,
+  };
 }
 
 export default async function PublicWorkPage(props: PublicWorkPageProps) {
@@ -94,6 +101,7 @@ export default async function PublicWorkPage(props: PublicWorkPageProps) {
   }
 
   const pageWork = pageData.work;
+  const indexable = await isIndexableFreePublicWork(pageWork);
     
     const publicBasePath =
       `/${encodeURIComponent(username)}/` +
@@ -114,6 +122,7 @@ export default async function PublicWorkPage(props: PublicWorkPageProps) {
         ownerId={pageWork.owner}
         publicBasePath={publicBasePath}
         headerLogoUrl={headerLogoUrl}
+        publicReadableText={indexable ? buildPublicReadableText(pageWork.content ?? "", pageWork.id) : null}
       />
     );
 }
@@ -244,4 +253,20 @@ function isAuthorVisibleWorkContent(content: string): boolean {
     .filter((line) => /^\s*\[(PAGE|PAGEINFO)\b/i.test(line)).length;
 
   return pageMarkerCount >= 1;
+}
+
+// PART: Search indexing eligibility (does not grant reader access).
+// Explicit public is mandatory; unlisted/private and paid works are excluded.
+// Database errors fail closed to avoid publishing sale bodies as crawler prose.
+async function isIndexableFreePublicWork(work: PublicWorkRow): Promise<boolean> {
+  if (work.visibility !== "public") return false;
+  const { data, error } = await supabaseAdmin
+    .from("commerce_products")
+    .select("id")
+    .eq("work_id", work.id)
+    .eq("product_type", "work")
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  return !error && !data;
 }

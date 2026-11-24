@@ -108,17 +108,22 @@ export async function generateMetadata({
   const publicUrl = `https://www.parari.app/p/${id}`;
 
   if (!book) {
-    return buildDefaultPublicMetadata(publicUrl);
+    return { ...buildDefaultPublicMetadata(publicUrl), robots: { index: false, follow: false } };
   }
 
   const brandImages = await fetchAuthorBrandImages(book.owner);
 
-  return buildPublicWorkMetadata({
-    content: book.content ?? "",
-    fallbackTitle: book.title,
-    brandImages,
-    url: `https://www.parari.app/p/${book.id}`,
-  });
+  return {
+    ...buildPublicWorkMetadata({
+      content: book.content ?? "",
+      fallbackTitle: book.title,
+      brandImages,
+      url: `https://www.parari.app/p/${book.id}`,
+    }),
+    // /p is a compatibility/share URL. Search the canonical author/work URL instead.
+    // In particular, unlisted and private IDs must not be indexed here.
+    robots: { index: false, follow: false },
+  };
 }
 
 /**
