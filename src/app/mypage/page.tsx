@@ -282,7 +282,7 @@ export default function MyPage() {
             />
           ) : null}
 
-          <ClassHomeShortcuts studioEnabled={studioEnabled} />
+          <ClassHomeShortcuts studioEnabled={studioEnabled} workspace="library" />
 
           {!loading && hasApplications ? (
             <HomeCard
