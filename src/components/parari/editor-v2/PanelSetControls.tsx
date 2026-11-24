@@ -12,7 +12,7 @@ export function PanelSetControls({ value, source, onChange }: { value: PanelSet;
         {Object.entries(PANEL_SETS).map(([key, set]) => <option key={key} value={key}>{set.label}</option>)}
       </select>
     </label> : <p>BOOKの設定：{PANEL_SETS[value].label}</p>}
-    {value === "kindle" ? <p className="mt-2 text-xs leading-5 text-neutral-500">出版向けのパネルを表示しています。既存の内容はそのまま編集できます。強調・リスト・リンクは簡素化し、開閉パネルは展開します。参照PAGEを含む最終確認はEPUB出力時に行います。</p> : null}
+    {value === "kindle" ? <p className="mt-2 text-xs leading-5 text-neutral-500">EPUB3対応：通常色＝そのまま出力、黄色＝変換して出力、赤＝書き出し不可（追加できません）。既存の内容は削除されません。強調・リスト・リンクは簡素化し、開閉パネルは展開します。参照PAGEを含む最終確認はEPUB出力時に行います。</p> : null}
     {issues.length ? <ul className="mt-3 space-y-2 text-xs">{issues.map((issue, index) => <li key={index} className={issue.blocking ? "text-red-700" : "text-amber-800"}>{issue.location}（{issue.tag}）：{issue.message}</li>)}</ul> : null}
   </div>;
 }

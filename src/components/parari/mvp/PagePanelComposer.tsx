@@ -35,7 +35,7 @@ import {
   type TextReadingSupportOptions,
 } from "@/lib/parari/richText/textReadingSupport";
 
-import { readPanelSet, writePanelSet, panelInSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
+import { readPanelSet, writePanelSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
 import { PanelSetControls } from "@/components/parari/editor-v2/PanelSetControls";
 
 type PagePanelComposerProps = {
@@ -199,7 +199,7 @@ export function PagePanelComposer({
   const visibleContentInsertItems = useMemo(
     () =>
       CONTENT_INSERT_ITEMS.filter((item) => {
-        if (!panelInSet(item.tag, panelSet)) return false;
+        // Keep all eligible panels visible; EPUB compatibility is shown by color.
         if(item.tag==="MARKDOWN"&&!codeInsertEnabled)return false;
         switch (item.tag) {
           case "FORM":
@@ -212,7 +212,7 @@ export function PagePanelComposer({
             return true;
         }
       }),
-    [entitlements, panelSet, codeInsertEnabled],
+    [entitlements, codeInsertEnabled],
   );
 const waitForNextPaint = () =>
     new Promise<void>((resolve) => {
@@ -877,6 +877,7 @@ const waitForNextPaint = () =>
 <div className="space-y-0">
           {!hideLeadingInsertSlot && !firstBlockIsBookInfo ? (
             <PanelInsertSlot
+              epubMode={panelSet === "kindle"}
               items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
@@ -1030,6 +1031,7 @@ const waitForNextPaint = () =>
                                     )}
 
                                <PanelInsertSlot
+                                 epubMode={panelSet === "kindle"}
                                  items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS

@@ -10,6 +10,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { epubPanelPolicy } from "@/lib/parari/authoring/panelSets";
 
 export type PanelInsertTag =
   | "TEXT"
@@ -45,6 +46,8 @@ type PanelInsertSlotProps = {
   items: PanelInsertItem[];
   structureItems?: PanelInsertItem[];
   onSelect: (tag: PanelInsertTag) => void;
+  /** Show EPUB3 output compatibility without hiding non-exportable panels. */
+  epubMode?: boolean;
 };
 
 type InsertMenuName =
@@ -53,6 +56,22 @@ type InsertMenuName =
   | "operation"
   | "structure"
   | null;
+
+function epubPanelDescription(tag: PanelInsertTag): string {
+  const policy = epubPanelPolicy(tag);
+  return policy === "unsupported" ? "EPUB3に書き出せないため追加できません"
+    : policy === "native" ? "EPUB3にそのまま出力できます"
+    : policy === "link" ? "EPUB3では外部リンクに変換されます"
+    : "EPUB3では紙面向けに変換されます";
+}
+
+function epubItemClass(tag: PanelInsertTag, epubMode: boolean): string {
+  if (!epubMode) return "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100";
+  const policy = epubPanelPolicy(tag);
+  if (policy === "unsupported") return "border-red-300 bg-red-50 text-red-700";
+  if (policy === "simplify" || policy === "link") return "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100";
+  return "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100";
+}
 
 const DIRECT_TAGS: PanelInsertTag[] = ["TEXT", "IMAGE"];
 
@@ -86,6 +105,7 @@ export function PanelInsertSlot({
   items,
   structureItems = [],
   onSelect,
+  epubMode = false,
 }: PanelInsertSlotProps) {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<InsertMenuName>(null);
@@ -112,6 +132,7 @@ export function PanelInsertSlot({
   };
 
   const selectItem = (tag: PanelInsertTag) => {
+    if (epubMode && epubPanelPolicy(tag) === "unsupported") return;
     closeAll();
     onSelect(tag);
   };
@@ -165,7 +186,9 @@ export function PanelInsertSlot({
                 key={item.tag}
                 type="button"
                 onClick={() => selectItem(item.tag)}
-                className="rounded-full border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-500 shadow-sm hover:bg-neutral-100 hover:text-neutral-800"
+                disabled={epubMode && epubPanelPolicy(item.tag) === "unsupported"}
+                title={epubMode ? epubPanelDescription(item.tag) : undefined}
+                className={`rounded-full border px-2 py-1 text-[10px] font-semibold shadow-sm ${epubItemClass(item.tag, epubMode)} disabled:cursor-not-allowed`}
               >
                 {item.label}
               </button>
@@ -178,6 +201,7 @@ export function PanelInsertSlot({
                 items={mediaItems}
                 onToggle={() => toggleMenu("media")}
                 onSelect={selectItem}
+                epubMode={epubMode}
               />
             ) : null}
 
@@ -188,6 +212,7 @@ export function PanelInsertSlot({
                 items={panelItems}
                 onToggle={() => toggleMenu("panel")}
                 onSelect={selectItem}
+                epubMode={epubMode}
               />
             ) : null}
 
@@ -198,6 +223,7 @@ export function PanelInsertSlot({
                  items={operationItems}
                  onToggle={() => toggleMenu("operation")}
                  onSelect={selectItem}
+                 epubMode={epubMode}
                />
              ) : null}
              
@@ -208,6 +234,7 @@ export function PanelInsertSlot({
                 items={structureItems}
                 onToggle={() => toggleMenu("structure")}
                 onSelect={selectItem}
+                epubMode={epubMode}
               />
             ) : null}
           </div>
@@ -223,6 +250,7 @@ type InsertDropdownProps = {
   items: PanelInsertItem[];
   onToggle: () => void;
   onSelect: (tag: PanelInsertTag) => void;
+  epubMode: boolean;
 };
 
 function InsertDropdown({
@@ -231,6 +259,7 @@ function InsertDropdown({
   items,
   onToggle,
   onSelect,
+  epubMode,
 }: InsertDropdownProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -300,9 +329,11 @@ function InsertDropdown({
               key={item.tag}
               type="button"
               onClick={() => onSelect(item.tag)}
-              className="block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              disabled={epubMode && epubPanelPolicy(item.tag) === "unsupported"}
+              title={epubMode ? epubPanelDescription(item.tag) : undefined}
+              className={`block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold ${epubItemClass(item.tag, epubMode)} disabled:cursor-not-allowed`}
             >
-              {item.label}
+              {item.label}{epubMode && epubPanelPolicy(item.tag) === "unsupported" ? "（EPUB不可）" : epubMode && epubPanelPolicy(item.tag) !== "native" ? "（変換）" : ""}
             </button>
           ))}
         </div>,
