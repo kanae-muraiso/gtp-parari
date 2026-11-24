@@ -22,12 +22,24 @@ export default function ClassHomeShortcuts({ studioEnabled }: { studioEnabled: b
   }, [userId]);
 
   if (!destinations || destinations.userId !== userId) return null;
+  const managedBusinesses = studioEnabled
+    ? destinations.businesses ?? (destinations.owned ? [destinations.owned] : [])
+    : [];
+  const canRegisterBusiness =
+    studioEnabled &&
+    destinations.canManage === true &&
+    !(destinations.businesses?.length || destinations.owned);
+
+  if (managedBusinesses.length === 0 && !canRegisterBusiness && destinations.enrolled.length === 0) {
+    return null;
+  }
+
   return (
     <section aria-label="クラス" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {(destinations.businesses ?? (destinations.owned ? [destinations.owned] : [])).map(school =>
+      {managedBusinesses.map(school =>
         <Shortcut key={school.id} title={school.name} action="事業を運営"
-          href={studioEnabled ? "/my/class-onboarding?business=" + school.id : "/my/start-studio"} />)}
-      {studioEnabled && destinations.canManage === true && !(destinations.businesses?.length || destinations.owned) &&
+          href={"/my/class-onboarding?business=" + school.id} />)}
+      {canRegisterBusiness &&
         <Shortcut title="事業を登録" action="クラス運営" href="/my/class-onboarding" />}
       {destinations.enrolled.map(school => <Shortcut key={school.id} title={school.name}
         action="クラスの予定" href={`/my/classes/${school.id}`} />)}
