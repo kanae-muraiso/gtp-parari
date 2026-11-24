@@ -46,9 +46,17 @@ function load(relative){
  const filename=path.resolve(root,relative);if(cache.has(filename))return cache.get(filename).exports;
  const mod=new Module(filename,module);cache.set(filename,mod);mod.filename=filename;mod.paths=Module._nodeModulePaths(path.dirname(filename));
  const old=mod.require.bind(mod);mod.require=name=>{
+  if(name==="server-only")return {};
   if(name==="next/server")return {NextResponse:{json:(body,{status=200}={})=>new Response(JSON.stringify(body),{status})}};
   if(name==="@/lib/billing/supabaseAdmin")return {supabaseAdmin:admin};
   if(name==="@/lib/parari/sales/server")return {protectedSaleWorkIds:async ids=>new Set(ids.filter(id=>activeIds.has(id)))};
+  if(name==="@/lib/parari/reader/compileAuthorizedWork")return load("src/lib/parari/reader/compileAuthorizedWork.ts");
+  if(name==="./compileReaderView")return {
+    compileReaderView:(source, id)=>({
+      document:{format:"book",book:{title:"Example",sheets:[]}},
+      blocksBySheetId:{"reader-page-1":[{kind:"text",text:source.replace(/\[(BOOK|PAGE)\][^\n]*/g,"")}]}
+    })
+  };
   if(name==="@/lib/parari/book/pageRefs")return {
     parseBookPageRefs:ssot=>ssot.split("\n").filter(line=>line.startsWith("[PAGE_REF id=")&&line.endsWith("]")).map(line=>({id:line.slice(13,-1)})),
     resolveBookPageRefs:(ssot,map)=>ssot.split("\n").map(line=>line.startsWith("[PAGE_REF id=")&&line.endsWith("]")?(map.get(line.slice(13,-1))??""):line).join("\n")
@@ -65,17 +73,18 @@ const req=(token=null)=>route.GET({nextUrl:new URL("https://test.invalid/api/wor
  reset();
  let r=await req(),j=await r.json();
  assert.equal(r.status,200);
- assert.match(j.resolvedContent,/PUBLIC TEXT/);
- assert.doesNotMatch(j.resolvedContent,/PAID SECRET/);
+ assert.equal(j.resolvedContent,undefined,"Book resolve must not send SSOT");
+ assert.match(JSON.stringify(j.reader),/PUBLIC TEXT/);
+ assert.doesNotMatch(JSON.stringify(j.reader),/PAID SECRET/);
  reset();activeIds.add(bookId);
  r=await req();assert.equal(r.status,403,"sold BOOK cannot be resolved by anonymous reader");
  reset();activeIds.add(bookId);tokenUser="buyer";grant=true;
  r=await req("buyer");j=await r.json();assert.equal(r.status,200);
- assert.match(j.resolvedContent,/PUBLIC TEXT/);
- assert.doesNotMatch(j.resolvedContent,/PAID SECRET/,"buying a BOOK does not automatically grant a separately sold PAGE");
+ assert.match(JSON.stringify(j.reader),/PUBLIC TEXT/);
+ assert.doesNotMatch(JSON.stringify(j.reader),/PAID SECRET/,"buying a BOOK does not automatically grant a separately sold PAGE");
  reset();activeIds.add(bookId);tokenUser=owner;
  r=await req("owner");j=await r.json();assert.equal(r.status,200);
- assert.match(j.resolvedContent,/PAID SECRET/);
+ assert.match(JSON.stringify(j.reader),/PAID SECRET/);
  reset();rows[0].visibility="private";rows[0].is_public=true;
  r=await req();assert.equal(r.status,403,"private must override stale is_public=true");
  reset();rows[0].expires_at="2020-01-01T00:00:00.000Z";
