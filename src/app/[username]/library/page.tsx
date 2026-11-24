@@ -23,7 +23,7 @@ export default function AuthorLibraryPage() {
     if (error || !profile) { setMessage("作者が見つかりません。"); return; }
     const a = profile as Author;
     setAuthor(a);
-    const [{data: books,error: workError},sales] = await Promise.all([supabase.from("parari_books")
+    const [{data: books,error: workError},sales] = await Promise.all([supabase.from("parari_public_work_cards")
       .select("id,title,stable_slug,slug,updated_at")
       .eq("owner",a.user_id).eq("visibility","public")
       .eq("show_in_profile_works",true).eq("is_deleted",false)
