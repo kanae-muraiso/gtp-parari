@@ -81,7 +81,7 @@ async function main(){
   assert.equal((await portal.GET(req(`/api/classes?school=${school}&member=${m2}`,'child'))).status,404);
   assert.equal((await portal.GET(req(`/api/classes?school=${school}`,'stranger'))).status,404);
   assert.equal((await portal.GET(req('/api/classes?businesses=1','parent'))).status,403);
-  assert.equal((await portal.POST(req('/api/classes','parent',{action:'create',name:'権限なし'}))).status,404);
+  assert.equal((await portal.POST(req('/api/classes','parent',{action:'create',name:'権限なし'}))).status,403);
   const uri=`/api/classes/schedule?school=${school}&month=${day.slice(0,7)}`;
   assert.equal((await schedule.GET(req(uri,'stranger'))).status,404);
   assert.equal((await schedule.GET(req(uri+`&member=${m2}`,'child'))).status,404);
