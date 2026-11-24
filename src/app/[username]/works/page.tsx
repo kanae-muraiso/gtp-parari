@@ -31,6 +31,7 @@ type PublicWorkRow = {
   owner: string;
   title: string | null;
   content: string | null;
+  work_kind?: WorkKind | null;
   visibility: string | null;
   stable_slug: string | null;
   slug: string | null;
@@ -96,13 +97,13 @@ export default function PublicAuthorWorksPage() {
     setProfile(profileRow);
 
     const [{ data, error }, sales] = await Promise.all([supabase
-      .from("parari_books")
+      .from("parari_public_work_cards")
       .select(
         [
           "id",
           "owner",
           "title",
-          "content",
+          "work_kind",
           "visibility",
           "stable_slug",
           "slug",
@@ -141,7 +142,7 @@ export default function PublicAuthorWorksPage() {
     }));
 
     const paid: PublicWorkRow[] = (sales?.works ?? []).map((work:Pick<PublicWorkRow,"id"|"title"|"owner"|"href">)=>({
-      ...work,content:null,visibility:"public",stable_slug:null,slug:null,entry_mode:null,
+      ...work,content:null,work_kind:"unknown",visibility:"public",stable_slug:null,slug:null,entry_mode:null,
       updated_at:null,show_in_profile_works:true,is_deleted:false,
     }));
     setWorks([...rows,...paid.filter(work=>!rows.some(row=>row.id===work.id))]);
@@ -212,7 +213,7 @@ export default function PublicAuthorWorksPage() {
 
             <div className="divide-y divide-neutral-100">
               {works.map((work) => {
-                const workKind = detectWorkKind(work.content ?? "");
+                const workKind = work.work_kind ?? "unknown";
                 const title = work.title?.trim() || "Untitled";
                 const workHref = work.href ?? buildPublicWorkHref(work);
 
