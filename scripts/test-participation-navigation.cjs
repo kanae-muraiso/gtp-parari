@@ -127,6 +127,7 @@ const classes = load("src/app/api/classes/route.ts", {
   "@/lib/classRecurrence": recurrence,
   "@/lib/classBusinessScope": businessScope,
   "@/lib/classCalendarAccess": calendarAccess,
+  "@/lib/classFeatureAccess": { classFeatureAccess: async () => ({ canManage: true, canCreateEvents: false, plan: "a" }) },
   "@/lib/classProduct": load("src/lib/classProduct.ts"),
   "@/lib/classes": classModule,
   "@/lib/billing/supabaseAdmin": { supabaseAdmin: admin },
