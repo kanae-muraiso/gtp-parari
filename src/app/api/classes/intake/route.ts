@@ -126,7 +126,23 @@ async function handle(request: NextRequest) {
       const remind = Date.parse(booking.starts_at) - 86400000;
       const reminder = remind > Date.now() && remind < Date.now() + 29 * 86400000
         ? await classNotice(recipients, reminderMail.subject, withDetails(reminderMail.body), `class-reminder-${booking.case_id}`, new Date(remind).toISOString()) : null;
-      return reply({ ok: true, confirmation, reminder });
+      // Inform the school owner after the reservation is committed. This is a
+      // separate, idempotent notification; a mail failure must not roll back a booking.
+      const ownerAccount = await db.auth.admin.getUserById(school.data.owner_user_id).catch(() => null);
+      const ownerEmail = ownerAccount?.data?.user?.email;
+      const ownerNotified = ownerEmail ? await classNotice(
+        [ownerEmail],
+        school.data.name + "：新しい" + booking.kind + "予約",
+        [
+          "説明会・体験の新しい予約が入りました。",
+          "日時：" + classDateTime(booking.starts_at) + "（日本時間）",
+          "申込者：" + clean(input.name),
+          "連絡先：" + clean(input.email),
+          "入会希望者の詳細はPARARIの教室運営画面でご確認ください。",
+        ].join("\n"),
+        "class-booking-owner-" + booking.case_id,
+      ) : false;
+      return reply({ ok: true, confirmation, reminder, ownerNotified });
     }
     const now = Date.now();
     const [slots, manual] = await Promise.all([
