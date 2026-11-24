@@ -375,7 +375,7 @@ async function main() {
     "@/lib/classEnrollmentNotice":{sendClassEnrollmentNotice:async()=>true},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:decisionDb},
-    "@/lib/classBusinessScope":{classBusinessId:async()=>"school"},
+    "@/lib/classBusinessScope":{classBusinessId:async()=>"school",canManageClassStudio:async()=>true},
     "@/lib/classRegistrationMail":{classRegistrationMail:async()=>true},
     "@/lib/classAdmissionMail":{classNotice:async(to,subject,body)=>{decisionMail.push({to,body});return true;}},
     "@/lib/classes":{classIdPattern:/^[a-z-]+$/},
