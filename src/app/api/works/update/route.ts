@@ -14,6 +14,7 @@ import {
 } from "@/lib/billing/plan";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 import { getUserBillingByUserId } from "@/lib/billing/supabaseBilling";
+import { isInternalAdminUser } from "@/lib/auth/internalAdmin";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,8 @@ type UpdateWorkBody = {
   title?: unknown;
   content?: unknown;
   stableSlug?: unknown;
-    expectedRevision?: unknown;
+  expectedRevision?: unknown;
+  internalSsotEdit?: unknown;
 };
 
 type CurrentWorkRow = {
@@ -273,7 +275,10 @@ export async function POST(request: NextRequest) {
         isEditor = collaborator?.role === "editor";
       }
 
-      if (!isOwner && !isEditor) {
+      const isAuthorizedSsotAdmin =
+        body.internalSsotEdit === true && isInternalAdminUser(user);
+
+      if (!isOwner && !isEditor && !isAuthorizedSsotAdmin) {
         return NextResponse.json(
           {
             ok: false,
