@@ -29,6 +29,7 @@ export function buildPublicReadableText(
   workId: string,
   pageSlug?: string | null,
 ): PublicReadableText {
+  try {
   const document = buildViewerDocument({ content, workId, pageSlug });
   const paragraphs: string[] = [];
   let size = 0;
@@ -106,6 +107,11 @@ export function buildPublicReadableText(
   }
 
   return { title: document.book.title, paragraphs };
+  } catch {
+    // A malformed public work must not break the ordinary reader page.
+    // Search output is optional and fails closed.
+    return { title: "", paragraphs: [] };
+  }
 }
 
 function normalizeVisibleLine(line: string): string {
