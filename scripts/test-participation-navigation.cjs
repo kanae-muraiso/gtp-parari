@@ -136,7 +136,7 @@ const classes = load("src/app/api/classes/route.ts", {
 });
 async function main() {
   const hidden = { headers: { Authorization: "Bearer purchaser" } };
-  for (const [query, expectedStatus] of [["", 404], ["?businesses=1", 403]]) {
+  for (const [query, expectedStatus] of [["", 403], ["?businesses=1", 403]]) {
     const response = await classes.GET(new NextRequest(`https://www.parari.app/api/classes${query}`, hidden));
     assert.equal(response.status, expectedStatus);
   }
