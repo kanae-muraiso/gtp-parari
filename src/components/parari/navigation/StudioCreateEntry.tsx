@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { activateStudioForCurrentUser } from "@/lib/parari/workspace/activateStudio";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -73,19 +74,19 @@ export default function StudioCreateEntry() {
       </p>
     )}
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 p-4">
+      <div className={`flex flex-col gap-3 rounded-2xl border p-4 ${WORKSPACE_PALETTE.studio.header}`}>
         <h2 className="text-base font-bold">作品を作る</h2>
         <p className="flex-1 text-sm leading-6 text-neutral-600">文章、写真、PAGEやBOOKを作成します。</p>
         <button type="button" onClick={()=>void enter("works")} disabled={Boolean(activating)||loading||checking}
-          className="rounded-full bg-emerald-800 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+          className={`rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50 ${WORKSPACE_PALETTE.studio.button}` }>
           {activating==="works"?"STUDIOを準備中…":"作品づくりへ"}
         </button>
       </div>
-      <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 p-4">
+      <div className={`flex flex-col gap-3 rounded-2xl border p-4 ${WORKSPACE_PALETTE.studio.header}`}>
         <h2 className="text-base font-bold">クラスを開く</h2>
         <p className="flex-1 text-sm leading-6 text-neutral-600">教室、コース、クラスの設計と運営を始めます。</p>
         <button type="button" onClick={()=>void enter("class")} disabled={Boolean(activating)||loading||checking}
-          className="rounded-full bg-emerald-800 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+          className={`rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50 ${WORKSPACE_PALETTE.studio.button}` }>
           {activating==="class"?"STUDIOを準備中…":"CLASSの開設ガイドへ"}
         </button>
       </div>
