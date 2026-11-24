@@ -14,6 +14,7 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ClassHomeShortcuts from "@/components/parari/navigation/ClassHomeShortcuts";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { supabase } from "@/lib/supabaseClient";
 
 const notices: Array<{
@@ -30,6 +31,7 @@ type HomeCardProps = {
   onDismiss?: () => void;
   dismissing?: boolean;
   dismissError?: string;
+  studio?: boolean;
 };
 
 function HomeCard({
@@ -40,9 +42,10 @@ function HomeCard({
   onDismiss,
   dismissing = false,
   dismissError,
+  studio = false,
 }: HomeCardProps) {
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+    <section className={`rounded-2xl border p-5 ${studio ? WORKSPACE_PALETTE.studio.header : "border-neutral-200 bg-white"}`}>
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-sm font-bold text-neutral-950">
@@ -55,7 +58,7 @@ function HomeCard({
 
         <Link
           href={href}
-          className="shrink-0 text-xs font-bold text-emerald-800 transition hover:text-emerald-950"
+          className={`shrink-0 text-xs font-bold transition ${studio ? "text-blue-800 hover:text-blue-950" : "text-emerald-800 hover:text-emerald-950"}`}
         >
           {action} →
         </Link>
@@ -275,6 +278,7 @@ export default function MyPage() {
               onDismiss={() => void dismissStudioCard()}
               dismissing={dismissingStudioCard}
               dismissError={studioCardDismissError}
+              studio
             />
           ) : null}
 
