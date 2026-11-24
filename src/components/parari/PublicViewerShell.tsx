@@ -17,6 +17,7 @@ import ReaderLibraryActions from "./ReaderLibraryActions";
 import CompleteLibraryIntent from "./CompleteLibraryIntent";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
 import { isBookSsot } from "@/lib/parari/book/pageRefs";
+import type { PublicReadableText } from "@/lib/parari/seo/publicReadableText";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -30,6 +31,7 @@ type Props = {
   pageSlug?: string | null;
   publicBasePath?: string;
   headerLogoUrl?: string | null;
+  publicReadableText?: PublicReadableText | null;
 };
 
 export default function PublicViewerShell({
@@ -40,6 +42,7 @@ export default function PublicViewerShell({
   pageSlug = null,
   publicBasePath = "",
   headerLogoUrl = null,
+  publicReadableText = null,
 }: Props) {
   const [isOwner, setIsOwner] = React.useState(false);
   const [ownerCheckDone, setOwnerCheckDone] = React.useState(false);
@@ -69,6 +72,16 @@ export default function PublicViewerShell({
 
   return (
     <div>
+      {!ownerCheckDone && publicReadableText && publicReadableText.paragraphs.length > 0 ? (
+        <article className="mx-auto max-w-3xl px-5 py-10 text-neutral-900" aria-label="作品本文">
+          <h1 className="mb-6 text-2xl font-semibold">{publicReadableText.title}</h1>
+          <div className="space-y-4 leading-8">
+            {publicReadableText.paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+        </article>
+      ) : null}
       {ownerCheckDone ? (
         <>
           {isOwner ? (
