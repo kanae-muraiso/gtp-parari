@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { compileReaderView } from "@/lib/parari/reader/compileReaderView";
 
 export const runtime = "nodejs";
 
@@ -80,9 +81,12 @@ export async function GET(request: NextRequest) {
   if (!authorized) {
     return NextResponse.json({ ok: false }, { status: 404, headers });
   }
+  // Compile reader-only DTO where the current viewer can render all panels.
+  // Unsupported works retain legacy compatibility until parity is available.
+  const reader = compileReaderView(work.content ?? "", work.id);
   return NextResponse.json({
-    ok: true, book: {
-      id: work.id, title: work.title, content: work.content, owner: work.owner,
+    ok: true, reader, book: {
+      id: work.id, title: work.title, content: reader ? null : work.content, owner: work.owner,
       is_public: work.is_public, visibility: work.visibility,
       slug: work.slug, stable_slug: work.stable_slug,
       custom_slug: work.custom_slug, render_mode: work.render_mode,
