@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
-import { compileReaderView } from "@/lib/parari/reader/compileReaderView";
+import { compileAuthorizedWork } from "@/lib/parari/reader/compileAuthorizedWork";
 
 export const runtime = "nodejs";
 
@@ -81,12 +81,18 @@ export async function GET(request: NextRequest) {
   if (!authorized) {
     return NextResponse.json({ ok: false }, { status: 404, headers });
   }
-  // Compile reader-only DTO where the current viewer can render all panels.
-  // Unsupported works retain legacy compatibility until parity is available.
-  const reader = compileReaderView(work.content ?? "", work.id);
+  // The server may resolve referenced PAGEs, but only after it verifies
+  // the parent work and each separately sold PAGE. Never return source SSOT.
+  const compiled = await compileAuthorizedWork(work, userId);
+  if (compiled.error) {
+    return NextResponse.json({ ok: false }, { status: 503, headers });
+  }
+  if (!compiled.reader) {
+    return NextResponse.json({ ok: false, message: "この作品の表示形式を準備できませんでした。" }, { status: 422, headers });
+  }
   return NextResponse.json({
-    ok: true, reader, book: {
-      id: work.id, title: work.title, content: reader ? null : work.content, owner: work.owner,
+    ok: true, reader: compiled.reader, missingPageIds: compiled.missingPageIds, book: {
+      id: work.id, title: work.title, content: null, owner: work.owner,
       is_public: work.is_public, visibility: work.visibility,
       slug: work.slug, stable_slug: work.stable_slug,
       custom_slug: work.custom_slug, render_mode: work.render_mode,
