@@ -835,7 +835,7 @@ export default function BookPanelSequenceEditorPage() {
       }
     };
     
-  const handleSave = async (internalSsotEdit = false) => {
+  const handleSave = async () => {
     if (!supabase) {
       setStatus({
         type: "error",
@@ -852,7 +852,7 @@ export default function BookPanelSequenceEditorPage() {
       return;
     }
 
-      if (!canEdit && !(internalSsotEdit && showInternalSsotUi)) {
+      if (!canEdit) {
         setStatus({
           type: "ready",
           message: "現在は編集できません。",
@@ -950,7 +950,6 @@ export default function BookPanelSequenceEditorPage() {
             ? stableSlugDraft
             : undefined,
           expectedRevision: row.revision,
-          internalSsotEdit: internalSsotEdit && showInternalSsotUi,
         }),
     });
 
@@ -1247,10 +1246,10 @@ export default function BookPanelSequenceEditorPage() {
                  </summary>
 
                  <p className="mt-2 text-xs leading-5 text-neutral-400">
-                   この欄は指定された内部管理者用です。SSOT専用保存では改訂番号を確認して保存します。
+                   この欄は管理者用です。変更内容は下のパネル表示にも反映されます。編集権を取得している間に変更できます。
                  </p>
 
-                 {!canEdit && !showInternalSsotUi ? (
+                 {!canEdit ? (
                    <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
                      <div>
                        {editLockState === "claiming"
@@ -1271,21 +1270,12 @@ export default function BookPanelSequenceEditorPage() {
                    </div>
                  ) : null}
 
-                 <button
-                   type="button"
-                   onClick={() => void handleSave(true)}
-                   disabled={status.type === "saving"}
-                   className="mt-4 rounded-full bg-[#2467A4] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1D5588] disabled:opacity-50"
-                 >
-                   {status.type === "saving" ? "SSOTを保存中..." : "SSOTを保存"}
-                 </button>
-
                  <textarea
                    value={ssot}
                                     onChange={(event) =>
                                       handleSsotChange(event.target.value)
                                     }
-                                    disabled={(!canEdit && !showInternalSsotUi) || status.type === "saving"}
+                                    disabled={!canEdit || status.type === "saving"}
                    spellCheck={false}
                    className="mt-4 min-h-[420px] w-full resize-y rounded-2xl border border-neutral-200 bg-neutral-50 p-4 font-mono text-xs leading-6 text-neutral-800 outline-none focus:border-neutral-400"
                  />
