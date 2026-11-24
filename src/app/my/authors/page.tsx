@@ -33,7 +33,7 @@ function WorkSearchPanel() {
     try {
       // Treat punctuation as part of the title, including %, _ and *.
       const pattern = query.replace(/[.*+?^$(){}|[\]\\]/g, "\\$&");
-      const [{ data, error }, sales] = await Promise.all([supabase.from("parari_books")
+      const [{ data, error }, sales] = await Promise.all([supabase.from("parari_public_work_cards")
         .select("id,title,owner")
         .eq("visibility", "public")
         .eq("show_in_profile_works", true)

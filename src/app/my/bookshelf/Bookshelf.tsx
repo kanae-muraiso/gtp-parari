@@ -17,9 +17,9 @@ type Shelf = {
   categories: {id:string;name:string}[];
   categoryItems: {category_id:string;target_kind:string;target_id:string}[];
 };
-type Work = {id:string;title:string|null;owner:string;content:string|null};
+type Work = {id:string;title:string|null;owner:string;content:string|null;cover_image?:string|null};
 function coverOf(work:Work):string {
-  if (!work.content) return "";
+  if (!work.content) return work.cover_image || "";
   try {
     const parsed=parseParari(work.content);
     return parsed.bookCoverImage || parsed.pages?.[0]?.imageUrl || "";
@@ -176,11 +176,17 @@ export default function LibraryV2Page() {
     ]);
     setActivityError(failed);
     const ids = [...new Set([...shelf.stars.map(x=>x.work_id),...shelf.reading.map(x=>x.work_id),...rows.map(x=>x.book_id),...(personal?.items ?? []).map(x=>x.book_id)])];
-    const saved = await Promise.all(batches(ids).map(batch=>
-      supabase!.from("parari_books").select("id,title,owner,content").in("id",batch).or("is_deleted.is.null,is_deleted.eq.false"),
-    ));
-    if (own.error || saved.some(result=>result.error) || people.error) {setMessage("一部の作品を取得できませんでした。");return;}
-    const loadedWorks = [...new Map([...(own.data??[]),...saved.flatMap(result=>result.data??[])].map(x=>[x.id,x as Work])).values()];
+    const [saved, publicSaved] = await Promise.all([
+      Promise.all(batches(ids).map(batch=>
+        supabase!.from("parari_books").select("id,title,owner,content").in("id",batch).or("is_deleted.is.null,is_deleted.eq.false"),
+      )),
+      Promise.all(batches(ids).map(batch=>
+        supabase!.from("parari_public_work_cards").select("id,title,owner,cover_image").in("id",batch),
+      )),
+    ]);
+    if (own.error || saved.some(result=>result.error) || publicSaved.some(result=>result.error) || people.error) {setMessage("一部の作品を取得できませんでした。");return;}
+    const publicCards = publicSaved.flatMap(result=>result.data??[]).map(card=>({...card,content:null}));
+    const loadedWorks = [...new Map([...publicCards,...saved.flatMap(result=>result.data??[]),...(own.data??[])].map(x=>[x.id,x as Work])).values()];
     const workOwnerIds = [...new Set(loadedWorks.map(work=>work.owner))];
     const workPeople = await Promise.all(batches(workOwnerIds).map(batch=>
       supabase!.from("profiles").select("user_id,username,display_name").in("user_id",batch),
