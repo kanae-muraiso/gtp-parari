@@ -7,6 +7,7 @@
 // - 未対応パネルを検出したら null とし、機能欠落を起こす切替を防ぐ。
 
 import "server-only";
+import { hasBookPageRefs } from "@/lib/parari/book/pageRefs";
 import { buildViewerDocument, type ViewerDocument } from "@/components/parari/viewer-v2/buildViewerDocument";
 import { parseBlocks } from "@/lib/parari/ssot-v2/parseBlocks";
 import { parseNoticePanel } from "@/components/parari/panels/notice/parseNoticePanel";
@@ -58,9 +59,12 @@ function compileBlocks(body: string, depth = 0): SafeReaderBlock[] | null {
     switch (panel.tag) {
       case "PAGE": case "PAGEINFO": case "BOOK": case "BOOKINFO":
       case "CHAPTER": case "CHAPTERINFO": case "WEB": case "WEBINFO":
-      case "TOC":
         // Structural metadata is not reader-facing text.
         break;
+      case "TOC":
+        // PAGE-scoped table-of-contents has interactive anchors.
+        // Do not lose those anchors during a partial renderer migration.
+        return null;
       case "NOTICE": {
         const data = parseNoticePanel(panel.raw, panel);
         const nested = compileBlocks(data.body, depth + 1);
@@ -126,6 +130,9 @@ export function compileReaderView(
   options: { pageSlug?: string | null; publicBasePath?: string; headerLogoUrl?: string | null } = {},
 ): CompiledReaderView | null {
   try {
+    // Referenced PAGEs require server-side entitlement-aware resolution.
+    // Keep the legacy reader until that pipeline has a compiled equivalent.
+    if (hasBookPageRefs(ssot)) return null;
     const parsed = buildViewerDocument({
       content: ssot,
       workId,
