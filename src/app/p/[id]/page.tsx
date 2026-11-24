@@ -9,6 +9,7 @@ import PublicViewerShell from "../../../components/parari/PublicViewerShell";
 import { supabase } from "../../../lib/supabaseClient";
 import { ParariBrandTopBar } from "@/components/parari/ParariTopBars";
 import { hasBookPageRefs } from "@/lib/parari/book/pageRefs";
+import type { CompiledReaderView } from "@/lib/parari/reader/compileReaderView";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -32,6 +33,7 @@ export default function PublicPage() {
 
   const [loading, setLoading] = React.useState(true);
   const [book, setBook] = React.useState<BookRow | null>(null);
+  const [compiledReader, setCompiledReader] = React.useState<CompiledReaderView | null>(null);
   const [notFound, setNotFound] = React.useState(false);
   const [hasPurchasedAccess, setHasPurchasedAccess] =
     React.useState(false);
@@ -71,6 +73,7 @@ export default function PublicPage() {
       }
       const data = result.book as BookRow;
       const purchasedAccess = result.hasPurchasedAccess === true;
+      const readable = (result.reader ?? null) as CompiledReaderView | null;
 
       let resolvedBook = data;
 
@@ -102,6 +105,7 @@ export default function PublicPage() {
       }
 
       setHasPurchasedAccess(purchasedAccess);
+      setCompiledReader(readable);
       setBook(resolvedBook);
       setLoading(false);
     };
@@ -138,6 +142,7 @@ export default function PublicPage() {
 
       <PublicViewerShell
         content={book.content ?? ""}
+        compiledReader={compiledReader}
         renderMode={book.render_mode ?? null}
         physicalPagination={book.physical_pagination ?? false}
         bookId={book.id}

@@ -18,6 +18,7 @@ import CompleteLibraryIntent from "./CompleteLibraryIntent";
 import { ParariViewer } from "./viewer-v2/ParariViewer";
 import { isBookSsot } from "@/lib/parari/book/pageRefs";
 import type { PublicReadableText } from "@/lib/parari/seo/publicReadableText";
+import type { CompiledReaderView } from "@/lib/parari/reader/compileReaderView";
 
 type RenderMode = "scroll" | "cover-scroll" | "page-scroll" | "page";
 
@@ -32,6 +33,7 @@ type Props = {
   publicBasePath?: string;
   headerLogoUrl?: string | null;
   publicReadableText?: PublicReadableText | null;
+  compiledReader?: CompiledReaderView | null;
 };
 
 export default function PublicViewerShell({
@@ -43,6 +45,7 @@ export default function PublicViewerShell({
   publicBasePath = "",
   headerLogoUrl = null,
   publicReadableText = null,
+  compiledReader = null,
 }: Props) {
   const [isOwner, setIsOwner] = React.useState(false);
   const [ownerCheckDone, setOwnerCheckDone] = React.useState(false);
@@ -68,7 +71,7 @@ export default function PublicViewerShell({
   }, [ownerId]);
 
   const viewerContent = resolveViewerContent(content, doc);
-  const isBook = isBookSsot(viewerContent);
+  const isBook = compiledReader ? compiledReader.document.format === "book" : isBookSsot(viewerContent);
 
   return (
     <div>
@@ -133,6 +136,7 @@ export default function PublicViewerShell({
             key={`${bookId}:${pageSlug ?? ""}`}
             workId={bookId}
             content={viewerContent}
+            compiledReader={compiledReader}
             pageSlug={pageSlug}
             publicBasePath={publicBasePath}
             headerLogoUrl={headerLogoUrl}

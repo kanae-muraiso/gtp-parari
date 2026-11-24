@@ -11,6 +11,10 @@
 
 import React from "react";
 import { ReaderBodyPanelRenderer } from "@/components/parari/reader/ReaderBodyPanelRenderer";
+import { SafeReaderBody } from "./SafeReaderBody";
+import type { CompiledReaderView, SafeReaderBlock } from "@/lib/parari/reader/compileReaderView";
+
+const SafeReaderBlocksContext = React.createContext<Record<string, SafeReaderBlock[]> | null>(null);
 import {
   type BookSheet,
   type ReadingMode,
@@ -43,9 +47,9 @@ type ReadingItem = {
   physicalPageNumber?: number;
 };
 
-export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.ReactNode }) {
+export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.ReactNode; compiledReader?: CompiledReaderView | null }) {
   const { content, workId, pageSlug = null, publicBasePath = "", headerLogoUrl = null, endActions } = props;
-  const documentModel = React.useMemo(() => buildViewerDocument({ content, workId, pageSlug, publicBasePath, headerLogoUrl }), [content, workId, pageSlug, publicBasePath, headerLogoUrl]);
+  const documentModel = React.useMemo(() => props.compiledReader?.document ?? buildViewerDocument({ content, workId, pageSlug, publicBasePath, headerLogoUrl }), [props.compiledReader, content, workId, pageSlug, publicBasePath, headerLogoUrl]);
   const book = documentModel.book;
   const viewerRef = React.useRef<HTMLDivElement | null>(null);
   const scrollToReaderTop = React.useCallback(() => {
@@ -656,6 +660,7 @@ export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.R
 
   return (
     <WebPageFrame data={documentModel.web}>
+      <SafeReaderBlocksContext.Provider value={props.compiledReader?.blocksBySheetId ?? null}>
       <div
         ref={viewerRef}
         data-parari-viewer={documentModel.format}
@@ -765,6 +770,7 @@ export function ParariViewer(props: ViewerDocumentInput & { endActions?: React.R
           className="pointer-events-none fixed left-[-10000px] top-0 w-[calc(100vw-72px)] max-w-[624px] overflow-hidden px-0 py-0 opacity-0 sm:w-[calc(100vw-96px)]"
         />
       </div>
+      </SafeReaderBlocksContext.Provider>
     </WebPageFrame>
   );
 }
@@ -1215,6 +1221,7 @@ function ChapterSheet({
   dictionaryMode: ReaderDictionaryMode;
   rubyMode: ReaderRubyMode;
 }) {
+  const safeBlocks = React.useContext(SafeReaderBlocksContext)?.[sheet.id];
   return (
     <div className="flex min-h-[62vh] flex-col justify-center text-center">
       <div className="text-xs font-bold tracking-[0.22em] text-violet-500">
@@ -1237,9 +1244,9 @@ function ChapterSheet({
         />
       ) : null}
 
-      {sheet.bodySsot ? (
+      {(safeBlocks || sheet.bodySsot) ? (
         <div className="mt-8 text-left">
-          <ReaderBodyPanelRenderer
+          {safeBlocks ? <SafeReaderBody blocks={safeBlocks} className={textClassName} dictionaryMode={dictionaryMode} rubyMode={rubyMode}/> : <ReaderBodyPanelRenderer
             bodySsot={sheet.bodySsot}
             renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
               <ViewerTextBlock
@@ -1251,7 +1258,7 @@ function ChapterSheet({
                 rubyMode={rubyMode}
               />
             )}
-          />
+          />}
         </div>
       ) : null}
     </div>
@@ -1269,6 +1276,7 @@ function PageSheet({
   dictionaryMode: ReaderDictionaryMode;
   rubyMode: ReaderRubyMode;
 }) {
+  const safeBlocks = React.useContext(SafeReaderBlocksContext)?.[sheet.id];
   return (
     <div>
       <header
@@ -1308,7 +1316,7 @@ function PageSheet({
         />
       ) : null}
 
-      <ReaderBodyPanelRenderer
+      {safeBlocks ? <SafeReaderBody blocks={safeBlocks} className={textClassName} dictionaryMode={dictionaryMode} rubyMode={rubyMode} /> : <ReaderBodyPanelRenderer
         bodySsot={sheet.bodySsot}
         renderTextBlock={({ text, tocHeadingStartIndex, tocHeadingIdPrefix }) => (
           <ViewerTextBlock
@@ -1320,7 +1328,7 @@ function PageSheet({
             rubyMode={rubyMode}
           />
         )}
-      />
+      />}
     </div>
   );
 }

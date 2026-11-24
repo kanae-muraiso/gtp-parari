@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import PublicViewerShell from "@/components/parari/PublicViewerShell";
+import type { CompiledReaderView } from "@/lib/parari/reader/compileReaderView";
 
 type LoadStatus =
   | { type: "loading"; message: string }
@@ -42,6 +43,7 @@ export default function UserPageViewPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const [work, setWork] = useState<PageWorkRow | null>(null);
+  const [compiledReader, setCompiledReader] = useState<CompiledReaderView | null>(null);
   const [status, setStatus] = useState<LoadStatus>({
     type: "loading",
     message: "PAGEを読み込んでいます...",
@@ -115,6 +117,7 @@ export default function UserPageViewPage() {
         return;
       }
 
+      setCompiledReader((result.reader ?? null) as CompiledReaderView | null);
       setWork(data);
 
       setStatus({
@@ -165,6 +168,7 @@ export default function UserPageViewPage() {
   return (
     <PublicViewerShell
       content={work.content ?? ""}
+      compiledReader={compiledReader}
       bookId={work.id}
       ownerId={work.owner}
     />
