@@ -767,11 +767,28 @@ export default function WritingWorkPage() {
 }
 
 function parsePageMeta(content: string) {
-  const title =
-    content.match(/^title:\s*(.*)$/im)?.[1]?.trim() ?? "";
+  const lines = String(content ?? "").replace(/\r\n/g, "\n").split("\n");
+  const pageIndex = lines.findIndex((line) =>
+    /^\s*\[(PAGE|PAGEINFO)\b/i.test(line),
+  );
+  const pageHeader = pageIndex >= 0
+    ? lines[pageIndex]?.match(/^\s*\[(?:PAGE|PAGEINFO)(?::[^\]]+)?\]\s*(.*)$/i)?.[1]?.trim() ?? ""
+    : "";
 
+  let metaEnd = lines.length;
+  for (let index = pageIndex + 1; pageIndex >= 0 && index < lines.length; index += 1) {
+    if (/^\s*\[[A-Za-z][A-Za-z0-9_]*(?::[^\]]+)?\]/.test(lines[index] ?? "")) {
+      metaEnd = index;
+      break;
+    }
+  }
+
+  const pageMeta = pageIndex >= 0 ? lines.slice(pageIndex + 1, metaEnd).join("\n") : "";
+  const title =
+    pageMeta.match(/^title:\s*(.*)$/im)?.[1]?.trim() ||
+    pageHeader;
   const mainImageUrl =
-    content.match(/^mainImage:\s*(.*)$/im)?.[1]?.trim() ?? "";
+    pageMeta.match(/^mainImage:\s*(.*)$/im)?.[1]?.trim() ?? "";
 
   return {
     title,
