@@ -4,7 +4,7 @@ import PackageStore from "@/components/parari/billing/PackageStore";
 
 export const metadata = {
   title: "パッケージ | PARARI",
-  description: "PARARI WRITERS A・Bと、開発予定のCLASS・BUSINESSパッケージをご案内します。",
+  description: "PARARI WRITERS Aと、開発予定のWRITERS・CLASS・BUSINESSパッケージをご案内します。",
 };
 
 export default function PackagesPage() {
