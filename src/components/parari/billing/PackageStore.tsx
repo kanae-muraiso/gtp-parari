@@ -82,8 +82,8 @@ export default function PackageStore() {
               <h3 className="text-lg font-bold text-neutral-700">WRITERS B</h3>
               <span className="rounded-full border border-neutral-300 bg-white px-2 py-1 text-[10px] font-bold text-neutral-600">新規申込停止中</span>
             </div>
-            <p className="mt-1 text-xs text-neutral-500">旧Plus契約の内容</p>
-            <p className="mt-4 text-2xl font-bold text-neutral-700">{WRITERS_B_MONTHLY_PRICE_JPY}円 <span className="text-sm font-normal">/月（参考）</span></p>
+            <p className="mt-1 text-xs text-neutral-500">従来のPlusプラン（日本向け）</p>
+            <p className="mt-4 text-2xl font-bold text-neutral-700">{WRITERS_B_MONTHLY_PRICE_JPY}円 <span className="text-sm font-normal">/月</span></p>
             <p className="mt-3 text-sm leading-6">より多くの作品制作と電子書籍出版に。</p>
             <ul className="mt-4 flex-1 space-y-2 text-xs leading-6">
               <li>BOOK：{legacyPlus.bookLimit}冊</li>
