@@ -11,6 +11,7 @@ import LearnerClassCalendar from "@/components/parari/manage/LearnerClassCalenda
 import ClassEventNotices from "@/components/parari/manage/ClassEventNotices";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
+import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
 import { classRequest, ClassRequestError } from "@/lib/classRequests";
 import { classMeetingUrl, classSchedule, type ClassSchool, type ClassVisits } from "@/lib/classes";
@@ -75,7 +76,7 @@ export default function MyClassSchoolPage() {
     matchesClassDateRule(entry.rule, nextLesson.day))?.location ?? nextLesson?.slot.location;
   const nextMeeting = nextLesson && !nextLesson.pendingPayment && nextLesson.slot.delivery !== "onsite"
     ? classMeetingUrl(nextLesson.slot.meeting_url) : null;
-  return <main className="min-h-screen bg-neutral-100">
+  return <main className="min-h-screen bg-white">
     <div className="mx-auto grid w-full max-w-3xl gap-5 px-4 py-6">
       <MyAreaHeader title="クラス" area="library" navigation={<MyPrimaryTabs active={null} embedded />} />
       {current?.members && current.members.length > 1 && <label className="grid gap-2 rounded-xl border bg-white p-4">予定を確認する受講者
@@ -83,7 +84,7 @@ export default function MyClassSchoolPage() {
           {current.members.map(member => <option key={member.id} value={member.id}>{member.name}{member.role === "guardian" ? "（保護者として確認）" : ""}</option>)}
         </select>
       </label>}
-      {current?.school && <section className="grid gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-label="クラスへの参加">
+      {current?.school && <section className="grid gap-3 rounded-2xl ${WORKSPACE_PALETTE.library.header} p-5" aria-label="クラスへの参加">
         <h2 className="text-xl font-bold">{current.school.name}</h2>
         {current.startsOn && <p className="text-sm">参加開始日 {current.startsOn}</p>}
         {nextLesson ? <>
@@ -92,7 +93,7 @@ export default function MyClassSchoolPage() {
             <p className="text-lg font-bold">{nextLesson.day} {nextLesson.slot.starts_at.slice(0, 5)}</p>
             <p>{nextLesson.slot.name} · {nextLesson.slot.delivery === "online" ? "オンライン" : nextLocation || "会場は教室にご確認ください"}</p>
           </div>
-          {nextMeeting && <a className="w-fit rounded-lg bg-blue-800 px-4 py-2 text-sm text-white" href={nextMeeting} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
+          {nextMeeting && <a className={`w-fit rounded-lg px-4 py-2 text-sm font-semibold ${WORKSPACE_PALETTE.library.button}`} href={nextMeeting} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
           {nextLesson.pendingPayment && <p className="text-sm">差額の入金確認待ちです。</p>}
         </> : <p>{current.visits?.flexible ? "参加する回を選んで予約してください。" : "直近の開催予定はカレンダーから確認できます。"}</p>}
         <nav className="flex flex-wrap gap-3 text-sm" aria-label="クラスの操作">
@@ -113,7 +114,7 @@ export default function MyClassSchoolPage() {
             <h3 className="font-bold">{item.productName && item.productName + " · "}{item.name}</h3>
             <p className="mt-1 text-sm">{classSchedule(item)}</p>
             {item.delivery !== "onsite" && classMeetingUrl(item.meeting_url) && <a
-              className="mt-3 inline-flex rounded-lg bg-blue-800 px-4 py-2 text-sm text-white"
+              className={`mt-3 inline-flex rounded-lg px-4 py-2 text-sm font-semibold ${WORKSPACE_PALETTE.library.button}`}
               href={classMeetingUrl(item.meeting_url)!} target="_blank" rel="noreferrer">オンライン授業に参加</a>}
             {item.location && <p className="mt-1 text-sm">{item.location}</p>}
             {current.visits?.flexible && current.visits.classIds.includes(item.id) && <details className="mt-2 text-sm" open={!nextLesson || undefined}>
