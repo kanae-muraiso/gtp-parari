@@ -7,6 +7,7 @@ type Props = {
   onChange: (next: PanelVisualStyle) => void;
   allowWidth?: boolean;
   allowTextSpacing?: boolean;
+  compact?: boolean;
 };
 
 const WIDTH_OPTIONS = [
@@ -45,6 +46,7 @@ export function PanelStyleControls({
   onChange,
   allowWidth = true,
   allowTextSpacing = true,
+  compact = false,
 }: Props) {
   const patch = <K extends keyof PanelVisualStyle>(
     key: K,
@@ -57,12 +59,12 @@ export function PanelStyleControls({
   };
 
   return (
-    <details className="mb-8 mt-1 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
-      <summary className="cursor-pointer select-none font-bold">
-        スタイル
+    <details className={compact ? "relative shrink-0 text-xs text-neutral-500" : "mb-8 mt-1 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500"}>
+      <summary className={compact ? "inline-flex cursor-pointer list-none select-none items-center gap-1 rounded-full border border-neutral-300 bg-white px-3 py-1 text-[11px] font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50" : "cursor-pointer select-none font-bold"}>
+        スタイル{compact ? <span aria-hidden="true">▼</span> : null}
       </summary>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className={compact ? "absolute right-0 top-full z-[60] mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-neutral-700 shadow-xl sm:grid-cols-2" : "mt-3 grid gap-3 sm:grid-cols-2"}>
         {allowWidth ? (
           <label className="block">
             <span className="mb-1 block text-[11px] font-bold">幅</span>
