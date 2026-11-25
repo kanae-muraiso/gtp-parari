@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 export type ParariExperience = {
   studioEnabled: boolean;
   hasApplications: boolean;
+  hasParticipationPurchase: boolean;
   hasCalendar: boolean;
   hasMessages: boolean;
   loading: boolean;
@@ -19,11 +20,19 @@ type ExperienceRow = {
   has_messages: boolean | null;
 };
 
+type LibraryRecordsSummary = {
+  memberships?: unknown[];
+  applications?: unknown[];
+  purchases?: unknown[];
+  purchasedWorks?: unknown[];
+};
+
 const EXPERIENCE_CHANGED_EVENT = "parari-experience-changed";
 
 const EMPTY_STATE: ParariExperience = {
   studioEnabled: false,
   hasApplications: false,
+  hasParticipationPurchase: false,
   hasCalendar: false,
   hasMessages: false,
   loading: true,
@@ -52,7 +61,10 @@ export default function useParariExperience() {
       return;
     }
 
-    const { data, error } = await supabase.rpc("get_my_parari_experience");
+    const [{ data, error }, sessionResult] = await Promise.all([
+      supabase.rpc("get_my_parari_experience"),
+      supabase.auth.getSession(),
+    ]);
 
     if (error) {
       console.error("load PARARI experience failed:", error);
@@ -61,10 +73,35 @@ export default function useParariExperience() {
     }
 
     const row = (Array.isArray(data) ? data[0] : data) as ExperienceRow | null;
+    const accessToken = sessionResult.data.session?.access_token;
+    let hasRecords = false;
+
+    if (accessToken) {
+      try {
+        const response = await fetch("/api/library-v2/records", {
+          headers: { Authorization: "Bearer " + accessToken },
+          cache: "no-store",
+        });
+        if (response.ok) {
+          const records = await response.json() as LibraryRecordsSummary;
+          hasRecords = [
+            records.memberships,
+            records.applications,
+            records.purchases,
+            records.purchasedWorks,
+          ].some((items) => Array.isArray(items) && items.length > 0);
+        }
+      } catch {
+        // Keep the existing experience flags when the record summary is unavailable.
+      }
+    }
+
+    const hasApplications = Boolean(row?.has_applications);
 
     setState({
       studioEnabled: Boolean(row?.studio_enabled),
-      hasApplications: Boolean(row?.has_applications),
+      hasApplications,
+      hasParticipationPurchase: hasApplications || hasRecords,
       hasCalendar: Boolean(row?.has_calendar),
       hasMessages: Boolean(row?.has_messages),
       loading: false,
