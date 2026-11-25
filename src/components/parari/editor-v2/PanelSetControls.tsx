@@ -6,9 +6,9 @@ import { PANEL_SETS, inspectPanelIssues, type PanelSet } from "@/lib/parari/auth
 
 export function PanelSetControls({ value, source, onChange }: { value: PanelSet; source: string; onChange?: (value: PanelSet) => void }) {
   const issues = value === "kindle" ? inspectPanelIssues(source) : [];
-  return <div className="mb-4 rounded-xl border border-neutral-200 bg-white p-3 text-sm">
+  return <div className="rounded-xl border border-neutral-200 bg-white px-3 py-1 text-sm">
     {onChange ? <label className="flex flex-wrap items-center gap-3">パネルセット
-      <select aria-label="パネルセット" value={value} onChange={event => onChange(event.target.value as PanelSet)} className="rounded border border-neutral-300 bg-white px-3 py-2">
+      <select aria-label="パネルセット" value={value} onChange={event => onChange(event.target.value as PanelSet)} className="rounded border border-neutral-300 bg-white px-3 py-1">
         {Object.entries(PANEL_SETS).map(([key, set]) => <option key={key} value={key}>{set.label}</option>)}
       </select>
     </label> : <p>BOOKの設定：{PANEL_SETS[value].label}</p>}
