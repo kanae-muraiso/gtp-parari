@@ -41,6 +41,7 @@ const MESSAGES_ITEM: Item = { key: "messages", label: "メッセージ", href: "
 
 export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTabsProps) {
   const {
+    hasOpenSpace,
     hasParticipationPurchase,
     hasCalendar,
     hasMessages,
@@ -53,7 +54,11 @@ export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTab
         ? "open-space"
         : active;
 
-  const items: Item[] = [HOME_ITEM, OPEN_SPACE_ITEM, BOOKSHELF_ITEM];
+  const items: Item[] = [HOME_ITEM];
+  if (hasOpenSpace || activeKey === "open-space") {
+    items.push(OPEN_SPACE_ITEM);
+  }
+  items.push(BOOKSHELF_ITEM);
 
   // Keep a deep-linked current section visible while experience data is loading.
   if (hasParticipationPurchase || activeKey === "records") {
