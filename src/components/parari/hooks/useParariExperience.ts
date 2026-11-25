@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 export type ParariExperience = {
   studioEnabled: boolean;
   hasApplications: boolean;
+  hasOpenSpace: boolean;
   hasParticipationPurchase: boolean;
   hasCalendar: boolean;
   hasMessages: boolean;
@@ -32,6 +33,7 @@ const EXPERIENCE_CHANGED_EVENT = "parari-experience-changed";
 const EMPTY_STATE: ParariExperience = {
   studioEnabled: false,
   hasApplications: false,
+  hasOpenSpace: false,
   hasParticipationPurchase: false,
   hasCalendar: false,
   hasMessages: false,
@@ -101,6 +103,7 @@ export default function useParariExperience() {
     setState({
       studioEnabled: Boolean(row?.studio_enabled),
       hasApplications,
+      hasOpenSpace: user.user_metadata?.library_open_space_visited === true,
       hasParticipationPurchase: hasApplications || hasRecords,
       hasCalendar: Boolean(row?.has_calendar),
       hasMessages: Boolean(row?.has_messages),
