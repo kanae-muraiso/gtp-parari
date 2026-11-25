@@ -3203,6 +3203,15 @@ export default function ApplicationManager({
                   <p className="mt-2 text-xs leading-6 text-neutral-500">{item.example}</p>
                 </button>
               ))}
+              <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <div className="font-bold text-emerald-950">継続クラスの運営はこちら</div>
+                <p className="mt-2 text-xs leading-6 text-emerald-900">
+                  クラス・料金・開催予定・申込者をまとめて管理する場合は、STUDIOの「継続運営」をご利用ください。
+                </p>
+                <a href="/my/manage?tab=service" className="mt-3 inline-block text-sm font-semibold text-emerald-900 underline">
+                  STUDIOの継続運営を開く →
+                </a>
+              </section>
               <div aria-disabled="true" className="cursor-not-allowed rounded-2xl border border-neutral-200 bg-neutral-100 p-5 text-left text-neutral-400">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold">作品・商品を販売する</span>
