@@ -4,12 +4,7 @@
 // 免責条項等は、必要に応じて専門家の確認を受けてください。
 
 import type { ReactNode } from "react";
-import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
-
-import { WRITERS_B_MONTHLY_PRICE_JPY, getWritersBJapanPriceId } from "@/lib/billing/writersPricing";
-
-const LAST_UPDATED = "2026年9月23日";
-const PLUS_MONTHLY_PRICE_USD = PLAN_ENTITLEMENTS.plus.monthlyPriceUsd;
+const LAST_UPDATED = "2026年11月25日";
 
 type RowProps = {
   label: string;
@@ -67,17 +62,7 @@ export default function TokushoPage() {
             </Row>
 
           <Row label="販売価格">
-            {getWritersBJapanPriceId() && process.env.STRIPE_SECRET_KEY ? (
-              <>
-                WRITERS B（日本向け）：月額{WRITERS_B_MONTHLY_PRICE_JPY}円
-                <br />
-                既存の米ドル建てPARARI Plus契約は契約時の料金が適用されます。
-              </>
-            ) : (
-              <>PARARI Plus：月額{PLUS_MONTHLY_PRICE_USD}米ドル</>
-            )}
-            <br />
-            実際の請求額は、申込画面およびStripeの決済画面に表示されます。
+            現在、有料プランの新規申込は受け付けていません。既存契約の料金は契約時の条件に従います。
           </Row>
 
           <Row label="販売価格以外の費用">
@@ -91,12 +76,11 @@ export default function TokushoPage() {
           </Row>
 
           <Row label="支払時期">
-            申込時に初回料金が決済され、その後は毎月の自動更新時に
-            決済されます。
+            既存の有料契約について、契約時に定めた自動更新日に決済されます。
           </Row>
 
           <Row label="サービス提供時期">
-            決済が完了し、Plusプランが有効になり次第利用できます。
+            既存契約は、契約が有効な期間中ご利用いただけます。
           </Row>
 
           <Row label="契約期間・自動更新">
