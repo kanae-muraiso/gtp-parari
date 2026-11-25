@@ -146,8 +146,8 @@ export function PanelInsertSlot({
             type="button"
             onClick={() => setOpen(true)}
             className={[
-              "grid h-8 w-8 place-items-center rounded-full border border-sky-200 bg-sky-50",
-              "text-base leading-none text-sky-600 shadow-sm transition",
+              "grid h-6 w-6 place-items-center rounded-full border border-sky-200 bg-sky-50",
+              "text-sm leading-none text-sky-600 shadow-sm transition",
               "hover:border-sky-400 hover:bg-sky-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500",
               placement === "between" ? "pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "",
             ].filter(Boolean).join(" ")}
