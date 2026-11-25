@@ -199,6 +199,10 @@ export function PagePanelComposer({
   onSplitPageToBook,
 }: PagePanelComposerProps) {
   const panelSet = authoringSet ?? readPanelSet(value);
+  const showPanelSetControls =
+    !bookPage &&
+    mode === "page" &&
+    (Boolean(authoringSet) || /^\s*\[(BOOK|PAGE)\b/.test(value));
   const [structureVersion, setStructureVersion] = useState(0);
   const [codeInsertEnabled,setCodeInsertEnabled]=useState(false);
   useEffect(()=>{try{setCodeInsertEnabled(window.localStorage.getItem("parari:code-insert-enabled")==="true");}catch{}},[]);
@@ -875,7 +879,7 @@ const waitForNextPaint = () =>
   return (
     <div className={`relative space-y-0 ${bookPage ? "[&_[data-page-info-title]]:text-lg" : ""}`}>
       {mode==="page" ? <details className="mb-1 text-right text-xs text-neutral-500"><summary className="inline-flex cursor-pointer select-none px-2 py-1">編集オプション</summary><label className="mt-1 flex items-center justify-end gap-2 rounded-lg bg-neutral-50 px-3 py-2"><input type="checkbox" checked={codeInsertEnabled} onChange={e=>toggleCodeInsertion(e.target.checked)}/> ＋メニューに「コード挿入」を表示する</label></details> : null}
-      {!bookPage && mode === "page" && (authoringSet || /^\s*\[(BOOK|PAGE)\b/.test(value)) ? <PanelSetControls value={panelSet} source={value} onChange={authoringSet ? undefined : next => onChange(writePanelSet(value, next))} /> : null}
+      {showPanelSetControls ? <PanelSetControls value={panelSet} source={value} onChange={authoringSet ? undefined : next => onChange(writePanelSet(value, next))} /> : null}
                    {isMutating ? (
                      <div className="absolute inset-0 z-50 flex items-start justify-center rounded-3xl bg-white/70 pt-10 backdrop-blur-sm">
                        <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm font-bold text-neutral-700 shadow-lg">
@@ -883,7 +887,7 @@ const waitForNextPaint = () =>
                        </div>
                      </div>
                    ) : null}
-<div className="space-y-0">
+<div className={showPanelSetControls ? "mt-5 space-y-0" : "space-y-0"}>
           {!hideLeadingInsertSlot &&
           mode === "page" &&
           isPageInfoBlock(renderBlocks[0]) &&

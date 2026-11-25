@@ -21,6 +21,7 @@ import type {
 import { getPanelDefinition, hasPanelDefinition } from "../panels/registry";
 import { PanelFrame } from "../panels/shared/PanelFrame";
 import { PanelStyleControls } from "../panels/shared/PanelStyleControls";
+import { getBooleanMeta, getMetaValue, parseMetaFields } from "../panels/shared/metaFields";
 import {
   applyPanelVisualStyleToRaw,
   resolvePanelVisualStyle,
@@ -112,6 +113,14 @@ export function PanelBlockCard({
     const widthClass = panelWidthClass(block.tag);
     const canCollapseToSummary = isCollapsibleMediaPanel(block.tag);
     const canStyle = canStylePanel(block.tag);
+    const isBookInfoPanel = /^(BOOK|BOOKINFO)$/.test(block.tag.trim().toUpperCase());
+    const bookInfoFields = parseMetaFields(contentRaw);
+    const hasBookPreview =
+      getBooleanMeta(bookInfoFields, ["cover"], false) ||
+      getBooleanMeta(bookInfoFields, ["titlePage", "title_page"], false) ||
+      getBooleanMeta(bookInfoFields, ["toc"], false);
+    const bookTitle =
+      getMetaValue(bookInfoFields, ["title"], "BOOKタイトル") || "BOOKタイトル";
 
     const handleEditorChangeRaw = (
       nextRaw: string,
@@ -229,7 +238,13 @@ export function PanelBlockCard({
                 defaultWidth={defaultWidthForPanelTag(block.tag)}
                 gap={compactSpacing ? "zero" : "default"}
               >
-                {Renderer ? (
+                {isBookInfoPanel && !hasBookPreview ? (
+                  <header className="mb-0">
+                    <h2 className="text-2xl font-bold leading-tight text-neutral-900 md:text-3xl">
+                      {bookTitle}
+                    </h2>
+                  </header>
+                ) : Renderer ? (
                   <Renderer
                     block={contentBlock}
                     data={data as never}
@@ -564,13 +579,13 @@ function createPanelSummary(block: PanelBlock, data: unknown): string {
   }
 
   if (tag === "BOOK" || tag === "BOOKINFO") {
-    const title = getStringProp(data, "title");
+    const title = getMetaValue(
+      parseMetaFields(block.raw),
+      ["title"],
+      "BOOKタイトル",
+    ).trim();
 
-    if (title) {
-      return title;
-    }
-
-    return "BOOK情報";
+    return title || "BOOKタイトル";
   }
 
   if (tag === "IMAGE") {
