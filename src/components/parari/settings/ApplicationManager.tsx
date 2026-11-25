@@ -3186,7 +3186,6 @@ export default function ApplicationManager({
               {([
                 { key: "event", name: "イベントを開催する", example: "単発イベント・交流会", type: "EVENT" },
                 { key: "booking", name: "予約を受け付ける", example: "説明会・面談の希望受付", type: "OTHER" },
-                { key: "class", name: "クラスを運営する", example: "英会話・ダンスなどの継続クラス", type: "SCHOOL" },
               ] as const).map((item) => (
                 <button
                   key={item.key}
