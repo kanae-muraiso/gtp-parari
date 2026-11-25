@@ -10,6 +10,7 @@ import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
 export type ManagementTab =
+  | "home"
   | "works"
   | "manage"
   | "sales"
@@ -24,6 +25,12 @@ type Item = {
   key: ManagementTab;
   label: string;
   href: string;
+};
+
+const HOME_ITEM: Item = {
+  key: "home",
+  label: "HOME",
+  href: "/my/studio",
 };
 
 const WORKS_ITEM: Item = {
@@ -47,6 +54,10 @@ const SALES_ITEM: Item = {
 export default function ManagementTabs({ active, embedded = false }: ManagementTabsProps) {
   const { studioEnabled } = useParariExperience();
   const items: Item[] = [];
+
+  if (studioEnabled || active === "home") {
+    items.push(HOME_ITEM);
+  }
 
   if (studioEnabled || active === "works") {
     items.push(WORKS_ITEM);
