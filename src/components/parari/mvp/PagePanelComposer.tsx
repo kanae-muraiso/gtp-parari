@@ -64,6 +64,15 @@ import { createTablePanel } from "@/components/parari/panels/table/tableSsot";
 
 const EMPTY_TEXT_BLOCK_ID = "__parari_empty_rich_text_panel__";
 
+function isPageInfoBlock(block: SsotBlock | undefined): boolean {
+  if (!block || block.kind !== "panel") {
+    return false;
+  }
+
+  const tag = block.tag.trim().toUpperCase();
+  return tag === "PAGE" || tag === "PAGEINFO";
+}
+
 function countPagePanels(ssot: string): number {
   return String(ssot ?? "")
     .replace(/\r\n/g, "\n")
@@ -875,23 +884,33 @@ const waitForNextPaint = () =>
                      </div>
                    ) : null}
 <div className="space-y-0">
-          {!hideLeadingInsertSlot && !firstBlockIsBookInfo ? (
+          {!hideLeadingInsertSlot &&
+          mode === "page" &&
+          isPageInfoBlock(renderBlocks[0]) &&
+          !hasBookInfo ? (
+            <div className="relative z-10 h-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!window.confirm("PAGEINFOの前にBOOKINFOパネルを挿入します。よろしいですか？")) {
+                    return;
+                  }
+                  void runLockedMutation(() => insertPanelAt(0, "BOOK"));
+                }}
+                className="pointer-events-auto absolute left-1/2 top-1/2 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-violet-200 bg-violet-50 text-sm leading-none text-violet-700 shadow-sm transition hover:border-violet-400 hover:bg-violet-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500"
+                aria-label="BOOKINFOパネルを追加"
+                title="BOOKINFOパネルを先頭に追加"
+              >
+                ＋
+              </button>
+            </div>
+          ) : null}
+          {!hideLeadingInsertSlot &&
+          mode === "card" &&
+          !firstBlockIsBookInfo ? (
             <PanelInsertSlot
               placement="leading"
-              items={
-                mode === "card"
-                  ? CARD_CONTENT_INSERT_ITEMS
-                  : visibleContentInsertItems
-              }
-              structureItems={
-                mode === "card"
-                  ? []
-                  : onSplitPageToBook
-                    ? []
-                    : hasBookInfo
-                      ? STRUCTURE_INSERT_ITEMS
-                      : FIRST_STRUCTURE_INSERT_ITEMS
-              }
+              items={CARD_CONTENT_INSERT_ITEMS}
               onSelect={(tag) => {
                 void runLockedMutation(() => insertPanelAt(0, tag));
               }}
