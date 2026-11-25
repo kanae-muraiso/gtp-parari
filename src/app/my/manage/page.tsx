@@ -19,7 +19,6 @@ import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import ManagementTabs from "@/components/parari/navigation/ManagementTabs";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 
-import FormManagerPanel from "@/components/parari/manage/FormManagerPanel";
 import ApplicationManager from "@/components/parari/settings/ApplicationManager";
 import CalendarManagerPanel from "@/components/parari/manage/CalendarManagerPanel";
 import ClassManagerPanel from "@/components/parari/manage/ClassManagerPanel";
@@ -33,11 +32,11 @@ import { supabase } from "@/lib/supabaseClient";
 
 
 type ManageMode =
-  | "form"
   | "application"
-  | "calendar"
-  | "membership"
-  | "class";
+  | "recruit"
+  | "service"
+  | "custom"
+  | "calendar";
 
 
 export default function MyManagePage() {
@@ -66,35 +65,22 @@ export default function MyManagePage() {
     const tabs: {
       key: ManageMode;
       label: string;
-    }[] = [];
+    }[] = [
+      { key: "application", label: "申込受付" },
+      { key: "recruit", label: "募集をつくる" },
+    ];
 
-    if (entitlements.canManageForms) {
-      tabs.push({
-        key: "form",
-        label: "FORM",
-      });
+    if (isMonitor || entitlements.canManageMembership) {
+      tabs.push({ key: "service", label: "継続運営" });
     }
 
-    tabs.push({
-      key: "application",
-      label: "APPLICATION",
-    });
+    tabs.push({ key: "custom", label: "カスタム設計" });
 
+    // 開催予定は運営メニューの最後に置く。
     if (entitlements.canManageCalendar) {
-      tabs.push({
-        key: "calendar",
-        label: "CALENDAR",
-      });
+      tabs.push({ key: "calendar", label: "開催予定" });
     }
 
-    if (entitlements.canManageMembership) {
-      tabs.push({
-        key: "membership",
-        label: "Membership",
-      });
-    }
-
-    if (isMonitor) tabs.push({ key: "class", label: "クラス" });
     return tabs;
   }, [entitlements, isMonitor]);
 
@@ -175,15 +161,18 @@ export default function MyManagePage() {
       params.get("tab");
 
     if (
-      tab === "form" ||
       tab === "application" ||
-      tab === "calendar" ||
-      tab === "membership" ||
-      tab === "class"
+      tab === "recruit" ||
+      tab === "service" ||
+      tab === "custom" ||
+      tab === "calendar"
     ) {
-      setManageMode(
-        tab,
-      );
+      setManageMode(tab);
+    } else if (tab === "form") {
+      // Keep older FORM links working while hiding the technical menu item.
+      setManageMode("recruit");
+    } else if (tab === "membership" || tab === "class") {
+      setManageMode("service");
     }
   }, []);
 
@@ -234,7 +223,11 @@ export default function MyManagePage() {
     <main className="min-h-screen bg-neutral-100">
       <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
 
-        <MyAreaHeader title="運営" area="studio" navigation={<ManagementTabs active="manage" embedded />} />
+        <MyAreaHeader
+          title={manageMode === "application" ? "申込受付" : manageMode === "recruit" ? "募集をつくる" : manageMode === "service" ? "継続運営" : manageMode === "custom" ? "カスタム設計" : "開催予定"}
+          area="studio"
+          navigation={<ManagementTabs active="manage" embedded />}
+        />
 
         <div className="mt-4">
           <ParariTabs
@@ -256,26 +249,59 @@ export default function MyManagePage() {
             </p>
           ) : null}
 
-          {accessLoaded &&
-          manageMode === "form" ? (
-            <FormManagerPanel />
+          {accessLoaded && manageMode === "application" ? (
+            <>
+              <section className="mb-5 rounded-2xl border border-neutral-200 bg-white p-5">
+                <h2 className="text-lg font-bold text-neutral-950">募集作品への申込</h2>
+                <p className="mt-1 text-sm leading-6 text-neutral-600">
+                  あなたの募集に届いた申込を確認し、申込者への対応を行います。
+                </p>
+              </section>
+              <ApplicationManager />
+              {entitlements.canManageCalendar ? (
+                <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+                  <h2 className="text-lg font-bold text-neutral-950">事業の開催予定</h2>
+                  <p className="mt-1 text-sm leading-6 text-neutral-600">
+                    登録したクラスやイベントのスケジュールを確認・管理します。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => changeManageMode("calendar")}
+                    className="mt-3 rounded-full border border-neutral-300 px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+                  >
+                    開催予定を開く
+                  </button>
+                </section>
+              ) : null}
+            </>
           ) : null}
 
-          {accessLoaded &&
-          manageMode === "application" ? (
-            <ApplicationManager />
+          {accessLoaded && manageMode === "recruit" ? (
+            <ApplicationManager createOnly />
           ) : null}
 
-          {accessLoaded &&
-          manageMode === "calendar" ? (
+          {accessLoaded && manageMode === "service" ? (
+            <div className="grid gap-5">
+              {isMonitor ? <ClassManagerPanel /> : null}
+              {entitlements.canManageMembership ? <MembershipManagerPanel /> : null}
+            </div>
+          ) : null}
+
+          {accessLoaded && manageMode === "custom" ? (
+            <section className="rounded-3xl border border-violet-200 bg-violet-50 p-5 sm:p-6">
+              <div className="text-xs font-bold tracking-[0.16em] text-violet-700">CUSTOM DESIGN</div>
+              <h2 className="mt-2 text-lg font-bold text-neutral-950">カスタム設計</h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-700">
+                事業の流れに合わせて、申込・参加者管理・開催予定を組み立てる機能を準備しています。
+              </p>
+              <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200">
+                準備中
+              </span>
+            </section>
+          ) : null}
+
+          {accessLoaded && manageMode === "calendar" ? (
             <CalendarManagerPanel />
-          ) : null}
-
-          {accessLoaded && isMonitor && manageMode === "class" ? <ClassManagerPanel /> : null}
-
-          {accessLoaded &&
-          manageMode === "membership" ? (
-            <MembershipManagerPanel />
           ) : null}
         </div>
       </div>
