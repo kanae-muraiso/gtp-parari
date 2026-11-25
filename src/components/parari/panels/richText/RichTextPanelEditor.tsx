@@ -43,6 +43,7 @@ import { panelInSet, type PanelSet } from "@/lib/parari/authoring/panelSets";
 type RichTextPanelEditorProps = {
   framed?: boolean;
   editControls?: import("react").ReactNode;
+  toolbarControls?: import("react").ReactNode;
   panelSet?: PanelSet;
   ssotText: string;
   placeholder?: string;
@@ -90,6 +91,7 @@ const DEFAULT_PANELIZE_ACTIONS: Array<{
 export function RichTextPanelEditor({
   framed = false,
   editControls,
+  toolbarControls,
   ssotText,
   panelSet = "standard",
   placeholder = "ここから本文",
@@ -306,6 +308,7 @@ export function RichTextPanelEditor({
             panelizeActions={resolvedPanelizeActions}
             onPanelizeSelection={handlePanelizeSelection}
             onSplitText={onSplitText}
+            toolbarControls={toolbarControls}
           />
         )}
       </div>
