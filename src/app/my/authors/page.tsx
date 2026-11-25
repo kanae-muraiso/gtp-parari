@@ -137,7 +137,7 @@ export default function AuthorsPage() {
   }
   return <main className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <MyAreaHeader title="作品・作者を探す" area="library"
+      <MyAreaHeader title="オープンスペース" area="library"
         navigation={<LibraryV2Menu active="authors" />} />
       <div className="mt-6 space-y-4">
         <WorkSearchPanel />

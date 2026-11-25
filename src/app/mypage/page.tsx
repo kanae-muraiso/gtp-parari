@@ -12,7 +12,6 @@ import {
 
 import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
-import ClassHomeShortcuts from "@/components/parari/navigation/ClassHomeShortcuts";
 import MyPrimaryTabs from "@/components/parari/navigation/MyPrimaryTabs";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 import { supabase } from "@/lib/supabaseClient";
@@ -84,17 +83,12 @@ function HomeCard({
 
 export default function MyPage() {
   const {
-    hasApplications,
     hasCalendar,
     hasMessages,
     loading,
     studioEnabled,
   } = useParariExperience();
 
-  const [
-    hasPasses,
-    setHasPasses,
-  ] = useState(false);
   const [studioCardDismissed, setStudioCardDismissed] = useState(false);
   const [studioCardPreferenceLoaded, setStudioCardPreferenceLoaded] = useState(false);
   const [dismissingStudioCard, setDismissingStudioCard] = useState(false);
@@ -147,85 +141,6 @@ export default function MyPage() {
     setDismissingStudioCard(false);
   }
 
-  useEffect(() => {
-    if (
-      loading ||
-      !hasApplications ||
-      !supabase
-    ) {
-      if (!hasApplications) {
-        setHasPasses(false);
-      }
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadPassAvailability() {
-      const {
-        data: { session },
-      } =
-        await supabase.auth.getSession();
-
-      if (
-        cancelled ||
-        !session?.access_token
-      ) {
-        return;
-      }
-
-      try {
-        const response =
-          await fetch(
-            "/api/application/my-passes?summary=1",
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${session.access_token}`,
-              },
-              cache: "no-store",
-            },
-          );
-
-        const result =
-          (await response
-            .json()
-            .catch(() => null)) as
-            | {
-                ok?: boolean;
-                hasPasses?: boolean;
-              }
-            | null;
-
-        if (
-          cancelled ||
-          !response.ok ||
-          !result?.ok
-        ) {
-          return;
-        }
-
-        setHasPasses(
-          result.hasPasses === true,
-        );
-      } catch (error) {
-        console.error(
-          "[LIBRARY HOME] pass availability load failed:",
-          error,
-        );
-      }
-    }
-
-    void loadPassAvailability();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    hasApplications,
-    loading,
-  ]);
-
   return (
     <main className="min-h-screen bg-white">
       <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
@@ -250,20 +165,15 @@ export default function MyPage() {
         ) : null}
 
         <div className="mt-6 space-y-4">
-          <section aria-labelledby="open-space-heading" className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 id="open-space-heading" className="text-base font-bold text-emerald-950">
-                PARARIオープンスペース（仮称）
-              </h2>
-              <span className="text-xs font-semibold text-emerald-800">準備中</span>
-            </div>
-            <p className="mt-2 text-sm leading-7 text-emerald-950/80">
-              作品や作者との出会いを広げる、新しい入口を準備しています。
-            </p>
-          </section>
+          <HomeCard
+            title="オープンスペース"
+            description="公開されている作品や作者を探せます。"
+            href="/my/authors"
+            action="作品・作者を探す"
+          />
 
           <HomeCard
-            title="あなたの本棚"
+            title="本棚"
             description="読むもの、あとで読むもの、参加しているBOOKがここに集まります。"
             href="/my/bookshelf"
             action="本棚を見る"
@@ -282,25 +192,12 @@ export default function MyPage() {
             />
           ) : null}
 
-          <ClassHomeShortcuts studioEnabled={studioEnabled} workspace="library" />
-
-          {!loading && hasApplications ? (
-            <HomeCard
-              title="参加・申し込み"
-              description="あなたが申し込んだものを確認できます。"
-              href="/my/applications"
-              action="見る"
-            />
-          ) : null}
-
-          {!loading && hasPasses ? (
-            <HomeCard
-              title="参加証"
-              description="確定したイベントやクラスのQR参加証をいつでも表示できます。"
-              href="/my/passes"
-              action="参加証を見る"
-            />
-          ) : null}
+          <HomeCard
+            title="参加・購入"
+            description="申込状況、参加中のクラス、参加証、購入した作品をまとめて確認できます。"
+            href="/my/bookshelf/records?tab=participation"
+            action="まとめて見る"
+          />
 
           {!loading && hasCalendar ? (
             <HomeCard
