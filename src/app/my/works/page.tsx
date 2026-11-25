@@ -21,6 +21,7 @@ import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalet
 import {
   isLegacyBookSsot,
   isReferenceBookSsot,
+  isWritingPageWithBookInfo,
   parseBookOutline,
 } from "@/lib/parari/book/pageRefs";
 import {
@@ -2340,6 +2341,26 @@ function resolveVisibilityLabel(visibility: string | null): string {
 }
 
 function resolveWorkTitle(work: WorkRow): string {
+  const content = String(work.content ?? "");
+  if (isWritingPageWithBookInfo(content)) {
+    const lines = content.replace(/\r\n/g, "\n").split("\n");
+    const pageIndex = lines.findIndex((line) => /^\s*\[(PAGE|PAGEINFO)\b/i.test(line));
+    if (pageIndex >= 0) {
+      const pageHeader = lines[pageIndex]?.match(/^\s*\[(?:PAGE|PAGEINFO)(?::[^\]]+)?\]\s*(.*)$/i)?.[1]?.trim();
+      if (pageHeader) return pageHeader;
+      let metaEnd = lines.length;
+      for (let index = pageIndex + 1; index < lines.length; index += 1) {
+        if (/^\s*\[[A-Za-z][A-Za-z0-9_]*(?::[^\]]+)?\]/.test(lines[index] ?? "")) {
+          metaEnd = index;
+          break;
+        }
+      }
+      const pageMeta = lines.slice(pageIndex + 1, metaEnd).join("\n");
+      const pageTitle = pageMeta.match(/^title:\s*(.+)$/im)?.[1]?.trim();
+      if (pageTitle) return pageTitle;
+    }
+  }
+
   const title = String(work.title ?? "").trim();
 
   if (title && title.toLowerCase() !== "untitled") {
@@ -2369,6 +2390,10 @@ function resolveWorkKind(
 
   if (/^\[(WEB|WEBINFO)\b/i.test(trimmed)) {
     return "Web";
+  }
+
+  if (isWritingPageWithBookInfo(trimmed)) {
+    return "Page";
   }
 
   if (/^\[(BOOK|BOOKINFO)\b/i.test(trimmed)) {
