@@ -82,7 +82,7 @@ export const WRITER_PARTS: WriterPart[] = [
 ];
 
 const DEFAULT_PARTS: Record<WriterTier, string[]> = {
-  A: ["TEXT", "IMAGE", "LIST", "TABLE", "NOTICE", "ACCORDION", "BUTTON", "LINKS", "YOUTUBE", "INSTAGRAM", "AUDIO", "BOOK", "WORKS", "PUBLISH", "READER", "LIBRARY", "APPLICATION", "EXTERNAL"],
+  A: ["TEXT", "IMAGE", "LIST", "TABLE", "NOTICE", "ACCORDION", "BUTTON", "LINKS", "YOUTUBE", "INSTAGRAM", "AUDIO", "BOOK", "WORKS", "PUBLISH", "READER", "LIBRARY", "APPLICATION", "SALES", "EXTERNAL"],
   B: ["TEXT", "IMAGE", "LIST", "TABLE", "NOTICE", "ACCORDION", "BUTTON", "LINKS", "YOUTUBE", "INSTAGRAM", "AUDIO", "BOOK", "WORKS", "PUBLISH", "READER", "LIBRARY", "APPLICATION", "EXTERNAL", "QA", "EPUB", "COLLABORATION", "SALES", "SQUARE"],
   C: WRITER_PARTS.filter((part) => part.implementation !== "planned").map((part) => part.id),
 };
