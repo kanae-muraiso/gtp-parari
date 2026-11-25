@@ -42,6 +42,38 @@ function SettingsCard({ title, description, href }: SettingsCardProps) {
   );
 }
 
+function SettingsGroup({
+  title,
+  description,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+    >
+      <summary className="cursor-pointer list-none">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-950">{title}</h2>
+            <p className="mt-1 text-xs leading-6 text-neutral-500">{description}</p>
+          </div>
+          <span className="shrink-0 text-sm text-neutral-400" aria-hidden="true">⌄</span>
+        </div>
+      </summary>
+      <div className="mt-4 grid gap-3 border-t border-neutral-100 pt-4">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 function GuideStep({
   title,
   children,
@@ -64,14 +96,6 @@ function GuideStep({
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-1 pt-2 text-[11px] font-bold tracking-[0.16em] text-neutral-400">
-      {children}
-    </div>
-  );
-}
-
 export default function SettingsHomePage() {
   const { studioEnabled, loading } = useParariExperience();
 
@@ -80,100 +104,104 @@ export default function SettingsHomePage() {
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <MyAreaHeader title="設定" area="settings" />
 
-        <div className="mx-auto mt-8 max-w-3xl space-y-4">
-          <SectionTitle>基本</SectionTitle>
+        <div className="mx-auto mt-8 max-w-3xl space-y-3">
+          <SettingsGroup
+            title="アカウント"
+            description="氏名などの基本情報と、利用中のプランを設定します。"
+            defaultOpen
+          >
+            <SettingsCard
+              title="基本設定"
+              description="氏名や表示名など、アカウントの情報を設定します。"
+              href="/my/profile?returnTo=/my/settings"
+            />
+            {!loading && studioEnabled ? (
+              <SettingsCard
+                title="プラン"
+                description="現在のプランや利用できる機能を確認します。"
+                href="/billing"
+              />
+            ) : null}
+          </SettingsGroup>
 
-          <SettingsCard
-            title="基本設定"
-            description="氏名や表示名など、アカウントの情報を設定します。"
-            href="/my/profile?returnTo=/my/settings"
-          />
+          {!loading && studioEnabled ? (
+            <>
+              <SettingsGroup
+                title="作品・公開"
+                description="作品の発表方法や、作者としての見え方を設定します。"
+              >
+                <section aria-labelledby="publish-work" className="rounded-2xl border border-neutral-200 p-4">
+                  <h3 id="publish-work" className="text-sm font-bold text-neutral-950">作品を発表する</h3>
+                  <p className="mt-1 text-xs leading-6 text-neutral-600">
+                    作品のURLを知らせる方法や、PARARIで見つけてもらうための設定を確認できます。
+                  </p>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-sm font-semibold text-neutral-800">作品を読んでもらう方法を見る</summary>
+                    <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm">
+                      <GuideStep title="作品のURLを知らせる" action={{ label: "作品一覧でURLを確認する", href: "/my/works" }}>
+                        作品を「限定公開」にして、URLをメッセージで送ったり、自分のサイトに載せたりできます。URLを知っている人なら誰でも読めます。
+                      </GuideStep>
+                      <GuideStep title="ユーザーネームを決める" action={{ label: "ユーザーネームを設定する", href: "/my/profile?returnTo=/my/settings" }}>
+                        ユーザーネームを決めると、www.parari.app/あなたのユーザーネーム/ が公開ページのURLになります。初期設定では、公開作品の一覧が表示されます。
+                      </GuideStep>
+                      <GuideStep title="PARARIで作品を見つけてもらう" action={{ label: "作品の公開設定を開く", href: "/my/works" }}>
+                        公開プロフィールに掲載した作品は、LIBRARYの「作品・作者を探す」で作品名から検索できます。
+                      </GuideStep>
+                      <GuideStep title="ファンになってもらう">
+                        公開作品を読んだ人が「ファンになる」を押すと、その読者の本棚から、あなたの作品をまとめて見られるようになります。
+                      </GuideStep>
+                    </ol>
+                    <Link className="mt-4 inline-block text-sm font-semibold text-sky-800 underline underline-offset-4" href="/my/profile/public">
+                      公開プロフィールを編集する
+                    </Link>
+                  </details>
+                </section>
 
-          {!loading && !studioEnabled ? (
-            <details className={`rounded-3xl border p-5 shadow-sm ${WORKSPACE_PALETTE.studio.header}`}>
-              <summary className="cursor-pointer list-none">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-bold text-blue-950">STUDIOを始める</div>
-                    <p className="mt-1 text-xs leading-6 text-blue-900/75">
-                      作品づくりやクラス運営を始めるときに利用します。
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm text-blue-700" aria-hidden="true">⌄</span>
-                </div>
-              </summary>
-              <div className="mt-5 border-t border-blue-200 pt-5">
+                <SettingsCard
+                  title="作者の書棚設定"
+                  description="公開する作品の並び方や、作者としての掲載を設定します。"
+                  href="/my/author-library-settings"
+                />
+              </SettingsGroup>
+
+              <SettingsGroup
+                title="販売・決済"
+                description="販売者情報、Square接続、作品の販売管理をまとめています。"
+              >
+                <SettingsCard
+                  title="販売者情報・特定商取引法・個人情報の取扱い"
+                  description="有料販売に必要な表示を登録し、購入者に公開します。Square接続とは別に必要です。"
+                  href="/my/settings/seller"
+                />
+                <SquareConnectionPanel />
+              </SettingsGroup>
+            </>
+          ) : null}
+
+          <SettingsGroup
+            title={studioEnabled ? "STUDIOの利用" : "STUDIOを始める"}
+            description={studioEnabled
+              ? "起動時の画面や執筆支援、利用の休止を設定します。"
+              : "作品づくりやクラス運営を始めるための環境です。"}
+            defaultOpen={!loading && !studioEnabled}
+          >
+            {!loading && studioEnabled ? (
+              <>
+                <StartDestinationPanel />
+                <EnglishAuthoringSettings />
+                <StudioPausePanel />
+              </>
+            ) : !loading ? (
+              <div className={`rounded-2xl border p-4 ${WORKSPACE_PALETTE.studio.header}`}>
                 <p className="mb-4 text-sm leading-7 text-blue-950/80">
-                  PARARIのSTUDIOは、作品をつくる人も、クラスを開く人も使う共通の制作・運営環境です。
-                  無料で利用を開始でき、何かを作成・保存する前からSTUDIOへ入れます。
+                  PARARIのSTUDIOは、作品をつくる人もクラスを開く人も使う、共通の制作・運営環境です。無料で利用を開始できます。
                 </p>
                 <StudioCreateEntry />
               </div>
-            </details>
-          ) : null}
-
-          {!loading && studioEnabled ? (
-            <SettingsCard
-              title="プラン"
-              description="現在のプランや利用できる機能を確認します。"
-              href="/billing"
-            />
-          ) : null}
-
-          {!loading && studioEnabled ? (
-            <>
-              <section aria-labelledby="publish-work" className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-                <h2 id="publish-work" className="text-sm font-bold text-neutral-950">作品を発表する</h2>
-                <p className="mt-1 text-xs leading-6 text-neutral-600">
-                  まずは作品のURLを知らせるだけで、読んでもらえます。
-                </p>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-sm font-semibold text-neutral-800">あなたの作品を読んでもらうには</summary>
-                  <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm">
-                    <GuideStep title="作品のURLを知らせる" action={{ label: "作品一覧でURLを確認する", href: "/my/works" }}>
-                      作品を「限定公開」にして、URLをメッセージで送ったり、自分のサイトに載せたりできます。URLを知っている人なら誰でも読めます。
-                    </GuideStep>
-                    <GuideStep title="ユーザーネームを決める" action={{ label: "ユーザーネームを設定する", href: "/my/profile?returnTo=/my/settings" }}>
-                      ユーザーネームを決めると、www.parari.app/あなたのユーザーネーム/ があなたの公開ページのURLになります。初期設定では、公開作品の一覧が表示されます。
-                    </GuideStep>
-                    <GuideStep title="PARARIで作品を見つけてもらう" action={{ label: "作品の公開設定を開く", href: "/my/works" }}>
-                      作品の公開範囲は作品一覧で変更できます。公開プロフィールに掲載した公開作品は、LIBRARYの「作品・作者を探す」で作品名から検索できます。
-                    </GuideStep>
-                    <GuideStep title="ファンになってもらう">
-                      公開作品を読んだ人が「ファンになる」を押すと、その読者の本棚の「作者別」に、あなたの作品をまとめて見られる入口ができます。
-                    </GuideStep>
-                  </ol>
-                  <Link className="mt-4 inline-block text-sm font-semibold text-sky-800 underline underline-offset-4" href="/my/profile/public">
-                    公開プロフィールを編集する
-                  </Link>
-                </details>
-              </section>
-
-              <SettingsCard
-                title="作者の書棚設定"
-                description="公開する作品の並び方や作者としての掲載を設定します。"
-                href="/my/author-library-settings"
-              />
-
-              <SettingsCard
-                title="販売者情報・特定商取引法・個人情報の取扱い"
-                description="有料販売前に必要な表示を登録し、購入者に公開します。Square接続とは別に必要です。"
-                href="/my/settings/seller"
-              />
-              <SquareConnectionPanel />
-            </>
-          ) : null}
-
-          {!loading && studioEnabled ? (
-            <>
-              <SectionTitle>STUDIO</SectionTitle>
-
-              <StartDestinationPanel />
-              <EnglishAuthoringSettings />
-              <StudioPausePanel />
-            </>
-          ) : null}
-
+            ) : (
+              <p className="text-sm text-neutral-500">利用できる設定を確認しています…</p>
+            )}
+          </SettingsGroup>
         </div>
       </div>
     </main>
