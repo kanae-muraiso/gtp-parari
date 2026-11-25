@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { PanelizeTag } from "@/lib/parari/ssot-v2/patchBlocks";
 import type { RichTextColorName } from "@/lib/parari/richText/textColors";
 
@@ -94,7 +94,7 @@ type RichTextInlineInsertMenuProps = {
   panelActions: RichTextInlineMenuAction[];
   position?: RichTextInlineMenuPosition | null;
   onSelect: (action: RichTextInlineMenuAction) => void;
-
+  trailingControls?: ReactNode;
 };
 
 type OpenMenu =
@@ -131,6 +131,7 @@ export function RichTextInlineInsertMenu({
   panelActions,
   position,
   onSelect,
+  trailingControls,
 }: RichTextInlineInsertMenuProps) {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
 
@@ -203,7 +204,7 @@ export function RichTextInlineInsertMenu({
 
   return (
     <div className="sticky top-[56px] z-40 -mx-3 mb-2 border-b border-neutral-200 bg-neutral-100/95 px-3 py-1 shadow-sm backdrop-blur">
-      <div className="flex max-w-full flex-wrap items-center gap-1 overflow-visible">
+      <div className="flex w-full max-w-full flex-wrap items-center gap-1 overflow-visible">
           {visibleTextActions.map((action) =>
             action.kind === "format" && action.format === "red" ? (
               <ColorToolbarControl
@@ -255,6 +256,10 @@ export function RichTextInlineInsertMenu({
             onToggle={() => toggleMenu("structure")}
             onSelect={handleAction}
           />
+        ) : null}
+
+        {trailingControls ? (
+          <div className="ml-auto shrink-0">{trailingControls}</div>
         ) : null}
       </div>
 

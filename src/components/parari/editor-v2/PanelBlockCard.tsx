@@ -312,8 +312,30 @@ export function PanelBlockCard({
                       削除
                     </button>
                   ) : null}
+
+                  {canStyle ? (
+                    <PanelStyleControls
+                      compact
+                      value={panelStyle}
+                      onChange={handleStyleChange}
+                      allowWidth={canChangeWidthForPanel(block.tag)}
+                      allowTextSpacing={canChangeTextSpacingForPanel(block.tag)}
+                    />
+                  ) : null}
                 </div>
               </div>
+
+              {isDirectEditPanel(block.tag) && canStyle ? (
+                <div className="absolute right-16 top-1 z-30">
+                  <PanelStyleControls
+                    compact
+                    value={panelStyle}
+                    onChange={handleStyleChange}
+                    allowWidth={canChangeWidthForPanel(block.tag)}
+                    allowTextSpacing={canChangeTextSpacingForPanel(block.tag)}
+                  />
+                </div>
+              ) : null}
 
               {isDirectEditPanel(block.tag) && hasMounted && onDelete ? (
                 <button
@@ -346,14 +368,6 @@ export function PanelBlockCard({
                   />
                 </PanelFrame>
 
-                {canStyle ? (
-                  <PanelStyleControls
-                    value={panelStyle}
-                    onChange={handleStyleChange}
-                    allowWidth={canChangeWidthForPanel(block.tag)}
-                    allowTextSpacing={canChangeTextSpacingForPanel(block.tag)}
-                  />
-                ) : null}
               </div>
             </div>
           ) : null}

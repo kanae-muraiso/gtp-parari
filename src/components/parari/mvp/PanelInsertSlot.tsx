@@ -123,7 +123,7 @@ export function PanelInsertSlot({
   return (
     <div
       className={[
-        "relative flex min-h-12 items-center justify-center py-2",
+        "relative -my-5 flex min-h-12 items-center justify-center py-2",
         open ? "z-30" : "z-10",
       ].join(" ")}
     >

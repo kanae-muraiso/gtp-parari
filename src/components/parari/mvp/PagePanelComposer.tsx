@@ -916,8 +916,9 @@ const waitForNextPaint = () =>
                                    >
                                      <RichTextPanelEditor
                                        framed={bookPage}
-                                       editControls={bookPage && textPanelStyle ? (
+                                       toolbarControls={textPanelStyle ? (
                                          <PanelStyleControls
+                                           compact
                                            value={textPanelStyle}
                                            onChange={(next) => replaceTextPanelStyle(block.id, next)}
                                          />
@@ -976,14 +977,6 @@ const waitForNextPaint = () =>
                                      />
                                    </PanelFrame>
 
-                                   {!bookPage && textPanelStyle ? (
-                                     <PanelStyleControls
-                                       value={textPanelStyle}
-                                       onChange={(next) =>
-                                         replaceTextPanelStyle(block.id, next)
-                                       }
-                                     />
-                                   ) : null}
                                  </div>
                                ) : (
                                     <PanelBlockCard

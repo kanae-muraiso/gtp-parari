@@ -14,6 +14,7 @@ import {
   useRef,
   useState,
   type MutableRefObject,
+  type ReactNode,
 } from "react";
 import {
   $createLineBreakNode,
@@ -119,6 +120,7 @@ type RichTextFieldProps = {
   inlineOnly?: boolean;
   onEnter?: () => void;
   autoFocus?: boolean;
+  toolbarControls?: ReactNode;
 };
 
 const PARARI_NOTE_URL_PREFIX = "parari-note:";
@@ -154,6 +156,7 @@ export function RichTextField({
   inlineOnly = false,
   onEnter,
   autoFocus = false,
+  toolbarControls,
 }: RichTextFieldProps) {
   const initialValueRef = useRef(value);
   const lastEmittedValueRef = useRef(value);
@@ -271,6 +274,7 @@ export function RichTextField({
                 setDictionaryMarksEnabled((current) => !current)
               }
               inlineOnly={inlineOnly}
+              toolbarControls={toolbarControls}
             /> : null}
             
         <div
@@ -410,6 +414,7 @@ function RichTextToolbar({
   readingSupport,
   onChangeReadingSupport,
   inlineOnly,
+  toolbarControls,
 }: {
   visible: boolean;
   suppressNextChangeRef: MutableRefObject<boolean>;
@@ -427,6 +432,7 @@ function RichTextToolbar({
   readingSupport?: TextReadingSupportOptions;
   onChangeReadingSupport?: (next: TextReadingSupportOptions) => void;
   inlineOnly: boolean;
+  toolbarControls?: ReactNode;
 }) {
   const [editor] = useLexicalComposerContext();
   const englishAuthoring = useEnglishAuthoring();
@@ -1009,6 +1015,7 @@ function RichTextToolbar({
             panelActions={panelActions}
             position={menuPosition}
             onSelect={handleAction}
+            trailingControls={toolbarControls}
           />
 
           {englishAuthoring?.enabled && dictionaryLookup ? (
