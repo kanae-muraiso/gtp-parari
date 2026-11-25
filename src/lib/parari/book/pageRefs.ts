@@ -186,6 +186,52 @@ export function isBookSsot(
   );
 }
 
+/**
+ * PAGE編集画面で追加したBOOKINFOがPAGEより前にある作品を判定する。
+ * 初期挿入形と、今後の明示マーカーを認識して旧BOOK編集画面への
+ * 誤振り分けを防ぐ。
+ */
+export function isWritingPageWithBookInfo(ssot: string): boolean {
+  const lines = String(ssot ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n");
+  if (!/^\s*\[(BOOK|BOOKINFO)\b/i.test(lines[0] ?? "")) {
+    return false;
+  }
+
+  const pageIndex = lines.findIndex((line, index) =>
+    index > 0 && /^\s*\[(PAGE|PAGEINFO)\b/i.test(line),
+  );
+  if (pageIndex < 0) {
+    return false;
+  }
+
+  const headerLines = lines
+    .slice(1, pageIndex)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (headerLines.some((line) => /^workType\s*:\s*page\s*$/i.test(line))) {
+    return true;
+  }
+
+  const fields = headerLines.map((line) => {
+    const match = line.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$/);
+    return match
+      ? { key: match[1].toLowerCase(), value: match[2].trim() }
+      : null;
+  });
+
+  return (
+    fields.length === 3 &&
+    fields.every(Boolean) &&
+    fields[0]?.key === "title" &&
+    fields[1]?.key === "subtitle" &&
+    fields[2]?.key === "author" &&
+    fields.every((field) => field?.value === "")
+  );
+}
+
 export function isReferenceBookSsot(
   ssot: string,
 ): boolean {
@@ -206,7 +252,11 @@ export function isReferenceBookSsot(
 }
 
 export function isLegacyBookSsot(ssot: string): boolean {
-  return isBookSsot(ssot) && !isReferenceBookSsot(ssot);
+  return (
+    isBookSsot(ssot) &&
+    !isReferenceBookSsot(ssot) &&
+    !isWritingPageWithBookInfo(ssot)
+  );
 }
 
 export function replaceBookPageRefs(
