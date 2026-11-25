@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { getEffectivePlan } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function PlusCheckoutButton({ currency = "usd" }: { currency?: "usd" | "jpy" }) {
+export default function PlusCheckoutButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingPlan, setCheckingPlan] = useState(true);
   const [hasPaidPlan, setHasPaidPlan] = useState(false);
@@ -71,7 +71,7 @@ export default function PlusCheckoutButton({ currency = "usd" }: { currency?: "u
       }
 
       if (!session?.access_token) {
-        setMessage("WRITERS Bへのお申し込みにはログインが必要です。");
+        window.location.assign("/login?returnTo=" + encodeURIComponent("/billing#writers-b"));
         return;
       }
 
@@ -83,7 +83,7 @@ export default function PlusCheckoutButton({ currency = "usd" }: { currency?: "u
         },
         body: JSON.stringify({
           plan: "plus",
-          currency,
+          currency: "jpy",
         }),
       });
 
