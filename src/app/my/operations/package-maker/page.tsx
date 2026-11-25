@@ -268,7 +268,7 @@ export default function WriterPackageMakerPage() {
             <>
               <p className="mt-2 text-xs leading-5 text-neutral-600">
                 {tier === "B"
-                  ? `料金：$${currentEntitlements.monthlyPriceUsd}/月（USD）・${WRITERS_B_MONTHLY_PRICE_JPY}円/月（日本）。同じWRITERS Bの地域別価格です。新規申込は停止中ですが、既存契約の機能・上限はこれまでどおりです。`
+                  ? `料金：$${currentEntitlements.monthlyPriceUsd}/月（USD）・${WRITERS_B_MONTHLY_PRICE_JPY}円/月（日本）。同じWRITERS Bの地域別価格です。現在の新規申込は日本向けです。`
                   : "料金：無料。以下は料金・権限設定から読み取った現在の上限と機能です。"}
               </p>
               <p className="mt-1 text-[11px] leading-5 text-neutral-500">この一覧は読み取り専用です。上のパーツ構成を編集しても、実際の権限は変わりません。</p>

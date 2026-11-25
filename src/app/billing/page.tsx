@@ -1,4 +1,3 @@
-// PARARI subscriptions: existing legacy contracts remain manageable after new WRITERS B sales close.
 import Link from "next/link";
 import BillingPortalButton from "@/components/parari/billing/BillingPortalButton";
 import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
@@ -21,7 +20,7 @@ export default function BillingPage() {
             <p className="text-xs font-semibold tracking-[0.18em] text-neutral-400">PACKAGES & BILLING</p>
             <h1 className="mt-2 text-2xl font-bold text-neutral-950">パッケージとお支払い</h1>
             <p className="mt-3 text-sm leading-7 text-neutral-600">
-              Plusの新規申込は終了しました。すでにご契約中の方は、機能・上限はこれまでどおりで、契約内容の確認や請求管理も引き続きご利用いただけます。
+              WRITERS B（日本向け）にお申し込みいただけます。すでにPlusをご契約中の方は、これまでどおり機能をご利用いただけます。
             </p>
             <Link href="/packages" className="mt-3 inline-block text-sm font-semibold text-sky-800 underline underline-offset-4">
               ログイン不要のパッケージ一覧を見る
@@ -30,7 +29,7 @@ export default function BillingPage() {
 
           <div className="mt-6"><CurrentPlanPanel /></div>
 
-          <div className="mt-10"><PackageStore /></div>
+          <div className="mt-10"><PackageStore checkoutOnPage /></div>
 
           <section className="mt-10 rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
             <p className="text-xs font-bold tracking-[0.16em] text-neutral-400">CUSTOMER PORTAL</p>
