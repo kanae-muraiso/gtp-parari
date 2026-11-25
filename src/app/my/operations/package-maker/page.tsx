@@ -4,6 +4,9 @@ import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import useParariStaff from "@/components/parari/hooks/useParariStaff";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
+import { PLAN_ENTITLEMENTS, type PlanEntitlements } from "@/lib/billing/plan";
+import { getWriterBillingCode } from "@/lib/billing/packageMapping";
+import { WRITERS_B_MONTHLY_PRICE_JPY } from "@/lib/billing/writersPricing";
 import {
   createDefaultWriterDraft,
   normalizeWriterDraft,
@@ -43,6 +46,42 @@ function selectedBySurface(packageDraft: WriterPackageDraft["packages"][WriterTi
   );
 }
 
+function capLabel(value: number | null, unit: string): string {
+  return value === null ? "上限なし" : `${value}${unit}`;
+}
+
+function storageLabel(value: number | null): string {
+  if (value === null) return "上限なし";
+  if (value >= 1024 * 1024 * 1024) return `${Math.round(value / (1024 * 1024 * 1024))}GB`;
+  return `${Math.round(value / (1024 * 1024))}MB`;
+}
+
+function entitlementRows(entitlements: PlanEntitlements) {
+  return [
+    { label: "全作品", value: capLabel(entitlements.workLimit, "作品") },
+    { label: "BOOK", value: capLabel(entitlements.bookLimit, "冊") },
+    { label: "公開作品", value: capLabel(entitlements.publishedWorkLimit, "作品") },
+    { label: "1 BOOKあたり", value: capLabel(entitlements.pageLimitPerWork, " PAGE") },
+    { label: "1 PAGEの文字数", value: capLabel(entitlements.charactersPerPage, "字") },
+    { label: "画像保存", value: storageLabel(entitlements.imageStorageLimitBytes) },
+    { label: "WEBサイト", value: capLabel(entitlements.webWorkLimit, "件") },
+    { label: "作者コレクション", value: capLabel(entitlements.profileCollectionLimit, "件") },
+    { label: "リンクツリー", value: capLabel(entitlements.linkTreeLimit, "件") },
+    { label: "申込パネル／参加者", value: `${capLabel(entitlements.applicationPanelLimit, "個")}／${capLabel(entitlements.applicationParticipantLimit, "人")}` },
+    { label: "申込モード", value: entitlements.applicationMode === "builder" ? "Builder" : "Lite" },
+    { label: "販売", value: entitlements.canUseIntegratedSales ? `利用可（手数料${entitlements.salesFeeBps / 100}%）` : "利用不可" },
+    { label: "定期販売", value: entitlements.canUseRecurringSales ? "利用可" : "利用不可" },
+    { label: "EPUB3出力", value: entitlements.canExportEpub ? "利用可" : "利用不可" },
+    { label: "英語教材支援", value: entitlements.canUseEnglishAuthoring ? "利用可" : "利用不可" },
+    { label: "共同編集", value: entitlements.canCollaborate ? "利用可" : "利用不可" },
+    { label: "リンク背景画像", value: entitlements.canUseLinkTreeBackgroundImage ? "利用可" : "利用不可" },
+    { label: "フォーム管理", value: entitlements.canManageForms ? "利用可" : "利用不可" },
+    { label: "カレンダー管理", value: entitlements.canManageCalendar ? "利用可" : "利用不可" },
+    { label: "会員管理", value: entitlements.canManageMembership ? "利用可" : "利用不可" },
+    { label: "Gateway", value: entitlements.canUseGateway ? "利用可" : "利用不可" },
+  ];
+}
+
 export default function WriterPackageMakerPage() {
   const { isSuperuser, loading: accessLoading } = useParariStaff();
   const [ready, setReady] = useState(false);
@@ -75,6 +114,9 @@ export default function WriterPackageMakerPage() {
   }, [draft, ready, isSuperuser]);
 
   const current = draft.packages[tier];
+  const billingCode = tier === "C" ? null : getWriterBillingCode(tier);
+  const currentEntitlements = billingCode ? PLAN_ENTITLEMENTS[billingCode] : null;
+  const currentEntitlementRows = currentEntitlements ? entitlementRows(currentEntitlements) : [];
   const filteredParts = useMemo(() => WRITER_PARTS.filter((part) => {
     if (kind !== "all" && part.kind !== kind) return false;
     if (selectedOnly && !current.parts.includes(part.id)) return false;
@@ -185,7 +227,7 @@ export default function WriterPackageMakerPage() {
         </div>
 
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900">
-          <strong>構成設計モード：</strong> 編集内容はこのブラウザーに自動保存されます。契約料金、サーバー側権限、実際の作品編集メニューにはまだ反映しません。初期設定は現行の権限を保証するものではありません。
+          <strong>構成設計モード：</strong> パーツと配置の編集内容はこのブラウザーに自動保存されます。契約料金やサーバー側権限には反映しません。実際の料金・上限・機能権限は、下の「現行の契約権限」を参照してください。
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -214,6 +256,36 @@ export default function WriterPackageMakerPage() {
             <span className="rounded-full bg-neutral-100 px-3 py-1">必須部品は解除不可</span>
           </div>
         </div>
+
+        <section aria-labelledby="current-entitlements" className="mt-5 rounded-2xl border border-sky-200 bg-sky-50/50 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="current-entitlements" className="text-base font-bold text-neutral-950">現行の契約権限（参照）</h2>
+            {tier === "B" ? <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-neutral-600">WRITERS B＝Plus（同じ権限）</span> : null}
+            {tier === "A" ? <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-neutral-600">WRITERS A＝Free</span> : null}
+            {tier === "C" ? <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold text-neutral-500">権限未設定</span> : null}
+          </div>
+          {currentEntitlements ? (
+            <>
+              <p className="mt-2 text-xs leading-5 text-neutral-600">
+                {tier === "B"
+                  ? `料金：$${currentEntitlements.monthlyPriceUsd}/月（USD）・${WRITERS_B_MONTHLY_PRICE_JPY}円/月（日本）。同じWRITERS Bの地域別価格です。新規申込は停止中です。`
+                  : "料金：無料。以下は料金・権限設定から読み取った現在の上限と機能です。"}
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-neutral-500">この一覧は読み取り専用です。上のパーツ構成を編集しても、実際の権限は変わりません。</p>
+              <dl className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {currentEntitlementRows.map((row) => (
+                  <div key={row.label} className="flex items-baseline justify-between gap-3 rounded-lg border border-sky-100 bg-white px-3 py-2">
+                    <dt className="text-[11px] text-neutral-500">{row.label}</dt>
+                    <dd className="text-right text-xs font-semibold text-neutral-800">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-3 text-[11px] leading-5 text-neutral-500">小テスト・Square連携はパーツ構成の項目です。現在の料金権限では、これらをA/Bの差として個別に制限する設定はありません。パーツ選択はサーバー権限を付与しません。</p>
+            </>
+          ) : (
+            <p className="mt-2 text-xs leading-6 text-neutral-600">WRITERS Cの契約料金・上限・機能権限はまだ定義されていません。この下書きは実際の利用権限を変更しません。</p>
+          )}
+        </section>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.8fr)]">
           <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
