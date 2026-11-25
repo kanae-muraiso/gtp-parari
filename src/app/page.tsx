@@ -8,11 +8,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParticipations } from "@/components/parari/navigation/ParticipationProvider";
 import { classRequest } from "@/lib/classRequests";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function HomePage() {
   const router = useRouter();
   const { userId, items, loading, error, refresh, navigate } = useParticipations();
   const [checkedOwner, setCheckedOwner] = React.useState<{ userId: string; school: { name: string } | null } | null>(null);
+  const [workspacePreference, setWorkspacePreference] = React.useState<{
+    start_destination: "library" | "studio" | "last" | null;
+    last_workspace: "library" | "studio" | null;
+  } | null>(null);
+  const [workspacePreferenceLoaded, setWorkspacePreferenceLoaded] = React.useState(false);
 
   React.useEffect(() => {
     if (!userId) return;
@@ -27,14 +33,74 @@ export default function HomePage() {
     return () => controller.abort();
   }, [userId]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (!userId) {
+      if (!loading) {
+        setWorkspacePreference(null);
+        setWorkspacePreferenceLoaded(true);
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setWorkspacePreferenceLoaded(false);
+    void (async () => {
+      if (!supabase) {
+        if (!cancelled) {
+          setWorkspacePreference(null);
+          setWorkspacePreferenceLoaded(true);
+        }
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_workspace_preferences")
+        .select("start_destination, last_workspace")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("load workspace start preference failed:", error);
+        setWorkspacePreference(null);
+      } else {
+        const start = data?.start_destination;
+        const last = data?.last_workspace;
+        setWorkspacePreference({
+          start_destination: start === "library" || start === "studio" || start === "last" ? start : null,
+          last_workspace: last === "library" || last === "studio" ? last : null,
+        });
+      }
+      setWorkspacePreferenceLoaded(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, loading]);
+
+  const preferredWorkspace =
+    workspacePreference?.start_destination === "last"
+      ? workspacePreference.last_workspace
+      : workspacePreference?.start_destination ?? null;
+
+  React.useEffect(() => {
+    if (!userId || !workspacePreferenceLoaded || !preferredWorkspace) return;
+    router.replace(preferredWorkspace === "studio" ? "/my/studio" : "/mypage");
+  }, [userId, workspacePreferenceLoaded, preferredWorkspace, router]);
+
   const ownership = checkedOwner?.userId === userId ? checkedOwner : null;
   React.useEffect(() => {
-    if (userId && !loading && !error && ownership && !ownership.school && items.length === 0) {
+    if (userId && workspacePreferenceLoaded && !preferredWorkspace && !loading && !error && ownership && !ownership.school && items.length === 0) {
       router.replace("/mypage");
     }
-  }, [userId, loading, error, ownership, items.length, router]);
+  }, [userId, workspacePreferenceLoaded, preferredWorkspace, loading, error, ownership, items.length, router]);
 
-  if (loading || (userId && !ownership)) {
+  if (loading || (userId && (!workspacePreferenceLoaded || preferredWorkspace || !ownership))) {
     return <main className="min-h-screen bg-white px-6 py-12 text-sm" role="status">行き先を確認しています…</main>;
   }
 
