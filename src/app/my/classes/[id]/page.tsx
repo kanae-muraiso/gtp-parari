@@ -84,7 +84,7 @@ export default function MyClassSchoolPage() {
           {current.members.map(member => <option key={member.id} value={member.id}>{member.name}{member.role === "guardian" ? "（保護者として確認）" : ""}</option>)}
         </select>
       </label>}
-      {current?.school && <section className="grid gap-3 rounded-2xl ${WORKSPACE_PALETTE.library.header} p-5" aria-label="クラスへの参加">
+      {current?.school && <section className={`grid gap-3 rounded-2xl border p-5 ${WORKSPACE_PALETTE.library.header}`} aria-label="クラスへの参加">
         <h2 className="text-xl font-bold">{current.school.name}</h2>
         {current.startsOn && <p className="text-sm">参加開始日 {current.startsOn}</p>}
         {nextLesson ? <>
