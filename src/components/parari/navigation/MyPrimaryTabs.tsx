@@ -1,7 +1,8 @@
 // 2026-11-25 JST
-// PART: One shared LIBRARY navigation for every Library screen.
+// PART: LIBRARY navigation grows as each person starts using features.
 "use client";
 
+import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import { AffiliationMenu } from "@/components/parari/navigation/ParticipationNav";
 
@@ -21,16 +22,30 @@ type MyPrimaryTabsProps = {
   embedded?: boolean;
 };
 
-const items = [
-  { key: "home", label: "HOME", href: "/mypage" },
-  { key: "open-space", label: "オープンスペース", href: "/my/authors" },
-  { key: "bookshelf", label: "本棚", href: "/my/bookshelf" },
-  { key: "records", label: "参加・購入", href: "/my/bookshelf/records?tab=participation" },
-  { key: "calendar", label: "カレンダー", href: "/my/calendar" },
-  { key: "messages", label: "メッセージ", href: "/my/messages" },
-] as const;
+type Item = {
+  key: MyPrimaryTab;
+  label: string;
+  href: string;
+};
+
+const HOME_ITEM: Item = { key: "home", label: "HOME", href: "/mypage" };
+const OPEN_SPACE_ITEM: Item = { key: "open-space", label: "オープンスペース", href: "/my/authors" };
+const BOOKSHELF_ITEM: Item = { key: "bookshelf", label: "本棚", href: "/my/bookshelf" };
+const RECORDS_ITEM: Item = {
+  key: "records",
+  label: "参加・購入",
+  href: "/my/bookshelf/records?tab=participation",
+};
+const CALENDAR_ITEM: Item = { key: "calendar", label: "カレンダー", href: "/my/calendar" };
+const MESSAGES_ITEM: Item = { key: "messages", label: "メッセージ", href: "/my/messages" };
 
 export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTabsProps) {
+  const {
+    hasParticipationPurchase,
+    hasCalendar,
+    hasMessages,
+  } = useParariExperience();
+
   const activeKey =
     active === "applications" || active === "purchases"
       ? "records"
@@ -38,9 +53,22 @@ export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTab
         ? "open-space"
         : active;
 
+  const items: Item[] = [HOME_ITEM, OPEN_SPACE_ITEM, BOOKSHELF_ITEM];
+
+  // Keep a deep-linked current section visible while experience data is loading.
+  if (hasParticipationPurchase || activeKey === "records") {
+    items.push(RECORDS_ITEM);
+  }
+  if (hasCalendar || activeKey === "calendar") {
+    items.push(CALENDAR_ITEM);
+  }
+  if (hasMessages || activeKey === "messages") {
+    items.push(MESSAGES_ITEM);
+  }
+
   return (
     <ParariTabs
-      items={[...items]}
+      items={items}
       active={activeKey ?? ""}
       embedded={embedded}
       color="library"

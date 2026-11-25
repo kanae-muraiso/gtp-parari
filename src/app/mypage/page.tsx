@@ -85,6 +85,7 @@ export default function MyPage() {
   const {
     hasCalendar,
     hasMessages,
+    hasParticipationPurchase,
     loading,
     studioEnabled,
   } = useParariExperience();
@@ -192,12 +193,14 @@ export default function MyPage() {
             />
           ) : null}
 
-          <HomeCard
+          {!loading && hasParticipationPurchase ? (
+            <HomeCard
             title="参加・購入"
             description="申込状況、参加中のクラス、参加証、購入した作品をまとめて確認できます。"
             href="/my/bookshelf/records?tab=participation"
             action="まとめて見る"
-          />
+            />
+          ) : null}
 
           {!loading && hasCalendar ? (
             <HomeCard
