@@ -85,6 +85,7 @@ export default function PackageStore() {
             <p className="mt-1 text-xs text-neutral-500">従来のPlusプラン（日本向け）</p>
             <p className="mt-4 text-2xl font-bold text-neutral-700">{WRITERS_B_MONTHLY_PRICE_JPY}円 <span className="text-sm font-normal">/月</span></p>
             <p className="mt-3 text-sm leading-6">より多くの作品制作と電子書籍出版に。</p>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">新規申込は停止中です。既存契約者の機能・上限はこれまでどおりです。</p>
             <ul className="mt-4 flex-1 space-y-2 text-xs leading-6">
               <li>BOOK：{legacyPlus.bookLimit}冊</li>
               <li>公開作品：{legacyPlus.publishedWorkLimit}作品まで</li>
