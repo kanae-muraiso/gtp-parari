@@ -45,6 +45,7 @@ type PanelInsertSlotProps = {
   items: PanelInsertItem[];
   structureItems?: PanelInsertItem[];
   onSelect: (tag: PanelInsertTag) => void;
+  placement?: "leading" | "between";
 };
 
 type InsertMenuName =
@@ -86,6 +87,7 @@ export function PanelInsertSlot({
   items,
   structureItems = [],
   onSelect,
+  placement = "between",
 }: PanelInsertSlotProps) {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<InsertMenuName>(null);
@@ -122,10 +124,13 @@ export function PanelInsertSlot({
 
   return (
     <div
-      className={[
-        "relative -my-5 flex min-h-12 items-center justify-center py-2",
-        open ? "z-30" : "z-10",
-      ].join(" ")}
+      className={
+        open
+          ? "relative z-30 flex min-h-12 items-center justify-center py-2"
+          : placement === "leading"
+            ? "relative z-10 flex h-10 items-center justify-center"
+            : "relative z-10 h-3"
+      }
     >
       <div
         className={[
@@ -133,6 +138,7 @@ export function PanelInsertSlot({
           open
             ? "rounded-2xl bg-sky-50 py-1 shadow-sm"
             : "h-8",
+          !open && placement === "between" ? "pointer-events-none" : "",
         ].join(" ")}
       >
         {!open ? (
@@ -143,7 +149,8 @@ export function PanelInsertSlot({
               "grid h-8 w-8 place-items-center rounded-full border border-sky-200 bg-sky-50",
               "text-base leading-none text-sky-600 shadow-sm transition",
               "hover:border-sky-400 hover:bg-sky-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500",
-            ].join(" ")}
+              placement === "between" ? "pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" : "",
+            ].filter(Boolean).join(" ")}
             aria-label="パネルを追加"
             title="ここにパネルを追加"
           >

@@ -48,6 +48,7 @@ type PanelBlockCardProps = {
   }>;
   renderNestedPanelEditor?: NestedPanelEditorRenderer;
   renderNestedPanelViewer?: NestedPanelViewerRenderer;
+  compactSpacing?: boolean;
 };
 
 export function PanelBlockCard({
@@ -63,6 +64,7 @@ export function PanelBlockCard({
   webPages,
   renderNestedPanelEditor,
   renderNestedPanelViewer,
+  compactSpacing = false,
 }: PanelBlockCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
     const [mode, setMode] = useState<PanelCardMode>(() => isDirectEditPanel(block.tag) ? "edit" : "view");
@@ -225,6 +227,7 @@ export function PanelBlockCard({
               <PanelFrame
                 style={panelStyle}
                 defaultWidth={defaultWidthForPanelTag(block.tag)}
+                gap={compactSpacing ? "zero" : "default"}
               >
                 {Renderer ? (
                   <Renderer

@@ -877,6 +877,7 @@ const waitForNextPaint = () =>
 <div className="space-y-0">
           {!hideLeadingInsertSlot && !firstBlockIsBookInfo ? (
             <PanelInsertSlot
+              placement="leading"
               items={
                 mode === "card"
                   ? CARD_CONTENT_INSERT_ITEMS
@@ -981,6 +982,7 @@ const waitForNextPaint = () =>
                                ) : (
                                     <PanelBlockCard
                                       block={block}
+                                      compactSpacing
                                       publicBasePath={publicBasePath}
                                       renderNestedPanelEditor={
                                         mode === "page"
