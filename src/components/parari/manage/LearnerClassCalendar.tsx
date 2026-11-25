@@ -38,7 +38,7 @@ export default function LearnerClassCalendar({ schoolId, memberId, refresh }: { 
     <ClassMonthGrid month={month} cell={day => {
       const count = current?.entries.filter(entry => entry.day === day).length ?? 0;
       return <button type="button" aria-pressed={selectedDay === day} aria-label={`${day} 予定${count}件`}
-        className={`min-h-10 w-full rounded border text-sm ${selectedDay === day ? "border-emerald-700 ring-1 ring-emerald-700" : count ? "bg-emerald-50" : "bg-white"}`}
+        className={`min-h-10 w-full rounded border text-sm ${selectedDay === day ? WORKSPACE_PALETTE.library.tabActive : count ? "bg-emerald-50" : "bg-white"}`}
         onClick={() => setSelectedDay(value => value === day ? "" : day)}>{Number(day.slice(-2))}{count > 0 && <span className="block text-xs text-emerald-800">{count}件</span>}</button>;
     }} />
     {current?.error ? <p role="alert">{current.error}</p> : !current ? <p role="status">予定を読み込んでいます…</p> :
