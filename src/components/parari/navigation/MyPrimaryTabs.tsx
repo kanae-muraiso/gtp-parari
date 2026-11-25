@@ -1,21 +1,16 @@
-// src/components/parari/navigation/MyPrimaryTabs.tsx
-// 2026/09/16 JST
-//
-// PARARI LIBRARY 共通メインナビ
-//
-// 最初は HOME / 本棚だけ。
-// 申込・カレンダー・メッセージは、実際に利用した人にだけ現れる。
-// ただし現在表示中の画面は、状態読込中や直リンク時にも消さない。
-
+// 2026-11-25 JST
+// PART: One shared LIBRARY navigation for every Library screen.
 "use client";
 
-import useParariExperience from "@/components/parari/hooks/useParariExperience";
 import ParariTabs from "@/components/parari/navigation/ParariTabs";
 import { AffiliationMenu } from "@/components/parari/navigation/ParticipationNav";
 
 export type MyPrimaryTab =
   | "home"
+  | "open-space"
+  | "authors"
   | "bookshelf"
+  | "records"
   | "purchases"
   | "applications"
   | "calendar"
@@ -26,74 +21,30 @@ type MyPrimaryTabsProps = {
   embedded?: boolean;
 };
 
-type Item = {
-  key: MyPrimaryTab;
-  label: string;
-  href: string;
-};
-
-const HOME_ITEM: Item = {
-  key: "home",
-  label: "HOME",
-  href: "/mypage",
-};
-
-const BOOKSHELF_ITEM: Item = {
-  key: "bookshelf",
-  label: "書棚",
-  href: "/my/bookshelf",
-};
-
-const PURCHASES_ITEM: Item = {
-  key: "purchases",
-  label: "購入済み",
-  href: "/my/purchases",
-};
-
-const APPLICATIONS_ITEM: Item = {
-  key: "applications",
-  label: "申込",
-  href: "/my/applications",
-};
-
-const CALENDAR_ITEM: Item = {
-  key: "calendar",
-  label: "カレンダー",
-  href: "/my/calendar",
-};
-
-const MESSAGES_ITEM: Item = {
-  key: "messages",
-  label: "メッセージ",
-  href: "/my/messages",
-};
+const items = [
+  { key: "home", label: "HOME", href: "/mypage" },
+  { key: "open-space", label: "オープンスペース", href: "/my/authors" },
+  { key: "bookshelf", label: "本棚", href: "/my/bookshelf" },
+  { key: "records", label: "参加・購入", href: "/my/bookshelf/records?tab=participation" },
+  { key: "calendar", label: "カレンダー", href: "/my/calendar" },
+  { key: "messages", label: "メッセージ", href: "/my/messages" },
+] as const;
 
 export default function MyPrimaryTabs({ active, embedded = false }: MyPrimaryTabsProps) {
-  const {
-    hasApplications,
-    hasCalendar,
-    hasMessages,
-  } = useParariExperience();
-
-  const items: Item[] = [
-    HOME_ITEM,
-    BOOKSHELF_ITEM,
-    PURCHASES_ITEM,
-  ];
-
-  if (hasApplications || active === "applications") {
-    items.push(APPLICATIONS_ITEM);
-  }
-
-  if (hasCalendar || active === "calendar") {
-    items.push(CALENDAR_ITEM);
-  }
-
-  if (hasMessages || active === "messages") {
-    items.push(MESSAGES_ITEM);
-  }
+  const activeKey =
+    active === "applications" || active === "purchases"
+      ? "records"
+      : active === "authors"
+        ? "open-space"
+        : active;
 
   return (
-    <ParariTabs items={items} active={active} embedded={embedded} color="library" trailing={<AffiliationMenu />} />
+    <ParariTabs
+      items={[...items]}
+      active={activeKey ?? ""}
+      embedded={embedded}
+      color="library"
+      trailing={<AffiliationMenu />}
+    />
   );
 }
