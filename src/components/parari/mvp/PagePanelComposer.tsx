@@ -762,6 +762,7 @@ const waitForNextPaint = () =>
               "title:",
               "subtitle:",
               "author:",
+              "workType: page",
               "",
             ].join("\n");
          
