@@ -178,10 +178,16 @@ export default function MyWorksPage() {
       const userId = user.id;
       setCurrentUserId(userId);
       let savedTab: string | null = null;
-      try {
-        savedTab = window.localStorage.getItem(workTabKey(user.id));
-      } catch {
-        // The default tab also works without browser storage.
+      const openedFromStudioHome =
+        new URLSearchParams(window.location.search).get("from") === "studio-home";
+      if (openedFromStudioHome) {
+        savedTab = "All";
+      } else {
+        try {
+          savedTab = window.localStorage.getItem(workTabKey(user.id));
+        } catch {
+          // The default tab also works without browser storage.
+        }
       }
       setActiveWorkKind(WORK_TABS.find((tab) => tab === savedTab) ?? "All");
         
