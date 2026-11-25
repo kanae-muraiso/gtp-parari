@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
 import LibraryV2Menu from "@/components/parari/navigation/LibraryV2Menu";
+import { notifyParariExperienceChanged } from "@/components/parari/hooks/useParariExperience";
 import { WORKSPACE_PALETTE } from "@/components/parari/navigation/workspacePalette";
 
 type Author = { user_id: string; username: string; display_name: string | null };
@@ -102,6 +103,20 @@ export default function AuthorsPage() {
   const [searched, setSearched] = useState(false);
   const [message, setMessage] = useState("");
   const [directoryError, setDirectoryError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    async function markOpenSpaceUsed() {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!active || !user || user.user_metadata?.library_open_space_visited === true) return;
+      const { error } = await supabase.auth.updateUser({
+        data: { library_open_space_visited: true },
+      });
+      if (!error && active) notifyParariExperienceChanged();
+    }
+    void markOpenSpaceUsed();
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     let active = true;
     async function load() {
