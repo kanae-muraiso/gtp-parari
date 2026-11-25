@@ -2,6 +2,7 @@
 // Availability is defined here for display; purchase eligibility is enforced by the checkout API.
 import Link from "next/link";
 import { PLAN_ENTITLEMENTS } from "@/lib/billing/plan";
+import { WRITERS_B_MONTHLY_PRICE_JPY } from "@/lib/billing/writersPricing";
 
 const upcoming = [
   {
@@ -46,6 +47,7 @@ function AvailabilityCard({ name, description }: { name: string; description: st
 
 export default function PackageStore() {
   const free = PLAN_ENTITLEMENTS.free;
+  const legacyPlus = PLAN_ENTITLEMENTS.plus;
   return (
     <div className="space-y-8">
       <section aria-labelledby="writers-packages">
@@ -54,7 +56,7 @@ export default function PackageStore() {
           <h2 id="writers-packages" className="mt-1 text-xl font-bold text-neutral-950">ライターズパッケージ</h2>
           <p className="mt-2 text-sm leading-6 text-neutral-600">無料で作品を書いて公開できます。ほかのパッケージは順次準備中です。</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <article className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-5">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-lg font-bold text-neutral-950">WRITERS A</h3>
@@ -73,6 +75,27 @@ export default function PackageStore() {
             <Link href="/my/start-studio" className="mt-6 block rounded-full border border-neutral-300 bg-white px-4 py-3 text-center text-sm font-bold text-neutral-900 hover:bg-neutral-50">
               無料で作品をつくる
             </Link>
+          </article>
+
+          <article aria-label="WRITERS B（新規申込停止中）" className="flex flex-col rounded-2xl border border-neutral-300 bg-neutral-100 p-5 text-neutral-600">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-lg font-bold text-neutral-700">WRITERS B</h3>
+              <span className="rounded-full border border-neutral-300 bg-white px-2 py-1 text-[10px] font-bold text-neutral-600">新規申込停止中</span>
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">旧Plus契約の内容</p>
+            <p className="mt-4 text-2xl font-bold text-neutral-700">{WRITERS_B_MONTHLY_PRICE_JPY}円 <span className="text-sm font-normal">/月（参考）</span></p>
+            <p className="mt-3 text-sm leading-6">より多くの作品制作と電子書籍出版に。</p>
+            <ul className="mt-4 flex-1 space-y-2 text-xs leading-6">
+              <li>BOOK：{legacyPlus.bookLimit}冊</li>
+              <li>公開作品：{legacyPlus.publishedWorkLimit}作品まで</li>
+              <li>1 BOOK：{legacyPlus.pageLimitPerWork} PAGEまで</li>
+              <li>画像保存：{Math.round((legacyPlus.imageStorageLimitBytes ?? 0) / 1073741824)}GB</li>
+              <li>EPUB3出力・共同編集</li>
+              <li>作品販売手数料：{legacyPlus.salesFeeBps / 100}%</li>
+            </ul>
+            <div aria-disabled="true" className="mt-6 rounded-xl border border-neutral-300 bg-neutral-200 px-4 py-3 text-center text-xs font-bold text-neutral-500">
+              現在、新規申込は受け付けていません
+            </div>
           </article>
 
           <AvailabilityCard name="WRITERS C" description={upcoming[0].packages[0].description} />
