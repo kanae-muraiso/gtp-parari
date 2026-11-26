@@ -27,9 +27,9 @@ const PANEL_GAP_OPTIONS: { value: ImagePanelGap; label: string }[] = [
 
 type ImageLibraryFile = {
   name: string;
-  id: string | null;
+  path: string;
+  id: string;
   created_at?: string | null;
-  updated_at?: string | null;
   metadata?: { mimetype?: string; size?: number } | null;
 };
 
@@ -76,8 +76,7 @@ export function ImagePanelEditor({
   const [isUploading, setIsUploading] = useState(false);
   const [imageLibraryOpen, setImageLibraryOpen] = useState(false);
   const [imageLibraryFiles, setImageLibraryFiles] = useState<ImageLibraryFile[]>([]);
-  const [imageLibraryUserId, setImageLibraryUserId] = useState("");
-  const [imageLibraryOffset, setImageLibraryOffset] = useState(0);
+  const [imageLibraryVisibleCount, setImageLibraryVisibleCount] = useState(60);
   const [imageLibraryHasMore, setImageLibraryHasMore] = useState(false);
   const [imageLibraryLoading, setImageLibraryLoading] = useState(false);
   const [imageLibraryError, setImageLibraryError] = useState("");
@@ -100,7 +99,7 @@ export function ImagePanelEditor({
     commitData(nextData);
   };
 
-  const loadImageLibrary = async (offset: number) => {
+  const loadImageLibrary = async () => {
     if (imageLibraryLoading) return;
     setImageLibraryLoading(true);
     setImageLibraryError("");
@@ -113,26 +112,71 @@ export function ImagePanelEditor({
       }
 
       const uid = userData.user.id;
-      setImageLibraryUserId(uid);
-      const { data, error } = await supabase.storage
-        .from("parari-images")
-        .list(uid + "/inline", {
-          limit: 60,
-          offset,
-          sortBy: { column: "created_at", order: "desc" },
-        });
 
-      if (error) {
-        setImageLibraryError("画像を読み込めませんでした: " + error.message);
-        return;
+      // Older uploads live in several user-owned folders, so walk only this
+      // user's folder tree and collect image objects from every generation.
+      const pendingFolders = [uid];
+      const files: ImageLibraryFile[] = [];
+
+      while (pendingFolders.length > 0) {
+        const folderBatch = pendingFolders.splice(0, 8);
+        const folderResults = await Promise.all(folderBatch.map(async (folderPath) => {
+          const childFolders: string[] = [];
+          const folderFiles: ImageLibraryFile[] = [];
+          let offset = 0;
+          let hasNextPage = true;
+
+          while (hasNextPage) {
+            const { data, error } = await supabase.storage
+              .from("parari-images")
+              .list(folderPath, {
+                limit: 100,
+                offset,
+                sortBy: { column: "created_at", order: "desc" },
+              });
+
+            if (error) throw new Error(error.message);
+
+            const entries = data ?? [];
+            for (const item of entries) {
+              if (item.id === null) {
+                childFolders.push(folderPath + "/" + item.name);
+                continue;
+              }
+
+              const mime = item.metadata?.mimetype ?? "";
+              const isImage = mime.startsWith("image/") || /\.(avif|gif|heic|heif|jpe?g|png|webp)$/i.test(item.name);
+              if (isImage) {
+                folderFiles.push({
+                  name: item.name,
+                  path: folderPath + "/" + item.name,
+                  id: item.id,
+                  created_at: item.created_at,
+                  metadata: item.metadata,
+                });
+              }
+            }
+
+            hasNextPage = entries.length === 100;
+            offset += entries.length;
+          }
+
+          return { childFolders, folderFiles };
+        }));
+
+        for (const result of folderResults) {
+          pendingFolders.push(...result.childFolders);
+          files.push(...result.folderFiles);
+        }
       }
 
-      const files = (data ?? []).filter((item) =>
-        item.id !== null && (!item.metadata?.mimetype || item.metadata.mimetype.startsWith("image/")),
-      ) as ImageLibraryFile[];
-      setImageLibraryFiles((current) => offset === 0 ? files : [...current, ...files]);
-      setImageLibraryOffset(offset + (data?.length ?? 0));
-      setImageLibraryHasMore((data?.length ?? 0) === 60);
+      files.sort((a, b) => {
+        const dateDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+        return dateDifference || a.path.localeCompare(b.path);
+      });
+      setImageLibraryFiles(files);
+      setImageLibraryVisibleCount(60);
+      setImageLibraryHasMore(files.length > 60);
     } catch (error: any) {
       setImageLibraryError("画像を読み込めませんでした: " + (error?.message ?? String(error)));
     } finally {
@@ -142,14 +186,19 @@ export function ImagePanelEditor({
 
   const openImageLibrary = () => {
     setImageLibraryFiles([]);
-    setImageLibraryOffset(0);
+    setImageLibraryVisibleCount(60);
     setImageLibraryHasMore(false);
     setImageLibraryOpen(true);
-    void loadImageLibrary(0);
+    void loadImageLibrary();
   };
 
-  const chooseLibraryImage = (fileName: string) => {
-    const path = imageLibraryUserId + "/inline/" + fileName;
+  const showMoreLibraryImages = () => {
+    const nextCount = imageLibraryVisibleCount + 60;
+    setImageLibraryVisibleCount(nextCount);
+    setImageLibraryHasMore(imageLibraryFiles.length > nextCount);
+  };
+
+  const chooseLibraryImage = (path: string) => {
     const { data: publicUrlData } = supabase.storage
       .from("parari-images")
       .getPublicUrl(path);
@@ -300,14 +349,13 @@ export function ImagePanelEditor({
                 </div>
               ) : null}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {imageLibraryFiles.map((file) => {
-                  const path = imageLibraryUserId + "/inline/" + file.name;
-                  const imageUrl = supabase.storage.from("parari-images").getPublicUrl(path).data.publicUrl;
+                {imageLibraryFiles.slice(0, imageLibraryVisibleCount).map((file) => {
+                  const imageUrl = supabase.storage.from("parari-images").getPublicUrl(file.path).data.publicUrl;
                   return (
                     <button
-                      key={file.name}
+                      key={file.path}
                       type="button"
-                      onClick={() => chooseLibraryImage(file.name)}
+                      onClick={() => chooseLibraryImage(file.path)}
                       className="overflow-hidden rounded-xl border border-neutral-200 text-left hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400"
                     >
                       <img src={imageUrl} alt="" className="aspect-square w-full bg-neutral-100 object-cover" />
@@ -320,7 +368,7 @@ export function ImagePanelEditor({
               </div>
               {imageLibraryLoading ? <p className="py-4 text-center text-xs text-neutral-500">画像を読み込んでいます…</p> : null}
               {!imageLibraryLoading && imageLibraryHasMore ? (
-                <div className="pt-4 text-center"><button type="button" onClick={() => void loadImageLibrary(imageLibraryOffset)} className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-600">さらに表示</button></div>
+                <div className="pt-4 text-center"><button type="button" onClick={showMoreLibraryImages} className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-600">さらに表示</button></div>
               ) : null}
               <div className="mt-5 border-t border-neutral-100 pt-4 text-center">
                 <button type="button" onClick={() => { setImageLibraryOpen(false); fileInputRef.current?.click(); }} className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white">新しい画像をアップロード</button>
