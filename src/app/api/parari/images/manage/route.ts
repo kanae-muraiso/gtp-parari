@@ -141,15 +141,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const used = await findUsedPaths(paths);
-
-    if (action === "check") {
-      return NextResponse.json({
-        ok: true,
-        usage: Object.fromEntries(paths.map((path) => [path, used.has(path)])),
-      }, { headers: { "Cache-Control": "private, no-store" } });
-    }
-
     if (action === "references") {
       if (paths.length !== 1) {
         return NextResponse.json({ ok: false, message: "画像を1つ指定してください。" }, { status: 400 });
@@ -158,8 +149,17 @@ export async function POST(request: NextRequest) {
       const works = await findUsingWorks(path, auth.user.id);
       return NextResponse.json({
         ok: true,
-        inUse: used.has(path),
+        inUse: works.length > 0,
         works,
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+
+    const used = await findUsedPaths(paths);
+
+    if (action === "check") {
+      return NextResponse.json({
+        ok: true,
+        usage: Object.fromEntries(paths.map((path) => [path, used.has(path)])),
       }, { headers: { "Cache-Control": "private, no-store" } });
     }
 
