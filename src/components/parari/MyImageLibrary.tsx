@@ -11,6 +11,7 @@ type ImageFile = {
 };
 
 type ImageReferences = {
+  inUse: boolean;
   works: Array<{ id: string; title: string; href: string }>;
 };
 
@@ -23,7 +24,6 @@ export default function MyImageLibrary() {
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
   const [checkingPath, setCheckingPath] = useState<string | null>(null);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
-  const [copiedPath, setCopiedPath] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,10 +108,10 @@ export default function MyImageLibrary() {
         body: JSON.stringify({ action: "references", paths: [path] }),
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.ok || !Array.isArray(result.works)) {
+      if (!response.ok || !result?.ok || typeof result.inUse !== "boolean" || !Array.isArray(result.works)) {
         throw new Error(result?.message ?? "使用作品を確認できませんでした。");
       }
-      setReferences((current) => ({ ...current, [path]: { works: result.works } }));
+      setReferences((current) => ({ ...current, [path]: { inUse: result.inUse, works: result.works } }));
     } catch (cause: any) {
       setError(cause?.message ?? "使用作品を確認できませんでした。");
       setExpandedPath(null);
@@ -145,17 +145,6 @@ export default function MyImageLibrary() {
     }
   };
 
-  const copyImageUrl = async (path: string) => {
-    const url = supabase.storage.from("parari-images").getPublicUrl(path).data.publicUrl;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedPath(path);
-      window.setTimeout(() => setCopiedPath((current) => current === path ? null : current), 1500);
-    } catch {
-      window.prompt("画像URLをコピーしてください", url);
-    }
-  };
-
   return (
     <section className="rounded-3xl bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -182,25 +171,31 @@ export default function MyImageLibrary() {
               <div className="p-3">
                 <div className="truncate text-[11px] font-semibold text-neutral-700" title={file.name}>{file.name}</div>
                 <div className="mt-1 text-[10px] text-neutral-500">{file.created_at ? new Date(file.created_at).toLocaleDateString("ja-JP") : "アップロード済み"}</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => void copyImageUrl(file.path)} className="rounded-full border border-neutral-200 px-2.5 py-1 text-[10px] font-bold text-neutral-700 hover:bg-neutral-50">{copiedPath === file.path ? "コピー済み" : "URLをコピー"}</button>
-                  <button type="button" disabled={checkingPath !== null} onClick={() => void requestReferences(file.path)} className="rounded-full border border-neutral-200 px-2.5 py-1 text-[10px] font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">{checkingPath === file.path ? "確認中…" : expanded ? "使用作品を閉じる" : "使用作品を見る"}</button>
-                </div>
-                {expanded && details ? (
-                  <div className="mt-3 border-t border-neutral-100 pt-2">
-                    {details.works.length > 0 ? (
-                      <>
-                        <p className="text-[10px] font-bold text-neutral-500">使用中（{details.works.length}作品）</p>
-                        <ul className="mt-1 space-y-1">
-                          {details.works.map((work) => <li key={work.id}><Link href={work.href} className="block truncate text-[11px] text-blue-700 hover:underline">{work.title}</Link></li>)}
-                        </ul>
-                      </>
+                <div className="mt-2">
+                  {details && !details.inUse ? (
+                    <button type="button" disabled={deletingPath === file.path} onClick={() => void deleteImage(file.path)} className="text-[11px] font-bold text-red-700 hover:underline disabled:opacity-50">
+                      {deletingPath === file.path ? "削除中…" : "削除可能"}
+                    </button>
+                  ) : details?.inUse ? (
+                    details.works.length > 0 ? (
+                      <button type="button" onClick={() => void requestReferences(file.path)} className="text-[11px] font-bold text-neutral-700 hover:underline">
+                        {expanded ? "使用作品を閉じる" : "使用作品を見る"}
+                      </button>
                     ) : (
-                      <>
-                        <p className="text-[10px] font-bold text-emerald-700">作品では未使用</p>
-                        <button type="button" disabled={deletingPath === file.path} onClick={() => void deleteImage(file.path)} className="mt-2 rounded-full border border-red-200 px-3 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">{deletingPath === file.path ? "削除中…" : "削除"}</button>
-                      </>
-                    )}
+                      <span className="text-[11px] font-bold text-neutral-500">他の場所で使用中</span>
+                    )
+                  ) : (
+                    <button type="button" disabled={checkingPath !== null} onClick={() => void requestReferences(file.path)} className="text-[11px] font-bold text-neutral-700 hover:underline disabled:opacity-50">
+                      {checkingPath === file.path ? "確認中…" : "使用作品を見る"}
+                    </button>
+                  )}
+                </div>
+                {expanded && details?.inUse && details.works.length > 0 ? (
+                  <div className="mt-2 border-t border-neutral-100 pt-2">
+                    <p className="text-[10px] font-bold text-neutral-500">使用中（{details.works.length}作品）</p>
+                    <ul className="mt-1 space-y-1">
+                      {details.works.map((work) => <li key={work.id}><Link href={work.href} className="block truncate text-[11px] text-blue-700 hover:underline">{work.title}</Link></li>)}
+                    </ul>
                   </div>
                 ) : null}
               </div>
