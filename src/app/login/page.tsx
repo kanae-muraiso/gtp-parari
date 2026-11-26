@@ -17,8 +17,11 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import LoginTurnstile from "@/components/parari/auth/LoginTurnstile";
 
 const RESEND_COOLDOWN_SEC = 60;
+// Set this public site key in Vercel BEFORE enabling CAPTCHA in Supabase Auth.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -47,6 +50,8 @@ export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [status, setStatus] = React.useState<string>("");
   const [isSending, setIsSending] = React.useState(false);
+  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
+  const [captchaResetNonce, setCaptchaResetNonce] = React.useState(0);
 
   /**
    * PART: auth check ready
@@ -126,6 +131,10 @@ export default function LoginPage() {
     if (!normalizedEmail) return;
     if (isSending) return;
     if (cooldown > 0) return;
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setStatus("セキュリティ確認の完了後にメールを送信してください。");
+      return;
+    }
 
     setIsSending(true);
     setStatus("送信中…");
@@ -134,12 +143,14 @@ export default function LoginPage() {
       email: normalizedEmail,
       options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(getReturnTo())}`,
+          ...(TURNSTILE_SITE_KEY ? { captchaToken: captchaToken! } : {}),
       },
     });
 
     if (error) {
       setStatus("送信失敗: " + error.message);
       setIsSending(false);
+      if (TURNSTILE_SITE_KEY) setCaptchaResetNonce(n => n + 1);
       return;
     }
 
@@ -168,9 +179,11 @@ export default function LoginPage() {
     setHasSent(false);
     setStatus("");
     setCooldown(0);
+    setCaptchaToken(null);
+    setCaptchaResetNonce(n => n + 1);
   };
 
-  const canSubmit = email.trim().length > 0 && !isSending && cooldown === 0;
+  const canSubmit = email.trim().length > 0 && !isSending && cooldown === 0 && (!TURNSTILE_SITE_KEY || Boolean(captchaToken));
   const maskedEmail = email.trim();
 
   /**
@@ -219,6 +232,12 @@ export default function LoginPage() {
                 autoComplete="email"
               />
 
+              {TURNSTILE_SITE_KEY && <LoginTurnstile
+                siteKey={TURNSTILE_SITE_KEY}
+                onToken={setCaptchaToken}
+                resetNonce={captchaResetNonce}
+              />}
+
               <button
                 type="submit"
                 className="mt-4 w-full rounded-xl bg-black px-3 py-2 text-sm text-white disabled:opacity-40"
@@ -259,7 +278,16 @@ export default function LoginPage() {
              </div>
             <button
               type="button"
-              onClick={sendMagicLink}
+              onClick={() => {
+                if (TURNSTILE_SITE_KEY) {
+                  setHasSent(false);
+                  setCaptchaToken(null);
+                  setCaptchaResetNonce(n => n + 1);
+                  setStatus("セキュリティ確認を完了してから、もう一度送信してください。");
+                } else {
+                  void sendMagicLink();
+                }
+              }}
               className="mt-5 w-full rounded-xl bg-black px-3 py-2 text-sm text-white disabled:opacity-40"
               disabled={isSending || cooldown > 0}
             >
