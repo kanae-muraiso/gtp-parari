@@ -156,6 +156,7 @@ export function ImagePanelEditor({
                   id: item.id,
                   created_at: item.created_at,
                   metadata: item.metadata,
+                  inUse: null,
                 });
               }
             }
