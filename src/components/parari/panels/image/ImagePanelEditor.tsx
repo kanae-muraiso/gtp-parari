@@ -31,6 +31,7 @@ type ImageLibraryFile = {
   id: string;
   created_at?: string | null;
   metadata?: { mimetype?: string; size?: number } | null;
+  inUse: boolean | null;
 };
 
 async function normalizeUploadImage(
@@ -80,6 +81,8 @@ export function ImagePanelEditor({
   const [imageLibraryHasMore, setImageLibraryHasMore] = useState(false);
   const [imageLibraryLoading, setImageLibraryLoading] = useState(false);
   const [imageLibraryError, setImageLibraryError] = useState("");
+  const [imagePickerStep, setImagePickerStep] = useState<"choose" | "library">("choose");
+  const [deletingImagePath, setDeletingImagePath] = useState<string | null>(null);
 
   useEffect(() => {
     setDraftData(data);
@@ -174,7 +177,21 @@ export function ImagePanelEditor({
         const dateDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
         return dateDifference || a.path.localeCompare(b.path);
       });
-      setImageLibraryFiles(files);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
+      const usage = new Map<string, boolean>();
+      for (let index = 0; index < files.length; index += 400) {
+        const batch = files.slice(index, index + 400);
+        const response = await fetch("/api/parari/images/manage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
+          body: JSON.stringify({ action: "check", paths: batch.map((file) => file.path) }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.ok || !result.usage) throw new Error(result?.message ?? "画像の使用状況を確認できませんでした。");
+        Object.entries(result.usage as Record<string, boolean>).forEach(([path, inUse]) => usage.set(path, inUse));
+      }
+      setImageLibraryFiles(files.map((file) => ({ ...file, inUse: usage.has(file.path) ? usage.get(file.path)! : null })));
       setImageLibraryVisibleCount(60);
       setImageLibraryHasMore(files.length > 60);
     } catch (error: any) {
@@ -188,8 +205,8 @@ export function ImagePanelEditor({
     setImageLibraryFiles([]);
     setImageLibraryVisibleCount(60);
     setImageLibraryHasMore(false);
+    setImagePickerStep("choose");
     setImageLibraryOpen(true);
-    void loadImageLibrary();
   };
 
   const showMoreLibraryImages = () => {
@@ -207,6 +224,37 @@ export function ImagePanelEditor({
     commitData(nextData);
     setUploadStatus("マイ画像を反映しました");
     setImageLibraryOpen(false);
+  };
+
+  const showImageLibrary = () => {
+    setImagePickerStep("library");
+    void loadImageLibrary();
+  };
+
+  const deleteLibraryImage = async (file: ImageLibraryFile) => {
+    if (file.inUse !== false || deletingImagePath) return;
+    if (!window.confirm("この画像を削除しますか？削除した画像は元に戻せません。")) return;
+    setDeletingImagePath(file.path);
+    setImageLibraryError("");
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
+      const response = await fetch("/api/parari/images/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
+        body: JSON.stringify({ action: "delete", paths: [file.path] }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok) {
+        if (response.status === 409) setImageLibraryFiles((current) => current.map((item) => item.path === file.path ? { ...item, inUse: true } : item));
+        throw new Error(result?.message ?? "画像を削除できませんでした。");
+      }
+      setImageLibraryFiles((current) => current.filter((item) => item.path !== file.path));
+    } catch (error: any) {
+      setImageLibraryError(error?.message ?? "画像を削除できませんでした。");
+    } finally {
+      setDeletingImagePath(null);
+    }
   };
 
   const handlePickImageFile = async (file: File) => {
@@ -276,35 +324,18 @@ export function ImagePanelEditor({
       />
 
       {draftData.url.trim().length > 0 ? (
-        <div className="group relative overflow-hidden rounded-xl">
+        <div className="overflow-hidden rounded-xl">
           <ImagePanelRenderer block={block} data={draftData} />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-neutral-700 opacity-0 shadow-sm ring-1 ring-neutral-200 transition group-hover:opacity-100 focus:opacity-100"
-          >
-            {isUploading ? "処理中…" : "画像を変更"}
-          </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm font-bold text-neutral-400 hover:bg-neutral-100"
-        >
-          {isUploading ? "画像を処理中…" : "＋ 画像を選ぶ"}
-        </button>
+        <div className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-400">
+          {isUploading ? "画像を処理中…" : "画像が選択されていません"}
+        </div>
       )}
 
       <div className="mt-2 flex justify-center">
-        <button
-          type="button"
-          onClick={openImageLibrary}
-          className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:bg-neutral-50"
-        >
-          マイ画像から選ぶ
+        <button type="button" onClick={openImageLibrary} disabled={isUploading} className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">
+          {isUploading ? "画像を処理中…" : draftData.url.trim().length > 0 ? "画像を変更" : "＋ 画像を選ぶ"}
         </button>
       </div>
 
