@@ -28,7 +28,7 @@ function normalizePaths(value: unknown, userId: string): string[] | null {
 }
 
 function escapeRegExp(value: string): string {
-  return value.split("").map((character) => "\\\\^$.*+?()[]{}|".includes(character) ? "\\\\" + character : character).join("");
+  return value.split("").map((character) => "\\^$.*+?()[]{}|".includes(character) ? "\\" + character : character).join("");
 }
 
 async function loadReferenceDocuments(): Promise<string[]> {
