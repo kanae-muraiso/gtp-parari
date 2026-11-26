@@ -35,7 +35,7 @@ type ImageLibraryFile = {
 
 type ImageReferenceDetails = {
   inUse: boolean;
-  works: Array<{ id: string; title: string }>;
+  works: Array<{ id: string; title: string; href: string }>;
 };
 
 async function normalizeUploadImage(
@@ -443,7 +443,7 @@ export function ImagePanelEditor({
                                 <ul className="mt-2 space-y-1 border-t border-neutral-100 pt-2">
                                   {referenceDetails.works.map((work) => (
                                     <li key={work.id}>
-                                      <a href={"/editor-v2/" + work.id} target="_blank" rel="noreferrer" className="block truncate text-[11px] text-neutral-700 hover:underline">{work.title}</a>
+                                      <a href={work.href} target="_blank" rel="noreferrer" className="block truncate text-[11px] text-neutral-700 hover:underline">{work.title}</a>
                                     </li>
                                   ))}
                                 </ul>
