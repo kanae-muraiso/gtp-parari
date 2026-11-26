@@ -76,7 +76,6 @@ export function ImagePanelEditor({
   const [isUploading, setIsUploading] = useState(false);
   const [imageLibraryOpen, setImageLibraryOpen] = useState(false);
   const [imageLibraryFiles, setImageLibraryFiles] = useState<ImageLibraryFile[]>([]);
-  const [imageLibraryUserId, setImageLibraryUserId] = useState("");
   const [imageLibraryVisibleCount, setImageLibraryVisibleCount] = useState(60);
   const [imageLibraryHasMore, setImageLibraryHasMore] = useState(false);
   const [imageLibraryLoading, setImageLibraryLoading] = useState(false);
@@ -113,7 +112,6 @@ export function ImagePanelEditor({
       }
 
       const uid = userData.user.id;
-      setImageLibraryUserId(uid);
 
       // Older uploads live in several user-owned folders, so walk only this
       // user's folder tree and collect image objects from every generation.
