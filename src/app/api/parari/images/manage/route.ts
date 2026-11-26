@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 type Action = "check" | "delete";
 
 function getBearerToken(request: NextRequest): string | null {
-  const parts = (request.headers.get("authorization") ?? "").trim().split(/\s+/);\n  return parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1] : null;
+  const parts = (request.headers.get("authorization") ?? "").trim().split(/\s+/);
+  return parts.length === 2 && parts[0].toLowerCase() === "bearer" ? parts[1] : null;
 }
 
 function normalizePaths(value: unknown, userId: string): string[] | null {
