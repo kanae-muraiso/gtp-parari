@@ -31,6 +31,7 @@ type ImageLibraryFile = {
   id: string;
   created_at?: string | null;
   metadata?: { mimetype?: string; size?: number } | null;
+  inUse: boolean | null;
 };
 
 async function normalizeUploadImage(
@@ -80,6 +81,8 @@ export function ImagePanelEditor({
   const [imageLibraryHasMore, setImageLibraryHasMore] = useState(false);
   const [imageLibraryLoading, setImageLibraryLoading] = useState(false);
   const [imageLibraryError, setImageLibraryError] = useState("");
+  const [imagePickerStep, setImagePickerStep] = useState<"choose" | "library">("choose");
+  const [deletingImagePath, setDeletingImagePath] = useState<string | null>(null);
 
   useEffect(() => {
     setDraftData(data);
@@ -153,6 +156,7 @@ export function ImagePanelEditor({
                   id: item.id,
                   created_at: item.created_at,
                   metadata: item.metadata,
+                  inUse: null,
                 });
               }
             }
@@ -174,7 +178,21 @@ export function ImagePanelEditor({
         const dateDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
         return dateDifference || a.path.localeCompare(b.path);
       });
-      setImageLibraryFiles(files);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
+      const usage = new Map<string, boolean>();
+      for (let index = 0; index < files.length; index += 400) {
+        const batch = files.slice(index, index + 400);
+        const response = await fetch("/api/parari/images/manage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
+          body: JSON.stringify({ action: "check", paths: batch.map((file) => file.path) }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.ok || !result.usage) throw new Error(result?.message ?? "画像の使用状況を確認できませんでした。");
+        Object.entries(result.usage as Record<string, boolean>).forEach(([path, inUse]) => usage.set(path, inUse));
+      }
+      setImageLibraryFiles(files.map((file) => ({ ...file, inUse: usage.has(file.path) ? usage.get(file.path)! : null })));
       setImageLibraryVisibleCount(60);
       setImageLibraryHasMore(files.length > 60);
     } catch (error: any) {
@@ -188,8 +206,8 @@ export function ImagePanelEditor({
     setImageLibraryFiles([]);
     setImageLibraryVisibleCount(60);
     setImageLibraryHasMore(false);
+    setImagePickerStep("choose");
     setImageLibraryOpen(true);
-    void loadImageLibrary();
   };
 
   const showMoreLibraryImages = () => {
@@ -207,6 +225,37 @@ export function ImagePanelEditor({
     commitData(nextData);
     setUploadStatus("マイ画像を反映しました");
     setImageLibraryOpen(false);
+  };
+
+  const showImageLibrary = () => {
+    setImagePickerStep("library");
+    void loadImageLibrary();
+  };
+
+  const deleteLibraryImage = async (file: ImageLibraryFile) => {
+    if (file.inUse !== false || deletingImagePath) return;
+    if (!window.confirm("この画像を削除しますか？削除した画像は元に戻せません。")) return;
+    setDeletingImagePath(file.path);
+    setImageLibraryError("");
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
+      const response = await fetch("/api/parari/images/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
+        body: JSON.stringify({ action: "delete", paths: [file.path] }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok) {
+        if (response.status === 409) setImageLibraryFiles((current) => current.map((item) => item.path === file.path ? { ...item, inUse: true } : item));
+        throw new Error(result?.message ?? "画像を削除できませんでした。");
+      }
+      setImageLibraryFiles((current) => current.filter((item) => item.path !== file.path));
+    } catch (error: any) {
+      setImageLibraryError(error?.message ?? "画像を削除できませんでした。");
+    } finally {
+      setDeletingImagePath(null);
+    }
   };
 
   const handlePickImageFile = async (file: File) => {
@@ -276,35 +325,18 @@ export function ImagePanelEditor({
       />
 
       {draftData.url.trim().length > 0 ? (
-        <div className="group relative overflow-hidden rounded-xl">
+        <div className="overflow-hidden rounded-xl">
           <ImagePanelRenderer block={block} data={draftData} />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-neutral-700 opacity-0 shadow-sm ring-1 ring-neutral-200 transition group-hover:opacity-100 focus:opacity-100"
-          >
-            {isUploading ? "処理中…" : "画像を変更"}
-          </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm font-bold text-neutral-400 hover:bg-neutral-100"
-        >
-          {isUploading ? "画像を処理中…" : "＋ 画像を選ぶ"}
-        </button>
+        <div className="flex min-h-[180px] w-full items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-400">
+          {isUploading ? "画像を処理中…" : "画像が選択されていません"}
+        </div>
       )}
 
       <div className="mt-2 flex justify-center">
-        <button
-          type="button"
-          onClick={openImageLibrary}
-          className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:bg-neutral-50"
-        >
-          マイ画像から選ぶ
+        <button type="button" onClick={openImageLibrary} disabled={isUploading} className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">
+          {isUploading ? "画像を処理中…" : draftData.url.trim().length > 0 ? "画像を変更" : "＋ 画像を選ぶ"}
         </button>
       </div>
 
@@ -328,51 +360,62 @@ export function ImagePanelEditor({
             if (event.target === event.currentTarget) setImageLibraryOpen(false);
           }}
         >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="image-library-title"
-            className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-          >
+          <section role="dialog" aria-modal="true" aria-labelledby="image-library-title" className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
               <div>
-                <h2 id="image-library-title" className="text-base font-bold text-neutral-900">マイ画像</h2>
-                <p className="mt-1 text-xs text-neutral-500">アップロード済みの画像を選んで作品に挿入できます。</p>
+                <h2 id="image-library-title" className="text-base font-bold text-neutral-900">{imagePickerStep === "choose" ? "画像を選ぶ" : "マイ画像"}</h2>
+                <p className="mt-1 text-xs text-neutral-500">{imagePickerStep === "choose" ? "画像の追加方法を選んでください。" : "アップロード済みの画像を選んで作品に挿入できます。"}</p>
               </div>
               <button type="button" onClick={() => setImageLibraryOpen(false)} className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-600">閉じる</button>
             </header>
             <div className="overflow-y-auto p-5">
-              {imageLibraryError ? <p role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{imageLibraryError}</p> : null}
-              {!imageLibraryLoading && imageLibraryFiles.length === 0 && !imageLibraryError ? (
-                <div className="rounded-xl bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">
-                  まだ画像がありません。新しい画像をアップロードすると、次回からここで選べます。
+              {imagePickerStep === "choose" ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button type="button" onClick={() => { setImageLibraryOpen(false); fileInputRef.current?.click(); }} className="rounded-xl border border-neutral-200 p-5 text-left hover:border-neutral-500 hover:bg-neutral-50">
+                    <span className="block font-bold text-neutral-900">新しくアップロード</span>
+                    <span className="mt-2 block text-sm text-neutral-500">この端末から画像を選びます。</span>
+                  </button>
+                  <button type="button" onClick={showImageLibrary} className="rounded-xl border border-neutral-200 p-5 text-left hover:border-neutral-500 hover:bg-neutral-50">
+                    <span className="block font-bold text-neutral-900">マイ画像から選ぶ</span>
+                    <span className="mt-2 block text-sm text-neutral-500">以前アップロードした画像を使います。</span>
+                  </button>
                 </div>
-              ) : null}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {imageLibraryFiles.slice(0, imageLibraryVisibleCount).map((file) => {
-                  const imageUrl = supabase.storage.from("parari-images").getPublicUrl(file.path).data.publicUrl;
-                  return (
-                    <button
-                      key={file.path}
-                      type="button"
-                      onClick={() => chooseLibraryImage(file.path)}
-                      className="overflow-hidden rounded-xl border border-neutral-200 text-left hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400"
-                    >
-                      <img src={imageUrl} alt="" className="aspect-square w-full bg-neutral-100 object-cover" />
-                      <div className="px-2 py-2 text-[11px] text-neutral-500">
-                        {file.created_at ? new Date(file.created_at).toLocaleDateString("ja-JP") : "アップロード済み"}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {imageLibraryLoading ? <p className="py-4 text-center text-xs text-neutral-500">画像を読み込んでいます…</p> : null}
-              {!imageLibraryLoading && imageLibraryHasMore ? (
-                <div className="pt-4 text-center"><button type="button" onClick={showMoreLibraryImages} className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-600">さらに表示</button></div>
-              ) : null}
-              <div className="mt-5 border-t border-neutral-100 pt-4 text-center">
-                <button type="button" onClick={() => { setImageLibraryOpen(false); fileInputRef.current?.click(); }} className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-bold text-white">新しい画像をアップロード</button>
-              </div>
+              ) : (
+                <>
+                  <button type="button" onClick={() => setImagePickerStep("choose")} className="mb-4 text-xs font-bold text-neutral-600 hover:underline">← 選択方法に戻る</button>
+                  {imageLibraryError ? <p role="alert" className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{imageLibraryError}</p> : null}
+                  {!imageLibraryLoading && imageLibraryFiles.length === 0 && !imageLibraryError ? (
+                    <div className="rounded-xl bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">まだ画像がありません。新しい画像をアップロードすると、次回からここで選べます。</div>
+                  ) : null}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {imageLibraryFiles.slice(0, imageLibraryVisibleCount).map((file) => {
+                      const imageUrl = supabase.storage.from("parari-images").getPublicUrl(file.path).data.publicUrl;
+                      const statusClass = file.inUse === false ? "text-emerald-700" : file.inUse === true ? "text-neutral-500" : "text-amber-700";
+                      const statusText = file.inUse === false ? "削除可能" : file.inUse === true ? "使用中" : "使用状況を確認できません";
+                      return (
+                        <article key={file.path} className="overflow-hidden rounded-xl border border-neutral-200">
+                          <button type="button" onClick={() => chooseLibraryImage(file.path)} className="block w-full text-left hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-neutral-400">
+                            <img src={imageUrl} alt="" className="aspect-square w-full bg-neutral-100 object-cover" />
+                            <span className="block px-2 pt-2 text-[11px] text-neutral-500">{file.created_at ? new Date(file.created_at).toLocaleDateString("ja-JP") : "アップロード済み"}</span>
+                          </button>
+                          <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
+                            <span className={"text-[10px] font-bold " + statusClass}>{statusText}</span>
+                            {file.inUse === false ? (
+                              <button type="button" disabled={deletingImagePath === file.path} onClick={() => void deleteLibraryImage(file)} className="rounded-full border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">
+                                {deletingImagePath === file.path ? "削除中…" : "削除"}
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  {imageLibraryLoading ? <p className="py-4 text-center text-xs text-neutral-500">画像を読み込んでいます…</p> : null}
+                  {!imageLibraryLoading && imageLibraryHasMore ? (
+                    <div className="pt-4 text-center"><button type="button" onClick={showMoreLibraryImages} className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-600">さらに表示</button></div>
+                  ) : null}
+                </>
+              )}
             </div>
           </section>
         </div>
