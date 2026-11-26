@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "check" | "delete";
+type Action = "check" | "references" | "delete";
 
 function getBearerToken(request: NextRequest): string | null {
   const parts = (request.headers.get("authorization") ?? "").trim().split(/\s+/);
@@ -63,6 +63,34 @@ async function loadReferenceDocuments(): Promise<string[]> {
   return documents;
 }
 
+async function findUsingWorks(path: string, userId: string): Promise<Array<{ id: string; title: string }>> {
+  const variants = [path, path.split("/").map(encodeURIComponent).join("/")];
+  const works: Array<{ id: string; title: string }> = [];
+  let from = 0;
+  const pageSize = 200;
+
+  while (true) {
+    const { data, error } = await (supabaseAdmin as any)
+      .from("parari_books")
+      .select("id,title,content")
+      .eq("owner", userId)
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error("Could not inspect the user's works");
+
+    const rows = data ?? [];
+    for (const row of rows) {
+      const content = String(row.content ?? "");
+      if (variants.some((variant) => content.includes(variant))) {
+        works.push({ id: String(row.id), title: String(row.title ?? "").trim() || "無題の作品" });
+      }
+    }
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return works;
+}
+
 async function findUsedPaths(paths: string[]): Promise<Set<string>> {
   const documents = await loadReferenceDocuments();
   const variants = new Map<string, string>();
@@ -103,7 +131,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null) as { action?: unknown; paths?: unknown } | null;
   const action = body?.action as Action;
-  if (action !== "check" && action !== "delete") {
+  if (action !== "check" && action !== "references" && action !== "delete") {
     return NextResponse.json({ ok: false, message: "操作を確認できませんでした。" }, { status: 400 });
   }
 
@@ -119,6 +147,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ok: true,
         usage: Object.fromEntries(paths.map((path) => [path, used.has(path)])),
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+
+    if (action === "references") {
+      if (paths.length !== 1) {
+        return NextResponse.json({ ok: false, message: "画像を1つ指定してください。" }, { status: 400 });
+      }
+      const path = paths[0];
+      const works = await findUsingWorks(path, auth.user.id);
+      return NextResponse.json({
+        ok: true,
+        inUse: used.has(path),
+        works,
       }, { headers: { "Cache-Control": "private, no-store" } });
     }
 
