@@ -1310,12 +1310,17 @@ export default function MyWorksPage() {
                     count={works.length - hiddenBookPageIds.size + sharedWorks.length}
                   />
                 </div>
-                <Link
-                  href="/editor/new"
-                  className={`inline-flex shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${WORKSPACE_PALETTE.studio.button}`}
-                >
-                  ＋ 新規作成
-                </Link>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Link href="/my/images" className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50">
+                    マイ画像
+                  </Link>
+                  <Link
+                    href="/editor/new"
+                    className={`inline-flex rounded-full px-4 py-2 text-xs font-bold transition ${WORKSPACE_PALETTE.studio.button}`}
+                  >
+                    ＋ 新規作成
+                  </Link>
+                </div>
               </div>
               <p className="mt-2 text-sm leading-7 text-neutral-500">
                 作品を編集したり、表示確認用のURLをコピーしたりできます。
