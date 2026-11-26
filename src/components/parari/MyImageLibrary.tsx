@@ -11,7 +11,7 @@ type ImageFile = {
 };
 
 type ImageReferences = {
-  works: Array<{ id: string; title: string }>;
+  works: Array<{ id: string; title: string; href: string }>;
 };
 
 export default function MyImageLibrary() {
@@ -192,7 +192,7 @@ export default function MyImageLibrary() {
                       <>
                         <p className="text-[10px] font-bold text-neutral-500">使用中（{details.works.length}作品）</p>
                         <ul className="mt-1 space-y-1">
-                          {details.works.map((work) => <li key={work.id}><Link href={"/editor-v2/" + work.id} className="block truncate text-[11px] text-blue-700 hover:underline">{work.title}</Link></li>)}
+                          {details.works.map((work) => <li key={work.id}><Link href={work.href} className="block truncate text-[11px] text-blue-700 hover:underline">{work.title}</Link></li>)}
                         </ul>
                       </>
                     ) : (
