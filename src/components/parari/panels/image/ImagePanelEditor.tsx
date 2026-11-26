@@ -427,7 +427,7 @@ export function ImagePanelEditor({
                           <div className="px-2 pb-2 pt-1">
                             <div className="flex items-center justify-between gap-2">
                               <span className={"text-[10px] font-bold " + (referenceDetails ? referenceDetails.inUse ? "text-neutral-500" : "text-emerald-700" : "text-neutral-500")}>
-                                {referenceDetails ? referenceDetails.inUse ? "作品で使用中" : "作品では未使用" : "使用状況は未確認"}
+                                {referenceDetails ? referenceDetails.inUse ? referenceDetails.works.length > 0 ? "作品で使用中" : "他の場所で使用中" : "作品では未使用" : "使用状況は未確認"}
                               </span>
                               {referenceDetails && !referenceDetails.inUse ? (
                                 <button type="button" disabled={deletingImagePath === file.path} onClick={() => void deleteLibraryImage(file)} className="rounded-full border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">
