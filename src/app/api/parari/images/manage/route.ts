@@ -88,7 +88,7 @@ async function findUsingWorks(path: string, userId: string): Promise<Array<{ id:
           ? "/editor/book/" + encodeURIComponent(id)
           : isLegacyBookSsot(content)
             ? "/editor-v2/" + encodeURIComponent(id)
-            : "/writing/" + encodeURIComponent(id) + (/^\\s*\\[(WEB|WEBINFO)\\b/i.test(content) ? "?mode=editing" : "");
+            : "/writing/" + encodeURIComponent(id) + (/^\s*\[(WEB|WEBINFO)\b/i.test(content) ? "?mode=editing" : "");
         works.push({ id, title: String(row.title ?? "").trim() || "無題の作品", href });
       }
     }
