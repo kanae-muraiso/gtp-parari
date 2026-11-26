@@ -458,10 +458,6 @@ export function ImagePanelEditor({
                       );
                     })}
                   </div>
-                        </article>
-                      );
-                    })}
-                  </div>
                   {imageLibraryLoading ? <p className="py-4 text-center text-xs text-neutral-500">画像を読み込んでいます…</p> : null}
                   {!imageLibraryLoading && imageLibraryHasMore ? (
                     <div className="pt-4 text-center"><button type="button" onClick={showMoreLibraryImages} className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-bold text-neutral-600">さらに表示</button></div>
