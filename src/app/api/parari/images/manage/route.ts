@@ -1,0 +1,148 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type Action = "check" | "delete";
+
+function getBearerToken(request: NextRequest): string | null {
+  return request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1] ?? null;
+}
+
+function normalizePaths(value: unknown, userId: string): string[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 500) return null;
+
+  const paths = [...new Set(value.map((item) => String(item ?? "").trim()))];
+  if (paths.length !== value.length) return null;
+
+  for (const path of paths) {
+    if (
+      path.length > 1024 ||
+      !path.startsWith(userId + "/") ||
+      path.endsWith("/") ||
+      path.split("/").some((segment) => !segment || segment === "." || segment === "..")
+    ) return null;
+  }
+  return paths;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
+}
+
+async function loadReferenceDocuments(): Promise<string[]> {
+  const documents: string[] = [];
+  const sources = [
+    ["parari_books", "content"],
+    ["profiles", "avatar_url,cover_image_url,homepage_header_logo_url,public_page_draft,public_page_published,public_page_ideas"],
+    ["parari_public_work_cards", "cover_image"],
+    ["cpp_companies", "logo_path"],
+    ["cpp_profiles", "photo_path"],
+    ["parari_social_profiles", "photo_url"],
+  ] as const;
+
+  for (const [table, columns] of sources) {
+    let from = 0;
+    const pageSize = 200;
+    while (true) {
+      const { data, error } = await (supabaseAdmin as any)
+        .from(table)
+        .select(columns)
+        .range(from, from + pageSize - 1);
+      if (error) throw new Error("Could not inspect image references in " + table);
+
+      const rows = data ?? [];
+      for (const row of rows) documents.push(JSON.stringify(row));
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+  }
+
+  return documents;
+}
+
+async function findUsedPaths(paths: string[]): Promise<Set<string>> {
+  const documents = await loadReferenceDocuments();
+  const variants = new Map<string, string>();
+
+  for (const path of paths) {
+    variants.set(path, path);
+    variants.set(path.split("/").map(encodeURIComponent).join("/"), path);
+  }
+
+  const patterns = Array.from(variants.keys())
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp);
+  const matcher = new RegExp(patterns.join("|"), "g");
+  const used = new Set<string>();
+
+  for (const document of documents) {
+    matcher.lastIndex = 0;
+    for (const match of document.matchAll(matcher)) {
+      const path = variants.get(match[0]);
+      if (path) used.add(path);
+    }
+    if (used.size === paths.length) break;
+  }
+
+  return used;
+}
+
+export async function POST(request: NextRequest) {
+  const token = getBearerToken(request);
+  if (!token) {
+    return NextResponse.json({ ok: false, message: "ログインしてください。" }, { status: 401 });
+  }
+
+  const { data: auth, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (authError || !auth.user) {
+    return NextResponse.json({ ok: false, message: "ログイン状態を確認できませんでした。" }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => null) as { action?: unknown; paths?: unknown } | null;
+  const action = body?.action as Action;
+  if (action !== "check" && action !== "delete") {
+    return NextResponse.json({ ok: false, message: "操作を確認できませんでした。" }, { status: 400 });
+  }
+
+  const paths = normalizePaths(body?.paths, auth.user.id);
+  if (!paths) {
+    return NextResponse.json({ ok: false, message: "画像の指定が正しくありません。" }, { status: 400 });
+  }
+
+  try {
+    const used = await findUsedPaths(paths);
+
+    if (action === "check") {
+      return NextResponse.json({
+        ok: true,
+        usage: Object.fromEntries(paths.map((path) => [path, used.has(path)])),
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+
+    if (used.size > 0) {
+      return NextResponse.json({
+        ok: false,
+        message: "作品やプロフィールで使用中の画像は削除できません。",
+        usedPaths: Array.from(used),
+      }, { status: 409, headers: { "Cache-Control": "private, no-store" } });
+    }
+
+    const { error: deleteError } = await supabaseAdmin.storage
+      .from("parari-images")
+      .remove(paths);
+    if (deleteError) {
+      console.error("[api/parari/images/manage] storage delete failed:", deleteError);
+      return NextResponse.json({ ok: false, message: "画像を削除できませんでした。" }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error("[api/parari/images/manage] reference check failed:", error);
+    return NextResponse.json({
+      ok: false,
+      message: "画像の使用状況を確認できないため、削除を停止しました。",
+    }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+  }
+}
