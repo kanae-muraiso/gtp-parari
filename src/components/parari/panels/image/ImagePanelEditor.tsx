@@ -31,7 +31,11 @@ type ImageLibraryFile = {
   id: string;
   created_at?: string | null;
   metadata?: { mimetype?: string; size?: number } | null;
-  inUse: boolean | null;
+};
+
+type ImageReferenceDetails = {
+  inUse: boolean;
+  works: Array<{ id: string; title: string }>;
 };
 
 async function normalizeUploadImage(
@@ -83,6 +87,9 @@ export function ImagePanelEditor({
   const [imageLibraryError, setImageLibraryError] = useState("");
   const [imagePickerStep, setImagePickerStep] = useState<"choose" | "library">("choose");
   const [deletingImagePath, setDeletingImagePath] = useState<string | null>(null);
+  const [checkingReferencePath, setCheckingReferencePath] = useState<string | null>(null);
+  const [expandedReferencePath, setExpandedReferencePath] = useState<string | null>(null);
+  const [imageReferences, setImageReferences] = useState<Record<string, ImageReferenceDetails>>({});
 
   useEffect(() => {
     setDraftData(data);
@@ -156,7 +163,6 @@ export function ImagePanelEditor({
                   id: item.id,
                   created_at: item.created_at,
                   metadata: item.metadata,
-                  inUse: null,
                 });
               }
             }
@@ -178,21 +184,9 @@ export function ImagePanelEditor({
         const dateDifference = new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
         return dateDifference || a.path.localeCompare(b.path);
       });
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
-      const usage = new Map<string, boolean>();
-      for (let index = 0; index < files.length; index += 400) {
-        const batch = files.slice(index, index + 400);
-        const response = await fetch("/api/parari/images/manage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
-          body: JSON.stringify({ action: "check", paths: batch.map((file) => file.path) }),
-        });
-        const result = await response.json().catch(() => null);
-        if (!response.ok || !result?.ok || !result.usage) throw new Error(result?.message ?? "画像の使用状況を確認できませんでした。");
-        Object.entries(result.usage as Record<string, boolean>).forEach(([path, inUse]) => usage.set(path, inUse));
-      }
-      setImageLibraryFiles(files.map((file) => ({ ...file, inUse: usage.has(file.path) ? usage.get(file.path)! : null })));
+      setImageLibraryFiles(files);
+      setImageReferences({});
+      setExpandedReferencePath(null);
       setImageLibraryVisibleCount(60);
       setImageLibraryHasMore(files.length > 60);
     } catch (error: any) {
@@ -232,8 +226,40 @@ export function ImagePanelEditor({
     void loadImageLibrary();
   };
 
+  const showImageReferences = async (path: string) => {
+    if (expandedReferencePath === path) {
+      setExpandedReferencePath(null);
+      return;
+    }
+    setExpandedReferencePath(path);
+    if (imageReferences[path] || checkingReferencePath) return;
+
+    setCheckingReferencePath(path);
+    setImageLibraryError("");
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) throw new Error("ログイン状態を確認できませんでした。");
+      const response = await fetch("/api/parari/images/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + sessionData.session.access_token },
+        body: JSON.stringify({ action: "references", paths: [path] }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok || typeof result.inUse !== "boolean" || !Array.isArray(result.works)) {
+        throw new Error(result?.message ?? "使用作品を確認できませんでした。");
+      }
+      setImageReferences((current) => ({ ...current, [path]: { inUse: result.inUse, works: result.works } }));
+    } catch (error: any) {
+      setImageLibraryError(error?.message ?? "使用作品を確認できませんでした。");
+      setExpandedReferencePath(null);
+    } finally {
+      setCheckingReferencePath(null);
+    }
+  };
+
   const deleteLibraryImage = async (file: ImageLibraryFile) => {
-    if (file.inUse !== false || deletingImagePath) return;
+    const referenceDetails = imageReferences[file.path];
+    if (!referenceDetails || referenceDetails.inUse || deletingImagePath) return;
     if (!window.confirm("この画像を削除しますか？削除した画像は元に戻せません。")) return;
     setDeletingImagePath(file.path);
     setImageLibraryError("");
@@ -247,7 +273,7 @@ export function ImagePanelEditor({
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.ok) {
-        if (response.status === 409) setImageLibraryFiles((current) => current.map((item) => item.path === file.path ? { ...item, inUse: true } : item));
+        if (response.status === 409) setImageReferences((current) => ({ ...current, [file.path]: { ...(current[file.path] ?? { works: [] }), inUse: true } }));
         throw new Error(result?.message ?? "画像を削除できませんでした。");
       }
       setImageLibraryFiles((current) => current.filter((item) => item.path !== file.path));
@@ -390,22 +416,48 @@ export function ImagePanelEditor({
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                     {imageLibraryFiles.slice(0, imageLibraryVisibleCount).map((file) => {
                       const imageUrl = supabase.storage.from("parari-images").getPublicUrl(file.path).data.publicUrl;
-                      const statusClass = file.inUse === false ? "text-emerald-700" : file.inUse === true ? "text-neutral-500" : "text-amber-700";
-                      const statusText = file.inUse === false ? "削除可能" : file.inUse === true ? "使用中" : "使用状況を確認できません";
+                      const referenceDetails = imageReferences[file.path];
+                      const isExpanded = expandedReferencePath === file.path;
                       return (
                         <article key={file.path} className="overflow-hidden rounded-xl border border-neutral-200">
                           <button type="button" onClick={() => chooseLibraryImage(file.path)} className="block w-full text-left hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-neutral-400">
                             <img src={imageUrl} alt="" className="aspect-square w-full bg-neutral-100 object-cover" />
                             <span className="block px-2 pt-2 text-[11px] text-neutral-500">{file.created_at ? new Date(file.created_at).toLocaleDateString("ja-JP") : "アップロード済み"}</span>
                           </button>
-                          <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
-                            <span className={"text-[10px] font-bold " + statusClass}>{statusText}</span>
-                            {file.inUse === false ? (
-                              <button type="button" disabled={deletingImagePath === file.path} onClick={() => void deleteLibraryImage(file)} className="rounded-full border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">
-                                {deletingImagePath === file.path ? "削除中…" : "削除"}
-                              </button>
+                          <div className="px-2 pb-2 pt-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={"text-[10px] font-bold " + (referenceDetails ? referenceDetails.inUse ? "text-neutral-500" : "text-emerald-700" : "text-neutral-500")}>
+                                {referenceDetails ? referenceDetails.inUse ? "使用中" : "削除可能" : "使用状況は未確認"}
+                              </span>
+                              {referenceDetails && !referenceDetails.inUse ? (
+                                <button type="button" disabled={deletingImagePath === file.path} onClick={() => void deleteLibraryImage(file)} className="rounded-full border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">
+                                  {deletingImagePath === file.path ? "削除中…" : "削除"}
+                                </button>
+                              ) : null}
+                            </div>
+                            <button type="button" disabled={checkingReferencePath === file.path} onClick={() => void showImageReferences(file.path)} className="mt-2 text-[10px] font-bold text-blue-700 hover:underline disabled:opacity-50">
+                              {checkingReferencePath === file.path ? "確認中…" : isExpanded ? "使用作品を閉じる" : "使用作品を見る"}
+                            </button>
+                            {isExpanded && referenceDetails ? (
+                              referenceDetails.works.length > 0 ? (
+                                <ul className="mt-2 space-y-1 border-t border-neutral-100 pt-2">
+                                  {referenceDetails.works.map((work) => (
+                                    <li key={work.id}>
+                                      <a href={"/editor-v2/" + work.id} target="_blank" rel="noreferrer" className="block truncate text-[11px] text-neutral-700 hover:underline">{work.title}</a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="mt-2 border-t border-neutral-100 pt-2 text-[10px] text-neutral-500">
+                                  {referenceDetails.inUse ? "作品以外の設定で使用されています。" : "作品では使用されていません。"}
+                                </p>
+                              )
                             ) : null}
                           </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                         </article>
                       );
                     })}
