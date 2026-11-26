@@ -5,7 +5,7 @@ import { isLegacyBookSsot, isReferenceBookSsot } from "@/lib/parari/book/pageRef
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "check" | "references" | "delete";
+type Action = "check" | "references" | "works" | "delete";
 
 function getBearerToken(request: NextRequest): string | null {
   const parts = (request.headers.get("authorization") ?? "").trim().split(/\s+/);
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null) as { action?: unknown; paths?: unknown } | null;
   const action = body?.action as Action;
-  if (action !== "check" && action !== "references" && action !== "delete") {
+  if (action !== "check" && action !== "references" && action !== "works" && action !== "delete") {
     return NextResponse.json({ ok: false, message: "操作を確認できませんでした。" }, { status: 400 });
   }
 
@@ -149,6 +149,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (action === "works") {
+      if (paths.length !== 1) {
+        return NextResponse.json({ ok: false, message: "画像を1つ指定してください。" }, { status: 400 });
+      }
+      const works = await findUsingWorks(paths[0], auth.user.id);
+      return NextResponse.json({ ok: true, works }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+
     if (action === "references") {
       if (paths.length !== 1) {
         return NextResponse.json({ ok: false, message: "画像を1つ指定してください。" }, { status: 400 });
