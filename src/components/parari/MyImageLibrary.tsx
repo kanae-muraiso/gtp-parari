@@ -161,7 +161,7 @@ export default function MyImageLibrary() {
 
   const deleteImage = async (path: string) => {
     if (usageStatus[path] !== "unused" || deletingPath) return;
-    if (!window.confirm("作品では使用されていない画像です。削除しますか？削除前に、ほかの設定での使用状況も確認します。")) return;
+    if (!window.confirm("未使用の画像です。削除しますか？削除前に、使用状況をもう一度確認します。")) return;
     setDeletingPath(path);
     setError("");
     try {
