@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { isLegacyBookSsot, isReferenceBookSsot } from "@/lib/parari/book/pageRefs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,9 +64,9 @@ async function loadReferenceDocuments(): Promise<string[]> {
   return documents;
 }
 
-async function findUsingWorks(path: string, userId: string): Promise<Array<{ id: string; title: string }>> {
+async function findUsingWorks(path: string, userId: string): Promise<Array<{ id: string; title: string; href: string }>> {
   const variants = [path, path.split("/").map(encodeURIComponent).join("/")];
-  const works: Array<{ id: string; title: string }> = [];
+  const works: Array<{ id: string; title: string; href: string }> = [];
   let from = 0;
   const pageSize = 200;
 
@@ -81,7 +82,14 @@ async function findUsingWorks(path: string, userId: string): Promise<Array<{ id:
     for (const row of rows) {
       const content = String(row.content ?? "");
       if (variants.some((variant) => content.includes(variant))) {
-        works.push({ id: String(row.id), title: String(row.title ?? "").trim() || "無題の作品" });
+        const id = String(row.id);
+        const content = String(row.content ?? "");
+        const href = isReferenceBookSsot(content)
+          ? "/editor/book/" + encodeURIComponent(id)
+          : isLegacyBookSsot(content)
+            ? "/editor-v2/" + encodeURIComponent(id)
+            : "/writing/" + encodeURIComponent(id) + (/^\\s*\\[(WEB|WEBINFO)\\b/i.test(content) ? "?mode=editing" : "");
+        works.push({ id, title: String(row.title ?? "").trim() || "無題の作品", href });
       }
     }
     if (rows.length < pageSize) break;
