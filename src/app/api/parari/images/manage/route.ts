@@ -154,10 +154,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, message: "画像を1つ指定してください。" }, { status: 400 });
       }
       const path = paths[0];
-      const works = await findUsingWorks(path, auth.user.id);
+      const [used, works] = await Promise.all([
+        findUsedPaths([path]),
+        findUsingWorks(path, auth.user.id),
+      ]);
       return NextResponse.json({
         ok: true,
-        inUse: works.length > 0,
+        inUse: used.has(path),
         works,
       }, { headers: { "Cache-Control": "private, no-store" } });
     }
