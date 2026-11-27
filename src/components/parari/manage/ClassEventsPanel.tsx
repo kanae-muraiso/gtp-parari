@@ -16,7 +16,7 @@ const localDate = (value: string) => new Date(Date.parse(value) + 9 * 3600000).t
 const eventPath = (id: string) => "/events?event=" + encodeURIComponent(id);
 const statuses = { draft: "下書き", open: "公開中", closed: "受付終了" };
 const audiences = { members: "在籍者のみ", public: "一般のみ", mixed: "在籍者と一般" };
-const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "外部決済リンク" };
+const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "外部決済リンク", parari: "PARARI内Square決済（販売手数料5％）" };
 
 type Detail = { event: ClassEvent; entries: ClassEventEntry[]; eventPageId?: string | null };
 
@@ -173,7 +173,7 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
             onChange={e => void change({ id: event.id, action: "entry", entryId: entry.id, sessionAt: selectedSession, change: e.target.value }, "出欠を更新しました。")}>
             <option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option>
           </select></label>
-          {entry.payment_status === "unpaid" && <button className={button} disabled={busy}
+          {entry.payment_status === "unpaid" && event.payment_method !== "parari" && <button className={button} disabled={busy}
             onClick={() => void change({ id: event.id, action: "entry", entryId: entry.id, change: "paid" }, "入金を記録しました。")}>入金を記録</button>}
           {entry.payment_status === "paid" && <span>入金済み</span>}
         </div>)}
@@ -256,16 +256,16 @@ function EventForm({ kind, event, classes, busy, onSave }: {
     </fieldset>}
     {!workshop && <label className="flex items-center gap-2"><input type="checkbox" checked={registration} onChange={e => {
       setRegistration(e.target.checked);
-      if (!e.target.checked && payment === "payment_link") setPayment("none");
+      if (!e.target.checked && (payment === "payment_link" || payment === "parari")) setPayment("none");
     }} />申込を受け付ける</label>}
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1">{workshop ? "講習会全体の定員（最大50人）" : "定員（最大50人）"}<input className={input} type="number" min={1} max={50} required name="capacity" defaultValue={event?.definition.capacity ?? 50} /></label>
+      <label className="grid gap-1">{workshop ? "講習会全体の定員" : "定員"}{payment === "parari" ? "（空欄で制限なし）" : "（最大50人）"}<input className={input} type="number" min={1} max={payment === "parari" ? 2147483647 : 50} required={payment !== "parari"} name="capacity" defaultValue={event ? event.definition.capacity ?? "" : 50} /></label>
       {registration && <label className="grid gap-1">申込締切（空欄なら{workshop ? "初回" : ""}開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
     </div>
     </div>
     <div id="event-payment" className="grid gap-3 scroll-mt-24">
     <label className="grid gap-1">{workshop ? "講習会全体の受講料" : "参加費"}<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
-      {Object.entries(paymentLabels).filter(([key]) => registration || key !== "payment_link").map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      {Object.entries(paymentLabels).filter(([key]) => registration || (key !== "payment_link" && key !== "parari")).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
     {payment !== "none" && <label className="grid gap-1">金額（円）<input className={input} type="number" min={1} max={10000000} required name="amount" defaultValue={event?.payment_amount ?? ""} /></label>}
     {payment === "payment_link" && <label className="grid gap-1">外部決済URL<input className={input} type="url" required name="paymentUrl" defaultValue={event?.payment_url ?? ""} /></label>}
