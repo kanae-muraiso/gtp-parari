@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     if (event && ["publish", "close"].includes(body.action)) {
       const publish = body.action === "publish";
       if (!publish && event.status !== "open") return fail("公開中のイベントを選んでください。", 409);
-      if (publish && (!Number.isInteger(event.definition.capacity) || Number(event.definition.capacity) < 1 || Number(event.definition.capacity) > 100)) return fail("CLASS Bの定員を1〜100人に設定してください。", 409);
+      if (publish && (!Number.isInteger(event.definition.capacity) || Number(event.definition.capacity) < 1 || Number(event.definition.capacity) > 50)) return fail("CLASS Bの定員を1〜50人に設定してください。", 409);
       if (publish && Date.parse(event.class_event.startsAt) <= Date.now()) return fail("開催日時を未来に設定してください。");
       if (publish && event.class_event.registration && Date.parse(event.class_event.deadline) <= Date.now()) return fail("申込締切を未来に設定してください。");
       const { error } = await db.from("applications").update({ status: publish ? "open" : "closed" })
@@ -304,8 +304,8 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       if (count !== classIds.length) return fail("この事業のクラスを選んでください。");
     }
-    const capacity = body.capacity === "" || body.capacity == null ? 100 : Number(body.capacity);
-    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 100) return fail("CLASS Bの定員は1〜100人で入力してください。");
+    const capacity = body.capacity === "" || body.capacity == null ? 50 : Number(body.capacity);
+    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 50) return fail("CLASS Bの定員は1〜50人で入力してください。");
     const payment = body.payment;
     if (payment !== "none" && payment !== "on_site" && payment !== "payment_link") return fail("支払方法を選択してください。");
     if (!registration && payment === "payment_link") return fail("決済リンクを使う場合は申込を受け付けてください。");
