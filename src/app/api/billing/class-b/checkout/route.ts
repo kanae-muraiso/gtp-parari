@@ -56,8 +56,26 @@ export async function POST(request: NextRequest) {
     const reservation = await db.from("class_b_contracts").insert({
       school_id:schoolId,owner_user_id:user.id,requested_blocks:quantity
     }).select("attempt_id,created_at").single();
-    if (reservation.error?.code === "23505")
+    if (reservation.error?.code === "23505") {
+      const existing = await db.from("class_b_contracts")
+        .select("status,requested_blocks,stripe_checkout_session_id,stripe_subscription_id")
+        .eq("school_id",schoolId).eq("owner_user_id",user.id).maybeSingle();
+      if (existing.error) throw existing.error;
+      const contract = existing.data;
+      if (contract?.status === "pending" && !contract.stripe_subscription_id &&
+          contract.stripe_checkout_session_id) {
+        const prior = await stripe.checkout.sessions.retrieve(contract.stripe_checkout_session_id);
+        if (prior.metadata?.class_b_school_id !== schoolId ||
+            prior.metadata?.supabase_user_id !== user.id || prior.metadata?.plan !== "class_b")
+          throw new Error("Mismatched CLASS B checkout reservation");
+        if (prior.status === "open" && prior.url) {
+          if (contract.requested_blocks !== quantity)
+            return reply({ok:false,message:"購入手続き中の契約数量と異なります。元の数量で再開してください。"},409);
+          return reply({ok:true,url:prior.url,resumed:true});
+        }
+      }
       return reply({ok:false,message:"この事業には既存の契約または購入手続きがあります。"},409);
+    }
     if (reservation.error || !reservation.data) throw reservation.error ?? new Error("Missing contract reservation");
     const attempt = reservation.data.attempt_id;
     const metadata = {plan:"class_b",class_b_school_id:schoolId,class_b_attempt_id:attempt,supabase_user_id:user.id};
