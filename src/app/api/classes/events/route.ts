@@ -6,6 +6,7 @@ import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope"
 import { getUsableSquareConnection } from "@/lib/square/connection";
 import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { classFeatureAccess } from "@/lib/classFeatureAccess";
+import { CLASS_B_EVENT_CAPACITY, CLASS_B_MONTHLY_EVENT_LIMIT } from "@/lib/classBPolicy";
 import { eligibleClassEventPage } from "@/lib/classEventPage";
 import { classIdPattern } from "@/lib/classes";
 import { activeEventSchool, isClassEventMember } from "@/lib/classEventAccess";
@@ -182,9 +183,26 @@ export async function POST(request: NextRequest) {
         try { await getUsableSquareConnection(user); }
         catch { return fail("有料受付の開始前にSquareの接続を確認してください。",409); }
       }
-      if (publish && event.payment_method !== "parari" && (!Number.isInteger(event.definition.capacity) || Number(event.definition.capacity) < 1 || Number(event.definition.capacity) > 50)) return fail("CLASS Bの定員を1〜50人に設定してください。", 409);
+      if (publish && event.payment_method !== "parari" && (!Number.isInteger(event.definition.capacity) || Number(event.definition.capacity) < 1 || Number(event.definition.capacity) > CLASS_B_EVENT_CAPACITY)) return fail("CLASS Bの定員を1〜50人に設定してください。", 409);
       if (publish && Date.parse(event.class_event.startsAt) <= Date.now()) return fail("開催日時を未来に設定してください。");
       if (publish && event.class_event.registration && Date.parse(event.class_event.deadline) <= Date.now()) return fail("申込締切を未来に設定してください。");
+      if (publish && event.payment_method !== "parari") {
+        // Count published and closed events in the scheduled month (Japan time).
+        // A closed event still occupies its original slot; reopening is not a new event.
+        const month = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0,7);
+        const months = new Set((event.class_event.sessions ?? [event.class_event]).map(session => month(session.startsAt)));
+        const { data: others, error: quotaError } = await db.from("applications")
+          .select("id,class_event").eq("class_event_school_id",school)
+          .neq("payment_method","parari").in("status",["open","closed"]).neq("id",id);
+        if (quotaError) throw quotaError;
+        for (const key of months) {
+          const used = (others ?? []).filter(item => {
+            const settings = item.class_event as ClassEventSettings | null;
+            return settings && (settings.sessions ?? [settings]).some(session => month(session.startsAt) === key);
+          }).length;
+          if (used >= CLASS_B_MONTHLY_EVENT_LIMIT) return fail(`通常のイベント・講習会は開催月ごとに${CLASS_B_MONTHLY_EVENT_LIMIT}件までです。PARARI内Square決済の有料イベントは対象外です。`,409);
+        }
+      }
       const { error } = await db.from("applications").update({ status: publish ? "open" : "closed" })
         .eq("id", id).eq("class_event_school_id", school);
       if (error) throw error;
@@ -317,8 +335,8 @@ export async function POST(request: NextRequest) {
     const payment = body.payment;
     if (payment !== "none" && payment !== "on_site" && payment !== "payment_link" && payment !== "parari") return fail("支払方法を選択してください。");
     if (!registration && (payment === "payment_link" || payment === "parari")) return fail("事前決済を使う場合は申込を受け付けてください。");
-    const capacity = body.capacity === "" || body.capacity == null ? (payment === "parari" ? null : 50) : Number(body.capacity);
-    if (capacity !== null && (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 2147483647 || (payment !== "parari" && capacity > 50))) return fail(payment === "parari" ? "定員は正の整数で入力してください。" : "CLASS Bの定員は1〜50人で入力してください。");
+    const capacity = body.capacity === "" || body.capacity == null ? (payment === "parari" ? null : CLASS_B_EVENT_CAPACITY) : Number(body.capacity);
+    if (capacity !== null && (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 2147483647 || (payment !== "parari" && capacity > CLASS_B_EVENT_CAPACITY))) return fail(payment === "parari" ? "定員は正の整数で入力してください。" : "CLASS Bの定員は1〜50人で入力してください。");
     const amount = payment === "none" ? null : Number(body.amount);
     if (amount !== null && (!Number.isInteger(amount) || amount < 1 || amount > 10000000)) return fail("参加費を入力してください。");
     const url = payment === "payment_link" ? clean(body.paymentUrl, 2048) : null;
