@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
   if (process.env.CLASS_B_CHECKOUT_ENABLED !== "true") {
     return reply({ok:false,message:"CLASS Bの購入受付は準備中です。"},503);
   }
-  // This stage intentionally cannot create a Stripe Checkout session.
   const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return reply({ok:false,message:"ログインしてください。"},401);
   const {data:{user},error:authError} = await db.auth.getUser(token);
@@ -41,9 +40,45 @@ export async function POST(request: NextRequest) {
         (process.env.VERCEL_ENV === "production" && !price.livemode)) {
       return reply({ok:false,message:"CLASS Bの価格設定を確認できません。"},503);
     }
-    // Payment session creation is deliberately gated pending atomic
-    // reservation of a per-school contract and signed webhook support.
-    return reply({ok:false,message:"CLASS Bの契約受付は準備中です。"},503);
+    // Keep the second release gate closed until the webhook and ledger have
+    // been tested together. Never enable checkout based on a client parameter.
+    if (process.env.CLASS_B_CONTRACT_LEDGER_READY !== "true") {
+      return reply({ok:false,message:"CLASS Bの契約受付は準備中です。"},503);
+    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_BASE_URL;
+    if (!appUrl) return reply({ok:false,message:"サービスのURL設定を確認してください。"},503);
+    const {data:entitlement,error:entitlementError} = await db.from("class_feature_plans")
+      .select("plan,active_until").eq("school_id",schoolId).maybeSingle();
+    if (entitlementError) throw entitlementError;
+    if (entitlement?.plan === "b" && (!entitlement.active_until || Date.parse(entitlement.active_until)>Date.now()))
+      return reply({ok:false,message:"この事業はすでにCLASS Bをご契約中です。"},409);
+    // Atomic primary-key reservation prevents concurrent purchases for one school.
+    const reservation = await db.from("class_b_contracts").insert({
+      school_id:schoolId,owner_user_id:user.id,requested_blocks:quantity
+    }).select("attempt_id,created_at").single();
+    if (reservation.error?.code === "23505")
+      return reply({ok:false,message:"この事業には既存の契約または購入手続きがあります。"},409);
+    if (reservation.error || !reservation.data) throw reservation.error ?? new Error("Missing contract reservation");
+    const attempt = reservation.data.attempt_id;
+    const metadata = {plan:"class_b",class_b_school_id:schoolId,class_b_attempt_id:attempt,supabase_user_id:user.id};
+    // No shared WRITERS customer is supplied: this subscription is independent.
+    const session = await stripe.checkout.sessions.create({
+      mode:"subscription",currency:"jpy",locale:"ja",
+      line_items:[{price:priceId,quantity}],
+      customer_email:user.email ?? undefined,
+      client_reference_id:schoolId,
+      metadata,subscription_data:{metadata},
+      allow_promotion_codes:false,
+      adaptive_pricing:{enabled:false},
+      success_url:`${appUrl}/billing?class_b_checkout=success`,
+      cancel_url:`${appUrl}/billing?class_b_checkout=cancel`,
+    },{idempotencyKey:`class-b-checkout-${attempt}`});
+    const saved = await db.from("class_b_contracts").update({
+      stripe_checkout_session_id:session.id,updated_at:new Date().toISOString()
+    }).eq("school_id",schoolId).eq("attempt_id",attempt).eq("status","pending");
+    if (saved.error) throw saved.error;
+    if (!session.url) throw new Error("Missing CLASS B Checkout URL");
+    return reply({ok:true,url:session.url});
   } catch(error) {
     console.error("[class-b checkout] validation failed",error);
     return reply({ok:false,message:"契約の準備状況を確認できませんでした。"},503);
