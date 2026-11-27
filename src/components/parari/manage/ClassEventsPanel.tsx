@@ -259,7 +259,7 @@ function EventForm({ kind, event, classes, busy, onSave }: {
       if (!e.target.checked && payment === "payment_link") setPayment("none");
     }} />申込を受け付ける</label>}
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1">{workshop ? "講習会全体の定員（任意）" : "定員（任意）"}<input className={input} type="number" min={1} max={1000} name="capacity" defaultValue={event?.definition.capacity ?? ""} /></label>
+      <label className="grid gap-1">{workshop ? "講習会全体の定員（最大100人）" : "定員（最大100人）"}<input className={input} type="number" min={1} max={100} required name="capacity" defaultValue={event?.definition.capacity ?? 100} /></label>
       {registration && <label className="grid gap-1">申込締切（空欄なら{workshop ? "初回" : ""}開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
     </div>
     </div>
