@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { stripe } from "@/lib/billing/stripe";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
@@ -53,12 +54,12 @@ export async function POST(request: NextRequest) {
     if (entitlement?.plan === "b" && (!entitlement.active_until || Date.parse(entitlement.active_until)>Date.now()))
       return reply({ok:false,message:"この事業はすでにCLASS Bをご契約中です。"},409);
     // Atomic primary-key reservation prevents concurrent purchases for one school.
-    const reservation = await db.from("class_b_contracts").insert({
+    let reservation = await db.from("class_b_contracts").insert({
       school_id:schoolId,owner_user_id:user.id,requested_blocks:quantity
     }).select("attempt_id,created_at").single();
     if (reservation.error?.code === "23505") {
       const existing = await db.from("class_b_contracts")
-        .select("status,requested_blocks,stripe_checkout_session_id,stripe_subscription_id")
+        .select("attempt_id,status,requested_blocks,stripe_checkout_session_id,stripe_subscription_id")
         .eq("school_id",schoolId).eq("owner_user_id",user.id).maybeSingle();
       if (existing.error) throw existing.error;
       const contract = existing.data;
@@ -66,15 +67,29 @@ export async function POST(request: NextRequest) {
           contract.stripe_checkout_session_id) {
         const prior = await stripe.checkout.sessions.retrieve(contract.stripe_checkout_session_id);
         if (prior.metadata?.class_b_school_id !== schoolId ||
-            prior.metadata?.supabase_user_id !== user.id || prior.metadata?.plan !== "class_b")
+            prior.metadata?.supabase_user_id !== user.id || prior.metadata?.plan !== "class_b" ||
+            prior.metadata?.class_b_attempt_id !== contract.attempt_id)
           throw new Error("Mismatched CLASS B checkout reservation");
         if (prior.status === "open" && prior.url) {
           if (contract.requested_blocks !== quantity)
             return reply({ok:false,message:"購入手続き中の契約数量と異なります。元の数量で再開してください。"},409);
           return reply({ok:true,url:prior.url,resumed:true});
         }
+        if (prior.status === "expired" && prior.payment_status === "unpaid" && !prior.subscription) {
+          // Compare-and-swap: only one concurrent retry can replace an expired attempt.
+          reservation = await db.from("class_b_contracts").update({
+            attempt_id:randomUUID(),requested_blocks:quantity,stripe_checkout_session_id:null,
+            created_at:new Date().toISOString(),updated_at:new Date().toISOString()
+          }).eq("school_id",schoolId).eq("owner_user_id",user.id)
+            .eq("attempt_id",contract.attempt_id).eq("status","pending")
+            .eq("stripe_checkout_session_id",prior.id).is("stripe_subscription_id",null)
+            .select("attempt_id,created_at").single();
+          if (reservation.error?.code === "PGRST116")
+            return reply({ok:false,message:"別の購入手続きが進行中です。"},409);
+        }
       }
-      return reply({ok:false,message:"この事業には既存の契約または購入手続きがあります。"},409);
+      if (reservation.error?.code === "23505")
+        return reply({ok:false,message:"この事業には既存の契約または購入手続きがあります。"},409);
     }
     if (reservation.error || !reservation.data) throw reservation.error ?? new Error("Missing contract reservation");
     const attempt = reservation.data.attempt_id;
