@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/billing/stripe";
 import { supabaseAdmin } from "@/lib/billing/supabaseAdmin";
+import { isClassBSubscription, reconcileClassBSubscription } from "@/lib/billing/classBSubscription";
 import {
   markBillingCanceledBySubscriptionId,
   markBillingPastDueByCustomerId,
@@ -47,6 +48,10 @@ async function handleCheckoutSessionCompleted(
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
+  if (session.metadata?.plan === "class_b" || isClassBSubscription(subscription)) {
+    await reconcileClassBSubscription(subscription.id);
+    return;
+  }
   await updateBillingFromSubscription({
     subscription,
     userId,
@@ -54,12 +59,20 @@ async function handleCheckoutSessionCompleted(
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  if (isClassBSubscription(subscription)) {
+    await reconcileClassBSubscription(subscription.id);
+    return;
+  }
   await updateBillingFromSubscription({
     subscription,
   });
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  if (isClassBSubscription(subscription)) {
+    await reconcileClassBSubscription(subscription.id);
+    return;
+  }
   await markBillingCanceledBySubscriptionId(subscription.id);
 }
 
@@ -85,6 +98,16 @@ async function handlePlatformFeeInvoicePaid(
   }
 }
 
+async function handleClassBInvoice(invoice: Stripe.Invoice): Promise<boolean> {
+  const ref = invoice.parent?.subscription_details?.subscription;
+  const id = typeof ref === "string" ? ref : ref?.id;
+  if (!id) return false;
+  const subscription = await stripe.subscriptions.retrieve(id);
+  if (!isClassBSubscription(subscription)) return false;
+  await reconcileClassBSubscription(id);
+  return true;
+}
+
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (isParariPlatformFeeInvoice(invoice)) {
     console.warn(
@@ -94,6 +117,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     return;
   }
 
+  if (await handleClassBInvoice(invoice)) return;
   const stripeCustomerId = getStripeCustomerId(invoice.customer);
 
   if (!stripeCustomerId) {
@@ -169,6 +193,8 @@ export async function POST(request: NextRequest) {
 
         if (isParariPlatformFeeInvoice(invoice)) {
           await handlePlatformFeeInvoicePaid(invoice);
+        } else {
+          await handleClassBInvoice(invoice);
         }
 
         break;
