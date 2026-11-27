@@ -30,6 +30,7 @@ type ApplicationRow = {
   owner_user_id: string;
   title: string;
   payment_method: string;
+  class_event_school_id: string | null;
 };
 
 type PaymentRow = {
@@ -167,7 +168,7 @@ export async function createSquareCheckoutForEntry(
     error: applicationError,
   } = await supabaseAdmin
     .from("applications")
-    .select("id,owner_user_id,title,payment_method")
+    .select("id,owner_user_id,title,payment_method,class_event_school_id")
     .eq("id", entry.application_id)
     .maybeSingle();
 
@@ -202,8 +203,7 @@ export async function createSquareCheckoutForEntry(
       application.owner_user_id,
     );
 
-  const feeBps =
-    entitlements.salesFeeBps;
+  const feeBps = application.class_event_school_id ? 500 : entitlements.salesFeeBps;
 
   const appFeeMinor =
     feeBps > 0
