@@ -16,7 +16,7 @@ export type ClassEvent = {
   status: "draft" | "open" | "closed";
   class_event: ClassEventSettings;
   definition: { capacity: number | null };
-  payment_method: "none" | "on_site" | "payment_link";
+  payment_method: "none" | "on_site" | "payment_link" | "parari";
   payment_amount: number | null;
   payment_url: string | null;
 };
