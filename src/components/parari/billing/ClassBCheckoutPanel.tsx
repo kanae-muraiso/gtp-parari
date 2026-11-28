@@ -34,6 +34,21 @@ export default function ClassBCheckoutPanel(){
   }catch(e){setMessage(e instanceof Error?e.message:"決済画面を開けませんでした。");}
   finally{setBusy(false);}
  }
+ async function refreshContract(){
+  if(!current||busy)return;
+  if(current.status==="unavailable"||current.status==="none"){await load();return;}
+  setBusy(true);setMessage("");
+  try{
+   const {data:{session}}=await supabase.auth.getSession();
+   if(!session?.access_token)throw Error("ログインしてください。");
+   const response=await fetch("/api/billing/class-b/refresh",{method:"POST",cache:"no-store",headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({schoolId})});
+   const data=await response.json();
+   if(!response.ok||!data.ok)throw Error(data.message||"契約確認に失敗しました。");
+   await load();
+   if(data.waiting)setMessage("Stripeの支払い確認を待っています。支払いが完了した場合は再度確認してください。");
+  }catch(e){setMessage(e instanceof Error?e.message:"契約確認に失敗しました。");}
+  finally{setBusy(false);}
+ }
  const statusLabels:Record<string,string>={active:"契約中",pending:"購入手続き中",past_due:"支払い確認中",canceled:"解約済み",expired:"期限切れ",none:"未契約",unavailable:"販売準備中"};
  return <section id="class-b" className="mt-8 grid gap-4 rounded-3xl border border-emerald-200 bg-white p-5">
  <div><p className="text-sm font-semibold text-emerald-800">CLASS B</p><h2 className="mt-1 text-2xl font-bold">事業ごとの契約・請求管理</h2><p className="mt-2 text-base">月額1,000円（税込）で通常5クラス。追加5クラスごとに月額1,000円（税込）です。WRITERSの契約とは独立しています。</p></div>
@@ -48,7 +63,7 @@ export default function ClassBCheckoutPanel(){
  {current?.canManageBilling&&<p className="text-sm text-neutral-700">追加枠は日割りの差額決済後に反映します。枠の縮小・解約は次回更新時に反映します。</p>}
  {current?.canManageBilling&&<button disabled={busy} onClick={()=>void open("portal")} className="min-h-12 rounded-xl border p-3 text-base font-bold">追加枠・カード変更・解約の手続き</button>}
  {!ready&&<p className="rounded-xl bg-amber-50 p-3 text-base text-amber-900">販売開始前のため、購入受付は停止しています。</p>}
- <button disabled={busy} onClick={()=>void load()} className="min-h-11 rounded-xl border p-3 text-base">最新の契約状況を確認</button>
+ <button disabled={busy} onClick={()=>void refreshContract()} className="min-h-11 rounded-xl border p-3 text-base">最新の契約状況を確認</button>
  </>}
  {message&&<p role="alert" className="text-base text-red-700">{message}</p>}
  </section>;
