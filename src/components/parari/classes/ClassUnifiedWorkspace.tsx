@@ -358,8 +358,9 @@ export default function ClassUnifiedWorkspace(){
     try{await classRequest("/onboarding?school="+business,{action:"saveWizard",revision:details.draft.revision,wizard:{...details.draft.wizard,businessModel:JSON.stringify(next)}});setModel(next);setShowModel(false);setNotice("事業の設計案を保存しました。");refresh();return true;}
     catch(e){setError(e instanceof Error?e.message:"設計案を保存できませんでした。");}finally{setBusy(false);}
   }
-  const recruitTabs=[["services","個別サービスの申込導線（設計）"],["homepage","事業の募集ページ"],["improve","募集の改善"]] as const;
+  const businessPageEntry=<button type="button" className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-left" onClick={()=>go("homepage")}><span className="flex-1"><span className="block text-lg font-bold">事業の募集ページ</span><span className="block text-sm text-neutral-600">事業紹介・サービス一覧（任意）</span></span><span aria-hidden="true">›</span></button>;
   function go(next:Tab){
+    if(next==="improve")next="homepage";
     resetDesign();setShowCreateBusiness(false);setRecruitService(null);setLegacyRecruit(false);setSettingsFocus(null);
     if(next==="classes")setSelected({kind:"business",id:business});
     if(next==="settings")setShowModel(false);
@@ -457,10 +458,7 @@ export default function ClassUnifiedWorkspace(){
         {preview&&eventDesign?.id&&flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)&&<ClassServiceQualification key={eventDesign.id} schoolId={business} target={flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)!} membership={model.membership}/>}
         {eventDesign&&<ClassEventsPanel key={business+":"+eventDesign.kind+":"+(eventDesign.id??"new")} labels={serviceLabels} kind={eventDesign.kind} classes={slots} roster={roster} mode="design" initialCreate={!eventDesign.id} initialEventId={eventDesign.id} onChanged={refresh} onBack={backDesign}/>}
       </>}
-      {school&&area==="募集"&&<nav aria-label="募集" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {recruitTabs.map(([id,label])=><button key={id} type="button" aria-pressed={tab===id} onClick={()=>go(id)}
-          className={tab===id?primary:button}>{label}</button>)}
-      </nav>}
+      {school&&area==="募集"&&tab!=="services"&&<button type="button" className={button} onClick={()=>go("services")}>‹ 募集に戻る</button>}
       {loading&&business&&<p role="status" className="text-sm">教室の情報を確認しています…</p>}
 
       {school&&tab==="classes"&&editingDesign&&!newCourse&&!chooseCourse&&!eventDesign&&<section className="space-y-4" aria-label="選択中のサービスの編集">
@@ -576,7 +574,8 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="services"&&<section className={panel+" grid gap-3"}>
-        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onMembershipChange={enabled=>void applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
+        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onMembershipChange={enabled=>void applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign} overviewHeader={businessPageEntry}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
+        {!recruitService&&businessPageEntry}
         <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
         {recruitService?<><button type="button" className={button} onClick={()=>{setRecruitService(null);setLegacyRecruit(false);}}>← 募集の構成図に戻る</button>
@@ -622,12 +621,7 @@ export default function ClassUnifiedWorkspace(){
 
       {school&&tab==="homepage"&&<section className={panel+" space-y-5"}>
         <h2 className="text-xl font-bold">事業の募集ページ</h2>
-        <div className="grid gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><h3 className="font-bold">事業に合わせた掲載構成案</h3><p className="text-base">事業紹介</p>{kinds.map(kind=><p key={kind} className="text-base">{serviceLabels[kind]}の紹介・申込{model.primary===kind?"（最優先）":""}</p>)}{model.membership&&<p className="text-base">入会案内（事業への入会制度）</p>}<p className="text-sm text-neutral-600">構成案です。既存の公開ページを自動変更しません。</p><button className={button} onClick={()=>{go("settings");setShowModel(true);}}>事業の形態を見直す</button></div>
-        <p className="text-sm">公開URL：<Link className="underline" href={"/class-business/"+business} target="_blank">/class-business/{business}</Link></p>
-        <div className="grid gap-2 rounded-xl bg-neutral-50 p-4 text-sm">
-          <p>PARARIで編集する部分：ご挨拶・写真・教室紹介</p>
-          <p>CLASSが管理する部分：提供サービス・料金・日時・申込ボタン</p>
-        </div>
+        <p className="text-base text-neutral-600">事業全体を紹介するページです。個別サービスの募集ページだけで運営する場合は作成不要です。</p>
         {details?.draft.landing_page_id ? <div className="flex flex-wrap gap-2">
           <Link className={primary} href={"/editor-v2/"+details.draft.landing_page_id}>紹介文や写真を編集</Link>
           <Link className={button} href={"/class-business/"+business} target="_blank">公開ページを見る</Link>
@@ -640,10 +634,11 @@ export default function ClassUnifiedWorkspace(){
             <textarea className={field} rows={3} value={welcome} maxLength={2000} onChange={e=>setWelcome(e.target.value)}/></label>
           <button type="button" className={primary} disabled={pageBusy||busy} onClick={()=>void createHomePage()}>この教室の紹介PAGEを作る</button>
         </>}
+        {details&&<details className="rounded-xl border p-3"><summary className="min-h-11 cursor-pointer py-2 font-bold">募集内容を改善する（16項目）</summary><ClassSalesPanel key={business+":business-sales"} schoolId={business} answers={details.draft.sales_answers??[]} revision={details.draft.revision} onSaved={refresh} draftKey={preview?"class-page-sales:"+business+":business":undefined} pageTitle={school.name}/></details>}
         <details className="rounded-xl border p-3">
-          <summary className="cursor-pointer font-bold">募集ページの掲載・公開設定</summary>
+          <summary className="min-h-11 cursor-pointer py-2 font-bold">募集ページの掲載・公開設定</summary>
           <div className="mt-3"><ClassBusinessFrontPanel key={business+":front"} schoolId={business} name={school.name}
-            products={products} onOpenRecruitment={()=>setTab("admission")} onOpenSchedule={()=>setTab("classes")} onSaved={refresh}/></div>
+            products={products} onOpenRecruitment={()=>go("services")} onOpenSchedule={()=>go("classes")} onSaved={refresh}/></div>
         </details>
         {kinds.includes("course")&&<details className="rounded-xl border p-3">
           <summary className="cursor-pointer font-bold">継続サービスの既存共通受付</summary>
@@ -686,8 +681,7 @@ export default function ClassUnifiedWorkspace(){
         <Link href="/my/sales" className={button+" inline-flex items-center"}>販売・売上管理を開く</Link>
       </section>}
       {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} labels={serviceLabels} kind={tab==="events"?"event":"workshop"} mode="recruit"/>}
-      {school&&tab==="improve"&&details&&<ClassSalesPanel schoolId={business}
-        answers={details.draft.sales_answers??[]} revision={details.draft.revision} onSaved={refresh}/>}
+
       {school&&tab==="operation"&&<section className={panel+" space-y-5"}>
         <h2 className="text-xl font-bold">日々の運営</h2>
         <div className="flex flex-wrap gap-2">
