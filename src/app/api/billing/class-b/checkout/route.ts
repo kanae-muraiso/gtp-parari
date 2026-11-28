@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         // documented retention window. Never create a second attempt blindly.
         if (contract.requested_blocks !== quantity || Date.now()-Date.parse(contract.created_at)>=23*3600000)
           return reply({ok:false,message:"購入手続きの確認が必要です。管理者へお問い合わせください。"},409);
-        reservation = { ...reservation, data:{attempt_id:contract.attempt_id,created_at:contract.created_at}, error:null };
+        reservation = { data:{attempt_id:contract.attempt_id,created_at:contract.created_at}, error:null, count:1, status:200, statusText:"OK", success:true };
       }
       if (contract?.status === "pending" && !contract.stripe_subscription_id &&
           contract.stripe_checkout_session_id) {
