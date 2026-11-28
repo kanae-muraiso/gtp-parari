@@ -3,6 +3,8 @@ on:
   push:
     branches: [class-b-capacity-guard]
     paths: ['docs/class-b-*.sql','scripts/class-b-postgres-fixture.sql','.github/workflows/class-b-postgres.yml']
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
