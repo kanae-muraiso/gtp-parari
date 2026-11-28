@@ -67,6 +67,7 @@ export async function GET(request:NextRequest){
 
 export async function POST(request:NextRequest){
  try{
+  if(process.env.VERCEL_ENV==="preview")return fail("開発プレビューでは出欠を保存できません。隔離されたテスト環境でお試しください。",503);
   const token=request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const auth=token?await db.auth.getUser(token):null,user=auth?.data.user;
   const scope=request.nextUrl.searchParams.get("business");
