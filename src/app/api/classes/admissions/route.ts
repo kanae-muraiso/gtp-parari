@@ -6,6 +6,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
+import { serviceLabelPatch } from "@/lib/classServiceLabels";
 import { classDate, classInterviewExpiry, classToday, designForApplicant, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
@@ -173,16 +174,26 @@ async function handle(request: NextRequest, write: boolean) {
         mailed = primary && learner;
       }
       return send({ ok: true, link, mailed });
-    } else if (input?.action === "settings" || input?.action === "labels") {
-      const terms = trim(input.terms);
-      const labels = Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key => [key, trim(input.labels?.[key])]));
-      if (input.action === "labels" && Object.values(labels).some(label => !label || label.length > 24)) {
-        return fail("呼び方はそれぞれ1〜24文字で入力してください。");
+    } else if (input?.action === "serviceLabels" || input?.action === "labels") {
+      const patch = input.action === "serviceLabels" ? serviceLabelPatch(input.labels) : Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key=>[key,trim(input.labels?.[key])]));
+      if(!patch||Object.values(patch).some(value=>!value||value.length>24))return fail("呼び方はそれぞれ1〜24文字で入力してください。");
+      if(!setting.data){
+        const initial=await db.from("school_admission_settings").upsert({school_id:schoolId,...defaultAdmissionSettings},{onConflict:"school_id",ignoreDuplicates:true});
+        if(initial.error)throw initial.error;
       }
-      if (input.action === "settings" && terms.length > 8000) return fail("規約は8000文字以内で入力してください。");
-      const changes = input.action === "labels" ? { labels } : {
-        terms, briefing: input.briefing === true, test: input.test === true, proxy: input.proxy === true,
-      };
+      // Merge presentation keys, preserving unrelated role labels; compare the
+      // original JSON value to avoid losing another editor's changes.
+      const current=await db.from("school_admission_settings").select("labels").eq("school_id",schoolId).single();
+      if(current.error)throw current.error;
+      const original=current.data.labels;
+      const merged={...defaultAdmissionSettings.labels,...original,...patch};
+      const result=await db.from("school_admission_settings").update({labels:merged}).eq("school_id",schoolId).eq("labels",JSON.stringify(original)).select("school_id").maybeSingle();
+      if(result.error)throw result.error;
+      if(!result.data)return fail("呼び方が別の画面で更新されました。再読み込みしてください。",409);
+    } else if (input?.action === "settings") {
+      const terms = trim(input.terms);
+      if (terms.length > 8000) return fail("規約は8000文字以内で入力してください。");
+      const changes = {terms, briefing: input.briefing === true, test: input.test === true, proxy: input.proxy === true};
       if (!setting.data) {
         const initial = await db.from("school_admission_settings").upsert(
           { school_id: schoolId, ...defaultAdmissionSettings, ...changes },
