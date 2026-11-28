@@ -29,7 +29,7 @@ export function buildFlow(target:FlowTarget,draft:FlowDraft):FlowStep[]{
 }
 export function stepLabel(step:FlowStep,target:FlowTarget,draft:FlowDraft){
  const member=target.kind==="membership";
- const labels:Record<FlowStep,string>={page:member?"入会案内":"募集ページ",common:"共通の入会手続き",eligibility:"会員資格確認",booking:"説明会予約",briefing:"説明会・体験",application:member?"入会申込":target.kind==="event"?"参加申込":"受講申込",test:"テスト",approval:member?"入会許可":"運営者の確認",terms:"規約同意",class:"開催枠選択",payment:draft.payment==="recurring"?"月謝決済":member?"入会金決済":"事前決済",confirmation:member?"入会確定":target.kind==="event"?"参加確定":"受講確定",onsite:"当日払い"};
+ const labels:Record<FlowStep,string>={page:member?"入会案内":"募集ページ",common:"共通の入会手続き",eligibility:"会員資格確認",booking:"説明会予約",briefing:"説明会・体験",application:member?"入会申込":target.kind==="event"?"参加申込":"受講申込",test:"テスト",approval:member?"入会許可":"運営者の確認",terms:"規約同意",class:"開催枠選択",payment:draft.payment==="recurring"||target.defaultPayment==="recurring"?"月謝決済":member?"入会金決済":"事前決済",confirmation:member?"入会確定":target.kind==="event"?"参加確定":"受講確定",onsite:"当日払い"};
  return labels[step];
 }
 
