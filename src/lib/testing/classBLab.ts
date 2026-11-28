@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const labActions = ["pay","fail","upgrade","cancel","class","fill","member","event","paid","unpaid","open","enterPaid","enterUnpaid","close","confirmCash","manualPresent"] as const;
+export const labActions = ["pay","fail","upgrade","cancel","class","fill","member","event","paid","unpaid","open","enterPaid","enterUnpaid","close","confirmCash","manualPresent","squareConnect","squareClass","squareFill","disconnectSquare","squareEvent"] as const;
 export type LabAction = typeof labActions[number];
 const id=(n:number)=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
 const owner=id(1),school=id(2),attempt=id(3),paidUser=id(4),unpaidUser=id(5);
@@ -19,7 +19,10 @@ export async function runClassBLab(actions:LabAction[]){
     create table profiles(user_id uuid primary key,is_monitor boolean,display_name text,username text);
     create table class_schools(id uuid primary key,owner_user_id uuid not null references auth.users(id),archived_at timestamptz);
     create table class_feature_plans(school_id uuid primary key references class_schools(id),plan text not null default 'a',active_until timestamptz,updated_at timestamptz default now());
-    create table school_classes(id uuid primary key default gen_random_uuid(),school_id uuid not null references class_schools(id));
+    create table school_class_products(id uuid primary key,school_id uuid not null references class_schools(id),design jsonb,unique(school_id,id));
+    create table commerce_products(id uuid primary key,owner_user_id uuid,product_type text,amount numeric,currency text,billing_interval text,active boolean,square_plan_id text,square_plan_variation_id text);
+    create table square_connections(owner_user_id uuid,environment text,status text,primary key(owner_user_id,environment));
+    create table school_classes(id uuid primary key default gen_random_uuid(),school_id uuid not null references class_schools(id),product_id uuid,fee_override_yen int);
     create table school_enrollments(id uuid primary key,school_id uuid,status text,class_participation text);
     create table school_class_assignments(school_id uuid,enrollment_id uuid,class_id uuid,self_selected boolean default false,primary key(school_id,enrollment_id,class_id));
     create table school_class_visit_reservations(school_id uuid,enrollment_id uuid,class_id uuid,visit_on date,primary key(enrollment_id,class_id,visit_on));
@@ -31,7 +34,7 @@ export async function runClassBLab(actions:LabAction[]){
     where a.school_id=p_school and a.class_id=p_class and e.status='active' and (a.self_selected or e.class_participation<>'flexible') $$;
     grant select,insert,update,delete on all tables in schema public to service_role;
    `);
-   for(const file of ["class-b-class-blocks-draft.sql","class-b-contract-ledger-draft.sql","class-b-reconcile-draft.sql","class-b-event-checkin-draft.sql","class-b-operation-quotas-draft.sql"])
+   for(const file of ["class-b-class-blocks-draft.sql","class-b-contract-ledger-draft.sql","class-b-reconcile-draft.sql","class-b-event-checkin-draft.sql","class-b-operation-quotas-draft.sql","class-b-square-slot-quotas-draft.sql"])
      await db.exec(await readFile(join(process.cwd(),"docs",file),"utf8"));
    await db.exec("create trigger class_limit after insert or update of school_id on school_classes for each row execute function class_a_guard_new_class()");
    await db.query("insert into auth.users values($1),($2),($3)",[owner,paidUser,unpaidUser]);
@@ -57,6 +60,40 @@ export async function runClassBLab(actions:LabAction[]){
          case "upgrade": await requireB();await reconcile("active",(await plan()).class_blocks+1,true);break;
          case "cancel": await reconcile("canceled",Math.max(1,(await plan()).class_blocks),false);break;
          case "class": await db.query("insert into school_classes(id,school_id) values($1,$2)",[id(200+await count("select count(*)::int as n from school_classes")),school]);break;
+         case "squareConnect":
+           await requireB();
+           await db.query("insert into square_connections values($1,'production','active') on conflict(owner_user_id,environment) do update set status='active'",[owner]);break;
+         case "disconnectSquare":
+           await db.query("update square_connections set status='revoked' where owner_user_id=$1",[owner]);break;
+         case "squareClass": {
+           await requireB();
+           // Synthetic verified product evidence exists ONLY inside this fresh memory DB.
+           await db.query("insert into square_connections values($1,'production','active') on conflict(owner_user_id,environment) do update set status='active'",[owner]);
+           await db.query("insert into school_class_products values($1,$2,$3) on conflict do nothing",[id(800),school,JSON.stringify({monthlyFee:1000,capacity:100})]);
+           await db.query("insert into commerce_products values($1,$2,'recurring',1000,'JPY','monthly',true,'DUMMY_PLAN','DUMMY_VARIATION') on conflict do nothing",[id(801),owner]);
+           await db.query("insert into class_b_square_products(school_id,class_product_id,commerce_product_id,environment) values($1,$2,$3,'production') on conflict do nothing",[school,id(800),id(801)]);
+           // Exercise the actual two-step priced-slot transaction.
+           await db.transaction(async tx=>{
+             const n=Number((await tx.query<{n:number}>("select count(*)::int as n from school_classes")).rows[0].n);
+             const cls=id(200+n);
+             await tx.query("insert into school_classes(id,school_id) values($1,$2)",[cls,school]);
+             await tx.query("update school_classes set product_id=$1 where id=$2",[id(800),cls]);
+           });break;
+         }
+         case "squareFill": {
+           await requireB();
+           const cls=(await db.query<{id:string}>("select id from school_classes where school_id=$1 and public.class_b_square_slot(school_id,id) order by id limit 1",[school])).rows[0]?.id;
+           if(!cls)throw Error("確認済みSquare決済クラスを追加してください。");
+           for(let i=0;i<31;i++){
+             const member=id(2000+i);
+             await db.query("insert into school_enrollments values($1,$2,'active','fixed') on conflict do nothing",[member,school]);
+             await db.query("insert into school_class_assignments(school_id,enrollment_id,class_id) values($1,$2,$3) on conflict do nothing",[school,member,cls]);
+           }break;
+         }
+         case "squareEvent": {
+           await requireB();const n=await count("select count(*)::int as n from applications");
+           await db.query("insert into applications(id,owner_user_id,class_event_school_id,status,class_event,definition,payment_method,payment_amount,title) values($1,$2,$3,'open',$4,$5,'parari',1000,$6)",[id(100+n),owner,school,JSON.stringify({startsAt:at,registration:true}),JSON.stringify({capacity:100}),"Squareテストイベント "+(n+1)]);break;
+         }
          case "fill":
          case "member":{
            await requireB();const cls=await firstClass();if(!cls)throw Error("最初にクラスを作成してください。");
@@ -99,6 +136,6 @@ export async function runClassBLab(actions:LabAction[]){
    }
    const current=await plan();
    const entries=(await db.query("select id,applicant_name as name,status,payment_status,class_event_attendance from application_entries order by id")).rows;
-   return {results,entries,plan:current.plan,blocks:current.plan==="b"?current.class_blocks:0,classes:await count("select count(*)::int as n from school_classes"),members:await count("select count(*)::int as n from school_class_assignments"),events:await count("select count(*)::int as n from applications"),paid:await count("select count(*)::int as n from application_entries where payment_status='paid'"),unpaid:await count("select count(*)::int as n from application_entries where payment_status='unpaid'"),attended:await count("select count(*)::int as n from application_entries where class_event_attendance='present'"),gate:await count("select count(*)::int as n from class_event_checkin_gates")>0,receipt};
+   return {results,entries,squareClasses:await count("select count(*)::int as n from school_classes where public.class_b_square_slot(school_id,id)"),ordinaryClasses:await count("select count(*)::int as n from school_classes where not public.class_b_square_slot(school_id,id)"),ordinaryEvents:await count("select count(*)::int as n from applications where payment_method<>'parari'"),squareEvents:await count("select count(*)::int as n from applications where payment_method='parari'"),plan:current.plan,blocks:current.plan==="b"?current.class_blocks:0,classes:await count("select count(*)::int as n from school_classes"),members:await count("select count(*)::int as n from school_class_assignments"),events:await count("select count(*)::int as n from applications"),paid:await count("select count(*)::int as n from application_entries where payment_status='paid'"),unpaid:await count("select count(*)::int as n from application_entries where payment_status='unpaid'"),attended:await count("select count(*)::int as n from application_entries where class_event_attendance='present'"),gate:await count("select count(*)::int as n from class_event_checkin_gates")>0,receipt};
  }finally{await db.close();}
 }
