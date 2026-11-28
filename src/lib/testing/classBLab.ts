@@ -56,7 +56,7 @@ export async function runClassBLab(actions:LabAction[]){
          case "fail": await reconcile("past_due",Math.max(1,(await plan()).class_blocks),false);break;
          case "upgrade": await requireB();await reconcile("active",(await plan()).class_blocks+1,true);break;
          case "cancel": await reconcile("canceled",Math.max(1,(await plan()).class_blocks),false);break;
-         case "class": await db.query("insert into school_classes(school_id) values($1)",[school]);break;
+         case "class": await db.query("insert into school_classes(id,school_id) values($1,$2)",[id(200+await count("select count(*)::int as n from school_classes")),school]);break;
          case "fill":
          case "member":{
            await requireB();const cls=await firstClass();if(!cls)throw Error("最初にクラスを作成してください。");
