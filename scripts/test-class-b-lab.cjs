@@ -16,6 +16,13 @@ async function main(){
  assert.equal(cash.results[4].ok,false);assert.equal(cash.results[5].ok,true);assert.equal(cash.results[6].ok,true);
  assert.equal(cash.paid,2);assert.equal(cash.unpaid,0);assert.equal(cash.attended,1);
  assert.equal(cash.entries.find(e=>e.name==="ダミー参加者 B").class_event_attendance,"present");
+ const square=await runClassBLab(["pay","class","class","class","class","class","squareConnect","class","squareClass","squareFill","event","event","event","event","squareEvent"]);
+ assert.deepEqual(square.results.flatMap((r,i)=>r.ok?[]:[i]),[7,13]);
+ assert.equal(square.ordinaryClasses,5);assert.equal(square.squareClasses,1);
+ assert.equal(square.members,31);assert.equal(square.ordinaryEvents,3);assert.equal(square.squareEvents,1);
+ const revoked=await runClassBLab(["pay","class","class","class","class","class","squareClass","squareFill","disconnectSquare","class"]);
+ assert.equal(revoked.results.at(-1).ok,false);assert.equal(revoked.ordinaryClasses,6);assert.equal(revoked.squareClasses,0);assert.equal(revoked.members,31);
+ console.log("PASS: ordinary quotas, verified Square link only, deferred priced-slot attachment, 31 seats, paid event exemption and revocation retains data.");
  console.log("PASS: actual isolated browser lab scenario from failed payment through paid upgrade, quota, unpaid rejection, attendance, repeat check-in and gate closure.");
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
