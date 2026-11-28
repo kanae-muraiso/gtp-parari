@@ -53,7 +53,7 @@ export async function GET(request:NextRequest){
   ]);
   if(schedules.error||events.error)throw schedules.error??events.error;
   if(schedules.data.length>=1000||events.data.length>=1000)return fail("開催予定の件数が上限を超えています。",409);
-  const byKey=new Map(schedules.data.map(s=>[s.class_id+":"+s.month.slice(0,7),s]));
+  const byKey=new Map<string,{class_id:string;month:string;days:string[];confirmed:boolean}>((schedules.data as {class_id:string;month:string;days:string[];confirmed:boolean}[]).map(s=>[s.class_id+":"+s.month.slice(0,7),s] as const));
   const sessions:OperationSession[]=[];
   for(const item of classes)for(let month=start.slice(0,7);month<=end.slice(0,7);month=shiftCalendarMonth(month,1)){
    const saved=byKey.get(item.id+":"+month);
