@@ -1,0 +1,55 @@
+name: CLASS B PostgreSQL 17 isolated integration
+on:
+  push:
+    branches: [class-b-capacity-guard]
+    paths: ['docs/class-b-*.sql','scripts/class-b-postgres-fixture.sql','.github/workflows/class-b-postgres.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: class_b_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d class_b_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: isolated_ci_only
+      PGDATABASE: class_b_ci
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Apply actual draft SQL to isolated PostgreSQL
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/class-b-postgres-fixture.sql
+      - name: Simultaneous fifth and sixth class
+        shell: bash
+        run: |
+          set -euo pipefail
+          sql="SET ROLE service_role; INSERT INTO public.school_classes(school_id) VALUES('00000000-0000-4000-8000-000000000002');"
+          set +e
+          psql -X -v ON_ERROR_STOP=1 -c "BEGIN; $sql SELECT pg_sleep(1); COMMIT;" > /tmp/class-a.log 2>&1 &
+          a=$!
+          psql -X -v ON_ERROR_STOP=1 -c "BEGIN; $sql COMMIT;" > /tmp/class-b.log 2>&1 &
+          b=$!
+          wait "$a"; x=$?
+          wait "$b"; y=$?
+          set -e
+          cat /tmp/class-a.log /tmp/class-b.log
+          test "$(( (x == 0) + (y == 0) ))" = 1
+          test "$(psql -X -Atc 'SELECT count(*) FROM public.school_classes')" = 5
+          grep -q "CLASS B ordinary class allowance exceeded" /tmp/class-a.log /tmp/class-b.log
+          echo "PASS: PostgreSQL 17 concurrent class creation permits exactly one of two competing fifth/sixth slots."
