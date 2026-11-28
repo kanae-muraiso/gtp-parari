@@ -1,5 +1,7 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useState,type ReactNode} from "react";
+import ClassSalesPanel from "./ClassSalesPanel";
+const emptySalesAnswers:string[]=[];
 import ClassRecruitmentStepEditor from "./ClassRecruitmentStepEditor";
 import {availableFlowSteps,flowOrder,flowOrderIssue,flowKey,initialFlow,moveFlowStep,parseFlowDraft,requiredFlowSteps,stepConfigIssue,stepLabel,type FlowTarget,type FlowDraft,type FlowStep} from "@/lib/classRecruitmentFlowDesign";
 const field="min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base";
@@ -19,7 +21,7 @@ export function ClassServiceQualification({schoolId,target,membership}:{schoolId
  {message&&<p role="status" className="text-base">{message}</p>}
  </section>;
 }
-export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membership,onMembershipChange,onOpenLegacy,onOpenDesign}:{schoolId:string;targets:FlowTarget[];membership:boolean;onMembershipChange:(enabled:boolean)=>void;onOpenLegacy:(target:FlowTarget,step:FlowStep)=>void;onOpenDesign:(target:FlowTarget)=>void}){
+export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membership,onMembershipChange,onOpenLegacy,onOpenDesign,overviewHeader}:{schoolId:string;targets:FlowTarget[];membership:boolean;onMembershipChange:(enabled:boolean)=>void;onOpenLegacy:(target:FlowTarget,step:FlowStep)=>void;onOpenDesign:(target:FlowTarget)=>void;overviewHeader?:ReactNode}){
  const [drafts,setDrafts]=useState<Record<string,FlowDraft>>({});
  const [selection,setSelection]=useState<{id:string;step:FlowStep}|null>(null);
  const [checklist,setChecklist]=useState<string|null>(null);
@@ -93,7 +95,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  }
  const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
  return <section className="min-w-0 grid gap-4">
-
+  {!configuring&&!target&&<>{overviewHeader}<h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2></>}
   <p className="text-sm text-neutral-600">ブラウザ内の設計案です。実際の受付・公開・決済は変更しません。</p>
   {!confirmed?<section className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-4">
     <h3 className="text-lg font-bold">共通の入会手続きを設けますか？</h3>
@@ -155,7 +157,8 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    {target.kind!=="membership"&&step==="page"&&<div className="grid gap-2 text-base"><p>参加資格：{draft.audience==="members_only"?"事業への入会者限定":"一般の方も参加可能"}</p>{target.priceText&&<p>設計で決めた料金：{target.priceText}</p>}<button type="button" className={btn+" w-fit"} onClick={()=>onOpenDesign(target)}>設計で変更する</button></div>}
    <ClassRecruitmentStepEditor key={rowKey(target)+":"+step} step={step} target={target} draft={draft} onChange={update} onCommon={()=>openChecklist(shared)}/>
    {step!=="common"&&<div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={save}>保存</button></div>}
-   {step!=="common"&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">移行前の設定を確認する</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
+   {step==="page"&&<details className="rounded-lg border p-3"><summary className="min-h-11 cursor-pointer py-2 text-base font-medium">募集内容を改善する（16項目）</summary><ClassSalesPanel key={rowKey(target)+":sales"} schoolId={schoolId} answers={emptySalesAnswers} revision={0} onSaved={()=>{}} draftKey={"class-page-sales:"+schoolId+":"+rowKey(target)} pageTitle={target.title}/></details>}
+   {step!=="common"&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">{step==="page"?"既存ページの編集・公開設定":"移行前の設定を確認する"}</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
    </div>
   </section>}
   {message&&<p role="status" className="rounded-lg bg-neutral-50 p-3 text-base">{message}</p>}
