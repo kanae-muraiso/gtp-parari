@@ -9,6 +9,7 @@ import ClassEventSchedule from "./ClassEventSchedule";
 import ClassEventEntrance from "./ClassEventEntrance";
 import { classEventDate, classEventLabels, classEventEntryAttendance, classEventEntryReady, classEventEntryMatches, type ClassEventEntryFilter, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
+import {defaultServiceLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 
 const input = "min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-base";
 const button = "w-fit min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base disabled:opacity-50";
@@ -21,8 +22,8 @@ const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "
 
 type Detail = { event: ClassEvent; entries: ClassEventEntry[]; eventPageId?: string | null };
 
-export default function ClassEventsPanel({ classes, roster, kind, mode="all", initialCreate=false, initialEventId, onChanged, onBack }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind; mode?:"all"|"design"|"recruit"|"operation"; initialCreate?:boolean; initialEventId?:string; onChanged?:()=>void; onBack?:()=>void }) {
-  const label = classEventLabels[kind];
+export default function ClassEventsPanel({ classes, roster, kind, labels=defaultServiceLabels, mode="all", initialCreate=false, initialEventId, onChanged, onBack }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind; labels?:ServiceLabels; mode?:"all"|"design"|"recruit"|"operation"; initialCreate?:boolean; initialEventId?:string; onChanged?:()=>void; onBack?:()=>void }) {
+  const label = labels[kind];
   const [sessionAt, setSessionAt] = useState("");
   const [events, setEvents] = useState<ClassEvent[]>([]);
   const [canCreateEvents, setCanCreateEvents] = useState(false);
@@ -141,7 +142,7 @@ export default function ClassEventsPanel({ classes, roster, kind, mode="all", in
 
   return <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
     <header className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-xl font-bold">{kind==="workshop"?"短期講習会":label}{mode==="design"?"の設計":mode==="recruit"?"の募集":mode==="operation"?"の受付・運営":""}</h2>
+      <h2 className="text-xl font-bold">{label}{mode==="design"?"の設計":mode==="recruit"?"の募集":mode==="operation"?"の受付・運営":""}</h2>
       {event || editing
         ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); onBack?.(); }}>{onBack?"事業の構成図に戻る":label+"一覧に戻る"}</button>
         : mode==="all"||mode==="design"?<button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>:null}
@@ -152,7 +153,7 @@ export default function ClassEventsPanel({ classes, roster, kind, mode="all", in
     </p>}
     {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
     {notice && <p className="text-sm text-green-800" role="status">{notice}</p>}
-    {editing && canCreateEvents && (mode==="all"||mode==="design") ? <EventForm key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
+    {editing && canCreateEvents && (mode==="all"||mode==="design") ? <EventForm labels={labels} key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
       void change({ ...values, id: event?.id, kind, action: "save" }, "下書きを保存しました。")} /> : event && detail ? <>
       <article className="grid gap-2 rounded-xl border p-4" aria-label="参加者向けプレビュー">
         <p className="text-sm text-neutral-600">{statuses[event.status]} · {audiences[event.class_event.audience]}</p>
@@ -248,8 +249,8 @@ export default function ClassEventsPanel({ classes, roster, kind, mode="all", in
   </section>;
 }
 
-function EventForm({ kind, event, classes, busy, onSave }: {
-  kind: ClassEventKind; event?: ClassEvent; classes: SchoolClass[]; busy: boolean; onSave: (values: object) => void;
+function EventForm({ kind, event, classes, busy, onSave,labels }: {
+  kind: ClassEventKind; event?: ClassEvent; classes: SchoolClass[]; busy: boolean; onSave: (values: object) => void;labels:ServiceLabels;
 }) {
   const defaults = event?.class_event;
   const workshop = kind === "workshop";
@@ -282,7 +283,7 @@ function EventForm({ kind, event, classes, busy, onSave }: {
     </nav>
     <p className="text-xs text-neutral-600">工程を押すと、その設定欄へ移動します。※開催・出欠は公開後に管理します。</p>
     <div id="event-content" className="grid gap-3 scroll-mt-24">
-    <label className="grid gap-1">{classEventLabels[kind]}名<input className={input} name="title" required maxLength={120} defaultValue={event?.title} /></label>
+    <label className="grid gap-1">{labels[kind]}名<input className={input} name="title" required maxLength={120} defaultValue={event?.title} /></label>
     <label className="grid gap-1">案内文<textarea className={input} rows={3} name="description" maxLength={4000} defaultValue={event?.description ?? ""} /></label>
     {workshop ? <fieldset className="grid gap-3">
       <legend className="font-semibold">開催日程（日本時間）</legend>
@@ -310,7 +311,7 @@ function EventForm({ kind, event, classes, busy, onSave }: {
       {Object.entries(audiences).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
     {audience !== "public" && classes.length > 0 && <fieldset className="grid gap-2 rounded-lg border p-3">
-      <legend>対象クラス（指定しない場合は事業全体）</legend>
+      <legend>対象{labels.class}（指定しない場合は事業全体）</legend>
       {classes.map(item => <label className="flex items-center gap-2" key={item.id}>
         <input type="checkbox" name="classId" value={item.id} defaultChecked={defaults?.classIds.includes(item.id)} />
         {item.productName ? item.productName + " · " : ""}{item.name}
@@ -321,12 +322,12 @@ function EventForm({ kind, event, classes, busy, onSave }: {
       if (!e.target.checked && (payment === "payment_link" || payment === "parari")) setPayment("none");
     }} />申込を受け付ける</label>}
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1">{workshop ? "講習会全体の定員" : "定員"}{payment === "parari" ? "（空欄で制限なし）" : "（最大50人）"}<input className={input} type="number" min={1} max={payment === "parari" ? 2147483647 : 50} required={payment !== "parari"} name="capacity" defaultValue={event ? event.definition.capacity ?? "" : 50} /></label>
+      <label className="grid gap-1">{workshop ? labels.workshop+"全体の定員" : "定員"}{payment === "parari" ? "（空欄で制限なし）" : "（最大50人）"}<input className={input} type="number" min={1} max={payment === "parari" ? 2147483647 : 50} required={payment !== "parari"} name="capacity" defaultValue={event ? event.definition.capacity ?? "" : 50} /></label>
       {registration && <label className="grid gap-1">申込締切（空欄なら{workshop ? "初回" : ""}開始時刻）<input className={input} type="datetime-local" name="deadline" defaultValue={defaults && defaults.startsAt !== defaults.deadline ? localDate(defaults.deadline) : ""} /></label>}
     </div>
     </div>
     <div id="event-payment" className="grid gap-3 scroll-mt-24">
-    <label className="grid gap-1">{workshop ? "講習会全体の受講料" : "参加費"}<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
+    <label className="grid gap-1">{workshop ? labels.workshop+"全体の受講料" : "参加費"}<select className={input} value={payment} onChange={e => setPayment(e.target.value as typeof payment)}>
       {Object.entries(paymentLabels).filter(([key]) => registration || (key !== "payment_link" && key !== "parari")).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
     </select></label>
     {payment !== "none" && <label className="grid gap-1">金額（円）<input className={input} type="number" min={1} max={10000000} required name="amount" defaultValue={event?.payment_amount ?? ""} /></label>}
