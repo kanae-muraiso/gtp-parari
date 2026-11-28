@@ -5,7 +5,7 @@
     "dev": "next dev -p 3001",
     "build": "npm run test:pdf-import && npm run test:paste-envelope && npm run test:html-conversion && npm run test:text-split && npm run test:markdown-conversion && npm run test:markdown-security && npm run test:text-paste-wiring && npm run test:login-turnstile && npm run test:share-access && npm run test:unlisted-rls && npm run test:book-resolve-security && next build",
     "start": "next start -p 3001",
-    "typecheck": "tsc --noEmit && npm run test:class-b-payment && npm run test:class-b-checkin && npm run test:class-b-quotas && npm run test:class-b-lab",
+    "typecheck": "tsc --noEmit && npm run test:class-b-payment && npm run test:class-b-checkin && npm run test:class-b-quotas && npm run test:class-b-lab && npm run test:class-b-operations",
     "test:pdf-import": "node scripts/test-pdf-import.cjs",
     "test:login-turnstile": "node scripts/test-login-turnstile.cjs",
     "test:commerce-work-preview": "node scripts/test-commerce-work-preview.cjs",
@@ -36,7 +36,8 @@
     "test:class-b-payment": "node scripts/test-class-b-payment-simulation.cjs",
     "test:class-b-checkin": "node scripts/test-class-b-checkin.cjs",
     "test:class-b-quotas": "node scripts/test-class-b-quotas.cjs",
-    "test:class-b-lab": "node scripts/test-class-b-lab.cjs"
+    "test:class-b-lab": "node scripts/test-class-b-lab.cjs",
+    "test:class-b-operations": "node scripts/test-class-b-operations.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
