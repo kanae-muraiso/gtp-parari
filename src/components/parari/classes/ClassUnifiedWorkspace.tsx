@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { classRequest } from "@/lib/classRequests";
 import { classSchedule, type ClassManagement, type SchoolClass } from "@/lib/classes";
@@ -18,6 +18,8 @@ import ClassAbsencesPanel from "@/components/parari/manage/ClassAbsencesPanel";
 import ClassBusinessFrontPanel from "@/components/parari/manage/ClassBusinessFrontPanel";
 import ClassEventsPanel from "@/components/parari/manage/ClassEventsPanel";
 import ClassSalesPanel from "./ClassSalesPanel";
+import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
+import ClassWorkspaceHome, {classAreaForTab,type ClassWorkspaceTab} from "./ClassWorkspaceHome";
 
 type Business={id:string;name:string;business_type:"school"|"studio"|"other";archived_at?:string|null};
 type HomeDraft={wizard:Record<string,unknown>;sales_answers:string[];landing_page_id:string|null;revision:number};
@@ -25,7 +27,7 @@ type OwnerDetails={
   draft:HomeDraft;pages:{id:string;title:string;visibility:string|null;is_public:boolean}[];
   published:boolean;recruitment:{enabled:boolean;public_id:string;route:string}|null;
 };
-type Tab="classes"|"admission"|"homepage"|"operation"|"improve";
+type Tab=ClassWorkspaceTab;
 type Selection={kind:"business"|"course"|"class";id:string};
 type FlowFocus="recruitment"|"agreement"|"blueprint"|"admissions";
 type FirstDraft={
@@ -33,9 +35,9 @@ type FirstDraft={
   delivery:"onsite"|"online"|"hybrid";location:string;meetingUrl:string;
   feeMode:"monthly"|"per_visit";fee:string;monthlyVisits:string;capacity:string;audience:"adult"|"minor";
 };
-const field="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm";
-const button="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-50";
-const primary="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
+const field="block min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base";
+const button="min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base font-medium disabled:opacity-50";
+const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
 const panel="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5";
 const firstDraft=():FirstDraft=>({name:"",cadence:"weekly",date:classCalendarToday(),time:"",duration:"60",delivery:"onsite",
   location:"",meetingUrl:"",feeMode:"monthly",fee:"0",monthlyVisits:"4",capacity:"10",audience:"adult"});
@@ -60,9 +62,7 @@ export default function ClassUnifiedWorkspace(){
   const [products,setProducts]=useState<NamedClassProduct[]>([]);
   const [details,setDetails]=useState<OwnerDetails|null>(null);
   const [recruitment,setRecruitment]=useState<ClassRecruitmentData|null>(null);
-  const [tab,setTab]=useState<Tab>("classes");
-  const [operating,setOperating]=useState(false);
-  const lastModeBusiness=useRef("");
+  const [tab,setTab]=useState<Tab>("home");
   const [selected,setSelected]=useState<Selection|null>(null);
   const [first,setFirst]=useState<FirstDraft>(firstDraft);
   const [firstStep,setFirstStep]=useState(0);
@@ -77,14 +77,14 @@ export default function ClassUnifiedWorkspace(){
   const [notice,setNotice]=useState("");
   const [refreshKey,setRefreshKey]=useState(0);
   const [editorKey,setEditorKey]=useState(0);
-  const [operationFocus,setOperationFocus]=useState<"admissions"|"attendance"|"calendar"|"roster"|"events"|"workshops">("admissions");
+  const [operationFocus,setOperationFocus]=useState<"admissions"|"attendance"|"calendar"|"roster"|"events"|"workshops">("roster");
 
   const refresh=useCallback(()=>setRefreshKey(k=>k+1),[]);
   function selectBusiness(id:string){
     window.history.replaceState(null,"",id?"/my/class-onboarding?business="+encodeURIComponent(id):"/my/class-onboarding");
     setBusiness(id);setManagement(null);setDetails(null);setRecruitment(null);
     setSelected(id?{kind:"business",id}:null);
-    setFirstActive(false);setNewSlot(null);setTab("classes");setError("");setNotice("");
+    setFirstActive(false);setNewSlot(null);setTab("home");setOperationFocus("roster");setError("");setNotice("");
   }
 
   useEffect(()=>{
@@ -92,7 +92,7 @@ export default function ClassUnifiedWorkspace(){
     setBusiness(requested);
     const controller=new AbortController();
     void classRequest<{businesses:Business[]}>("?businesses=1",undefined,controller.signal)
-      .then(data=>{if(!controller.signal.aborted){setBusinesses(data.businesses.filter(item=>!item.archived_at));setLoading(false);}})
+      .then(data=>{if(!controller.signal.aborted){const active=data.businesses.filter(item=>!item.archived_at);setBusinesses(active);if(!requested&&active.length===1)selectBusiness(active[0].id);setLoading(false);}})
       .catch(cause=>{if(!controller.signal.aborted){setError(cause instanceof Error?cause.message:"事業一覧を取得できませんでした。");setLoading(false);}});
     return ()=>controller.abort();
   },[]);
@@ -112,7 +112,6 @@ export default function ClassUnifiedWorkspace(){
       setManagement(m);setProducts(p.products);setDetails(d);setRecruitment(r);
       setEditingBusinessName(m.school?.name??"");
       setWelcome(typeof d.draft.wizard?.welcome==="string"?d.draft.wizard.welcome:"");
-      if(lastModeBusiness.current!==business){lastModeBusiness.current=business;setOperating(Boolean(d.published));}
       setLoading(false);
     }).catch(cause=>{
       if(!controller.signal.aborted){setError(cause instanceof Error?cause.message:"事業を読み込めませんでした。");setLoading(false);}
@@ -252,30 +251,34 @@ export default function ClassUnifiedWorkspace(){
     : ["募集ページ","入会申込","同意・支払","確認・名簿登録"]);
   const flowAction:FlowFocus[]=["recruitment","blueprint","agreement","admissions"];
   const roster=management?.roster??[];
-  const navs:{id:Tab;label:string}[]=[
-    {id:"classes",label:"クラス設計"},{id:"admission",label:"入会フロー"},
-    {id:"homepage",label:"募集ページ"},{id:"operation",label:"名簿・日々の運営"},
-    {id:"improve",label:"16問で改善（任意）"},
-  ];
+  const area=classAreaForTab(tab);
+  const recruitTabs=[["homepage","募集ページ"],["admission","入会フロー"],["events","イベント"],["workshops","講習会"],["improve","募集の改善"]] as const;
+  function go(next:Tab){
+    setError("");setNotice("");setShowCreateBusiness(false);
+    if(next==="operation")setOperationFocus("roster");
+    setTab(next);
+    window.scrollTo(0,0);
+  }
+  async function confirmSurcharge(memberId:string,classId:string,day:string){
+    if(busy)return;
+    setBusy(true);setError("");setNotice("");
+    try{await classRequest("",{action:"confirmSurcharge",memberId,classId,day});setNotice("差額の入金を記録しました。");refresh();}
+    catch(cause){setError(cause instanceof Error?cause.message:"入金を記録できませんでした。");}
+    finally{setBusy(false);}
+  }
 
   return <main className="min-h-screen bg-neutral-100 px-4 py-6 text-neutral-950 sm:px-6">
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-xs font-bold tracking-wider text-emerald-900">PARARI CLASS</p>
-          <h1 className="text-2xl font-bold">{operating?"日々の運営":"教室の開設・準備"}</h1>
-          <p className="text-sm text-neutral-600">設計も運営も同じ場所で。クラスと入会の流れは、いつでも変更できます。</p>
-        </div>
-        {business&&<button className={button} onClick={()=>setOperating(v=>!v)}>
-          {operating?"開設・設計の表示に切り替え":"日々の運営の表示に切り替え"}
-        </button>}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/my/studio" className="inline-flex min-h-11 items-center text-base font-medium text-neutral-700">← STUDIO</Link>
+        {tab!=="home"&&<button className={button} onClick={()=>go("home")}>← CLASS ホーム</button>}
       </header>
-
+      {process.env.NEXT_PUBLIC_VERCEL_ENV==="preview"&&<p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-base text-amber-900">開発プレビュー：実データと接続している場合があります。既存事業の保存・公開・入金操作は行わず、画面と導線を確認してください。</p>}
       {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}</p>}
       {notice&&<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">{notice}</p>}
       <section className={panel+" space-y-3"}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">あなたのクラス環境</h2>
+          <h2 className="text-lg font-bold">運営する事業</h2>
           <button className={button} type="button" onClick={()=>setShowCreateBusiness(v=>!v)}>
             {showCreateBusiness?"閉じる":"＋ 事業を作る"}
           </button>
@@ -294,11 +297,11 @@ export default function ClassUnifiedWorkspace(){
         {!businesses.length&&!loading&&<p className="text-sm text-neutral-600">最初に事業を一つ作りましょう。その中にクラスを開設します。</p>}
         <div className="flex flex-wrap gap-2">
           {businesses.map(item=><button key={item.id} type="button" onClick={()=>selectBusiness(item.id)}
-            className={"rounded-lg border px-3 py-2 text-sm "+(business===item.id?"border-emerald-800 bg-emerald-50 font-bold":"border-neutral-300")}>
-            ■ {item.name}
+            aria-pressed={business===item.id} className={"min-h-11 rounded-lg border px-4 py-2 text-base "+(business===item.id?"border-emerald-800 bg-emerald-50 font-bold":"border-neutral-300")}>
+            {item.name}
           </button>)}
         </div>
-        {school&&<div className="space-y-2 rounded-xl bg-neutral-50 p-3 sm:p-4">
+        {school&&tab==="classes"&&<div className="space-y-2 rounded-xl bg-neutral-50 p-3 sm:p-4">
           <p className="text-xs text-neutral-600">■ 事業、□ コース、× クラスを押すと、下の「選択中の設定」が切り替わります。</p>
           <button onClick={()=>{setSelected({kind:"business",id:business});setFirstActive(false);setNewSlot(null);setTab("classes");}}
             className={"text-left font-bold "+(selected?.kind==="business"?"text-emerald-900 underline":"")} type="button">
@@ -307,14 +310,14 @@ export default function ClassUnifiedWorkspace(){
           {products.map(product=>{
             const listed=slots.filter(slot=>slot.product_id===product.id);
             return <div key={product.id} className="ml-3 space-y-2 border-l-2 border-neutral-300 pl-4 sm:ml-5">
-              <button className={"text-left text-sm font-semibold "+(selected?.kind==="course"&&selected.id===product.id?"text-emerald-900 underline":"")}
+              <button className={"min-h-11 text-left text-base font-semibold "+(selected?.kind==="course"&&selected.id===product.id?"text-emerald-900 underline":"")}
                 type="button" onClick={()=>{setTab("classes");setSelected({kind:"course",id:product.id});setFirstActive(false);setNewSlot(null);}}>
                 □ {product.name} <span className="font-normal text-neutral-500">コース · {listed.length}クラス</span>
               </button>
               <div className="flex flex-wrap gap-2 pl-4">
                 {listed.length?listed.map(slot=><button type="button" key={slot.id}
                   onClick={()=>{setTab("classes");setSelected({kind:"class",id:slot.id});setFirstActive(false);setNewSlot(null);}}
-                  className={"rounded-md border px-2 py-1 text-xs "+(selected?.kind==="class"&&selected.id===slot.id?"border-emerald-700 bg-emerald-100":"border-neutral-300 bg-white")}>
+                  className={"min-h-11 rounded-lg border px-3 py-2 text-base "+(selected?.kind==="class"&&selected.id===slot.id?"border-emerald-700 bg-emerald-100":"border-neutral-300 bg-white")}>
                   × {slot.name} · {slot.starts_at.slice(0,5)}
                 </button>):<span className="text-xs text-amber-800">開催日時が未登録です</span>}
               </div>
@@ -327,11 +330,14 @@ export default function ClassUnifiedWorkspace(){
         </div>}
       </section>
 
-      {business&&<nav aria-label="クラス環境の操作" className="flex flex-wrap gap-2">
-        {navs.map(item=><button type="button" key={item.id} onClick={()=>{setTab(item.id);setError("");}}
-          className={"rounded-lg border px-3 py-2 text-sm font-semibold "+(tab===item.id?"border-emerald-800 bg-emerald-50 text-emerald-900":"border-neutral-200 bg-white")}>
-          {item.label}
-        </button>)}
+      {tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={go}/>}
+      {tab!=="home"&&school&&<div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+        <p className="text-base text-neutral-600">CLASS / {school.name}</p>
+        <h1 className="mt-1 text-2xl font-bold">{area}</h1>
+      </div>}
+      {school&&area==="募集"&&<nav aria-label="募集" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        {recruitTabs.map(([id,label])=><button key={id} type="button" aria-pressed={tab===id} onClick={()=>go(id)}
+          className={tab===id?primary:button}>{label}</button>)}
       </nav>}
       {loading&&business&&<p role="status" className="text-sm">教室の情報を確認しています…</p>}
 
@@ -458,16 +464,7 @@ export default function ClassUnifiedWorkspace(){
           <p className="text-sm">コースを選択して開催日時・場所を追加します。</p>
           {products.map(product=><button className={button+" mr-2"} key={product.id} onClick={()=>setSelected({kind:"course",id:product.id})}>{product.name}を選ぶ</button>)}
         </>:<>
-          <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3">
-            <label className="grid gap-1 text-sm font-medium">事業名
-              <input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/>
-            </label>
-            <button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>事業名を保存</button>
-          </form>
-          <details className="rounded-xl border p-3">
-            <summary className="cursor-pointer font-semibold">先生・生徒・手続きの呼び方</summary>
-            <div className="mt-3"><ClassAdmissionsPanel mode="labels" /></div>
-          </details>
+          <button type="button" className={button} onClick={()=>go("settings")}>事業設定を開く</button>
           <div className="border-t pt-4">
             <h3 className="font-semibold">この事業の構成</h3>
             <p className="mt-1 text-xs text-neutral-600">コースやクラスの詳しい設定は、上の図から選ぶとこの場所に表示されます。</p>
@@ -535,16 +532,61 @@ export default function ClassUnifiedWorkspace(){
         </details>
       </section>}
 
+      {school&&tab==="settings"&&<>
+        <section className={panel+" space-y-4"}><h2 className="text-xl font-bold">事業の基本設定</h2>
+          <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3">
+            <label className="grid gap-1 text-sm font-medium">事業名
+              <input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/>
+            </label>
+            <button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>事業名を保存</button>
+          </form>
+          <details className="rounded-xl border p-3">
+            <summary className="cursor-pointer font-semibold">先生・生徒・手続きの呼び方</summary>
+            <div className="mt-3"><ClassAdmissionsPanel mode="labels" /></div>
+          </details>
+
+        </section>
+        <ClassBCheckoutPanel key={business} initialSchoolId={business} fixedSchool/>
+        <section className={panel+" space-y-3"}><h2 className="text-xl font-bold">決済サービス</h2>
+          <p className="text-base text-neutral-600">CLASS Bの利用契約と、受講者から受け取る月謝・参加費は別の設定です。</p>
+          <Link href="/my/sales" className={button+" inline-flex items-center"}>販売・決済の設定を開く</Link>
+        </section>
+      </>}
+      {school&&tab==="accounting"&&<section className={panel+" space-y-5"}>
+        <h2 className="text-xl font-bold">月謝・入金・売上</h2>
+        <section className="space-y-2 rounded-xl border p-4">
+          <h3 className="text-lg font-bold">月謝・受講費の設定</h3>
+          {products.map(product=><div key={product.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-3">
+            <div><p className="font-semibold">{product.name}</p><p className="text-base text-neutral-700">{product.design.walkInFee!=null?"1回 "+money(product.design.walkInFee):"月額 "+money(product.design.monthlyFee)}</p></div>
+            <button className={button} onClick={()=>{setSelected({kind:"course",id:product.id});setFirstActive(false);setNewSlot(null);go("classes");}}>料金設定</button>
+          </div>)}
+          {!products.length&&<p>コースがまだありません。</p>}
+          <p className="text-base text-neutral-600">月次の請求・回収・売上集計は準備中です。設定された料金は実際の入金額とは異なります。</p>
+        </section>
+        <section className="space-y-3 rounded-xl border p-4">
+          <h3 className="text-lg font-bold">差額の入金確認</h3>
+          {management?.surcharges?.map(charge=><div className="flex flex-wrap items-center justify-between gap-3 border-t py-3" key={charge.enrollment_id+charge.class_id+charge.visit_on}>
+            <div><p>{roster.find(member=>member.id===charge.enrollment_id)?.name??"受講者"} · {charge.visit_on}</p><p>{slots.find(slot=>slot.id===charge.class_id)?.name??"開催枠"} · {money(charge.surcharge_yen)}</p></div>
+            <button type="button" className={primary} disabled={busy} onClick={()=>void confirmSurcharge(charge.enrollment_id,charge.class_id,charge.visit_on)}>入金を確認</button>
+          </div>)}
+          {!management?.surcharges?.length&&<p className="text-base text-neutral-600">入金待ちの差額はありません。</p>}
+          <h3 className="border-t pt-3 text-lg font-bold">最近の差額入金記録</h3>
+          {management?.receipts?.map(receipt=><p key={receipt.id}>{roster.find(member=>member.id===receipt.enrollment_id)?.name??"受講者"} · {receipt.visit_on} · {money(receipt.amount_yen)}</p>)}
+          {!management?.receipts?.length&&<p className="text-base text-neutral-600">入金記録はありません。</p>}
+        </section>
+        <Link href="/my/sales" className={button+" inline-flex items-center"}>販売・売上管理を開く</Link>
+      </section>}
+      {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} kind={tab==="events"?"event":"workshop"}/>}
       {school&&tab==="improve"&&details&&<ClassSalesPanel schoolId={business}
         answers={details.draft.sales_answers??[]} revision={details.draft.revision} onSaved={refresh}/>}
       {school&&tab==="operation"&&<section className={panel+" space-y-5"}>
         <h2 className="text-xl font-bold">日々の運営</h2>
         <div className="flex flex-wrap gap-2">
           {([
-            ["admissions","申込・入会"],["attendance","欠席連絡"],["calendar","開催予定"],
-            ["roster","名簿"],["events","イベント"],["workshops","講習会"],
+            ["roster","生徒・名簿"],["admissions","申込・入会"],["attendance","欠席連絡"],["calendar","開催予定"],
+            ["events","イベント・受付"],["workshops","講習会・受付"],
           ] as const).map(([id,label])=><button type="button" key={id} onClick={()=>setOperationFocus(id)}
-            className={operationFocus===id?primary:button}>{label}</button>)}
+            aria-pressed={operationFocus===id} className={operationFocus===id?primary:button}>{label}</button>)}
         </div>
         {operationFocus==="admissions"&&<ClassAdmissionsPanel key={business+":ops-admission"} mode="admissions" onRosterChanged={refresh}/>}
         {operationFocus==="attendance"&&<ClassAbsencesPanel schoolId={business} classes={slots}/>}
