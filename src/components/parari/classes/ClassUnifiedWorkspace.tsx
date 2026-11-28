@@ -342,7 +342,14 @@ export default function ClassUnifiedWorkspace(){
         <span aria-hidden="true" className="w-16"/>
       </section>}
       {business&&tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={go}/>}
-      {tab!=="home"&&school&&<h2 className="px-1 text-2xl font-bold">{area}</h2>}
+      {tab!=="home"&&school&&<>
+        <nav aria-label="CLASS 共通ナビゲーション" className="grid grid-cols-4 gap-1 rounded-xl border border-neutral-200 bg-white p-1 sm:gap-2 sm:p-2">
+          {([["classes","設計"],["homepage","募集"],["operation","運営"],["accounting","会計"]] as const).map(([id,label])=>
+            <button key={id} type="button" aria-current={area===label?"page":undefined} disabled={busy||pageBusy} onClick={()=>{if(area!==label)go(id);}}
+              className={"min-h-11 rounded-lg px-1 py-2 text-base font-semibold transition-colors disabled:opacity-50 "+(area===label?"bg-emerald-800 text-white":"text-neutral-700 hover:bg-emerald-50")}>{label}</button>)}
+        </nav>
+        <h2 className="px-1 text-2xl font-bold">{area}</h2>
+      </>}
       {school&&tab==="classes"&&<>
         <section className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 sm:p-5" aria-label="事業の構成図">
           <button type="button" className="min-h-11 text-left text-xl font-bold text-emerald-950" onClick={()=>pickDesign("business",business)}>■ {school.name}</button>
