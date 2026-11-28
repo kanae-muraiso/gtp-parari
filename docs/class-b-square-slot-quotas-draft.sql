@@ -29,6 +29,7 @@ returns boolean language sql stable security invoker set search_path='' as $$
     and l.environment='production' and sq.status='active'
     and p.active and p.billing_interval='monthly' and p.product_type in ('recurring','service')
     and p.currency='JPY' and p.amount>0
+    and coalesce(cp.design->'walkInFee','null'::jsonb)='null'::jsonb
     and nullif(btrim(p.square_plan_id),'') is not null
     and nullif(btrim(p.square_plan_variation_id),'') is not null
     and (case when jsonb_typeof(cp.design->'monthlyFee')='number' then (cp.design->>'monthlyFee')::numeric else null end)=p.amount
