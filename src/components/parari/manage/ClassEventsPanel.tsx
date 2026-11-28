@@ -10,7 +10,7 @@ import ClassEventEntrance from "./ClassEventEntrance";
 import { classEventDate, classEventLabels, classEventEntryAttendance, classEventEntryReady, classEventEntryMatches, type ClassEventEntryFilter, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
 
-const input = "w-full rounded-lg border border-neutral-300 px-3 py-2";
+const input = "min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-base";
 const button = "w-fit min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base disabled:opacity-50";
 const primary = "w-fit min-h-11 rounded-lg bg-neutral-900 px-4 py-2 text-base font-bold text-white disabled:opacity-50";
 const localDate = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16);
@@ -21,14 +21,14 @@ const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "
 
 type Detail = { event: ClassEvent; entries: ClassEventEntry[]; eventPageId?: string | null };
 
-export default function ClassEventsPanel({ classes, roster, kind }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind }) {
+export default function ClassEventsPanel({ classes, roster, kind, mode="all", initialCreate=false, initialEventId, onChanged, onBack }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind; mode?:"all"|"design"|"recruit"|"operation"; initialCreate?:boolean; initialEventId?:string; onChanged?:()=>void; onBack?:()=>void }) {
   const label = classEventLabels[kind];
   const [sessionAt, setSessionAt] = useState("");
   const [events, setEvents] = useState<ClassEvent[]>([]);
   const [canCreateEvents, setCanCreateEvents] = useState(false);
   const [pageBusy,setPageBusy]=useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialCreate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -57,6 +57,8 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
     finally { setBusy(false); }
   }
 
+  useEffect(()=>{if(initialEventId)void open(initialEventId);},[initialEventId]);
+
   async function change(body: object, message: string) {
     setBusy(true);
     setError("");
@@ -68,6 +70,7 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
       setEditing(false);
       setRefresh(value => value + 1);
       setNotice(notice ?? message);
+      onChanged?.();
     } catch (cause) { setError(cause instanceof Error ? cause.message : label + "を更新できませんでした。"); }
     finally { setBusy(false); }
   }
@@ -138,10 +141,10 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
 
   return <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
     <header className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-xl font-bold">{label}</h2>
+      <h2 className="text-xl font-bold">{kind==="workshop"?"短期講習会":label}{mode==="design"?"の設計":mode==="recruit"?"の募集":mode==="operation"?"の受付・運営":""}</h2>
       {event || editing
-        ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); }}>{label}一覧に戻る</button>
-        : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>}
+        ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); onBack?.(); }}>{onBack?"事業の構成図に戻る":label+"一覧に戻る"}</button>
+        : mode==="all"||mode==="design"?<button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>:null}
     </header>
     {!canCreateEvents&&<p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
       CLASS Aではイベント・講習会の新規作成・公開はできません。CLASS Bで利用できます。
@@ -149,7 +152,7 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
     </p>}
     {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
     {notice && <p className="text-sm text-green-800" role="status">{notice}</p>}
-    {editing ? <EventForm key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
+    {editing && canCreateEvents && (mode==="all"||mode==="design") ? <EventForm key={event?.id ?? "new"} kind={kind} event={event} classes={classes} busy={busy} onSave={values =>
       void change({ ...values, id: event?.id, kind, action: "save" }, "下書きを保存しました。")} /> : event && detail ? <>
       <article className="grid gap-2 rounded-xl border p-4" aria-label="参加者向けプレビュー">
         <p className="text-sm text-neutral-600">{statuses[event.status]} · {audiences[event.class_event.audience]}</p>
@@ -160,29 +163,29 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
         {event.class_event.registration ? <p className="text-sm">申込締切 {classEventDate(event.class_event.deadline)}{event.definition.capacity && ` · 定員 ${event.definition.capacity}人`}</p> : <p className="text-sm">申込不要</p>}
       </article>
       <div className="flex flex-wrap gap-2">
-        {event.status === "draft" && <button className={button} disabled={busy||!canCreateEvents} onClick={() => setEditing(true)}>下書きを編集</button>}
-        {event.status === "open"
+        {(mode==="all"||mode==="design")&&event.status === "draft" && <button className={button} disabled={busy||!canCreateEvents} onClick={() => setEditing(true)}>下書きを編集</button>}
+        {(mode==="all"||mode==="recruit")&&(event.status === "open"
           ? <button className={button} disabled={busy} onClick={() => void change({ id: event.id, action: "close" }, "受付を終了しました。")}>受付を終了</button>
-          : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => void change({ id: event.id, action: "publish" }, label + "を公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>}
+          : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => void change({ id: event.id, action: "publish" }, label + "を公開しました。")}>{event.status === "draft" ? "公開する" : "受付を再開"}</button>)}
         {event.status !== "draft" && <a className={button} href={`/class-event/${event.id}`} target="_blank" rel="noreferrer">案内ページを開く</a>}
-        {event.status === "open" && event.class_event.audience !== "public" && Date.parse(event.class_event.startsAt) > Date.now() &&
+        {(mode==="all"||mode==="recruit")&&event.status === "open" && event.class_event.audience !== "public" && Date.parse(event.class_event.startsAt) > Date.now() &&
           <button className={button} disabled={busy} onClick={() => {
             if (window.confirm(`対象の保護者に${label}の案内をメールで送りますか？`))
               void change({ id: event.id, action: "notifyGuardians" }, "保護者に案内を送りました。");
           }}>保護者に案内を送る</button>}
-        {event.status === "open" && event.class_event.audience !== "members" && <button className={button} disabled={busy} onClick={() =>
+        {(mode==="all"||mode==="recruit")&&event.status === "open" && event.class_event.audience !== "members" && <button className={button} disabled={busy} onClick={() =>
           void navigator.clipboard.writeText(new URL(`/class-event/${event.id}`, window.location.origin).href)
             .then(() => setNotice("案内URLをコピーしました。")).catch(() => setError("案内ページを開き、アドレスをコピーしてください。"))}>案内URLをコピー</button>}
       </div>
-      <section className="rounded-xl border border-neutral-200 p-4">
+      {(mode==="all"||mode==="recruit")&&<section className="rounded-xl border border-neutral-200 p-4">
         <h4 className="font-semibold">PARARI作品で魅力を伝える（任意）</h4>
         <p className="mt-1 text-sm text-neutral-600">紹介文・写真を編集できるイベント専用PAGEです。日時・費用・定員・申込はCLASSの設定から自動表示されます。</p>
         {detail.eventPageId ? <Link href={"/editor-v2/"+detail.eventPageId} className={button+" mt-3 inline-block"}>紹介PAGEを編集する</Link>
           : <button className={button+" mt-3"} disabled={pageBusy||!canCreateEvents} onClick={()=>void createEventPage()}>
             {pageBusy?"作成中…":"このイベントの紹介PAGEを作る"}</button>}
         {detail.eventPageId&&<p className="mt-2 text-xs text-neutral-600">PAGEを一般公開にすると、イベントの申込ページに本文が表示されます。</p>}
-      </section>
-      {event.status !== "draft" && <section className="grid gap-3 border-t pt-4">
+      </section>}
+      {(mode==="all"||mode==="operation")&&event.status !== "draft" && <section className="grid gap-3 border-t pt-4">
         <h3 className="text-lg font-semibold">参加者・受付状況</h3>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">申込</p><strong className="text-2xl">{detail.entries.length}</strong></div>
@@ -238,8 +241,8 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
         </div>)}
       </section>}
     </> : <>
-      {!events.length && <p className="text-sm text-neutral-600">{label}はまだありません。</p>}
-      {events.map(item => <button key={item.id} type="button" disabled={busy} className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500"
+      {!events.some(item=>mode!=="operation"||item.status!=="draft") && <p className="text-sm text-neutral-600">{label}はまだありません。</p>}
+      {events.filter(item=>mode!=="operation"||item.status!=="draft").map(item => <button key={item.id} type="button" disabled={busy} className="grid gap-1 rounded-lg border p-3 text-left hover:border-neutral-500"
         onClick={() => void open(item.id)}><strong>{item.title}</strong><span className="text-sm text-neutral-600">{classEventDate(item.class_event.startsAt)} · {item.class_event.sessions && `全${item.class_event.sessions.length}回 · `}{statuses[item.status]}</span></button>)}
     </>}
   </section>;
@@ -268,7 +271,7 @@ function EventForm({ kind, event, classes, busy, onSave }: {
     ["○","案内・日時","event-content"],["◎","申込・定員","event-registration"],
     ["△","費用","event-payment"],["※","開催・出欠","event-operation"]
   ] as const;
-  return <form className="grid gap-4 text-sm" onSubmit={submit}>
+  return <form className="grid gap-4 text-base" onSubmit={submit}>
     <nav className="flex flex-wrap items-center gap-2 rounded-xl bg-neutral-50 p-3" aria-label="イベント申込フロー">
       {steps.map(([symbol,label,id],i)=><div key={id} className="flex items-center gap-2">
         {i>0&&<span aria-hidden className="text-neutral-500">→</span>}
