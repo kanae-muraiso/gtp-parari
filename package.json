@@ -32,7 +32,8 @@
     "test:text-paste-wiring": "node scripts/test-text-paste-wiring.cjs",
     "test:share-access": "node scripts/test-work-share-access.cjs",
     "test:unlisted-rls": "node scripts/test-unlisted-rls-cutover.cjs",
-    "test:book-resolve-security": "node scripts/test-book-resolve-security.cjs"
+    "test:book-resolve-security": "node scripts/test-book-resolve-security.cjs",
+    "test:class-b-payment": "node scripts/test-class-b-payment-simulation.cjs"
   },
   "dependencies": {
     "@lexical/link": "^0.43.0",
