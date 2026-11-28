@@ -50,7 +50,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  const configuring=visibleTargets.find(t=>rowKey(t)===checklist);
  function openChecklist(t:FlowTarget){
   const d=drafts[rowKey(t)]??initialFlow(t);
-  setChecklist(rowKey(t));setChecked(flowOrder(t,d,membership));setSelection(null);setMessage("");
+  setChecklist(rowKey(t));const current=flowOrder(t,d,membership);const required=requiredFlowSteps(t);setChecked(required.every(s=>current.includes(s))?current:availableFlowSteps(t,membership).filter(s=>current.includes(s)||required.includes(s)));setSelection(null);setMessage("");
  }
  function chooseMembership(){
   if(choice===null)return;
@@ -64,6 +64,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  function saveChecklist(){
   if(!configuring)return;
   const t=configuring,d=drafts[rowKey(t)]??initialFlow(t);
+  if(!membership&&d.audience==="members_only"){setMessage("設計で参加資格を見直してください。");return;}
   const issue=flowOrderIssue(t,checked,membership,sharedConfigured);
   if(issue){setMessage(issue);return;}
   const next:FlowDraft={...d,order:[...checked],route:checked.includes("briefing")?"briefing":"direct",test:checked.includes("test"),confirmation:checked.includes("approval")?"review":"automatic",payment:checked.includes("onsite")?"onsite":checked.includes("payment")?(t.defaultPayment==="recurring"?"recurring":"before"):"free"};
@@ -122,7 +123,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    {availableFlowSteps(configuring,membership).map(s=>{
     const required=requiredFlowSteps(configuring).includes(s);
     const d=drafts[rowKey(configuring)]??initialFlow(configuring);
-    return <label key={s} className="flex min-h-11 items-center gap-3 rounded-lg border px-3 text-base"><input className="h-5 w-5" type="checkbox" checked={checked.includes(s)} disabled={required} onChange={e=>{const next=e.target.checked?[...checked,s]:checked.filter(x=>x!==s);const available=availableFlowSteps(configuring,membership);setChecked(available.filter(x=>next.includes(x)));setMessage("");}}/>{stepLabel(s,configuring,d)}{required&&<span className="ml-auto text-sm text-neutral-500">必須</span>}</label>;
+    return <label key={s} className="flex min-h-11 items-center gap-3 rounded-lg border px-3 text-base"><input className="h-5 w-5" type="checkbox" checked={checked.includes(s)} disabled={required} onChange={e=>{const next=e.target.checked?[...checked,s]:checked.filter(x=>x!==s);if(e.target.checked){const available=availableFlowSteps(configuring,membership);const position=checked.findIndex(x=>available.indexOf(x)>available.indexOf(s));if(position>=0){next.pop();next.splice(position,0,s);}}setChecked(next);setMessage("");}}/>{stepLabel(s,configuring,d)}{required&&<span className="ml-auto text-sm text-neutral-500">必須</span>}</label>;
    })}
    <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={saveChecklist}>工程を保存してフロー図を作る</button><button type="button" className={btn} onClick={()=>{setChecklist(null);setMessage("");}}>閉じる</button></div>
   </section>}
