@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const labActions = ["pay","fail","upgrade","cancel","class","fill","member","event","paid","unpaid","open","enterPaid","enterUnpaid","close"] as const;
+export const labActions = ["pay","fail","upgrade","cancel","class","fill","member","event","paid","unpaid","open","enterPaid","enterUnpaid","close","confirmCash","manualPresent"] as const;
 export type LabAction = typeof labActions[number];
 const id=(n:number)=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
 const owner=id(1),school=id(2),attempt=id(3),paidUser=id(4),unpaidUser=id(5);
@@ -78,6 +78,14 @@ export async function runClassBLab(actions:LabAction[]){
            const e=await requireEvent(),paid=action==="paid";
            await db.query("insert into application_entries(id,application_id,user_id,status,payment_status,applicant_name) values($1,$2,$3,$4,$5,$6) on conflict(id) do nothing",[paid?id(500):id(501),e,paid?paidUser:unpaidUser,paid?"confirmed":"submitted",paid?"paid":"unpaid",paid?"ダミー参加者 A":"ダミー参加者 B"]);break;
          }
+         case "confirmCash": {
+           const e=await requireEvent();const updated=await db.query("update application_entries set payment_status='paid',status='confirmed' where application_id=$1 and user_id=$2 and payment_status='unpaid' returning id",[e,unpaidUser]);
+           if(!updated.rows.length)throw Error("未入金の参加者がいません。");break;
+         }
+         case "manualPresent": {
+           const e=await requireEvent();const updated=await db.query("update application_entries set class_event_attendance='present' where application_id=$1 and user_id=$2 and status='confirmed' and payment_status='paid' returning id",[e,unpaidUser]);
+           if(!updated.rows.length)throw Error("参加者Bの入金確認が必要です。");break;
+         }
          case "open":
          case "close":await db.query("select set_class_event_gate($1,$2,$3,$4,$5)",[owner,await requireEvent(),at,code,action==="open"]);break;
          case "enterPaid":
@@ -90,6 +98,7 @@ export async function runClassBLab(actions:LabAction[]){
      }
    }
    const current=await plan();
-   return {results,plan:current.plan,blocks:current.plan==="b"?current.class_blocks:0,classes:await count("select count(*)::int as n from school_classes"),members:await count("select count(*)::int as n from school_class_assignments"),events:await count("select count(*)::int as n from applications"),paid:await count("select count(*)::int as n from application_entries where payment_status='paid'"),unpaid:await count("select count(*)::int as n from application_entries where payment_status='unpaid'"),attended:await count("select count(*)::int as n from class_event_checkin_receipts"),gate:await count("select count(*)::int as n from class_event_checkin_gates")>0,receipt};
+   const entries=(await db.query("select id,applicant_name as name,status,payment_status,class_event_attendance from application_entries order by id")).rows;
+   return {results,entries,plan:current.plan,blocks:current.plan==="b"?current.class_blocks:0,classes:await count("select count(*)::int as n from school_classes"),members:await count("select count(*)::int as n from school_class_assignments"),events:await count("select count(*)::int as n from applications"),paid:await count("select count(*)::int as n from application_entries where payment_status='paid'"),unpaid:await count("select count(*)::int as n from application_entries where payment_status='unpaid'"),attended:await count("select count(*)::int as n from application_entries where class_event_attendance='present'"),gate:await count("select count(*)::int as n from class_event_checkin_gates")>0,receipt};
  }finally{await db.close();}
 }
