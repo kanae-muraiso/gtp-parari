@@ -316,7 +316,7 @@ export default function ClassUnifiedWorkspace(){
   const roster=management?.roster??[];
   const area=classAreaForTab(tab);
   const kinds=visibleServiceKinds(model,[...(products.length||slots.length?["course" as const]:[]),...(designWorkshops.length?["workshop" as const]:[]),...(designEvents.length?["event" as const]:[])]);
-  const services=kinds.flatMap(kind=>kind==="course"?products.map(p=>({kind,id:p.id,title:p.name,detail:"受講申込"})):(kind==="workshop"?designWorkshops:designEvents).map(e=>({kind,id:e.id,title:e.title,detail:e.status==="draft"?"下書き":e.status==="open"?"公開中":"受付終了"})));
+  const services=kinds.flatMap<{kind:ServiceKind;id:string;title:string;detail:string}>(kind=>kind==="course"?products.map(p=>({kind,id:p.id,title:p.name,detail:"受講申込"})):(kind==="workshop"?designWorkshops:designEvents).map(e=>({kind,id:e.id,title:e.title,detail:e.status==="draft"?"下書き":e.status==="open"?"公開中":"受付終了"})));
   const currentCourse=audienceProducts.find(p=>p.id===recruitService?.id);
   async function applyModel(next:ClassBusinessModel){
     if(!business||busy)return;
