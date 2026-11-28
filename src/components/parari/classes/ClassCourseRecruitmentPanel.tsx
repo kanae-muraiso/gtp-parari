@@ -1,10 +1,11 @@
 "use client";
+import {parseFlowDraft} from "@/lib/classRecruitmentFlowDesign";
 import {useState} from "react";
 import ClassRecruitmentOffers from "@/components/parari/manage/ClassRecruitmentOffers";
 import type {ClassRecruitmentData} from "@/components/parari/manage/ClassRecruitmentPanel";
 import type {ClassManagement,SchoolClass} from "@/lib/classes";
 import {classRequest} from "@/lib/classRequests";
-export default function ClassCourseRecruitmentPanel({product,classes,recruitment,onSaved,preview}:{product:NonNullable<ClassManagement["products"]>[number];classes:SchoolClass[];recruitment:ClassRecruitmentData|null;onSaved:()=>void;preview:boolean}){
+export default function ClassCourseRecruitmentPanel({product,classes,recruitment,onSaved,preview,designJson}:{product:NonNullable<ClassManagement["products"]>[number];classes:SchoolClass[];recruitment:ClassRecruitmentData|null;onSaved:()=>void;preview:boolean;designJson?:string}){
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(""),[editing,setEditing]=useState(false);
  const slots=classes.filter(c=>c.product_id===product.id);
  const ids=new Set(slots.map(c=>c.id));
@@ -20,12 +21,29 @@ export default function ClassCourseRecruitmentPanel({product,classes,recruitment
   catch(e){setMessage(e instanceof Error?e.message:"保存できませんでした。");return false;}
   finally{setBusy(false);}
  }
+ let initialOffer: Parameters<typeof ClassRecruitmentOffers>[0]["initialOffer"];
+ if (designJson) {
+  try {
+   const saved = JSON.parse(designJson)?.["course:" + product.id];
+   if (saved?.order?.length) {
+    const draft = parseFlowDraft(JSON.stringify(saved), {kind:"course", id:product.id, title:product.name});
+    initialOffer = {
+     name: (draft.config?.page?.title?.trim() || product.name).slice(0,120),
+     information: draft.config?.page?.body ?? draft.notes.page?.slice(0,4000),
+     route: draft.route,
+     review: draft.confirmation === "review",
+    };
+   }
+  } catch {
+   // A missing or invalid draft leaves the existing offer defaults in place.
+  }
+ }
  const props={classes:slots,products:[product],offers,busy,save,commonRoute:recruitment?.recruitment?.route??"direct" as const,commonAudience:recruitment?.recruitment?.audience??"adult" as const,commonInformation:recruitment?.recruitment?.information??""};
  return <section className="grid gap-4 rounded-xl border p-4">
   <h3 className="text-xl font-bold">{product.name} の申込導線</h3>
   <p className="text-base text-neutral-600">このサービスに含まれる開催枠だけを対象にします。現行の申込エンジンでは規約・決済・説明会予約枠は事業共通です。</p>
   {mixed&&<p className="rounded-lg bg-amber-50 p-3 text-base">複数コースを含む既存の募集があります。自動分割や変更はしません。既存の共通設定で確認できます。</p>}
-  <ClassRecruitmentOffers {...props} singleCourse onEditingChange={setEditing}/>
+  <ClassRecruitmentOffers {...props} initialOffer={initialOffer} singleCourse onEditingChange={setEditing}/>
   {!editing&&offers.length>0&&<ClassRecruitmentOffers {...props} singleCourse publicationOnly/>}
   {message&&<p role="status" className="text-base">{message}</p>}
  </section>;
