@@ -15,11 +15,12 @@ export function isClassBSubscription(subscription: Stripe.Subscription): boolean
 /** Reconcile authoritative Stripe state, not the quantity in Checkout metadata.
  * The SQL RPC atomically checks the reserved contract and updates its entitlement.
  */
-export async function reconcileClassBSubscription(id: string) {
+export async function reconcileClassBSubscription(id: string, expected?: {schoolId:string;ownerId:string;attemptId:string}) {
   if(!classBBillingTargetReady())throw Error("CLASS B billing target not ready");
   const subscription = await stripe.subscriptions.retrieve(id, {expand:["latest_invoice"]});
   if (!isClassBSubscription(subscription)) throw new Error("Not a CLASS B subscription");
   const metadata = subscription.metadata;
+  if(expected&&(metadata.class_b_school_id!==expected.schoolId||metadata.supabase_user_id!==expected.ownerId||metadata.class_b_attempt_id!==expected.attemptId))throw Error("CLASS B contract mismatch");
   const item = subscription.items.data[0];
   const priceId = process.env.STRIPE_CLASS_B_JPY_PRICE_ID;
   if (metadata.plan !== "class_b" || !metadata.class_b_school_id ||
