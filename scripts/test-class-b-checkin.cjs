@@ -42,10 +42,36 @@ async function main(){
  assert.equal((await db.query("select count(*)::int as n from class_event_checkin_receipts")).rows[0].n,1);
  await gate(id(2),false);
  await assert.rejects(enter(id(5)),{code:"P0002"});
+ // Separate free workshop sessions, with the same participant and registration.
+ await db.exec("reset role");
+ const secondAt=new Date(Date.now()+3600000).toISOString();
+ const futureAt=new Date(Date.now()+86400000).toISOString();
+ await db.query("insert into applications values($1,$2,$3,null,'open',$4,'none','無料講習会')",
+  [id(10),id(2),id(1),JSON.stringify({startsAt:at,registration:true,sessions:[{startsAt:at},{startsAt:secondAt},{startsAt:futureAt}]})]);
+ await db.query("insert into application_entries values($1,$2,$3,'confirmed','not_required','無料参加者',null),($4,$2,$5,'cancelled','not_required','取消済',null)",
+  [id(11),id(10),id(5),id(12),id(7)]);
+ await db.exec("set role service_role");
+ const workshopGate=(session,code,open=true)=>db.query("select set_class_event_gate($1,$2,$3,$4,$5)",[id(2),id(10),session,code,open]);
+ const workshopEnter=async(user,code)=>(await db.query("select self_class_event_checkin($1,$2) as receipt",[user,code])).rows[0].receipt;
+ const firstCode="aaaaaaaaaaaaaaaa",secondCode="bbbbbbbbbbbbbbbb";
+ await assert.rejects(workshopGate(futureAt,"cccccccccccccccc"),{code:"22023"});
+ await assert.rejects(workshopGate(new Date(Date.now()+1800000).toISOString(),"dddddddddddddddd"),{code:"22023"});
+ await workshopGate(at,firstCode);
+ await workshopGate(secondAt,secondCode);
+ await assert.rejects(workshopEnter(id(7),firstCode),{code:"P0001"});
+ const first=await workshopEnter(id(5),firstCode);
+ const second=await workshopEnter(id(5),secondCode);
+ assert.equal(first.bookingId,id(11));assert.equal(first.name,"無料参加者");
+ assert.notEqual(first.sessionAt,second.sessionAt);
+ assert.deepEqual(await workshopEnter(id(5),secondCode),second);
+ assert.equal((await db.query("select count(*)::int as n from class_workshop_attendance where entry_id=$1 and status='present'",[id(11)])).rows[0].n,2);
+ await workshopGate(at,firstCode,false);
+ await assert.rejects(workshopEnter(id(5),firstCode),{code:"P0002"});
+ assert.deepEqual(await workshopEnter(id(5),secondCode),second);
  await db.exec("reset role; set role authenticated");
  await assert.rejects(enter(id(5)),{code:"42501"});
  await assert.rejects(db.query("select * from class_event_checkin_receipts"),{code:"42501"});
- console.log("PASS: QR matrix reference, shared entrance, paid-only self check-in, ownership, duplicate receipt, close and client denial.");
+ console.log("PASS: QR matrix reference, shared entrance, paid-only self check-in, ownership, duplicate receipt, close, free workshops, separate sessions, invalid times, cancellation and client denial.");
  }finally{await db.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
