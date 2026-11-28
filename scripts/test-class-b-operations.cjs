@@ -86,3 +86,12 @@ assert.equal(flowOrderIssue(freeEvent,["page","application","confirmation"],fals
 assert.notEqual(flowOrderIssue(freeEvent,["page","application","payment","confirmation"],false,false),null);
 assert.deepEqual(parseFlowDraft(JSON.stringify({...initialFlow(paidCourse),order:courseOrder}),paidCourse).order,courseOrder);
 console.log("PASS: checklist flow, optional shared admission, ordering validation and saved order isolation.");
+
+const {allLabelPatch,defaultRoleLabels,readRoleLabels}=labelModule.exports;
+const allPatch=allLabelPatch(custom,{...defaultRoleLabels,operator:"インストラクター"});
+assert.equal(allPatch.service_course,custom.course);
+assert.equal(allPatch.operator,"インストラクター");
+assert.equal(allLabelPatch(custom,{...defaultRoleLabels,operator:""}),null);
+assert.equal(readRoleLabels(allPatch).operator,"インストラクター");
+assert.deepEqual(readServiceLabels(allPatch),custom);
+console.log("PASS: combined service and role terminology validation.");
