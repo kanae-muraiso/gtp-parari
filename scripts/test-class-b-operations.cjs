@@ -24,3 +24,17 @@ assert.equal(attendance(workshop,second),"absent");
 assert.equal(matches(workshop,"on_site",second,"present",""),false);
 assert.equal(matches(workshop,"on_site",second,"notPresent",""),true);
 console.log("PASS: event roster eligibility, free/paid distinction, search, filters and session attendance.");
+
+const labelModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/classServiceLabels.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(labelModule,labelModule.exports);
+const {defaultServiceLabels,readServiceLabels,serviceLabelPatch}=labelModule.exports;
+assert.deepEqual(readServiceLabels({operator:"講師"}),defaultServiceLabels);
+const custom={course:"プログラム",class:"レッスン",workshop:"ワークショップ",event:"特別企画"};
+const patch=serviceLabelPatch(custom);
+assert.deepEqual(readServiceLabels({operator:"講師",...patch}),custom);
+assert.equal(serviceLabelPatch({...custom,course:" "}),null);
+assert.equal(serviceLabelPatch({...custom,course:"あ".repeat(25)}),null);
+assert.equal(serviceLabelPatch({...custom,event:"特別\n企画"}),null);
+assert.deepEqual(readServiceLabels({service_course:"講座",service_event:""}),{...defaultServiceLabels,course:"講座"});
+assert.deepEqual(serviceLabelPatch({...custom,operator:"変更しない"}),patch);
+console.log("PASS: independent business labels, legacy defaults, validation and unrelated role labels.");
