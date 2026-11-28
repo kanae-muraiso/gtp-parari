@@ -74,4 +74,37 @@ begin
 end; $$;
 revoke all on function public.set_class_event_gate(uuid,uuid,timestamptz,text,boolean),public.self_class_event_checkin(uuid,text) from public,anon,authenticated;
 grant execute on function public.set_class_event_gate(uuid,uuid,timestamptz,text,boolean),public.self_class_event_checkin(uuid,text) to service_role;
+-- Staff fallback uses the same paid/confirmed eligibility as self check-in.
+-- Absence and corrections can still be recorded for any non-canceled entry.
+create function public.staff_class_event_attendance(
+ p_owner uuid,p_event uuid,p_entry uuid,p_session timestamptz,p_change text
+) returns void language plpgsql security invoker set search_path='' as $$
+declare a public.applications%rowtype; e public.application_entries%rowtype;
+begin
+ if p_change not in ('present','absent','clear') then raise exception 'Invalid attendance' using errcode='22023'; end if;
+ select * into a from public.applications where id=p_event and owner_user_id=p_owner
+   and class_event_school_id is not null and archived_at is null and status in ('open','closed') for update;
+ if not found or not exists(select 1 from public.class_schools where id=a.class_event_school_id
+   and owner_user_id=p_owner and archived_at is null) then raise exception 'Event unavailable' using errcode='P0002'; end if;
+ if not exists(select 1 from jsonb_array_elements(coalesce(a.class_event->'sessions',jsonb_build_array(a.class_event))) s
+   where (s->>'startsAt')::timestamptz=p_session) then raise exception 'Invalid session' using errcode='22023'; end if;
+ select * into e from public.application_entries where id=p_entry and application_id=p_event
+   and status in ('submitted','confirmed') for update;
+ if not found then raise exception 'Entry unavailable' using errcode='P0002'; end if;
+ if p_change='present' and not coalesce(e.status='confirmed' and
+   (e.payment_status='paid' or (a.payment_method='none' and e.payment_status='not_required')),false)
+   then raise exception 'Confirmed paid registration required' using errcode='P0001'; end if;
+ if a.class_event ? 'sessions' then
+   if p_change='clear' then
+     delete from public.class_workshop_attendance where entry_id=e.id and session_at=p_session;
+   else
+     insert into public.class_workshop_attendance(entry_id,session_at,status) values(e.id,p_session,p_change)
+       on conflict(entry_id,session_at) do update set status=excluded.status;
+   end if;
+ else
+   update public.application_entries set class_event_attendance=case when p_change='clear' then null else p_change end where id=e.id;
+ end if;
+end; $$;
+revoke all on function public.staff_class_event_attendance(uuid,uuid,uuid,timestamptz,text) from public,anon,authenticated;
+grant execute on function public.staff_class_event_attendance(uuid,uuid,uuid,timestamptz,text) to service_role;
 commit;
