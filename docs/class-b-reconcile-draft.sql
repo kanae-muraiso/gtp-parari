@@ -34,7 +34,7 @@ begin
     v_status:='canceled'; v_blocks:=0; v_until:=now();
   elsif p_status='active' and p_paid and p_period_end>now() then
     -- Do not overwrite a later paid period with an older one.
-    if v_until is not null and p_period_end<v_until then return; end if;
+    if v_until is not null and (p_period_end<v_until or (p_period_end=v_until and p_blocks<v_blocks)) then return; end if;
     v_status:='active'; v_blocks:=p_blocks; v_until:=p_period_end;
   elsif p_status in ('past_due','unpaid','paused') then
     -- Do not extend access on failed invoices. Preserve only already paid time.
