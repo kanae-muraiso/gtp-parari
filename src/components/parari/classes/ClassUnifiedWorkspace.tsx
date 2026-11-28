@@ -22,7 +22,8 @@ import ClassSalesPanel from "./ClassSalesPanel";
 import ClassServiceLabelSettings from "./ClassServiceLabelSettings";
 import ClassBusinessModelSettings from "./ClassBusinessModelSettings";
 import ClassCourseRecruitmentPanel from "./ClassCourseRecruitmentPanel";
-import ClassServiceIntakeDesignPanel from "./ClassServiceIntakeDesignPanel";
+import ClassRecruitmentFlowWorkspace,{ClassServiceQualification} from "./ClassRecruitmentFlowWorkspace";
+import type {FlowTarget,FlowStep} from "@/lib/classRecruitmentFlowDesign";
 import {legacyBusinessModel,parseBusinessModel,visibleServiceKinds,type ClassBusinessModel,type ServiceKind} from "@/lib/classBusinessModel";
 import {defaultServiceLabels,readServiceLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
@@ -64,6 +65,7 @@ export default function ClassUnifiedWorkspace(){
   const [model,setModel]=useState<ClassBusinessModel>(legacyBusinessModel);
   const [showModel,setShowModel]=useState(false);
   const [recruitService,setRecruitService]=useState<{kind:ServiceKind;id:string}|null>(null);
+  const [legacyRecruit,setLegacyRecruit]=useState(false);
   const preview=process.env.NEXT_PUBLIC_VERCEL_ENV==="preview";
   const [serviceLabels,setServiceLabels]=useState<ServiceLabels>(defaultServiceLabels);
   const [labelsLoaded,setLabelsLoaded]=useState(false);
@@ -103,7 +105,7 @@ export default function ClassUnifiedWorkspace(){
   const refresh=useCallback(()=>setRefreshKey(k=>k+1),[]);
   function selectBusiness(id:string){
     window.history.replaceState(null,"",id?"/my/class-onboarding?business="+encodeURIComponent(id):"/my/class-onboarding");
-    setBusiness(id);setModel(legacyBusinessModel);setShowModel(false);setRecruitService(null);setServiceLabels(defaultServiceLabels);setLabelsLoaded(false);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
+    setBusiness(id);setModel(legacyBusinessModel);setShowModel(false);setRecruitService(null);setLegacyRecruit(false);setServiceLabels(defaultServiceLabels);setLabelsLoaded(false);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
     setNewCourse(false);setChooseCourse(false);setEventDesign(null);setShowCreateBusiness(false);
     setSelected(id?{kind:"business",id}:null);
     setFirstActive(false);setNewSlot(null);setTab("home");setOperationFocus("roster");setError("");setNotice("");
@@ -319,6 +321,29 @@ export default function ClassUnifiedWorkspace(){
   const kinds=visibleServiceKinds(model,[...(products.length||slots.length?["course" as const]:[]),...(designWorkshops.length?["workshop" as const]:[]),...(designEvents.length?["event" as const]:[])]);
   const services=kinds.flatMap<{kind:ServiceKind;id:string;title:string;detail:string}>(kind=>kind==="course"?products.map(p=>({kind,id:p.id,title:p.name,detail:"受講申込"})):(kind==="workshop"?designWorkshops:designEvents).map(e=>({kind,id:e.id,title:e.title,detail:e.status==="draft"?"下書き":e.status==="open"?"公開中":"受付終了"})));
   const currentCourse=audienceProducts.find(p=>p.id===recruitService?.id);
+  const flowTargets:FlowTarget[]=[
+    ...(model.membership?[{kind:"membership" as const,id:business,title:"事業への入会"}]:[]),
+    ...services.map((s):FlowTarget=>{
+      if(s.kind==="course"){
+        const p=products.find(p=>p.id===s.id);
+        const fee=p?.design.walkInFee??p?.design.monthlyFee??0;
+        return {...s,paid:fee>0,priceText:(p?.design.walkInFee!=null?"1回 ":"月額 ")+money(fee),defaultPayment:fee<=0?"free":p?.design.walkInFee!=null?"onsite":"recurring",classNames:slots.filter(c=>c.product_id===s.id).map(c=>c.name)};
+      }
+      const event=(s.kind==="event"?designEvents:designWorkshops).find(e=>e.id===s.id);
+      const fee=event?.payment_amount??0;
+      return {...s,paid:fee>0,priceText:fee>0?money(fee):"無料",defaultPayment:fee<=0?"free":event?.payment_method==="on_site"?"onsite":"before"};
+    })
+  ];
+  function openFlowDesign(target:FlowTarget){
+    if(target.kind==="membership"){go("settings");setShowModel(true);return;}
+    go("classes");
+    if(target.kind==="course")pickDesign("course",target.id);
+    else setEventDesign({kind:target.kind,id:target.id});
+  }
+  function openLegacyFlow(target:FlowTarget,step:FlowStep){
+    if(target.kind==="membership"){go("admission");setFlowFocus(step==="terms"?"agreement":step==="briefing"?"blueprint":"recruitment");return;}
+    setRecruitService({kind:target.kind,id:target.id});setLegacyRecruit(true);
+  }
   async function applyModel(next:ClassBusinessModel){
     if(!business||busy)return;
     if(preview){try{sessionStorage.setItem("class-model:"+business,JSON.stringify(next));}catch{}setModel(next);setShowModel(false);setNotice("このブラウザに事業の設計案を反映しました。本番データは変更していません。");return;}
@@ -329,7 +354,7 @@ export default function ClassUnifiedWorkspace(){
   }
   const recruitTabs=[["services","個別サービスの申込"],["homepage","事業の募集ページ"],...(kinds.includes("course")?[["admission",model.membership?"入会・共通設定":"継続サービスの共通設定"] as const]:model.membership?[["admission","入会制度の設計"] as const]:[]),["improve","募集の改善"]] as const;
   function go(next:Tab){
-    resetDesign();setShowCreateBusiness(false);setRecruitService(null);
+    resetDesign();setShowCreateBusiness(false);setRecruitService(null);setLegacyRecruit(false);
     if(next==="operation")setOperationFocus(model.primary==="event"?"events":model.primary==="workshop"?"workshops":"roster");
     setTab(next);
     window.scrollTo(0,0);
@@ -423,6 +448,7 @@ export default function ClassUnifiedWorkspace(){
         {model.kinds.some(k=>k!=="course")&&!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">{serviceLabels.workshop}・{serviceLabels.event}の作成はCLASS Bで利用できます。</p>}
         {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どの{serviceLabels.course}に{serviceLabels.class}を追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}<button type="button" className={button} onClick={()=>setChooseCourse(false)}>閉じる</button></section>}
         {newCourse&&<section className="grid gap-2"><ClassProductPanel labels={serviceLabels} key={business+":new-course"} classes={slots} allowProductSelection={false} onSaved={id=>{setNewCourse(false);setSelected({kind:"course",id});setNotice("コースを保存しました。次に開催クラスを追加できます。");refresh();}}/><button type="button" className={button} onClick={()=>setNewCourse(false)}>閉じる</button></section>}
+        {preview&&eventDesign?.id&&flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)&&<ClassServiceQualification key={eventDesign.id} schoolId={business} target={flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)!} membership={model.membership}/>}
         {eventDesign&&<ClassEventsPanel key={business+":"+eventDesign.kind+":"+(eventDesign.id??"new")} labels={serviceLabels} kind={eventDesign.kind} classes={slots} roster={roster} mode="design" initialCreate={!eventDesign.id} initialEventId={eventDesign.id} onChanged={refresh} onBack={()=>setEventDesign(null)}/>}
       </>}
       {school&&area==="募集"&&<nav aria-label="募集" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -535,6 +561,7 @@ export default function ClassUnifiedWorkspace(){
           <button className={button} type="button" onClick={()=>setNewSlot(null)}>追加をやめる</button>
         </>:activeProduct&&selected?.kind==="course"?<>
           <h3 className="font-bold">□ {activeProduct.name} ／ コースの内容・月謝・定員</h3>
+          {preview&&flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)&&<ClassServiceQualification key={activeProduct.id} schoolId={business} target={flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)!} membership={model.membership}/>}
           <ClassProductPanel labels={serviceLabels} key={selected.id+":"+editorKey} classes={slots} initialProduct={activeProduct.id}
             allowProductSelection={false} onSaved={()=>{setNotice("コースを保存しました。");refresh();}}/>
           <div className="border-t pt-4"><button className={button} onClick={()=>{
@@ -568,11 +595,12 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="services"&&<section className={panel+" grid gap-3"}>
+        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
         <h2 className="text-xl font-bold">個別サービスの申込導線</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
-        {recruitService?<><button type="button" className={button} onClick={()=>setRecruitService(null)}>← サービス一覧に戻る</button>
-          {preview&&<ClassServiceIntakeDesignPanel key={recruitService.kind+":"+recruitService.id} schoolId={business} kind={recruitService.kind} serviceId={recruitService.id} title={services.find(s=>s.kind===recruitService.kind&&s.id===recruitService.id)?.title??"サービス"} membership={model.membership}/>}
-          {recruitService.kind==="course"&&currentCourse?<ClassCourseRecruitmentPanel key={currentCourse.id} product={currentCourse} classes={slots} recruitment={recruitment} onSaved={refresh} preview={preview}/>:recruitService.kind!=="course"?<ClassEventsPanel key={recruitService.id} classes={slots} roster={roster} labels={serviceLabels} kind={recruitService.kind} mode="recruit" initialEventId={recruitService.id} onBack={()=>setRecruitService(null)} onChanged={refresh}/>:<p>サービスが見つかりません。</p>}
+        {recruitService?<><button type="button" className={button} onClick={()=>{setRecruitService(null);setLegacyRecruit(false);}}>← 募集の構成図に戻る</button>
+
+          {recruitService.kind==="course"&&currentCourse?<ClassCourseRecruitmentPanel key={currentCourse.id} product={currentCourse} classes={slots} recruitment={recruitment} onSaved={refresh} preview={preview}/>:recruitService.kind!=="course"?<ClassEventsPanel key={recruitService.id} classes={slots} roster={roster} labels={serviceLabels} kind={recruitService.kind} mode="recruit" initialEventId={recruitService.id} onBack={()=>{setRecruitService(null);setLegacyRecruit(false);}} onChanged={refresh}/>:<p>サービスが見つかりません。</p>}
         </>:<>
           {designLoading&&<p>サービスを読み込んでいます…</p>}
           {designError&&<p role="alert" className="text-red-800">{designError}</p>}
@@ -582,6 +610,7 @@ export default function ClassUnifiedWorkspace(){
             {!services.some(s=>s.kind===kind)&&<p className="text-base text-neutral-600">まだ登録されていません。</p>}
           </div>)}
           <button type="button" className={button} onClick={()=>go("classes")}>サービスを設計する</button>
+        </>}
         </>}
       </section>}
       {school&&tab==="admission"&&<section className={panel+" space-y-5"}>
