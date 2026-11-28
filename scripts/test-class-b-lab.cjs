@@ -22,6 +22,16 @@ async function main(){
  assert.equal(square.members,31);assert.equal(square.ordinaryEvents,3);assert.equal(square.squareEvents,1);
  const revoked=await runClassBLab(["pay","class","class","class","class","class","squareClass","squareFill","disconnectSquare","class"]);
  assert.equal(revoked.results.at(-1).ok,false);assert.equal(revoked.ordinaryClasses,6);assert.equal(revoked.squareClasses,0);assert.equal(revoked.members,31);
+ const full=await runClassBLab(["pay","event","paid","unpaid","fillEvent","extraEntry","cancelEntry","extraEntry","open","enterPaid","refundEntry","enterPaid","enterUnpaid","close"]);
+ assert.deepEqual(full.results.flatMap((r,i)=>r.ok?[]:[i]),[5,11,12]);
+ assert.equal(full.entries.length,50);
+ assert.equal(full.results[5].message,"イベントの定員に達しています。");
+ const downgrade=await runClassBLab(["pay","upgrade","class","class","class","class","class","class","fill","downgrade","class","cancel","class"]);
+ assert.deepEqual(downgrade.results.flatMap((r,i)=>r.ok?[]:[i]),[10,12]);
+ assert.equal(downgrade.classes,6);assert.equal(downgrade.members,30);assert.equal(downgrade.plan,"a");
+ const fresh=await runClassBLab([]);
+ assert.equal(fresh.plan,"a");assert.equal(fresh.classes,0);assert.equal(fresh.entries.length,0);
+ console.log("PASS: deployed event registration SQL, 50-person entry boundary, cancellation releases seat, refunded entry denied, downgrade retains existing records, and isolated reset.");
  console.log("PASS: ordinary quotas, verified Square link only, deferred priced-slot attachment, 31 seats, paid event exemption and revocation retains data.");
  console.log("PASS: actual isolated browser lab scenario from failed payment through paid upgrade, quota, unpaid rejection, attendance, repeat check-in and gate closure.");
 }
