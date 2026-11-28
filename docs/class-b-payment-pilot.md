@@ -1,6 +1,12 @@
 # CLASS B: restricted real-payment pilot checklist
 Status: development branch only; not a release approval.
 
+## Production state (2026-11-28)
+- The three CLASS B billing migrations were applied to the production database: class-block allowance, server-only contract ledger, and paid-invoice reconciliation.
+- Vercel Production now has the billing readiness and checkout gates enabled for the PARARI owner account only. Public checkout remains disabled.
+- No production Checkout Session, subscription, or charge has been created. Checkout is available after this branch is released, and the owner must initiate the purchase from the CLASS settings page.
+- The source changes remain in PR #336. The production app still runs the current main branch until that PR is merged and deployed.
+
 ## Verified in CI / isolated preview
 - Per-school Stripe Checkout reservation, paid invoice evidence matched to the CLASS B item and period.
 - Dedicated portal: quantity-only, same price, immediate proration invoice on increases, scheduled decreases and cancellation at period end.
