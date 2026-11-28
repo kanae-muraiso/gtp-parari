@@ -38,3 +38,18 @@ assert.equal(serviceLabelPatch({...custom,event:"特別\n企画"}),null);
 assert.deepEqual(readServiceLabels({service_course:"講座",service_event:""}),{...defaultServiceLabels,course:"講座"});
 assert.deepEqual(serviceLabelPatch({...custom,operator:"変更しない"}),patch);
 console.log("PASS: independent business labels, legacy defaults, validation and unrelated role labels.");
+
+const modelModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/classBusinessModel.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(modelModule,modelModule.exports);
+const {parseBusinessModel,visibleServiceKinds,legacyBusinessModel}=modelModule.exports;
+const eventsOnly={kinds:["event"],primary:"event",membership:false};
+assert.deepEqual(parseBusinessModel(JSON.stringify(eventsOnly)),eventsOnly);
+assert.deepEqual(visibleServiceKinds(eventsOnly,[]),["event"]);
+assert.deepEqual(visibleServiceKinds(eventsOnly,["course"]),["event","course"]);
+assert.deepEqual(visibleServiceKinds({kinds:["course","event"],primary:"event",membership:true},[]),["event","course"]);
+assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,primary:"course"})),null);
+assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,membership:"false"})),null);
+assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,kinds:["event","event"]})),null);
+assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,kinds:[]})),null);
+assert.deepEqual(visibleServiceKinds(legacyBusinessModel,[]),["course","workshop","event"]);
+console.log("PASS: optional membership design, service type validation, primary order and existing record preservation.");
