@@ -25,7 +25,7 @@ export default function ClassOperationWorkspace({schoolId,classes,roster,labels,
  const [view,setView]=useState<View>("home"),[sessions,setSessions]=useState<OperationSession[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(""),[refresh,setRefresh]=useState(0);
  const [nextPeople,setNextPeople]=useState<{id:string;people:OperationPerson[]}|null>(null),[nextPeopleError,setNextPeopleError]=useState("");
  const [selected,setSelected]=useState<OperationSession|null>(null),[phase,setPhase]=useState<Phase>("before"),[people,setPeople]=useState<OperationPerson[]|null>(null),[peopleError,setPeopleError]=useState(""),[historic,setHistoric]=useState(false);
- const [draftAttendance,setDraftAttendance]=useState<Record<string,"present"|"absent"|"clear">>({}),[memo,setMemo]=useState(""),[message,setMessage]=useState(""),[search,setSearch]=useState(""),[contactIds,setContactIds]=useState<string[]>([]),[contactSubject,setContactSubject]=useState(""),[contactBody,setContactBody]=useState(""),[admissionMode,setAdmissionMode]=useState<"join"|"leave">("join"),[scheduleMode,setScheduleMode]=useState<"list"|"calendar">("list");
+ const [draftAttendance,setDraftAttendance]=useState<Record<string,"present"|"absent"|"clear">>({}),[savingAttendance,setSavingAttendance]=useState(false),[memo,setMemo]=useState(""),[message,setMessage]=useState(""),[search,setSearch]=useState(""),[contactIds,setContactIds]=useState<string[]>([]),[contactSubject,setContactSubject]=useState(""),[contactBody,setContactBody]=useState(""),[admissionMode,setAdmissionMode]=useState<"join"|"leave">("join"),[scheduleMode,setScheduleMode]=useState<"list"|"calendar">("list");
  useEffect(()=>{const c=new AbortController();setLoading(true);setError("");void classRequest<{sessions:OperationSession[]}>("/operations",undefined,c.signal).then(d=>{if(!c.signal.aborted){setSessions(d.sessions);setLoading(false);}}).catch(e=>{if(!c.signal.aborted){setError(e.message);setLoading(false);}});return()=>c.abort();},[schoolId,refresh]);
  useEffect(()=>{
   if(!selected)return;
@@ -39,6 +39,17 @@ export default function ClassOperationWorkspace({schoolId,classes,roster,labels,
  function open(s:OperationSession){setSelected(s);setPhase(phaseOf(s));setDraftAttendance({});setMemo("");setMessage("");setView("session");}
  function home(){setView("home");setSelected(null);setMessage("");setSearch("");}
  function contact(ids:string[]){setContactIds(ids);setContactSubject("");setContactBody("");setMessage("");setView("contact");}
+ async function saveAttendance(){
+  if(!selected||selected.kind!=="class"||!people)return;
+  const records=Object.entries(draftAttendance).map(([enrollmentId,status])=>({enrollmentId,actual:status==="clear"?null:status}));
+  if(!records.length){setMessage("保存する出欠を選択してください。");return;}
+  setSavingAttendance(true);setMessage("");
+  try{
+   await classRequest("/operations",{classId:selected.serviceId,day:selected.day,records});
+   setDraftAttendance({});setMessage("出欠を保存しました。");setRefresh(v=>v+1);onRefresh();
+  }catch(e){setMessage(e instanceof Error?e.message:"出欠を保存できませんでした。");}
+  finally{setSavingAttendance(false);}
+ }
  const actual=(p:OperationPerson)=>draftAttendance[p.id]===undefined?p.actual:draftAttendance[p.id]==="clear"?null:draftAttendance[p.id];
  const absent=(people??[]).filter(p=>p.absenceReported||actual(p)==="absent");
  const notArrived=(people??[]).filter(p=>!p.absenceReported&&!actual(p)&&p.ready!==false);
@@ -70,11 +81,11 @@ export default function ClassOperationWorkspace({schoolId,classes,roster,labels,
      {historic&&<p className="text-sm text-neutral-600">過去の開催は保存済みの予約・出欠記録を表示します。当時の全名簿は復元していません。</p>}
      <div className="grid grid-cols-3 gap-2 text-center">{[["出席予定",counts?.planned],["欠席連絡・欠席",counts?.absent],["出欠未記録",counts?.unmarked]].map(([label,n])=><div key={label} className="rounded-lg bg-neutral-50 p-2"><strong className="block text-2xl">{n}</strong><span className="text-sm">{label}</span></div>)}</div>
      <h3 className="font-bold">{phase==="before"?"参加予定・欠席連絡":phase==="during"?"出欠確認":"出欠記録の確認"}</h3>
-     {phase==="during"&&<p className="text-sm text-neutral-600">画面確認用の出欠入力です。実際の出欠には保存しません。</p>}
+     {phase==="during"&&selected.kind==="class"&&<p className="text-sm text-neutral-600">出欠を変更したら、保存ボタンを押してください。</p>}
      {!people.length&&<p>該当する参加者・記録はありません。</p>}
-     {people.map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2"><div><strong>{p.name}</strong><p className="text-sm text-neutral-600">{p.source==="reserved"?"予約済み":p.source==="fixed"?"固定受講":p.ready===false?"参加未確定":p.source==="event"?"申込者":"記録あり"}{p.absenceReported?" ・ 欠席連絡済み":""}{p.payment==="unpaid"?" ・ 未入金":""}</p></div>{phase==="during"?<select aria-label={p.name+"の出欠"} className={btn} value={actual(p)??"clear"} onChange={e=>setDraftAttendance(old=>({...old,[p.id]:e.target.value as "present"|"absent"|"clear"}))}><option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option></select>:<span>{actual(p)==="present"?"出席":actual(p)==="absent"?"欠席":"未記録"}</span>}</div>)}
+     {people.map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2"><div><strong>{p.name}</strong><p className="text-sm text-neutral-600">{p.source==="reserved"?"予約済み":p.source==="fixed"?"固定受講":p.ready===false?"参加未確定":p.source==="event"?"申込者":"記録あり"}{p.absenceReported?" ・ 欠席連絡済み":""}{p.payment==="unpaid"?" ・ 未入金":""}</p></div>{phase==="during"&&selected.kind==="class"?<select aria-label={p.name+"の出欠"} className={btn} value={actual(p)??"clear"} onChange={e=>setDraftAttendance(old=>({...old,[p.id]:e.target.value as "present"|"absent"|"clear"}))}><option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option></select>:<span>{actual(p)==="present"?"出席":actual(p)==="absent"?"欠席":"未記録"}</span>}</div>)}
      {phase==="before"&&<div className="flex flex-wrap gap-2"><button type="button" className={btn} disabled={!eligible.length} onClick={()=>contact(eligible.map(p=>p.id))}>参加予定者に連絡</button><button type="button" className={btn} disabled={!absent.length} onClick={()=>contact(absent.map(p=>p.id))}>欠席者に連絡</button></div>}
-     {phase==="during"&&<div className="flex flex-wrap gap-2"><button type="button" className={btn} disabled={!notArrived.length} onClick={()=>contact(notArrived.map(p=>p.id))}>未到着者に連絡</button>{selected.kind!=="class"&&<button type="button" className={btn} onClick={()=>setView(selected.kind==="event"?"events":"workshops")}>既存のQR受付・出欠を開く</button>}</div>}
+     {phase==="during"&&<div className="flex flex-wrap gap-2">{selected.kind==="class"&&<button type="button" className={primary} disabled={!Object.keys(draftAttendance).length||savingAttendance} onClick={()=>void saveAttendance()}>{savingAttendance?"保存中…":"出欠を保存"}</button>}<button type="button" className={btn} disabled={!notArrived.length} onClick={()=>contact(notArrived.map(p=>p.id))}>未到着者に連絡</button>{selected.kind!=="class"&&<button type="button" className={btn} onClick={()=>setView(selected.kind==="event"?"events":"workshops")}>既存のQR受付・出欠を開く</button>}</div>}
      {phase==="after"&&<><label className="grid gap-1">運営メモ（確認用）<textarea rows={3} className={btn} value={memo} onChange={e=>setMemo(e.target.value)} placeholder="実施内容・次回への引き継ぎ"/></label><div className="flex flex-wrap gap-2"><button type="button" className={btn} onClick={onAccounting}>会計記録を開く</button><button type="button" className={btn} disabled={!people.length} onClick={()=>contact(people.filter(p=>p.ready!==false).map(p=>p.id))}>参加者へフォロー連絡</button></div><p className="text-sm text-neutral-600">出欠の確定・運営メモの永続保存は未接続です。</p></>}
     </>}
    </section>}
