@@ -28,7 +28,7 @@ export async function reconcileClassBSubscription(id: string) {
       item.price.recurring?.interval !== "month" || item.price.recurring.interval_count !== 1 ||
       item.price.recurring.usage_type !== "licensed" ||
       !Number.isSafeInteger(item.quantity) || (item.quantity ?? 0)<1 || (item.quantity ?? 0)>1000000 ||
-      (process.env.VERCEL_ENV === "production" && !subscription.livemode)) {
+      (subscription.livemode !== (process.env.VERCEL_ENV === "production"))) {
     throw new Error("Invalid CLASS B subscription");
   }
   const paid = classBPaidInvoiceMatches(subscription,priceId);
