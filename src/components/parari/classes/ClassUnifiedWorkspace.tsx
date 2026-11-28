@@ -333,7 +333,7 @@ export default function ClassUnifiedWorkspace(){
       if(s.kind==="course"){
         const p=products.find(p=>p.id===s.id);
         const fee=p?.design.walkInFee??p?.design.monthlyFee??0;
-        return {...s,paid:fee>0,priceText:(p?.design.walkInFee!=null?"1回 ":"月額 ")+money(fee),defaultPayment:fee<=0?"free":p?.design.walkInFee!=null?"onsite":"recurring",classNames:slots.filter(c=>c.product_id===s.id).map(c=>c.name)};
+        return {...s,audience:p?.design.audience,paid:fee>0,priceText:(p?.design.walkInFee!=null?"1回 ":"月額 ")+money(fee),defaultPayment:fee<=0?"free":p?.design.walkInFee!=null?"onsite":"recurring",classNames:slots.filter(c=>c.product_id===s.id).map(c=>c.name)};
       }
       const event=(s.kind==="event"?designEvents:designWorkshops).find(e=>e.id===s.id);
       const fee=event?.payment_amount??0;
