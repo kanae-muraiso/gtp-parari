@@ -29,6 +29,7 @@ import {
   type PlanEntitlements,
 } from "@/lib/billing/plan";
 import { supabase } from "@/lib/supabaseClient";
+import { classRequest } from "@/lib/classRequests";
 
 
 type ManageMode =
@@ -60,6 +61,7 @@ export default function MyManagePage() {
   ] = useState(false);
 
   const [isMonitor, setIsMonitor] = useState(false);
+  const [canManageClass, setCanManageClass] = useState(false);
 
   const manageTabs = useMemo(() => {
     const tabs: {
@@ -70,8 +72,11 @@ export default function MyManagePage() {
       { key: "recruit", label: "募集をつくる" },
     ];
 
-    if (isMonitor || entitlements.canManageMembership) {
-      tabs.push({ key: "service", label: "継続運営" });
+    if (isMonitor || entitlements.canManageMembership || canManageClass) {
+      const label = canManageClass
+        ? entitlements.canManageMembership ? "クラス・継続運営" : "クラス運営"
+        : "継続運営";
+      tabs.push({ key: "service", label });
     }
 
     tabs.push({ key: "custom", label: "カスタム設計" });
@@ -82,7 +87,7 @@ export default function MyManagePage() {
     }
 
     return tabs;
-  }, [entitlements, isMonitor]);
+  }, [entitlements, isMonitor, canManageClass]);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,7 +109,7 @@ export default function MyManagePage() {
         return;
       }
 
-      const [billingResult, profileResult] =
+      const [billingResult, profileResult, classAccess] =
         await Promise.all([
           supabase
             .from("user_billing")
@@ -116,6 +121,9 @@ export default function MyManagePage() {
             .select("is_monitor")
             .eq("user_id", user.id)
             .maybeSingle(),
+          classRequest<{ canManage: boolean }>("?home=1")
+            .then((result) => result.canManage === true)
+            .catch(() => false),
         ]);
 
       if (cancelled) return;
@@ -126,6 +134,7 @@ export default function MyManagePage() {
         );
 
       setIsMonitor(profileResult.data?.is_monitor === true);
+      setCanManageClass(classAccess);
       setEntitlements(
         getPlanEntitlements(
           effectivePlan,
@@ -224,7 +233,7 @@ export default function MyManagePage() {
       <div className="mx-auto w-full max-w-[768px] px-4 py-6 sm:px-6 sm:py-8">
 
         <MyAreaHeader
-          title={manageMode === "application" ? "申込受付" : manageMode === "recruit" ? "募集をつくる" : manageMode === "service" ? "継続運営" : manageMode === "custom" ? "カスタム設計" : "開催予定"}
+          title={manageMode === "application" ? "申込受付" : manageMode === "recruit" ? "募集をつくる" : manageMode === "service" ? canManageClass ? entitlements.canManageMembership ? "クラス・継続運営" : "クラス運営" : "継続運営" : manageMode === "custom" ? "カスタム設計" : "開催予定"}
           area="studio"
           navigation={<ManagementTabs active="manage" embedded />}
         />
@@ -282,7 +291,7 @@ export default function MyManagePage() {
 
           {accessLoaded && manageMode === "service" ? (
             <div className="grid gap-5">
-              {isMonitor ? <ClassManagerPanel /> : null}
+              {canManageClass || isMonitor ? <ClassManagerPanel /> : null}
               {entitlements.canManageMembership ? <MembershipManagerPanel /> : null}
             </div>
           ) : null}
