@@ -67,7 +67,7 @@ export async function GET(request:NextRequest){
 
 export async function POST(request:NextRequest){
  try{
-  const token=request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token=request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const auth=token?await db.auth.getUser(token):null,user=auth?.data.user;
   const scope=request.nextUrl.searchParams.get("business");
   if(!user||auth?.error||!scope||!await canManageClassStudio(user.id))return fail("事業を確認してください。",404);
@@ -76,7 +76,7 @@ export async function POST(request:NextRequest){
   const input=await request.json().catch(()=>null);
   const classId=input?.classId,day=input?.day,rawRecords=input?.records;
   if(typeof classId!=="string"||!classIdPattern.test(classId)||typeof day!=="string"||
-    !/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!Number.isFinite(Date.parse(day))||
+    !/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day))||
     new Date(Date.parse(day)).toISOString().slice(0,10)!==day||!Array.isArray(rawRecords)||
     rawRecords.length<1||rawRecords.length>1000)return fail("出欠の内容を確認してください。");
   const today=classCalendarToday();
