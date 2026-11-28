@@ -357,6 +357,9 @@ export async function POST(request: NextRequest) {
     if (!result.data) return fail("イベントの状態が変わりました。再読み込みしてください。", 409);
     return send({ ok: true, id: result.data.id });
   } catch (error) {
+    const code=(error as {code?:string})?.code;
+    if(code==="P0014")return fail("通常イベントの定員は1〜50人です。",409);
+    if(code==="P0015")return fail("通常イベント・講習会は月3件までです。",409);
     console.error("[class events] update failed", error);
     return fail("イベントを更新できませんでした。", 500);
   }
