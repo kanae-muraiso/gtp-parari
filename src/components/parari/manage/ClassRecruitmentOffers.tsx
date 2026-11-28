@@ -47,7 +47,7 @@ export default function ClassRecruitmentOffers({ classes, products = [], offers,
     {offers.filter(offer => publicationOnly || !products.some(product => classes.some(item => item.product_id === product.id && offer.class_ids.includes(item.id)))).map(offer => <div key={offer.id} className="grid gap-2 rounded border p-3 text-sm">
       <strong>{offer.name}</strong><p> {routeLabel(offer.route_override ?? commonRoute)}{offer.link_only ? "（URLで案内）" : ""} · {offer.enabled ? "受付公開中" : "下書き"}</p>
       {publicationOnly ? <button className={button} type="button" disabled={busy} onClick={() => void save({ action: "offer", id: offer.id, name: offer.name, information: offer.information,
-        classIds: offer.class_ids, routeOverride: offer.route_override ?? null, audienceOverride: offer.audience_override ?? null, directCompletion: offer.direct_completion ?? null, linkOnly: offer.link_only === true, enabled: !offer.enabled })}>{offer.enabled ? "この受付を非公開にする" : "この受付を公開する"}</button>
+        classIds: offer.class_ids, routeOverride: offer.route_override ?? null, audienceOverride: offer.audience_override ?? null, enabled: !offer.enabled })}>{offer.enabled ? "この受付を非公開にする" : "この受付を公開する"}</button>
         : <button className="w-fit underline" type="button" disabled={busy || editing !== null} onClick={() => edit(offer)}>設定を編集</button>}
       {offer.enabled && offer.link_only && <label>面接後に渡す入会URL
         <input className={field} readOnly value={typeof window === "undefined" ? "" : window.location.origin + "/class-intake/" + offer.id} onFocus={event => event.currentTarget.select()} />
