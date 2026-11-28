@@ -1,5 +1,6 @@
 import { NextRequest,NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
+import { classBBillingTargetReady,classBPurchaseAllowed } from "@/lib/billing/classBReleasePolicy";
 const reply=(body:object,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"private, no-store"}});
 export const runtime="nodejs";
 export async function GET(request:NextRequest){
@@ -8,12 +9,12 @@ export async function GET(request:NextRequest){
  const {data:{user},error}=await db.auth.getUser(token);
  if(error||!user)return reply({ok:false,message:"ログインしてください。"},401);
  try{
-  const ready=process.env.CLASS_B_CHECKOUT_ENABLED==="true"&&process.env.CLASS_B_CONTRACT_LEDGER_READY==="true"&&Boolean(process.env.STRIPE_CLASS_B_JPY_PRICE_ID);
+  const ready=classBPurchaseAllowed(user.id);
   const schools=await db.from("class_schools").select("id,name").eq("owner_user_id",user.id).is("archived_at",null).order("name");
   if(schools.error)throw schools.error;
-  if(!ready)return reply({ok:true,ready:false,schools:schools.data.map(s=>({...s,plan:"a",blocks:0,status:"unavailable",canManageBilling:false}))});
+  if(!classBBillingTargetReady())return reply({ok:true,ready:false,schools:schools.data.map(s=>({...s,plan:"a",blocks:0,status:"unavailable",canManageBilling:false}))});
   const ids=schools.data.map(s=>s.id);
-  if(!ids.length)return reply({ok:true,ready:true,schools:[]});
+  if(!ids.length)return reply({ok:true,ready,schools:[]});
   const [plans,contracts]=await Promise.all([
     db.from("class_feature_plans").select("school_id,plan,class_blocks,active_until").in("school_id",ids),
     db.from("class_b_contracts").select("school_id,status,requested_blocks,paid_blocks,paid_until,stripe_customer_id,stripe_subscription_id").eq("owner_user_id",user.id).in("school_id",ids)
@@ -26,6 +27,6 @@ export async function GET(request:NextRequest){
       requestedBlocks:c?.requested_blocks??null,paidUntil:c?.paid_until??null,
       canManageBilling:Boolean(c?.stripe_customer_id&&c.stripe_subscription_id&&process.env.STRIPE_CLASS_B_PORTAL_CONFIGURATION_ID)};
   });
-  return reply({ok:true,ready:true,schools:rows});
+  return reply({ok:true,ready,schools:rows});
  }catch(error){console.error("[class-b status]",error);return reply({ok:false,message:"契約情報を確認できませんでした。"},503);}
 }
