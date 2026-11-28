@@ -25,7 +25,7 @@ import ClassCourseRecruitmentPanel from "./ClassCourseRecruitmentPanel";
 import ClassRecruitmentFlowWorkspace,{ClassServiceQualification} from "./ClassRecruitmentFlowWorkspace";
 import type {FlowTarget,FlowStep} from "@/lib/classRecruitmentFlowDesign";
 import {legacyBusinessModel,parseBusinessModel,visibleServiceKinds,type ClassBusinessModel,type ServiceKind} from "@/lib/classBusinessModel";
-import {defaultServiceLabels,readServiceLabels,type ServiceLabels} from "@/lib/classServiceLabels";
+import {defaultServiceLabels,readServiceLabels,defaultRoleLabels,readRoleLabels,type RoleLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
 import ClassWorkspaceHome, {classAreaForTab,type ClassWorkspaceTab} from "./ClassWorkspaceHome";
 
@@ -47,6 +47,8 @@ const field="block min-h-11 w-full rounded-lg border border-neutral-300 bg-white
 const button="min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base font-medium disabled:opacity-50";
 const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
 const panel="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5";
+const addButton="min-h-11 shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 text-sm font-semibold text-emerald-900 disabled:opacity-50";
+const settingEntries=[["business","事業の基本情報"],["names","呼び方"],["contract","CLASSの利用契約"],["payment","販売・決済"]] as const;
 const firstDraft=():FirstDraft=>({name:"",cadence:"weekly",date:classCalendarToday(),time:"",duration:"60",delivery:"onsite",
   location:"",meetingUrl:"",feeMode:"monthly",fee:"0",monthlyVisits:"4",capacity:"10",audience:"adult"});
 const firstQuestions=[
@@ -69,6 +71,7 @@ export default function ClassUnifiedWorkspace(){
   const [legacyRecruit,setLegacyRecruit]=useState(false);
   const preview=process.env.NEXT_PUBLIC_VERCEL_ENV==="preview";
   const [serviceLabels,setServiceLabels]=useState<ServiceLabels>(defaultServiceLabels);
+  const [roleLabels,setRoleLabels]=useState<RoleLabels>(defaultRoleLabels);
   const [labelsLoaded,setLabelsLoaded]=useState(false);
   const [schoolName,setSchoolName]=useState("");
   const [businessKind,setBusinessKind]=useState<Business["business_type"]>("school");
@@ -106,7 +109,7 @@ export default function ClassUnifiedWorkspace(){
   const refresh=useCallback(()=>setRefreshKey(k=>k+1),[]);
   function selectBusiness(id:string){
     window.history.replaceState(null,"",id?"/my/class-onboarding?business="+encodeURIComponent(id):"/my/class-onboarding");
-    setBusiness(id);setModel(legacyBusinessModel);setShowModel(false);setSettingsFocus(null);setRecruitService(null);setLegacyRecruit(false);setServiceLabels(defaultServiceLabels);setLabelsLoaded(false);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
+    setBusiness(id);setModel(legacyBusinessModel);setShowModel(false);setSettingsFocus(null);setRecruitService(null);setLegacyRecruit(false);setServiceLabels(defaultServiceLabels);setRoleLabels(defaultRoleLabels);setLabelsLoaded(false);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
     setNewCourse(false);setChooseCourse(false);setEventDesign(null);setShowCreateBusiness(false);
     setSelected(id?{kind:"business",id}:null);
     setFirstActive(false);setNewSlot(null);setTab("home");setOperationFocus("roster");setError("");setNotice("");
@@ -153,7 +156,7 @@ export default function ClassUnifiedWorkspace(){
     const controller=new AbortController();
     setLabelsLoaded(false);
     void classRequest<{settings:{labels:unknown}}>("/admissions?settings=1",undefined,controller.signal).then(data=>{
-      if(!controller.signal.aborted){setServiceLabels(readServiceLabels(data.settings.labels));setLabelsLoaded(true);}
+      if(!controller.signal.aborted){let raw=data.settings.labels;if(preview)try{const local=sessionStorage.getItem("class-labels:"+business);if(local)raw={...(raw as Record<string,unknown>),...JSON.parse(local)};}catch{}setServiceLabels(readServiceLabels(raw));setRoleLabels(readRoleLabels(raw));setLabelsLoaded(true);}
     }).catch(()=>{if(!controller.signal.aborted)setLabelsLoaded(false);});
     return ()=>controller.abort();
   },[business]);
@@ -407,26 +410,29 @@ export default function ClassUnifiedWorkspace(){
         <h1 className="flex-1 break-words text-center text-xl font-bold">{school?.name??businesses.find(item=>item.id===business)?.name??"事業を確認中…"}</h1>
         <span aria-hidden="true" className="w-16"/>
       </section>}
-      {business&&tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={go} labels={serviceLabels}/>}
+      {business&&tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={next=>go(next==="settings"?"classes":next)} labels={serviceLabels}/>}
       {tab!=="home"&&school&&<>
         <nav aria-label="CLASS 共通ナビゲーション" className="grid grid-cols-4 gap-1 rounded-xl border border-neutral-200 bg-white p-1 sm:gap-2 sm:p-2">
           {([["classes","設計"],["homepage","募集"],["operation","運営"],["accounting","会計"]] as const).map(([id,label])=>
             <button key={id} type="button" aria-current={area===label?"page":undefined} disabled={busy||pageBusy} onClick={()=>{if(area!==label)go(id==="homepage"?"services":id);}}
               className={"min-h-11 rounded-lg px-1 py-2 text-base font-semibold transition-colors disabled:opacity-50 "+(area===label?"bg-emerald-800 text-white":"text-neutral-700 hover:bg-emerald-50")}>{label}</button>)}
         </nav>
-        {tab==="settings"&&<h2 className="px-1 text-xl font-bold">事業設定</h2>}
+
       </>}
       {school&&tab==="classes"&&<>
-        {!editingDesign?<><section className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 sm:p-5" aria-label="事業の構成図">
-          <h2 className="text-xl font-bold text-emerald-950">事業の構成図</h2>
-          <p className="text-base text-neutral-600">変更したいサービスを選んでください。</p>
+        {!editingDesign?<><section className={panel+" grid gap-3"} aria-label="事業設定">
+          <h2 className="text-lg font-bold">事業設定</h2>
+          <div className="grid grid-cols-2 gap-2">{settingEntries.map(([id,title])=><button key={id} type="button" className="flex min-h-12 items-center justify-between gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-left text-base font-medium" onClick={()=>{go("settings");setSettingsFocus(id);}}><span>{title}</span><span aria-hidden="true">›</span></button>)}</div>
+        </section><section className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 sm:p-5" aria-label="事業の構成図">
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-bold text-emerald-950">事業構成図</h2><button type="button" className={addButton} onClick={()=>{go("settings");setShowModel(true);}}>構成を変更</button></div>
+          <p className="text-sm text-neutral-600">中心：{serviceLabels[model.primary]} ／ {model.membership?"入会制度あり":"入会制度なし"}</p>
           {kinds.includes("course")&&<div className="space-y-3 border-t border-emerald-200 pt-3">
-            <h3 className="text-lg font-bold text-emerald-950">{serviceLabels.course}</h3>
+            <div className="flex items-center justify-between gap-2"><h3 className="text-lg font-bold text-emerald-950">{serviceLabels.course}</h3>{model.kinds.includes("course")&&<button type="button" className={addButton} onClick={()=>{resetDesign();setNewCourse(true);}}>＋ 作る</button>}</div>
             {!products.length&&<p className="text-base text-neutral-600">{serviceLabels.course}はまだありません。</p>}
             {products.map(product=>{
               const listed=slots.filter(slot=>slot.product_id===product.id);
               return <div key={product.id} className="ml-2 space-y-1 border-l-2 border-emerald-200 pl-3">
-                <button type="button" aria-pressed={!newCourse&&!newSlot&&!firstActive&&!eventDesign&&selected?.kind==="course"&&selected.id===product.id} onClick={()=>pickDesign("course",product.id)} className="min-h-11 text-left text-base font-bold text-emerald-950 hover:underline">□ {product.name} <span className="font-normal text-neutral-600">({listed.length}{serviceLabels.class})</span></button>
+                <div className="flex flex-wrap items-center justify-between gap-1"><button type="button" onClick={()=>pickDesign("course",product.id)} className="min-h-11 flex-1 text-left text-base font-bold text-emerald-950 hover:underline">□ {product.name} <span className="font-normal text-neutral-600">({listed.length}{serviceLabels.class})</span></button>{model.kinds.includes("course")&&<button type="button" className={addButton} onClick={()=>addClassToCourse(product.id)}>＋ {serviceLabels.class}追加</button>}</div>
                 <div className="grid gap-1 pl-3">
                   {listed.map(slot=><button type="button" key={slot.id} aria-pressed={!eventDesign&&selected?.kind==="class"&&selected.id===slot.id} onClick={()=>pickDesign("class",slot.id)} className="min-h-11 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-left text-base hover:border-emerald-700">× {slot.name} · {slot.starts_at.slice(0,5)}</button>)}
                   {!listed.length&&<p className="py-1 text-base text-neutral-600">開催枠は未登録です。</p>}
@@ -436,7 +442,7 @@ export default function ClassUnifiedWorkspace(){
             {slots.filter(slot=>!slot.product_id).length>0&&<div className="grid gap-1"><p className="text-base text-amber-900">未分類の開催枠（既存データ）</p>{slots.filter(slot=>!slot.product_id).map(slot=><button key={slot.id} className={button+" text-left"} onClick={()=>pickDesign("class",slot.id)}>{slot.name}</button>)}</div>}
           </div>}
           {([["workshop",serviceLabels.workshop,designWorkshops],["event",serviceLabels.event,designEvents]] as const).filter(([kind])=>kinds.includes(kind)).sort((a,b)=>kinds.indexOf(a[0])-kinds.indexOf(b[0])).map(([kind,title,items])=><div key={kind} className="space-y-2 border-t border-emerald-200 pt-3">
-            <h3 className="text-lg font-bold text-emerald-950">{title}</h3>
+            <div className="flex items-center justify-between gap-2"><h3 className="text-lg font-bold text-emerald-950">{title}</h3>{model.kinds.includes(kind)&&<button type="button" className={addButton} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind});}}>＋ 作る</button>}</div>
             {designLoading?<p className="text-base text-neutral-600">読み込み中…</p>:designError?<p className="text-base text-red-800">{designError}</p>:!items.filter(item=>item.status!=="closed").length?<p className="text-base text-neutral-600">現在の{title}はありません。</p>:null}
             {items.filter(item=>item.status!=="closed").map(item=><button type="button" key={item.id} onClick={()=>{resetDesign();setEventDesign({kind,id:item.id});}} className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-left text-base">
               <span className="flex-1 font-medium">{item.title}{kind==="workshop"&&item.class_event.sessions?"（全"+item.class_event.sessions.length+"回）":""}</span><span className="text-neutral-600">{item.status==="draft"?"下書き":"公開中"}</span>
@@ -444,13 +450,6 @@ export default function ClassUnifiedWorkspace(){
             {items.some(item=>item.status==="closed")&&<details><summary className="min-h-11 cursor-pointer py-2 text-base">受付終了の{title}を見る</summary>{items.filter(item=>item.status==="closed").map(item=><button key={item.id} type="button" className={button+" mb-1 block w-full text-left"} onClick={()=>{resetDesign();setEventDesign({kind,id:item.id});}}>{item.title} · {classEventDate(item.class_event.startsAt)}</button>)}</details>}
           </div>)}
         </section>
-        <div className="grid grid-cols-2 gap-2" aria-label="新しいサービスを作る">
-          {model.kinds.includes("course")&&<><button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={()=>{resetDesign();setNewCourse(true);}}>＋ {serviceLabels.course}を作る</button>
-          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={startClass}>＋ {serviceLabels.class}を追加する</button></>}
-          {model.kinds.includes("workshop")&&<button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"workshop"});}}>＋ {serviceLabels.workshop}を作る</button>}
-          {model.kinds.includes("event")&&<button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"event"});}}>＋ {serviceLabels.event}を作る</button>}
-        </div>
-        <button type="button" className={button} onClick={()=>{go("settings");setShowModel(true);}}>事業の形態を変更</button>
         {model.kinds.some(k=>k!=="course")&&!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">{serviceLabels.workshop}・{serviceLabels.event}の作成はCLASS Bで利用できます。</p>}
         </>:<div className="flex flex-wrap items-center gap-3"><button type="button" className={button} onClick={backDesign}>‹ 構成図に戻る</button><h2 className="flex-1 text-xl font-bold">{designTitle}</h2></div>}
         {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どの{serviceLabels.course}に{serviceLabels.class}を追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}</section>}
@@ -559,9 +558,7 @@ export default function ClassUnifiedWorkspace(){
           {preview&&flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)&&<ClassServiceQualification key={activeProduct.id} schoolId={business} target={flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)!} membership={model.membership}/>}
           <ClassProductPanel labels={serviceLabels} key={selected.id+":"+editorKey} classes={slots} initialProduct={activeProduct.id}
             allowProductSelection={false} onSaved={()=>{setNotice("コースを保存しました。");refresh();}}/>
-          <div><button className={button} onClick={()=>{
-            setNewSlot({id:crypto.randomUUID(),productId:activeProduct.id});setEditorKey(k=>k+1);
-          }}>＋ この{serviceLabels.course}に{serviceLabels.class}を追加</button></div>
+
         </>:selected?.kind==="class"&&activeSlot&&activeProduct?<>
           <p className="text-sm text-neutral-600">{classSchedule(activeSlot)} · {activeSlot.location||"オンライン"}</p>
           <ClassSlotSettingsPanel key={activeSlot.id+":"+editorKey} item={activeSlot} additionalSlots={childSlots} startId={activeSlot.id}
@@ -656,18 +653,10 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="settings"&&<>
-        {!showModel&&!settingsFocus?<section className={panel+" grid gap-2"}>
-          {([["business","事業の基本情報","事業名・提供するサービス"],["names","呼び方","サービス名・運営者・参加者"],["contract","CLASSの利用契約","プラン・利用枠"],["payment","販売・決済","受講料・参加費の受け取り"]] as const).map(([id,title,desc])=><button key={id} type="button" className="flex min-h-16 items-center gap-3 rounded-xl border border-neutral-200 px-4 py-3 text-left" onClick={()=>setSettingsFocus(id)}><span className="flex-1"><span className="block text-lg font-bold">{title}</span><span className="block text-base text-neutral-600">{desc}</span></span><span aria-hidden="true">›</span></button>)}
-        </section>:<>
-        <button type="button" className={button} onClick={()=>{setSettingsFocus(null);setShowModel(false);}}>‹ 設定一覧に戻る</button>
-        {showModel?<ClassBusinessModelSettings key={business} model={model} labels={serviceLabels} onApply={next=>void applyModel(next)} preview={preview} busy={busy}/>:settingsFocus==="business"?<section className={panel+" space-y-4"}>
-          <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3"><label className="grid gap-1 text-base font-medium">事業名<input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/></label><button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>事業名を保存</button></form>
-          <div className="border-t pt-3 grid gap-2"><h3 className="text-lg font-bold">提供するサービス</h3><p>中心：{serviceLabels[model.primary]}</p><p>{model.kinds.map(k=>serviceLabels[k]).join("・")}</p><button type="button" className={button} onClick={()=>setShowModel(true)}>変更する</button></div>
-        </section>:settingsFocus==="names"?<section className={panel+" grid gap-4"}>
-          {labelsLoaded?<ClassServiceLabelSettings key={business} labels={serviceLabels} onSaved={setServiceLabels}/>:<p>呼び方を読み込めません。再読み込みしてください。</p>}
-          <ClassAdmissionsPanel key={business+":labels"} mode="labels"/>
-        </section>:settingsFocus==="contract"?<ClassBCheckoutPanel key={business} initialSchoolId={business} fixedSchool/>:settingsFocus==="payment"?<section className={panel+" grid gap-3"}><p>CLASS Bの利用契約と、受講者から受け取る月謝・参加費は別の設定です。</p><Link href="/my/sales" className={button+" inline-flex items-center"}>販売・決済の設定を開く</Link></section>:null}
-        </>}
+        <div className="flex flex-wrap items-center gap-3"><button type="button" className={button} onClick={()=>go("classes")}>‹ 設計に戻る</button><h2 className="flex-1 text-xl font-bold">{showModel?"事業構成の変更":settingEntries.find(([id])=>id===settingsFocus)?.[1]??"事業設定"}</h2></div>
+        {showModel?<ClassBusinessModelSettings key={business} model={model} labels={serviceLabels} onApply={next=>{void applyModel(next);if(preview)go("classes");}} preview={preview} busy={busy}/>:settingsFocus==="business"?<section className={panel}>
+          <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3"><label className="grid gap-1 text-base font-medium">事業名<input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/></label><button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>保存</button></form>
+        </section>:settingsFocus==="names"?(labelsLoaded?<ClassServiceLabelSettings key={business} schoolId={business} labels={serviceLabels} roles={roleLabels} preview={preview} onSaved={(labels,roles)=>{setServiceLabels(labels);setRoleLabels(roles);}}/>:<p>呼び方を読み込めません。再読み込みしてください。</p>):settingsFocus==="contract"?<ClassBCheckoutPanel key={business} initialSchoolId={business} fixedSchool/>:settingsFocus==="payment"?<section className={panel+" grid gap-3"}><p>受講料・参加費の受け取りを設定します。</p><Link href="/my/sales" className={button+" inline-flex items-center"}>販売・決済の設定を開く</Link></section>:<section className={panel+" grid grid-cols-2 gap-2"}>{settingEntries.map(([id,title])=><button key={id} type="button" className={button} onClick={()=>setSettingsFocus(id)}>{title}</button>)}</section>}
       </>}
 
       {school&&tab==="accounting"&&<section className={panel+" space-y-5"}>
