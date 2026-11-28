@@ -2,6 +2,7 @@ import Link from "next/link";
 import BillingPortalButton from "@/components/parari/billing/BillingPortalButton";
 import CurrentPlanPanel from "@/components/parari/billing/CurrentPlanPanel";
 import PackageStore from "@/components/parari/billing/PackageStore";
+import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
 import ParariLegalFooter from "@/components/parari/ParariLegalFooter";
 import SettingsTabs from "@/components/parari/settings/SettingsTabs";
 import MyAreaHeader from "@/components/parari/navigation/MyAreaHeader";
@@ -30,6 +31,7 @@ export default function BillingPage() {
           <div className="mt-6"><CurrentPlanPanel /></div>
 
           <div className="mt-10"><PackageStore checkoutOnPage /></div>
+          <ClassBCheckoutPanel />
 
           <section className="mt-10 rounded-3xl border border-neutral-200 bg-white p-6 sm:p-8">
             <p className="text-xs font-bold tracking-[0.16em] text-neutral-400">CUSTOMER PORTAL</p>
