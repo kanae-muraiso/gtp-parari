@@ -90,9 +90,8 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  }
  const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
  return <section className="grid gap-4">
-  <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
-  <p className="text-base text-neutral-600">必要な工程を選んで保存し、フロー図を作成します。各工程を選ぶと内容を編集でき、同じサービス内でドラッグして順番を変更できます。</p>
-  <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-base">設計確認用：このブラウザ内の下書きです。実際の受付・公開・決済は変更しません。</p>
+
+  <p className="text-sm text-neutral-600">ブラウザ内の設計案です。実際の受付・公開・決済は変更しません。</p>
   {!confirmed?<section className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-4">
     <h3 className="text-lg font-bold">共通の入会手続きを設けますか？</h3>
     <label className="flex min-h-11 items-center gap-2 text-base"><input type="radio" name="commonIntake" checked={choice===true} onChange={()=>setChoice(true)}/> 設ける</label>
@@ -100,48 +99,50 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
     <p className="text-sm text-neutral-600">設ける場合だけ、事業共通の入会手続きと各サービスで利用する選択肢が表示されます。</p>
     <button type="button" disabled={choice===null||!ready} className={primary} onClick={chooseMembership}>設定を確定</button>
   </section>:<>
-  <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-base text-neutral-600">共通入会手続き：{membership?"あり":"なし"}</p><button type="button" className={btn} onClick={()=>{setChoice(membership);setConfirmed(false);setSelection(null);setChecklist(null);setMessage("");}}>再設定</button></div>
-  <div className="grid gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+  {!configuring&&!target&&<div className="flex flex-wrap items-center justify-between gap-2"><p className="text-base text-neutral-600">共通入会手続き：{membership?"あり":"なし"}</p><button type="button" className={btn} onClick={()=>{setChoice(membership);setConfirmed(false);setSelection(null);setChecklist(null);setMessage("");}}>再設定</button></div>}
+  {!configuring&&!target&&<div className="grid gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
   {visibleTargets.map(t=>{
    const d=drafts[rowKey(t)]??initialFlow(t);
    const order=flowOrder(t,d,membership);
    const configured=!!d.order?.length;
    return <div key={rowKey(t)} className="grid gap-2 border-b border-emerald-200 pb-4 last:border-0 last:pb-0">
-    <button type="button" className="min-h-11 text-left text-lg font-bold text-emerald-950" onClick={()=>openChecklist(t)}>{t.title}　›</button>
+    <button type="button" className="min-h-11 text-left text-lg font-bold text-emerald-950" onClick={()=>{if(configured&&order.length){setSelection({id:rowKey(t),step:order[0]});setMessage("");}else openChecklist(t);}}>{t.title}　›</button>
     {configured?<div className="flex flex-wrap items-center gap-2">
     {order.map((s,i)=><div key={s} className="flex items-center gap-2" draggable onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",s);setDrag({row:rowKey(t),step:s});}} onDragEnd={()=>setDrag(null)} onDragOver={e=>{if(drag?.row===rowKey(t))e.preventDefault();}} onDrop={e=>{e.preventDefault();if(drag?.row===rowKey(t))reorder(t,drag.step,s);setDrag(null);}}>{i>0&&<span aria-hidden="true" className="text-emerald-700">→</span>}<button type="button" disabled={!ready} aria-pressed={selection?.id===rowKey(t)&&step===s} onClick={()=>{setChecklist(null);setSelection({id:rowKey(t),step:s});setMessage("");}} className={"min-h-11 rounded-lg border px-3 py-2 text-base font-medium "+(selection?.id===rowKey(t)&&step===s?"border-emerald-800 bg-emerald-800 text-white":"border-emerald-300 bg-white text-emerald-950")}>{stepLabel(s,t,d)}</button></div>)}
     </div>:<p className="text-base text-neutral-600">必要な工程を選んでください。</p>}
-    <button type="button" disabled={!ready} className={btn+" w-fit"} onClick={()=>openChecklist(t)}>{configured?"工程を再設定":"工程を選択する"}</button>
+
     {configured&&flowOrderIssue(t,order,membership,sharedConfigured)&&<p className="text-sm text-red-800">{flowOrderIssue(t,order,membership,sharedConfigured)}</p>}
    </div>;
   })}
   {!visibleTargets.length&&<p className="text-base">設計でサービスを作ると、ここに募集の導線が表示されます。</p>}
-  </div>
+  </div>}
+  {(configuring||target)&&<div className="flex items-center gap-3"><button type="button" className={btn} onClick={()=>{setSelection(null);setChecklist(null);setMessage("");}}>‹ 導線一覧に戻る</button><h2 className="flex-1 text-xl font-bold">{(configuring??target)?.title}</h2></div>}
   {configuring&&<section className="grid gap-3 rounded-xl border border-neutral-200 bg-white p-4">
-   <h3 className="text-lg font-bold">{configuring.title}：必要な工程</h3>
+   <h3 className="text-lg font-bold">必要な工程を選ぶ</h3>
    <p className="text-sm text-neutral-600">チェックした工程を保存すると、フロー図が自動生成されます。</p>
    {availableFlowSteps(configuring,membership).map(s=>{
     const required=requiredFlowSteps(configuring).includes(s);
     const d=drafts[rowKey(configuring)]??initialFlow(configuring);
-    return <label key={s} className="flex min-h-11 items-center gap-3 rounded-lg border px-3 text-base"><input className="h-5 w-5" type="checkbox" checked={checked.includes(s)} disabled={required} onChange={e=>{const next=e.target.checked?[...checked,s]:checked.filter(x=>x!==s);if(e.target.checked){const available=availableFlowSteps(configuring,membership);const position=checked.findIndex(x=>available.indexOf(x)>available.indexOf(s));if(position>=0){next.pop();next.splice(position,0,s);}}setChecked(next);setMessage("");}}/>{stepLabel(s,configuring,d)}{required&&<span className="ml-auto text-sm text-neutral-500">必須</span>}</label>;
+    return <label key={s} className="flex min-h-11 items-center gap-3 border-b border-neutral-100 px-1 text-base"><input className="h-5 w-5" type="checkbox" checked={checked.includes(s)} disabled={required} onChange={e=>{const next=e.target.checked?[...checked,s]:checked.filter(x=>x!==s);if(e.target.checked){const available=availableFlowSteps(configuring,membership);const position=checked.findIndex(x=>available.indexOf(x)>available.indexOf(s));if(position>=0){next.pop();next.splice(position,0,s);}}setChecked(next);setMessage("");}}/>{stepLabel(s,configuring,d)}{required&&<span className="ml-auto text-sm text-neutral-500">必須</span>}</label>;
    })}
-   <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={saveChecklist}>工程を保存してフロー図を作る</button><button type="button" className={btn} onClick={()=>{setChecklist(null);setMessage("");}}>閉じる</button></div>
+   <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={saveChecklist}>工程を保存してフロー図を作る</button></div>
   </section>}
   {target&&draft&&<section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5" aria-label="選択中の募集工程">
-   <p className="text-base text-neutral-600">選択中：{target.title}</p>
-   <h3 className="text-xl font-bold">{stepLabel(step,target,draft)}</h3>
-   <div className="grid gap-2 rounded-lg border p-3">
-    <p className="font-bold">工程の順序</p><p className="text-sm text-neutral-600">ドラッグ、または上下ボタンで順番を変更できます。</p>
+   <div className="grid gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">手続きの流れ</p><button type="button" className={btn} onClick={()=>openChecklist(target)}>工程を再設定</button></div><p className="text-sm text-neutral-600">ドラッグまたは上下ボタンで並べ替え、工程名を押して編集します。</p>
     {flowOrder(target,draft,membership).map((s,i,order)=><div key={s} draggable onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",s);setDrag({row:rowKey(target),step:s});}} onDragEnd={()=>setDrag(null)} onDragOver={e=>{if(drag?.row===rowKey(target))e.preventDefault();}} onDrop={e=>{e.preventDefault();if(drag?.row===rowKey(target))reorder(target,drag.step,s);setDrag(null);}} className="flex min-h-11 items-center gap-2 rounded-lg border bg-white p-2">
-     <span aria-hidden="true" className="cursor-grab text-neutral-500">⠿</span><button className="min-h-11 flex-1 text-left text-base" type="button" onClick={()=>{setSelection({id:rowKey(target),step:s});setMessage("");}}>{i+1}. {stepLabel(s,target,draft)}</button>
+     <span aria-hidden="true" className="cursor-grab text-neutral-500">⠿</span><button className={"min-h-11 flex-1 text-left text-base "+(step===s?"font-bold text-emerald-800":"")} type="button" aria-pressed={step===s} onClick={()=>{setSelection({id:rowKey(target),step:s});setMessage("");}}>{i+1}. {stepLabel(s,target,draft)}</button>
      <button type="button" className={btn+" disabled:opacity-30"} disabled={i===0} aria-label={stepLabel(s,target,draft)+"を上へ"} onClick={()=>reorder(target,s,order[i-1])}>↑</button>
      <button type="button" className={btn+" disabled:opacity-30"} disabled={i===order.length-1} aria-label={stepLabel(s,target,draft)+"を下へ"} onClick={()=>reorder(target,s,order[i+1])}>↓</button>
     </div>)}
    </div>
-   {target.kind!=="membership"&&<div className="grid gap-2 rounded-lg bg-neutral-50 p-3 text-base"><p>参加資格：{draft.audience==="members_only"?"事業への入会者限定":"一般の方も参加可能"}</p>{target.priceText&&<p>設計で決めた料金：{target.priceText}</p>}<button type="button" className={btn+" w-fit"} onClick={()=>onOpenDesign(target)}>設計で変更する</button></div>}
+   <div className="grid gap-3 border-t pt-4"><h3 className="text-lg font-bold">{stepLabel(step,target,draft)}の編集</h3>
+   {target.kind!=="membership"&&step==="page"&&<div className="grid gap-2 text-base"><p>参加資格：{draft.audience==="members_only"?"事業への入会者限定":"一般の方も参加可能"}</p>{target.priceText&&<p>設計で決めた料金：{target.priceText}</p>}<button type="button" className={btn+" w-fit"} onClick={()=>onOpenDesign(target)}>設計で変更する</button></div>}
    {step==="common"?<div className="grid gap-2 rounded-lg bg-emerald-50 p-3"><p>事業共通の入会手続きを参照します。すでに入会済みの場合は手続きの繰り返しを想定しません。設定内容は共通の導線で管理します。</p><button type="button" className={btn} onClick={()=>openChecklist(shared)}>共通の入会手続きを設定する</button></div>:step==="terms"?<label className="grid gap-1 text-base">規約・同意事項<textarea className={field} rows={5} maxLength={8000} value={draft.terms} onChange={e=>update({terms:e.target.value})}/></label>:<label className="grid gap-1 text-base">{notesLabels[step]}<textarea className={field} rows={4} maxLength={8000} value={draft.notes[step]??""} onChange={e=>update({notes:{...draft.notes,[step]:e.target.value}})}/></label>}
-   {step==="class"&&<div className="grid gap-1 rounded-lg bg-neutral-50 p-3"><strong>設計済みの開催枠</strong>{target.classNames?.map((name,i)=><p key={i}>{name}</p>)}{!target.classNames?.length&&<p>開催枠を設計で追加してください。</p>}</div>}
-   <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={save}>工程の内容を保存</button>{step!=="common"&&<button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の実際の設定を確認</button>}</div>
+   {step==="class"&&<div className="grid gap-1"><strong>設計済みの開催枠</strong>{target.classNames?.map((name,i)=><p key={i}>{name}</p>)}{!target.classNames?.length&&<p>開催枠を設計で追加してください。</p>}</div>}
+   <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={save}>保存</button></div>
+   {step!=="common"&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">移行前の設定を確認する</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
+   </div>
   </section>}
   {message&&<p role="status" className="rounded-lg bg-neutral-50 p-3 text-base">{message}</p>}
   </>}
