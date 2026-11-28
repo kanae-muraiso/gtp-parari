@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['@electric-sql/pglite'],
+  outputFileTracingIncludes: {
+    '/api/dev/class-b-lab': ['./docs/class-b-*.sql', './supabase/migrations/20261116150000_class_business_events.sql', './node_modules/@electric-sql/pglite/dist/**/*'],
+  },
 
   async redirects() {
     return [

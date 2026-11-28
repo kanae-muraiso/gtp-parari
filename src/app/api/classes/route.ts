@@ -505,6 +505,8 @@ export async function POST(request: NextRequest) {
     const code = (error as { code?: string })?.code;
     if (code === "P0010") return fail("CLASS Aではクラスは1件までです。",403);
     if (code === "P0011") return fail("CLASS Aでは在籍者は10人までです。",403);
+    if (code === "P0012") return fail("CLASS Bの契約クラス数の上限に達しています。追加クラス枠をご契約ください。",403);
+    if (code === "P0013") return fail("このクラスは30人の定員に達しています。別の開催枠を選択してください。",409);
     if (code === "23505") return fail("すでに同じ情報が登録されています。再読み込みしてください。", 409);
     if (code === "P0002") return fail("指定した教室または継続クラスの受付が見つかりません。", 404);
     if (code === "22007" || code === "22008") return fail("初回日時を確認してください。");

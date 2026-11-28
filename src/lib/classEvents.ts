@@ -16,7 +16,7 @@ export type ClassEvent = {
   status: "draft" | "open" | "closed";
   class_event: ClassEventSettings;
   definition: { capacity: number | null };
-  payment_method: "none" | "on_site" | "payment_link";
+  payment_method: "none" | "on_site" | "payment_link" | "parari";
   payment_amount: number | null;
   payment_url: string | null;
 };
@@ -48,4 +48,23 @@ export function classEventSessions(settings: ClassEventSession & Pick<ClassEvent
 export function classEventScheduleText(settings: ClassEventSession & Pick<ClassEventSettings, "sessions">) {
   return classEventSessions(settings).map(({ startsAt, location }, index) =>
     (settings.sessions ? `第${index + 1}回　` : "") + classEventDate(startsAt) + "（日本時間） " + location);
+}
+
+export type ClassEventEntryFilter = "all" | "ready" | "unpaid" | "present" | "notPresent";
+export function classEventEntryAttendance(entry: ClassEventEntry, sessionAt?: string) {
+  return (sessionAt
+    ? entry.class_workshop_attendance?.find(record => Date.parse(record.session_at) === Date.parse(sessionAt))?.status
+    : entry.class_event_attendance) ?? null;
+}
+export function classEventEntryReady(entry: ClassEventEntry, paymentMethod: ClassEvent["payment_method"]) {
+  return entry.status === "confirmed" && (entry.payment_status === "paid" ||
+    (paymentMethod === "none" && entry.payment_status === "not_required"));
+}
+export function classEventEntryMatches(entry: ClassEventEntry, paymentMethod: ClassEvent["payment_method"], sessionAt: string | undefined, filter: ClassEventEntryFilter, search: string) {
+  const present = classEventEntryAttendance(entry,sessionAt) === "present";
+  const matches = filter === "all" || (filter === "ready" && classEventEntryReady(entry,paymentMethod)) ||
+    (filter === "unpaid" && entry.payment_status === "unpaid") || (filter === "present" && present) ||
+    (filter === "notPresent" && !present);
+  const key = search.trim().normalize("NFKC").toLocaleLowerCase("ja-JP");
+  return matches && (!key || entry.name.normalize("NFKC").toLocaleLowerCase("ja-JP").includes(key) || entry.id.toLowerCase().includes(key));
 }

@@ -232,6 +232,7 @@ async function main() {
   assert.equal(productDomain.parseClassProduct(productDesign,new Set(),true).audience,"minor");
   assert.equal(productDomain.parseClassProduct({...productDesign,audience:"invalid"},new Set(),true),null);
   const ProductEditor=load("src/components/parari/manage/ClassProductPanel.tsx",{
+    "@/lib/classServiceLabels":load("src/lib/classServiceLabels.ts"),
     "@/lib/classRequests":{classRequest:async(url,body)=>{if(body){lastBody=body;return {design:body.design};}
       return {design:null,products:[{id:"english",name:"英語",design:productDesign}]};}},
     "@/lib/classProduct":productDomain,"@/lib/classBusinessFront":{classParticipationFormat:()=>"fixed"},
@@ -372,6 +373,7 @@ async function main() {
       if(key==="update")return changes=>{decisions.push(changes);return chain;};return ()=>chain;}});return chain;
   }};
   const decisionApi = load("src/app/api/classes/admissions/route.ts",{
+    "@/lib/classServiceLabels":load("src/lib/classServiceLabels.ts"),
     "@/lib/classEnrollmentNotice":{sendClassEnrollmentNotice:async()=>true},
     "next/server":{NextResponse:{json:(body,{status})=>({body,status})}},
     "@/lib/billing/supabaseAdmin":{supabaseAdmin:decisionDb},

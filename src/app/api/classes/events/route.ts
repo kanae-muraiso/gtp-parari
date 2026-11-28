@@ -3,7 +3,10 @@ import { classAdmissionMail } from "@/lib/classAdmissionMail";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classBusinessId, canManageClassStudio } from "@/lib/classBusinessScope";
+import { getUsableSquareConnection } from "@/lib/square/connection";
+import { readSellerDisclosure, sellerDisclosureReady } from "@/lib/parari/sales/sellerDisclosure";
 import { classFeatureAccess } from "@/lib/classFeatureAccess";
+import { CLASS_B_EVENT_CAPACITY, CLASS_B_MONTHLY_EVENT_LIMIT } from "@/lib/classBPolicy";
 import { eligibleClassEventPage } from "@/lib/classEventPage";
 import { classIdPattern } from "@/lib/classes";
 import { activeEventSchool, isClassEventMember } from "@/lib/classEventAccess";
@@ -100,6 +103,7 @@ export async function GET(request: NextRequest) {
       }
       return send({ ok: true, event: publicEvent(event), authoredPage, schoolName: school.name, registered: Boolean(entry?.data),
         paymentUrl: entry?.data?.payment_status === "unpaid" ? event.payment_url : null,
+        squareEntryId: event.payment_method === "parari" && entry?.data?.payment_status === "unpaid" ? entry.data.id : null,
         canRegister: event.status === "open" && !owner && event.class_event.registration && Date.parse(event.class_event.deadline) > Date.now() });
     }
     const school = await ownBusiness(request, user);
@@ -173,8 +177,32 @@ export async function POST(request: NextRequest) {
     if (event && ["publish", "close"].includes(body.action)) {
       const publish = body.action === "publish";
       if (!publish && event.status !== "open") return fail("公開中のイベントを選んでください。", 409);
+      if (publish && event.payment_method === "parari") {
+        if (!event.class_event.registration || !Number.isInteger(event.payment_amount) || Number(event.payment_amount) <= 0) return fail("有料申込と参加費を設定してください。",409);
+        if (!sellerDisclosureReady(await readSellerDisclosure(user))) return fail("販売者情報・特商法表記を公開してください。",409);
+        try { await getUsableSquareConnection(user); }
+        catch { return fail("有料受付の開始前にSquareの接続を確認してください。",409); }
+      }
+      if (publish && event.payment_method !== "parari" && (!Number.isInteger(event.definition.capacity) || Number(event.definition.capacity) < 1 || Number(event.definition.capacity) > CLASS_B_EVENT_CAPACITY)) return fail("CLASS Bの定員を1〜50人に設定してください。", 409);
       if (publish && Date.parse(event.class_event.startsAt) <= Date.now()) return fail("開催日時を未来に設定してください。");
       if (publish && event.class_event.registration && Date.parse(event.class_event.deadline) <= Date.now()) return fail("申込締切を未来に設定してください。");
+      if (publish && event.payment_method !== "parari") {
+        // Count published and closed events in the scheduled month (Japan time).
+        // A closed event still occupies its original slot; reopening is not a new event.
+        const month = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0,7);
+        const months = new Set((event.class_event.sessions ?? [event.class_event]).map(session => month(session.startsAt)));
+        const { data: others, error: quotaError } = await db.from("applications")
+          .select("id,class_event").eq("class_event_school_id",school)
+          .neq("payment_method","parari").in("status",["open","closed"]).neq("id",id);
+        if (quotaError) throw quotaError;
+        for (const key of months) {
+          const used = (others ?? []).filter(item => {
+            const settings = item.class_event as ClassEventSettings | null;
+            return settings && (settings.sessions ?? [settings]).some(session => month(session.startsAt) === key);
+          }).length;
+          if (used >= CLASS_B_MONTHLY_EVENT_LIMIT) return fail(`通常のイベント・講習会は開催月ごとに${CLASS_B_MONTHLY_EVENT_LIMIT}件までです。PARARI内Square決済の有料イベントは対象外です。`,409);
+        }
+      }
       const { error } = await db.from("applications").update({ status: publish ? "open" : "closed" })
         .eq("id", id).eq("class_event_school_id", school);
       if (error) throw error;
@@ -211,37 +239,30 @@ export async function POST(request: NextRequest) {
     if (event && body.action === "entry") {
       const entry = clean(body.entryId, 36);
       if (!classIdPattern.test(entry)) return fail("参加者を選択してください。");
-      if (event.class_event.sessions && body.change !== "paid") {
-        const session = event.class_event.sessions.find(item => item.startsAt === body.sessionAt);
-        const status = body.change;
-        if (!session || (status !== "present" && status !== "absent" && status !== "clear")) {
-          return fail("開催回と出欠を選択してください。");
-        }
-        const { data, error } = await db.from("application_entries").select("id")
-          .eq("id", entry).eq("application_id", id).in("status", ["submitted", "confirmed"]).maybeSingle();
-        if (error) throw error;
-        if (!data) return fail("参加者が見つかりません。", 404);
-        const attendance = db.from("class_workshop_attendance");
-        const result = status === "clear"
-          ? await attendance.delete().eq("entry_id", entry).eq("session_at", session.startsAt)
-          : await attendance.upsert({ entry_id: entry, session_at: session.startsAt, status });
-        if (result.error) throw result.error;
-        return send({ ok: true, id });
+      if (body.change === "paid") {
+        if (event.payment_method === "none" || event.payment_method === "parari") return fail("この入金方法は手動で確認できません。");
+        const {data,error}=await db.from("application_entries").update({payment_status:"paid",status:"confirmed",payment_confirmed_at:new Date().toISOString()})
+          .eq("id",entry).eq("application_id",id).in("status",["submitted","confirmed"]).eq("payment_status","unpaid").select("id").maybeSingle();
+        if(error)throw error;
+        if(!data)return fail("未入金の申込が見つかりません。再読み込みしてください。",409);
+        return send({ok:true,id});
       }
-      const change = body.change === "paid" && event.payment_method !== "none" ? { payment_status: "paid", status: "confirmed", payment_confirmed_at: new Date().toISOString() }
-        : body.change === "present" || body.change === "absent" || body.change === "clear"
-          ? { class_event_attendance: body.change === "clear" ? null : body.change } : null;
-      if (!change) return fail("変更内容を選択してください。");
-      let query = db.from("application_entries").update(change).eq("id", entry).eq("application_id", id)
-        .in("status", ["submitted", "confirmed"]);
-      if (body.change === "paid") query = query.eq("payment_status", "unpaid");
-      const { error } = await query;
-      if (error) throw error;
-      return send({ ok: true, id });
+      if (!["present","absent","clear"].includes(body.change)) return fail("出欠を選択してください。");
+      const session=event.class_event.sessions
+        ? event.class_event.sessions.find(item=>item.startsAt===body.sessionAt)?.startsAt
+        : event.class_event.startsAt;
+      if(!session)return fail("開催回を選択してください。");
+      const {error}=await db.rpc("staff_class_event_attendance",{p_owner:user,p_event:id,p_entry:entry,p_session:session,p_change:body.change});
+      if(error?.code==="P0001")return fail("入金確認・参加確定後に出席を記録してください。",409);
+      if(error?.code==="P0002")return fail("参加者またはイベントが見つかりません。",404);
+      if(error?.code==="22023")return fail("開催回と出欠を確認してください。");
+      if(error)throw error;
+      return send({ok:true,id});
     }
 
     if (event && body.action === "add") {
       const memberId = clean(body.memberId, 36);
+      if (event.payment_method === "parari") return fail("Square決済のイベントは参加者本人からお申し込みください。",409);
       if (!classIdPattern.test(memberId) || event.status === "draft") return fail("参加者を選んでください。");
       const { data: member, error: memberError } = await db.from("school_enrollments").select("id,name,user_id")
         .eq("school_id", school).eq("status", "active").eq("id", memberId).maybeSingle();
@@ -303,11 +324,11 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       if (count !== classIds.length) return fail("この事業のクラスを選んでください。");
     }
-    const capacity = body.capacity === "" || body.capacity == null ? null : Number(body.capacity);
-    if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 1000)) return fail("定員は1〜1000人で入力してください。");
     const payment = body.payment;
-    if (payment !== "none" && payment !== "on_site" && payment !== "payment_link") return fail("支払方法を選択してください。");
-    if (!registration && payment === "payment_link") return fail("決済リンクを使う場合は申込を受け付けてください。");
+    if (payment !== "none" && payment !== "on_site" && payment !== "payment_link" && payment !== "parari") return fail("支払方法を選択してください。");
+    if (!registration && (payment === "payment_link" || payment === "parari")) return fail("事前決済を使う場合は申込を受け付けてください。");
+    const capacity = body.capacity === "" || body.capacity == null ? (payment === "parari" ? null : CLASS_B_EVENT_CAPACITY) : Number(body.capacity);
+    if (capacity !== null && (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 2147483647 || (payment !== "parari" && capacity > CLASS_B_EVENT_CAPACITY))) return fail(payment === "parari" ? "定員は正の整数で入力してください。" : "CLASS Bの定員は1〜50人で入力してください。");
     const amount = payment === "none" ? null : Number(body.amount);
     if (amount !== null && (!Number.isInteger(amount) || amount < 1 || amount > 10000000)) return fail("参加費を入力してください。");
     const url = payment === "payment_link" ? clean(body.paymentUrl, 2048) : null;
@@ -328,6 +349,9 @@ export async function POST(request: NextRequest) {
     if (!result.data) return fail("イベントの状態が変わりました。再読み込みしてください。", 409);
     return send({ ok: true, id: result.data.id });
   } catch (error) {
+    const code=(error as {code?:string})?.code;
+    if(code==="P0014")return fail("通常イベントの定員は1〜50人です。",409);
+    if(code==="P0015")return fail("通常イベント・講習会は月3件までです。",409);
     console.error("[class events] update failed", error);
     return fail("イベントを更新できませんでした。", 500);
   }

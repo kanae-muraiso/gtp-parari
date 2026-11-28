@@ -29,7 +29,7 @@ async function checkReader({ userId = null, visibility = "public", owner = "owne
   const client = {
     auth: {
       getUser: async () => ({ data: { user: userId ? { id: userId } : null } }),
-      getSession: async () => ({ data: { session: null } }),
+      getSession: async () => ({ data: { session: userId ? { access_token: "test-session" } : null } }),
     },
     from(table) {
       assert.ok(table in tables, `Unexpected table: ${table}`);
@@ -63,21 +63,37 @@ async function checkReader({ userId = null, visibility = "public", owner = "owne
     "@supabase/supabase-js": { createClient: () => client },
     "@/components/parari/PublicViewerShell": { __esModule: true, default: Viewer },
   });
-  Page();
-  firstRender = false;
-  effects.forEach(fn => fn());
-  await new Promise(resolve => setImmediate(resolve));
-  cursor = 0;
-  const result = Page();
+  // The production reader now gets authorized, compiled data from share-read.
+  // Mock only the HTTP boundary here; server authorization is covered separately.
+  const oldFetch = global.fetch;
+  let result;
+  try {
+    global.fetch = async (url, options) => {
+      if (url.startsWith("/api/commerce/work-preview?")) return { ok: false, json: async () => ({}) };
+      assert.equal(url, "/api/works/share-read?id=work-id");
+      assert.equal(options.cache, "no-store");
+      assert.equal(options.headers?.Authorization, userId ? "Bearer test-session" : undefined);
+      queries.push(["share-read", "id", "work-id"]);
+      const permitted = failure !== "parari_books" && (visibility !== "private" || userId === owner);
+      return { ok: permitted, json: async () => permitted ? { ok: true, book: { ...work, content: null }, reader: { testCompiledReader: true } } : { ok: false } };
+    };
+    Page();
+    firstRender = false;
+    effects.forEach(fn => fn());
+    await new Promise(resolve => setImmediate(resolve));
+    cursor = 0;
+    result = Page();
+  } finally { global.fetch = oldFetch; }
   if (allowed) {
     assert.equal(result.type, Viewer);
-    assert.deepEqual(result.props, { content: work.content, bookId: work.id, ownerId: owner });
-    assert.ok(queries.some(q => q[0] === "parari_books" && q[1] === "owner" && q[2] === "owner"));
+    assert.deepEqual(result.props, { content: "", compiledReader: { testCompiledReader: true }, bookId: work.id, ownerId: owner });
+    assert.ok(queries.some(q => q[0] === "share-read" && q[1] === "id" && q[2] === "work-id"));
+    assert.ok(!queries.some(q => q[0] === "parari_books"), "browser must not directly read source SSOT");
   } else {
     assert.notEqual(result.type, Viewer);
     const html = renderToStaticMarkup(result);
     assert.doesNotMatch(html, /Original body/);
-    assert.match(html, /非公開|見つかりませんでした|失敗しました/);
+    assert.match(html, /非公開|見つかりませんでした|失敗しました|表示できません/);
   }
 }
 

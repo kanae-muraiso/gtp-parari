@@ -8,7 +8,7 @@ import ClassEventSchedule from "@/components/parari/manage/ClassEventSchedule";
 import ClassHomePageContent from "@/components/parari/classes/ClassHomePageContent";
 import { classEventDate, type ClassEvent } from "@/lib/classEvents";
 
-type View = { event: ClassEvent; schoolName: string; canRegister: boolean; registered: boolean; paymentUrl: string | null; authoredPage?: {id:string;content:string}|null };
+type View = { event: ClassEvent; schoolName: string; canRegister: boolean; registered: boolean; paymentUrl: string | null; squareEntryId?: string | null; authoredPage?: {id:string;content:string}|null };
 const field = "rounded-lg border border-neutral-300 px-3 py-2";
 const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50";
 
@@ -58,6 +58,7 @@ export default function ClassEventPage() {
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.message || "申し込めませんでした。");
       if (!token && data.email_delivery === "failed") throw new Error("確認メールを送れませんでした。時間をおいてお試しください。");
+      if (token && typeof data.checkout_url === "string") { window.location.assign(data.checkout_url); return; }
       if (token) {
         setMessage("お申し込みを受け付けました。");
         setRefresh(value => value + 1);
@@ -70,6 +71,17 @@ export default function ClassEventPage() {
     } finally { setBusy(false); }
   }
 
+  async function pay() {
+    if (!token || !view?.squareEntryId) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch("/api/application/payment/checkout", { method:"POST", headers:{"Content-Type":"application/json",Authorization:"Bearer "+token}, body:JSON.stringify({entryId:view.squareEntryId}) });
+      const data = await response.json();
+      if (!response.ok || !data.ok || typeof data.url !== "string") throw new Error(data.message || "決済を開始できませんでした。");
+      window.location.assign(data.url);
+    } catch(cause) { setError(cause instanceof Error ? cause.message : "決済を開始できませんでした。"); }
+    finally { setBusy(false); }
+  }
   const event = view?.event;
   return <main className="min-h-screen bg-neutral-100 px-4 py-8">
     <article className="mx-auto grid max-w-xl gap-4 rounded-2xl border border-neutral-200 bg-white p-6">
@@ -86,6 +98,7 @@ export default function ClassEventPage() {
         {event.class_event.sessions && <p className="text-sm">一度のお申し込みで全日程に参加できます。</p>}
         {view.registered ? <>
           <p className="font-medium">申込受付済み</p>
+          {view.squareEntryId && <button className={button} disabled={busy} onClick={()=>void pay()}>Squareで参加費を支払う</button>}
           {view.paymentUrl && <a className={button} href={view.paymentUrl} rel="noreferrer">参加費を支払う</a>}
         </> : event.status === "closed" ? <p>受付は終了しました。</p> :
           !event.class_event.registration ? <p>申込不要です。</p> :
