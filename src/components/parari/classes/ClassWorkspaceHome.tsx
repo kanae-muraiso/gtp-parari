@@ -6,7 +6,7 @@ export function classAreaForTab(tab:ClassWorkspaceTab){
  if(["admission","homepage","services","events","workshops","improve"].includes(tab))return "募集";
  if(tab==="operation")return "運営";
  if(tab==="accounting")return "会計";
- if(tab==="settings")return "事業設定・契約・利用枠";
+ if(tab==="settings")return "設計";
  return "CLASS";
 }
 const entries=[["classes","設計","事業・コース・クラス"],["services","募集","サービスの申込・募集ページ"],["operation","運営","生徒・出欠・開催予定"],["accounting","会計","月謝・入金・売上"]] as const;
