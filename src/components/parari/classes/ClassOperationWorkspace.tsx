@@ -15,28 +15,35 @@ const format=(at:string)=>new Intl.DateTimeFormat("ja-JP",{month:"long",day:"num
 type View="home"|"schedule"|"session"|"admissions"|"roster"|"contact"|"events"|"workshops";
 type Phase="before"|"during"|"after";
 type Props={schoolId:string;classes:SchoolClass[];roster:ClassRosterMember[];labels:ServiceLabels;preview:boolean;onAccounting:()=>void;onRefresh:()=>void};
-const phaseOf=(s:OperationSession):Phase=>Date.parse(s.startsAt)>Date.now()?"before":s.endsAt&&Date.parse(s.endsAt)<Date.now()?"after":"during";
+const phaseOf=(s:OperationSession):Phase=>Date.parse(s.startsAt)>Date.now()?"before":s.endsAt&&Date.parse(s.endsAt)<Date.now()||!s.endsAt&&s.day<new Date(Date.now()+9*3600000).toISOString().slice(0,10)?"after":"during";
+async function loadPeople(s:OperationSession,signal:AbortSignal){
+ if(s.kind==="class")return classRequest<{people:OperationPerson[];historical:boolean}>("/operations?class="+encodeURIComponent(s.serviceId)+"&day="+s.day,undefined,signal);
+ const d=await classRequest<{event:ClassEvent;entries:ClassEventEntry[]}>("/events?event="+encodeURIComponent(s.serviceId),undefined,signal);
+ return {historical:false,people:d.entries.map((e):OperationPerson=>({id:e.id,name:e.name,source:"event",absenceReported:false,actual:classEventEntryAttendance(e,s.kind==="workshop"?s.sessionAt:undefined),payment:e.payment_status,ready:classEventEntryReady(e,d.event.payment_method)||e.status==="confirmed"&&d.event.payment_method==="on_site"}))};
+}
 export default function ClassOperationWorkspace({schoolId,classes,roster,labels,preview,onAccounting,onRefresh}:Props){
  const [view,setView]=useState<View>("home"),[sessions,setSessions]=useState<OperationSession[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(""),[refresh,setRefresh]=useState(0);
+ const [nextPeople,setNextPeople]=useState<{id:string;people:OperationPerson[]}|null>(null),[nextPeopleError,setNextPeopleError]=useState("");
  const [selected,setSelected]=useState<OperationSession|null>(null),[phase,setPhase]=useState<Phase>("before"),[people,setPeople]=useState<OperationPerson[]|null>(null),[peopleError,setPeopleError]=useState(""),[historic,setHistoric]=useState(false);
  const [draftAttendance,setDraftAttendance]=useState<Record<string,"present"|"absent"|"clear">>({}),[memo,setMemo]=useState(""),[message,setMessage]=useState(""),[search,setSearch]=useState(""),[contactIds,setContactIds]=useState<string[]>([]),[contactSubject,setContactSubject]=useState(""),[contactBody,setContactBody]=useState(""),[admissionMode,setAdmissionMode]=useState<"join"|"leave">("join"),[scheduleMode,setScheduleMode]=useState<"list"|"calendar">("list");
  useEffect(()=>{const c=new AbortController();setLoading(true);setError("");void classRequest<{sessions:OperationSession[]}>("/operations",undefined,c.signal).then(d=>{if(!c.signal.aborted){setSessions(d.sessions);setLoading(false);}}).catch(e=>{if(!c.signal.aborted){setError(e.message);setLoading(false);}});return()=>c.abort();},[schoolId,refresh]);
  useEffect(()=>{
   if(!selected)return;
   const c=new AbortController();setPeople(null);setPeopleError("");setHistoric(false);
-  if(selected.kind==="class")void classRequest<{people:OperationPerson[];historical:boolean}>("/operations?class="+encodeURIComponent(selected.serviceId)+"&day="+selected.day,undefined,c.signal).then(d=>{if(!c.signal.aborted){setPeople(d.people);setHistoric(d.historical);}}).catch(e=>{if(!c.signal.aborted)setPeopleError(e.message);});
-  else void classRequest<{event:ClassEvent;entries:ClassEventEntry[]}>("/events?event="+encodeURIComponent(selected.serviceId),undefined,c.signal).then(d=>{if(!c.signal.aborted)setPeople(d.entries.map(e=>({id:e.id,name:e.name,source:"event",absenceReported:false,actual:classEventEntryAttendance(e,selected.kind==="workshop"?selected.sessionAt:undefined),payment:e.payment_status,ready:classEventEntryReady(e,d.event.payment_method)})));}).catch(e=>{if(!c.signal.aborted)setPeopleError(e.message);});
+  void loadPeople(selected,c.signal).then(d=>{if(!c.signal.aborted){setPeople(d.people);setHistoric(d.historical);}}).catch(e=>{if(!c.signal.aborted)setPeopleError(e.message);});
   return()=>c.abort();
  },[schoolId,selected,refresh]);
  const next=nextOperationSession(sessions,Date.now());
+ useEffect(()=>{if(view!=="home"||!next)return;const c=new AbortController();setNextPeople(null);setNextPeopleError("");void loadPeople(next,c.signal).then(d=>{if(!c.signal.aborted)setNextPeople({id:next.id,people:d.people});}).catch(e=>{if(!c.signal.aborted)setNextPeopleError(e.message);});return()=>c.abort();},[schoolId,view,next?.id,refresh]);
+ const nextRoster=nextPeople?.id===next?.id?nextPeople?.people:null;
  function open(s:OperationSession){setSelected(s);setPhase(phaseOf(s));setDraftAttendance({});setMemo("");setMessage("");setView("session");}
  function home(){setView("home");setSelected(null);setMessage("");setSearch("");}
  function contact(ids:string[]){setContactIds(ids);setContactSubject("");setContactBody("");setMessage("");setView("contact");}
  const actual=(p:OperationPerson)=>draftAttendance[p.id]===undefined?p.actual:draftAttendance[p.id]==="clear"?null:draftAttendance[p.id];
  const absent=(people??[]).filter(p=>p.absenceReported||actual(p)==="absent");
  const notArrived=(people??[]).filter(p=>!p.absenceReported&&!actual(p)&&p.ready!==false);
- const eligible=(people??[]).filter(p=>p.ready!==false&&!p.absenceReported);
- const counts=people?{planned:eligible.length,absent:absent.length,unmarked:people.filter(p=>!actual(p)).length}:null;
+ const eligible=(people??[]).filter(p=>p.ready!==false&&!p.absenceReported&&actual(p)!=="absent");
+ const counts=people?{planned:eligible.length,absent:absent.length,unmarked:people.filter(p=>p.ready!==false&&!p.absenceReported&&!actual(p)).length}:null;
  const title=view==="admissions"?"入退会受付":view==="roster"?"名簿一覧":view==="contact"?"参加者への連絡":view==="schedule"?"開催予定":view==="events"?labels.event+"の受付":view==="workshops"?labels.workshop+"の受付":selected?.title;
  const menu=[["admissions","入退会受付","申込・退会の確認"],["roster","名簿一覧","在籍・参加者"],["accounting","会計記録","入金・売上"],["contact","参加者への連絡","個別・一斉連絡"]] as const;
  const recipientList=selected&&people?people:roster.filter(r=>r.status==="active");
@@ -44,12 +51,12 @@ export default function ClassOperationWorkspace({schoolId,classes,roster,labels,
   {view==="home"?<>
    <section className="grid gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
     <h2 className="text-lg font-bold text-emerald-950">次の開催</h2>
-    {loading?<p role="status">開催予定を確認しています…</p>:error?<p role="alert" className="text-red-800">{error}</p>:next?<><p className="text-xl font-bold">{next.title}</p><p className="text-base">{format(next.startsAt)}{next.endsAt?" 〜 "+new Date(next.endsAt).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Tokyo"}):""}</p>{next.location&&<p>{next.location}</p>}{!next.confirmed&&<p className="text-sm text-neutral-600">定期開催の設定に基づく予定（未確定）</p>}<button type="button" className={primary} onClick={()=>open(next)}>この開催の運営画面を開く　›</button></>:<p>今後90日以内の開催予定はありません。</p>}
+    {loading?<p role="status">開催予定を確認しています…</p>:error?<p role="alert" className="text-red-800">{error}</p>:next?<><p className="text-xl font-bold">{next.title}</p><p className="text-base">{format(next.startsAt)}{next.endsAt?" 〜 "+new Date(next.endsAt).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Tokyo"}):""}</p>{next.location&&<p>{next.location}</p>}{!next.confirmed&&<p className="text-sm text-neutral-600">定期開催の設定に基づく予定（未確定）</p>}{nextRoster?<div className="grid grid-cols-3 gap-2 text-center">{[["出席予定",nextRoster.filter(p=>p.ready!==false&&!p.absenceReported&&p.actual!=="absent").length],["欠席連絡・欠席",nextRoster.filter(p=>p.absenceReported||p.actual==="absent").length],["出欠未記録",nextRoster.filter(p=>p.ready!==false&&!p.absenceReported&&!p.actual).length]].map(([label,n])=><div key={label} className="rounded-lg bg-white p-2"><strong className="block text-2xl">{n}</strong><span className="text-sm">{label}</span></div>)}</div>:<p className="text-sm text-neutral-600">{nextPeopleError?"参加予定者を取得できませんでした。":"参加予定者を確認しています…"}</p>}<button type="button" className={primary} onClick={()=>open(next)}>この開催の運営画面を開く　›</button></>:<p>今後90日以内の開催予定はありません。</p>}
     <div className="flex flex-wrap justify-between gap-2"><button type="button" className={btn} onClick={()=>{setView("schedule");setScheduleMode("list");}}>開催予定を見る</button><button type="button" className={btn} onClick={()=>setRefresh(v=>v+1)}>更新</button></div>
    </section>
    <div className="grid grid-cols-2 gap-2">{menu.map(([id,label,desc])=><button key={id} className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border bg-white p-3 text-center" type="button" onClick={()=>{if(id==="accounting")onAccounting();else if(id==="contact")contact([]);else setView(id);}}><strong className="text-lg">{label}</strong><span className="text-sm text-neutral-600">{desc}</span></button>)}</div>
   </>:<>
-   <div className="flex flex-wrap items-center gap-3"><button type="button" className={btn} onClick={view==="contact"&&selected?()=>{setView("session");setMessage("");}:home}>{view==="contact"&&selected?"‹ 開催の運営に戻る":"‹ 運営に戻る"}</button><h2 className="flex-1 text-xl font-bold">{title}</h2></div>
+   <div className="flex flex-wrap items-center gap-3"><button type="button" className={btn} onClick={(view==="contact"||view==="events"||view==="workshops")&&selected?()=>{setView("session");setMessage("");}:home}>{(view==="contact"||view==="events"||view==="workshops")&&selected?"‹ 開催の運営に戻る":"‹ 運営に戻る"}</button><h2 className="flex-1 text-xl font-bold">{title}</h2></div>
    {view==="schedule"&&<section className={panel}>
     <div className="flex flex-wrap gap-2"><button type="button" className={btn} aria-pressed={scheduleMode==="list"} onClick={()=>setScheduleMode("list")}>開催一覧</button><button type="button" className={btn} aria-pressed={scheduleMode==="calendar"} onClick={()=>setScheduleMode("calendar")}>カレンダー設定</button></div>
     {scheduleMode==="calendar"?<ClassCalendarPanel classes={classes} onSaved={()=>{setRefresh(v=>v+1);onRefresh();}}/>:<>{loading?<p>読み込み中…</p>:error?<p role="alert">{error}</p>:<>
