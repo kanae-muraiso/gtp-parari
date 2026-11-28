@@ -124,7 +124,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
     <label className="flex min-h-11 items-center gap-2 text-base"><input type="radio" name="commonIntake" checked={choice===true} onChange={()=>setChoice(true)}/> 設ける</label>
     <label className="flex min-h-11 items-center gap-2 text-base"><input type="radio" name="commonIntake" checked={choice===false} onChange={()=>setChoice(false)}/> 設けない</label>
     <p className="text-sm text-neutral-600">設ける場合だけ、事業共通の入会手続きと各サービスで利用する選択肢が表示されます。</p>
-    <button type="button" disabled={choice===null||!ready||saving} className={primary} onClick={()=>void chooseMembership()}>{saving?"保存中…":"設定を確定"</button>
+    <button type="button" disabled={choice===null||!ready||saving} className={primary} onClick={()=>void chooseMembership()}>{saving?"保存中…":"設定を確定"}</button>
   </section>:<>
   {!configuring&&!target&&<div className="flex flex-wrap items-center justify-between gap-2"><p className="text-base text-neutral-600">共通入会手続き：{membership?"あり":"なし"}</p><button type="button" className={btn} onClick={()=>{setChoice(membership);setConfirmed(false);setSelection(null);setChecklist(null);setMessage("");}}>再設定</button></div>}
   {!configuring&&!target&&<div className="min-w-0 grid gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
