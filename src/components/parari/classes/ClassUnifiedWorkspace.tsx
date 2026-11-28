@@ -358,6 +358,22 @@ export default function ClassUnifiedWorkspace(){
     catch(e){setError(e instanceof Error?e.message:"設計案を保存できませんでした。");}finally{setBusy(false);}
   }
 
+  async function saveMembershipChoice(enabled:boolean){
+    const next={...model,membership:enabled};
+    if(preview){
+      try{sessionStorage.setItem("class-model:"+business,JSON.stringify(next));}catch{}
+      setModel(next);
+      return;
+    }
+    if(!business||!details)throw new Error("事業設定を読み込めません。");
+    const wizard={...details.draft.wizard,businessModel:JSON.stringify(next),classCommonIntakeConfigured:true};
+    const saved=await classRequest<{revision:number}>("/onboarding?school="+business,{
+      action:"saveWizard",revision:details.draft.revision,wizard,
+    });
+    setDetails(current=>current?{...current,draft:{...current.draft,wizard,revision:saved.revision}}:current);
+    setModel(next);
+  }
+
   async function saveRecruitmentFlows(flows:Record<string,FlowDraft>){
     if(!business||!details)throw new Error("事業設定を読み込めません。");
     const encoded=JSON.stringify(flows);
@@ -583,7 +599,7 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="services"&&<section className={panel+" grid gap-3"}>
-        {!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} preview={preview} initialDraftsJson={typeof details?.draft.wizard.classRecruitmentFlows==="string"?details.draft.wizard.classRecruitmentFlows:""} onSaveDrafts={saveRecruitmentFlows} onMembershipChange={enabled=>applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign} overviewHeader={businessPageEntry}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
+        {!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} preview={preview} membershipConfigured={Boolean(details?.draft.wizard.classCommonIntakeConfigured)} initialDraftsJson={typeof details?.draft.wizard.classRecruitmentFlows==="string"?details.draft.wizard.classRecruitmentFlows:""} onSaveDrafts={saveRecruitmentFlows} onMembershipChange={saveMembershipChoice} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign} overviewHeader={businessPageEntry}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
         {!recruitService&&businessPageEntry}
         <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
