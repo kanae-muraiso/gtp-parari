@@ -27,7 +27,7 @@ export default function LabClient(){
  let qr:boolean[][]=[];
  if(entranceUrl){try{qr=createQrVersion6M(entranceUrl);}catch{}}
  return <main className="min-h-screen bg-neutral-100 p-4 text-neutral-950"><article className="mx-auto grid max-w-3xl gap-4">
- <header className="rounded-2xl bg-emerald-900 p-5 text-white"><p className="text-sm font-bold tracking-wide">PARARI DEVELOPMENT LAB</p><h1 className="mt-2 text-2xl font-bold">CLASS B 操作テスト</h1><p className="mt-2 text-base">架空の教室と参加者を使用します。実際の課金・メール・本番DBへの接続はありません。</p></header>
+ <header className="rounded-2xl bg-emerald-900 p-5 text-white"><p className="text-sm font-bold tracking-wide">PARARI DEVELOPMENT LAB</p><h1 className="mt-2 text-2xl font-bold">CLASS B 操作テスト</h1><p className="mt-2 text-base">架空の教室と参加者を使用します。実際の課金・メール・本番DBへの接続はありません。Stripeのテスト決済は下の専用パネルからお試しください。</p></header>
  <section className="grid gap-3 rounded-2xl bg-white p-4"><h2 className="text-lg font-bold">利用状況</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["契約",state.plan==="b"?"CLASS B":"CLASS A"],["月額",state.blocks*1000+"円"],["通常クラス",state.ordinaryClasses+"/"+(state.plan==="b"?state.blocks*5:1)],["Squareクラス",state.squareClasses],["在籍登録（全クラス）",state.members+"人"],["通常イベント",state.ordinaryEvents+"/3"],["Squareイベント",state.squareEvents],["入金済",state.paid],["未入金",state.unpaid],["出席",state.attended]].map(([name,value])=><div key={name} className="rounded-xl bg-neutral-50 p-3"><p className="text-base">{name}</p><strong className="text-xl">{value}</strong></div>)}</div></section>
  <section className="grid gap-2 rounded-2xl bg-white p-4"><button className="min-h-12 rounded-xl bg-emerald-700 p-3 text-base font-bold text-white disabled:opacity-50" disabled={busy} onClick={()=>void run(sequence)}>一連の運営テストを実行</button><button className={button} disabled={busy} onClick={()=>void run(["pay","class","class","class","class","class","squareConnect","class","squareClass","squareFill","event","event","event","event","squareEvent"])}>利用枠・Square特例の一連テスト</button><button className={button} disabled={busy} onClick={()=>void run(["pay","event","paid","unpaid","fillEvent","extraEntry","cancelEntry","extraEntry","open","enterPaid","refundEntry","enterPaid","enterUnpaid","close"])}>満席・キャンセル・返金の一連テスト</button><button className={button} disabled={busy} onClick={()=>void run(["pay","upgrade","class","class","class","class","class","class","fill","downgrade","class","cancel","class"])}>契約縮小・解約の一連テスト</button><button className={button} disabled={busy} onClick={()=>void run([])}>最初からやり直す</button>{busy&&<p role="status">隔離DBで操作を実行中…</p>}{error&&<p role="alert" className="text-red-700">{error}</p>}</section>
  {groups.map(([name,items])=><section key={name} className="grid gap-3 rounded-2xl bg-white p-4"><h2 className="text-lg font-bold">{name}</h2><div className="grid gap-2 sm:grid-cols-2">{items.map(action=><button key={action} className={button} disabled={busy||actions.length>=60} onClick={()=>operate(action)}>{labels[action]}</button>)}</div></section>)}
@@ -45,6 +45,7 @@ export default function LabClient(){
  </section>
  {entranceUrl&&<section className="rounded-2xl bg-white p-4 text-center"><h2 className="text-lg font-bold">スマートフォンでQR受付を試す</h2>{qr.length>0&&<svg viewBox="0 0 49 49" className="mx-auto w-64" role="img" aria-label="テスト用QR" shapeRendering="crispEdges"><rect width="49" height="49" fill="white"/>{qr.flatMap((row,y)=>row.map((dark,x)=>dark?<rect key={x+":"+y} x={x+4} y={y+4} width="1" height="1"/>:null))}</svg>}<a href={entranceUrl} target="_blank" rel="noreferrer" className="block break-all p-3 text-base underline">受付テスト画面を開く</a><p className="text-sm">QRで参加者画面を開けます。端末間の名簿は同期しません。</p></section>}
  {state.receipt&&<section className="rounded-2xl bg-emerald-100 p-5 text-center text-emerald-950"><div className="mx-auto grid h-16 w-16 animate-pulse place-items-center rounded-full bg-emerald-700 text-4xl text-white motion-reduce:animate-none">✓</div><h2 className="mt-3 text-3xl font-bold">受付完了</h2><p className="text-xl">{state.receipt.name} 様</p><p>{state.receipt.title}</p><p>受付時刻 {new Date(state.receipt.checkedAt).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo"})}</p><p className="break-all">申込番号 {state.receipt.bookingId}</p></section>}
+ <StripeSandboxPanel/>
  <SquareSandboxPanel/>
  <section className="grid gap-2 rounded-2xl bg-white p-4"><h2 className="text-lg font-bold">操作結果</h2>{!state.results.length&&<p>操作を選択してください。</p>}{state.results.map((r,i)=><div key={i} className="border-t py-2 text-base"><strong>{r.ok?"✓":"－"} {labels[r.action]}</strong><p className={r.ok?"text-neutral-600":"text-red-700"}>{r.message}</p></div>)}</section>
  </article></main>;
@@ -70,5 +71,44 @@ function SquareSandboxPanel(){
  <button className={button} disabled={busy} onClick={()=>void test(true)}>Sandbox決済リンクを作成</button>
  <p role="status">{status}</p>
  {url&&<a href={url} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-800 p-3 text-center font-bold text-white">Squareのテスト決済画面を開く</a>}
+ </section>;
+}
+
+function StripeSandboxPanel(){
+ const [status,setStatus]=useState("未確認"),[busy,setBusy]=useState(false),[result,setResult]=useState<{plan:string;classes:number;sixthRejected?:boolean}|null>(null),[session,setSession]=useState("");
+ async function confirm(id:string){
+  setBusy(true);
+  try{
+   const res=await fetch("/api/dev/class-b-stripe-purchase?session="+encodeURIComponent(id),{cache:"no-store"});
+   const data=await res.json();if(!res.ok||!data.ok)throw Error("決済確認に失敗しました。("+ (data.reason??res.status)+")");
+   setResult(data);setStatus(data.paid?"Stripeの入金を確認。隔離DBでCLASS Bの利用枠を検証しました。":"未入金です。CLASS Bの利用権限は付与されていません。");
+  }catch(e){setStatus(e instanceof Error?e.message:"決済確認できませんでした。");}finally{setBusy(false);}
+ }
+ useEffect(()=>{const id=new URLSearchParams(window.location.search).get("stripeSession");if(id){setSession(id);void confirm(id);}},[]);
+ async function connect(){
+  setBusy(true);
+  try{
+   const res=await fetch("/api/dev/class-b-stripe-sandbox",{cache:"no-store"}),data=await res.json();
+   if(!res.ok||!data.ok)throw Error("接続確認に失敗しました。("+ (data.reason??res.status)+")");
+   setStatus("Stripeテスト環境への接続・価格・請求管理設定を確認しました。");
+  }catch(e){setStatus(e instanceof Error?e.message:"接続確認できませんでした。");}finally{setBusy(false);}
+ }
+ async function purchase(){
+  setBusy(true);
+  try{
+   const res=await fetch("/api/dev/class-b-stripe-purchase",{method:"POST",cache:"no-store"}),data=await res.json();
+   if(!res.ok||!data.ok)throw Error("テスト購入画面を開けません。("+ (data.reason??res.status)+")");
+   window.location.assign(data.url);
+  }catch(e){setStatus(e instanceof Error?e.message:"購入できませんでした。");}finally{setBusy(false);}
+ }
+ return <section className="grid gap-3 rounded-2xl border border-emerald-200 bg-white p-4">
+ <h2 className="text-xl font-bold">STEP 6：Stripeテスト購入</h2>
+ <p className="text-base">月額1,000円（税込）。テストカード専用。本番のカードや実際の会員データは使用しないでください。</p>
+ <button className={button} disabled={busy} onClick={()=>void connect()}>Stripe接続を確認</button>
+ <button className="min-h-12 rounded-xl bg-emerald-800 p-3 text-lg font-bold text-white disabled:opacity-50" disabled={busy||!!session} onClick={()=>void purchase()}>CLASS Bをテスト購入する</button>
+ <p className="text-sm">テストカード：4242 4242 4242 4242／有効期限は将来の日付／CVCは任意の3桁。</p>
+ {session&&<button className={button} disabled={busy} onClick={()=>void confirm(session)}>支払い結果を再確認</button>}
+ <p role="status" className="text-base">{busy?"確認中…":status}</p>
+ {result&&<div className="rounded-xl bg-neutral-100 p-4 text-lg font-bold">{result.plan==="b"?"CLASS B":"CLASS A"} ／ 登録クラス数 {result.classes}件 {result.sixthRejected?"（6件目は拒否）":""}</div>}
  </section>;
 }
