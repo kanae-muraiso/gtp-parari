@@ -28,7 +28,16 @@ export default function ClassRecruitmentStepEditor({step,target,draft,onChange,o
   {area("予約時の案内（任意）")}
  </>;
  if(step==="common")return <div className="grid gap-2"><p>事業共通の入会手続きを利用します。入会済みの場合は繰り返さない設計です。</p><button type="button" className={field+" w-fit"} onClick={onCommon}>共通の入会手続きを開く</button></div>;
- if(step==="page")return <>{text("title","ページのタイトル")}{area("紹介文")}{select("mode","募集ページの構成",[["service","サービス紹介と申込ボタン"],["page","PARARI PAGEの紹介と申込ボタン"]],"service")}<p className="text-sm text-neutral-600">料金・開催枠は設計から引き継ぎます。実際のPAGE作成・公開は移行前の設定で確認できます。</p></>;
+ if(step==="page")return <>{text("title","ページのタイトル")}{area("紹介文")}{select("mode","募集ページの構成",[["service","サービス紹介と申込ボタン"],["page","PARARI PAGEの紹介と申込ボタン"]],"service")}
+  <details className="rounded-lg border p-3"><summary className="min-h-11 cursor-pointer py-2 font-medium">プレビュー</summary><div className="grid gap-3 rounded-lg bg-neutral-50 p-4">
+   <h4 className="text-xl font-bold">{c.title?.trim()||target.title}</h4>
+   <p className="whitespace-pre-wrap break-words text-base">{c.body??draft.notes[step]??""}</p>
+   {target.priceText&&<p className="font-medium">{target.priceText}</p>}
+   {target.classNames?.map((name,i)=><p key={i}>{name}</p>)}
+   <button type="button" disabled className="min-h-11 rounded-lg bg-emerald-800 px-3 py-2 font-medium text-white opacity-70">申し込む</button>
+   <p className="text-sm text-neutral-600">設計確認用です。実際の申込・公開は行いません。</p>
+  </div></details>
+  <p className="text-sm text-neutral-600">料金・開催枠は設計から引き継ぎます。新しい導線の公開は未接続です。既存ページの編集・公開設定は下から確認できます。</p></>;
  if(step==="application")return <>{form}{area("申込時の補足案内（任意）")}</>;
  if(step==="booking"||step==="testBooking")return <>{reservation}{form}</>;
  if(step==="briefing"||step==="test")return <>
