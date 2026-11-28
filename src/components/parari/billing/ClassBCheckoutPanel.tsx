@@ -45,7 +45,8 @@ export default function ClassBCheckoutPanel(){
  <p className="text-xl font-bold">{classBClassAllowance(quantity)}クラス / 月額{classBMonthlyPrice(quantity).toLocaleString("ja-JP")}円</p>
  <button disabled={busy||quantity<1||quantity>1000000||!Number.isSafeInteger(quantity)} onClick={()=>void open("checkout")} className="min-h-12 rounded-xl bg-emerald-800 p-3 text-lg font-bold text-white disabled:opacity-50">{current.status==="pending"?"購入手続きを再開":"Stripeで申し込む"}</button>
  </>}
- {current?.canManageBilling&&<button disabled={busy} onClick={()=>void open("portal")} className="min-h-12 rounded-xl border p-3 text-base font-bold">CLASS Bの請求管理を開く</button>}
+ {current?.canManageBilling&&<p className="text-sm text-neutral-700">追加枠は日割りの差額決済後に反映します。枠の縮小・解約は次回更新時に反映します。</p>}
+ {current?.canManageBilling&&<button disabled={busy} onClick={()=>void open("portal")} className="min-h-12 rounded-xl border p-3 text-base font-bold">追加枠・カード変更・解約の手続き</button>}
  {!ready&&<p className="rounded-xl bg-amber-50 p-3 text-base text-amber-900">販売開始前のため、購入受付は停止しています。</p>}
  <button disabled={busy} onClick={()=>void load()} className="min-h-11 rounded-xl border p-3 text-base">最新の契約状況を確認</button>
  </>}
