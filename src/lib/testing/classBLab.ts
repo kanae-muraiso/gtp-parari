@@ -146,8 +146,8 @@ export async function runClassBLab(actions:LabAction[]){
            if(!updated.rows.length)throw Error("未入金の参加者がいません。");break;
          }
          case "manualPresent": {
-           const e=await requireEvent();const updated=await db.query("update application_entries set class_event_attendance='present' where application_id=$1 and user_id=$2 and status='confirmed' and payment_status='paid' returning id",[e,unpaidUser]);
-           if(!updated.rows.length)throw Error("参加者Bの入金確認が必要です。");break;
+           const e=await requireEvent();
+           await db.query("select staff_class_event_attendance($1,$2,$3,$4,'present')",[owner,e,id(501),at]);break;
          }
          case "open":
          case "close":await db.query("select set_class_event_gate($1,$2,$3,$4,$5)",[owner,await requireEvent(),at,code,action==="open"]);break;
