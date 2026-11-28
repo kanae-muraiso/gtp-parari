@@ -42,3 +42,23 @@ for(const mutate of [c=>c.features.subscription_update.default_allowed_updates.p
  const c=portal();mutate(c);assert.equal(allowed(c,"price_b","prod_b",false),false);
 }
 console.log("PASS: dedicated Stripe portal permits quantity changes only for CLASS B, immediate upgrade invoicing and renewal-date downgrade/cancellation.");
+
+const releaseModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/billing/classBReleasePolicy.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(releaseModule,releaseModule.exports);
+const {classBBillingTargetReady:targetReady,classBPurchaseAllowed:purchaseAllowed}=releaseModule.exports;
+const pilot={VERCEL_ENV:"production",CLASS_B_CONTRACT_LEDGER_READY:"true",CLASS_B_CHECKOUT_ENABLED:"true",STRIPE_CLASS_B_JPY_PRICE_ID:"price_b",STRIPE_CLASS_B_PORTAL_CONFIGURATION_ID:"bpc_b",CLASS_B_PILOT_OWNER_IDS:"owner-1, owner-2"};
+assert.equal(purchaseAllowed("owner-1",pilot),true);
+assert.equal(purchaseAllowed("owner-2",pilot),true);
+assert.equal(purchaseAllowed("owner-3",pilot),false);
+assert.equal(purchaseAllowed("owner",pilot),false);
+assert.equal(purchaseAllowed("owner-1",{...pilot,CLASS_B_CHECKOUT_ENABLED:"false"}),false);
+assert.equal(purchaseAllowed("owner-1",{...pilot,CLASS_B_CONTRACT_LEDGER_READY:"false"}),false);
+assert.equal(purchaseAllowed("owner-1",{...pilot,STRIPE_CLASS_B_PORTAL_CONFIGURATION_ID:undefined}),false);
+assert.equal(purchaseAllowed("owner-3",{...pilot,CLASS_B_PUBLIC_CHECKOUT_ENABLED:"true"}),true);
+assert.equal(targetReady({...pilot,VERCEL_ENV:"preview"}),false);
+const preview={...pilot,VERCEL_ENV:"preview",CLASS_B_TEST_DB_PROJECT_REF:"testdb",CLASS_B_PRODUCTION_DB_PROJECT_REF:"livedb",NEXT_PUBLIC_SUPABASE_URL:"https://testdb.supabase.co"};
+assert.equal(purchaseAllowed("owner-1",preview),true);
+assert.equal(targetReady({...preview,NEXT_PUBLIC_SUPABASE_URL:"https://livedb.supabase.co"}),false);
+assert.equal(targetReady({...preview,CLASS_B_TEST_DB_PROJECT_REF:"livedb",NEXT_PUBLIC_SUPABASE_URL:"https://livedb.supabase.co"}),false);
+assert.equal(targetReady({...preview,VERCEL_ENV:"development",NODE_ENV:"production"}),false);
+console.log("PASS: private CLASS B pilot, closed sales, explicit public release and separate test DB target.");
