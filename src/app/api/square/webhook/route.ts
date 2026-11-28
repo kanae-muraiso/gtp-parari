@@ -228,22 +228,17 @@ async function handleApplicationPayment(
       currency,
     );
 
-  const {
-    data: completionRows,
-    error: completionError,
-  } = await supabaseAdmin.rpc(
-    "complete_application_square_payment",
-    {
-      p_order_id:
-        payment.order_id,
-      p_payment_id:
-        payment.id,
-      p_amount:
-        amount,
-      p_currency:
-        currency,
-    },
-  );
+  const payload={p_order_id:payment.order_id,p_payment_id:payment.id,p_amount:amount,p_currency:currency};
+  // CLASS-only transactional wrapper; existing APPLICATION payments retain
+  // their original path. This switch remains off until the SQL is deployed.
+  const classCompletion=process.env.CLASS_B_SQUARE_EVENT_READY==="true"
+    ? await supabaseAdmin.rpc("class_b_square_event_complete",{...payload,p_merchant:input.merchantId??null})
+    : null;
+  if(classCompletion?.error)throw classCompletion.error;
+  const classHandled=Array.isArray(classCompletion?.data)&&classCompletion.data.length>0;
+  const {data:completionRows,error:completionError}=classHandled
+    ? classCompletion!
+    : await supabaseAdmin.rpc("complete_application_square_payment",payload);
 
   if (completionError) {
     throw completionError;
@@ -268,14 +263,14 @@ async function handleApplicationPayment(
       paymentId: payment.id,
       amountMinor,
       currency,
-      idempotencyKey:
-        `late-${input.eventId}`.slice(
-          0,
-          45,
-        ),
+      idempotencyKey: classHandled ? `late-${paymentRecord.id}` : `late-${input.eventId}`.slice(0,45),
       reason:
         "PARARI APPLICATION payment hold expired",
     });
+
+    // Square may return PENDING. For CLASS the signed completed refund
+    // webhook, not the refund request itself, is the final authority.
+    if(classHandled)return true;
 
     const { error: refundUpdateError } =
       await supabaseAdmin
@@ -371,6 +366,20 @@ async function handleCommercePayment(
   }
 
   return true;
+}
+
+async function handleClassEventRefund(event:SquareWebhookEvent):Promise<boolean>{
+  if(process.env.CLASS_B_SQUARE_EVENT_READY!=="true")return false;
+  const refund=event.data?.object?.refund;
+  if(!refund?.id||!refund.payment_id||refund.status?.toUpperCase()!=="COMPLETED"||
+    !Number.isSafeInteger(refund.amount_money?.amount)||!refund.amount_money?.amount||!refund.amount_money.currency)return false;
+  const currency=refund.amount_money.currency.toUpperCase();
+  const {data,error}=await supabaseAdmin.rpc("class_b_square_event_refund",{
+    p_refund_id:refund.id,p_payment_id:refund.payment_id,p_order_id:refund.order_id??null,
+    p_merchant:event.merchant_id??null,p_amount:toMajorUnits(refund.amount_money.amount,currency),p_currency:currency
+  });
+  if(error)throw error;
+  return data===true;
 }
 
 async function handleCommerceRefund(
@@ -1277,12 +1286,10 @@ export async function POST(
         }
       }
     } else if (
-      eventType === "refund.updated"
+      eventType === "refund.updated" || eventType === "refund.created"
     ) {
-      handled =
-        await handleCommerceRefund(
-          event,
-        );
+      handled=await handleClassEventRefund(event);
+      if(!handled&&eventType==="refund.updated")handled=await handleCommerceRefund(event);
     } else if (
       eventType === "invoice.payment_made"
     ) {
