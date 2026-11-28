@@ -4,6 +4,7 @@ import { stripe } from "@/lib/billing/stripe";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { CLASS_B_BLOCK_PRICE_JPY } from "@/lib/classBPolicy";
+import { classBPurchaseAllowed } from "@/lib/billing/classBReleasePolicy";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   if (!token) return reply({ok:false,message:"ログインしてください。"},401);
   const {data:{user},error:authError} = await db.auth.getUser(token);
   if (authError || !user) return reply({ok:false,message:"ログインしてください。"},401);
+  if(!classBPurchaseAllowed(user.id))return reply({ok:false,message:"CLASS Bの購入受付は準備中です。"},503);
   const body = await request.json().catch(()=>null);
   const schoolId = body?.schoolId;
   const quantity = body?.quantity;
