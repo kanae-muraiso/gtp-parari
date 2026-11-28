@@ -24,7 +24,7 @@ export async function POST(request:NextRequest){
   if(contract.error)throw contract.error;
   const c=contract.data;
   if(!c?.stripe_customer_id||!c.stripe_subscription_id)return reply({ok:false,message:"ご契約を確認できません。"},409);
-  const [sub,config]=await Promise.all([stripe.subscriptions.retrieve(c.stripe_subscription_id),stripe.billingPortal.configurations.retrieve(configId)]);
+  const [sub,config]=await Promise.all([stripe.subscriptions.retrieve(c.stripe_subscription_id),stripe.billingPortal.configurations.retrieve(configId,{expand:["features.subscription_update.products"]})]);
   const customer=typeof sub.customer==="string"?sub.customer:sub.customer.id;
   if(!isClassBSubscription(sub)||sub.metadata.class_b_school_id!==school.id||sub.metadata.supabase_user_id!==user.id||sub.metadata.class_b_attempt_id!==c.attempt_id||customer!==c.stripe_customer_id||sub.livemode!==(process.env.VERCEL_ENV==="production"))
    throw Error("CLASS B contract mismatch");
