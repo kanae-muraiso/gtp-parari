@@ -117,3 +117,27 @@ assert.notEqual(stepConfigIssue("testBooking",{mode:"scheduled",date:"2027-01-01
 const cfg={application:{rules:{phone:"optional",address:"required"},audience:"minor"},result:{mode:"score",maxScore:100,passScore:80}};
 assert.deepEqual(parseFlowDraft(JSON.stringify({...initialFlow(paidCourse),config:cfg,order:testing}),paidCourse).config,cfg);
 console.log("PASS: structured intake field rules, screening dependencies, payment ordering and configuration validation.");
+
+const operationModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/classOperationSchedule.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(operationModule,operationModule.exports);
+const {classSession,eventSessions,nextOperationSession,operationPeople}=operationModule.exports;
+const operationClass={id:"a",name:"Wednesday",product_id:"course",starts_on:"2026-12-02",starts_at:"17:00:00",cadence:"weekly",location:null,delivery:"onsite",duration_minutes:90};
+const session=classSession(operationClass,"2026-12-02",true);
+assert.equal(session.startsAt,"2026-12-02T08:00:00.000Z");
+assert.equal(session.endsAt,"2026-12-02T09:30:00.000Z");
+assert.equal(nextOperationSession([session],Date.parse("2026-12-02T09:00:00Z")).id,session.id);
+assert.equal(nextOperationSession([session],Date.parse("2026-12-02T10:00:00Z")),null);
+const eventFixture={id:"event",title:"Workshop",status:"closed",class_event:{startsAt:"2026-12-02T09:00:00Z",sessions:[{startsAt:"2026-12-02T09:00:00Z",location:"A"},{startsAt:"2026-12-09T09:00:00Z",location:"A"}]}};
+assert.equal(eventSessions(eventFixture).length,2);
+assert.equal(eventSessions({...eventFixture,status:"draft"}).length,0);
+assert.equal(nextOperationSession(eventSessions(eventFixture),Date.parse("2026-12-03T00:00:00Z")).day,"2026-12-09");
+const member=(id,mode,status="active")=>({id,name:id,status,class_participation:mode,assignments:[{class_id:"a",self_selected:false}]});
+const members=[member("fixed","fixed"),member("flex","flexible"),member("reserved","flexible"),member("ended","fixed","ended"),member("later","fixed"),member("absent","fixed")];
+const reservations=[{enrollment_id:"reserved",surcharge_yen:100,surcharge_paid_at:null}];
+const reports=[{enrollment_id:"absent",absence_reported:true,actual:null}];
+const people=operationPeople(operationClass,[operationClass],members,reservations,reports,{later:"2026-12-09"},"2026-12-02",false);
+assert.deepEqual(people.map(p=>p.id),["fixed","reserved","absent"]);
+assert.equal(people.find(p=>p.id==="reserved").payment,"unpaid");
+assert.equal(people.find(p=>p.id==="absent").absenceReported,true);
+assert.deepEqual(operationPeople(operationClass,[operationClass],members,reservations,reports,{},"2026-12-02",true).map(p=>p.id),["reserved","absent"]);
+console.log("PASS: operation session chronology, workshop occurrences, actual reservation and fixed roster separation.");
