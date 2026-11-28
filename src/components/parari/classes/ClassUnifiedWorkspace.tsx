@@ -388,7 +388,7 @@ export default function ClassUnifiedWorkspace(){
       {school&&tab==="classes"&&<>
         <section className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 sm:p-5" aria-label="事業の構成図">
           <button type="button" className="min-h-11 text-left text-xl font-bold text-emerald-950" onClick={()=>pickDesign("business",business)}>■ {school.name}</button>
-          <div className="space-y-3 border-t border-emerald-200 pt-3">
+          {kinds.includes("course")&&<div className="space-y-3 border-t border-emerald-200 pt-3">
             <h3 className="text-lg font-bold text-emerald-950">{serviceLabels.course}</h3>
             {!products.length&&<p className="text-base text-neutral-600">{serviceLabels.course}はまだありません。</p>}
             {products.map(product=>{
@@ -402,8 +402,8 @@ export default function ClassUnifiedWorkspace(){
               </div>;
             })}
             {slots.filter(slot=>!slot.product_id).length>0&&<div className="grid gap-1"><p className="text-base text-amber-900">未分類の開催枠（既存データ）</p>{slots.filter(slot=>!slot.product_id).map(slot=><button key={slot.id} className={button+" text-left"} onClick={()=>pickDesign("class",slot.id)}>{slot.name}</button>)}</div>}
-          </div>
-          {([["workshop",serviceLabels.workshop,designWorkshops],["event",serviceLabels.event,designEvents]] as const).map(([kind,title,items])=><div key={kind} className="space-y-2 border-t border-emerald-200 pt-3">
+          </div>}
+          {([["workshop",serviceLabels.workshop,designWorkshops],["event",serviceLabels.event,designEvents]] as const).filter(([kind])=>kinds.includes(kind)).sort((a,b)=>kinds.indexOf(a[0])-kinds.indexOf(b[0])).map(([kind,title,items])=><div key={kind} className="space-y-2 border-t border-emerald-200 pt-3">
             <h3 className="text-lg font-bold text-emerald-950">{title}</h3>
             {designLoading?<p className="text-base text-neutral-600">読み込み中…</p>:designError?<p className="text-base text-red-800">{designError}</p>:!items.filter(item=>item.status!=="closed").length?<p className="text-base text-neutral-600">現在の{title}はありません。</p>:null}
             {items.filter(item=>item.status!=="closed").map(item=><button type="button" key={item.id} onClick={()=>{resetDesign();setEventDesign({kind,id:item.id});}} className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-left text-base">
@@ -413,12 +413,13 @@ export default function ClassUnifiedWorkspace(){
           </div>)}
         </section>
         <div className="grid grid-cols-2 gap-2" aria-label="新しいサービスを作る">
-          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={()=>{resetDesign();setNewCourse(true);}}>＋ {serviceLabels.course}を作る</button>
-          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={startClass}>＋ {serviceLabels.class}を追加する</button>
-          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"workshop"});}}>＋ {serviceLabels.workshop}を作る</button>
-          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"event"});}}>＋ {serviceLabels.event}を作る</button>
+          {model.kinds.includes("course")&&<><button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={()=>{resetDesign();setNewCourse(true);}}>＋ {serviceLabels.course}を作る</button>
+          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={startClass}>＋ {serviceLabels.class}を追加する</button></>}
+          {model.kinds.includes("workshop")&&<button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"workshop"});}}>＋ {serviceLabels.workshop}を作る</button>}
+          {model.kinds.includes("event")&&<button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"event"});}}>＋ {serviceLabels.event}を作る</button>}
         </div>
-        {!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">{serviceLabels.workshop}・{serviceLabels.event}の作成はCLASS Bで利用できます。</p>}
+        <button type="button" className={button} onClick={()=>{go("settings");setShowModel(true);}}>提供するサービスの種類を変更</button>
+        {model.kinds.some(k=>k!=="course")&&!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">{serviceLabels.workshop}・{serviceLabels.event}の作成はCLASS Bで利用できます。</p>}
         {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どの{serviceLabels.course}に{serviceLabels.class}を追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}<button type="button" className={button} onClick={()=>setChooseCourse(false)}>閉じる</button></section>}
         {newCourse&&<section className="grid gap-2"><ClassProductPanel labels={serviceLabels} key={business+":new-course"} classes={slots} allowProductSelection={false} onSaved={id=>{setNewCourse(false);setSelected({kind:"course",id});setNotice("コースを保存しました。次に開催クラスを追加できます。");refresh();}}/><button type="button" className={button} onClick={()=>setNewCourse(false)}>閉じる</button></section>}
         {eventDesign&&<ClassEventsPanel key={business+":"+eventDesign.kind+":"+(eventDesign.id??"new")} labels={serviceLabels} kind={eventDesign.kind} classes={slots} roster={roster} mode="design" initialCreate={!eventDesign.id} initialEventId={eventDesign.id} onChanged={refresh} onBack={()=>setEventDesign(null)}/>}
@@ -661,8 +662,8 @@ export default function ClassUnifiedWorkspace(){
         </section>
       </>}
       {school&&tab==="accounting"&&<section className={panel+" space-y-5"}>
-        <h2 className="text-xl font-bold">月謝・入金・売上</h2>
-        <section className="space-y-2 rounded-xl border p-4">
+        <h2 className="text-xl font-bold">料金・入金・売上</h2>
+        {kinds.includes("course")&&<><section className="space-y-2 rounded-xl border p-4">
           <h3 className="text-lg font-bold">月謝・受講費の設定</h3>
           {products.map(product=><div key={product.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-3">
             <div><p className="font-semibold">{product.name}</p><p className="text-base text-neutral-700">{product.design.walkInFee!=null?"1回 "+money(product.design.walkInFee):"月額 "+money(product.design.monthlyFee)}</p></div>
@@ -682,6 +683,8 @@ export default function ClassUnifiedWorkspace(){
           {management?.receipts?.map(receipt=><p key={receipt.id}>{roster.find(member=>member.id===receipt.enrollment_id)?.name??"受講者"} · {receipt.visit_on} · {money(receipt.amount_yen)}</p>)}
           {!management?.receipts?.length&&<p className="text-base text-neutral-600">入金記録はありません。</p>}
         </section>
+        </>}
+        {kinds.some(k=>k!=="course")&&<section className="grid gap-2 rounded-xl border p-4"><h3 className="text-lg font-bold">講習会・イベントの参加費</h3>{services.filter(s=>s.kind!=="course").map(s=>{const e=(s.kind==="workshop"?designWorkshops:designEvents).find(e=>e.id===s.id);return <p key={s.id}>{s.title}：{e?.payment_method==="none"?"無料":money(e?.payment_amount)}（設定額）</p>})}<p className="text-sm text-neutral-600">参加者ごとの入金状況は運営の受付画面で確認します。売上集計ではありません。</p></section>}
         <Link href="/my/sales" className={button+" inline-flex items-center"}>販売・売上管理を開く</Link>
       </section>}
       {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} labels={serviceLabels} kind={tab==="events"?"event":"workshop"} mode="recruit"/>}
@@ -691,9 +694,9 @@ export default function ClassUnifiedWorkspace(){
         <h2 className="text-xl font-bold">日々の運営</h2>
         <div className="flex flex-wrap gap-2">
           {([
-            ["roster","生徒・名簿"],["admissions","申込・入会"],["attendance","欠席連絡"],["calendar","開催予定"],
+            ["roster","継続サービスの名簿"],["admissions","既存の入会対応"],["attendance","欠席連絡"],["calendar","開催予定"],
             ["events",serviceLabels.event+"・受付"],["workshops",serviceLabels.workshop+"・受付"],
-          ] as const).map(([id,label])=><button type="button" key={id} onClick={()=>setOperationFocus(id)}
+          ] as const).filter(([id])=>id==="events"?kinds.includes("event"):id==="workshops"?kinds.includes("workshop"):id==="admissions"?model.membership||kinds.includes("course"):kinds.includes("course")).map(([id,label])=><button type="button" key={id} onClick={()=>setOperationFocus(id)}
             aria-pressed={operationFocus===id} className={operationFocus===id?primary:button}>{label}</button>)}
         </div>
         {operationFocus==="admissions"&&<ClassAdmissionsPanel key={business+":ops-admission"} mode="admissions" onRosterChanged={refresh}/>}
