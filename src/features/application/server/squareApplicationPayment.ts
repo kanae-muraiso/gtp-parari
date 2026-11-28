@@ -182,6 +182,9 @@ export async function createSquareCheckoutForEntry(
   const application =
     applicationData as ApplicationRow;
 
+  if(application.class_event_school_id && process.env.CLASS_B_SQUARE_EVENT_READY!=="true") {
+    throw new Error("CLASS_B_SQUARE_EVENT_NOT_READY");
+  }
   if (application.payment_method !== "parari") {
     throw new Error("APPLICATION_NOT_PARARI_PAYMENT");
   }
