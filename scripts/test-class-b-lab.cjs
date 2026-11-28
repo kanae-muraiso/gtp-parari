@@ -29,6 +29,11 @@ async function main(){
  const downgrade=await runClassBLab(["pay","upgrade","class","class","class","class","class","class","fill","downgrade","class","cancel","class"]);
  assert.deepEqual(downgrade.results.flatMap((r,i)=>r.ok?[]:[i]),[10,12]);
  assert.equal(downgrade.classes,6);assert.equal(downgrade.members,30);assert.equal(downgrade.plan,"a");
+ const paidSandbox=await runClassBLab(["class","class","class","class","class","class"],{subscriptionId:"sub_verified_fixture",customerId:"cus_verified_fixture",quantity:1,periodEnd:new Date(Date.now()+30*86400000).toISOString()});
+ assert.equal(paidSandbox.plan,"b");assert.equal(paidSandbox.blocks,1);assert.equal(paidSandbox.classes,5);assert.deepEqual(paidSandbox.results.flatMap((r,i)=>r.ok?[]:[i]),[5]);
+ const expiredSandbox=await runClassBLab([],{subscriptionId:"sub_verified_fixture",customerId:"cus_verified_fixture",quantity:1,periodEnd:new Date(Date.now()-60000).toISOString()});
+ assert.equal(expiredSandbox.plan,"a");
+ console.log("PASS: verified sandbox payment evidence initializes actual isolated entitlement ledger and five-class allowance; expired evidence grants nothing.");
  const fresh=await runClassBLab([]);
  assert.equal(fresh.plan,"a");assert.equal(fresh.classes,0);assert.equal(fresh.entries.length,0);
  console.log("PASS: deployed event registration SQL, 50-person entry boundary, cancellation releases seat, refunded entry denied, downgrade retains existing records, and isolated reset.");
