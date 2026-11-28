@@ -31,10 +31,23 @@ async function main(){
  await db.query("insert into class_b_contracts(school_id,owner_user_id,attempt_id,requested_blocks) values($1,$2,$3,1)",[school,owner,attempt]);
  await db.exec("set role service_role");
  let legacy=0,rpcCount=0;
+ let storedContract={attempt_id:attempt,stripe_checkout_session_id:"cs_b",stripe_subscription_id:null,status:"pending"};
+ let remoteSession={id:"cs_b",livemode:false,mode:"subscription",status:"open",payment_status:"unpaid",subscription:"sub_b",metadata:structuredClone(sub.metadata)};
+ let currentUser=owner;
+ function query(table){
+   const conditions={};
+   const chain={select(){return chain},eq(key,value){conditions[key]=value;return chain},is(){return chain},async maybeSingle(){
+    if(conditions.owner_user_id!==owner)return {data:null,error:null};
+    if(table==="class_schools")return {data:conditions.id===school?{id:school}:null,error:null};
+    if(table==="class_b_contracts")return {data:conditions.school_id===school?structuredClone(storedContract):null,error:null};
+    throw Error("unexpected query "+table);
+   }};
+   return chain;
+ }
  const mocks={
  "server-only":{},
- "@/lib/billing/stripe":{stripe:{webhooks:sdk.webhooks,subscriptions:{retrieve:async id=>{assert.equal(id,sub.id);return structuredClone(sub);}}}},
- "@/lib/billing/supabaseAdmin":{supabaseAdmin:{rpc:async(name,p)=>{assert.equal(name,"reconcile_class_b_contract");rpcCount++;try{await db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[p.p_school,p.p_attempt,p.p_owner,p.p_subscription,p.p_customer,p.p_status,p.p_blocks,p.p_paid,p.p_period_end]);return {error:null};}catch(error){return {error};}}}},
+ "@/lib/billing/stripe":{stripe:{webhooks:sdk.webhooks,subscriptions:{retrieve:async id=>{assert.equal(id,sub.id);return structuredClone(sub);}},checkout:{sessions:{retrieve:async id=>{assert.equal(id,remoteSession.id);return structuredClone(remoteSession);}}}}},
+ "@/lib/billing/supabaseAdmin":{supabaseAdmin:{auth:{getUser:async token=>({data:{user:token==="valid"?{id:currentUser}:null},error:null})},from:query,rpc:async(name,p)=>{assert.equal(name,"reconcile_class_b_contract");rpcCount++;try{await db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[p.p_school,p.p_attempt,p.p_owner,p.p_subscription,p.p_customer,p.p_status,p.p_blocks,p.p_paid,p.p_period_end]);return {error:null};}catch(error){return {error};}}}},
  "@/lib/billing/supabaseBilling":{updateBillingFromSubscription:async()=>{legacy++},markBillingCanceledBySubscriptionId:async()=>{legacy++},markBillingPastDueByCustomerId:async()=>{legacy++}}
  };
  const modules=new Map();
@@ -44,6 +57,7 @@ async function main(){
    const js=ts.transpileModule(fs.readFileSync(full,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
    new Function("module","exports","require",js)(mod,mod.exports,spec=>{
      if(spec in mocks)return mocks[spec];
+     if(spec==="@/lib/classes")return {classIdPattern:/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i};
      if(spec.startsWith("@/"))return load("src/"+spec.slice(2)+".ts");
      if(spec.startsWith("."))return load(path.resolve(path.dirname(full),spec+".ts"));
      return require(spec);
@@ -60,9 +74,26 @@ async function main(){
  }
  assert.equal(await notify("checkout.session.completed",{metadata:sub.metadata,subscription:sub.id},false),400);
  assert.equal(rpcCount,0);assert.equal(await plan(),undefined);
+ const refresh=load("src/app/api/billing/class-b/refresh/route.ts").POST;
+ async function refreshRequest(token="valid",schoolId=school){
+   return refresh(new NextRequest("https://example.invalid/api/billing/class-b/refresh",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({schoolId})}));
+ }
+ assert.equal((await refreshRequest("invalid")).status,401);
+ currentUser="00000000-0000-4000-8000-000000000009";
+ assert.equal((await refreshRequest()).status,404);
+ currentUser=owner;
+ assert.deepEqual(await (await refreshRequest()).json(),{ok:true,waiting:true});
+ assert.equal(rpcCount,0);
  assert.equal(await notify("checkout.session.completed",{metadata:sub.metadata,subscription:sub.id}),200);
  assert.equal(await plan(),undefined);
  sub.latest_invoice.status="paid";sub.latest_invoice.amount_paid=1000;sub.latest_invoice.amount_remaining=0;
+ remoteSession.status="complete";remoteSession.payment_status="paid";
+ remoteSession.metadata.class_b_attempt_id="wrong";
+ assert.equal((await refreshRequest()).status,503);
+ assert.equal(await plan(),undefined);
+ remoteSession.metadata.class_b_attempt_id=attempt;
+ assert.equal((await refreshRequest()).status,200);
+ assert.deepEqual(await plan(),{plan:"b",class_blocks:1});
  assert.equal(await notify("invoice.paid",sub.latest_invoice),200);
  assert.deepEqual(await plan(),{plan:"b",class_blocks:1});
  assert.equal(await notify("invoice.paid",sub.latest_invoice),200);
@@ -82,7 +113,7 @@ async function main(){
  assert.deepEqual(await plan(),{plan:"a",class_blocks:1});
  assert.equal(legacy,0);
  assert.equal((await db.query("select count(*)::int as n from class_b_contracts")).rows[0].n,1);
- console.log("PASS: real Stripe SDK signed webhook route through isolated CLASS B ledger, unpaid rejection, 5-class grant, duplicate notice, stale quantity, paid upgrade, cancellation and WRITERS isolation.");
+ console.log("PASS: real Stripe SDK signed webhook route through isolated CLASS B ledger, unpaid rejection, 5-class grant, duplicate notice, stale quantity, paid upgrade, cancellation, owner-only refresh and WRITERS isolation.");
  }finally{await db.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
