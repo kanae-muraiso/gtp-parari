@@ -208,8 +208,7 @@ export default function ClassUnifiedWorkspace(){
   const chosenLabel=firstActive?"新しい"+serviceLabels.class:newSlot?serviceLabels.class+"の追加":
     selected?.kind==="course"?(activeProduct?.name??serviceLabels.course):
     selected?.kind==="class"?(activeSlot?.name??serviceLabels.class):(school?.name??"事業");
-  const chosenKind=firstActive||newSlot?serviceLabels.class:selected?.kind==="course"?serviceLabels.course:
-    selected?.kind==="class"?serviceLabels.class:"事業";
+  
 
   async function renameBusiness(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -454,8 +453,8 @@ export default function ClassUnifiedWorkspace(){
         <button type="button" className={button} onClick={()=>{go("settings");setShowModel(true);}}>事業の形態を変更</button>
         {model.kinds.some(k=>k!=="course")&&!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">{serviceLabels.workshop}・{serviceLabels.event}の作成はCLASS Bで利用できます。</p>}
         </>:<div className="flex flex-wrap items-center gap-3"><button type="button" className={button} onClick={backDesign}>‹ 構成図に戻る</button><h2 className="flex-1 text-xl font-bold">{designTitle}</h2></div>}
-        {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どの{serviceLabels.course}に{serviceLabels.class}を追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}<button type="button" className={button} onClick={backDesign}>戻る</button></section>}
-        {newCourse&&<section className="grid gap-2"><ClassProductPanel labels={serviceLabels} key={business+":new-course"} classes={slots} allowProductSelection={false} onSaved={id=>{setNewCourse(false);setSelected({kind:"course",id});setNotice("コースを保存しました。次に開催クラスを追加できます。");refresh();}}/><button type="button" className={button} onClick={backDesign}>戻る</button></section>}
+        {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どの{serviceLabels.course}に{serviceLabels.class}を追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}</section>}
+        {newCourse&&<section><ClassProductPanel labels={serviceLabels} key={business+":new-course"} classes={slots} allowProductSelection={false} onSaved={id=>{setNewCourse(false);setSelected({kind:"course",id});setNotice("コースを保存しました。次に開催クラスを追加できます。");refresh();}}/></section>}
         {preview&&eventDesign?.id&&flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)&&<ClassServiceQualification key={eventDesign.id} schoolId={business} target={flowTargets.find(t=>t.kind===eventDesign.kind&&t.id===eventDesign.id)!} membership={model.membership}/>}
         {eventDesign&&<ClassEventsPanel key={business+":"+eventDesign.kind+":"+(eventDesign.id??"new")} labels={serviceLabels} kind={eventDesign.kind} classes={slots} roster={roster} mode="design" initialCreate={!eventDesign.id} initialEventId={eventDesign.id} onChanged={refresh} onBack={backDesign}/>}
       </>}
@@ -533,7 +532,7 @@ export default function ClassUnifiedWorkspace(){
             <p className="mt-2 text-xs text-neutral-600">保存すると、内部に初期コースも自動作成され、開催予定と料金が紐付きます。</p>
           </div>}
           <div className="flex flex-wrap gap-2 border-t pt-4">
-            <button type="button" className={button} onClick={()=>firstStep===0?setFirstActive(false):setFirstStep(x=>x-1)}>
+            <button type="button" className={button} onClick={()=>firstStep===0?backDesign():setFirstStep(x=>x-1)}>
               ← {firstStep===0?"閉じる":"戻る"}</button>
             {firstStep<5?<button className={primary} type="button" onClick={()=>{
               if(firstStep===0&&!first.name.trim()){setError("クラス名を入力してください。");return;}
@@ -555,7 +554,7 @@ export default function ClassUnifiedWorkspace(){
               if(saved){setSelected({kind:"class",id:newSlot.id});setNewSlot(null);}
               return saved;
             }}/>
-          <button className={button} type="button" onClick={()=>setNewSlot(null)}>追加をやめる</button>
+
         </>:activeProduct&&selected?.kind==="course"?<>
           {preview&&flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)&&<ClassServiceQualification key={activeProduct.id} schoolId={business} target={flowTargets.find(t=>t.kind==="course"&&t.id===activeProduct.id)!} membership={model.membership}/>}
           <ClassProductPanel labels={serviceLabels} key={selected.id+":"+editorKey} classes={slots} initialProduct={activeProduct.id}
