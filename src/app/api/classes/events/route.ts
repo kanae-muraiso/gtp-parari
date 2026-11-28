@@ -159,6 +159,13 @@ export async function POST(request: NextRequest) {
     const id = clean(body.id, 36);
     const event = id ? await getEvent(id) : null;
     if (id && (!event || event.class_event_school_id !== school)) return missing();
+    if (!event && access.plan === "a") {
+      const { count, error: quotaError } = await db.from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("class_event_school_id", school).is("archived_at", null);
+      if (quotaError) throw quotaError;
+      if ((count ?? 0) >= 1) return fail("無料プランでは事業ごとにイベントを1件まで作成できます。既存のイベントを整理してから作成してください。", 409);
+    }
 
     if (event && body.action === "bindPage") {
       const workId=body.workId;
