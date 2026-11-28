@@ -68,3 +68,21 @@ assert.equal(parseFlowDraft(JSON.stringify({...initialFlow(freeEvent),payment:"b
 assert.notEqual(flowKey("school",paidCourse),flowKey("school",freeEvent));
 assert.notEqual(flowKey("school",paidCourse),flowKey("other",paidCourse));
 console.log("PASS: independent recruitment diagrams, ordered steps, designed fee and membership separation.");
+
+const {availableFlowSteps,flowOrder,flowOrderIssue,moveFlowStep}=flowModule.exports;
+const commonOrder=["page","application","approval","confirmation"];
+const courseOrder=["page","common","application","approval","class","payment","confirmation"];
+assert.equal(flowOrderIssue(membership,commonOrder,true,true),null);
+assert.equal(flowOrderIssue(paidCourse,courseOrder,true,true),null);
+assert.notEqual(flowOrderIssue(paidCourse,courseOrder,true,false),null);
+assert.equal(availableFlowSteps(paidCourse,false).includes("common"),false);
+assert.equal(availableFlowSteps(membership,true).includes("common"),false);
+assert.deepEqual(flowOrder(paidCourse,{...initialFlow(paidCourse),order:courseOrder},false),courseOrder.filter(x=>x!=="common"));
+assert.deepEqual(flowOrder(paidCourse,{...initialFlow(paidCourse),order:courseOrder},true),courseOrder);
+assert.equal(flowOrderIssue(paidCourse,moveFlowStep(courseOrder,"approval","class"),true,true),null);
+assert.notEqual(flowOrderIssue(paidCourse,moveFlowStep(courseOrder,"payment","confirmation"),true,true),null);
+assert.notEqual(flowOrderIssue(paidCourse,courseOrder.filter(x=>x!=="payment"),true,true),null);
+assert.equal(flowOrderIssue(freeEvent,["page","application","confirmation"],false,false),null);
+assert.notEqual(flowOrderIssue(freeEvent,["page","application","payment","confirmation"],false,false),null);
+assert.deepEqual(parseFlowDraft(JSON.stringify({...initialFlow(paidCourse),order:courseOrder}),paidCourse).order,courseOrder);
+console.log("PASS: checklist flow, optional shared admission, ordering validation and saved order isolation.");
