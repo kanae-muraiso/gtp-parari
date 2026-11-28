@@ -21,8 +21,8 @@ const questions=[
   ["今選ぶ特典","今申し込む理由や特典はありますか？"],
   ["次の行動","興味を持った人に何をしてもらいたいですか？"],
 ] as const;
-const button="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50";
-const primary="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
+const button="min-h-11 rounded-lg border px-3 py-2 text-base font-semibold disabled:opacity-50";
+const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
 export default function ClassSalesPanel({schoolId,answers:initial,revision,onSaved,draftKey,pageTitle}:{
   schoolId:string;answers:string[];revision:number;onSaved:()=>void;draftKey?:string;pageTitle?:string;
 }){
@@ -35,7 +35,7 @@ export default function ClassSalesPanel({schoolId,answers:initial,revision,onSav
   useEffect(()=>{
     let values=initial??emptyAnswers;
     if(draftKey)try{const stored=JSON.parse(sessionStorage.getItem(draftKey)??"null");if(Array.isArray(stored)&&stored.every(v=>typeof v==="string"))values=stored;}catch{}
-    setAnswers(Array.from({length:16},(_,i)=>(values[i]??"").slice(0,5000)));setRevision(revision);setIndex(0);
+    setAnswers(Array.from({length:16},(_,i)=>(values[i]??"").slice(0,5000)));setRevision(revision);
   },[schoolId,initial,revision,draftKey]);
   async function save(next:number){
     if(busy)return;
