@@ -20,7 +20,7 @@ async function main(){
  create table profiles(user_id uuid primary key,display_name text,username text);
  grant select,update on applications,application_entries to service_role;
  grant select on class_schools,profiles to service_role;
- grant select,insert,update on class_workshop_attendance to service_role;`);
+ grant select,insert,update,delete on class_workshop_attendance to service_role;`);
  await db.exec(fs.readFileSync(path.join(__dirname,"../docs/class-b-event-checkin-draft.sql"),"utf8"));
  const at=new Date().toISOString(),code="0123456789abcdef";
  await db.query("insert into class_schools values($1,$2,null)",[id(1),id(2)]);
@@ -40,6 +40,12 @@ async function main(){
  assert.deepEqual(await enter(id(5)),receipt);
  assert.equal((await db.query("select class_event_attendance from application_entries where id=$1",[id(4)])).rows[0].class_event_attendance,"present");
  assert.equal((await db.query("select count(*)::int as n from class_event_checkin_receipts")).rows[0].n,1);
+ const staff=(owner,event,entry,session,change)=>db.query("select staff_class_event_attendance($1,$2,$3,$4,$5)",[owner,event,entry,session,change]);
+ await assert.rejects(staff(id(8),id(3),id(4),at,"present"),{code:"P0002"});
+ await assert.rejects(staff(id(2),id(3),id(6),at,"present"),{code:"P0001"});
+ await staff(id(2),id(3),id(4),at,"clear");
+ assert.equal((await db.query("select class_event_attendance from application_entries where id=$1",[id(4)])).rows[0].class_event_attendance,null);
+ await staff(id(2),id(3),id(4),at,"present");
  await gate(id(2),false);
  await assert.rejects(enter(id(5)),{code:"P0002"});
  // Separate free workshop sessions, with the same participant and registration.
@@ -65,11 +71,18 @@ async function main(){
  assert.notEqual(first.sessionAt,second.sessionAt);
  assert.deepEqual(await workshopEnter(id(5),secondCode),second);
  assert.equal((await db.query("select count(*)::int as n from class_workshop_attendance where entry_id=$1 and status='present'",[id(11)])).rows[0].n,2);
+ await assert.rejects(staff(id(2),id(10),id(4),at,"present"),{code:"P0002"});
+ await assert.rejects(staff(id(2),id(10),id(12),at,"present"),{code:"P0002"});
+ await staff(id(2),id(10),id(11),at,"absent");
+ assert.equal((await db.query("select status from class_workshop_attendance where entry_id=$1 and session_at=$2",[id(11),at])).rows[0].status,"absent");
+ await staff(id(2),id(10),id(11),at,"clear");
+ assert.equal((await db.query("select count(*)::int as n from class_workshop_attendance where entry_id=$1",[id(11)])).rows[0].n,1);
  await workshopGate(at,firstCode,false);
  await assert.rejects(workshopEnter(id(5),firstCode),{code:"P0002"});
  assert.deepEqual(await workshopEnter(id(5),secondCode),second);
  await db.exec("reset role; set role authenticated");
  await assert.rejects(enter(id(5)),{code:"42501"});
+ await assert.rejects(staff(id(2),id(3),id(4),at,"present"),{code:"42501"});
  await assert.rejects(db.query("select * from class_event_checkin_receipts"),{code:"42501"});
  console.log("PASS: QR matrix reference, shared entrance, paid-only self check-in, ownership, duplicate receipt, close, free workshops, separate sessions, invalid times, cancellation and client denial.");
  }finally{await db.close();}
