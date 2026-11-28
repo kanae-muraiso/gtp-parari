@@ -45,6 +45,8 @@ async function main(){
     assert.deepEqual(await plan(),{plan:"b",class_blocks:2});
     await reconcile("active",1,true,end);
     assert.deepEqual(await plan(),{plan:"b",class_blocks:2});
+    await reconcile("active",1,true,later);
+    assert.deepEqual(await plan(),{plan:"b",class_blocks:2});
     await assert.rejects(reconcile("active",3,true,later,"sub_other"));
     await db.exec("reset role");
     for(let i=0;i<10;i++) await db.query("insert into school_classes(school_id) values($1)",[school]);
