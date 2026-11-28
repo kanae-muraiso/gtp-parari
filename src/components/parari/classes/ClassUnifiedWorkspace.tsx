@@ -15,10 +15,10 @@ import ClassCalendarPanel from "@/components/parari/manage/ClassCalendarPanel";
 import ClassRecruitmentPanel, { type ClassRecruitmentData } from "@/components/parari/manage/ClassRecruitmentPanel";
 import ClassAdmissionBlueprint from "@/components/parari/manage/ClassAdmissionBlueprint";
 import ClassAdmissionsPanel from "@/components/parari/manage/ClassAdmissionsPanel";
-import ClassAbsencesPanel from "@/components/parari/manage/ClassAbsencesPanel";
 import ClassBusinessFrontPanel from "@/components/parari/manage/ClassBusinessFrontPanel";
 import ClassEventsPanel from "@/components/parari/manage/ClassEventsPanel";
 import ClassSalesPanel from "./ClassSalesPanel";
+import ClassOperationWorkspace from "./ClassOperationWorkspace";
 import ClassServiceLabelSettings from "./ClassServiceLabelSettings";
 import ClassBusinessModelSettings from "./ClassBusinessModelSettings";
 import ClassCourseRecruitmentPanel from "./ClassCourseRecruitmentPanel";
@@ -104,7 +104,6 @@ export default function ClassUnifiedWorkspace(){
   const [notice,setNotice]=useState("");
   const [refreshKey,setRefreshKey]=useState(0);
   const [editorKey,setEditorKey]=useState(0);
-  const [operationFocus,setOperationFocus]=useState<"admissions"|"attendance"|"calendar"|"roster"|"events"|"workshops">("roster");
 
   const refresh=useCallback(()=>setRefreshKey(k=>k+1),[]);
   function selectBusiness(id:string){
@@ -112,7 +111,7 @@ export default function ClassUnifiedWorkspace(){
     setBusiness(id);setModel(legacyBusinessModel);setShowModel(false);setSettingsFocus(null);setRecruitService(null);setLegacyRecruit(false);setServiceLabels(defaultServiceLabels);setRoleLabels(defaultRoleLabels);setLabelsLoaded(false);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
     setNewCourse(false);setChooseCourse(false);setEventDesign(null);setShowCreateBusiness(false);
     setSelected(id?{kind:"business",id}:null);
-    setFirstActive(false);setNewSlot(null);setTab("home");setOperationFocus("roster");setError("");setNotice("");
+    setFirstActive(false);setNewSlot(null);setTab("home");setError("");setNotice("");
   }
 
   useEffect(()=>{
@@ -364,7 +363,6 @@ export default function ClassUnifiedWorkspace(){
     resetDesign();setShowCreateBusiness(false);setRecruitService(null);setLegacyRecruit(false);setSettingsFocus(null);
     if(next==="classes")setSelected({kind:"business",id:business});
     if(next==="settings")setShowModel(false);
-    if(next==="operation")setOperationFocus(model.primary==="event"?"events":model.primary==="workshop"?"workshops":"roster");
     setTab(next);
     window.scrollTo(0,0);
   }
@@ -682,29 +680,7 @@ export default function ClassUnifiedWorkspace(){
       </section>}
       {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} labels={serviceLabels} kind={tab==="events"?"event":"workshop"} mode="recruit"/>}
 
-      {school&&tab==="operation"&&<section className={panel+" space-y-5"}>
-        <h2 className="text-xl font-bold">日々の運営</h2>
-        <div className="flex flex-wrap gap-2">
-          {([
-            ["roster","継続サービスの名簿"],["admissions","既存の入会対応"],["attendance","欠席連絡"],["calendar","開催予定"],
-            ["events",serviceLabels.event+"・受付"],["workshops",serviceLabels.workshop+"・受付"],
-          ] as const).filter(([id])=>id==="events"?kinds.includes("event"):id==="workshops"?kinds.includes("workshop"):id==="admissions"?model.membership||kinds.includes("course"):kinds.includes("course")).map(([id,label])=><button type="button" key={id} onClick={()=>setOperationFocus(id)}
-            aria-pressed={operationFocus===id} className={operationFocus===id?primary:button}>{label}</button>)}
-        </div>
-        {operationFocus==="admissions"&&<ClassAdmissionsPanel key={business+":ops-admission"} mode="admissions" onRosterChanged={refresh}/>}
-        {operationFocus==="attendance"&&<ClassAbsencesPanel schoolId={business} classes={slots}/>}
-        {operationFocus==="calendar"&&<ClassCalendarPanel classes={slots} onSaved={refresh}/>}
-        {operationFocus==="roster"&&<div className="space-y-2">
-          <p className="text-sm text-neutral-600">在籍中の受講者を確認できます。退会や請求停止は、保護者・先生の確認手続きと連動する必要があるため、ここで在籍状況を直接変更しません。</p>
-          {roster.map(member=><div key={member.id} className="rounded-xl border p-3">
-            <p className="font-semibold">{member.name} <span className="text-sm font-normal text-neutral-600">· {member.status==="active"?"在籍中":"終了"}</span></p>
-            <p className="mt-1 text-xs text-neutral-600">登録{serviceLabels.class}：{(member.assignments??[]).map(a=>slots.find(s=>s.id===a.class_id)?.name).filter(Boolean).join("、")||"未登録"}</p>
-          </div>)}
-          {!roster.length&&<p className="text-sm">登録された受講者はまだいません。</p>}
-        </div>}
-        {operationFocus==="events"&&<ClassEventsPanel classes={slots} roster={roster} labels={serviceLabels} kind="event" mode="operation"/>}
-        {operationFocus==="workshops"&&<ClassEventsPanel classes={slots} roster={roster} labels={serviceLabels} kind="workshop" mode="operation"/>}
-      </section>}
+      {school&&tab==="operation"&&<ClassOperationWorkspace key={business} schoolId={business} classes={slots} roster={roster} labels={serviceLabels} preview={preview} onAccounting={()=>go("accounting")} onRefresh={refresh}/>}
       <footer className="pb-5 text-xs text-neutral-500">
         CLASSの設定・名簿・受付は既存の正本に保存されます。募集ページの文章はPARARI PAGEです。
         未完成の受付や未公開のPAGEは自動公開しません。
