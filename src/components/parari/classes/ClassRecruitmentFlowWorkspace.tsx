@@ -28,7 +28,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  const [ready,setReady]=useState(false);
  const [choice,setChoice]=useState<boolean|null>(null);
  const [confirmed,setConfirmed]=useState(false);
- const [drag,setDrag]=useState<FlowStep|null>(null);
+ const [drag,setDrag]=useState<{row:string;step:FlowStep}|null>(null);
  const identity=targets.map(rowKey).join("|");
  const shared:FlowTarget={kind:"membership",id:schoolId,title:"共通の入会手続き"};
  const sharedKey=rowKey(shared);
@@ -91,7 +91,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
  const primary="min-h-11 rounded-lg bg-emerald-800 px-4 py-2 text-base font-semibold text-white disabled:opacity-50";
  return <section className="grid gap-4">
   <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
-  <p className="text-base text-neutral-600">必要な工程を選んで保存し、フロー図を作成します。各工程を選ぶと内容を編集できます。</p>
+  <p className="text-base text-neutral-600">必要な工程を選んで保存し、フロー図を作成します。各工程を選ぶと内容を編集でき、同じサービス内でドラッグして順番を変更できます。</p>
   <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-base">設計確認用：このブラウザ内の下書きです。実際の受付・公開・決済は変更しません。</p>
   {!confirmed?<section className="grid gap-3 rounded-xl border border-emerald-200 bg-white p-4">
     <h3 className="text-lg font-bold">共通の入会手続きを設けますか？</h3>
@@ -109,7 +109,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    return <div key={rowKey(t)} className="grid gap-2 border-b border-emerald-200 pb-4 last:border-0 last:pb-0">
     <button type="button" className="min-h-11 text-left text-lg font-bold text-emerald-950" onClick={()=>openChecklist(t)}>{t.title}　›</button>
     {configured?<div className="flex flex-wrap items-center gap-2">
-    {order.map((s,i)=><div key={s} className="flex items-center gap-2">{i>0&&<span aria-hidden="true" className="text-emerald-700">→</span>}<button type="button" disabled={!ready} aria-pressed={selection?.id===rowKey(t)&&step===s} onClick={()=>{setChecklist(null);setSelection({id:rowKey(t),step:s});setMessage("");}} className={"min-h-11 rounded-lg border px-3 py-2 text-base font-medium "+(selection?.id===rowKey(t)&&step===s?"border-emerald-800 bg-emerald-800 text-white":"border-emerald-300 bg-white text-emerald-950")}>{stepLabel(s,t,d)}</button></div>)}
+    {order.map((s,i)=><div key={s} className="flex items-center gap-2" draggable onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",s);setDrag({row:rowKey(t),step:s});}} onDragEnd={()=>setDrag(null)} onDragOver={e=>{if(drag?.row===rowKey(t))e.preventDefault();}} onDrop={e=>{e.preventDefault();if(drag?.row===rowKey(t))reorder(t,drag.step,s);setDrag(null);}}>{i>0&&<span aria-hidden="true" className="text-emerald-700">→</span>}<button type="button" disabled={!ready} aria-pressed={selection?.id===rowKey(t)&&step===s} onClick={()=>{setChecklist(null);setSelection({id:rowKey(t),step:s});setMessage("");}} className={"min-h-11 rounded-lg border px-3 py-2 text-base font-medium "+(selection?.id===rowKey(t)&&step===s?"border-emerald-800 bg-emerald-800 text-white":"border-emerald-300 bg-white text-emerald-950")}>{stepLabel(s,t,d)}</button></div>)}
     </div>:<p className="text-base text-neutral-600">必要な工程を選んでください。</p>}
     <button type="button" disabled={!ready} className={btn+" w-fit"} onClick={()=>openChecklist(t)}>{configured?"工程を再設定":"工程を選択する"}</button>
     {configured&&flowOrderIssue(t,order,membership,sharedConfigured)&&<p className="text-sm text-red-800">{flowOrderIssue(t,order,membership,sharedConfigured)}</p>}
@@ -132,7 +132,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    <h3 className="text-xl font-bold">{stepLabel(step,target,draft)}</h3>
    <div className="grid gap-2 rounded-lg border p-3">
     <p className="font-bold">工程の順序</p><p className="text-sm text-neutral-600">ドラッグ、または上下ボタンで順番を変更できます。</p>
-    {flowOrder(target,draft,membership).map((s,i,order)=><div key={s} draggable onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",s);setDrag(s);}} onDragEnd={()=>setDrag(null)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(drag)reorder(target,drag,s);setDrag(null);}} className="flex min-h-11 items-center gap-2 rounded-lg border bg-white p-2">
+    {flowOrder(target,draft,membership).map((s,i,order)=><div key={s} draggable onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",s);setDrag({row:rowKey(target),step:s});}} onDragEnd={()=>setDrag(null)} onDragOver={e=>{if(drag?.row===rowKey(target))e.preventDefault();}} onDrop={e=>{e.preventDefault();if(drag?.row===rowKey(target))reorder(target,drag.step,s);setDrag(null);}} className="flex min-h-11 items-center gap-2 rounded-lg border bg-white p-2">
      <span aria-hidden="true" className="cursor-grab text-neutral-500">⠿</span><button className="min-h-11 flex-1 text-left text-base" type="button" onClick={()=>{setSelection({id:rowKey(target),step:s});setMessage("");}}>{i+1}. {stepLabel(s,target,draft)}</button>
      <button type="button" className={btn+" disabled:opacity-30"} disabled={i===0} aria-label={stepLabel(s,target,draft)+"を上へ"} onClick={()=>reorder(target,s,order[i-1])}>↑</button>
      <button type="button" className={btn+" disabled:opacity-30"} disabled={i===order.length-1} aria-label={stepLabel(s,target,draft)+"を下へ"} onClick={()=>reorder(target,s,order[i+1])}>↓</button>
