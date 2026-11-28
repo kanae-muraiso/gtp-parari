@@ -4,6 +4,7 @@ import { stripe } from "@/lib/billing/stripe";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { CLASS_B_BLOCK_PRICE_JPY } from "@/lib/classBPolicy";
 import { classBPaidInvoiceMatches } from "./classBInvoiceEvidence";
+import { classBBillingTargetReady } from "./classBReleasePolicy";
 
 export function isClassBSubscription(subscription: Stripe.Subscription): boolean {
   return subscription.metadata?.plan === "class_b" ||
@@ -15,6 +16,7 @@ export function isClassBSubscription(subscription: Stripe.Subscription): boolean
  * The SQL RPC atomically checks the reserved contract and updates its entitlement.
  */
 export async function reconcileClassBSubscription(id: string) {
+  if(!classBBillingTargetReady())throw Error("CLASS B billing target not ready");
   const subscription = await stripe.subscriptions.retrieve(id, {expand:["latest_invoice"]});
   if (!isClassBSubscription(subscription)) throw new Error("Not a CLASS B subscription");
   const metadata = subscription.metadata;
