@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { starterClassEventPageSsot } from "@/lib/classEventPage";
 import ClassEventSchedule from "./ClassEventSchedule";
+import ClassEventEntrance from "./ClassEventEntrance";
 import { classEventDate, classEventLabels, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
 
@@ -143,8 +144,14 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
         {detail.eventPageId&&<p className="mt-2 text-xs text-neutral-600">PAGEを一般公開にすると、イベントの申込ページに本文が表示されます。</p>}
       </section>
       {event.status !== "draft" && <section className="grid gap-3 border-t pt-4">
-        <h3 className="font-semibold">参加者 · {detail.entries.length}人</h3>
-        <form className="flex flex-wrap items-end gap-2" onSubmit={e => {
+        <h3 className="text-lg font-semibold">参加者・受付状況</h3>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">申込</p><strong className="text-2xl">{detail.entries.length}</strong></div>
+          <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">入金済・無料</p><strong className="text-2xl">{detail.entries.filter(e=>e.payment_status==="paid"||event.payment_method==="none").length}</strong></div>
+          <div className="rounded-xl bg-emerald-50 p-2"><p className="text-base">出席</p><strong className="text-2xl">{detail.entries.filter(e=>selectedSession?e.class_workshop_attendance?.some(record=>Date.parse(record.session_at)===Date.parse(selectedSession)&&record.status==="present"):e.class_event_attendance==="present").length}</strong></div>
+        </div>
+        {event.class_event.registration&&canCreateEvents&&<ClassEventEntrance key={event.id+":"+(selectedSession??event.class_event.startsAt)} eventId={event.id} sessionAt={selectedSession??event.class_event.startsAt} onRefresh={()=>{void classRequest<Detail>(eventPath(event.id)).then(setDetail).catch(e=>setError(e.message));}}/>}
+        {event.payment_method!=="parari"&&<form className="flex flex-wrap items-end gap-2" onSubmit={e => {
           e.preventDefault();
           const memberId = new FormData(e.currentTarget).get("memberId");
           void change({ id: event.id, action: "add", memberId }, "在籍者を追加しました。");
@@ -156,7 +163,7 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
               .map(member => <option value={member.id} key={member.id}>{member.name}</option>)}
           </select></label>
           <button className={button} disabled={busy}>追加</button>
-        </form>
+        </form>}
         {!detail.entries.length && <p className="text-sm text-neutral-600">参加者はまだいません。</p>}
         {event.class_event.sessions && detail.entries.length > 0 && <label className="grid max-w-sm gap-1 text-sm">
           出欠を記録する開催回
