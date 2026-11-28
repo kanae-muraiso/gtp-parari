@@ -239,33 +239,25 @@ export async function POST(request: NextRequest) {
     if (event && body.action === "entry") {
       const entry = clean(body.entryId, 36);
       if (!classIdPattern.test(entry)) return fail("参加者を選択してください。");
-      if (event.class_event.sessions && body.change !== "paid") {
-        const session = event.class_event.sessions.find(item => item.startsAt === body.sessionAt);
-        const status = body.change;
-        if (!session || (status !== "present" && status !== "absent" && status !== "clear")) {
-          return fail("開催回と出欠を選択してください。");
-        }
-        const { data, error } = await db.from("application_entries").select("id")
-          .eq("id", entry).eq("application_id", id).in("status", ["submitted", "confirmed"]).maybeSingle();
-        if (error) throw error;
-        if (!data) return fail("参加者が見つかりません。", 404);
-        const attendance = db.from("class_workshop_attendance");
-        const result = status === "clear"
-          ? await attendance.delete().eq("entry_id", entry).eq("session_at", session.startsAt)
-          : await attendance.upsert({ entry_id: entry, session_at: session.startsAt, status });
-        if (result.error) throw result.error;
-        return send({ ok: true, id });
+      if (body.change === "paid") {
+        if (event.payment_method === "none" || event.payment_method === "parari") return fail("この入金方法は手動で確認できません。");
+        const {data,error}=await db.from("application_entries").update({payment_status:"paid",status:"confirmed",payment_confirmed_at:new Date().toISOString()})
+          .eq("id",entry).eq("application_id",id).in("status",["submitted","confirmed"]).eq("payment_status","unpaid").select("id").maybeSingle();
+        if(error)throw error;
+        if(!data)return fail("未入金の申込が見つかりません。再読み込みしてください。",409);
+        return send({ok:true,id});
       }
-      const change = body.change === "paid" && event.payment_method !== "none" && event.payment_method !== "parari" ? { payment_status: "paid", status: "confirmed", payment_confirmed_at: new Date().toISOString() }
-        : body.change === "present" || body.change === "absent" || body.change === "clear"
-          ? { class_event_attendance: body.change === "clear" ? null : body.change } : null;
-      if (!change) return fail("変更内容を選択してください。");
-      let query = db.from("application_entries").update(change).eq("id", entry).eq("application_id", id)
-        .in("status", ["submitted", "confirmed"]);
-      if (body.change === "paid") query = query.eq("payment_status", "unpaid");
-      const { error } = await query;
-      if (error) throw error;
-      return send({ ok: true, id });
+      if (!["present","absent","clear"].includes(body.change)) return fail("出欠を選択してください。");
+      const session=event.class_event.sessions
+        ? event.class_event.sessions.find(item=>item.startsAt===body.sessionAt)?.startsAt
+        : event.class_event.startsAt;
+      if(!session)return fail("開催回を選択してください。");
+      const {error}=await db.rpc("staff_class_event_attendance",{p_owner:user,p_event:id,p_entry:entry,p_session:session,p_change:body.change});
+      if(error?.code==="P0001")return fail("入金確認・参加確定後に出席を記録してください。",409);
+      if(error?.code==="P0002")return fail("参加者またはイベントが見つかりません。",404);
+      if(error?.code==="22023")return fail("開催回と出欠を確認してください。");
+      if(error)throw error;
+      return send({ok:true,id});
     }
 
     if (event && body.action === "add") {
