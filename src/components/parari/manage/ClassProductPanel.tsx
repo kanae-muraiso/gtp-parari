@@ -7,9 +7,9 @@ import { classParticipationFormat } from "@/lib/classBusinessFront";
 import type { SchoolClass } from "@/lib/classes";
 import {defaultServiceLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 
-const field = "block w-full rounded-lg border border-neutral-300 px-3 py-2";
+const field = "block min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-base";
 const panel = "grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5";
-const button = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50";
+const button = "w-fit min-h-11 rounded-lg bg-neutral-900 px-4 py-2 text-base text-white disabled:opacity-50";
 
 export default function ClassProductPanel({ classes, initialProduct, initialClass, onSaved, onSaveError, onDraftChange, allowProductSelection = true,labels=defaultServiceLabels }: {
   classes: SchoolClass[]; initialProduct?: string | null; initialClass?: string; onSaved?: (id: string) => void; onSaveError?: () => void; onDraftChange?: () => void; allowProductSelection?: boolean; labels?:ServiceLabels;
@@ -71,7 +71,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
     } catch (cause) { onSaveError?.(); setError(cause instanceof Error ? cause.message : "保存できませんでした。"); }
     finally { setBusy(false); }
   }}>
-    <h3 className="font-bold">{allowProductSelection ? labels.course+"設定" : initialProduct ? labels.course+"設定を編集" : labels.course+"を作成"}</h3>
+    {allowProductSelection&&<h3 className="font-bold">{labels.course}設定</h3>}
     <fieldset disabled={busy} className="grid min-w-0 gap-4">
       {allowProductSelection && <label>{labels.course}を選ぶ<select className={field} value={products.some(item => item.id === productId) ? productId : ""} onChange={event => {
         const existing = products.find(item => item.id === event.target.value);
@@ -79,6 +79,7 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       }}>
         <option value="">新しい{labels.course}</option>{products.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label>}
+      <fieldset className="grid gap-3 border-b border-neutral-200 pb-4"><legend className="mb-2 font-bold text-lg">内容・対象</legend>
       <label>{labels.course}名<input className={field} value={name} required maxLength={120} placeholder="中学英語 / 初級など"
         onChange={event => { setName(event.target.value); setSaved(false); }} /></label>
       <label>受講対象<select name="classAudience" className={field} required value={product.audience ?? ""}
@@ -86,13 +87,15 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         <option value="">受講対象を選んでください</option><option value="adult">成人向け</option><option value="minor">未成年向け</option>
       </select></label>
       <p className="text-sm text-neutral-600">申込書はこの設定を引き継ぎます。未成年向けは保護者の氏名・メール・電話・住所が必須になり、連絡は本人と保護者の両方に届きます。</p>
+      <label>内容<textarea className={field} rows={3} maxLength={1000} value={product.description} onChange={event => patch("description", event.target.value)} /></label>
+      </fieldset>
+      <fieldset className="grid gap-3 border-b border-neutral-200 pb-4"><legend className="mb-2 font-bold text-lg">開催・通い方</legend>
       <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">同じ内容を教える{labels.class}</legend>
         {available.map(item => <label key={item.id} className="text-sm">
           <input type="checkbox" checked={product.classIds.includes(item.id)} onChange={event => patch("classIds",
             event.target.checked ? [...product.classIds, item.id] : product.classIds.filter(id => id !== item.id))} /> {item.name} · {item.starts_at.slice(0, 5)}{item.location ? " · " + item.location : ""}
         </label>)}
       </fieldset>
-      <label>内容<textarea className={field} rows={3} maxLength={1000} value={product.description} onChange={event => patch("description", event.target.value)} /></label>
       <label>通い方<select className={field} value={classParticipationFormat(product)} onChange={event => {
         const value = event.target.value;
         setSaved(false);
@@ -124,6 +127,8 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         </div>
         <p className="text-sm text-neutral-600">新しいクラスや開催頻度に、ここで設定した内容と{product.walkInFee != null ? "基本参加費" : "月謝"}を使います。</p>
       </fieldset>
+      </fieldset>
+      <fieldset className="grid gap-3 border-b border-neutral-200 pb-4"><legend className="mb-2 font-bold text-lg">料金・定員</legend>
       {product.walkInFee != null ? <>
         <label>当日の基本参加費（円）<input className={field} type="number" min={0} max={1000000} required
           value={product.walkInFee} onChange={event => patch("walkInFee", Number(event.target.value))} /></label>
@@ -137,6 +142,9 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
       <label><input type="checkbox" checked={product.extraFee !== null} onChange={event => patch("extraFee", event.target.checked ? 0 : null)} /> 別料金で追加受講を受け付ける</label>
       {product.extraFee !== null && <label>追加受講１回の料金（円）<input className={field} type="number" min={1} max={1000000} required
         value={product.extraFee || ""} onChange={event => patch("extraFee", Number(event.target.value))} /></label>}
+      </>}
+      </fieldset>
+      {product.walkInFee==null&&<fieldset className="grid gap-3 border-b border-neutral-200 pb-4"><legend className="mb-2 font-bold text-lg">欠席・振替</legend>
       <label>欠席時の振替<select className={field} value={product.makeup} onChange={event => patch("makeup", event.target.value as ClassProduct["makeup"])}>
         <option value="none">振替なし</option><option value="approval">先生が承認して付与</option><option value="notice">事前連絡のある欠席に付与</option>
       </select></label>
@@ -144,12 +152,12 @@ export default function ClassProductPanel({ classes, initialProduct, initialClas
         onChange={event => patch("makeupExpiry", event.target.value as ClassProduct["makeupExpiry"])}>
         <option value="same_month">欠席した月の末日</option><option value="next_month">欠席した月の翌月末</option>
       </select></label>}
-      </>}
-      {selected.length > 0 && <section className="rounded-lg bg-neutral-50 p-4">
-        <h4 className="mb-2 font-medium">受講条件の案内文</h4>
+      </fieldset>}
+      {selected.length > 0 && <details className="rounded-lg bg-neutral-50 p-4">
+        <summary className="min-h-11 cursor-pointer font-medium">受講条件の案内文を見る</summary>
         <p className="whitespace-pre-line text-sm leading-6">{describeClassProduct(product, selected.map(item => item.name))}</p>
-      </section>}
-      <button className={button}>コース設定を保存</button>
+      </details>}
+      <button className={button}>保存</button>
     </fieldset>
     {saved && <p role="status">コース設定を保存しました。</p>}
     {error && <p role="alert">{error}</p>}
