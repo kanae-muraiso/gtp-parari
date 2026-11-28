@@ -7,6 +7,13 @@ Status: development branch only; not a release approval.
 - Square CLASS event completion / refund RPCs: amount and merchant checks, duplicate and out-of-order notices, full refund denies self check-in.
 - PGlite operation lab: no production data, purchase to check-in verified through preview runtime.
 
+## Stripe live preparation (2026-11-28)
+- Dedicated live product `parari_class_b` and inclusive JPY 1000 monthly per-unit price `price_1UgckrDcS0mD3DIQFE3DZ8X2` created. No Checkout or charge created.
+- Dedicated non-default portal `bpc_1UgcmwDcS0mD3DIQaZsuJU49` verified with expanded product restrictions (quantity 1–1000; only CLASS B price). General default portal created automatically by Stripe on first configuration, then quantity changes disabled; existing contracts/prices untouched.
+- Both non-secret IDs registered in Vercel production environment, no release gates enabled. Checkout validates inclusive price, card-only, automatic tax off and dedicated portal before reserving a contract.
+- Existing enabled production webhook includes checkout.session.completed, customer.subscription.updated/deleted, invoice.paid and invoice.payment_failed. Real signed notification integration still requires provider-side testing.
+- Actual Stripe SDK signed-webhook + isolated SQL test passed (CI 46102793567). PostgreSQL 17 concurrent quota CI added, pending result.
+
 ## External blockers (2026-11-28)
 - Stripe connector exposes CPP live account only. No sandbox credentials or CLASS B price / portal configuration are configured in Preview.
 - Square Sandbox list locations returned HTTP 401 using the existing SQUARE_SANDBOX_TEST_ACCESS_TOKEN. Replace in Vercel Preview; never put a secret in chat or commit.
