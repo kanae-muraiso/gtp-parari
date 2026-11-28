@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createHash} from "node:crypto";
-import {getSquareEnvironment} from "@/lib/square/config";
+import {getSquareEnvironment,SQUARE_API_VERSION} from "@/lib/square/config";
 import {getSquareMainLocation,createSquarePaymentLink} from "@/lib/square/api";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -14,9 +14,13 @@ export async function GET(){
  const accessToken=token();
  if(!accessToken)return reply({ok:false,message:"Square Sandbox専用の認証情報がありません。"},404);
  try{
-  const location=await getSquareMainLocation(accessToken);
-  return reply({ok:true,environment:"sandbox",connected:true,currency:location.currency??null,locationActive:location.status==="ACTIVE"});
- }catch{return reply({ok:false,environment:"sandbox",message:"Square Sandboxへの接続確認に失敗しました。"},502);}
+  const response=await fetch("https://connect.squareupsandbox.com/v2/locations",{headers:{Authorization:"Bearer "+accessToken,"Square-Version":SQUARE_API_VERSION},cache:"no-store",signal:AbortSignal.timeout(5000)});
+  if(!response.ok)return reply({ok:false,environment:"sandbox",providerStatus:response.status,message:response.status===401||response.status===403?"Sandbox認証情報を更新してください。":"Square Sandbox APIがリクエストを拒否しました。"},502);
+  const data=await response.json();
+  const locations=Array.isArray(data.locations)?data.locations:[];
+  const location=locations.find((l:{status?:string})=>l.status==="ACTIVE");
+  return reply({ok:Boolean(location),environment:"sandbox",connected:true,currency:location?.currency??null,locationActive:Boolean(location),locationCount:locations.length},location?200:409);
+ }catch{return reply({ok:false,environment:"sandbox",message:"Square Sandboxへの通信が失敗しました。"},502);}
 }
 export async function POST(request:NextRequest){
  const accessToken=token();
