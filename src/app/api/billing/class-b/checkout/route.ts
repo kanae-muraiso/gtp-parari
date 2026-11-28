@@ -5,6 +5,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { CLASS_B_BLOCK_PRICE_JPY } from "@/lib/classBPolicy";
 import { classBPurchaseAllowed } from "@/lib/billing/classBReleasePolicy";
+import { classBPortalAllowed } from "@/lib/billing/classBPortalPolicy";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   const schoolId = body?.schoolId;
   const quantity = body?.quantity;
   if (typeof schoolId !== "string" || !classIdPattern.test(schoolId) ||
-      typeof quantity !== "number" || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000)
+      typeof quantity !== "number" || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000)
     return reply({ok:false,message:"事業と契約数量を確認してください。"},400);
   try {
     const {data:school,error} = await db.from("class_schools").select("id")
@@ -36,13 +37,17 @@ export async function POST(request: NextRequest) {
     const priceId = process.env.STRIPE_CLASS_B_JPY_PRICE_ID?.trim();
     if (!priceId) return reply({ok:false,message:"CLASS Bの価格は準備中です。"},503);
     const price = await stripe.prices.retrieve(priceId);
-    if (!price.active || price.currency !== "jpy" || price.unit_amount !== CLASS_B_BLOCK_PRICE_JPY ||
+    if (!price.active || price.tax_behavior !== "inclusive" || price.currency !== "jpy" || price.unit_amount !== CLASS_B_BLOCK_PRICE_JPY ||
         price.type !== "recurring" || price.recurring?.interval !== "month" ||
         price.recurring.interval_count !== 1 || price.billing_scheme !== "per_unit" ||
         price.recurring.usage_type !== "licensed" ||
         (price.livemode !== (process.env.VERCEL_ENV === "production"))) {
       return reply({ok:false,message:"CLASS Bの価格設定を確認できません。"},503);
     }
+    const productId=typeof price.product==="string"?price.product:price.product.id;
+    const configId=process.env.STRIPE_CLASS_B_PORTAL_CONFIGURATION_ID!;
+    const config=await stripe.billingPortal.configurations.retrieve(configId,{expand:["features.subscription_update.products"]});
+    if(!classBPortalAllowed(config,priceId,productId,price.livemode))return reply({ok:false,message:"CLASS Bの請求管理設定を確認できません。"},503);
     // Keep the second release gate closed until the webhook and ledger have
     // been tested together. Never enable checkout based on a client parameter.
     if (process.env.CLASS_B_CONTRACT_LEDGER_READY !== "true") {
@@ -112,6 +117,7 @@ export async function POST(request: NextRequest) {
       client_reference_id:schoolId,
       metadata,subscription_data:{metadata},
       allow_promotion_codes:false,
+      automatic_tax:{enabled:false},payment_method_types:["card"],
       adaptive_pricing:{enabled:false},
       success_url:`${appUrl}/billing?class_b_checkout=success`,
       cancel_url:`${appUrl}/billing?class_b_checkout=cancel`,
