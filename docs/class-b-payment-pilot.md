@@ -12,10 +12,10 @@ Status: development branch only; not a release approval.
 - Dedicated non-default portal `bpc_1UgcmwDcS0mD3DIQaZsuJU49` verified with expanded product restrictions (quantity 1–1000; only CLASS B price). General default portal created automatically by Stripe on first configuration, then quantity changes disabled; existing contracts/prices untouched.
 - Both non-secret IDs registered in Vercel production environment, no release gates enabled. Checkout validates inclusive price, card-only, automatic tax off and dedicated portal before reserving a contract.
 - Existing enabled production webhook includes checkout.session.completed, customer.subscription.updated/deleted, invoice.paid and invoice.payment_failed. Real signed notification integration still requires provider-side testing.
-- Actual Stripe SDK signed-webhook + isolated SQL test passed (CI 46102793567). PostgreSQL 17 concurrent quota CI added, pending result.
+- Actual Stripe SDK signed-webhook + isolated SQL test passed (CI 46102793567). PostgreSQL 17 concurrent quota CI passed (46105805771; repeated 46105955247).
 
 ## External blockers (2026-11-28)
-- Stripe connector exposes CPP live account only. No sandbox credentials or CLASS B price / portal configuration are configured in Preview.
+- Stripe connector now exposes both CPP live and test modes. Test product, price and dedicated portal are configured; the two test IDs are registered only in the CLASS B Preview branch. Preview still needs its own Stripe test API key, webhook signing secret and isolated Supabase DB before exercising the app end-to-end.
 - Square Sandbox list locations returned HTTP 401 using the existing SQUARE_SANDBOX_TEST_ACCESS_TOKEN. Replace in Vercel Preview; never put a secret in chat or commit.
 - Supabase Preview currently shares the production project by default. Provide a separate test project with complete schema and test users before exercising actual Stripe test webhooks. The PGlite lab is not a substitute for this integration test.
 - Square recurring CLASS tuition: dedicated checkout, course/member binding, month-10 billing policy, payment evidence and enrollment reconciliation remain to be implemented and verified. Do not activate class_b_square_products just by linking an arbitrary commerce product.
@@ -38,3 +38,9 @@ Status: development branch only; not a release approval.
 6. Public sales remain off until pilot passes.
 
 Rollback: disable new CLASS B checkout without disabling existing contract reconciliation; retain existing data. Do not merge or apply unreviewed draft SQL.
+
+## Stripe Sandbox provider verification (2026-11-28)
+- Test-mode product `parari_class_b`, inclusive monthly JPY 1000 price `price_1Ugd7YDcS0mD3DIQFLaVt6y1`, dedicated non-default portal `bpc_1Ugd7jDcS0mD3DIQdPkpDqxj` created and verified. Existing test default and live settings untouched during this verification.
+- Actual Stripe test subscription charged 1000 JPY using an attached Stripe test Visa method; `livemode=false`, active subscription, invoice paid, amount_remaining=0, matching price/quantity/item/period on the invoice line.
+- Increasing quantity from 1 to 2 with pending_if_incomplete and always_invoice succeeded: paid adjustment invoice, negative prior-quantity and positive new-quantity lines, same subscription item and period. These fields match classBPaidInvoiceMatches conditions. Dedicated test portal session issued. Period-end cancellation scheduled, then the synthetic test subscription canceled immediately for cleanup, with no live payments.
+- Separate Stripe-hosted test Checkout Session created for JPY 1000, unpaid/open; not linked to a PARARI school and intentionally not distributed for payment. Connector uses newer API (allowed_payment_method_types); application pins 2025-10-29.clover (payment_method_types). Actual application checkout integration and provider-delivered signed notification remain unverified.
