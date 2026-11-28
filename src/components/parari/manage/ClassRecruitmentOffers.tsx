@@ -7,9 +7,9 @@ const routeLabel = (route: string) => route === "direct" ? "そのまま申込" 
 const field = "block w-full rounded border p-2 text-sm";
 const button = "w-fit rounded bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50";
 
-export default function ClassRecruitmentOffers({ classes, products = [], offers, busy, save, commonRoute = "briefing", commonAudience = "adult", commonInformation = "", publicationOnly = false, onDraftChange, onSaved, onEditingChange }: {
+export default function ClassRecruitmentOffers({ classes, products = [], offers, busy, save, commonRoute = "briefing", commonAudience = "adult", commonInformation = "", publicationOnly = false, singleCourse = false, onDraftChange, onSaved, onEditingChange }: {
   classes: SchoolClass[]; products?: { id: string; name: string; audience?: "adult" | "minor" }[]; offers: ClassOffer[]; busy: boolean;
-  save: (input: object) => Promise<boolean>; commonRoute?: "direct" | "briefing"; commonAudience?: "adult" | "minor"; commonInformation?: string; publicationOnly?: boolean;
+  save: (input: object) => Promise<boolean>; commonRoute?: "direct" | "briefing"; commonAudience?: "adult" | "minor"; commonInformation?: string; publicationOnly?: boolean; singleCourse?: boolean;
   onDraftChange?: () => void; onSaved?: () => void; onEditingChange?: (editing: boolean) => void;
 }) {
   const [editing, setEditing] = useState<{ offer?: ClassOffer; productId?: string } | null>(null);
@@ -42,7 +42,7 @@ export default function ClassRecruitmentOffers({ classes, products = [], offers,
         {!slots.length && <p>先に開催日・時間を登録してください。</p>}
       </div>;
     })}
-    {!publicationOnly && <details className="text-sm"><summary className="cursor-pointer">複数のクラスをまとめる場合</summary><button type="button" className="mt-2 w-fit underline" disabled={busy || editing !== null} onClick={() => edit()}>複数の内容をまとめた申込ページを作る</button></details>}
+    {!publicationOnly && !singleCourse && <details className="text-sm"><summary className="cursor-pointer">複数のクラスをまとめる場合</summary><button type="button" className="mt-2 w-fit underline" disabled={busy || editing !== null} onClick={() => edit()}>複数の内容をまとめた申込ページを作る</button></details>}
     {offers.filter(offer => publicationOnly || !products.some(product => classes.some(item => item.product_id === product.id && offer.class_ids.includes(item.id)))).map(offer => <div key={offer.id} className="grid gap-2 rounded border p-3 text-sm">
       <strong>{offer.name}</strong><p> {routeLabel(offer.route_override ?? commonRoute)}{offer.link_only ? "（URLで案内）" : ""} · {offer.enabled ? "受付公開中" : "下書き"}</p>
       {publicationOnly ? <button className={button} type="button" disabled={busy} onClick={() => void save({ action: "offer", id: offer.id, name: offer.name, information: offer.information,
