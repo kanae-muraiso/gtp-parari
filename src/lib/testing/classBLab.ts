@@ -50,7 +50,7 @@ export async function runClassBLab(actions:LabAction[]){
    const results:{action:LabAction;ok:boolean;message:string}[]=[];
    const count=async(sql:string,params:unknown[]=[])=>Number((await db.query<{n:number}>(sql,params)).rows[0].n);
    const plan=async()=>(await db.query<{plan:string;class_blocks:number}>("select plan,class_blocks from class_feature_plans where school_id=$1",[school])).rows[0]??{plan:"a",class_blocks:0};
-   const reconcile=(status:string,blocks:number,paid:boolean)=>db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[school,attempt,owner,"sub_dummy","cus_dummy",status,blocks,paid,end]);
+   const reconcile=(status:string,blocks:number,paid:boolean,period=end)=>db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[school,attempt,owner,"sub_dummy","cus_dummy",status,blocks,paid,period]);
    const firstClass=async()=>(await db.query<{id:string}>("select id from school_classes where school_id=$1 order by id limit 1",[school])).rows[0]?.id;
    const event=async()=>(await db.query<{id:string}>("select id from applications order by id limit 1")).rows[0]?.id;
    const requireB=async()=>{if((await plan()).plan!=="b")throw Error("CLASS Bのダミー購入が必要です。");};
@@ -62,7 +62,7 @@ export async function runClassBLab(actions:LabAction[]){
          case "pay": await reconcile("active",1,true);break;
          case "fail": await reconcile("past_due",Math.max(1,(await plan()).class_blocks),false);break;
          case "upgrade": await requireB();await reconcile("active",(await plan()).class_blocks+1,true);break;
-         case "downgrade": await requireB();await reconcile("active",Math.max(1,(await plan()).class_blocks-1),true);break;
+         case "downgrade": await requireB();await reconcile("active",Math.max(1,(await plan()).class_blocks-1),true,new Date(Date.now()+60*86400000).toISOString());break;
          case "cancel": await reconcile("canceled",Math.max(1,(await plan()).class_blocks),false);break;
          case "class": await db.query("insert into school_classes(id,school_id) values($1,$2)",[id(200+await count("select count(*)::int as n from school_classes")),school]);break;
          case "squareConnect":
