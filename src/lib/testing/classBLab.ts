@@ -9,7 +9,8 @@ const id=(n:number)=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
 const owner=id(1),school=id(2),attempt=id(3),paidUser=id(4),unpaidUser=id(5);
 const code="0123456789abcdef";
 
-export async function runClassBLab(actions:LabAction[]){
+export type SandboxPaymentEvidence={subscriptionId:string;customerId:string;quantity:number;periodEnd:string};
+export async function runClassBLab(actions:LabAction[],evidence?:SandboxPaymentEvidence){
  if(actions.length>60||actions.some(action=>!labActions.includes(action)))throw new Error("Invalid lab actions");
  const db=new PGlite();
  try{
@@ -51,6 +52,9 @@ export async function runClassBLab(actions:LabAction[]){
    const count=async(sql:string,params:unknown[]=[])=>Number((await db.query<{n:number}>(sql,params)).rows[0].n);
    const plan=async()=>(await db.query<{plan:string;class_blocks:number}>("select plan,class_blocks from class_feature_plans where school_id=$1",[school])).rows[0]??{plan:"a",class_blocks:0};
    const reconcile=(status:string,blocks:number,paid:boolean,period=end)=>db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[school,attempt,owner,"sub_dummy","cus_dummy",status,blocks,paid,period]);
+   // Only server-verified sandbox evidence is supplied by the dedicated route.
+   // Never accept it from the public simulation API.
+   if(evidence)await db.query("select reconcile_class_b_contract($1,$2,$3,$4,$5,$6,$7,$8,$9)",[school,attempt,owner,evidence.subscriptionId,evidence.customerId,"active",evidence.quantity,true,evidence.periodEnd]);
    const firstClass=async()=>(await db.query<{id:string}>("select id from school_classes where school_id=$1 order by id limit 1",[school])).rows[0]?.id;
    const event=async()=>(await db.query<{id:string}>("select id from applications order by id limit 1")).rows[0]?.id;
    const requireB=async()=>{if((await plan()).plan!=="b")throw Error("CLASS Bのダミー購入が必要です。");};
