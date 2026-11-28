@@ -6,7 +6,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { classIdPattern } from "@/lib/classes";
 import { classNotice } from "@/lib/classAdmissionMail";
 import { defaultAdmissionSettings } from "@/lib/classAdmissions";
-import { serviceLabelPatch } from "@/lib/classServiceLabels";
+import { allLabelPatch,serviceLabelPatch } from "@/lib/classServiceLabels";
 import { classDate, classInterviewExpiry, classToday, designForApplicant, parseBriefingDesign, renderBriefingMail } from "@/lib/classBriefingWorkflow";
 
 const headers = { "Cache-Control": "private, no-store", Vary: "Authorization" };
@@ -174,8 +174,8 @@ async function handle(request: NextRequest, write: boolean) {
         mailed = primary && learner;
       }
       return send({ ok: true, link, mailed });
-    } else if (input?.action === "serviceLabels" || input?.action === "labels") {
-      const patch = input.action === "serviceLabels" ? serviceLabelPatch(input.labels) : Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key=>[key,trim(input.labels?.[key])]));
+    } else if (input?.action === "allLabels" || input?.action === "serviceLabels" || input?.action === "labels") {
+      const patch = input.action === "allLabels" ? allLabelPatch(input.labels,input.roles) : input.action === "serviceLabels" ? serviceLabelPatch(input.labels) : Object.fromEntries(Object.keys(defaultAdmissionSettings.labels).map(key=>[key,trim(input.labels?.[key])]));
       if(!patch||Object.values(patch).some(value=>!value||value.length>24))return fail("呼び方はそれぞれ1〜24文字で入力してください。");
       if(!setting.data){
         const initial=await db.from("school_admission_settings").upsert({school_id:schoolId,...defaultAdmissionSettings},{onConflict:"school_id",ignoreDuplicates:true});
