@@ -9,7 +9,7 @@ export default function ClassEventEntrance({eventId,sessionAt,onRefresh}:Props){
     const controller=new AbortController();
     setUrl("");setError("");
     void classRequest<{code:string|null}>("/event-checkin",{action:"read",eventId,sessionAt},controller.signal)
-      .then(result=>{if(!controller.signal.aborted)setUrl(result.code?new URL("/c/"+result.code,window.location.origin).href:"");})
+      .then(result=>{if(!controller.signal.aborted)setUrl(result.code?new URL("/class-entrance/"+result.code,window.location.origin).href:"");})
       .catch(e=>{if(!controller.signal.aborted)setError(e.message);});
     return ()=>controller.abort();
   },[eventId,sessionAt]);
@@ -17,7 +17,7 @@ export default function ClassEventEntrance({eventId,sessionAt,onRefresh}:Props){
     setBusy(true);setError("");
     try{
       const result=await classRequest<{code:string|null}>("/event-checkin",{action,eventId,sessionAt});
-      setUrl(result.code?new URL("/c/"+result.code,window.location.origin).href:"");onRefresh();
+      setUrl(result.code?new URL("/class-entrance/"+result.code,window.location.origin).href:"");onRefresh();
     }catch(e){setError(e instanceof Error?e.message:"受付を更新できませんでした。");}
     finally{setBusy(false);}
   }
