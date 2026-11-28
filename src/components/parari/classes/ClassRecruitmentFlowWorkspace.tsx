@@ -180,7 +180,8 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    <ClassRecruitmentStepEditor key={rowKey(target)+":"+step} step={step} target={target} draft={draft} onChange={update} onCommon={()=>openChecklist(shared)}/>
    {step!=="common"&&<div className="flex flex-wrap gap-2"><button type="button" className={primary} disabled={saving} onClick={()=>void save()}>{saving?"保存中…":"保存"}</button></div>}
    {step==="page"&&<details className="rounded-lg border p-3"><summary className="min-h-11 cursor-pointer py-2 text-base font-medium">募集内容を改善する（16項目）</summary><ClassSalesPanel key={rowKey(target)+":sales"} schoolId={schoolId} answers={emptySalesAnswers} revision={0} onSaved={()=>{}} draftKey={"class-page-sales:"+schoolId+":"+rowKey(target)} pageTitle={target.title}/></details>}
-   {step!=="common"&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">{step==="page"?"既存ページの編集・公開設定":"移行前の設定を確認する"}</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
+   {!preview&&target.kind==="course"&&step==="page"&&<button type="button" className={btn+" w-fit"} onClick={()=>onOpenLegacy(target,step)}>実際の受付設定を開く</button>}
+   {step!=="common"&&(preview||target.kind!=="course"||step!=="page")&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">{step==="page"?"既存ページの編集・公開設定":"移行前の設定を確認する"}</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
    </div>
   </section>}
   {message&&<p role="status" className="rounded-lg bg-neutral-50 p-3 text-base">{message}</p>}
