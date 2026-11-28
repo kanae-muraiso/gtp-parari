@@ -605,7 +605,7 @@ export default function ClassUnifiedWorkspace(){
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
         {recruitService?<><button type="button" className={button} onClick={()=>{setRecruitService(null);setLegacyRecruit(false);}}>← 募集の構成図に戻る</button>
 
-          {recruitService.kind==="course"&&currentCourse?<ClassCourseRecruitmentPanel key={currentCourse.id} product={currentCourse} classes={slots} recruitment={recruitment} onSaved={refresh} preview={preview}/>:recruitService.kind!=="course"?<ClassEventsPanel key={recruitService.id} classes={slots} roster={roster} labels={serviceLabels} kind={recruitService.kind} mode="recruit" initialEventId={recruitService.id} onBack={()=>{setRecruitService(null);setLegacyRecruit(false);}} onChanged={refresh}/>:<p>サービスが見つかりません。</p>}
+          {recruitService.kind==="course"&&currentCourse?<ClassCourseRecruitmentPanel key={currentCourse.id} product={currentCourse} classes={slots} recruitment={recruitment} onSaved={refresh} preview={preview} designJson={typeof details?.draft.wizard.classRecruitmentFlows==="string"?details.draft.wizard.classRecruitmentFlows:undefined}/>:recruitService.kind!=="course"?<ClassEventsPanel key={recruitService.id} classes={slots} roster={roster} labels={serviceLabels} kind={recruitService.kind} mode="recruit" initialEventId={recruitService.id} onBack={()=>{setRecruitService(null);setLegacyRecruit(false);}} onChanged={refresh}/>:<p>サービスが見つかりません。</p>}
         </>:<>
           {designLoading&&<p>サービスを読み込んでいます…</p>}
           {designError&&<p role="alert" className="text-red-800">{designError}</p>}
