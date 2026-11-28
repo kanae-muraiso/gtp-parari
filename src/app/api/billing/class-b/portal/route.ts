@@ -3,6 +3,7 @@ import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { stripe } from "@/lib/billing/stripe";
 import { classIdPattern } from "@/lib/classes";
 import { isClassBSubscription } from "@/lib/billing/classBSubscription";
+import { classBPortalAllowed } from "@/lib/billing/classBPortalPolicy";
 const reply=(body:object,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"private, no-store"}});
 export const runtime="nodejs";
 export async function POST(request:NextRequest){
@@ -26,9 +27,11 @@ export async function POST(request:NextRequest){
   const customer=typeof sub.customer==="string"?sub.customer:sub.customer.id;
   if(!isClassBSubscription(sub)||sub.metadata.class_b_school_id!==school.id||sub.metadata.supabase_user_id!==user.id||sub.metadata.class_b_attempt_id!==c.attempt_id||customer!==c.stripe_customer_id||sub.livemode!==(process.env.VERCEL_ENV==="production"))
    throw Error("CLASS B contract mismatch");
-  // Do not let a general WRITERS portal change CLASS B to an unrelated price.
-  // Quantity changes use a separately validated workflow.
-  if(!config.active||config.livemode!==sub.livemode||config.features.subscription_update.enabled)
+  // A dedicated Stripe-hosted confirmation flow prevents accidental charges.
+  const item=sub.items.data[0],priceId=process.env.STRIPE_CLASS_B_JPY_PRICE_ID;
+  const productId=typeof item?.price.product==="string"?item.price.product:item?.price.product?.id;
+  if(sub.items.has_more||sub.items.data.length!==1||!priceId||item?.price.id!==priceId||!productId||
+    !classBPortalAllowed(config,priceId,productId,sub.livemode))
    throw Error("Invalid dedicated CLASS B portal configuration");
   const base=process.env.NEXT_PUBLIC_APP_URL??process.env.NEXT_PUBLIC_BASE_URL;
   if(!base)throw Error("App URL missing");
