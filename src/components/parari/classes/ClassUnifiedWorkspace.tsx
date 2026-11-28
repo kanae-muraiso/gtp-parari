@@ -7,6 +7,7 @@ import { classSchedule, type ClassManagement, type SchoolClass } from "@/lib/cla
 import { supabase } from "@/lib/supabaseClient";
 import { starterClassHomeSsot } from "@/lib/classHomePage";
 import { classCalendarToday } from "@/lib/classCalendar";
+import { classEventDate, type ClassEvent, type ClassEventKind } from "@/lib/classEvents";
 import type { ClassProduct, NamedClassProduct } from "@/lib/classProduct";
 import ClassProductPanel from "@/components/parari/manage/ClassProductPanel";
 import ClassSlotSettingsPanel from "@/components/parari/manage/ClassSlotSettingsPanel";
@@ -67,6 +68,14 @@ export default function ClassUnifiedWorkspace(){
   const [first,setFirst]=useState<FirstDraft>(firstDraft);
   const [firstStep,setFirstStep]=useState(0);
   const [firstActive,setFirstActive]=useState(false);
+  const [newCourse,setNewCourse]=useState(false);
+  const [chooseCourse,setChooseCourse]=useState(false);
+  const [eventDesign,setEventDesign]=useState<{kind:ClassEventKind;id?:string}|null>(null);
+  const [designEvents,setDesignEvents]=useState<ClassEvent[]>([]);
+  const [designWorkshops,setDesignWorkshops]=useState<ClassEvent[]>([]);
+  const [designError,setDesignError]=useState("");
+  const [designLoading,setDesignLoading]=useState(false);
+  const [canDesignEvents,setCanDesignEvents]=useState(false);
   const [newSlot,setNewSlot]=useState<{id:string;productId:string}|null>(null);
   const [flowFocus,setFlowFocus]=useState<FlowFocus>("recruitment");
   const [pageBusy,setPageBusy]=useState(false);
@@ -82,17 +91,18 @@ export default function ClassUnifiedWorkspace(){
   const refresh=useCallback(()=>setRefreshKey(k=>k+1),[]);
   function selectBusiness(id:string){
     window.history.replaceState(null,"",id?"/my/class-onboarding?business="+encodeURIComponent(id):"/my/class-onboarding");
-    setBusiness(id);setManagement(null);setDetails(null);setRecruitment(null);
+    setBusiness(id);setManagement(null);setDetails(null);setRecruitment(null);setProducts([]);setDesignEvents([]);setDesignWorkshops([]);setCanDesignEvents(false);setDesignError("");setLoading(Boolean(id));
+    setNewCourse(false);setChooseCourse(false);setEventDesign(null);setShowCreateBusiness(false);
     setSelected(id?{kind:"business",id}:null);
     setFirstActive(false);setNewSlot(null);setTab("home");setOperationFocus("roster");setError("");setNotice("");
   }
 
   useEffect(()=>{
     const requested=new URLSearchParams(window.location.search).get("business")??"";
-    setBusiness(requested);
+    setBusiness(requested);setSelected(requested?{kind:"business",id:requested}:null);
     const controller=new AbortController();
     void classRequest<{businesses:Business[]}>("?businesses=1",undefined,controller.signal)
-      .then(data=>{if(!controller.signal.aborted){const active=data.businesses.filter(item=>!item.archived_at);setBusinesses(active);if(!requested&&active.length===1)selectBusiness(active[0].id);setLoading(false);}})
+      .then(data=>{if(!controller.signal.aborted){const active=data.businesses.filter(item=>!item.archived_at);setBusinesses(active);if(requested&&!active.some(item=>item.id===requested))selectBusiness("");setLoading(false);}})
       .catch(cause=>{if(!controller.signal.aborted){setError(cause instanceof Error?cause.message:"事業一覧を取得できませんでした。");setLoading(false);}});
     return ()=>controller.abort();
   },[]);
@@ -119,6 +129,35 @@ export default function ClassUnifiedWorkspace(){
     return ()=>controller.abort();
   },[business,refreshKey]);
 
+  useEffect(()=>{
+    if(!business||tab!=="classes")return;
+    const controller=new AbortController();
+    setDesignLoading(true);setDesignError("");setCanDesignEvents(false);
+    void Promise.all([
+      classRequest<{events:ClassEvent[];canCreateEvents:boolean}>("/events?kind=event",undefined,controller.signal),
+      classRequest<{events:ClassEvent[];canCreateEvents:boolean}>("/events?kind=workshop",undefined,controller.signal)
+    ]).then(([events,workshops])=>{
+      if(controller.signal.aborted)return;
+      setDesignEvents(events.events);setDesignWorkshops(workshops.events);setCanDesignEvents(events.canCreateEvents&&workshops.canCreateEvents);setDesignLoading(false);
+    }).catch(cause=>{if(!controller.signal.aborted){setDesignError(cause instanceof Error?cause.message:"講習会・イベントの構成を取得できませんでした。");setDesignLoading(false);}});
+    return ()=>controller.abort();
+  },[business,tab,refreshKey]);
+  function resetDesign(){
+    setFirstActive(false);setNewSlot(null);setNewCourse(false);setChooseCourse(false);setEventDesign(null);setError("");setNotice("");
+  }
+  function pickDesign(kind:Selection["kind"],id:string){
+    resetDesign();setSelected({kind,id});setEditorKey(k=>k+1);
+  }
+  function addClassToCourse(id:string){
+    pickDesign("course",id);setNewSlot({id:crypto.randomUUID(),productId:id});
+  }
+  function startClass(){
+    resetDesign();
+    if(products.length===1)addClassToCourse(products[0].id);
+    else if(products.length>1)setChooseCourse(true);
+    else{setFirstActive(true);setFirstStep(0);setFirst(firstDraft());}
+  }
+
   async function createBusiness(event:FormEvent<HTMLFormElement>){
     event.preventDefault();if(busy)return;
     setBusy(true);setError("");setNotice("");
@@ -126,7 +165,7 @@ export default function ClassUnifiedWorkspace(){
       const id=crypto.randomUUID();
       await classRequest("",{action:"createBusiness",id,name:schoolName.trim(),businessType:businessKind});
       setBusinesses(old=>[...old,{id,name:schoolName.trim(),business_type:businessKind}]);
-      setShowCreateBusiness(false);selectBusiness(id);
+      setShowCreateBusiness(false);selectBusiness(id);setTab("classes");
     }catch(cause){setError(cause instanceof Error?cause.message:"事業を作成できませんでした。");}
     finally{setBusy(false);}
   }
@@ -252,9 +291,9 @@ export default function ClassUnifiedWorkspace(){
   const flowAction:FlowFocus[]=["recruitment","blueprint","agreement","admissions"];
   const roster=management?.roster??[];
   const area=classAreaForTab(tab);
-  const recruitTabs=[["homepage","募集ページ"],["admission","入会フロー"],["events","イベント"],["workshops","講習会"],["improve","募集の改善"]] as const;
+  const recruitTabs=[["homepage","募集ページ"],["admission","入会フロー"],["events","イベント"],["workshops","短期講習会"],["improve","募集の改善"]] as const;
   function go(next:Tab){
-    setError("");setNotice("");setShowCreateBusiness(false);
+    resetDesign();setShowCreateBusiness(false);
     if(next==="operation")setOperationFocus("roster");
     setTab(next);
     window.scrollTo(0,0);
@@ -276,13 +315,15 @@ export default function ClassUnifiedWorkspace(){
       {process.env.NEXT_PUBLIC_VERCEL_ENV==="preview"&&<p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-base text-amber-900">開発プレビュー：実データと接続している場合があります。既存事業の保存・公開・入金操作は行わず、画面と導線を確認してください。</p>}
       {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}</p>}
       {notice&&<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">{notice}</p>}
-      <section className={panel+" space-y-3"}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">運営する事業</h2>
-          <button className={button} type="button" onClick={()=>setShowCreateBusiness(v=>!v)}>
-            {showCreateBusiness?"閉じる":"＋ 事業を作る"}
-          </button>
-        </div>
+      {!business?<section className={panel+" space-y-4"}>
+        <h1 className="text-2xl font-bold">運営する事業</h1>
+        <p className="text-base text-neutral-600">既存の事業を選ぶか、新しい事業を作って始めます。</p>
+        {businesses.map(item=><button type="button" key={item.id} disabled={busy} onClick={()=>selectBusiness(item.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 text-left text-lg font-semibold hover:border-emerald-700">
+          <span className="flex-1">{item.name}</span><span aria-hidden="true" className="text-2xl text-neutral-500">›</span>
+        </button>)}
+        {!businesses.length&&!loading&&!error&&<p className="text-base text-neutral-600">まだ事業がありません。最初の事業を作りましょう。</p>}
+        {loading&&<p role="status">事業一覧を読み込んでいます…</p>}
+        <button className={primary+" w-full"} type="button" disabled={busy||loading} onClick={()=>setShowCreateBusiness(v=>!v)}>{showCreateBusiness?"閉じる":"＋ 新しい事業を作る"}</button>
         {showCreateBusiness&&<form onSubmit={e=>void createBusiness(e)} className="grid gap-3 rounded-xl bg-neutral-50 p-4 sm:grid-cols-3">
           <label className="grid gap-1 text-sm">事業名
             <input className={field} required maxLength={120} value={schoolName} onChange={e=>setSchoolName(e.target.value)} placeholder="例：〇〇英語教室"/>
@@ -294,54 +335,59 @@ export default function ClassUnifiedWorkspace(){
           </label>
           <button className={primary+" self-end"} disabled={busy}>事業を保存</button>
         </form>}
-        {!businesses.length&&!loading&&<p className="text-sm text-neutral-600">最初に事業を一つ作りましょう。その中にクラスを開設します。</p>}
-        <div className="flex flex-wrap gap-2">
-          {businesses.map(item=><button key={item.id} type="button" onClick={()=>selectBusiness(item.id)}
-            aria-pressed={business===item.id} className={"min-h-11 rounded-lg border px-4 py-2 text-base "+(business===item.id?"border-emerald-800 bg-emerald-50 font-bold":"border-neutral-300")}>
-            {item.name}
-          </button>)}
-        </div>
-        {school&&tab==="classes"&&<div className="space-y-2 rounded-xl bg-neutral-50 p-3 sm:p-4">
-          <p className="text-xs text-neutral-600">■ 事業、□ コース、× クラスを押すと、下の「選択中の設定」が切り替わります。</p>
-          <button onClick={()=>{setSelected({kind:"business",id:business});setFirstActive(false);setNewSlot(null);setTab("classes");}}
-            className={"text-left font-bold "+(selected?.kind==="business"?"text-emerald-900 underline":"")} type="button">
-            ■ {school.name} <span className="text-xs font-normal text-neutral-500">事業</span>
-          </button>
-          {products.map(product=>{
-            const listed=slots.filter(slot=>slot.product_id===product.id);
-            return <div key={product.id} className="ml-3 space-y-2 border-l-2 border-neutral-300 pl-4 sm:ml-5">
-              <button className={"min-h-11 text-left text-base font-semibold "+(selected?.kind==="course"&&selected.id===product.id?"text-emerald-900 underline":"")}
-                type="button" onClick={()=>{setTab("classes");setSelected({kind:"course",id:product.id});setFirstActive(false);setNewSlot(null);}}>
-                □ {product.name} <span className="font-normal text-neutral-500">コース · {listed.length}クラス</span>
-              </button>
-              <div className="flex flex-wrap gap-2 pl-4">
-                {listed.length?listed.map(slot=><button type="button" key={slot.id}
-                  onClick={()=>{setTab("classes");setSelected({kind:"class",id:slot.id});setFirstActive(false);setNewSlot(null);}}
-                  className={"min-h-11 rounded-lg border px-3 py-2 text-base "+(selected?.kind==="class"&&selected.id===slot.id?"border-emerald-700 bg-emerald-100":"border-neutral-300 bg-white")}>
-                  × {slot.name} · {slot.starts_at.slice(0,5)}
-                </button>):<span className="text-xs text-amber-800">開催日時が未登録です</span>}
-              </div>
-            </div>;
-          })}
-          {slots.filter(slot=>!slot.product_id).length>0&&<p className="pl-5 text-xs text-amber-800">未分類の開催枠：{slots.filter(slot=>!slot.product_id).length}件（既存データ）</p>}
-          <button type="button" className={primary+" mt-2"} onClick={()=>{
-            setTab("classes");setFirstActive(true);setFirstStep(0);setFirst(firstDraft());setError("");
-          }}>＋ クラスを作る</button>
-        </div>}
-      </section>
 
-      {tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={go}/>}
-      {tab!=="home"&&school&&<div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3">
-        <p className="text-base text-neutral-600">CLASS / {school.name}</p>
-        <h1 className="mt-1 text-2xl font-bold">{area}</h1>
-      </div>}
+      </section>:<section className={panel+" flex min-h-16 items-center gap-3"}>
+        <button type="button" className={button} disabled={busy||pageBusy} onClick={()=>selectBusiness("")}>‹ 戻る</button>
+        <h1 className="flex-1 break-words text-center text-xl font-bold">{school?.name??businesses.find(item=>item.id===business)?.name??"事業を確認中…"}</h1>
+        <span aria-hidden="true" className="w-16"/>
+      </section>}
+      {business&&tab==="home"&&<ClassWorkspaceHome disabled={!school||loading} onNavigate={go}/>}
+      {tab!=="home"&&school&&<h2 className="px-1 text-2xl font-bold">{area}</h2>}
+      {school&&tab==="classes"&&<>
+        <section className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 sm:p-5" aria-label="事業の構成図">
+          <button type="button" className="min-h-11 text-left text-xl font-bold text-emerald-950" onClick={()=>pickDesign("business",business)}>■ {school.name}</button>
+          <div className="space-y-3 border-t border-emerald-200 pt-3">
+            <h3 className="text-lg font-bold text-emerald-950">コース</h3>
+            {!products.length&&<p className="text-base text-neutral-600">コースはまだありません。</p>}
+            {products.map(product=>{
+              const listed=slots.filter(slot=>slot.product_id===product.id);
+              return <div key={product.id} className="ml-2 space-y-1 border-l-2 border-emerald-200 pl-3">
+                <button type="button" aria-pressed={!newCourse&&!newSlot&&!firstActive&&!eventDesign&&selected?.kind==="course"&&selected.id===product.id} onClick={()=>pickDesign("course",product.id)} className="min-h-11 text-left text-base font-bold text-emerald-950 hover:underline">□ {product.name} <span className="font-normal text-neutral-600">({listed.length}クラス)</span></button>
+                <div className="grid gap-1 pl-3">
+                  {listed.map(slot=><button type="button" key={slot.id} aria-pressed={!eventDesign&&selected?.kind==="class"&&selected.id===slot.id} onClick={()=>pickDesign("class",slot.id)} className="min-h-11 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-left text-base hover:border-emerald-700">× {slot.name} · {slot.starts_at.slice(0,5)}</button>)}
+                  {!listed.length&&<p className="py-1 text-base text-neutral-600">開催枠は未登録です。</p>}
+                </div>
+              </div>;
+            })}
+            {slots.filter(slot=>!slot.product_id).length>0&&<div className="grid gap-1"><p className="text-base text-amber-900">未分類の開催枠（既存データ）</p>{slots.filter(slot=>!slot.product_id).map(slot=><button key={slot.id} className={button+" text-left"} onClick={()=>pickDesign("class",slot.id)}>{slot.name}</button>)}</div>}
+          </div>
+          {([["workshop","短期講習会",designWorkshops],["event","イベント",designEvents]] as const).map(([kind,title,items])=><div key={kind} className="space-y-2 border-t border-emerald-200 pt-3">
+            <h3 className="text-lg font-bold text-emerald-950">{title}</h3>
+            {designLoading?<p className="text-base text-neutral-600">読み込み中…</p>:designError?<p className="text-base text-red-800">{designError}</p>:!items.filter(item=>item.status!=="closed").length?<p className="text-base text-neutral-600">現在の{title}はありません。</p>:null}
+            {items.filter(item=>item.status!=="closed").map(item=><button type="button" key={item.id} onClick={()=>{resetDesign();setEventDesign({kind,id:item.id});}} className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2 text-left text-base">
+              <span className="flex-1 font-medium">{item.title}{kind==="workshop"&&item.class_event.sessions?"（全"+item.class_event.sessions.length+"回）":""}</span><span className="text-neutral-600">{item.status==="draft"?"下書き":"公開中"}</span>
+            </button>)}
+            {items.some(item=>item.status==="closed")&&<details><summary className="min-h-11 cursor-pointer py-2 text-base">受付終了の{title}を見る</summary>{items.filter(item=>item.status==="closed").map(item=><button key={item.id} type="button" className={button+" mb-1 block w-full text-left"} onClick={()=>{resetDesign();setEventDesign({kind,id:item.id});}}>{item.title} · {classEventDate(item.class_event.startsAt)}</button>)}</details>}
+          </div>)}
+        </section>
+        <div className="grid grid-cols-2 gap-2" aria-label="新しいサービスを作る">
+          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={()=>{resetDesign();setNewCourse(true);}}>＋ コースを作る</button>
+          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} onClick={startClass}>＋ クラスを追加する</button>
+          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"workshop"});}}>＋ 短期講習会を作る</button>
+          <button type="button" className={button+" min-h-14 font-semibold text-emerald-900"} disabled={!canDesignEvents||designLoading} onClick={()=>{resetDesign();setEventDesign({kind:"event"});}}>＋ イベントを作る</button>
+        </div>
+        {!canDesignEvents&&!designLoading&&!designError&&<p className="text-base text-neutral-600">短期講習会・イベントの作成はCLASS Bで利用できます。</p>}
+        {chooseCourse&&<section className={panel+" grid gap-2"}><h3 className="text-lg font-bold">どのコースにクラスを追加しますか？</h3>{products.map(product=><button type="button" key={product.id} className={button+" text-left"} onClick={()=>addClassToCourse(product.id)}>{product.name} ›</button>)}<button type="button" className={button} onClick={()=>setChooseCourse(false)}>閉じる</button></section>}
+        {newCourse&&<section className="grid gap-2"><ClassProductPanel key={business+":new-course"} classes={slots} allowProductSelection={false} onSaved={id=>{setNewCourse(false);setSelected({kind:"course",id});setNotice("コースを保存しました。次に開催クラスを追加できます。");refresh();}}/><button type="button" className={button} onClick={()=>setNewCourse(false)}>閉じる</button></section>}
+        {eventDesign&&<ClassEventsPanel key={business+":"+eventDesign.kind+":"+(eventDesign.id??"new")} kind={eventDesign.kind} classes={slots} roster={roster} mode="design" initialCreate={!eventDesign.id} initialEventId={eventDesign.id} onChanged={refresh} onBack={()=>setEventDesign(null)}/>}
+      </>}
       {school&&area==="募集"&&<nav aria-label="募集" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {recruitTabs.map(([id,label])=><button key={id} type="button" aria-pressed={tab===id} onClick={()=>go(id)}
           className={tab===id?primary:button}>{label}</button>)}
       </nav>}
       {loading&&business&&<p role="status" className="text-sm">教室の情報を確認しています…</p>}
 
-      {school&&tab==="classes"&&<section className={panel+" space-y-5"} aria-labelledby="selected-class-settings">
+      {school&&tab==="classes"&&!newCourse&&!chooseCourse&&!eventDesign&&<section className={panel+" space-y-5"} aria-labelledby="selected-class-settings">
         <div className="space-y-2 border-b border-neutral-200 pb-4">
           <p className="text-xs font-semibold tracking-wide text-emerald-800">上の図で選択中：{chosenKind}</p>
           <h2 id="selected-class-settings" className="text-xl font-bold">{firstActive?"新しいクラスを作成":newSlot?"クラスの開催日時を設定":
@@ -558,7 +604,7 @@ export default function ClassUnifiedWorkspace(){
           <h3 className="text-lg font-bold">月謝・受講費の設定</h3>
           {products.map(product=><div key={product.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-3">
             <div><p className="font-semibold">{product.name}</p><p className="text-base text-neutral-700">{product.design.walkInFee!=null?"1回 "+money(product.design.walkInFee):"月額 "+money(product.design.monthlyFee)}</p></div>
-            <button className={button} onClick={()=>{setSelected({kind:"course",id:product.id});setFirstActive(false);setNewSlot(null);go("classes");}}>料金設定</button>
+            <button className={button} onClick={()=>{go("classes");pickDesign("course",product.id);}}>料金設定</button>
           </div>)}
           {!products.length&&<p>コースがまだありません。</p>}
           <p className="text-base text-neutral-600">月次の請求・回収・売上集計は準備中です。設定された料金は実際の入金額とは異なります。</p>
@@ -576,7 +622,7 @@ export default function ClassUnifiedWorkspace(){
         </section>
         <Link href="/my/sales" className={button+" inline-flex items-center"}>販売・売上管理を開く</Link>
       </section>}
-      {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} kind={tab==="events"?"event":"workshop"}/>}
+      {school&&(tab==="events"||tab==="workshops")&&<ClassEventsPanel key={business+":"+tab} classes={slots} roster={roster} kind={tab==="events"?"event":"workshop"} mode="recruit"/>}
       {school&&tab==="improve"&&details&&<ClassSalesPanel schoolId={business}
         answers={details.draft.sales_answers??[]} revision={details.draft.revision} onSaved={refresh}/>}
       {school&&tab==="operation"&&<section className={panel+" space-y-5"}>
@@ -599,8 +645,8 @@ export default function ClassUnifiedWorkspace(){
           </div>)}
           {!roster.length&&<p className="text-sm">登録された受講者はまだいません。</p>}
         </div>}
-        {operationFocus==="events"&&<ClassEventsPanel classes={slots} roster={roster} kind="event"/>}
-        {operationFocus==="workshops"&&<ClassEventsPanel classes={slots} roster={roster} kind="workshop"/>}
+        {operationFocus==="events"&&<ClassEventsPanel classes={slots} roster={roster} kind="event" mode="operation"/>}
+        {operationFocus==="workshops"&&<ClassEventsPanel classes={slots} roster={roster} kind="workshop" mode="operation"/>}
       </section>}
       <footer className="pb-5 text-xs text-neutral-500">
         CLASSの設定・名簿・受付は既存の正本に保存されます。募集ページの文章はPARARI PAGEです。
