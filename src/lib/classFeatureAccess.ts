@@ -16,5 +16,6 @@ export async function classFeatureAccess(schoolId: string, userId: string) {
   if (!school.data || school.data.owner_user_id !== userId) return { canManage: false, canCreateEvents: false, plan: "a" as const };
   const active = entitlement.data?.plan === "b" &&
     (!entitlement.data.active_until || Date.parse(entitlement.data.active_until)>Date.now());
-  return { canManage: true, canCreateEvents: Boolean(profile.data?.is_monitor || active), plan: (active?"b":"a") as "a"|"b" };
+  // CLASS A includes one event slot per business; APPLICATION Lite has its own quota.
+  return { canManage: true, canCreateEvents: true, plan: (active?"b":"a") as "a"|"b" };
 }
