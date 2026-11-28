@@ -14,7 +14,7 @@ async function main(){
  create table school_class_assignments(school_id uuid,enrollment_id uuid,class_id uuid,self_selected boolean default false,primary key(school_id,enrollment_id,class_id));
  create table school_class_visit_reservations(school_id uuid,enrollment_id uuid,class_id uuid,visit_on date,primary key(enrollment_id,class_id,visit_on));
  create table applications(id uuid primary key,owner_user_id uuid,class_event_school_id uuid,status text,class_event jsonb,definition jsonb,payment_method text,payment_amount int,archived_at timestamptz);
- create function class_fixed_seat_count_on(p_school uuid,p_class uuid,p_day date) returns integer language sql stable set search_path='' as $
+ create function class_fixed_seat_count_on(p_school uuid,p_class uuid,p_day date) returns integer language sql stable set search_path='' as $$
  select count(*)::int from public.school_class_assignments a join public.school_enrollments e on e.id=a.enrollment_id
  where a.school_id=p_school and a.class_id=p_class and e.status='active' and (a.self_selected or e.class_participation<>'flexible') $$;
  grant select,insert,update,delete on all tables in schema public to service_role;`);
