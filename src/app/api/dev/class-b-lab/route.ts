@@ -15,3 +15,17 @@ export async function POST(request:NextRequest){
   return NextResponse.json({ok:true,...await runClassBLab(body.actions)},{headers:{"Cache-Control":"no-store"}});
  }catch(error){console.error("[CLASS B LAB]",error);return NextResponse.json({ok:false,message:"隔離テストの実行に失敗しました。"},{status:500});}
 }
+
+// Fixed, read-only deployment smoke test. Every request creates a fresh
+// in-memory database and cannot target external or real account data.
+export async function GET(request:NextRequest){
+ if(!classBLabAvailable())return NextResponse.json({ok:false},{status:404});
+ if(request.nextUrl.searchParams.get("smoke")!=="1")return NextResponse.json({ok:false},{status:400});
+ try{
+   const {runClassBLab}=await import("@/lib/testing/classBLab");
+   const x=await runClassBLab(["pay","event","paid","unpaid","open","enterUnpaid","enterPaid","enterPaid","confirmCash","manualPresent","close","enterPaid"]);
+   const passed=x.plan==="b"&&x.blocks===1&&x.entries.length===2&&x.paid===2&&x.unpaid===0&&x.attended===2&&!x.gate&&
+     x.results.every((r,i)=>r.ok===![5,11].includes(i));
+   return NextResponse.json({ok:passed,isolated:true,checks:{purchase:x.plan==="b",registered:x.entries.length,paid:x.paid,attended:x.attended,gateClosed:!x.gate,expectedRejections:x.results.filter(r=>!r.ok).length}},{status:passed?200:500,headers:{"Cache-Control":"no-store"}});
+ }catch(error){console.error("[CLASS B LAB SMOKE]",error);return NextResponse.json({ok:false,message:"隔離環境の実行エラー"},{status:500});}
+}
