@@ -352,10 +352,10 @@ export default function ClassUnifiedWorkspace(){
   }
   async function applyModel(next:ClassBusinessModel){
     if(!business||busy)return;
-    if(preview){try{sessionStorage.setItem("class-model:"+business,JSON.stringify(next));}catch{}setModel(next);setShowModel(false);setNotice("このブラウザに事業の設計案を反映しました。本番データは変更していません。");return;}
+    if(preview){try{sessionStorage.setItem("class-model:"+business,JSON.stringify(next));}catch{}setModel(next);setShowModel(false);setNotice("このブラウザに事業の設計案を反映しました。本番データは変更していません。");return true;}
     if(!details)return;
     setBusy(true);setError("");
-    try{await classRequest("/onboarding?school="+business,{action:"saveWizard",revision:details.draft.revision,wizard:{...details.draft.wizard,businessModel:JSON.stringify(next)}});setModel(next);setShowModel(false);setNotice("事業の設計案を保存しました。");refresh();}
+    try{await classRequest("/onboarding?school="+business,{action:"saveWizard",revision:details.draft.revision,wizard:{...details.draft.wizard,businessModel:JSON.stringify(next)}});setModel(next);setShowModel(false);setNotice("事業の設計案を保存しました。");refresh();return true;}
     catch(e){setError(e instanceof Error?e.message:"設計案を保存できませんでした。");}finally{setBusy(false);}
   }
   const recruitTabs=[["services","個別サービスの申込導線（設計）"],["homepage","事業の募集ページ"],["improve","募集の改善"]] as const;
@@ -414,7 +414,7 @@ export default function ClassUnifiedWorkspace(){
       {tab!=="home"&&school&&<>
         <nav aria-label="CLASS 共通ナビゲーション" className="grid grid-cols-4 gap-1 rounded-xl border border-neutral-200 bg-white p-1 sm:gap-2 sm:p-2">
           {([["classes","設計"],["homepage","募集"],["operation","運営"],["accounting","会計"]] as const).map(([id,label])=>
-            <button key={id} type="button" aria-current={area===label?"page":undefined} disabled={busy||pageBusy} onClick={()=>{if(area!==label)go(id==="homepage"?"services":id);}}
+            <button key={id} type="button" aria-current={area===label?"page":undefined} disabled={busy||pageBusy} onClick={()=>{if(area!==label||tab==="settings")go(id==="homepage"?"services":id);}}
               className={"min-h-11 rounded-lg px-1 py-2 text-base font-semibold transition-colors disabled:opacity-50 "+(area===label?"bg-emerald-800 text-white":"text-neutral-700 hover:bg-emerald-50")}>{label}</button>)}
         </nav>
 
@@ -654,7 +654,7 @@ export default function ClassUnifiedWorkspace(){
 
       {school&&tab==="settings"&&<>
         <div className="flex flex-wrap items-center gap-3"><button type="button" className={button} onClick={()=>go("classes")}>‹ 設計に戻る</button><h2 className="flex-1 text-xl font-bold">{showModel?"事業構成の変更":settingEntries.find(([id])=>id===settingsFocus)?.[1]??"事業設定"}</h2></div>
-        {showModel?<ClassBusinessModelSettings key={business} model={model} labels={serviceLabels} onApply={next=>{void applyModel(next);if(preview)go("classes");}} preview={preview} busy={busy}/>:settingsFocus==="business"?<section className={panel}>
+        {showModel?<ClassBusinessModelSettings key={business} model={model} labels={serviceLabels} onApply={next=>{void applyModel(next).then(saved=>{if(saved)go("classes");});}} preview={preview} busy={busy}/>:settingsFocus==="business"?<section className={panel}>
           <form onSubmit={e=>void renameBusiness(e)} className="grid max-w-lg gap-3"><label className="grid gap-1 text-base font-medium">事業名<input className={field} required maxLength={120} value={editingBusinessName} onChange={e=>setEditingBusinessName(e.target.value)}/></label><button className={primary+" w-fit"} disabled={busy||!editingBusinessName.trim()||editingBusinessName.trim()===school.name}>保存</button></form>
         </section>:settingsFocus==="names"?(labelsLoaded?<ClassServiceLabelSettings key={business} schoolId={business} labels={serviceLabels} roles={roleLabels} preview={preview} onSaved={(labels,roles)=>{setServiceLabels(labels);setRoleLabels(roles);}}/>:<p>呼び方を読み込めません。再読み込みしてください。</p>):settingsFocus==="contract"?<ClassBCheckoutPanel key={business} initialSchoolId={business} fixedSchool/>:settingsFocus==="payment"?<section className={panel+" grid gap-3"}><p>受講料・参加費の受け取りを設定します。</p><Link href="/my/sales" className={button+" inline-flex items-center"}>販売・決済の設定を開く</Link></section>:<section className={panel+" grid grid-cols-2 gap-2"}>{settingEntries.map(([id,title])=><button key={id} type="button" className={button} onClick={()=>setSettingsFocus(id)}>{title}</button>)}</section>}
       </>}
