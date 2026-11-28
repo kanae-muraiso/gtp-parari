@@ -408,7 +408,10 @@ export default function ClassUnifiedWorkspace(){
         {tab!=="home"&&<button className={button} onClick={()=>go("home")}>← CLASS ホーム</button>}
       </header>
       {process.env.NEXT_PUBLIC_VERCEL_ENV==="preview"&&<p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-base text-amber-900">開発プレビュー：実データと接続している場合があります。既存事業の保存・公開・入金操作は行わず、画面と導線を確認してください。</p>}
-      {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}</p>}
+      {error&&<div className="grid gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+        <p role="alert">{error}</p>
+        {business&&error.includes("追加クラス枠をご契約ください")&&<button type="button" className={button+" w-fit"} onClick={()=>{go("settings");setSettingsFocus("contract");}}>CLASSの利用契約を開く</button>}
+      </div>}
       {notice&&<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">{notice}</p>}
       {!business?<section className={panel+" space-y-4"}>
         <h1 className="text-2xl font-bold">運営する事業</h1>
