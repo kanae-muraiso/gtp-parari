@@ -145,7 +145,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
     const d=drafts[rowKey(configuring)]??initialFlow(configuring);
     return <label key={s} className="flex min-h-11 items-center gap-3 border-b border-neutral-100 px-1 text-base"><input className="h-5 w-5" type="checkbox" checked={checked.includes(s)} disabled={required} onChange={e=>{const next=e.target.checked?[...checked,s]:checked.filter(x=>x!==s);if(e.target.checked){const available=availableFlowSteps(configuring,membership);const position=checked.findIndex(x=>available.indexOf(x)>available.indexOf(s));if(position>=0){next.pop();next.splice(position,0,s);}}setChecked(next);setMessage("");}}/>{stepLabel(s,configuring,d)}{required&&<span className="ml-auto text-sm text-neutral-500">必須</span>}</label>;
    })}
-   <div className="flex flex-wrap gap-2"><button type="button" className={primary} disabled={saving||!ready} onClick={()=>void saveChecklist()}>{saving?"保存中…":"工程を保存してフロー図を作る"</button></div>
+   <div className="flex flex-wrap gap-2"><button type="button" className={primary} disabled={saving||!ready} onClick={()=>void saveChecklist()}>{saving?"保存中…":"工程を保存してフロー図を作る"}</button></div>
   </section>}
   {target&&draft&&<section className="min-w-0 grid gap-4 rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5" aria-label="選択中の募集工程">
    <div className="min-w-0 grid gap-2">
