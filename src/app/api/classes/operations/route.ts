@@ -64,3 +64,70 @@ export async function GET(request:NextRequest){
   return reply({ok:true,sessions,start,end});
  }catch{return fail("開催予定・参加者を取得できませんでした。",500);}
 }
+
+export async function POST(request:NextRequest){
+ try{
+  const token=request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const auth=token?await db.auth.getUser(token):null,user=auth?.data.user;
+  const scope=request.nextUrl.searchParams.get("business");
+  if(!user||auth?.error||!scope||!await canManageClassStudio(user.id))return fail("事業を確認してください。",404);
+  const school=await classBusinessId(user.id,scope);
+  if(!school)return fail("事業を確認してください。",404);
+  const input=await request.json().catch(()=>null);
+  const classId=input?.classId,day=input?.day,rawRecords=input?.records;
+  if(typeof classId!=="string"||!classIdPattern.test(classId)||typeof day!=="string"||
+    !/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!Number.isFinite(Date.parse(day))||
+    new Date(Date.parse(day)).toISOString().slice(0,10)!==day||!Array.isArray(rawRecords)||
+    rawRecords.length<1||rawRecords.length>1000)return fail("出欠の内容を確認してください。");
+  const today=classCalendarToday();
+  if(day<dateShift(today,-30)||day>dateShift(today,90))return fail("開催日を確認してください。");
+  const records:{enrollment_id:string;actual:"present"|"absent"|null}[]=[];
+  const seen=new Set<string>();
+  for(const record of rawRecords){
+   if(!record||typeof record.enrollmentId!=="string"||!classIdPattern.test(record.enrollmentId)||
+      !(record.actual===null||record.actual==="present"||record.actual==="absent")||seen.has(record.enrollmentId))
+    return fail("出欠の内容を確認してください。");
+   seen.add(record.enrollmentId);
+   records.push({enrollment_id:record.enrollmentId,actual:record.actual});
+  }
+  const [classResult,scheduleResult]=await Promise.all([
+   db.from("school_classes").select(columns).eq("school_id",school).eq("id",classId).maybeSingle(),
+   db.from("school_class_monthly_schedules").select("days").eq("class_id",classId).eq("month",day.slice(0,7)+"-01").maybeSingle()
+  ]);
+  if(classResult.error||scheduleResult.error)throw classResult.error??scheduleResult.error;
+  if(!classResult.data)return fail("開催枠を確認してください。",404);
+  const item=classResult.data as unknown as SchoolClass;
+  const scheduled=scheduleResult.data?.days??generateClassDays(item,day.slice(0,7),false);
+  if(!scheduled.includes(day))return fail("開催日ではありません。",409);
+  const ids=records.map(record=>record.enrollment_id);
+  const [members,bookings,existing,admissions]=await Promise.all([
+   db.from("school_enrollments").select("id,status,class_participation,assignments:school_class_assignments(class_id,self_selected)").eq("school_id",school).in("id",ids),
+   db.from("school_class_visit_reservations").select("enrollment_id").eq("school_id",school).eq("class_id",classId).eq("visit_on",day).in("enrollment_id",ids),
+   db.from("school_attendance").select("enrollment_id").eq("school_id",school).eq("class_id",classId).eq("lesson_date",day).in("enrollment_id",ids),
+   db.from("school_admission_cases").select("enrollment_id,starts_on").eq("school_id",school).in("enrollment_id",ids).not("starts_on","is",null)
+  ]);
+  for(const result of [members,bookings,existing,admissions])if(result.error)throw result.error;
+  if(members.data.length>=1000)return fail("対象者の件数が上限を超えています。",409);
+  const memberById=new Map(members.data.map(member=>[member.id,member]));
+  const booked=new Set(bookings.data.map(row=>row.enrollment_id));
+  const recorded=new Set(existing.data.map(row=>row.enrollment_id));
+  const starts=new Map<string,string>();
+  for(const row of admissions.data)if(row.enrollment_id&&row.starts_on){
+   const previous=starts.get(row.enrollment_id);
+   if(!previous||row.starts_on<previous)starts.set(row.enrollment_id,row.starts_on);
+  }
+  for(const id of ids){
+   const member=memberById.get(id);
+   if(recorded.has(id))continue;
+   const assigned=member?.assignments?.some((assignment:{class_id:string;self_selected?:boolean})=>
+    assignment.class_id===classId&&(assignment.self_selected||member.class_participation!=="flexible"));
+   if(!member||member.status!=="active"||(!assigned&&!booked.has(id))||(starts.get(id)&&day<starts.get(id)!))
+    return fail("参加対象者を確認してください。",409);
+  }
+  const result=await db.from("school_attendance").upsert(records.map(record=>({
+   school_id:school,class_id:classId,lesson_date:day,enrollment_id:record.enrollment_id,actual:record.actual
+  })),{onConflict:"school_id,class_id,lesson_date,enrollment_id"});
+  if(result.error)throw result.error;
+  return reply({ok:true,saved:records.length});
+ }catch{return fail("出欠を保存できませんでした。",500);}
+}
