@@ -4,11 +4,12 @@ import { stripe } from "@/lib/billing/stripe";
 import { classIdPattern } from "@/lib/classes";
 import { isClassBSubscription } from "@/lib/billing/classBSubscription";
 import { classBPortalAllowed } from "@/lib/billing/classBPortalPolicy";
+import { classBBillingTargetReady } from "@/lib/billing/classBReleasePolicy";
 const reply=(body:object,status=200)=>NextResponse.json(body,{status,headers:{"Cache-Control":"private, no-store"}});
 export const runtime="nodejs";
 export async function POST(request:NextRequest){
  const configId=process.env.STRIPE_CLASS_B_PORTAL_CONFIGURATION_ID;
- if(process.env.CLASS_B_CONTRACT_LEDGER_READY!=="true"||!configId)return reply({ok:false,message:"CLASS Bの請求管理は準備中です。"},503);
+ if(!classBBillingTargetReady()||!configId)return reply({ok:false,message:"CLASS Bの請求管理は準備中です。"},503);
  const token=request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
  if(!token)return reply({ok:false,message:"ログインしてください。"},401);
  const {data:{user},error:authError}=await db.auth.getUser(token);
