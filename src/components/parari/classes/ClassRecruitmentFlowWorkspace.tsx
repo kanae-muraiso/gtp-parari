@@ -1,9 +1,9 @@
 "use client";
 import {useEffect,useState} from "react";
-import {availableFlowSteps,flowOrder,flowOrderIssue,flowKey,initialFlow,moveFlowStep,parseFlowDraft,requiredFlowSteps,stepLabel,type FlowTarget,type FlowDraft,type FlowStep} from "@/lib/classRecruitmentFlowDesign";
+import ClassRecruitmentStepEditor from "./ClassRecruitmentStepEditor";
+import {availableFlowSteps,flowOrder,flowOrderIssue,flowKey,initialFlow,moveFlowStep,parseFlowDraft,requiredFlowSteps,stepConfigIssue,stepLabel,type FlowTarget,type FlowDraft,type FlowStep} from "@/lib/classRecruitmentFlowDesign";
 const field="min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base";
 const btn="min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base font-medium";
-const notesLabels:Record<FlowStep,string>={page:"紹介文・募集ページの構成",common:"共通入会の案内",eligibility:"参加資格の案内",booking:"予約方法・日時・場所の案内",briefing:"説明会・体験の内容",application:"申込フォームで確認する項目・案内文",test:"テストの内容・合格条件の案内",approval:"確認手順・許可の連絡",terms:"規約・同意事項",class:"開催枠の選択方法",payment:"決済方法・支払い案内",confirmation:"確定後の案内・メッセージ",onsite:"当日の支払い案内"};
 const rowKey=(t:FlowTarget)=>t.kind+":"+t.id;
 export function ClassServiceQualification({schoolId,target,membership}:{schoolId:string;target:FlowTarget;membership:boolean}){
  const [draft,setDraft]=useState<FlowDraft>(()=>initialFlow(target));
@@ -79,7 +79,10 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
   if(!membership&&draft.audience==="members_only"){setMessage("設計で参加資格を見直してください。");return;}
   const issue=flowOrderIssue(target,flowOrder(target,draft,membership),membership,sharedConfigured);
   if(issue){setMessage(issue);return;}
-  if(persist(target,draft))setMessage("この導線の設計案をブラウザ内に保存しました。");
+  const configIssue=stepConfigIssue(step,draft.config?.[step]??{});
+  if(configIssue){setMessage(configIssue);return;}
+  if(step==="terms"&&!draft.terms.trim()){setMessage("同意する規約を入力してください。");return;}
+  if(persist(target,draft))setMessage("この工程の設定を保存しました。");
  }
  function reorder(t:FlowTarget,from:FlowStep,to:FlowStep){
   const d=drafts[rowKey(t)]??initialFlow(t);
@@ -150,9 +153,8 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
    </div>
    <div className="grid gap-3 border-t pt-4"><h3 className="text-lg font-bold">{stepLabel(step,target,draft)}の編集</h3>
    {target.kind!=="membership"&&step==="page"&&<div className="grid gap-2 text-base"><p>参加資格：{draft.audience==="members_only"?"事業への入会者限定":"一般の方も参加可能"}</p>{target.priceText&&<p>設計で決めた料金：{target.priceText}</p>}<button type="button" className={btn+" w-fit"} onClick={()=>onOpenDesign(target)}>設計で変更する</button></div>}
-   {step==="common"?<div className="grid gap-2 rounded-lg bg-emerald-50 p-3"><p>事業共通の入会手続きを参照します。すでに入会済みの場合は手続きの繰り返しを想定しません。設定内容は共通の導線で管理します。</p><button type="button" className={btn} onClick={()=>openChecklist(shared)}>共通の入会手続きを設定する</button></div>:step==="terms"?<label className="grid gap-1 text-base">規約・同意事項<textarea className={field} rows={5} maxLength={8000} value={draft.terms} onChange={e=>update({terms:e.target.value})}/></label>:<label className="grid gap-1 text-base">{notesLabels[step]}<textarea className={field} rows={4} maxLength={8000} value={draft.notes[step]??""} onChange={e=>update({notes:{...draft.notes,[step]:e.target.value}})}/></label>}
-   {step==="class"&&<div className="grid gap-1"><strong>設計済みの開催枠</strong>{target.classNames?.map((name,i)=><p key={i}>{name}</p>)}{!target.classNames?.length&&<p>開催枠を設計で追加してください。</p>}</div>}
-   <div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={save}>保存</button></div>
+   <ClassRecruitmentStepEditor key={rowKey(target)+":"+step} step={step} target={target} draft={draft} onChange={update} onCommon={()=>openChecklist(shared)}/>
+   {step!=="common"&&<div className="flex flex-wrap gap-2"><button type="button" className={primary} onClick={save}>保存</button></div>}
    {step!=="common"&&<details className="text-sm text-neutral-600"><summary className="min-h-11 cursor-pointer py-2">移行前の設定を確認する</summary><button type="button" className={btn} onClick={()=>onOpenLegacy(target,step)}>既存の設定を開く</button></details>}
    </div>
   </section>}
