@@ -22,6 +22,7 @@ import ClassSalesPanel from "./ClassSalesPanel";
 import ClassServiceLabelSettings from "./ClassServiceLabelSettings";
 import ClassBusinessModelSettings from "./ClassBusinessModelSettings";
 import ClassCourseRecruitmentPanel from "./ClassCourseRecruitmentPanel";
+import ClassServiceIntakeDesignPanel from "./ClassServiceIntakeDesignPanel";
 import {legacyBusinessModel,parseBusinessModel,visibleServiceKinds,type ClassBusinessModel,type ServiceKind} from "@/lib/classBusinessModel";
 import {defaultServiceLabels,readServiceLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
@@ -570,6 +571,7 @@ export default function ClassUnifiedWorkspace(){
         <h2 className="text-xl font-bold">個別サービスの申込導線</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
         {recruitService?<><button type="button" className={button} onClick={()=>setRecruitService(null)}>← サービス一覧に戻る</button>
+          {preview&&<ClassServiceIntakeDesignPanel key={recruitService.kind+":"+recruitService.id} schoolId={business} kind={recruitService.kind} serviceId={recruitService.id} title={services.find(s=>s.kind===recruitService.kind&&s.id===recruitService.id)?.title??"サービス"} membership={model.membership}/>}
           {recruitService.kind==="course"&&currentCourse?<ClassCourseRecruitmentPanel key={currentCourse.id} product={currentCourse} classes={slots} recruitment={recruitment} onSaved={refresh} preview={preview}/>:recruitService.kind!=="course"?<ClassEventsPanel key={recruitService.id} classes={slots} roster={roster} labels={serviceLabels} kind={recruitService.kind} mode="recruit" initialEventId={recruitService.id} onBack={()=>setRecruitService(null)} onChanged={refresh}/>:<p>サービスが見つかりません。</p>}
         </>:<>
           {designLoading&&<p>サービスを読み込んでいます…</p>}
