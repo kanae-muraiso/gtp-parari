@@ -352,7 +352,7 @@ export default function ClassUnifiedWorkspace(){
     try{await classRequest("/onboarding?school="+business,{action:"saveWizard",revision:details.draft.revision,wizard:{...details.draft.wizard,businessModel:JSON.stringify(next)}});setModel(next);setShowModel(false);setNotice("事業の設計案を保存しました。");refresh();}
     catch(e){setError(e instanceof Error?e.message:"設計案を保存できませんでした。");}finally{setBusy(false);}
   }
-  const recruitTabs=[["services","個別サービスの申込"],["homepage","事業の募集ページ"],...(kinds.includes("course")?[["admission",model.membership?"入会・共通設定":"継続サービスの共通設定"] as const]:model.membership?[["admission","入会制度の設計"] as const]:[]),["improve","募集の改善"]] as const;
+  const recruitTabs=[["services","個別サービスの申込導線（設計）"],["homepage","事業の募集ページ"],["improve","募集の改善"]] as const;
   function go(next:Tab){
     resetDesign();setShowCreateBusiness(false);setRecruitService(null);setLegacyRecruit(false);
     if(next==="operation")setOperationFocus(model.primary==="event"?"events":model.primary==="workshop"?"workshops":"roster");
@@ -595,8 +595,8 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="services"&&<section className={panel+" grid gap-3"}>
-        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
-        <h2 className="text-xl font-bold">個別サービスの申込導線</h2>
+        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onMembershipChange={enabled=>void applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
+        <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
         {recruitService?<><button type="button" className={button} onClick={()=>{setRecruitService(null);setLegacyRecruit(false);}}>← 募集の構成図に戻る</button>
 
@@ -615,7 +615,8 @@ export default function ClassUnifiedWorkspace(){
       </section>}
       {school&&tab==="admission"&&<section className={panel+" space-y-5"}>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold">{model.membership?"事業の入会・共通設定":"継続サービスの既存共通設定"}</h2>
+          <button type="button" className={button} onClick={()=>go("services")}>← 個別サービスの申込導線（設計）に戻る</button>
+          <h2 className="text-xl font-bold">既存の受付設定（移行前）</h2>
           <p className="rounded-lg bg-amber-50 p-3 text-base">現行の入会エンジンは継続サービスの契約と連動しています。独立した事業会員制度への移行は未実装です。各サービスの設定は「個別サービスの申込」から開いてください。</p>
           <p className="text-sm text-neutral-600">矢印は実際の受付設定をもとに表示します。工程を選ぶと、すぐ下で設定を変更できます。</p>
         </div>
