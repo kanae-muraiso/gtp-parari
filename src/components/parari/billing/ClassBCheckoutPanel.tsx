@@ -3,8 +3,8 @@ import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabaseClient";
 import {classBClassAllowance,classBMonthlyPrice} from "@/lib/classBPolicy";
 type School={id:string;name:string;plan:"a"|"b";blocks:number;status:string;requestedBlocks?:number|null;paidUntil?:string|null;canManageBilling:boolean};
-export default function ClassBCheckoutPanel(){
- const [schools,setSchools]=useState<School[]>([]),[schoolId,setSchoolId]=useState(""),[quantity,setQuantity]=useState(1),[ready,setReady]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
+export default function ClassBCheckoutPanel({initialSchoolId="",fixedSchool=false}:{initialSchoolId?:string;fixedSchool?:boolean}={}){
+ const [schools,setSchools]=useState<School[]>([]),[schoolId,setSchoolId]=useState(initialSchoolId),[quantity,setQuantity]=useState(1),[ready,setReady]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
  const current=schools.find(s=>s.id===schoolId);
  async function load(){
   setLoading(true);setMessage("");
@@ -15,7 +15,7 @@ export default function ClassBCheckoutPanel(){
    const result=await response.json();
    if(!response.ok||!result.ok)throw Error(result.message||"契約情報を確認できませんでした。");
    setSchools(result.schools);setReady(result.ready);
-   const selected=(result.schools as School[]).find(s=>s.id===schoolId)??result.schools[0];
+   const selected=(result.schools as School[]).find(s=>s.id===schoolId)??(fixedSchool?undefined:result.schools[0]);
    setSchoolId(selected?.id??"");setQuantity(selected?.requestedBlocks??1);
   }catch(e){setReady(false);setMessage(e instanceof Error?e.message:"読み込みに失敗しました。");}
   finally{setLoading(false);}
@@ -53,7 +53,8 @@ export default function ClassBCheckoutPanel(){
  return <section id="class-b" className="mt-8 grid gap-4 rounded-3xl border border-emerald-200 bg-white p-5">
  <div><p className="text-sm font-semibold text-emerald-800">CLASS B</p><h2 className="mt-1 text-2xl font-bold">事業ごとの契約・請求管理</h2><p className="mt-2 text-base">月額1,000円（税込）で通常5クラス。追加5クラスごとに月額1,000円（税込）です。WRITERSの契約とは独立しています。</p></div>
  {loading?<p>契約情報を確認中…</p>:!schools.length?<p>最初にCLASS Aで事業を開設してください。</p>:<>
- <label className="grid gap-1 text-base font-semibold">対象の事業<select disabled={busy} className="min-h-11 rounded-xl border p-3 text-base" value={schoolId} onChange={e=>{setSchoolId(e.target.value);setQuantity(schools.find(s=>s.id===e.target.value)?.requestedBlocks??1);setMessage("");}}>{schools.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+ {!fixedSchool&&<label className="grid gap-1 text-base font-semibold">対象の事業<select disabled={busy} className="min-h-11 rounded-xl border p-3 text-base" value={schoolId} onChange={e=>{setSchoolId(e.target.value);setQuantity(schools.find(s=>s.id===e.target.value)?.requestedBlocks??1);setMessage("");}}>{schools.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
+ {fixedSchool&&<p className="text-base font-semibold">対象の事業：{current?.name??"確認できませんでした"}</p>}
  {current&&<div className="rounded-xl bg-neutral-50 p-4"><p className="text-base">契約状況：{statusLabels[current.status]??current.status}</p><p className="mt-1 text-base">現在の通常クラス枠：{current.plan==="b"?classBClassAllowance(current.blocks):1}件</p>{current.paidUntil&&<p className="mt-1 text-sm">支払済み期間：{new Date(current.paidUntil).toLocaleDateString("ja-JP",{timeZone:"Asia/Tokyo"})}まで</p>}</div>}
  {ready&&current&&current.plan!=="b"&&["none","pending"].includes(current.status)&&<>
  <label className="grid gap-1 text-base">契約する5クラス枠の数<input type="number" min={1} max={1000} step={1} disabled={busy||current.status==="pending"} value={quantity} onChange={e=>setQuantity(Number(e.target.value))} className="min-h-11 rounded-xl border p-3"/></label>
