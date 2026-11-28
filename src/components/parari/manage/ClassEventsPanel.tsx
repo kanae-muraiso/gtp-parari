@@ -22,7 +22,7 @@ const paymentLabels = { none: "無料", on_site: "当日払い", payment_link: "
 
 type Detail = { event: ClassEvent; entries: ClassEventEntry[]; eventPageId?: string | null };
 
-export default function ClassEventsPanel({ classes, roster, kind, labels=defaultServiceLabels, mode="all", initialCreate=false, initialEventId, onChanged, onBack }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind; labels?:ServiceLabels; mode?:"all"|"design"|"recruit"|"operation"; initialCreate?:boolean; initialEventId?:string; onChanged?:()=>void; onBack?:()=>void }) {
+export default function ClassEventsPanel({ classes, roster, kind, labels=defaultServiceLabels, mode="all", initialCreate=false, initialEventId, initialSessionAt, onChanged, onBack, readOnly=false }: { classes: SchoolClass[]; roster: ClassRosterMember[]; kind: ClassEventKind; labels?:ServiceLabels; mode?:"all"|"design"|"recruit"|"operation"; initialCreate?:boolean; initialEventId?:string; initialSessionAt?:string; onChanged?:()=>void; onBack?:()=>void; readOnly?:boolean }) {
   const label = labels[kind];
   const [sessionAt, setSessionAt] = useState("");
   const [events, setEvents] = useState<ClassEvent[]>([]);
@@ -50,7 +50,7 @@ export default function ClassEventsPanel({ classes, roster, kind, labels=default
   async function open(id: string) {
     setError("");
     setNotice("");
-    setSessionAt("");
+    setSessionAt(id===initialEventId?initialSessionAt??"":"");
     setEntryFilter("all"); setEntrySearch(""); setLiveRefresh(false); setLastUpdated(null); setRefreshFailed(false);
     setBusy(true);
     try { setDetail(await classRequest<Detail>(eventPath(id))); setLastUpdated(Date.now()); setEditing(false); }
@@ -61,6 +61,7 @@ export default function ClassEventsPanel({ classes, roster, kind, labels=default
   useEffect(()=>{if(initialEventId)void open(initialEventId);},[initialEventId]);
 
   async function change(body: object, message: string) {
+    if(readOnly){setError("開発プレビューでは実際の記録を変更しません。");return;}
     setBusy(true);
     setError("");
     setNotice("");
@@ -144,7 +145,7 @@ export default function ClassEventsPanel({ classes, roster, kind, labels=default
     <header className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="text-xl font-bold">{label}{mode==="design"?"の設計":mode==="recruit"?"の募集":mode==="operation"?"の受付・運営":""}</h2>
       {event || editing
-        ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); onBack?.(); }}>{onBack?"事業の構成図に戻る":label+"一覧に戻る"}</button>
+        ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); onBack?.(); }}>{onBack?(mode==="operation"?"開催の運営に戻る":"事業の構成図に戻る"):label+"一覧に戻る"}</button>
         : mode==="all"||mode==="design"?<button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>:null}
     </header>
     {!canCreateEvents&&<p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
@@ -193,8 +194,8 @@ export default function ClassEventsPanel({ classes, roster, kind, labels=default
           <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">参加確定</p><strong className="text-2xl">{detail.entries.filter(e=>classEventEntryReady(e,event.payment_method)).length}</strong></div>
           <div className="rounded-xl bg-emerald-50 p-2"><p className="text-base">出席</p><strong className="text-2xl">{detail.entries.filter(e=>classEventEntryAttendance(e,selectedSession)==="present").length}</strong></div>
         </div>
-        {event.class_event.registration&&canCreateEvents&&<ClassEventEntrance key={event.id+":"+(selectedSession??event.class_event.startsAt)} eventId={event.id} sessionAt={selectedSession??event.class_event.startsAt} onRefresh={()=>void refreshRosterNow(event.id)}/>}
-        {event.payment_method!=="parari"&&<form className="flex flex-wrap items-end gap-2" onSubmit={e => {
+        {event.class_event.registration&&canCreateEvents&&!readOnly&&<ClassEventEntrance key={event.id+":"+(selectedSession??event.class_event.startsAt)} eventId={event.id} sessionAt={selectedSession??event.class_event.startsAt} onRefresh={()=>void refreshRosterNow(event.id)}/>}
+        {event.payment_method!=="parari"&&!readOnly&&<form className="flex flex-wrap items-end gap-2" onSubmit={e => {
           e.preventDefault();
           const memberId = new FormData(e.currentTarget).get("memberId");
           void change({ id: event.id, action: "add", memberId }, "在籍者を追加しました。");
@@ -228,12 +229,12 @@ export default function ClassEventsPanel({ classes, roster, kind, labels=default
         </label>}
         {visibleEntries.map(entry => <div key={entry.id} className="flex flex-wrap items-center gap-3 border-t py-3 text-base">
           <strong>{entry.name}</strong>
-          <label className="flex items-center gap-2">出欠<select className={input} disabled={busy}
+          <label className="flex items-center gap-2">出欠<select className={input} disabled={busy||readOnly}
             value={classEventEntryAttendance(entry,selectedSession) ?? "clear"}
             onChange={e => void change({ id: event.id, action: "entry", entryId: entry.id, sessionAt: selectedSession, change: e.target.value }, "出欠を更新しました。")}>
             <option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option>
           </select></label>
-          {entry.payment_status === "unpaid" && event.payment_method !== "parari" && <button className={button} disabled={busy}
+          {entry.payment_status === "unpaid" && event.payment_method !== "parari" && !readOnly && <button className={button} disabled={busy}
             onClick={() => void change({ id: event.id, action: "entry", entryId: entry.id, change: "paid" }, "入金を記録しました。")}>入金を記録</button>}
           {entry.payment_status === "paid" && <span className="text-green-800">入金済み</span>}
           {entry.payment_status === "not_required" && <span>無料</span>}
