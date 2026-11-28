@@ -21,7 +21,7 @@ export function ClassServiceQualification({schoolId,target,membership}:{schoolId
  {message&&<p role="status" className="text-base">{message}</p>}
  </section>;
 }
-export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membership,onMembershipChange,onOpenLegacy,onOpenDesign,overviewHeader,preview,initialDraftsJson,onSaveDrafts}:{schoolId:string;targets:FlowTarget[];membership:boolean;onMembershipChange:(enabled:boolean)=>void;onOpenLegacy:(target:FlowTarget,step:FlowStep)=>void;onOpenDesign:(target:FlowTarget)=>void;overviewHeader?:ReactNode;preview:boolean;initialDraftsJson:string;onSaveDrafts:(drafts:Record<string,FlowDraft>)=>Promise<void>}){
+export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membership,onMembershipChange,onOpenLegacy,onOpenDesign,overviewHeader,preview,initialDraftsJson,onSaveDrafts,membershipConfigured}:{schoolId:string;targets:FlowTarget[];membership:boolean;membershipConfigured:boolean;onMembershipChange:(enabled:boolean)=>Promise<void>;onOpenLegacy:(target:FlowTarget,step:FlowStep)=>void;onOpenDesign:(target:FlowTarget)=>void;overviewHeader?:ReactNode;preview:boolean;initialDraftsJson:string;onSaveDrafts:(drafts:Record<string,FlowDraft>)=>Promise<void>}){
  const [drafts,setDrafts]=useState<Record<string,FlowDraft>>({});
  const [selection,setSelection]=useState<{id:string;step:FlowStep}|null>(null);
  const [checklist,setChecklist]=useState<string|null>(null);
@@ -52,9 +52,11 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
   setDrafts(next);setReady(true);setSelection(old=>old&&next[old.id]?old:null);
  },[schoolId,identity,preview,initialDraftsJson]);
  useEffect(()=>{
-  try{const stored=sessionStorage.getItem("class-common-intake-choice:"+schoolId);setConfirmed(stored===(membership?"yes":"no"));setChoice(stored===null?null:membership);}
-  catch{setConfirmed(false);setChoice(null);}
- },[schoolId,membership]);
+  if(preview){
+   try{const stored=sessionStorage.getItem("class-common-intake-choice:"+schoolId);setConfirmed(stored==="yes"||stored==="no");setChoice(stored===null?null:stored==="yes");}
+   catch{setConfirmed(false);setChoice(null);}
+  }else{setConfirmed(membershipConfigured);setChoice(membershipConfigured?membership:null);}
+ },[schoolId,membership,membershipConfigured,preview]);
  const target=visibleTargets.find(t=>rowKey(t)===selection?.id);
  const draft=target?drafts[rowKey(target)]??initialFlow(target):null;
  const step=selection?.step??"page";
@@ -63,10 +65,15 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
   const d=drafts[rowKey(t)]??initialFlow(t);
   setChecklist(rowKey(t));const current=flowOrder(t,d,membership);const required=requiredFlowSteps(t);setChecked(required.every(s=>current.includes(s))?current:availableFlowSteps(t,membership).filter(s=>current.includes(s)||required.includes(s)));setSelection(null);setMessage("");
  }
- function chooseMembership(){
-  if(choice===null)return;
-  try{sessionStorage.setItem("class-common-intake-choice:"+schoolId,choice?"yes":"no");}catch{}
-  onMembershipChange(choice);setConfirmed(true);setSelection(null);setChecklist(null);setMessage("");
+ async function chooseMembership(){
+  if(choice===null||saving)return;
+  setSaving(true);setMessage("");
+  try{
+   if(preview)sessionStorage.setItem("class-common-intake-choice:"+schoolId,choice?"yes":"no");
+   await onMembershipChange(choice);
+   setConfirmed(true);setSelection(null);setChecklist(null);setMessage(preview?"このブラウザに選択を保存しました。":"事業設定に選択を保存しました。");
+  }catch(cause){setMessage(cause instanceof Error?cause.message:"共通入会手続きを保存できませんでした。");}
+  finally{setSaving(false);}
  }
  async function persist(t:FlowTarget,d:FlowDraft){
   const next={...drafts,[rowKey(t)]:d};
@@ -117,7 +124,7 @@ export default function ClassRecruitmentFlowWorkspace({schoolId,targets,membersh
     <label className="flex min-h-11 items-center gap-2 text-base"><input type="radio" name="commonIntake" checked={choice===true} onChange={()=>setChoice(true)}/> 設ける</label>
     <label className="flex min-h-11 items-center gap-2 text-base"><input type="radio" name="commonIntake" checked={choice===false} onChange={()=>setChoice(false)}/> 設けない</label>
     <p className="text-sm text-neutral-600">設ける場合だけ、事業共通の入会手続きと各サービスで利用する選択肢が表示されます。</p>
-    <button type="button" disabled={choice===null||!ready||saving} className={primary} onClick={chooseMembership}>設定を確定</button>
+    <button type="button" disabled={choice===null||!ready||saving} className={primary} onClick={()=>void chooseMembership()}>{saving?"保存中…":"設定を確定"</button>
   </section>:<>
   {!configuring&&!target&&<div className="flex flex-wrap items-center justify-between gap-2"><p className="text-base text-neutral-600">共通入会手続き：{membership?"あり":"なし"}</p><button type="button" className={btn} onClick={()=>{setChoice(membership);setConfirmed(false);setSelection(null);setChecklist(null);setMessage("");}}>再設定</button></div>}
   {!configuring&&!target&&<div className="min-w-0 grid gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
