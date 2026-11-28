@@ -19,7 +19,7 @@ export function parseFlowDraft(raw:string|null,target:FlowTarget):FlowDraft{
   const notes:FlowDraft["notes"]={};
   for(const step of flowSteps)if(typeof v.notes?.[step]==="string"&&v.notes[step].length<=8000)notes[step]=v.notes[step];
   const allowed=["free","before","onsite",...(target.kind==="course"?["recurring"]:[])];
-  return {audience:target.kind!=="membership"&&v.audience==="members_only"?"members_only":"everyone",route:v.route==="briefing"?"briefing":"direct",confirmation:v.confirmation==="review"?"review":v.confirmation==="automatic"?"automatic":base.confirmation,terms:typeof v.terms==="string"?v.terms.slice(0,8000):"",payment:allowed.includes(v.payment)?v.payment:base.payment,test:v.test===true,notes};
+  return {audience:target.kind!=="membership"&&v.audience==="members_only"?"members_only":"everyone",route:v.route==="briefing"?"briefing":"direct",confirmation:v.confirmation==="review"?"review":v.confirmation==="automatic"?"automatic":base.confirmation,terms:typeof v.terms==="string"?v.terms.slice(0,8000):"",payment:target.paid===false?"free":target.paid===true&&v.payment==="free"?base.payment:allowed.includes(v.payment)?v.payment:base.payment,test:v.test===true,notes};
  }catch{return base;}
 }
 export function buildFlow(target:FlowTarget,draft:FlowDraft):FlowStep[]{
