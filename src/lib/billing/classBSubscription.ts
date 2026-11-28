@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/billing/stripe";
 import { supabaseAdmin as db } from "@/lib/billing/supabaseAdmin";
 import { CLASS_B_BLOCK_PRICE_JPY } from "@/lib/classBPolicy";
+import { classBPaidInvoiceMatches } from "./classBInvoiceEvidence";
 
 export function isClassBSubscription(subscription: Stripe.Subscription): boolean {
   return subscription.metadata?.plan === "class_b" ||
@@ -30,10 +31,7 @@ export async function reconcileClassBSubscription(id: string) {
       (process.env.VERCEL_ENV === "production" && !subscription.livemode)) {
     throw new Error("Invalid CLASS B subscription");
   }
-  const invoice = subscription.latest_invoice;
-  const paid = typeof invoice === "object" && invoice !== null &&
-    invoice.status === "paid" && invoice.currency === "jpy" &&
-    invoice.amount_paid > 0 && invoice.amount_remaining === 0;
+  const paid = classBPaidInvoiceMatches(subscription,priceId);
   const periodEnd = item.current_period_end;
   const {error} = await db.rpc("reconcile_class_b_contract", {
     p_school:metadata.class_b_school_id,
