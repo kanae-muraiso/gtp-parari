@@ -32,3 +32,13 @@ assert.equal(matches(upgrade,"price_b"),true);
 upgrade.latest_invoice.status="open";assert.equal(matches(upgrade,"price_b"),false);
 upgrade.latest_invoice.status="paid";upgrade.latest_invoice.billing_reason="subscription_cycle";assert.equal(matches(upgrade,"price_b"),false);
 console.log("PASS: CLASS B Stripe invoice evidence rejects old quantity, wrong item/price/customer/subscription, unpaid invoices, wrong environment and invalid proration.");
+
+const portalModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/billing/classBPortalPolicy.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(portalModule,portalModule.exports);
+const allowed=portalModule.exports.classBPortalAllowed;
+const portal=()=>({active:true,livemode:false,features:{subscription_cancel:{enabled:true,mode:"at_period_end",proration_behavior:"none"},subscription_update:{enabled:true,proration_behavior:"always_invoice",default_allowed_updates:["quantity"],products:[{product:"prod_b",prices:["price_b"]}],schedule_at_period_end:{conditions:[{type:"decreasing_item_amount"}]}}}});
+assert.equal(allowed(portal(),"price_b","prod_b",false),true);
+for(const mutate of [c=>c.features.subscription_update.default_allowed_updates.push("price"),c=>c.features.subscription_update.products[0].prices.push("price_writers"),c=>c.features.subscription_update.proration_behavior="none",c=>c.features.subscription_update.schedule_at_period_end.conditions=[],c=>c.features.subscription_cancel.mode="immediately",c=>c.livemode=true]){
+ const c=portal();mutate(c);assert.equal(allowed(c,"price_b","prod_b",false),false);
+}
+console.log("PASS: dedicated Stripe portal permits quantity changes only for CLASS B, immediate upgrade invoicing and renewal-date downgrade/cancellation.");
