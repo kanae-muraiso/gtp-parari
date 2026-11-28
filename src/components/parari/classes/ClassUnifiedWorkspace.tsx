@@ -23,7 +23,7 @@ import ClassServiceLabelSettings from "./ClassServiceLabelSettings";
 import ClassBusinessModelSettings from "./ClassBusinessModelSettings";
 import ClassCourseRecruitmentPanel from "./ClassCourseRecruitmentPanel";
 import ClassRecruitmentFlowWorkspace,{ClassServiceQualification} from "./ClassRecruitmentFlowWorkspace";
-import type {FlowTarget,FlowStep} from "@/lib/classRecruitmentFlowDesign";
+import type {FlowTarget,FlowStep,FlowDraft} from "@/lib/classRecruitmentFlowDesign";
 import {legacyBusinessModel,parseBusinessModel,visibleServiceKinds,type ClassBusinessModel,type ServiceKind} from "@/lib/classBusinessModel";
 import {defaultServiceLabels,readServiceLabels,defaultRoleLabels,readRoleLabels,type RoleLabels,type ServiceLabels} from "@/lib/classServiceLabels";
 import ClassBCheckoutPanel from "@/components/parari/billing/ClassBCheckoutPanel";
@@ -357,6 +357,17 @@ export default function ClassUnifiedWorkspace(){
     try{await classRequest("/onboarding?school="+business,{action:"saveWizard",revision:details.draft.revision,wizard:{...details.draft.wizard,businessModel:JSON.stringify(next)}});setModel(next);setShowModel(false);setNotice("事業の設計案を保存しました。");refresh();return true;}
     catch(e){setError(e instanceof Error?e.message:"設計案を保存できませんでした。");}finally{setBusy(false);}
   }
+
+  async function saveRecruitmentFlows(flows:Record<string,FlowDraft>){
+    if(!business||!details)throw new Error("事業設定を読み込めません。");
+    const encoded=JSON.stringify(flows);
+    const wizard={...details.draft.wizard,classRecruitmentFlows:encoded};
+    if(JSON.stringify(wizard).length>19000)throw new Error("募集フローの設定量が上限を超えました。");
+    const saved=await classRequest<{revision:number}>("/onboarding?school="+business,{
+      action:"saveWizard",revision:details.draft.revision,wizard,
+    });
+    setDetails(current=>current?{...current,draft:{...current.draft,wizard,revision:saved.revision}}:current);
+  }
   const businessPageEntry=<button type="button" className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-left" onClick={()=>go("homepage")}><span className="flex-1"><span className="block text-lg font-bold">事業の募集ページ</span><span className="block text-sm text-neutral-600">事業紹介・サービス一覧（任意）</span></span><span aria-hidden="true">›</span></button>;
   function go(next:Tab){
     if(next==="improve")next="homepage";
@@ -572,7 +583,7 @@ export default function ClassUnifiedWorkspace(){
       </section>}
 
       {school&&tab==="services"&&<section className={panel+" grid gap-3"}>
-        {preview&&!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} onMembershipChange={enabled=>void applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign} overviewHeader={businessPageEntry}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
+        {!legacyRecruit?<><ClassRecruitmentFlowWorkspace key={business} schoolId={business} targets={flowTargets} membership={model.membership} preview={preview} initialDraftsJson={typeof details?.draft.wizard.classRecruitmentFlows==="string"?details.draft.wizard.classRecruitmentFlows:""} onSaveDrafts={saveRecruitmentFlows} onMembershipChange={enabled=>applyModel({...model,membership:enabled})} onOpenLegacy={openLegacyFlow} onOpenDesign={openFlowDesign} overviewHeader={businessPageEntry}/>{designLoading&&<p>サービスを読み込んでいます…</p>}{designError&&<p role="alert">{designError}</p>}</>:<>
         {!recruitService&&businessPageEntry}
         <h2 className="text-xl font-bold">個別サービスの申込導線（設計）</h2>
         <p className="text-base text-neutral-600">サービスを選んで、そのサービスの募集・申込を設定します。事業への入会とは別の入口です。</p>
