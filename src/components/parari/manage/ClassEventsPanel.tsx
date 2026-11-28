@@ -7,12 +7,12 @@ import Link from "next/link";
 import { starterClassEventPageSsot } from "@/lib/classEventPage";
 import ClassEventSchedule from "./ClassEventSchedule";
 import ClassEventEntrance from "./ClassEventEntrance";
-import { classEventDate, classEventLabels, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
+import { classEventDate, classEventLabels, classEventEntryAttendance, classEventEntryReady, classEventEntryMatches, type ClassEventEntryFilter, maxWorkshopSessions, type ClassEventKind, type ClassEvent, type ClassEventEntry } from "@/lib/classEvents";
 import type { ClassRosterMember, SchoolClass } from "@/lib/classes";
 
 const input = "w-full rounded-lg border border-neutral-300 px-3 py-2";
-const button = "w-fit rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50";
-const primary = "w-fit rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50";
+const button = "w-fit min-h-11 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base disabled:opacity-50";
+const primary = "w-fit min-h-11 rounded-lg bg-neutral-900 px-4 py-2 text-base font-bold text-white disabled:opacity-50";
 const localDate = (value: string) => new Date(Date.parse(value) + 9 * 3600000).toISOString().slice(0, 16);
 const eventPath = (id: string) => "/events?event=" + encodeURIComponent(id);
 const statuses = { draft: "下書き", open: "公開中", closed: "受付終了" };
@@ -33,6 +33,11 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [entryFilter, setEntryFilter] = useState<ClassEventEntryFilter>("all");
+  const [entrySearch, setEntrySearch] = useState("");
+  const [liveRefresh, setLiveRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number|null>(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,8 +50,9 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
     setError("");
     setNotice("");
     setSessionAt("");
+    setEntryFilter("all"); setEntrySearch(""); setLiveRefresh(false); setLastUpdated(null); setRefreshFailed(false);
     setBusy(true);
-    try { setDetail(await classRequest<Detail>(eventPath(id))); setEditing(false); }
+    try { setDetail(await classRequest<Detail>(eventPath(id))); setLastUpdated(Date.now()); setEditing(false); }
     catch (cause) { setError(cause instanceof Error ? cause.message : label + "を開けませんでした。"); }
     finally { setBusy(false); }
   }
@@ -58,6 +64,7 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
     try {
       const { id, notice } = await classRequest<{ id: string; notice?: string }>("/events", body);
       setDetail(await classRequest<Detail>(eventPath(id)));
+      setLastUpdated(Date.now()); setRefreshFailed(false);
       setEditing(false);
       setRefresh(value => value + 1);
       setNotice(notice ?? message);
@@ -96,12 +103,44 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
   }
   const event = detail?.event;
   const selectedSession = sessionAt || event?.class_event.sessions?.[0]?.startsAt;
+  const eventId = event?.id;
+  const eventStatus = event?.status;
+  useEffect(() => {
+    if (!liveRefresh || !eventId || eventStatus === "draft" || editing || busy || pageBusy) return;
+    const controller = new AbortController();
+    let running = false;
+    async function refreshRoster() {
+      if (running || document.hidden || controller.signal.aborted || !eventId) return;
+      running = true;
+      try {
+        const next = await classRequest<Detail>(eventPath(eventId), undefined, controller.signal);
+        if (!controller.signal.aborted) {
+          setDetail(current => current?.event.id === eventId ? next : current);
+          setLastUpdated(Date.now()); setRefreshFailed(false);
+        }
+      } catch { if (!controller.signal.aborted) setRefreshFailed(true); }
+      finally { running = false; }
+    }
+    const timer = window.setInterval(() => void refreshRoster(), 5000);
+    void refreshRoster();
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [eventId, eventStatus, liveRefresh, editing, busy, pageBusy]);
+  async function refreshRosterNow(id: string) {
+    try {
+      const next = await classRequest<Detail>(eventPath(id));
+      setDetail(current => current?.event.id === id ? next : current);
+      setLastUpdated(Date.now()); setRefreshFailed(false);
+    } catch { setRefreshFailed(true); }
+  }
+  const visibleEntries = event && detail
+    ? detail.entries.filter(entry => classEventEntryMatches(entry,event.payment_method,selectedSession,entryFilter,entrySearch))
+    : [];
 
   return <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="text-xl font-bold">{label}</h2>
       {event || editing
-        ? <button className={button} disabled={busy} onClick={() => { setDetail(null); setEditing(false); setNotice(""); setError(""); }}>{label}一覧に戻る</button>
+        ? <button className={button} disabled={busy} onClick={() => { setLiveRefresh(false); setDetail(null); setEditing(false); setNotice(""); setError(""); }}>{label}一覧に戻る</button>
         : <button className={primary} disabled={busy||!canCreateEvents} onClick={() => { setEditing(true); setError(""); setNotice(""); }}>新規作成</button>}
     </header>
     {!canCreateEvents&&<p className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
@@ -147,10 +186,10 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
         <h3 className="text-lg font-semibold">参加者・受付状況</h3>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">申込</p><strong className="text-2xl">{detail.entries.length}</strong></div>
-          <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">入金済・無料</p><strong className="text-2xl">{detail.entries.filter(e=>e.payment_status==="paid"||event.payment_method==="none").length}</strong></div>
-          <div className="rounded-xl bg-emerald-50 p-2"><p className="text-base">出席</p><strong className="text-2xl">{detail.entries.filter(e=>selectedSession?e.class_workshop_attendance?.some(record=>Date.parse(record.session_at)===Date.parse(selectedSession)&&record.status==="present"):e.class_event_attendance==="present").length}</strong></div>
+          <div className="rounded-xl bg-neutral-50 p-2"><p className="text-base">参加確定</p><strong className="text-2xl">{detail.entries.filter(e=>classEventEntryReady(e,event.payment_method)).length}</strong></div>
+          <div className="rounded-xl bg-emerald-50 p-2"><p className="text-base">出席</p><strong className="text-2xl">{detail.entries.filter(e=>classEventEntryAttendance(e,selectedSession)==="present").length}</strong></div>
         </div>
-        {event.class_event.registration&&canCreateEvents&&<ClassEventEntrance key={event.id+":"+(selectedSession??event.class_event.startsAt)} eventId={event.id} sessionAt={selectedSession??event.class_event.startsAt} onRefresh={()=>{void classRequest<Detail>(eventPath(event.id)).then(setDetail).catch(e=>setError(e.message));}}/>}
+        {event.class_event.registration&&canCreateEvents&&<ClassEventEntrance key={event.id+":"+(selectedSession??event.class_event.startsAt)} eventId={event.id} sessionAt={selectedSession??event.class_event.startsAt} onRefresh={()=>void refreshRosterNow(event.id)}/>}
         {event.payment_method!=="parari"&&<form className="flex flex-wrap items-end gap-2" onSubmit={e => {
           e.preventDefault();
           const memberId = new FormData(e.currentTarget).get("memberId");
@@ -164,8 +203,18 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
           </select></label>
           <button className={button} disabled={busy}>追加</button>
         </form>}
-        {!detail.entries.length && <p className="text-sm text-neutral-600">参加者はまだいません。</p>}
-        {event.class_event.sessions && detail.entries.length > 0 && <label className="grid max-w-sm gap-1 text-sm">
+        <div className="grid gap-2 rounded-xl bg-neutral-50 p-3">
+          <label className="flex min-h-11 items-center gap-3 text-base"><input type="checkbox" className="h-5 w-5" checked={liveRefresh} onChange={e=>setLiveRefresh(e.target.checked)}/> 来場状況を自動更新（5秒間隔）</label>
+          <p className="text-sm text-neutral-700" role="status">{refreshFailed?"更新に失敗しました。再読み込みしてください。":lastUpdated?"最終更新 "+new Date(lastUpdated).toLocaleTimeString("ja-JP"):"更新時刻を確認中"}</p>
+          <label className="grid gap-1 text-base">参加者検索<input className={input+" min-h-11 text-base"} value={entrySearch} onChange={e=>setEntrySearch(e.target.value)} placeholder="氏名・申込番号"/></label>
+          <label className="grid gap-1 text-base">表示する参加者<select className={input+" min-h-11 text-base"} value={entryFilter} onChange={e=>setEntryFilter(e.target.value as ClassEventEntryFilter)}>
+            <option value="all">全員</option><option value="ready">参加確定</option><option value="unpaid">未入金</option><option value="present">出席済み</option><option value="notPresent">未出席</option>
+          </select></label>
+          <p className="text-base">{visibleEntries.length} / {detail.entries.length}人</p>
+        </div>
+        {!detail.entries.length && <p className="text-base text-neutral-600">参加者はまだいません。</p>}
+        {detail.entries.length>0&&!visibleEntries.length&&<p className="text-base text-neutral-600">条件に合う参加者はいません。</p>}
+        {event.class_event.sessions && <label className="grid max-w-sm gap-1 text-sm">
           出欠を記録する開催回
           <select className={input} value={selectedSession} onChange={e => setSessionAt(e.target.value)} disabled={busy}>
             {event.class_event.sessions.map((session, index) => <option key={session.startsAt} value={session.startsAt}>
@@ -173,16 +222,19 @@ export default function ClassEventsPanel({ classes, roster, kind }: { classes: S
             </option>)}
           </select>
         </label>}
-        {detail.entries.map(entry => <div key={entry.id} className="flex flex-wrap items-center gap-3 border-t py-3 text-sm">
+        {visibleEntries.map(entry => <div key={entry.id} className="flex flex-wrap items-center gap-3 border-t py-3 text-base">
           <strong>{entry.name}</strong>
           <label className="flex items-center gap-2">出欠<select className={input} disabled={busy}
-            value={(selectedSession ? entry.class_workshop_attendance?.find(record => Date.parse(record.session_at) === Date.parse(selectedSession))?.status : entry.class_event_attendance) ?? "clear"}
+            value={classEventEntryAttendance(entry,selectedSession) ?? "clear"}
             onChange={e => void change({ id: event.id, action: "entry", entryId: entry.id, sessionAt: selectedSession, change: e.target.value }, "出欠を更新しました。")}>
             <option value="clear">未記録</option><option value="present">出席</option><option value="absent">欠席</option>
           </select></label>
           {entry.payment_status === "unpaid" && event.payment_method !== "parari" && <button className={button} disabled={busy}
             onClick={() => void change({ id: event.id, action: "entry", entryId: entry.id, change: "paid" }, "入金を記録しました。")}>入金を記録</button>}
-          {entry.payment_status === "paid" && <span>入金済み</span>}
+          {entry.payment_status === "paid" && <span className="text-green-800">入金済み</span>}
+          {entry.payment_status === "not_required" && <span>無料</span>}
+          {entry.payment_status === "unpaid" && <span className="text-amber-800">未入金</span>}
+          {entry.status !== "confirmed" && <span className="text-neutral-600">参加未確定</span>}
         </div>)}
       </section>}
     </> : <>
