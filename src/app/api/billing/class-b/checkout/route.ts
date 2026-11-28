@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         price.type !== "recurring" || price.recurring?.interval !== "month" ||
         price.recurring.interval_count !== 1 || price.billing_scheme !== "per_unit" ||
         price.recurring.usage_type !== "licensed" ||
-        (process.env.VERCEL_ENV === "production" && !price.livemode)) {
+        (price.livemode !== (process.env.VERCEL_ENV === "production"))) {
       return reply({ok:false,message:"CLASS Bの価格設定を確認できません。"},503);
     }
     // Keep the second release gate closed until the webhook and ledger have
@@ -59,10 +59,18 @@ export async function POST(request: NextRequest) {
     }).select("attempt_id,created_at").single();
     if (reservation.error?.code === "23505") {
       const existing = await db.from("class_b_contracts")
-        .select("attempt_id,status,requested_blocks,stripe_checkout_session_id,stripe_subscription_id")
+        .select("attempt_id,status,requested_blocks,stripe_checkout_session_id,stripe_subscription_id,created_at")
         .eq("school_id",schoolId).eq("owner_user_id",user.id).maybeSingle();
       if (existing.error) throw existing.error;
       const contract = existing.data;
+      if (contract?.status === "pending" && !contract.stripe_subscription_id && !contract.stripe_checkout_session_id) {
+        // Stripe may have created a session before the DB save failed. Replay
+        // only the original quantity and idempotency key, inside Stripe's
+        // documented retention window. Never create a second attempt blindly.
+        if (contract.requested_blocks !== quantity || Date.now()-Date.parse(contract.created_at)>=23*3600000)
+          return reply({ok:false,message:"購入手続きの確認が必要です。管理者へお問い合わせください。"},409);
+        reservation = { ...reservation, data:{attempt_id:contract.attempt_id,created_at:contract.created_at}, error:null };
+      }
       if (contract?.status === "pending" && !contract.stripe_subscription_id &&
           contract.stripe_checkout_session_id) {
         const prior = await stripe.checkout.sessions.retrieve(contract.stripe_checkout_session_id);
