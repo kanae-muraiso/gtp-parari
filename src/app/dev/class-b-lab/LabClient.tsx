@@ -45,6 +45,30 @@ export default function LabClient(){
  </section>
  {entranceUrl&&<section className="rounded-2xl bg-white p-4 text-center"><h2 className="text-lg font-bold">スマートフォンでQR受付を試す</h2>{qr.length>0&&<svg viewBox="0 0 49 49" className="mx-auto w-64" role="img" aria-label="テスト用QR" shapeRendering="crispEdges"><rect width="49" height="49" fill="white"/>{qr.flatMap((row,y)=>row.map((dark,x)=>dark?<rect key={x+":"+y} x={x+4} y={y+4} width="1" height="1"/>:null))}</svg>}<a href={entranceUrl} target="_blank" rel="noreferrer" className="block break-all p-3 text-base underline">受付テスト画面を開く</a><p className="text-sm">QRで参加者画面を開けます。端末間の名簿は同期しません。</p></section>}
  {state.receipt&&<section className="rounded-2xl bg-emerald-100 p-5 text-center text-emerald-950"><div className="mx-auto grid h-16 w-16 animate-pulse place-items-center rounded-full bg-emerald-700 text-4xl text-white motion-reduce:animate-none">✓</div><h2 className="mt-3 text-3xl font-bold">受付完了</h2><p className="text-xl">{state.receipt.name} 様</p><p>{state.receipt.title}</p><p>受付時刻 {new Date(state.receipt.checkedAt).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo"})}</p><p className="break-all">申込番号 {state.receipt.bookingId}</p></section>}
+ <SquareSandboxPanel/>
  <section className="grid gap-2 rounded-2xl bg-white p-4"><h2 className="text-lg font-bold">操作結果</h2>{!state.results.length&&<p>操作を選択してください。</p>}{state.results.map((r,i)=><div key={i} className="border-t py-2 text-base"><strong>{r.ok?"✓":"－"} {labels[r.action]}</strong><p className={r.ok?"text-neutral-600":"text-red-700"}>{r.message}</p></div>)}</section>
  </article></main>;
+}
+
+function SquareSandboxPanel(){
+ const [status,setStatus]=useState("未確認"),[url,setUrl]=useState(""),[busy,setBusy]=useState(false);
+ async function test(create:boolean){
+  setBusy(true);setStatus("確認中…");setUrl("");
+  try{
+   const res=await fetch("/api/dev/class-b-square-sandbox",{method:create?"POST":"GET",cache:"no-store"});
+   const data=await res.json();
+   if(!res.ok||!data.ok)throw Error(data.message??"Sandbox未設定");
+   setStatus(create?"Sandbox決済リンクを作成しました（"+data.currency+"）":"Square Sandboxへの接続成功（"+data.currency+"）");
+   if(create&&typeof data.url==="string")setUrl(data.url);
+  }catch(e){setStatus(e instanceof Error?e.message:"接続確認できませんでした。");}
+  finally{setBusy(false);}
+ }
+ return <section className="grid gap-3 rounded-2xl border border-emerald-200 bg-white p-4">
+ <h2 className="text-lg font-bold">STEP 6：Square Sandbox接続</h2>
+ <p className="text-base">実際のSquareテスト環境を使用します。本番の決済・店舗・会員データには接続しません。</p>
+ <button className={button} disabled={busy} onClick={()=>void test(false)}>Sandbox接続を確認</button>
+ <button className={button} disabled={busy} onClick={()=>void test(true)}>Sandbox決済リンクを作成</button>
+ <p role="status">{status}</p>
+ {url&&<a href={url} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-800 p-3 text-center font-bold text-white">Squareのテスト決済画面を開く</a>}
+ </section>;
 }
