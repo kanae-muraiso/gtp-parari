@@ -53,3 +53,18 @@ assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,kinds:["event","ev
 assert.equal(parseBusinessModel(JSON.stringify({...eventsOnly,kinds:[]})),null);
 assert.deepEqual(visibleServiceKinds(legacyBusinessModel,[]),["course","workshop","event"]);
 console.log("PASS: optional membership design, service type validation, primary order and existing record preservation.");
+
+const flowModule={exports:{}};
+new Function("module","exports",ts.transpileModule(fs.readFileSync(path.join(__dirname,"../src/lib/classRecruitmentFlowDesign.ts"),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(flowModule,flowModule.exports);
+const {initialFlow,buildFlow,parseFlowDraft,flowKey}=flowModule.exports;
+const paidCourse={kind:"course",id:"a",title:"A",paid:true,defaultPayment:"recurring"};
+const freeEvent={kind:"event",id:"b",title:"B",paid:false,defaultPayment:"free"};
+const membership={kind:"membership",id:"school",title:"Membership"};
+assert.deepEqual(buildFlow(freeEvent,initialFlow(freeEvent)),["page","application","confirmation"]);
+assert.deepEqual(buildFlow(paidCourse,{...initialFlow(paidCourse),audience:"members_only",route:"briefing",test:true,terms:"terms"}),["page","eligibility","booking","briefing","application","test","approval","terms","class","payment","confirmation"]);
+assert.equal(buildFlow(membership,initialFlow(membership)).includes("class"),false);
+assert.equal(parseFlowDraft(JSON.stringify({...initialFlow(paidCourse),payment:"free"}),paidCourse).payment,"recurring");
+assert.equal(parseFlowDraft(JSON.stringify({...initialFlow(freeEvent),payment:"before"}),freeEvent).payment,"free");
+assert.notEqual(flowKey("school",paidCourse),flowKey("school",freeEvent));
+assert.notEqual(flowKey("school",paidCourse),flowKey("other",paidCourse));
+console.log("PASS: independent recruitment diagrams, ordered steps, designed fee and membership separation.");
