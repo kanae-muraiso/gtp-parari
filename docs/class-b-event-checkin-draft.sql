@@ -64,7 +64,7 @@ begin
     insert into public.class_workshop_attendance(entry_id,session_at,status) values(e.id,g.session_at,'present')
       on conflict(entry_id,session_at) do update set status='present';
   else
-    update public.application_entries set class_event_attendance='present',checked_in_at=coalesce(checked_in_at,stamp)
+    update public.application_entries set class_event_attendance='present'
       where id=e.id;
   end if;
   select coalesce(nullif(e.applicant_name,''),nullif(display_name,''),username,'参加者') into participant
